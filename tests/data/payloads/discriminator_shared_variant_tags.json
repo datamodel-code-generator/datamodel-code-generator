@@ -1,0 +1,102 @@
+{
+  "Pet": [
+    {
+      "kind": "cat"
+    },
+    {
+      "kind": "dog"
+    }
+  ],
+  "Animal": [
+    {
+      "kind": "feline"
+    },
+    {
+      "kind": "canine"
+    }
+  ],
+  "Pond": [
+    {
+      "kind": "Fish"
+    },
+    {
+      "kind": "reptile"
+    }
+  ],
+  "Sea": [
+    {
+      "kind": "fin"
+    },
+    {
+      "kind": "scale"
+    }
+  ],
+  "Figure": [
+    {
+      "shape": "circle"
+    },
+    {
+      "shape": "round"
+    },
+    {
+      "shape": "square"
+    }
+  ],
+  "Drawing": [
+    {
+      "shape": "disc"
+    },
+    {
+      "shape": "square"
+    }
+  ],
+  "Ocean": [
+    {
+      "kind": "swim"
+    },
+    {
+      "kind": "shell"
+    }
+  ],
+  "Lake": [
+    {
+      "kind": "Eel"
+    },
+    {
+      "kind": "shell"
+    }
+  ],
+  "Badge": [
+    {
+      "shape": "ring"
+    },
+    {
+      "shape": "hoop"
+    },
+    {
+      "shape": "star"
+    }
+  ],
+  "Emblem": [
+    {
+      "shape": "band"
+    },
+    {
+      "shape": "loop"
+    },
+    {
+      "shape": "star"
+    }
+  ],
+  "Seal": [
+    {
+      "shape": "ring"
+    },
+    {
+      "shape": "hoop"
+    },
+    {
+      "shape": "star"
+    }
+  ]
+}

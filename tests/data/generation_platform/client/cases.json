@@ -11,8 +11,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -105,8 +105,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -150,8 +150,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -229,8 +229,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -415,6 +415,10 @@
     "model": {
       "read_only_write_only_model_type": "request-response"
     },
+    "config": {}
+  },
+  "multipart-kinds": {
+    "input": "multipart-kinds.yaml",
     "config": {}
   },
   "servers": {
@@ -780,14 +784,87 @@
   "media-errors": {
     "input": "media-errors.yaml"
   },
+  "form-name-errors": {
+    "input": "form-name-errors.yaml"
+  },
+  "form-name-kept": {
+    "input": "form-name-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "extra_fields": "allow",
+      "openapi_include_paths": [
+        "/absorbing-kept",
+        "/absorbing-kept-parts",
+        "/absorbing-kept-wrapped"
+      ]
+    }
+  },
   "server-errors": {
     "input": "server-errors.yaml"
   },
   "codec-errors": {
-    "input": "codec-errors.yaml"
+    "input": "codec-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ]
+  },
+  "binary-text": {
+    "input": "binary-text.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ]
+  },
+  "binary-allowed": {
+    "input": "binary-allowed.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
+  "binary-mapped": {
+    "input": "binary-mapped.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "type_mappings": [
+        "password=binary",
+        "string+byte=binary"
+      ]
+    }
   },
   "cookie-names": {
     "input": "cookie-names.yaml"
+  },
+  "header-names": {
+    "input": "header-names.yaml"
   },
   "setting-errors": {
     "input": "pets.yaml",
@@ -849,6 +926,20 @@
     "model": {"naming_strategy": "primary-first"},
     "modules": false
   },
+  "naming-default": {
+    "input": "naming-default.yaml",
+    "modules": [["client", "_operations.py"]]
+  },
+  "naming-default-moved": {
+    "input": "naming-default.yaml",
+    "config": {"operations": [{"ref": "/paths/~1defaults/get", "resource": "other"}]},
+    "modules": [["client", "_operations.py"]]
+  },
+  "naming-device-moved": {
+    "input": "naming-device.yaml",
+    "config": {"operations": [{"ref": "/paths/~1consoles/get", "resource": "other"}]},
+    "modules": [["client", "_operations.py"]]
+  },
   "method-collisions": {
     "input": "method-collisions.yaml",
     "modules": [["client", "resources", "default", "_sync.py"], ["client", "types", "default", "_operations.py"]]
@@ -856,6 +947,10 @@
   "reference-errors": {
     "input": "pets.yaml",
     "config": {
+      "resource_names": [
+        {"tag": "pets", "namespace": "animals"},
+        {"tag": "nope", "namespace": "other"}
+      ],
       "operations": [
         {
           "ref": "/paths/~1missing/get"
@@ -3848,6 +3943,10 @@
       ]
     }
   },
+  "unions-mapped": {
+    "input": "unions-mapped.yaml",
+    "config": {}
+  },
   "unions-legacy": {
     "input": "unions-legacy.yaml",
     "config": {}
@@ -4292,6 +4391,15 @@
       "signature_style": "unpack"
     }
   },
+  "modelless-bodies": {
+    "input": "modelless-bodies.yaml",
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "config": {}
+  },
   "caching": {
     "input": "caching.yaml",
     "references": [
@@ -4683,6 +4791,12 @@
       "body_arguments": "both"
     }
   },
+  "missing-sentinel": {
+    "input": "missing-sentinel.yaml"
+  },
+  "nullable-enums": {
+    "input": "nullable-enums.yaml"
+  },
   "nullable-parameters": {
     "input": "nullable-parameters.yaml"
   },
@@ -4725,6 +4839,33 @@
       "use_schema_description": true,
       "use_single_line_docstring": true
     }
+  },
+  "route-text": {
+    "input": "route-text.yaml",
+    "references": [
+      "protocols/route-text.json"
+    ],
+    "config": {
+      "protocols": "protocols/route-text.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
   },
   "templates": {
     "input": "pets.yaml",
@@ -4846,8 +4987,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -4908,8 +5049,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [
@@ -4972,8 +5113,8 @@
     "config": {
       "resource_names": [
         {
-          "tag": "photos",
-          "namespace": "photos"
+          "tag": "pets",
+          "namespace": "pets"
         }
       ],
       "operations": [

@@ -43,7 +43,7 @@ from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Generator, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Generator, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
     import inflect
@@ -261,6 +261,14 @@ ID_PATTERN: Pattern[str] = re.compile(r"^#[^/].*")
 _NON_IDENTIFIER_PATTERN: Pattern[str] = re.compile(r"[¹²³⁴⁵⁶⁷⁸⁹]|\W")
 
 SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
+
+
+def _source_path(path: str) -> str:
+    """Return a reference path without the marker of a read or write variant of its model."""
+    if (variant := path.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
+        return variant[0].rstrip("/")
+    return path
+
 
 T = TypeVar("T")
 
@@ -721,6 +729,15 @@ class ClassName(NamedTuple):
     duplicate_name: str | None
 
 
+class _YieldingName(NamedTuple):
+    """A reference whose name moves aside when a reference that does not yield asks for it."""
+
+    reference: Reference
+    base_name: str
+    model_type: str
+    created_name: str
+
+
 def get_relative_path(base_path: PurePath, target_path: PurePath) -> PurePath:
     """Calculate relative path from base to target."""
     if base_path == target_path:
@@ -863,6 +880,13 @@ class ModelResolver:  # noqa: PLR0904
         # Incrementally maintained counts of reference names for O(1) uniqueness checking.
         self._reference_names_cache: dict[str, int] = {}
         self._unique_name_start_hints: dict[tuple[str, str, str], int] = {}
+        self._yielding_names: dict[str, _YieldingName] = {}
+        self._yielding_name_start_hints: dict[tuple[str, str, str, str], int] = {}
+        self._matched_model_name_keys: set[str] = set()
+        self.assigned_yielding_names: Mapping[str, tuple[str, str | None]] = {}
+        self.final_yielding_names: dict[str, tuple[str, str | None]] = {}
+        self.yielding_name_changes: set[str] = set()
+        self._new_references_yield = False
 
         # Default value overrides from external JSON file
         self.default_value_overrides: Mapping[str, Any] = (
@@ -919,6 +943,13 @@ class ModelResolver:  # noqa: PLR0904
             instance_state["_reference_names_cache"] = reference_names
         self.__dict__.update(instance_state)
         self.__dict__.setdefault("_resolved_base_path_cache", None)
+        self.__dict__.setdefault("_yielding_names", {})
+        self.__dict__.setdefault("_yielding_name_start_hints", {})
+        self.__dict__.setdefault("_matched_model_name_keys", set())
+        self.__dict__.setdefault("assigned_yielding_names", {})
+        self.__dict__.setdefault("final_yielding_names", {})
+        self.__dict__.setdefault("yielding_name_changes", set())
+        self.__dict__.setdefault("_new_references_yield", False)
         for name, value in slot_state.items():
             setattr(self, name, value)
 
@@ -935,23 +966,23 @@ class ModelResolver:  # noqa: PLR0904
         """Preserve replacement of the public resolver mapping."""
         self._field_name_resolvers = resolvers
 
-    def _get_model_name_map_value(self, path: str, generated_name: str, original_name: str) -> str | None:
-        """Return an explicit model rename for a source path or generated name."""
+    def _get_model_name_map_value(
+        self, path: str, generated_name: str, original_name: str, *, match_names: bool = True
+    ) -> str | None:
+        """Return an explicit model rename for a source path or generated name.
+
+        A yielding reference matches only by path: its generated name is not final until parsing ends.
+        """
         if not self.model_name_map:
             return None
 
         _, separator, fragment = path.partition("#")
-        candidates = (
-            (path, f"#{fragment}", generated_name, original_name)
-            if separator
-            else (
-                path,
-                generated_name,
-                original_name,
-            )
-        )
-        for candidate in candidates:
+        paths = (path, f"#{fragment}") if separator else (path,)
+        names = (generated_name, original_name) if match_names else ()
+        for candidate in (*paths, *names):
             if (mapped_name := self.model_name_map.get(candidate)) is not None:
+                if candidate in names:
+                    self._matched_model_name_keys.add(candidate)
                 return mapped_name
         return None
 
@@ -969,7 +1000,9 @@ class ModelResolver:  # noqa: PLR0904
         reference_names = self._get_reference_names()
         conflict_reason = (
             "already used"
-            if mapped_name != reserved_name and mapped_name in reference_names
+            if mapped_name != reserved_name
+            and mapped_name in reference_names
+            and mapped_name not in self._yielding_names
             else "reserved"
             if mapped_name != generated_name and mapped_name in self.exclude_names
             else None
@@ -988,8 +1021,11 @@ class ModelResolver:  # noqa: PLR0904
         class_name: ClassName,
         *,
         reserved_name: str | None = None,
+        match_names: bool = True,
     ) -> ClassName:
-        if (mapped_name := self._get_model_name_map_value(path, class_name.name, original_name)) is None:
+        if (
+            mapped_name := self._get_model_name_map_value(path, class_name.name, original_name, match_names=match_names)
+        ) is None:
             return class_name
 
         self._ensure_model_name_map_value(path, class_name.name, mapped_name, reserved_name)
@@ -1005,6 +1041,64 @@ class ModelResolver:  # noqa: PLR0904
         self.references.clear()
         self._reference_names_cache.clear()
         self._unique_name_start_hints.clear()
+        self._yielding_name_start_hints.clear()
+        self._yielding_names.clear()
+
+    @contextmanager
+    def yielding_new_references(self) -> Generator[None, None, None]:
+        """Let references created inside give their names to every later reference that does not yield."""
+        previous = self._new_references_yield
+        self._new_references_yield = True
+        try:
+            yield
+        finally:
+            self._new_references_yield = previous
+
+    def is_yielding(self, reference: Reference) -> bool:
+        """Return whether ``reference`` still gives its name to references that do not yield."""
+        return (entry := self._yielding_names.get(reference.name)) is not None and entry.reference is reference
+
+    def settle_yielding_names(self) -> set[int]:
+        """Keep the current names of yielding references from now on and return the ids of those references.
+
+        Model name keys of ``--model-name-map`` that matched no other reference apply to these references by their
+        final names. The final names are recorded, and the names of references that changed name since they were
+        created, for a parse that names these references as they end.
+        """
+        entries = list(self._yielding_names.values())
+        self._yielding_names.clear()
+        self._yielding_name_start_hints.clear()
+        for entry in entries:
+            reference = entry.reference
+            if (name := reference.name) not in self._matched_model_name_keys and (
+                mapped_name := self.model_name_map.get(name)
+            ) is not None:
+                self._ensure_model_name_map_value(reference.path, name, mapped_name, name)
+                reference.name = mapped_name
+                reference.duplicate_name = None
+                self._update_reference_name(name, mapped_name)
+            self.final_yielding_names[reference.path] = reference.name, reference.duplicate_name
+            if reference.name != entry.created_name:
+                self.yielding_name_changes.update((entry.created_name, reference.name))
+        return {id(entry.reference) for entry in entries}
+
+    def _evict_yielding_reference(self, name: str) -> None:
+        """Move a yielding reference off ``name`` so that a reference that does not yield can take it.
+
+        The name changes holder without being released, so no duplicate-name hint is dropped.
+        """
+        if (entry := self._yielding_names.pop(name, None)) is None or entry.reference.name != name:
+            return
+        module, dot, _ = name.rpartition(".")
+        prefix = f"{module}{dot}"
+        new_name = prefix + self._get_unique_name(
+            entry.base_name, camel=True, model_type=entry.model_type, prefix=prefix, yields=True
+        )
+        entry.reference.name = new_name
+        entry.reference.duplicate_name = entry.base_name
+        del self._reference_names_cache[name]
+        self._reference_names_cache[new_name] = 1
+        self._yielding_names[new_name] = entry
 
     def _get_reference_names(self) -> dict[str, int]:
         """Get the counts of all reference names for uniqueness checking."""
@@ -1036,6 +1130,7 @@ class ModelResolver:  # noqa: PLR0904
             reference_names[reference.name] = reference_names.get(reference.name, 0) + 1
         self._reference_names_cache = reference_names
         self._unique_name_start_hints.clear()
+        self._yielding_name_start_hints.clear()
 
     @property
     def current_base_path(self) -> Path | None:
@@ -1331,6 +1426,8 @@ class ModelResolver:  # noqa: PLR0904
         skip_affix = has_affix_config and needs_scope
         class_name = self.get_class_name(original_name, unique=use_unique, skip_affix=skip_affix)
         name = self._apply_model_name_map(path, original_name, class_name).name
+        if self._yielding_names:
+            self._evict_yielding_reference(name)
         reference = Reference(
             path=path,
             original_name=original_name,
@@ -1402,23 +1499,25 @@ class ModelResolver:  # noqa: PLR0904
 
         For PrimaryFirst strategy, when a primary definition in the main file
         has the same name as an external reference, rename the external reference
-        so the primary definition can use the clean name.
+        so the primary definition can use the clean name. A yielding reference is left to give its name way
+        when the primary definition takes it.
         """
         for ref_path, ref in self.references.items():
-            if ref.name == name and ref_path != current_path:
+            if ref.name == name and ref_path != current_path and not self.is_yielding(ref):
                 # Check if this is an external reference (different file)
                 ref_file = ref_path.split("#")[0]
                 current_file = current_path.split("#", maxsplit=1)[0]
                 if ref_file != current_file:  # pragma: no branch
                     # Rename this external reference
                     new_name = self._get_unique_name(name, camel=True)
+                    self._evict_yielding_reference(new_name)
                     old_name = ref.name
                     ref.duplicate_name = ref.name
                     ref.name = new_name
                     self._update_reference_name(old_name, new_name)
                     break
 
-    def add(  # noqa: PLR0913
+    def add(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         path: Sequence[str],
         original_name: str,
@@ -1430,8 +1529,14 @@ class ModelResolver:  # noqa: PLR0904
         loaded: bool = False,
         model_type: str = "model",
         preserve_class_name: bool = False,
+        yields: bool | None = None,
     ) -> Reference:
-        """Add or update a model reference with the given path and name."""
+        """Add or update a model reference with the given path and name.
+
+        A reference yields its name when ``yields`` says so, or when it is created inside
+        ``yielding_new_references()`` and is no primary definition; a yielding reference keeps yielding. A yielding
+        reference takes the name ``assigned_yielding_names`` gives its path, the name it ended with in an earlier parse.
+        """
         joined_path = self.join_path(tuple(path))
         is_root = joined_path == "#" or (joined_path.endswith("#") and "/" not in joined_path.split("#")[-1])
         reference: Reference | None = self.references.get(joined_path)
@@ -1449,7 +1554,18 @@ class ModelResolver:  # noqa: PLR0904
                 return reference
         name = original_name
         duplicate_name: str | None = None
-        if class_name:
+        previous_entry = self._yielding_names.pop(reference.name, None) if reference is not None else None
+        yields = previous_entry is not None or (
+            yields
+            if yields is not None
+            else reference is None
+            and self._new_references_yield
+            and class_name
+            and not self._is_primary_definition(path)
+        )
+        if yields and (assigned := self.assigned_yielding_names.get(joined_path)) is not None:
+            name, duplicate_name = assigned
+        elif class_name:
             name = self._check_parent_scope_option(name, path)
             name = self._apply_full_path_naming(name, path)
 
@@ -1460,7 +1576,7 @@ class ModelResolver:  # noqa: PLR0904
                 # For primary definitions, try to use the clean name first
                 # If an external reference has the same name, rename it
                 self._rename_external_ref_with_same_name(name, joined_path)
-            class_name_result = self.get_class_name(
+            generated_class_name = self.get_class_name(
                 name=name,
                 unique=unique,
                 reserved_name=reference.name if reference else None,
@@ -1469,13 +1585,16 @@ class ModelResolver:  # noqa: PLR0904
                 model_type=model_type,
                 is_root=is_root,
                 preserve_name=preserve_class_name,
+                **({"yields": True} if yields else {}),
             )
             class_name_result = self._apply_model_name_map(
                 joined_path,
                 original_name,
-                class_name_result,
+                generated_class_name,
                 reserved_name=reference.name if reference else None,
+                match_names=not yields,
             )
+            yields = yields and class_name_result is generated_class_name
             name, duplicate_name = class_name_result
         else:
             # TODO: create a validate for module name
@@ -1487,6 +1606,8 @@ class ModelResolver:  # noqa: PLR0904
                 if unique_name != name:
                     duplicate_name = name
                 name = unique_name
+        if not yields and self._yielding_names:
+            self._evict_yielding_reference(name)
         if reference:
             reference.original_name = original_name
             reference.name = name
@@ -1503,6 +1624,13 @@ class ModelResolver:  # noqa: PLR0904
             )
             self.references[joined_path] = reference
             self._update_reference_name(None, name, unique=unique)
+        if yields:
+            self._yielding_names[name] = _YieldingName(
+                reference,
+                duplicate_name or name.rpartition(".")[2],
+                model_type,
+                previous_entry.created_name if previous_entry is not None else name,
+            )
         return reference
 
     def get(self, path: Sequence[str] | str) -> Reference | None:
@@ -1510,12 +1638,12 @@ class ModelResolver:  # noqa: PLR0904
         return self.references.get(self.resolve_ref(path))
 
     def delete(self, path: Sequence[str] | str) -> None:
-        """Delete a reference by path if it exists."""
+        """Delete a reference by path if it exists, together with the name it yields."""
         resolved = self.resolve_ref(path)
-        if resolved in self.references:
-            old_name = self.references[resolved].name
-            del self.references[resolved]
-            self._remove_reference_name(old_name)
+        if (reference := self.references.pop(resolved, None)) is not None:
+            if self.is_yielding(reference):
+                del self._yielding_names[reference.name]
+            self._remove_reference_name(reference.name)
 
     def default_class_name_generator(self, name: str) -> str:
         """Generate a valid class name from a string."""
@@ -1590,6 +1718,8 @@ class ModelResolver:  # noqa: PLR0904
         is_root: bool = False,  # noqa: FBT001, FBT002
         skip_affix: bool = False,  # noqa: FBT001, FBT002
         preserve_name: bool = False,  # noqa: FBT001, FBT002
+        *,
+        yields: bool = False,
     ) -> ClassName:
         """Generate a unique class name with optional singularization."""
         split_name = None
@@ -1628,36 +1758,69 @@ class ModelResolver:  # noqa: PLR0904
 
         duplicate_name: str | None = None
         if unique:
-            unique_name = self._get_unique_name(class_name, camel=True, model_type=model_type)
+            unique_name = self._get_unique_name(
+                class_name, camel=True, model_type=model_type, prefix=prefix, yields=yields
+            )
             if unique_name != class_name:
                 duplicate_name = class_name
             class_name = unique_name
         return ClassName(name=f"{prefix}{class_name}", duplicate_name=duplicate_name)
 
-    def _get_unique_name(self, name: str, camel: bool = False, model_type: str = "model") -> str:  # noqa: FBT001, FBT002
-        reference_names = self._get_reference_names()
-        exclude_names = self.exclude_names
-
+    def _get_unique_name(
+        self,
+        name: str,
+        camel: bool = False,  # noqa: FBT001, FBT002
+        model_type: str = "model",
+        *,
+        prefix: str = "",
+        yields: bool = False,
+    ) -> str:
         # Determine the suffix to use
         suffix = self._get_suffix_for_model_type(model_type)
         if not suffix and self.duplicate_name_suffix:
             suffix = self.duplicate_name_suffix
 
         delimiter = "" if camel else "_"
+        if yields:
+            return self._get_yielding_unique_name(name, suffix, delimiter, prefix)
+        is_taken = self._is_taken_beside_yielding_names if self._yielding_names else self._is_taken
         hint_key = (name, suffix or "", delimiter)
         count = self._unique_name_start_hints.get(hint_key, 0)
-        if count and self._is_unique_name_available(
-            self._build_unique_name_candidate(name, suffix, delimiter, count - 1),
-            reference_names,
-            exclude_names,
-        ):
+        if count and not is_taken(self._build_unique_name_candidate(name, suffix, delimiter, count - 1)):
             count = 0
         unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
-        while unique_name in reference_names or unique_name in exclude_names:
+        while is_taken(unique_name):
             count += 1
             unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
         if count:
             self._unique_name_start_hints[hint_key] = count + 1
+        return unique_name
+
+    def _is_taken(self, name: str) -> bool:
+        return name in self._reference_names_cache or name in self.exclude_names
+
+    def _is_taken_beside_yielding_names(self, name: str) -> bool:
+        """Names of yielding references stay free for references that do not yield."""
+        return self._reference_names_cache.get(name, 0) > (name in self._yielding_names) or name in self.exclude_names
+
+    def _get_yielding_unique_name(self, name: str, suffix: str | None, delimiter: str, prefix: str) -> str:
+        """Return a duplicate candidate free also in the module of a yielding reference, after those given before.
+
+        Candidates before the last one given stay skipped even when a name among them is released later, which only
+        numbers a later model of a map value higher.
+        """
+        reference_names = self._reference_names_cache
+        hint_key = (name, suffix or "", delimiter, prefix)
+        count = self._yielding_name_start_hints.get(hint_key, 0)
+        unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
+        while (
+            unique_name in reference_names
+            or f"{prefix}{unique_name}" in reference_names
+            or unique_name in self.exclude_names
+        ):
+            count += 1
+            unique_name = self._build_unique_name_candidate(name, suffix, delimiter, count)
+        self._yielding_name_start_hints[hint_key] = count
         return unique_name
 
     @staticmethod
@@ -1669,11 +1832,6 @@ class ModelResolver:  # noqa: PLR0904
             suffix_count = count - 1
             return delimiter.join((name, suffix, str(suffix_count))) if suffix_count else delimiter.join((name, suffix))
         return delimiter.join((name, str(count)))
-
-    @staticmethod
-    def _is_unique_name_available(candidate: str, reference_names: Collection[str], exclude_names: set[str]) -> bool:
-        """Return whether a duplicate-name candidate is currently free."""
-        return candidate not in reference_names and candidate not in exclude_names
 
     @staticmethod
     def _matches_unique_name_candidate(candidate: str, name: str, suffix: str, delimiter: str) -> bool:

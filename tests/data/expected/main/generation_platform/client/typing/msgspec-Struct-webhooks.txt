@@ -1,3 +1,4 @@
+warning UserWarning: msgspec cannot decode the union Shape: its Struct types Circle, Square are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
 mypy pets and webhook_helpers.py: clean
 pyright pets and webhook_helpers.py: clean
 ty pets and webhook_helpers.py: clean

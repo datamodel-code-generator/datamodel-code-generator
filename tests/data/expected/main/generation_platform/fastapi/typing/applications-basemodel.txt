@@ -1,7 +1,7 @@
 13 marked lines
-mypy secured and applications.py: clean
-pyright secured and applications.py: clean
-ty secured and applications.py: clean
+mypy secured, services, and applications.py: clean
+pyright secured, services, and applications.py: clean
+ty secured, services, and applications.py: clean
 mypy applications_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
   18 override
   23 override

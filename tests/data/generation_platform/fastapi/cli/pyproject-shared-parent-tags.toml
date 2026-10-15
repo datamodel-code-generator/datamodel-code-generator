@@ -1,0 +1,24 @@
+[tool.datamodel-codegen]
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+
+[tool.datamodel-codegen.jobs.pets]
+input = "pets.yaml"
+input-file-type = "openapi"
+output = "app/models.py"
+generate-server = "fastapi"
+server-output = "app/pets"
+server-package = "app.pets"
+server-model-package = "app.models"
+
+[tool.datamodel-codegen.jobs.photos]
+input = "photos.yaml"
+input-file-type = "openapi"
+output = "app/photo_models.py"
+generate-server = "fastapi"
+server-output = "app/photos"
+server-package = "app.photos"
+server-model-package = "app.photo_models"

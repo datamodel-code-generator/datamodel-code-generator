@@ -1,0 +1,6 @@
+[
+  "ItemNamesEnum keeps the shifted member names and descriptions of 0.83.0: x-enum-varnames and x-enum-descriptions give null an entry, but the entries are matched to the values without null, so 'x' is named 'NIL' instead of 'FIRST'. Leave the entry of null out of the list.",
+  "DescribedBesideNullEnum keeps the shifted member descriptions of 0.83.0: x-enum-descriptions gives null an entry, but the entries are matched to the values without null, so 'y' is described 'Nothing' instead of 'The second'. Leave the entry of null out of the list.",
+  "NullableNumbersEnum keeps the shifted member names of 0.83.0: x-enumNames gives null an entry, but the entries are matched to the values without null, so 1 is named 'NIL' instead of 'ONE'. Leave the entry of null out of the list.",
+  "RepeatedNamesBesideNullEnum keeps the shifted member names of 0.83.0: x-enum-varnames gives null an entry, but the entries are matched to the values without null, so 'y' is named 'A' instead of 'B'. Leave the entry of null out of the list."
+]

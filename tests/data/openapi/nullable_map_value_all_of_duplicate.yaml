@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info: {title: Nullable map of an allOf duplicate, version: "1"}
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        entries:
+          type: [object, "null"]
+          additionalProperties:
+            allOf:
+              - $ref: "#/components/schemas/Base"
+              - description: an entry
+    Base:
+      type: object
+      properties:
+        id:
+          type: integer
+    Entries:
+      type: object
+      properties:
+        label:
+          type: string

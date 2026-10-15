@@ -11,9 +11,9 @@ from pets.options import UNSET
 from pets.responses import AsyncRawResponse, RawResponse, Response
 from pets.types.default import CreatePetResponse
 from pets_models import (
-    FieldPetsPetIdOwnerPutPathPetIdParameter,
-    FieldPetsPetIdPatchPathPetIdParameter,
-    FieldPetsPetIdVisitsPostPathPetIdParameter,
+    PetsPetIdOwnerPutPathPetIdParameter,
+    PetsPetIdPatchPathPetIdParameter,
+    PetsPetIdVisitsPostPathPetIdParameter,
     Kind,
     NewPet,
     Owner,
@@ -43,9 +43,9 @@ def create(client: Client, kind: Kind, owner: Owner, body: NewPet) -> None:
 
 def update(
     client: Client,
-    pet: FieldPetsPetIdPatchPathPetIdParameter,
-    visit: FieldPetsPetIdVisitsPostPathPetIdParameter,
-    owner_id: FieldPetsPetIdOwnerPutPathPetIdParameter,
+    pet: PetsPetIdPatchPathPetIdParameter,
+    visit: PetsPetIdVisitsPostPathPetIdParameter,
+    owner_id: PetsPetIdOwnerPutPathPetIdParameter,
     owner: Owner,
 ) -> None:
     pets = client.default

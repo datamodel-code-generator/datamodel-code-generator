@@ -24,10 +24,64 @@ EXPECTED_OPENAPI = EXPECTED_MAIN / "openapi"
 INPUT_MODEL_DATA = TEST_DATA / "python" / "input_model"
 EXPECTED_CLIENT = EXPECTED_MAIN / "generation_platform" / "client"
 CLIENT_DATA = TEST_DATA / "generation_platform" / "client"
-BINDING_LINES = ("plain", "async plain", "async list with")
 FASTAPI_CLI_DATA = TEST_DATA / "generation_platform" / "fastapi" / "cli"
 JSON_SCHEMA_DATA = TEST_DATA / "jsonschema"
 OPENAPI_DATA = TEST_DATA / "openapi"
+DOCS_PROJECTS = TEST_DATA / "docs"
+EXPECTED_DOCS_PROJECTS = TEST_DATA / "expected" / "docs"
+TUTORIAL = DOCS_PROJECTS / "tutorial"
+EXPECTED_TUTORIAL = EXPECTED_DOCS_PROJECTS / "tutorial"
+TUTORIAL_SERVICE = TUTORIAL / "implementation" / "app" / "services" / "pets.py"
+HOWTO = DOCS_PROJECTS / "howto"
+EXPECTED_HOWTO = EXPECTED_DOCS_PROJECTS / "howto"
+CLIENT_HOWTO = DOCS_PROJECTS / "client-howto"
+EXPECTED_CLIENT_HOWTO = EXPECTED_DOCS_PROJECTS / "client-howto"
+SNIPPETS = DOCS_PROJECTS / "snippets"
+PRESET_PLACEHOLDER = "<newest-standard-py312-preset>"
+CLIENT_HOWTO_SCRIPTS = ("calls", "responses", "options", "retries", "auth", "oauth", "signing", "errors")
+API_TARGET_OPTIONS: dict[str, tuple[str, ...]] = {
+    "server": (
+        "--generate-server",
+        "fastapi",
+        "--server-output",
+        "app/server",
+        "--server-package",
+        "app.server",
+        "--server-model-package",
+        "app.models",
+    ),
+    "client": (
+        "--generate-client",
+        "httpx2",
+        "--client-output",
+        "app/client",
+        "--client-package",
+        "app.client",
+        "--client-model-package",
+        "app.models",
+    ),
+}
+DOCS_PROJECT_OPTIONS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "tutorial": ("server", ()),
+    "howto": (
+        "server",
+        (
+            "--server-include-request",
+            "--server-handler-modes",
+            '{"/paths/~1pets~1{petId}~1photo/put": "async"}',
+        ),
+    ),
+    "client-howto": (
+        "client",
+        (
+            "--client-body-arguments",
+            "both",
+            "--client-operations",
+            '{"/paths/~1pets/get": {"runtime": {"request_id_header": "X-Request-Id"}}}',
+        ),
+    ),
+}
+TREE_BRANCHES = (("├── ", "│   "), ("└── ", "    "))
 
 BEGIN_MARKER_TEMPLATE = "<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: {example_id} -->"
 END_MARKER_TEMPLATE = "<!-- END AUTO-GENERATED DOC EXAMPLE: {example_id} -->"
@@ -102,6 +156,102 @@ def command(arguments: Iterable[str]) -> str:
     return " \\\n  ".join(("datamodel-codegen", *lines))
 
 
+def newest_preset() -> str:
+    """Return the newest standard preset of the quick start's Python version, which every guide and its tests use."""
+    from scripts import build_preset_docs  # ruff: ignore[import-outside-top-level]
+
+    return build_preset_docs._get_latest_preset_name_by_prefix(  # ruff: ignore[private-member-access]
+        "standard", target_python_version=build_preset_docs.QUICK_START_TARGET_PYTHON_VERSION
+    )
+
+
+def with_newest_preset(text: str) -> str:
+    """Fill the preset placeholder of a documentation fixture with the newest standard preset."""
+    return text.replace(PRESET_PLACEHOLDER, newest_preset())
+
+
+def read_with_newest_preset(path: Path) -> str:
+    """Read a documentation fixture with its preset placeholder filled in."""
+    return with_newest_preset(read_text(path))
+
+
+def api_quick_start_arguments(target: str) -> tuple[str, ...]:
+    """Return the quick-start arguments of the `server` or `client` target, with the newest standard py312 preset."""
+    return (
+        "--input",
+        "openapi.yaml",
+        "--input-file-type",
+        "openapi",
+        "--openapi-scopes",
+        "schemas",
+        "api",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--preset",
+        newest_preset(),
+        "--output",
+        "app/models.py",
+        *API_TARGET_OPTIONS[target],
+    )
+
+
+def docs_project_arguments(project: str) -> tuple[str, ...]:
+    """Return the arguments of a documentation project: its target's quick start's and the project's own."""
+    target, options = DOCS_PROJECT_OPTIONS[project]
+    return (*api_quick_start_arguments(target), *options)
+
+
+def toml_value(values: list[str]) -> str:
+    """Render an option's values as TOML: `true` for a flag, a string for one value, and a list for several."""
+    strings = [f"'{value}'" if '"' in value else json.dumps(value) for value in values]
+    if not strings:
+        return "true"
+    return strings[0] if len(strings) == 1 else f"[{', '.join(strings)}]"
+
+
+def pyproject_table(arguments: Iterable[str]) -> str:
+    """Render command-line arguments as the `[tool.datamodel-codegen]` table that sets the same options."""
+    options: dict[str, list[str]] = {}
+    values: list[str] = []
+    for argument in arguments:
+        if argument.startswith("--"):
+            options[argument.removeprefix("--")] = values = []
+        else:
+            values.append(argument)
+    return "\n".join(["[tool.datamodel-codegen]", *(f"{key} = {toml_value(value)}" for key, value in options.items())])
+
+
+def file_tree(listing: str, *, depth: int | None = None) -> str:
+    """Render a sorted listing of files as a tree.
+
+    Private modules are left out, and private directories, or those `depth` levels below a top-level one, are one line.
+    """
+    root: dict[str, dict] = {}
+    for line in listing.splitlines():
+        node, parts = root, line.split("/")
+        for level, directory in enumerate(parts[:-1]):
+            node = node.setdefault(f"{directory}/", {})
+            if directory.startswith("_") or (depth is not None and level == depth):
+                break
+        else:
+            if not parts[-1].startswith("_") or parts[-1] == "__init__.py":
+                node[parts[-1]] = {}
+
+    def branches(node: dict[str, dict], prefix: str) -> list[str]:
+        lines: list[str] = []
+        for index, (name, children) in enumerate(node.items()):
+            branch, indent = TREE_BRANCHES[index == len(node) - 1]
+            lines.extend((f"{prefix}{branch}{name}", *branches(children, prefix + indent)))
+        return lines
+
+    return "\n".join(line for name, children in root.items() for line in (name, *branches(children, "")))
+
+
+def indented(content: str) -> str:
+    """Indent a rendered example for a content tab, ending it where the indented end marker starts."""
+    return f"\n{indent_markdown(content.strip())}\n\n    "
+
+
 def details(summary: str, language: str, content: str) -> str:
     """Render a collapsible Markdown details block containing a code fence."""
     return f"\n<details>\n<summary>{summary}</summary>\n{fenced(language, content)}</details>\n"
@@ -174,21 +324,6 @@ def client_blocks(case_name: str, module: str, *needles: str, limit: int | None 
         )
     source = PYTHON_GENERATED_HEADER_PATTERN.sub("", modules[("client", *Path(module).parts)].rstrip(), count=1)
     return blocks(source, *needles, limit=limit, separator=separator)
-
-
-def report_lines(path: Path, *prefixes: str) -> str:
-    """Return the lines of a test report's first section that start with any of the prefixes, with their details."""
-    selected: list[str] = []
-    depth: int | None = None
-    for line in read_text(path).split("\n# ", 1)[0].splitlines():
-        indent = len(line) - len(line.lstrip())
-        if line.lstrip().startswith(prefixes):
-            depth = indent
-        elif depth is None or indent <= depth:
-            depth = None
-            continue
-        selected.append(line[2:])
-    return "\n".join(selected)
 
 
 def json_helpers(path: Path, *names: str) -> str:
@@ -280,15 +415,212 @@ def render_webhook_error_fields() -> str:
     return "\n".join(rows) + "\n"
 
 
+def excerpt(path: Path, *needles: str) -> str:
+    """Return the first block of a module that contains each needle, in turn, separated as top-level definitions.
+
+    A needle that starts with `def ` selects the whole function, and any other needle the lines between blank lines
+    that hold it, such as a statement group or a class with its first method.
+    """
+    return "\n\n\n".join(
+        blocks(path, needle, limit=1, separator="\n\n\n" if needle.startswith("def ") else "\n\n").strip("\n")
+        for needle in needles
+    )
+
+
+def api_overview_examples(page: str, path: Path) -> tuple[DocsExample, ...]:
+    """Return the server and client overview of README.md or docs/index.md, rendered from the tested tutorial."""
+    return tuple(
+        DocsExample(example_id=f"{page}.server-client.{name}", path=path, render=render)
+        for name, render in (
+            (
+                "openapi",
+                lambda: details("Input (<code>openapi.yaml</code>)", "yaml", read_text(TUTORIAL / "openapi.yaml")),
+            ),
+            (
+                "commands",
+                lambda: fenced(
+                    "bash",
+                    "\n\n".join((
+                        (
+                            "# The application package app, which the generated packages go into\n"
+                            "mkdir -p app && touch app/__init__.py"
+                        ),
+                        *(
+                            f"# {title}\n{command(api_quick_start_arguments(target))}"
+                            for target, title in (
+                                ("server", "FastAPI server package in app/server/"),
+                                ("client", "HTTPX2 client package in app/client/"),
+                            )
+                        ),
+                    )),
+                ),
+            ),
+            (
+                "notice",
+                lambda: fenced(
+                    "text",
+                    "\n".join(read_text(EXPECTED_TUTORIAL / name) for name in ("notice.txt", "client-notice.txt")),
+                ),
+            ),
+            (
+                "tree",
+                lambda: fenced(
+                    "text",
+                    file_tree(
+                        "\n".join(
+                            dict.fromkeys(
+                                line
+                                for name in ("files.txt", "client-files.txt")
+                                for line in read_text(EXPECTED_TUTORIAL / name).splitlines()
+                            )
+                        ),
+                        depth=1,
+                    ),
+                ),
+            ),
+            ("app", lambda: fenced("python", read_text(TUTORIAL_SERVICE))),
+            ("call", lambda: fenced("python", read_text(TUTORIAL / "call.py"))),
+            ("output", lambda: fenced("text", read_text(EXPECTED_TUTORIAL / "call.txt").removeprefix("exit 0\n"))),
+        )
+    )
+
+
+def fastapi_server_examples() -> tuple[DocsExample, ...]:
+    """Return the tutorial and how-to examples of docs/fastapi-server.md, rendered from the tested projects."""
+    app, test = HOWTO / "app" / "main.py", HOWTO / "test_app.py"
+    return tuple(
+        DocsExample(example_id=f"fastapi-server.{name}", path=DOCS / "fastapi-server.md", render=render)
+        for name, render in (
+            ("tutorial.openapi", lambda: details("openapi.yaml", "yaml", read_text(TUTORIAL / "openapi.yaml"))),
+            (
+                "tutorial.pyproject",
+                lambda: indented(fenced("toml", pyproject_table(docs_project_arguments("tutorial")))),
+            ),
+            ("tutorial.command", lambda: indented(fenced("bash", command(docs_project_arguments("tutorial"))))),
+            ("tutorial.notice", lambda: fenced("text", read_text(EXPECTED_TUTORIAL / "notice.txt"))),
+            ("tutorial.tree", lambda: fenced("text", file_tree(read_text(EXPECTED_TUTORIAL / "files.txt")))),
+            (
+                "tutorial.services",
+                lambda: fenced("python", read_python_output(EXPECTED_TUTORIAL / "app/server/services.py")),
+            ),
+            ("tutorial.app", lambda: fenced("python", read_text(TUTORIAL_SERVICE))),
+            ("tutorial.test", lambda: fenced("python", read_text(TUTORIAL / "test_app.py"))),
+            (
+                "tutorial.inline-names",
+                lambda: fenced(
+                    "python", excerpt(EXPECTED_TUTORIAL / "app/models.py", "type PetsGetQuery", "type PetsPetIdGet")
+                ),
+            ),
+            ("howto.openapi", lambda: details("openapi.yaml", "yaml", read_text(HOWTO / "openapi.yaml"))),
+            ("howto.pyproject", lambda: fenced("toml", pyproject_table(DOCS_PROJECT_OPTIONS["howto"][1]))),
+            ("howto.services", lambda: fenced("python", read_python_output(EXPECTED_HOWTO / "app/server/services.py"))),
+            ("howto.errors", lambda: fenced("python", blocks(app, "    def get_photo("))),
+            ("howto.async", lambda: fenced("python", blocks(app, "    async def upload_photo("))),
+            (
+                "howto.dependencies",
+                lambda: fenced("python", excerpt(app, "def tenant(", "class PhotoStore:", "class Photos(", "app = ")),
+            ),
+            ("howto.authorize", lambda: fenced("python", excerpt(app, "USERS =", "def authorize(", "app = "))),
+            (
+                "howto.app",
+                lambda: fenced(
+                    "python",
+                    f"{blocks(app, 'from fastapi import', 'from app.server import')}\n\n\n{excerpt(app, 'app = ')}",
+                ),
+            ),
+            ("howto.notice", lambda: fenced("text", read_text(EXPECTED_HOWTO / "notice.txt"))),
+            ("howto.models", lambda: fenced("python", excerpt(EXPECTED_HOWTO / "app/models.py", "class PhotoUpload("))),
+            (
+                "howto.tests",
+                lambda: fenced("python", excerpt(test, "def test_upload_and_get_photo(", "def test_credentials(")),
+            ),
+            ("batch-jobs", lambda: fenced("toml", read_with_newest_preset(SNIPPETS / "batch-jobs.toml"))),
+            (
+                "templates.command",
+                lambda: fenced(
+                    "bash",
+                    command((
+                        *api_quick_start_arguments("server"),
+                        "--custom-template-dir",
+                        "templates",
+                        "--extra-template-data",
+                        "extra.json",
+                    )),
+                ),
+            ),
+        )
+    )
+
+
+def script_output(path: Path) -> str:
+    """Return what a documentation script printed, without the exit status a successful run records."""
+    return read_text(path).removeprefix("exit 0\n")
+
+
+def client_script_examples(script: str) -> tuple[tuple[str, Callable[[], str]], ...]:
+    """Return a client how-to script and what it printed, as rendered example sections."""
+    return (
+        (f"howto.{script}", lambda: fenced("python", read_text(CLIENT_HOWTO / f"{script}.py"))),
+        (f"howto.{script}-output", lambda: fenced("text", script_output(EXPECTED_CLIENT_HOWTO / f"{script}.txt"))),
+    )
+
+
+def python_client_examples() -> tuple[DocsExample, ...]:
+    """Return the tutorial and how-to examples of docs/python-client.md, rendered from the tested projects."""
+    arguments = api_quick_start_arguments("client")
+    return tuple(
+        DocsExample(example_id=f"python-client.{name}", path=DOCS / "python-client.md", render=render)
+        for name, render in (
+            ("tutorial.openapi", lambda: details("openapi.yaml", "yaml", read_text(TUTORIAL / "openapi.yaml"))),
+            ("tutorial.pyproject", lambda: indented(fenced("toml", pyproject_table(arguments)))),
+            ("tutorial.command", lambda: indented(fenced("bash", command(arguments)))),
+            ("tutorial.notice", lambda: fenced("text", read_text(EXPECTED_TUTORIAL / "client-notice.txt"))),
+            ("tutorial.tree", lambda: fenced("text", file_tree(read_text(EXPECTED_TUTORIAL / "client-files.txt")))),
+            (
+                "tutorial.method",
+                lambda: fenced(
+                    "python",
+                    blocks(EXPECTED_TUTORIAL / "app/client/resources/pets/_sync.py", "    def get_pet(", limit=1),
+                ),
+            ),
+            ("tutorial.call", lambda: fenced("python", read_text(TUTORIAL / "call.py"))),
+            ("tutorial.call-output", lambda: fenced("text", script_output(EXPECTED_TUTORIAL / "call.txt"))),
+            ("tutorial.async", lambda: fenced("python", read_text(TUTORIAL / "call_async.py"))),
+            ("tutorial.async-output", lambda: fenced("text", script_output(EXPECTED_TUTORIAL / "call_async.txt"))),
+            ("howto.openapi", lambda: details("openapi.yaml", "yaml", read_text(CLIENT_HOWTO / "openapi.yaml"))),
+            ("howto.pyproject", lambda: fenced("toml", pyproject_table(DOCS_PROJECT_OPTIONS["client-howto"][1]))),
+            ("howto.fake", lambda: details("fake.py", "python", read_text(CLIENT_HOWTO / "fake.py"))),
+            *(example for script in CLIENT_HOWTO_SCRIPTS for example in client_script_examples(script)),
+            ("howto.generate", lambda: fenced("python", read_with_newest_preset(CLIENT_HOWTO / "generate.py"))),
+            ("howto.shelter", lambda: fenced("python", read_text(CLIENT_HOWTO / "shelter.py"))),
+            ("howto.test", lambda: fenced("python", read_text(CLIENT_HOWTO / "test_client.py"))),
+        )
+    )
+
+
 def docs_examples() -> tuple[DocsExample, ...]:
     """Return all generated docs example sections."""
     return (
+        *api_overview_examples("readme", ROOT / "README.md"),
+        *api_overview_examples("index", DOCS / "index.md"),
+        *fastapi_server_examples(),
+        *python_client_examples(),
+        DocsExample(
+            example_id="fastapi-code-generator-migration.command",
+            path=DOCS / "fastapi-code-generator-migration.md",
+            render=lambda: indented(fenced("bash", command(docs_project_arguments("tutorial")))),
+        ),
         DocsExample(
             example_id="fastapi-server.nested-models.command",
             path=DOCS / "fastapi-server.md",
             render=lambda: fenced(
-                "bash", command(json.loads(read_text(FASTAPI_CLI_DATA / "nested-models-example.json")))
+                "bash", command(json.loads(read_with_newest_preset(FASTAPI_CLI_DATA / "nested-models-example.json")))
             ),
+        ),
+        DocsExample(
+            example_id="using-as-module.server",
+            path=DOCS / "using_as_module.md",
+            render=lambda: fenced("python", read_with_newest_preset(SNIPPETS / "server-generate.py")),
         ),
         DocsExample(
             example_id="openapi.quick-start.schema",
@@ -418,12 +750,12 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.protocols.pyproject",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-protocols.toml")),
+            path=DOCS / "python-client-helpers.md",
+            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-protocols-app.toml")),
         ),
         DocsExample(
             example_id="python-client.protocols.json",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "json",
                 json_helpers(CLIENT_DATA / "protocols" / "disabled.json", "users.all", "jobs.run", "records.watch"),
@@ -431,7 +763,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.protocols.diagnostics",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "text",
                 error_findings(
@@ -445,7 +777,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.pagination.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -457,16 +789,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.pagination.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(EXPECTED_CLIENT / "protocols" / "protocols-pagination-checks.txt"),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.polling.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -479,7 +803,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.polling.handle",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -492,20 +816,12 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.polling.tracked",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced("json", json_helpers(CLIENT_DATA / "protocols" / "polling.json", "jobs.tracked")),
         ),
         DocsExample(
-            example_id="python-client.polling.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(EXPECTED_CLIENT / "protocols" / "protocols-polling-checks.txt"),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.uploads.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -518,16 +834,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.uploads.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(EXPECTED_CLIENT / "protocols" / "protocols-upload-checks.txt"),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.streams.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -539,23 +847,15 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.streams.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(EXPECTED_CLIENT / "protocols" / "protocols-stream-checks.txt"),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.streams.resume-json",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "json", json_helpers(CLIENT_DATA / "protocols" / "stream-resume.json", "events.live", "events.tracked")
             ),
         ),
         DocsExample(
             example_id="python-client.streams.resume",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -567,16 +867,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.streams.resume-diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(EXPECTED_CLIENT / "protocols" / "protocols-stream-resume-checks.txt"),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.ndjson.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -588,16 +880,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.ndjson.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(EXPECTED_CLIENT / "protocols" / "protocols-ndjson-checks.txt"),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.cache.keys",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: (
                 "\n"
                 + blocks(
@@ -615,12 +899,12 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.cache.json",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced("json", json_helpers(CLIENT_DATA / "protocols" / "caching.json", "users.profile")),
         ),
         DocsExample(
             example_id="python-client.cache.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -633,22 +917,14 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.cache.usage",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python", blocks(CLIENT_DATA / "typing" / "cache_helpers.py", "def cached_client(", separator="\n\n\n")
             ),
         ),
         DocsExample(
-            example_id="python-client.cache.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(EXPECTED_CLIENT / "protocols" / "protocols-cache-checks.txt"),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.websocket.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -660,33 +936,20 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.websocket.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(
-                    *(
-                        EXPECTED_CLIENT / "protocols" / name
-                        for name in ("protocols-socket-checks.txt", "protocols-socket-errors.txt")
-                    )
-                ),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.webhooks.error-fields",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=render_webhook_error_fields,
         ),
         DocsExample(
             example_id="python-client.webhooks.usage",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python", blocks(CLIENT_DATA / "typing" / "webhook_helpers.py", "def receive(", separator="\n\n\n")
             ),
         ),
         DocsExample(
             example_id="python-client.webhooks.helper",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -700,21 +963,21 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.webhooks.json",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "json", json_helpers(CLIENT_DATA / "protocols" / "webhooks.json", "standard.message")
             ),
         ),
         DocsExample(
             example_id="python-client.webhooks.public-keys",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python", blocks(CLIENT_DATA / "typing" / "public_key_helpers.py", "def keys(", separator="\n\n\n")
             ),
         ),
         DocsExample(
             example_id="python-client.webhooks.public-keys-json",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "json",
                 json_helpers(
@@ -724,7 +987,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.webhooks.adapter-json",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "json",
                 json_helpers(CLIENT_DATA / "protocols" / "webhook-adapters.json", "stripe.event", "unsigned.event"),
@@ -732,7 +995,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.webhooks.adapter",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-helpers.md",
             render=lambda: fenced(
                 "python",
                 blocks(
@@ -745,19 +1008,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.webhooks.diagnostics",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                error_findings(
-                    EXPECTED_CLIENT / "protocols" / "protocols-webhook-errors.txt",
-                    keep=lambda finding: ".signature" in finding,
-                ),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.signature-style.explicit",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -770,7 +1022,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.signature-style.unpack",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -783,7 +1035,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.signature-style.records",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -796,24 +1048,13 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.signature-style.binding",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                "\n".join(
-                    f"# {style}\n{report_lines(EXPECTED_CLIENT / 'runtime' / name, *BINDING_LINES)}"
-                    for style, name in (("explicit", "signatures.txt"), ("unpack", "signatures-unpack.txt"))
-                ),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.body-fields.pyproject",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-fields.toml")),
+            path=DOCS / "python-client-reference.md",
+            render=lambda: fenced("toml", read_text(CLIENT_DATA / "cli" / "pyproject-fields-app.toml")),
         ),
         DocsExample(
             example_id="python-client.body-fields.diagnostics",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "text",
                 error_findings(EXPECTED_CLIENT / "fields-errors.txt"),
@@ -821,7 +1062,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
         ),
         DocsExample(
             example_id="python-client.body-fields.overloads",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "python",
                 client_blocks(
@@ -833,27 +1074,8 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.body-fields.refusals",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                "\n".join(
-                    line.rstrip()
-                    for line in report_lines(
-                        EXPECTED_CLIENT / "runtime" / "fields.txt",
-                        "a body and fields",
-                        "fields missing a required one",
-                        "a field of another media",
-                        "fields for text",
-                        "fields without a media type",
-                        "update naming only a media type",
-                    ).splitlines()
-                ),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.model-codecs.diagnostics",
-            path=DOCS / "python-client.md",
+            path=DOCS / "python-client-reference.md",
             render=lambda: fenced(
                 "text",
                 error_findings(

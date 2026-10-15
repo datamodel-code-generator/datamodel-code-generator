@@ -36,10 +36,10 @@ class GetPetsByPetId:
 
         filter: plan_oas31_models.Filter | None
         coords: plan_oas31_models.Coords | None
-        ids: list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum] | None
+        ids: list[plan_oas31_models.PetsPetIdGetQueryIdsParameterEnum] | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='filter', plan=ParameterPlan(location='query', name='filter', style='deepObject', explode=True, shape='object', fields=(FieldPlan('kind', 'string'), FieldPlan('size', 'integer')), reserved_names=('api_key', 'coords', 'ids', 'tags', 'when')), adapter=TypeAdapter(plan_oas31_models.Filter)), ParameterArgument(name='coords', plan=ParameterPlan(location='query', name='coords', content_media_type='application/json'), adapter=TypeAdapter(plan_oas31_models.Coords)), ParameterArgument(name='ids', plan=ParameterPlan(location='query', name='ids', style='pipeDelimited', shape='array', kind='integer', reserved_names=('api_key', 'coords', 'filter', 'tags', 'when')), adapter=TypeAdapter(list[plan_oas31_models.FieldPetsPetIdGetQueryIdsParameterEnum]))),
+        arguments=(ParameterArgument(name='filter', plan=ParameterPlan(location='query', name='filter', style='deepObject', explode=True, shape='object', fields=(FieldPlan('kind', 'string'), FieldPlan('size', 'integer')), reserved_names=('api_key', 'coords', 'ids', 'tags', 'when')), adapter=TypeAdapter(plan_oas31_models.Filter)), ParameterArgument(name='coords', plan=ParameterPlan(location='query', name='coords', content_media_type='application/json'), adapter=TypeAdapter(plan_oas31_models.Coords)), ParameterArgument(name='ids', plan=ParameterPlan(location='query', name='ids', style='pipeDelimited', shape='array', kind='integer', reserved_names=('api_key', 'coords', 'filter', 'tags', 'when')), adapter=TypeAdapter(list[plan_oas31_models.PetsPetIdGetQueryIdsParameterEnum]))),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(

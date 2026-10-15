@@ -22,62 +22,62 @@ class Filter(BaseModel):
 type TraceParameter = Annotated[str, Field(pattern=r'^[a-f0-9]+$')]
 
 
-type FieldItemsItemIdGetQueryLimitParameter = Annotated[int, Field(ge=1, le=100)]
+type ItemsItemIdGetQueryLimitParameter = Annotated[int, Field(ge=1, le=100)]
 
 
-type FieldItemsItemIdGetQueryRatioParameter = Annotated[
+type ItemsItemIdGetQueryRatioParameter = Annotated[
     float, Field(multiple_of=0.5, gt=0.0)
 ]
 
 
-type FieldItemsItemIdGetQuerySlugParameter = Annotated[
+type ItemsItemIdGetQuerySlugParameter = Annotated[
     str, Field(pattern=compile('^(?!admin)[a-z]+$'), min_length=2)
 ]
 
 
-type FieldItemsItemIdGetQueryTagsParameterItem = Annotated[str, Field(max_length=8)]
+type ItemsItemIdGetQueryTagsParameterItem = Annotated[str, Field(max_length=8)]
 
 
-type FieldItemsItemIdGetQueryTagsParameter = Annotated[
-    list[FieldItemsItemIdGetQueryTagsParameterItem], Field(['new'], max_length=5)
+type ItemsItemIdGetQueryTagsParameter = Annotated[
+    list[ItemsItemIdGetQueryTagsParameterItem], Field(['new'], max_length=5)
 ]
 
 
-type FieldItemsItemIdGetQueryLabelsParameterItem = Annotated[str, Field(max_length=8)]
+type ItemsItemIdGetQueryLabelsParameterItem = Annotated[str, Field(max_length=8)]
 
 
-type FieldItemsItemIdGetQueryLabelsParameter = Annotated[
-    list[FieldItemsItemIdGetQueryLabelsParameterItem], Field(..., max_length=5)
+type ItemsItemIdGetQueryLabelsParameter = Annotated[
+    list[ItemsItemIdGetQueryLabelsParameterItem], Field(..., max_length=5)
 ]
 
 
-class FieldItemsItemIdGetQueryShadeParameter(StrEnum):
+class ItemsItemIdGetQueryShadeParameter(StrEnum):
     light = 'light'
     dark = 'dark'
 
 
-type FieldItemsItemIdGetQueryPinnedParameter = Literal['on']
+type ItemsItemIdGetQueryPinnedParameter = Literal['on']
 
 
-type FieldItemsItemIdGetQueryColorsParameter = Annotated[
+type ItemsItemIdGetQueryColorsParameter = Annotated[
     list[Color], Field(..., title='ColorList')
 ]
 
 
-type FieldItemsItemIdGetQueryCodesParameter = Annotated[str, Field(max_length=4)] | list[Annotated[str, Field(max_length=4)]]
+type ItemsItemIdGetQueryCodesParameter = Annotated[str, Field(max_length=4)] | list[Annotated[str, Field(max_length=4)]]
 
 
-type FieldItemsItemIdGetQueryNullableParameter = Annotated[int, Field(ge=0)] | None
+type ItemsItemIdGetQueryNullableParameter = Annotated[int, Field(ge=0)] | None
 
 
-class FieldItemsItemIdGetQueryOwnerParameter(BaseModel):
+class ItemsItemIdGetQueryOwnerParameter(BaseModel):
     name: constr(max_length=3) | None = None
 
 
-type FieldItemsItemIdGetQueryExtraParameter = dict[str, str]
+type ItemsItemIdGetQueryExtraParameter = dict[str, str]
 
 
-type FieldItemsItemIdGetPathItemIdParameter = Annotated[int, Field(ge=1)]
+type ItemsItemIdGetPathItemIdParameter = Annotated[int, Field(ge=1)]
 
 
 class Item(BaseModel):

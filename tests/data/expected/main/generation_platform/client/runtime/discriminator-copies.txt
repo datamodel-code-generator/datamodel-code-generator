@@ -31,6 +31,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 22] b'{"name":"n","count":1}'
   item with its count = None
 # discriminator-copies dataclasses.dataclass
+  warning UserWarning: Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from PetsListGetResponse1, so these unions cannot decode it: Pet ('kitty').
+  warning UserWarning: Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from PetsListGetResponse1, so these unions cannot decode it: Pet ('doggo').
   > GET https://api.example.com/child
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   inherited pet c = Child(pet=Lion(kind='c', mane=True), pets_by_name={'a': Wolf(kind='d')}, note=None)
@@ -59,6 +61,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 22] b'{"name":"n","count":1}'
   item with its count = None
 # discriminator-copies pydantic_v2.BaseModel
+  warning UserWarning: Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from PetsListGetResponse1, so these unions cannot decode it: Pet ('kitty').
+  warning UserWarning: Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from PetsListGetResponse1, so these unions cannot decode it: Pet ('doggo').
   > GET https://api.example.com/child
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   inherited pet c = Child(pet=Lion(kind='c', mane=True), pets_by_name={'a': Wolf(kind='d')}, note=None)
@@ -82,7 +86,7 @@ pet
   held null = Holder(pet=None)
   > GET https://api.example.com/pets/list
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  listed pets = FieldPetsListGetResponse(root=[FieldPetsListGetResponse1(root=Cat(kind='Cat', lives=None)), FieldPetsListGetResponse1(root=Dog(kind='Dog', bark=True))])
+  listed pets = PetsListGetResponse(root=[PetsListGetResponse1(root=Cat(kind='Cat', lives=None)), PetsListGetResponse1(root=Dog(kind='Dog', bark=True))])
   pet kitty ! ValidationError: 1 validation error for Pet
   Input tag 'kitty' found using 'kind' does not match any of the expected tags: 'Cat', 'Dog' [type=union_tag_invalid, input_value={'kind': 'kitty'}, input_type=dict]
     For further information visit https://errors.pydantic.dev/<version>/v/union_tag_invalid []

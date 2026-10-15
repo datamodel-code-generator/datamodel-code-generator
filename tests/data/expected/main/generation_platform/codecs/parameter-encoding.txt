@@ -65,9 +65,12 @@ header X-C application/vnd.api+json scalar/string: X-C: {"a":"\u00e9"} => "{\"a\
 querystring qs application/x-www-form-urlencoded scalar/string: ?q=a+b%2Bc%7E*&tags=x&tags=y&n=3 => {"q":"a b+c~*","tags":["x","y"],"n":3}
 querystring qs application/json scalar/string: ?%7B%22a%22%3A%5B1%2C%22x%26y%22%5D%7D => "{\"a\":[1,\"x&y\"]}"
 querystring qs text/plain scalar/string: ?a%20b%2Bc => "a b+c"
-header X-C simple scalar/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
-header X-C application/json scalar/string: UnicodeEncodeError 'utf-8' codec can't encode character '\ud800' in position 6
-query c application/json scalar/string: UnicodeEncodeError 'utf-8' codec can't encode character '\ud800' in position 6
+header X-C simple scalar/string: ParameterEncodingError A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter
+header X-C application/json scalar/string: ParameterEncodingError A parameter value is text that UTF-8 cannot encode, such as a lone surrogate
+query c application/json scalar/string: ParameterEncodingError A parameter value is text that UTF-8 cannot encode, such as a lone surrogate
+query c text/plain scalar/string: ParameterEncodingError A parameter value is text that UTF-8 cannot encode, such as a lone surrogate
+querystring qs application/json scalar/string: ParameterEncodingError A parameter value is text that UTF-8 cannot encode, such as a lone surrogate
+path p simple scalar/string: ParameterEncodingError A parameter value is text that UTF-8 cannot encode, such as a lone surrogate
 query q form* scalar/string: ParameterEncodingError JSON null cannot be written by a style-based parameter
 query q form* array/string: ? => UNSET
 query q form* object/string: ? => UNSET
@@ -84,11 +87,11 @@ path p label* array/string: ParameterEncodingError An exploded label value canno
 path p label* array/number: ParameterEncodingError An exploded label value cannot contain its '.' delimiter
 query q spaceDelimited array/string: ParameterEncodingError A delimited query value cannot contain its own delimiter
 query q pipeDelimited array/string: ParameterEncodingError A delimited query value cannot contain its own delimiter
-header X simple scalar/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
-header X simple scalar/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
-header X simple array/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
+header X simple scalar/string: ParameterEncodingError A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter
+header X simple scalar/string: ParameterEncodingError A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter
+header X simple array/string: ParameterEncodingError A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter
 header X simple* object/string: ParameterEncodingError An exploded header member name cannot contain '='
-header X simple* object/string: ParameterEncodingError A header value contains control characters, surrounding whitespace, or a list delimiter
+header X simple* object/string: ParameterEncodingError A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter
 cookie c cookie* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 cookie greeting form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets
 cookie c form* scalar/string: ParameterEncodingError A cookie name must be a token and its value unquoted cookie octets

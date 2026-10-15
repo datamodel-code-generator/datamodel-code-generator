@@ -1,9 +1,9 @@
 # pets pydantic_v2.BaseModel
-  sync native decode = FieldPetsGetResponse(root=[Pet(id=1, name='dog', tag='a')])
+  sync native decode = PetsGetResponse(root=[Pet(id=1, name='dog', tag='a')])
   sync native encode = Pet(id=2, name='dog', tag='a')
   native request GET /pets b''
   native request POST /pets b'{"name":"dog","tag":"a"}'
-  async native decode = FieldPetsGetResponse(root=[Pet(id=1, name='dog', tag='a')])
+  async native decode = PetsGetResponse(root=[Pet(id=1, name='dog', tag='a')])
   async native encode = Pet(id=2, name='dog', tag='a')
   native request GET /pets b''
   native request POST /pets b'{"name":"dog","tag":"a"}'

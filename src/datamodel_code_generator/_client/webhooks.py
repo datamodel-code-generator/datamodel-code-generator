@@ -406,15 +406,14 @@ class _Webhooks:
     @staticmethod
     def unsigned(module: TargetModule, event: str) -> Function:
         """Return the decode function of a helper without a signature."""
-        options = module.optional(module.local(_WEBHOOKS, "WebhookOptions"))
         return Function(
             "decode_unverified",
             (Parameter("raw_body", "bytes"),),
-            (Parameter("options", options, "None"),),
+            (),
             event,
             "",
             module.local(_EVENTS, "decode_unsigned"),
-            (Keyword("", "_PLAN"), Keyword("", "raw_body"), Keyword("options", "options")),
+            (Keyword("", "_PLAN"), Keyword("", "raw_body")),
         )
 
 

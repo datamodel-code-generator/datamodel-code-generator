@@ -9,21 +9,21 @@ from typing import Final
 
 from models import Field as Field_1
 from models import (
-    FieldPetsGetQueryCursorParameter,
-    FieldPetsGetQueryIdParameter,
     Page,
+    PetsGetQueryCursorParameter,
+    PetsGetQueryIdParameter,
     Response,
     Unset,
 )
 from models.owners import Pet as Pet_1
 from models.pets import Pet
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[FieldPetsGetQueryCursorParameter]] = PydanticCodec(FieldPetsGetQueryCursorParameter)
+codec_0: Final[PydanticCodec[PetsGetQueryCursorParameter]] = PydanticCodec(PetsGetQueryCursorParameter)
 """Codec of /paths/~1pets/get parameter (request query cursor)."""
 
-codec_1: Final[PydanticCodec[FieldPetsGetQueryIdParameter]] = PydanticCodec(FieldPetsGetQueryIdParameter)
+codec_1: Final[PydanticCodec[PetsGetQueryIdParameter]] = PydanticCodec(PetsGetQueryIdParameter)
 """Codec of /paths/~1pets/get parameter (request query id)."""
 
 codec_2: Final[PydanticCodec[Page]] = PydanticCodec(Page)

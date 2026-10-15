@@ -95,7 +95,7 @@ PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=2, has_more=BodySelector(pointer='/has_more')),
-    fingerprint='f0004336a003a2ec1a1954001fc89c99307fd01060b05b38d3db8f66d94fcc80',
+    fingerprint='f810837147c62d0bf56baa637d944badefc87ad75f0f3b6e9a0863eac7a30136',
     bindings=(PageBinding(target=ParameterTarget(location='query', name='limit'), literal=2),),
 )
 
@@ -107,7 +107,7 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=None, total=BodySelector(pointer='/total')),
-    fingerprint='056431aa7e995baad5010c277a4336c7a9db5df7015e741debae55f6d3752509',
+    fingerprint='9cd50d81711eb18e3eb34593a08975f91686d10b0647e2285a9e6ebb7da7006e',
 )
 
 
@@ -118,7 +118,7 @@ PLAN_2: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_2,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=10, step=None, has_more=BodySelector(pointer='/more')),
-    fingerprint='618eaf0d0cdd0137f5e4729a2d8a1df3d1b5d2ed14cedba9b89fcfe43ab6c234',
+    fingerprint='d0963a58c063e4ab24ac4b9584721cec7bc128d6aeec93c8fc3154c88e746ab4',
 )
 
 
@@ -129,7 +129,7 @@ PLAN_3: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='page', write=ParameterTarget(location='query', name='page'), first=1, step=1, total=HeaderSelector(name='x-total-count')),
-    fingerprint='13b47d7fd4c8778e9e635557c1e02495c8c4e15cf06b7cd0f9594fc32daa775a',
+    fingerprint='6af8beca9c322dce7b945939e119a6c4b92da89306c6c42b2bb0ea1e9bb38d6f',
 )
 
 
@@ -140,7 +140,7 @@ PLAN_4: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_4,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='page', write=ParameterTarget(location='query', name='page'), first=1, step=2, total=BodySelector(pointer='/count')),
-    fingerprint='4bc7e859709c11998f4757b1ebf45ddd6c8c8db01f4ea8219649dd78c140c654',
+    fingerprint='4a6b052117d8a29235bd9898861bc500cf96f9e6917889eb6eb0b3a4d794cad4',
 )
 
 
@@ -151,7 +151,7 @@ PLAN_5: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_5,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='page', write=ParameterTarget(location='header', name='X-Page'), first=0, step=1, has_more=HeaderSelector(name='X-Has-More')),
-    fingerprint='97f6000f6939129be6f2cff8f6d59e33018b99fd1ca04699d1347f4fb547bccd',
+    fingerprint='523fa699ff139f160b3892c59669e75e8d4874f733e1eebec135ffd0c693b233',
 )
 
 
@@ -173,7 +173,7 @@ PLAN_7: Final[PaginationPlan[models.User, FindResponse]] = PaginationPlan(
     items=_items_7,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='offset', write=QuerystringTarget(name='criteria', pointer='/start'), first=0, step=5, has_more=BodySelector(pointer='/has_more')),
-    fingerprint='bdcecf9126772404d0820e82e2b2c6576ccecb9927b6afc791f2636dfe74d365',
+    fingerprint='c5491fc58e9d6c3a45e09009a2d5caed6bc2c3df7bfb622bba091c0fb74619a8',
 )
 
 
@@ -184,5 +184,5 @@ PLAN_8: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_8,
     items_selector=BodySelector(pointer='/data'),
     continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='position'), first=0, step=1, has_more=BodySelector(pointer='/has_more')),
-    fingerprint='7705295a6a60f5885e8ac85ce688bf80b9016999b2f51d36d9af28cc4e5f5de7',
+    fingerprint='ea7e5baf3521402dd80a7b43c64371298688b83efa9a6f5df56cf6b0b2e341ac',
 )

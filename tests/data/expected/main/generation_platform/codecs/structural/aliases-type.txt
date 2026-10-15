@@ -1,5 +1,5 @@
-use /paths/~1choices/post request_body: StdlibCodec
-use /paths/~1choices/post response_body 200: StdlibCodec
+use /paths/~1choices/post request_body: DataclassCodec
+use /paths/~1choices/post response_body 200: DataclassCodec
 choice-server-decode: native Choice(color_or_count=<Color.red: 'red'>, word_or_list='w', maybe_or_flag=None, word_or_text=None, word_or_wide=None) json={"color_or_count":"red","word_or_list":"w"}
 choice-server-decode-numbers: native Choice(color_or_count=3, word_or_list=[1, 2], maybe_or_flag=True, word_or_text=None, word_or_wide=None) json={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
 choice-server-decode-dated: native Choice(color_or_count=None, word_or_list=5, maybe_or_flag='2020-01-02', word_or_text=None, word_or_wide=None) json={"word_or_list":5,"maybe_or_flag":"2020-01-02"}

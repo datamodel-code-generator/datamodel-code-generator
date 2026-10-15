@@ -135,9 +135,9 @@ paths:
                 items: {type: array, items: {type: integer}}
       responses:
         "204": {description: Done.}
-  /form/nested:
+  /form/extras:
     post:
-      operationId: postNestedForm
+      operationId: postExtrasForm
       tags: [form]
       requestBody:
         required: true
@@ -146,7 +146,7 @@ paths:
             schema:
               type: object
               properties:
-                point: {type: object, properties: {x: {type: number}}}
+                ratio: {type: number}
               additionalProperties: {type: integer}
       responses:
         "204": {description: Done.}

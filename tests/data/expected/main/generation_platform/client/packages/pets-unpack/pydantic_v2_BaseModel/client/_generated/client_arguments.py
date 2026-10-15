@@ -38,7 +38,7 @@ class Operation1Arguments(TypedDict):
 class Operation1Arguments1(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: models.FieldPetsPostRequest
+    body: models.PetsPostRequest
     media_type: Literal['text/plain']
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
@@ -47,7 +47,7 @@ class Operation1Arguments1(TypedDict):
 class Operation1Arguments2(TypedDict):
     """The keyword arguments of one signature of create_pet."""
 
-    body: models.NewPet | models.FieldPetsPostRequest
+    body: models.NewPet | models.PetsPostRequest
     media_type: NotRequired[Literal['application/json', 'text/plain'] | None]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]

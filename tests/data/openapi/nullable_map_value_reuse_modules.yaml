@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value reused across modules
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    a.Item:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          id:
+            type: integer
+    a.Value:
+      type: object
+      properties:
+        id:
+          type: integer
+    b.Holder:
+      type: object
+      properties:
+        items:
+          $ref: "#/components/schemas/a.Item"

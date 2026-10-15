@@ -1,6 +1,7 @@
 mypy v1 pets and extensions.py: clean
 pyright v1 pets and extensions.py: clean
 ty v1 pets and extensions.py: clean
+LeftoverFilesWarning: <root>/pets: These Python files are not generated and are left in place: <root>/pets/resources/archive/__init__.py, <root>/pets/resources/archive/_async.py, <root>/pets/resources/archive/_sync.py, <root>/pets/types/archive/__init__.py, <root>/pets/types/archive/_operations.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.
 mypy v2 extensions.py:
   extensions.py:15 call-arg
   extensions.py:29 attr-defined

@@ -59,7 +59,7 @@
   },
   "inputs": {
     "input": {"text": "inline.yaml"},
-    "model": {"openapi_scopes": ["api"], "input_file_type": "auto"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"check": {"exit": "DIFF", "config": {"server_operation_names": {"urn:dcg:root#/paths/~1items/get": "items"}}}},
       {
@@ -75,10 +75,19 @@
   },
   "validation": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "input_file_type": "auto"},
+    "model": {"openapi_scopes": ["api"]},
     "steps": [
       {"check": {"exit": "ERROR", "model": {"output_model_type": "dataclasses.dataclass"}, "input": {"directory": "."}}},
-      {"check": {"exit": "DIFF", "model": {"output_model_type": "pydantic_v2.dataclass"}}}
+      {
+        "check": {
+          "exit": "DIFF",
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
+        }
+      }
     ]
   },
   "empty": {
@@ -133,7 +142,29 @@
       "allow_private_network": true,
       "allow_remote_refs": true
     },
-    "steps": [{"check": {"exit": "DIFF"}}]
+    "steps": [{"check": {"exit": "DIFF"}}, {"check": {"exit": "ERROR", "input": {"url": "local.json"}}}]
+  },
+  "local-references": {
+    "input": {"path": "local/escape.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"write": ["secrets/creds.yaml", "token: SECRET-MARKER\nlink: {operationId: listOrders, description: SECRET-MARKER}\nscheme: {type: apiKey, in: header, name: SECRET-MARKER}\n"]},
+      {"generate": {"exit": "ERROR"}},
+      {"check": {"exit": "ERROR", "model": {"allow_remote_refs": true}}},
+      {"generate": {"exit": "ERROR", "input": {"path": "local/escape-link.yaml"}}},
+      {"generate": {"exit": "ERROR", "input": {"path": "local/escape-scheme.yaml"}}},
+      {"tree": null}
+    ]
+  },
+  "local-references-symlink": {
+    "input": {"path": "local/linked.yaml"},
+    "model": {"openapi_scopes": ["api"]},
+    "steps": [
+      {"write": ["secrets/creds.yaml", "token: SECRET-MARKER\n"]},
+      {"symlink": ["spec/local/linked", "../../secrets"]},
+      {"generate": {"exit": "ERROR"}},
+      {"tree": null}
+    ]
   },
   "publish": {
     "input": {"path": "api.yaml"},
@@ -385,7 +416,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-dict.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -393,7 +428,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-dict.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -417,7 +456,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-list.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -425,7 +468,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-list.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -449,7 +496,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-mutual.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -457,7 +508,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-mutual.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null}
@@ -492,7 +547,11 @@
         "check": {
           "exit": {"pyyaml": "DIFF", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-reference.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null},
@@ -500,7 +559,11 @@
         "generate": {
           "exit": {"pyyaml": "OK", "ryaml": "ERROR"},
           "input": {"path": "input-cycle-reference.yaml"},
-          "model": {"output_model_type": "pydantic_v2.dataclass"}
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass",
+            "use_missing_sentinel": true,
+            "target_pydantic_version": "2.14"
+          }
         }
       },
       {"tree": null}
@@ -517,5 +580,25 @@
       {"generate": {"input": {"path": "contacts.yaml"}}},
       {"file_modes": ["models.py"]}
     ]
+  },
+  "nullable-map-layout": {
+    "input": {"path": "nullable-map-layout.yaml"},
+    "model": {"openapi_scopes": ["api"], "output": "models", "use_typed_nullable_map_values": true},
+    "steps": [{"generate": {}}, {"tree": null}]
+  },
+  "nullable-map-class-keys": {
+    "input": {"path": "nullable-map-class-keys.yaml"},
+    "model": {"openapi_scopes": ["api"], "aliases": {"Tags1.label": "tag_label"}, "use_typed_nullable_map_values": true},
+    "steps": [{"generate": {}}, {"check": {}}]
+  },
+  "nullable-map-layout-untyped": {
+    "input": {"path": "nullable-map-layout.yaml"},
+    "model": {"openapi_scopes": ["api"], "output": "models"},
+    "steps": [{"generate": {}}, {"tree": null}]
+  },
+  "nullable-map-class-keys-untyped": {
+    "input": {"path": "nullable-map-class-keys.yaml"},
+    "model": {"openapi_scopes": ["api"], "aliases": {"Tags.label": "tag_label"}},
+    "steps": [{"generate": {}}, {"check": {}}]
   }
 }

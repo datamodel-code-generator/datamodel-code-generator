@@ -26,63 +26,63 @@ class Error:
     message: str | None = None
 
 
-FieldPetsGetQueryLimitParameter: TypeAlias = int
+PetsGetQueryLimitParameter: TypeAlias = int
 
 
-FieldPetsGetQueryTagsParameter: TypeAlias = list[str]
+PetsGetQueryTagsParameter: TypeAlias = list[str]
 
 
-FieldPetsGetHeaderXTraceParameter: TypeAlias = str
+PetsGetHeaderXTraceParameter: TypeAlias = str
 
 
-FieldPetsGetCookieSessionParameter: TypeAlias = str
+PetsGetCookieSessionParameter: TypeAlias = str
 
 
-FieldPetsGetResponse: TypeAlias = list[Pet]
+PetsGetResponse: TypeAlias = list[Pet]
 
 
-FieldPetsGetResponse200XNextHeader: TypeAlias = str
+PetsGetResponse200XNextHeader: TypeAlias = str
 
 
-FieldPetsGetResponse200XRateHeader: TypeAlias = int
+PetsGetResponse200XRateHeader: TypeAlias = int
 
 
-FieldPetsPostRequest: TypeAlias = str
+PetsPostRequest: TypeAlias = str
 
 
-FieldPetsPetIdGetPathPetIdParameter: TypeAlias = int
+PetsPetIdGetPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdGetResponse: TypeAlias = str
+PetsPetIdGetResponse: TypeAlias = str
 
 
-FieldPetsPetIdHeadResponse200ETagHeader: TypeAlias = str
+PetsPetIdHeadResponse200ETagHeader: TypeAlias = str
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
+PetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdPhotoPutRequest: TypeAlias = bytes
+PetsPetIdPhotoPutRequest: TypeAlias = bytes
 
 
-FieldPetsPetIdPhotoPutResponse: TypeAlias = bytes
+PetsPetIdPhotoPutResponse: TypeAlias = bytes
 
 
-FieldPetsPetIdFilesPostPathPetIdParameter: TypeAlias = int
+PetsPetIdFilesPostPathPetIdParameter: TypeAlias = int
 
 
 @dataclass
-class FieldPetsPetIdFilesPostRequest:
+class PetsPetIdFilesPostRequest:
     file: bytes
     note: str | None = None
     labels: list[str] | None = None
 
 
-FieldPetsPetIdFilesGetPathPetIdParameter: TypeAlias = int
+PetsPetIdFilesGetPathPetIdParameter: TypeAlias = int
 
 
 @dataclass
-class FieldPetsPetIdFilesGetResponse:
+class PetsPetIdFilesGetResponse:
     file: bytes
     note: str | None = None
     labels: list[str] | None = None

@@ -19,7 +19,7 @@ class Owner(BaseModel):
     email: str | None = None
 
 
-class FieldOwnersGetResponse(RootModel[list[Owner]]):
+class OwnersGetResponse(RootModel[list[Owner]]):
     root: list[Owner]
 
 

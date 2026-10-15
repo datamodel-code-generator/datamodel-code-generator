@@ -51,7 +51,7 @@ class Service(Protocol[PrincipalT_contra]):
         *,
         principal: PrincipalT_contra,
         limit: int | None,
-    ) -> models.FieldOwnersGetResponse | HTTPResult[models.FieldOwnersGetResponse] | Response:
+    ) -> models.OwnersGetResponse | HTTPResult[models.OwnersGetResponse] | Response:
         """
         Handle GET /owners.
         """

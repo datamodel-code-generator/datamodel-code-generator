@@ -12,7 +12,7 @@ from pets.protocols import (
     PollSnapshot,
     ProtocolProgress,
 )
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.responses import ResponseInfo
 from pets.types.exports import CancelExportsResponse
 from pets.types.jobs import CancelJobResponse, GetJobResponse, GetReportResponse

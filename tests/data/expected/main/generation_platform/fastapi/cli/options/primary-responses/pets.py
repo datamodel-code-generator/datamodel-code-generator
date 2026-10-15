@@ -25,6 +25,7 @@ def _add_list_pets(
     list_pets_handler = checked(
         pets.list_pets,
         'The pets.list_pets method of GET /pets',
+        ('limit',),
     )
 
     def list_pets(
@@ -43,7 +44,7 @@ def _add_list_pets(
         list_pets,
         methods=['GET'],
         status_code=200,
-        response_model=models.FieldPetsGetResponse,
+        response_model=models.PetsGetResponse,
         response_model_by_alias=True,
         response_model_exclude_unset=True,
         operation_id='listPets',
@@ -61,6 +62,7 @@ def _add_create_pet(
     create_pet_handler = checked(
         pets.create_pet,
         'The pets.create_pet method of POST /pets',
+        ('body',),
     )
 
     def create_pet(
@@ -97,6 +99,7 @@ def _add_replace_pet(
     replace_pet_handler = checked(
         pets.replace_pet,
         'The pets.replace_pet method of PUT /pets/{name}',
+        ('name', 'body'),
     )
 
     def replace_pet(

@@ -31,7 +31,7 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.FieldPetsGetResponse), 'default': Declared(media_type='application/json', model=models.Error)},
+        responses={'200': Declared(media_type='application/json', model=models.PetsGetResponse), 'default': Declared(media_type='application/json', model=models.Error)},
     )
 
 
@@ -47,7 +47,7 @@ class ListMyPets:
     """Plans of the list_my_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.FieldPetsMineGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=models.PetsMineGetResponse)},
     )
 
 
@@ -72,5 +72,5 @@ class GetInventory:
     """Plans of the get_inventory operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.FieldStoreInventoryGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=models.StoreInventoryGetResponse)},
     )

@@ -43,7 +43,7 @@ Write a separate JSON map from source schema references to the final generated m
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --emit-model-metadata model-map.json --module-split-mode single --disable-timestamp # (1)!
+    datamodel-codegen --input model_metadata.json --emit-model-metadata model-map.json --module-split-mode single --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--emit-model-metadata` - the option documented here
@@ -177,7 +177,7 @@ Default is UTF-8, which is the standard encoding for JSON and most modern text f
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --encoding utf-8 # (1)!
+    datamodel-codegen --input encoding_test.json --encoding utf-8 # (1)!
     ```
 
     1. :material-arrow-left: `--encoding` - the option documented here
@@ -237,7 +237,7 @@ instead of generating duplicate classes from external schema files.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --external-ref-mapping common.yaml=mypackage.shared.models # (1)!
+    datamodel-codegen --input api.yaml --input-file-type openapi --external-ref-mapping common.yaml=mypackage.shared.models # (1)!
     ```
 
     1. :material-arrow-left: `--external-ref-mapping` - the option documented here
@@ -318,7 +318,7 @@ and paired dependency errors do not fall back.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --http-backend auto # (1)!
+    datamodel-codegen --input pet_simple.json --http-backend auto # (1)!
     ```
 
     1. :material-arrow-left: `--http-backend` - the option documented here
@@ -450,7 +450,7 @@ not `--input-file-type yaml`. The `yaml` type treats the file as raw data and in
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type json # (1)!
+    datamodel-codegen --input pet.json --input-file-type json # (1)!
     ```
 
     1. :material-arrow-left: `--input-file-type` - the option documented here
@@ -699,7 +699,7 @@ new projects. The preset name pins generated Python syntax and backports.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --preset standard-py312-20260619 # (1)!
+    datamodel-codegen --input person.json --preset standard-py312-20260619 # (1)!
     ```
 
     1. :material-arrow-left: `--preset` - the option documented here
@@ -788,7 +788,7 @@ or OpenAPI (3.0, 3.1, 3.2). Default is 'auto' (detected from $schema or openapi 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --schema-version draft-07 # (1)!
+    datamodel-codegen --input simple_string.json --schema-version draft-07 # (1)!
     ```
 
     1. :material-arrow-left: `--schema-version` - the option documented here
@@ -1030,7 +1030,7 @@ The `--schema-version-mode` option controls how schema version validation is per
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --schema-version-mode lenient # (1)!
+    datamodel-codegen --input simple_string.json --schema-version-mode lenient # (1)!
     ```
 
     1. :material-arrow-left: `--schema-version-mode` - the option documented here

@@ -88,7 +88,7 @@ class AsyncPetsResource:
     async def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -96,7 +96,7 @@ class AsyncPetsResource:
     async def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -136,7 +136,7 @@ class AsyncPetsResource:
         petId: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> models.FieldPetsPetIdGetResponse: ...
+    ) -> models.PetsPetIdGetResponse: ...
     async def get_pet(
         self,
         *,
@@ -261,7 +261,7 @@ class AsyncPetsWithResponse:
     async def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -269,7 +269,7 @@ class AsyncPetsWithResponse:
     async def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -309,7 +309,7 @@ class AsyncPetsWithResponse:
         petId: int,
         response_media_type: Literal['text/plain'],
         options: RequestOptions | None = None,
-    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
+    ) -> Response[models.PetsPetIdGetResponse]: ...
     async def get_pet(
         self,
         *,
@@ -434,7 +434,7 @@ class AsyncPetsWithRawResponse:
     async def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -442,7 +442,7 @@ class AsyncPetsWithRawResponse:
     async def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -583,7 +583,7 @@ class AsyncPetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal['text/plain'],
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
@@ -591,7 +591,7 @@ class AsyncPetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal['application/json', 'text/plain'] | None = None,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,

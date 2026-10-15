@@ -33,7 +33,7 @@ class ListPets:
     OPERATION: Final = 'list_pets'
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.FieldPetsGetResponse), 'default': Declared(media_type='application/json', model=models.Error)},
+        responses={'200': Declared(media_type='application/json', model=models.PetsGetResponse), 'default': Declared(media_type='application/json', model=models.Error)},
     )
 
 
@@ -53,7 +53,7 @@ class ListMyPets:
     OPERATION: Final = 'list_my_pets'
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.FieldPetsMineGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=models.PetsMineGetResponse)},
     )
 
 
@@ -84,5 +84,5 @@ class GetInventory:
     OPERATION: Final = 'get_inventory'
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.FieldStoreInventoryGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=models.StoreInventoryGetResponse)},
     )

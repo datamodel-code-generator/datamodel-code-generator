@@ -8,20 +8,56 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import DataModelType
-from tests.api_generation.support.client_typing import client_regenerated_typing_report, client_typing_report
+from tests.api_generation.support.client_publication import capability_arguments
+from tests.api_generation.support.client_typing import (
+    client_dependency_typing_report,
+    client_regenerated_typing_report,
+    client_typing_report,
+)
 from tests.conftest import assert_output
+from tests.main.conftest import run_main_with_args
 
 EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "client" / "typing"
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
 
 
-@pytest.mark.parametrize("case", ["no-success", "no-success-unpack"])
+@pytest.mark.parametrize("case", ["no-success", "no-success-unpack", "modelless-bodies"])
 @pytest.mark.parametrize("backend", list(DataModelType))
 def test_client_typing_no_success(backend: DataModelType, case: str, tmp_path: Path) -> None:
-    """Type-check error-only resource methods and all their views in both signature styles."""
+    """Type-check error-only methods in both signature styles, and the codecs of a package with no model classes."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(client_typing_report(tmp_path, backend, case, ()), EXPECTED / "no-success.txt")
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        "minimal",
+        "minimal-pydantic-dataclass",
+        "minimal-dataclass",
+        "minimal-typeddict",
+        "minimal-msgspec",
+        "all",
+        "all-pydantic-dataclass",
+        "all-dataclass",
+        "all-typeddict",
+        "all-msgspec",
+    ],
+)
+def test_client_typing_printed_dependencies(profile: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Check a package of each backend clean where only the dependencies its generation prints are installed.
+
+    The other lanes check against an environment that holds every model library, where a package that imports a
+    library its backend does not need still resolves.
+    """
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    run_main_with_args(capability_arguments(profile, tmp_path / "project"))
+    assert_output(
+        client_dependency_typing_report(tmp_path / "project", tmp_path / "environment", capsys.readouterr().err),
+        EXPECTED / "dependencies" / f"{profile}.txt",
+    )
 
 
 @pytest.mark.parametrize("case", ["pets-protocols", "pets-protocols-unpack"])
@@ -287,6 +323,16 @@ def test_client_typing_sockets(backend: DataModelType, tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, backend, "sockets", ("sockets",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-sockets.txt",
+    )
+
+
+def test_client_typing_missing(tmp_path: Path) -> None:
+    """Check a package of Pydantic dataclasses whose unset optional members hold MISSING, and the misuses of them."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2Dataclass, "missing-sentinel", ("missing",)),
+        EXPECTED / "pydantic_v2-dataclass-missing.txt",
     )
 
 

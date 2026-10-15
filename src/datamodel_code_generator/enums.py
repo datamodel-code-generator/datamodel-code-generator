@@ -258,7 +258,9 @@ class TargetPydanticVersion(Enum):
     V2: Generate code compatible with Pydantic 2.0+ (uses populate_by_name).
     V2_11: Generate code for Pydantic 2.11+ (uses validate_by_name).
     V2_12: Generate code for Pydantic 2.12+ (supports MISSING sentinel).
-    V2_14: Generate code for Pydantic 2.14+ (imports MISSING from pydantic).
+    V2_14: Generate code for Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's
+        regex engine; pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of
+        the same class).
     """
 
     V2 = "2"

@@ -24,14 +24,26 @@ from datamodel_code_generator._fastapi.routes import (
     placeholders,
     route_path,
 )
-from datamodel_code_generator._openapi_wire_plan import parameter_plans
-from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
+from datamodel_code_generator._openapi_codec_plan import extras_symbols, named_symbols, takes_null
+from datamodel_code_generator._openapi_wire_plan import (
+    NO_SCALAR_KIND,
+    body_kind,
+    content_types,
+    declared_media,
+    form_extras,
+    form_members,
+    form_styled,
+    parameter_plans,
+    plan_wire,
+)
+from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, charset, media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     GeneratedSymbolType,
     GenericType,
     ImportedType,
+    KnownBackendValue,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
@@ -40,7 +52,7 @@ from datamodel_code_generator._target_contract import (
     SourceLocation,
     UnionType,
 )
-from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis
+from datamodel_code_generator._target_naming import NameScope, explicit_name, operation_basis, path_placeholders
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import DataModelType
 from datamodel_code_generator.imports import Import
@@ -51,7 +63,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import OperationSelector
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._openapi_wire_plan import FormMember, LexicalKinds, WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._target_contract import (
@@ -82,6 +94,8 @@ SettingT = TypeVar("SettingT")
 RESERVED: Final = frozenset({"self", "request", "principal", "body", "media_type"})
 BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
 _JSON: Final = "application/json"
+_PART_CHARSETS: Final = frozenset({"utf-8", "us-ascii"})
+_TEXT: Final = FieldPlan("")
 _LOCATIONS: Final[dict[object, ParameterLocation]] = {
     "path": "path",
     "query": "query",
@@ -105,6 +119,8 @@ _STRICT_BYTES: Final = ("pydantic", "StrictBytes")
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
 _NULL: Final = LiteralScalar("none", None)
+_TRUE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=True))
+_BY_NAME: Final = frozenset({"populate_by_name", "validate_by_name"})
 _LITERAL_KINDS: Final = frozenset({"bool", "int", "float", "str"})
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
@@ -197,12 +213,27 @@ class NativeField:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MediaSpec:
-    """One declared media type of a body or response, with its type use when the content has a schema."""
+    """One declared media type of a body or response, with its type use when the content has a schema.
+
+    A form an adapter reads comes with the plans of its members: a member is read as text in its field's kind, or,
+    as a multipart member without one, as JSON. A URL-encoded member whose encoding gives it a style or content is
+    read by its query parameter plan in `encoded`, and its JSON content then as a JSON part. `additional` reads the
+    properties the form's schema types without declaring them, when that is not as the text they come as, which any
+    other member is, and `checked` is their type when they are text that the model keeps without one, as a dataclass
+    does. `extras` says JSON whose type reaches a Pydantic dataclass that allows extra members, which a response writes
+    through the runtime's serializer, as Pydantic's own writes none.
+    """
 
     media_type: str
     kind: MediaKind
     use: TypeUseBinding | None
     declaration: WireDeclaration
+    fields: tuple[FieldPlan, ...] = ()
+    json_parts: tuple[JsonPartSpec, ...] = ()
+    additional: FieldPlan | JsonPartSpec | None = None
+    checked: TypeView | None = None
+    encoded: tuple[ParameterPlan, ...] = ()
+    extras: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -224,14 +255,29 @@ class ParameterSpec:
     local: bool = True
 
 
+@dataclass(frozen=True, slots=True)
+class JsonPartSpec:
+    """One multipart member whose parts carry JSON: its wire name, the type of its value or items, and its repeats.
+
+    A single-valued property names its model and its field there, which read its part as the model reads the field,
+    by the field's own discriminator and constraints too. The one that reads a form's other properties has no name.
+    An untyped one keeps a part that is not JSON as it comes.
+    """
+
+    name: str
+    type: TypeView
+    repeated: bool = False
+    field: tuple[GeneratedSymbolType, str] | None = None
+    untyped: bool = False
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class BodySpec:
-    """A request body: its media, requiredness, decision, and the plans a URL-encoded form adapter reads."""
+    """A request body: its media, each form with the plans an adapter reads it by, requiredness, and decision."""
 
     required: bool
     media: tuple[MediaSpec, ...]
     decision: Decision
-    form_fields: tuple[FieldPlan, ...] = ()
 
     @property
     def form(self) -> bool:
@@ -241,21 +287,26 @@ class BodySpec:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ResponseSpec:
-    """One declared response with its media."""
+    """One declared response with its media, and whether it sends None as the JSON null its default media accepts."""
 
     status: str
     declaration: WireDeclaration
     media: tuple[MediaSpec, ...]
+    null: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PrimarySpec:
-    """The response a bare return value takes, and how FastAPI sends it."""
+    """The response a bare return value takes, its media, and how FastAPI sends it.
+
+    `null` says the media is JSON of a type that accepts null, so a bare None is sent as `null`.
+    """
 
     status: int
     response: ResponseSpec
     media: MediaSpec | None
     decision: Decision
+    null: bool = False
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -325,8 +376,12 @@ class OperationSpec:
 
     @property
     def native_primary(self) -> bool:
-        """Return whether FastAPI's response_model sends bare primary values."""
-        return self.primary is not None and self.primary.decision.transport == "fastapi_native"
+        """Return whether FastAPI's response_model sends bare primary values, which would leave out extra members."""
+        return (
+            (primary := self.primary) is not None
+            and primary.decision.transport == "fastapi_native"
+            and not (primary.media is not None and primary.media.extras)
+        )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -376,7 +431,7 @@ def _problem(
     return Diagnostic(
         code=code,
         severity="error",
-        stage="config" if code.startswith("E_") else "target",
+        stage="config" if code.startswith("E_") else "binding" if code.startswith("MC_") else "target",
         message=message,
         source_pointer=None if source is None else source.pointer,
         option_path=option_path,
@@ -427,8 +482,83 @@ def _uses(declaration: WireDeclaration) -> tuple[TypeUseId, ...]:
     return (*declaration.schemas, *(use for child in declaration.children for use in child.schemas))
 
 
-def _encoded(media: MediaSpec) -> WireDeclaration | None:
-    """Return the first form encoding that neither FastAPI's Form nor the form adapter reads."""
+def _json_type(encoding: WireDeclaration) -> bool:
+    """Return whether an encoding's contentType names one JSON media type, rather than several or a range."""
+    if (found := content_types(encoding)) is None or len(found) != 1:
+        return False
+    return "*" not in found[0].partition(";")[0] and media_kind(found[0]) == "json"
+
+
+def _part_text(encoding: WireDeclaration) -> bool:
+    """Return whether an encoding's contentType names one text media type in UTF-8 or US-ASCII, or in no charset.
+
+    Starlette reads a field part as UTF-8, whatever media type the part names.
+    """
+    if (found := content_types(encoding)) is None or len(found) != 1:
+        return False
+    single = found[0]
+    return (
+        "*" not in single.partition(";")[0]
+        and media_kind(single) == "text"
+        and charset(single).lower() in _PART_CHARSETS
+    )
+
+
+def _files(media: MediaSpec) -> frozenset[str]:
+    parts = None if media.use is None else media.use.parts
+    return frozenset(() if parts is None else (name for name, part in parts.members if part.file))
+
+
+def _json_members(media: MediaSpec, version: str) -> frozenset[str | None]:
+    """Return the multipart members whose encodings send them as JSON: one JSON media type and no style.
+
+    A style that the document's version applies leaves the media type unused, and a member holding files keeps its
+    bytes.
+    """
+    parts = None if media.kind != "multipart" or media.use is None else media.use.parts
+    if parts is None:
+        return frozenset()
+    texts = {name for name, part in parts.members if not part.file}
+    return frozenset(
+        child.name
+        for child in media.declaration.children
+        if child.kind == "encoding"
+        and child.name in texts
+        and _json_type(child)
+        and not form_styled(child, version, multipart=True)
+    )
+
+
+def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: str) -> frozenset[str | None]:
+    """Return the multipart members whose encodings name media types the adapters read their parts in.
+
+    A member is read as JSON in a JSON media type; one of a single scalar kind, whose field parts Starlette reads as
+    UTF-8 text, in a text media type of that charset; and one holding files, whose bytes are kept, in any.
+    """
+    assert media.use is not None
+    files = _files(media)
+    scalars = {member.name for member in form_members(kinds, media.use) if member.kind is not None}
+    return _json_members(media, version) | {
+        child.name
+        for child in media.declaration.children
+        if child.kind == "encoding"
+        and (
+            (child.name in files and content_types(child) is not None)
+            or (child.name in scalars and child.name not in files and _part_text(child))
+        )
+    }
+
+
+def _encoded(media: MediaSpec, kinds: LexicalKinds, version: str) -> WireDeclaration | None:
+    """Return the first multipart encoding that the form adapter does not read.
+
+    No adapter reads part headers, nor a style for a member holding files, which the client refuses too. A style that
+    the document's version applies is read by its query parameter plan and leaves the media type unused; without one,
+    a member is read in the media types `_typed_members` says. A URL-encoded member's encoding, which carries no
+    headers, is read by its query parameter plan.
+    """
+    typed = _typed_members(media, kinds, version)
+    files = _files(media)
     return next(
         (
             child
@@ -436,14 +566,39 @@ def _encoded(media: MediaSpec) -> WireDeclaration | None:
             if child.kind == "encoding"
             and (
                 bool(child.children)
-                or fact(child, "contentType") is not None
-                or fact(child, "style") not in {None, "form"}
-                or fact(child, "explode") is False
-                or fact(child, "allowReserved") is True
+                or (child.name in files if form_styled(child, version, multipart=True) else _untyped(child, typed))
             )
         ),
         None,
     )
+
+
+def _untyped(encoding: WireDeclaration, typed: frozenset[str | None]) -> bool:
+    return fact(encoding, "contentType") is not None and encoding.name not in typed
+
+
+def _planned(encoding: WireDeclaration, version: str, textless: frozenset[str], *, multipart: bool) -> bool:
+    """Return whether a form member's encoding is read by its query parameter plan rather than as plain text.
+
+    A form's own text reads the default `form` style with explode of a member of one scalar kind; a URL-encoded
+    member's content and allowReserved need the plan too, while a part is never percent-encoded.
+    """
+    styled = form_styled(encoding, version, multipart=multipart)
+    if multipart and not styled:
+        return False
+    return (
+        fact(encoding, "style") not in {None, "form"}
+        or fact(encoding, "explode") is False
+        or (not multipart and (fact(encoding, "contentType") is not None or fact(encoding, "allowReserved") is True))
+        or (styled and encoding.name in textless)
+    )
+
+
+def _content_part(member: FormMember, plan: ParameterPlan | None) -> JsonPartSpec | None:
+    """Return the JSON part that parses a URL-encoded member's JSON content, as its whole value."""
+    if plan is None or media_kind(plan.content_media_type or "") != "json":
+        return None
+    return JsonPartSpec(member.name, member.type)
 
 
 class Planner:  # noqa: PLR0904
@@ -475,6 +630,7 @@ class Planner:  # noqa: PLR0904
             for member in reversed(request.batch.fields)
             if member.model_facts is not None
         }
+        self.extras = extras_symbols(self.symbols, self.members)
         self.parameter_plans = parameter_plans(wire)
         self.scheme_declarations = {
             (declaration.use_site.document, declaration.name): declaration
@@ -490,6 +646,12 @@ class Planner:  # noqa: PLR0904
         self.primaries = self.selected("primary_responses", config.primary_responses)
         self.parameter_names = self.selected("parameter_names", config.parameter_names)
         self.modes: dict[str, HandlerMode] = self.selected("handler_modes", config.handler_modes)
+        groups = {group_key(operation, single=config.layout == "single") for operation in request.operations}
+        self.problems.extend(
+            _problem("E_CONFIG_VALUE", f"The router_names entry {key!r} names no group", option_path="router_names")
+            for key in config.router_names
+            if key not in groups
+        )
         self.raise_problems()
 
     def raise_problems(self) -> None:
@@ -629,13 +791,21 @@ class Planner:  # noqa: PLR0904
         )
 
     def check_routes(self, specs: tuple[OperationSpec, ...]) -> None:
-        """Reject two operations FastAPI cannot tell apart: the same method and path shape."""
-        seen: set[tuple[str, str]] = set()
+        """Reject two operations FastAPI cannot tell apart: the same method and routed path shape.
+
+        Literal text is compared decoded, as the routes match it, so `/a b` and `/a%20b` are one route.
+        """
+        seen: dict[tuple[str, str], RoutePath] = {}
         for spec in specs:
-            if (key := (spec.contract.method, spec.route.shape())) in seen:
-                message = f"{_label(spec.contract)} differs from another route only by placeholder names"
-                self.problems.append(_problem("F_ROUTE_INVALID", message, spec.contract.id.use_site))
-            seen.add(key)
+            if (other := seen.setdefault((spec.contract.method, spec.route.shape()), spec.route)) is spec.route:
+                continue
+            reason = (
+                "placeholder names"
+                if other.written() == spec.route.written()
+                else "how its path text is percent-encoded"
+            )
+            message = f"{_label(spec.contract)} differs from another route only by {reason}"
+            self.problems.append(_problem("F_ROUTE_INVALID", message, spec.contract.id.use_site))
 
     def operation(self, operation: OperationContract, name: str, pascal: str) -> OperationSpec:
         """Plan one operation's parameters, body, responses, arguments, and route path."""
@@ -654,6 +824,16 @@ class Planner:  # noqa: PLR0904
             )
             for placeholder in dict.fromkeys(names)
             if placeholder not in declared
+        )
+        template = path_placeholders(operation.path)
+        self.problems.extend(
+            _problem(
+                "F_ROUTE_INVALID",
+                f"The path parameter {declaration.name!r} of {_label(operation)} names no path placeholder",
+                declaration.use_site,
+            )
+            for declaration in operation.parameters
+            if fact(declaration, "in") == "path" and declaration.name not in template
         )
         body = None if operation.request_body is None else self.body(operation, operation.request_body)
         responses = tuple(self.response(operation, response) for response in operation.responses)
@@ -805,15 +985,16 @@ class Planner:  # noqa: PLR0904
             if value is None or (plan is not None and plan.kind != "string" and self.textless(value))
             else self.kind(value)
         )
+        required = fact(declaration, "required") is True
         spec = ParameterSpec(
             location=location,
             wire_name=name,
-            required=fact(declaration, "required") is True,
+            required=required,
             use=use,
             plan=plan,
             decision=Decision(transport="adapter"),
             type=value,
-            default=default,
+            default=Default.ABSENT if required else default,
             local=declaration.declaration.location.document == operation.id.use_site.document,
         )
         if plan is None or value is None or not _native(plan, location, kind, repeated=name in repeated):
@@ -1008,8 +1189,12 @@ class Planner:  # noqa: PLR0904
             yield "examples", examples
 
     def body(self, operation: OperationContract, declaration: WireDeclaration) -> BodySpec:
-        """Decide how the server receives a request body: FastAPI reads one JSON or URL-encoded model natively."""
-        media = tuple(self.media(child) for child in declaration.children if child.kind == "media")
+        """Decide how the server receives a request body: FastAPI reads one JSON or URL-encoded model natively.
+
+        FastAPI takes the JSON null of a required body for an omitted one, so an adapter reads a required JSON body
+        whose type accepts null.
+        """
+        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
         for item in media:
             self.bound(item.use)
         spec = BodySpec(
@@ -1019,13 +1204,14 @@ class Planner:  # noqa: PLR0904
             return replace(spec, decision=Decision(transport="raw_request"))
         if len(media) != 1:
             self.unsupported(operation, (item for item in media if item.kind == "multipart"))
-            for item in media:
-                if item.kind == "form" and (encoded := _encoded(item)) is not None:
-                    self.unsupported(operation, (item,), f"the {encoded.name} encoding of ")
-            form = next((item.use for item in media if item.kind == "form" and item.use is not None), None)
-            return spec if form is None else replace(spec, form_fields=self.form_plans(form.type))
+            planned = tuple(
+                self.form_read(item) if item.kind == "form" and item.use is not None else item for item in media
+            )
+            return replace(spec, media=planned)
         item = media[0]
         match item.kind:
+            case "json" if spec.required and self.takes_null(None if item.use is None else item.use.type):
+                return spec
             case "json":
                 return replace(spec, decision=Decision(transport="fastapi_native"))
             case "form" | "multipart":
@@ -1033,6 +1219,10 @@ class Planner:  # noqa: PLR0904
             case _:
                 pass
         return spec
+
+    def takes_null(self, value: TypeView | None) -> bool:
+        """Return whether a type validates JSON null, as the generated models annotate it."""
+        return takes_null(value, self.symbols, self.members)
 
     def unsupported(self, operation: OperationContract, media: Iterable[MediaSpec], encoding: str = "") -> None:
         """Report request media that only the request body mode reads."""
@@ -1045,42 +1235,163 @@ class Planner:  # noqa: PLR0904
             for item in media
         )
 
-    def media(self, declaration: WireDeclaration) -> MediaSpec:
-        """Return one media declaration with its normalized type, kind, and type use."""
-        media_type = normalize_media_type(declaration.name or "")
+    def media(self, operation: OperationContract, declaration: WireDeclaration) -> MediaSpec:
+        """Return one media declaration with its normalized type, kind, type use, and whether it keeps extras.
+
+        A key that is no media type, or whose text is not ASCII header text, is reported, as the client reports it.
+        """
+        media_type, problem = declared_media(declaration.name or "")
+        if problem is not None:
+            message = f"The media type {declaration.name!r} of {_label(operation)} {problem}"
+            self.problems.append(_problem("F_MEDIA_UNSUPPORTED", message, declaration.use_site))
+        use = self.use(declaration.schemas)
+        kind = body_kind(media_type, use)
         return MediaSpec(
             media_type=media_type,
-            kind=media_kind(media_type),
-            use=self.use(declaration.schemas),
+            kind=kind,
+            use=use,
             declaration=declaration,
+            extras=kind == "json"
+            and use is not None
+            and use.type is not None
+            and not self.extras.isdisjoint(named_symbols(use.type)),
         )
 
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:
-        """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model."""
-        if (use := media.use) is None or (media.kind == "multipart" and use.type is None):
+        """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model.
+
+        A multipart body of a union of several schemas declares no members its parts could be read by.
+        """
+        if (
+            (use := media.use) is None
+            or (media.kind == "multipart" and use.type is None)
+            or (use.parts is not None and not use.parts.object)
+        ):
             self.unsupported(operation, (media,))
             return spec
-        if (encoded := _encoded(media)) is not None:
+        if media.kind == "multipart" and (encoded := _encoded(media, self.wire.kinds, self.wire.version)) is not None:
             self.unsupported(operation, (media,), f"the {encoded.name} encoding of ")
             return spec
-        if media.kind == "form" and spec.required and self.form_model(use.type):
+        read = self.form_read(media)
+        if media.kind == "form" and spec.required and not read.encoded and self.form_model(use.type):
             return replace(spec, decision=Decision(transport="fastapi_native"))
-        return replace(spec, form_fields=self.form_plans(use.type))
+        return replace(spec, media=(read,))
 
-    def form_plans(self, value: TypeView | None) -> tuple[FieldPlan, ...]:
-        """Return the members a form adapter reads as text: each model field by wire name, as the field's type says."""
-        members = self.members.get(value.symbol, ()) if isinstance(value, GeneratedSymbolType) else ()
-        return tuple(
-            self.form_field(member.wire_name, facts.type)
+    def form_read(self, media: MediaSpec) -> MediaSpec:
+        """Return a form with how its members are read: each property of its model, then any other property.
+
+        A member whose type, or whose items' type, has a lexical kind is text of that kind. Any other, such as an
+        object, is JSON in a multipart body, as is a member whose encoding names JSON and one that takes any value,
+        which keeps a part that is not JSON as it comes since it takes that too; a URL-encoded body carries
+        text alone, so generation stops for such a member, as it does for a parameter and for the client, unless its
+        encoding gives it a style or content. A member whose encoding gives it a style or content that its own text
+        does not read is read by its query parameter plan. The other properties a schema types are read by the same
+        rule, under whatever names they come, and need no plan when that reads them as the text they come as; their
+        type checks such text when the model keeps them without it. Those a multipart body allows without a type are
+        JSON as well. A model that validates its fields by name reads a property that its query parameter plan does
+        not read under its field's name too, unless that is the name of another property. A URL-encoded body whose
+        schema no builtin encoding writes, such as one that is no object, is refused as the client refuses to send it.
+        """
+        assert media.use is not None
+        members = tuple(form_members(self.wire.kinds, media.use))
+        encoded = self.encoded(media, members)
+        json_members = _json_members(media, self.wire.version)
+        multipart = media.kind == "multipart"
+        read = [
+            (
+                member,
+                _content_part(member, encoded[member.name])
+                if member.name in encoded
+                else self.form_plan(
+                    media,
+                    member,
+                    json=member.name in json_members,
+                    untyped=multipart and self.wire.kinds.untyped(member.leaf),
+                ),
+            )
             for member in members
-            if member.wire_name is not None and (facts := member.model_facts) is not None
+        ]
+        names = {member.name for member, _ in read}
+        plans = [plan for _, plan in read]
+        plans.extend(
+            replace(plan, name=name)
+            for member, plan in read
+            if plan is not None
+            and (field := member.field) is not None
+            and field.slot is not None
+            and member.name not in encoded
+            and (name := field.slot.name) not in names
+            and self.by_name(field.consumer)
+        )
+        additional: FieldPlan | JsonPartSpec | None = None
+        if (extras := form_extras(self.wire.kinds, media.use)) is not None:
+            untyped = multipart and self.wire.kinds.untyped(extras.leaf)
+            additional = self.form_plan(media, extras, untyped=untyped)
+        elif multipart and (media.use.parts is None or media.use.parts.extra is None):
+            additional = JsonPartSpec("", BuiltinType("object"), untyped=True)
+        if media.kind == "form" and (encoding := media.use.encoding) is not None and encoding.form.problem is not None:
+            source, message = encoding.form.problem
+            self.problems.append(_problem("MC_PARAMETER_ENCODING", message, source))
+        return replace(
+            media,
+            fields=tuple(plan for plan in plans if isinstance(plan, FieldPlan)),
+            json_parts=tuple(plan for plan in plans if isinstance(plan, JsonPartSpec)),
+            additional=None if additional == _TEXT else additional,
+            checked=extras.type
+            if extras is not None and isinstance(additional, FieldPlan) and self.wire.kinds.kept(media.use) is None
+            else None,
+            encoded=tuple(plan for plan in encoded.values() if plan is not None),
         )
 
-    def form_field(self, name: str, value: TypeView) -> FieldPlan:
-        """Return a form member's plan: repeated for a list, in the kind the model's type gives its text or items."""
-        repeated = self.kind(value) == "sequence"
-        kind = self.wire.kinds.of(value, ("items",) if repeated else ()) or "string"
-        return FieldPlan(name, kind, repeated=repeated)
+    def by_name(self, symbol: SymbolId) -> bool:
+        """Return whether a model, by its own configuration or one it inherits, validates its fields by name too."""
+        declared = self.symbols[symbol]
+        settings = () if declared.facts is None else declared.facts.configuration
+        return any(setting.name in _BY_NAME and setting.value == _TRUE for setting in settings) or any(
+            self.by_name(base) for base in declared.bases
+        )
+
+    def encoded(self, media: MediaSpec, members: tuple[FormMember, ...]) -> dict[str, ParameterPlan | None]:
+        """Return the query parameter plans of the form members that the form's own text or parts do not read.
+
+        A URL-encoded member's encoding names content, allowReserved, a style other than `form` with explode, or any
+        style for a member without one scalar kind. A multipart member's encoding gives it a style that the document's
+        version applies, other than `form` with explode, or any for a member without one scalar kind; allowReserved
+        changes no part, which no style percent-encodes. Either is read as the client writes it, by the plan the
+        client takes from the encoding. An encoding without a plan stops generation as it does for the client, and
+        its member then maps to None.
+        """
+        assert media.use is not None
+        textless = frozenset(member.name for member in members if member.kind is None)
+        multipart = media.kind == "multipart"
+        encodings = tuple(
+            child
+            for child in media.declaration.children
+            if child.kind == "encoding" and _planned(child, self.wire.version, textless, multipart=multipart)
+        )
+        if not encodings:
+            return {}
+        wire = plan_wire(self.request.batch, (), operations=frozenset(), styles={media.use.id: encodings})
+        self.problems.extend(_problem(item.code, item.message, item.source) for item in wire.diagnostics)
+        plans = {plan.name: plan for _, planned in wire.styles for plan in planned}
+        return {child.name or "": plans.get(child.name or "") for child in encodings}
+
+    def form_plan(
+        self, media: MediaSpec, member: FormMember, *, json: bool = False, untyped: bool = False
+    ) -> FieldPlan | JsonPartSpec | None:
+        """Return how one member of a form is read, reporting one that the adapters do not read."""
+        if member.kind is not None and not json and not untyped:
+            return FieldPlan(member.name, member.kind, repeated=member.repeated)
+        if media.kind == "multipart":
+            binding = member.field
+            field = (
+                None
+                if member.repeated or binding is None or binding.slot is None
+                else (GeneratedSymbolType(binding.consumer), binding.slot.name)
+            )
+            return JsonPartSpec(member.name, member.leaf, repeated=member.repeated, field=field, untyped=untyped)
+        self.problems.append(_problem("MC_PARAMETER_ENCODING", NO_SCALAR_KIND, member.source))
+        return None
 
     def form_model(self, value: TypeView | None) -> bool:
         """Return whether FastAPI reads a type as a form model: a BaseModel of fields FastAPI reads from text.
@@ -1095,14 +1406,17 @@ class Planner:  # noqa: PLR0904
             and all(
                 (facts := member.model_facts) is not None
                 and self.kind(facts.type) is not None
-                and not (self.textless(facts.type) and self.form_field("", facts.type).kind != "string")
+                and not (self.textless(facts.type) and self.wire.kinds.member(facts.type)[0] != "string")
                 for member in self.members.get(value.symbol, ())
             )
         )
 
     def response(self, operation: OperationContract, declaration: WireDeclaration) -> ResponseSpec:
-        """Return one declared response with its media and effective headers."""
-        media = tuple(self.media(child) for child in declaration.children if child.kind == "media")
+        """Return one declared response with its media and effective headers.
+
+        A response whose default media is JSON of a type that accepts null sends None as null, as the models decide.
+        """
+        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
         self.problems.extend(
             _problem(
                 "F_MEDIA_UNSUPPORTED",
@@ -1113,29 +1427,47 @@ class Planner:  # noqa: PLR0904
             if item.kind in {"form", "multipart"}
         )
         status = declaration.name or "default"
-        return ResponseSpec(
+        spec = ResponseSpec(
             status=status if status == "default" else status.upper(), declaration=declaration, media=media
+        )
+        return replace(spec, null=True) if self.json_null(default_media(spec)) else spec
+
+    def json_null(self, media: MediaSpec | None) -> bool:
+        """Return whether a media is JSON of a type that accepts null, so its response sends None as `null`."""
+        return (
+            media is not None
+            and media.kind == "json"
+            and self.takes_null(None if media.use is None else media.use.type)
         )
 
     def primary(self, operation: OperationContract, responses: tuple[ResponseSpec, ...]) -> PrimarySpec | None:
-        """Choose the primary response and decide whether FastAPI's response_model sends bare values."""
-        exact = {int(response.status): response for response in responses if response.status.isdigit()}
+        """Choose the primary response and decide whether FastAPI's response_model sends bare values.
+
+        Without a choice it is `200`, else the lowest success status, else the `2XX` or `default` response at `200`,
+        else the lowest declared status; an operation that declares only other ranges has none.
+        """
         if (choice := self.primaries.get(operation.id.use_site.pointer)) is not None:
-            return self.chosen(operation, exact, choice)
-        if not exact:
-            return None
+            return self.chosen(operation, responses, choice)
+        exact = {int(response.status): response for response in responses if response.status.isdigit()}
         successful = [code for code in exact if _MIN_CONTENT_STATUS <= code <= _MAX_SUCCESS_STATUS]
-        status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact else min(successful or exact)
-        response = exact[status]
+        status = _DEFAULT_STATUS if _DEFAULT_STATUS in exact or not successful else min(successful)
+        if (response := _declaring(responses, status)) is None and exact:
+            status = min(exact)
+            response = exact[status]
+        if response is None:
+            return None
         media = default_media(response)
         decision = _primary_decision(operation, status, media)
-        return PrimarySpec(status=status, response=response, media=media, decision=decision)
+        return PrimarySpec(status=status, response=response, media=media, decision=decision, null=response.null)
 
     def chosen(
-        self, operation: OperationContract, exact: dict[int, ResponseSpec], choice: ResponseChoice
+        self, operation: OperationContract, responses: tuple[ResponseSpec, ...], choice: ResponseChoice
     ) -> PrimarySpec | None:
-        """Return the explicitly chosen primary response, reporting a choice that names no declared response."""
-        response = exact.get(choice.status_code)
+        """Return the explicitly chosen primary response, reporting a choice that names no declared response.
+
+        The chosen status takes the response that declares it: exactly, by its range, or as `default`.
+        """
+        response = _declaring(responses, choice.status_code)
         media = None if response is None else default_media(response)
         if response is not None and choice.media_type is not None:
             wanted = _normalized(choice.media_type)
@@ -1151,7 +1483,9 @@ class Planner:  # noqa: PLR0904
             )
             return None
         decision = _primary_decision(operation, choice.status_code, media)
-        return PrimarySpec(status=choice.status_code, response=response, media=media, decision=decision)
+        return PrimarySpec(
+            status=choice.status_code, response=response, media=media, decision=decision, null=self.json_null(media)
+        )
 
     def arguments(  # noqa: PLR0913
         self,
@@ -1438,11 +1772,15 @@ def _slotted(argument: Argument, slots: Mapping[str, str]) -> Argument:
     return replace(argument, native=replace(native, alias=slot))
 
 
+def _declaring(responses: tuple[ResponseSpec, ...], status: int) -> ResponseSpec | None:
+    """Return the response that declares a status: exact, then the same status class, then default."""
+    declared = {response.status: response for response in responses}
+    return declared.get(str(status)) or declared.get(f"{status // 100}XX") or declared.get("default")
+
+
 def _registration(responses: tuple[ResponseSpec, ...], primary: PrimarySpec | None) -> int:
     if primary is not None:
         return primary.status
-    if any(response.status == "default" for response in responses):
-        return _DEFAULT_STATUS
     ranges = (int(response.status[0]) * 100 for response in responses if response.status.endswith("XX"))
     return min(ranges, default=_DEFAULT_STATUS)
 

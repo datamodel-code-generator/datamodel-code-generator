@@ -64,7 +64,7 @@ providing fine-grained control over generated names independent of schema defini
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --aliases openapi/aliases.json --target-python-version 3.10 # (1)!
+    datamodel-codegen --input api.yaml --aliases openapi/aliases.json --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--aliases` - the option documented here
@@ -478,7 +478,7 @@ naming conventions for constants.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --capitalize-enum-members # (1)!
+    datamodel-codegen --input many_case_enum.json --capitalize-enum-members # (1)!
     ```
 
     1. :material-arrow-left: `--capitalize-enum-members` - the option documented here
@@ -535,7 +535,7 @@ Supports scoped format (ClassName.field) for hierarchical overrides.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --default-values default_values/scoped_defaults.json # (1)!
+    datamodel-codegen --input default_values_override.json --default-values default_values/scoped_defaults.json # (1)!
     ```
 
     1. :material-arrow-left: `--default-values` - the option documented here
@@ -609,7 +609,7 @@ cannot be deserialized remain serialized so the generated module stays importabl
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --deserialize-default-values decimal --target-python-version 3.10 # (1)!
+    datamodel-codegen --input serialized_decimal_defaults.json --deserialize-default-values decimal --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--deserialize-default-values` - the option documented here
@@ -782,7 +782,7 @@ The `--empty-enum-field-name` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --empty-enum-field-name empty # (1)!
+    datamodel-codegen --input special_enum.json --empty-enum-field-name empty # (1)!
     ```
 
     1. :material-arrow-left: `--empty-enum-field-name` - the option documented here
@@ -855,7 +855,7 @@ store fields not defined in the schema. Options: allow, ignore, forbid.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-fields allow # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --extra-fields allow # (1)!
     ```
 
     1. :material-arrow-left: `--extra-fields` - the option documented here
@@ -1211,7 +1211,7 @@ validation constraints (min/max length, pattern, etc.) from the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-constraints # (1)!
+    datamodel-codegen --input api_constrained.yaml --field-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--field-constraints` - the option documented here
@@ -1657,7 +1657,7 @@ The `--field-extra-keys` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-extra-keys key2 --field-extra-keys-without-x-prefix x-repr # (1)!
+    datamodel-codegen --input extras.json --field-extra-keys key2 --field-extra-keys-without-x-prefix x-repr # (1)!
     ```
 
     1. :material-arrow-left: `--field-extra-keys` - the option documented here
@@ -1752,7 +1752,7 @@ in Field(). This is useful for custom schema extensions and vendor-specific meta
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-include-all-keys --field-extra-keys-without-x-prefix x-repr # (1)!
+    datamodel-codegen --input extras.json --field-include-all-keys --field-extra-keys-without-x-prefix x-repr # (1)!
     ```
 
     1. :material-arrow-left: `--field-extra-keys-without-x-prefix` - the option documented here
@@ -1857,7 +1857,7 @@ The `--field-include-all-keys` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --field-include-all-keys # (1)!
+    datamodel-codegen --input person.json --field-include-all-keys # (1)!
     ```
 
     1. :material-arrow-left: `--field-include-all-keys` - the option documented here
@@ -1936,7 +1936,7 @@ to preserve the original field name, instead of renaming the field and adding an
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --field-type-collision-strategy rename-type # (1)!
+    datamodel-codegen --input field_has_same_name.json --output-model-type pydantic_v2.BaseModel --field-type-collision-strategy rename-type # (1)!
     ```
 
     1. :material-arrow-left: `--field-type-collision-strategy` - the option documented here
@@ -2006,7 +2006,7 @@ Existing generated output is preserved unless this option is enabled.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --infer-union-variant-names # (1)!
+    datamodel-codegen --input infer_union_variant_names.json --infer-union-variant-names # (1)!
     ```
 
     1. :material-arrow-left: `--infer-union-variant-names` - the option documented here
@@ -2128,7 +2128,7 @@ With this flag, only Python-safe names are used without aliases.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-alias # (1)!
+    datamodel-codegen --input no_alias.json --no-alias # (1)!
     ```
 
     1. :material-arrow-left: `--no-alias` - the option documented here
@@ -2218,7 +2218,7 @@ match the generated Python type.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --preset standard-py310-20260826 --no-deserialize-default-values --disable-timestamp --formatters builtin # (1)!
+    datamodel-codegen --input serialized_decimal_defaults.json --preset standard-py310-20260826 --no-deserialize-default-values --disable-timestamp --formatters builtin # (1)!
     ```
 
     1. :material-arrow-left: `--no-deserialize-default-values` - the option documented here
@@ -2301,7 +2301,7 @@ snake_case conversion.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field --original-field-name-delimiter " " # (1)!
+    datamodel-codegen --input space_field_enum.json --snake-case-field --original-field-name-delimiter " " # (1)!
     ```
 
     1. :material-arrow-left: `--original-field-name-delimiter` - the option documented here
@@ -2367,7 +2367,7 @@ The `--remove-special-field-name-prefix` flag configures the code generation beh
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --remove-special-field-name-prefix # (1)!
+    datamodel-codegen --input special_prefix_model.json --remove-special-field-name-prefix # (1)!
     ```
 
     1. :material-arrow-left: `--remove-special-field-name-prefix` - the option documented here
@@ -2434,7 +2434,7 @@ or validation aliases while using separate output-only names for serialization.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --aliases aliases/serialization_aliases.json --serialization-aliases aliases/serialization_aliases_output.json --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input serialization_aliases.json --aliases aliases/serialization_aliases.json --serialization-aliases aliases/serialization_aliases_output.json --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--serialization-aliases` - the option documented here
@@ -2739,7 +2739,7 @@ The `--set-default-enum-member` flag is deprecated. Use `--deserialize-default-v
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --set-default-enum-member # (1)!
+    datamodel-codegen --input duplicate_enum.json --reuse-model --set-default-enum-member # (1)!
     ```
 
     1. :material-arrow-left: `--set-default-enum-member` - the option documented here
@@ -2859,7 +2859,7 @@ conventions (PEP 8).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field # (1)!
+    datamodel-codegen --input invalid_enum_name.json --snake-case-field # (1)!
     ```
 
     1. :material-arrow-left: `--snake-case-field` - the option documented here
@@ -2920,7 +2920,7 @@ The `--special-field-name-prefix` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --special-field-name-prefix special # (1)!
+    datamodel-codegen --input special_enum.json --special-field-name-prefix special # (1)!
     ```
 
     1. :material-arrow-left: `--special-field-name-prefix` - the option documented here
@@ -2996,7 +2996,7 @@ This provides better IDE support for hovering over attributes. Requires
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-field-description --use-attribute-docstrings # (1)!
+    datamodel-codegen --input use_attribute_docstrings_test.json --output-model-type pydantic_v2.BaseModel --use-field-description --use-attribute-docstrings # (1)!
     ```
 
     1. :material-arrow-left: `--use-attribute-docstrings` - the option documented here
@@ -3065,7 +3065,7 @@ The `--use-enum-values-in-discriminator` flag configures the code generation beh
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-enum-values-in-discriminator --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input discriminator_enum.yaml --use-enum-values-in-discriminator --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-enum-values-in-discriminator` - the option documented here
@@ -3173,7 +3173,7 @@ generated models, preserving documentation from the original schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-type-alias --use-field-description # (1)!
+    datamodel-codegen --input type_alias.json --use-type-alias --use-field-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-field-description` - the option documented here
@@ -3549,7 +3549,7 @@ is visible in IDE intellisense.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-field-description-example # (1)!
+    datamodel-codegen --input extras.json --use-field-description-example # (1)!
     ```
 
     1. :material-arrow-left: `--use-field-description-example` - the option documented here
@@ -3648,7 +3648,7 @@ documentation without using Field() wrappers.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-inline-field-description # (1)!
+    datamodel-codegen --input api_multiline_docstrings.yaml --use-inline-field-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-inline-field-description` - the option documented here
@@ -3992,7 +3992,7 @@ useful for preserving documentation from your schema in the generated code.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-schema-description # (1)!
+    datamodel-codegen --input api_multiline_docstrings.yaml --use-schema-description # (1)!
     ```
 
     1. :material-arrow-left: `--use-schema-description` - the option documented here
@@ -4282,7 +4282,7 @@ serializing to the original JSON property name.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-serialization-alias --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input no_alias.json --use-serialization-alias --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-serialization-alias` - the option documented here
@@ -4372,7 +4372,7 @@ format as the default.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-field-description --use-single-line-docstring # (1)!
+    datamodel-codegen --input person.json --use-field-description --use-single-line-docstring # (1)!
     ```
 
     1. :material-arrow-left: `--use-single-line-docstring` - the option documented here
@@ -4454,7 +4454,7 @@ This is useful when schemas have descriptive titles that should be preserved.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-title-as-name # (1)!
+    datamodel-codegen --input titles.json --use-title-as-name # (1)!
     ```
 
     1. :material-arrow-left: `--use-title-as-name` - the option documented here

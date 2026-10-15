@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, replace
 from functools import cached_property
 from itertools import starmap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from urllib.parse import quote
 
 from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import arguments as arguments_template
@@ -23,7 +25,7 @@ from datamodel_code_generator._client._compiled_templates import types as types_
 from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.codec_render import render_model_bindings
 from datamodel_code_generator._client.facade import Attribute, Lazy, Subclass, facade_module, name_set, statement
-from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, VIEW_KEYWORDS, helper_classes
+from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, TYPE_EXPORTS, VIEW_KEYWORDS, helper_classes
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.runtime import (
@@ -32,6 +34,7 @@ from datamodel_code_generator._client.runtime import (
     declared_helpers,
     declared_security,
 )
+from datamodel_code_generator._client.streams import stream_only
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -48,7 +51,7 @@ from datamodel_code_generator._target_render import (
     runtime_sources,
 )
 from datamodel_code_generator._target_templates import builtin_role, templated
-from datamodel_code_generator.model.base import format_docstring
+from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.reference import snake_to_upper_camel
 
 if TYPE_CHECKING:
@@ -76,7 +79,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.client.multipart import PartPlan
+    from datamodel_code_generator._runtime.client.parts import PartPlan
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelHint,
@@ -88,6 +91,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
 _RUNTIME: Final = "_runtime.client.operations"
+_PATH_KEPT: Final = re.compile(r"(\{[^{}]*\}|%[0-9A-Fa-f]{2})")
+_PATH_SAFE: Final = "/:@!$&'()*+,;="
 _CODECS: Final = "_runtime.client.codecs"
 _OPTION_NAMES: Final = ("Clock", "RequestOptions", "RetryOptions", "ServerSelection")
 _CLIENTS: Final = (("._async_client", ("AsyncClient", "AsyncClientView")), ("._client", ("Client", "ClientView")))
@@ -97,6 +102,8 @@ _CREDENTIAL_EXAMPLES: Final = {
     "basic": ("(username, password)", "username: str, password: str"),
     "bearer": ("token", "token: str"),
 }
+_CREDENTIAL_VALUES: Final = {"api_key": '"..."', "basic": '("...", "...")', "bearer": '"..."'}
+_EXAMPLE_VALUES: Final = {"str": '"..."', "int": "1", "float": "1.0", "bool": "True"}
 _FLOW_CLASSES: Final = {
     "client_credentials": ("ClientCredentials", "client credentials"),
     "refresh_token": ("RefreshToken", "refresh token"),
@@ -273,16 +280,13 @@ class _Facades:
         )
 
     @staticmethod
-    def model_codecs() -> Templated:
-        """Return the module of the JSON value type and the sentinel for an omitted argument."""
+    def types() -> Templated:
+        """Return the initializer of the types packages, which exports the type of a JSON value an argument takes."""
         return facade_module(
-            "model_codecs",
-            "JSON values and omitted arguments used by the generated client.",
-            imports=(
-                statement("._runtime.model_codecs.media", ("JSONValue",)),
-                statement("._runtime.model_codecs.unset", ("UNSET",)),
-            ),
-            exports=("JSONValue", "UNSET"),
+            "types",
+            "The types of the resources, and the type of any JSON value.",
+            imports=(statement(".._runtime.model_codecs.media", sorted(TYPE_EXPORTS)),),
+            exports=sorted(TYPE_EXPORTS),
         )
 
     @staticmethod
@@ -415,7 +419,7 @@ _Key: TypeAlias = _Model | _Parts | str
 _SURFACES: Final = {
     "form": ("bodies", "FormData", ""),
     "multipart": ("bodies", "MultipartData", "[bytes]"),
-    "wire": ("model_codecs", "JSONValue", ""),
+    "wire": ("types", "JSONValue", ""),
 }
 _Headers: TypeAlias = "dict[str, tuple[str, list[tuple[ResponseSpec, HeaderSpec]]]]"
 
@@ -542,11 +546,15 @@ class RuntimePagination:
 
 @dataclass(frozen=True, slots=True)
 class RuntimeStreams:
-    """The stream helpers a runtime reference describes: their label, and whether NDJSON or resumable ones exist."""
+    """The stream helpers a runtime reference describes: their label, and whether NDJSON or resumable ones exist.
+
+    `no_content` tells whether an operation a helper opens or reopens declares a 204 without a body.
+    """
 
     label: str
     ndjson: bool
     resumed: bool
+    no_content: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -673,13 +681,15 @@ class Function:
 class Check:
     """A step of a typed accessor that ends its read: the local keeping the value, its read, and what ends it.
 
-    `none` ends the read at None, and `unset`, msgspec's UnsetType when it is not empty, at an unset value.
+    `none` ends the read at None, `unset`, msgspec's UnsetType when it is not empty, at an unset value, and `missing`,
+    Pydantic's MISSING when it is not empty, at a field that holds it.
     """
 
     value: str
     read: str
     none: bool
     unset: str
+    missing: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -791,6 +801,11 @@ def _handle(spec: PollingSpec, prefix: str) -> str:
     return f"{prefix}{''.join(map(snake_to_upper_camel, spec.helper.name.split('.')))}Handle"
 
 
+def _route(operation: OperationSpec) -> str:
+    """Return the method and path that a helper's docstrings cite, escaped for their literals."""
+    return escape_docstring(f"{operation.contract.method.upper()} {operation.contract.path}") or ""
+
+
 def _docstring(spec: OperationSpec, *, schema: bool) -> str:
     """Return the text of an operation's docstring: its configured description, or its route.
 
@@ -807,6 +822,27 @@ def _docstring(spec: OperationSpec, *, schema: bool) -> str:
     return f"Call {spec.contract.method.upper()} {spec.contract.path}."
 
 
+def _sent_path(path: str) -> str:
+    """Return a path template as calls send it: literal text RFC 3986 does not allow in a path percent-encoded.
+
+    Placeholders and the percent-encoded octets the document writes stay as they are, and a `%` that starts none is
+    encoded, so the literal text reaches the server as path arguments do.
+    """
+    return "".join(
+        piece if index % 2 else quote(piece, safe=_PATH_SAFE) for index, piece in enumerate(_PATH_KEPT.split(path))
+    )
+
+
+def _no_content(operation: OperationSpec) -> bool:
+    """Return whether a 204 selects a response of an operation without a body, which ends a stream with no events.
+
+    A 204 selects its own declaration, else its range's, else the default one, as a call's response does.
+    """
+    responses = {item.status: item for item in operation.responses if item.success}
+    selected = next((responses[key] for key in ("204", "2XX", "default") if key in responses), None)
+    return selected is not None and (selected.bodyless or not selected.media)
+
+
 def _operation_summary(spec: OperationSpec) -> dict[str, object]:
     """Return how a README lists one operation: its route, body arguments, and the fields or reason of each media."""
     reasons = dict(spec.body_only)
@@ -815,6 +851,7 @@ def _operation_summary(spec: OperationSpec) -> dict[str, object]:
         "name": f"{spec.resource}.{spec.name}",
         "method": spec.contract.method.upper(),
         "path": spec.contract.path,
+        "reference": spec.contract.id.use_site.pointer,
         "body_arguments": spec.body_arguments,
         "media": [
             {
@@ -828,6 +865,37 @@ def _operation_summary(spec: OperationSpec) -> dict[str, object]:
             for media in (() if spec.body is None else spec.body.media)
         ],
     }
+
+
+def _stub(name: str, parameters: Iterable[Parameter], returns: str) -> str:
+    """Return a method's signature as a stub without `self`, one keyword parameter on each line."""
+    lines = (
+        f"    {item.name}: {item.annotation}{f' = {item.default}' if item.default else ''}," for item in parameters
+    )
+    return "\n".join((f"def {name}(", "    *,", *lines, f") -> {returns}: ..."))
+
+
+def _opened(name: str, keywords: str, *, stream: bool) -> tuple[list[str], list[str]]:
+    """Return the statements that open a WebSocket or stream helper and read what it receives, without and with await.
+
+    A WebSocket helper's `connect` is entered with `with` or `async with`, and a stream helper's `open` returns the
+    stream, which an asynchronous helper awaits before the block enters it.
+    """
+    target = f"client.protocols.{name}.{'open' if stream else 'connect'}({keywords})"
+    value, item = ("stream", "event") if stream else ("session", "message")
+    loop, read = f"for {item} in {value}:", f"        print({item}.data)"
+    return (
+        [f"with {target} as {value}:", f"    {loop}", read],
+        [f"async with {'await ' if stream else ''}{target} as {value}:", f"    async {loop}", read],
+    )
+
+
+def _example(argument: _Argument, spec: OperationSpec) -> str:
+    """Return the value a README's call gives a required keyword: a literal of its type or media, or `...`."""
+    if argument.name == "media_type" and spec.body is not None:
+        concrete = next((media.media_type for media in spec.body.media if not media_range(media.media_type)), None)
+        return "..." if concrete is None else repr(concrete)
+    return _EXAMPLE_VALUES.get(argument.annotation, "...")
 
 
 def _contract(spec: OperationSpec) -> dict[str, object]:
@@ -921,7 +989,7 @@ def _core_call(
 def _part_plan(module: TargetModule, plan: PartPlan) -> str:
     """Return the PartPlan constructor of one form-data member."""
     repeated = ", repeated=True" if plan.repeated else ""
-    return f"{module.local('_runtime.client.multipart', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
+    return f"{module.local('_runtime.client.parts', 'PartPlan')}({plan.name!r}, {plan.kind!r}{repeated})"
 
 
 class _Typing:
@@ -1111,7 +1179,7 @@ class _Resources(_Typing):
         """Return the body type `request_raw` takes: the bodies of the package's request media, else bytes."""
         match self.raw_body:
             case "multipart":
-                return f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('model_codecs', 'JSONValue')}]"
+                return f"{module.local('bodies', f'{prefix}BodyInput')}[{module.local('types', 'JSONValue')}]"
             case "binary":
                 return module.local("bodies", f"{prefix or 'Sync'}BinaryBody")
             case _:
@@ -1261,6 +1329,50 @@ class _Resources(_Typing):
             imports=module.imports(),
         )
 
+    def resource_module(self, resource: ResourceSpec, prefix: str) -> TargetModule:
+        """Return the name scope of a resource module, which defines the resource class and its views' classes."""
+        names = (f"{prefix}{resource.pascal}{suffix}" for suffix in ("Resource", *(item[2] for item in _VIEWS)))
+        return TargetModule(self.types, names, level=len(resource.parts) + 2)
+
+    def summaries(self) -> Iterator[tuple[dict[str, object], tuple[str, ...]]]:
+        """Yield how the README shows each operation, with the keywords a call of it gives, in operation order.
+
+        The signature is the plain synchronous method's, spelled in the name scope of its resource module, and lists
+        the keywords also when the method takes them unpacked. A call gives each required keyword, with `body=` for a
+        required body that fields may replace.
+        """
+        modules = {resource.namespace: self.resource_module(resource, "") for resource in self.plan.resources}
+        for spec in self.plan.operations:
+            module = modules[spec.resource]
+            overloads, implementation = self.branches(module, spec, asynchronous=False, view="plain")
+            required = [item for item in implementation.parameters if item.default == "required"]
+            keywords = [f"{item.name}={_example(item, spec)}" for item in required]
+            if spec.body is not None and spec.body.required and all(item.name != "body" for item in required):
+                keywords.append("body=...")
+            yield (
+                {
+                    **_operation_summary(spec),
+                    "signature": _stub(
+                        spec.name, (item.record(module) for item in implementation.parameters), implementation.returns
+                    ),
+                    "overloads": bool(overloads),
+                    "module": PurePosixPath("resources", *spec.resource.split("."), "_sync.py").as_posix(),
+                },
+                tuple(keywords),
+            )
+
+    def helper_keywords(self, spec: OperationSpec, *, body: bool) -> tuple[str, ...]:
+        """Return the keywords a README's call of a protocol helper of an operation gives, as `summaries` does.
+
+        The helper takes the operation's parameters, and a stream helper, with `body`, also its body, never its fields.
+        """
+        module = self.resource_module(next(item for item in self.plan.resources if item.namespace == spec.resource), "")
+        operation = replace(spec, fields=())
+        arguments = [self.parameter(module, parameter) for parameter in operation.parameters]
+        if body:
+            arguments.extend(self.requests(module, operation, asynchronous=False)[1])
+        return tuple(f"{item.name}={_example(item, spec)}" for item in arguments if item.default == "required")
+
     def resource(self, resource: ResourceSpec, *, asynchronous: bool) -> Templated:
         """Return a resource module: the resource and its metadata, raw, and streaming views of every operation."""
         prefix = "Async" if asynchronous else ""
@@ -1268,7 +1380,7 @@ class _Resources(_Typing):
         views: list[tuple[View, str, str, str]] = [
             (view, attribute, f"{prefix}{resource.pascal}{suffix}", doc) for view, attribute, suffix, doc in _VIEWS
         ]
-        module = TargetModule(self.types, {main, *(name for _, _, name, _ in views)}, level=len(resource.parts) + 2)
+        module = self.resource_module(resource, prefix)
         cached = module.name("functools", "cached_property")
         attributes = [Member(attribute, name, f"The same operations, {doc}.") for _, attribute, name, doc in views]
         pascals = {item.namespace: item.pascal for item in self.plan.resources}
@@ -1852,14 +1964,15 @@ class _Registry(_Typing):
         entries: list[tuple[str, str]] = [
             ("operation_id=", repr(spec.operation_id)),
             ("method=", repr(spec.contract.method.upper())),
-            ("path=", repr(spec.contract.path)),
+            ("path=", repr(_sent_path(spec.contract.path))),
             ("servers=", servers),
             ("responses=", self.decoder(module, spec)),
         ]
         if spec.parameters:
             entries.append(("parameters=", _tuple(self.parameter(module, item) for item in spec.parameters)))
         if (body := spec.body) is not None:
-            fields: list[tuple[str, str]] = [("media=", _tuple(self.media(module, item) for item in body.media))]
+            media = _tuple(self.media(module, item, null=item.null and not body.required) for item in body.media)
+            fields: list[tuple[str, str]] = [("media=", media)]
             if body.default is not None:
                 fields.append(("default=", repr(body.default)))
             if body.required:
@@ -1940,20 +2053,25 @@ class _Registry(_Typing):
                 entries.append(("converts=", "True"))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
-    def media(self, module: TargetModule, media: MediaSpec) -> str:
-        """Return the BodyMedia constructor of one request media type, a form-data one with its form encoder."""
+    def media(self, module: TargetModule, media: MediaSpec, *, null: bool) -> str:
+        """Return the BodyMedia constructor of one request media type, a form-data one with its form encoder.
+
+        `null` marks the media of an optional body that sends None as JSON null; any other leaves None out.
+        """
         kind = media.kind if media.kind in {"json", "text", "form", "multipart"} else "binary"
         entries: list[tuple[str, str]] = [("media_type=", repr(media.media_type)), ("kind=", repr(kind))]
+        if null:
+            entries.append(("null=", "True"))
         form: list[tuple[str, str]] = []
         if media.members is not None:
             form.append(("parts=", _tuple(self.sent_plan(module, part) for part in media.members)))
             if media.extra is not None:
                 form.append(("additional=", self.sent_plan(module, media.extra)))
-        elif kind != "binary" and media.use is not None and media.use.id in self.accessors:
-            entries.append(("codec=", self.codec(module, media.use)))
+        elif (use := media.use) is not None and use.id in self.accessors and (kind != "binary" or use.checked):
+            entries.append(("codec=", self.codec(module, use)))
             if kind == "multipart":
                 form.extend((("members=", "True"), *self.multipart_members(module, media)))
-            else:
+            elif kind != "binary":
                 entries.extend(self.form(module, media))
         if kind == "multipart":
             entries.append(("form=", _call(module.local("_runtime.client.multipart", "MultipartForm"), form)))
@@ -1963,9 +2081,10 @@ class _Registry(_Typing):
         """Return the PartPlan constructor of one member of a body sent as parts."""
         plan = part.plan
         return _call(
-            module.local("_runtime.client.multipart", "PartPlan"),
+            module.local("_runtime.client.parts", "PartPlan"),
             (
                 ("", repr(plan.name)),
+                *((("", repr(plan.kind)),) if plan.kind == "json" else ()),
                 *((("repeated=", "True"),) if plan.repeated else ()),
                 *((("codec=", self.codec(module, part.use)),) if part.use is not None else ()),
                 *((("content_types=", _tuple(map(repr, plan.content_types))),) if plan.content_types else ()),
@@ -1987,8 +2106,12 @@ class _Registry(_Typing):
 
     @staticmethod
     def multipart_members(module: TargetModule, media: MediaSpec) -> list[tuple[str, str]]:
-        """Return the keywords of a form-data media type whose members its codec writes: their media and styles."""
+        """Return the keywords of a form-data media type whose members its codec writes: JSON, media, and styles."""
         entries: list[tuple[str, str]] = []
+        if media.parts:
+            entries.append(("parts=", _tuple(_part_plan(module, item) for item in media.parts)))
+        if media.additional_part is not None:
+            entries.append(("additional=", _part_plan(module, media.additional_part)))
         if media.content_types:
             entries.append(("content_types=", _tuple(repr(pair) for pair in media.content_types)))
         if media.encoded:
@@ -2018,7 +2141,10 @@ class _Registry(_Typing):
         for media in response.media:
             media_type = repr(media.media_type)
             if media.kind == "binary":
-                branches.append(f"{module.local(_RUNTIME, 'binary_branch')}({status}, {media_type})")
+                checked = () if (use := media.use) is None or not use.checked else (("", self.codec(module, use)),)
+                branches.append(
+                    _call(module.local(_RUNTIME, "binary_branch"), (("", status), ("", media_type), *checked))
+                )
             elif media.members is not None:
                 branches.append(self.parts_branch(module, status, media))
             elif media.use is None or media.use.id not in self.accessors:
@@ -2235,10 +2361,11 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     expression = f"{expression}.get({step.name!r})"
                 case _:
                     expression = f"{expression}.{step.name}"
-            if (step.none and position < last) or step.unset:
+            if (step.none and position < last) or step.unset or step.missing:
                 value = f"value_{position}"
                 unset = module.name("msgspec", "UnsetType") if step.unset else ""
-                checks.append(Check(value, expression, step.none, unset))
+                missing = module.name("pydantic", "MISSING") if step.missing else ""
+                checks.append(Check(value, expression, step.none, unset, missing))
                 expression = value
         return Accessor(name, data, returns, f"Return {what}.", tuple(checks), expression)
 
@@ -2513,8 +2640,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     @staticmethod
     def what(spec: PaginationSpec | PollingSpec | CacheSpec | UploadSpec | StreamSpec | SocketSpec) -> str:
         """Return the docstring of a helper's class: its name, kind, and its operation's route."""
-        route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
-        return f"The {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {route}."
+        return f"The {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {_route(spec.operation)}."
 
     def leaf(  # noqa: PLR0913
         self,
@@ -2570,7 +2696,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         first, iterate, following, resume = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
         forwarded = [(f"{name}=", name) for name, _, _ in _HELPER_OPTIONS]
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         signature = (*(argument.record(module) for argument in (*arguments, *body)), *options)
         state = Parameter("state", module.local("_runtime.model_codecs.media", "JSONValue"))
         return [
@@ -2641,7 +2767,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *forwarded,
         ]
         start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         signature = (*(argument.record(module) for argument in (*arguments, *body)), *options)
         resume = module.local(_POLLING, "aresume_operation" if asynchronous else "resume_operation")
         state = Parameter("state", module.local("_runtime.model_codecs.media", "JSONValue"))
@@ -2681,7 +2807,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, operation)}]"
         fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         return Function(
             "fetch",
             (),
@@ -2699,7 +2825,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         assert cancel is not None
         base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
         receipt = f"{module.local('_runtime.protocols.records', 'CancelReceipt')}[{self.response(module, cancel)}]"
-        route = f"{cancel.contract.method.upper()} {cancel.contract.path}"
+        route = _route(cancel)
         return Handle(
             name,
             f"{base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]",
@@ -2714,7 +2840,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return "None" if spec.completion is None else _Helpers.response(module, spec.completion)
 
     def upload(self, module: TargetModule, index: int, spec: UploadSpec) -> Plan:
-        """Return an upload helper's plan: its operations, selectors, targets, bindings, chunk limit, and completion.
+        """Return an upload helper's plan: its operations, selectors, targets, bindings, and completion.
 
         Each optional entry appears only when the helper declares it.
         """
@@ -2731,7 +2857,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ("append_operation=", self.reference(module, spec.append)),
             ("append=", f"{operations}.OPERATION_{spec.append.index}"),
             ("offset=", self.target(module, append["offset"])),
-            ("max_chunk_bytes=", repr(tree["max_chunk_bytes"])),
             ("partial_commit=", repr(tree["partial_commit"] == "allowed")),
         ]
         if (size := create.get("size")) is not None:
@@ -2786,7 +2911,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         forwarded = [(f"{name}=", name) for name, _, _ in _UPLOAD_OPTIONS]
         start = module.local(_UPLOADS, "astart_upload" if asynchronous else "start_upload")
         resume = module.local(_UPLOADS, "aresume_upload" if asynchronous else "resume_upload")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         started = (
             ("", "self._core"),
             plan,
@@ -2930,7 +3055,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((f"{name}=", name) for name, _, _ in _STREAM_OPTIONS),
         ]
         opener = module.local(runtime, "aopen_events" if asynchronous else "open_events")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         signature = (*(argument.record(module) for argument in (*arguments, *body)), *options)
         stream = _STREAM_KINDS[spec.helper.kind]
         returns = f"{handle}[{self.event_type(module, spec)}]"
@@ -3018,7 +3143,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((f"{name}=", name) for name, _, _ in _SOCKET_OPTIONS),
         ]
         opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
-        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        route = _route(operation)
         keywords = (*(argument.record(module) for argument in arguments), *options)
         sent, received = self.message_types(module, spec)
         returns = f"{session}[{sent}, {received}]"
@@ -3099,8 +3224,10 @@ class ClientRenderer:
         """Return one generated file of the package, rendered through its role."""
         return RenderedFile(path=path, kind=kind, text=module.render(self.role))
 
-    def readme(self, capabilities: Capabilities, runtime: tuple[PurePosixPath, ...], *, bodies: bool) -> Templated:
-        """Describe the finalized package: its profile, operations, contracts, helpers, dependencies, and capabilities.
+    def readme(
+        self, capabilities: Capabilities, runtime: tuple[PurePosixPath, ...], resources: _Resources, *, bodies: bool
+    ) -> Templated:
+        """Describe the finalized package: how to call it, its operations, dependencies, and generation details.
 
         The runtime holds the paths of the copied runtime modules, and `bodies` marks a package with a bodies module.
         """
@@ -3110,17 +3237,20 @@ class ClientRenderer:
         for path in runtime:
             groups.setdefault(path.parent.as_posix(), []).append(path.name)
         public = ("options", *(("bodies",) if bodies else ()), "errors")
+        summaries = list(resources.summaries())
         return templated(
             "readme.jinja2",
             readme_template.render,
             package=config.package,
             public_modules=f"{', '.join(public)}, and response types",
-            reference="runtime.md",
+            reference="_generated_docs/runtime.md",
+            example=self.example([keywords for _, keywords in summaries], resources) if summaries else None,
+            credentials=[CredentialLabel(item.name, _KIND_LABELS[item.scheme.kind]) for item in self.plan.credentials],
             signature_style=config.signature_style,
             body_arguments=config.body_arguments,
             backend=self.backend,
             model_package=config.model_package,
-            operations=[_operation_summary(spec) for spec in self.plan.operations],
+            operations=[summary for summary, _ in summaries],
             contracts=json.dumps([_contract(spec) for spec in self.plan.operations], indent=2, ensure_ascii=True),
             helpers=json.dumps([_helper(spec) for spec in helpers], indent=2, ensure_ascii=True) if helpers else "",
             stream_label=self.stream_label if self.streams else "",
@@ -3135,6 +3265,57 @@ class ClientRenderer:
             capabilities=sorted(capabilities.helpers),
             runtime=[{"package": package, "modules": modules} for package, modules in groups.items()],
         )
+
+    def example(self, keywords: list[tuple[str, ...]], resources: _Resources) -> dict[str, object]:
+        """Return the README's use of an operation: the client's arguments, the statements, and what they assume.
+
+        The client sends to the operation's default server with the credentials of its first security alternative.
+        `keywords` holds the keywords each operation requires, in operation order, `...` standing for each value
+        without a literal; `calls` holds the synchronous statements and `awaited` the asynchronous ones.
+        """
+        index, helper = self.example_operation()
+        spec = self.plan.operations[index]
+        server = spec.servers[0].default_url
+        names = {item.scheme.name: item.name for item in self.plan.credentials}
+        alternative = spec.security.alternatives[0] if spec.security is not None and spec.security.alternatives else ()
+        secured = [f"{names[item.scheme.name]}={_CREDENTIAL_VALUES[item.scheme.kind]}" for item in alternative]
+        arguments = ", ".join((f"base_url={json.dumps(server)}", *secured))
+        if helper is None:
+            call = f"client.{spec.resource}.{spec.name}({', '.join(keywords[index])})"
+            calls, awaited = [f"result = {call}"], [f"result = await {call}"]
+        else:
+            name, stream = helper
+            calls, awaited = _opened(name, ", ".join(resources.helper_keywords(spec, body=stream)), stream=stream)
+        return {
+            "operation": f"{spec.resource}.{spec.name}",
+            "server": server,
+            "arguments": arguments,
+            "calls": calls,
+            "awaited": awaited,
+            "helper": None if helper is None else helper[0],
+            "secured": bool(secured),
+            "placeholders": "..." in arguments + calls[0],
+        }
+
+    def example_operation(self) -> tuple[int, tuple[str, bool] | None]:
+        """Return the position of the operation the README uses, and the helper it uses it through, if any.
+
+        The operation is the first that is neither the handshake of a WebSocket helper nor one whose success bodies are
+        all event streams or NDJSON. Without one, it is the first operation that has a WebSocket or stream helper,
+        used through its first helper, named with whether it is a stream helper; or else the first of all.
+        """
+        sockets = {item.operation.index for item in self.sockets}
+        operations = self.plan.operations
+        plain = (index for index, spec in enumerate(operations) if spec.index not in sockets and not stream_only(spec))
+        if (index := next(plain, None)) is not None:
+            return index, None
+        opened: dict[int, tuple[str, bool]] = {}
+        for item in self.sockets:
+            opened.setdefault(item.operation.index, (item.helper.name, False))
+        for item in self.streams:
+            opened.setdefault(item.operation.index, (item.helper.name, True))
+        index = next((index for index, spec in enumerate(operations) if spec.index in opened), 0)
+        return index, opened.get(operations[index].index)
 
     def _accepted_encodings(self) -> dict[str, list[str]]:
         """Return the request codings each operation accepts, by its resource and method name."""
@@ -3177,6 +3358,12 @@ class ClientRenderer:
                 self.stream_label,
                 any(spec.helper.kind == "ndjson" for spec in self.streams),
                 any(spec.reopen is not None for spec in self.streams),
+                any(
+                    _no_content(operation)
+                    for spec in self.streams
+                    for operation in (spec.operation, spec.reopen)
+                    if operation is not None
+                ),
             )
             if self.streams
             else None,
@@ -3212,7 +3399,6 @@ class ClientRenderer:
             yield self.file(PurePosixPath("auth.py"), "auth", auth)
         if (bodies := facades.bodies()) is not None:
             yield self.file(PurePosixPath("bodies.py"), "bodies", bodies)
-        yield self.file(PurePosixPath("model_codecs.py"), "model_codecs", facades.model_codecs())
         if (protocols := facades.protocols()) is not None:
             yield self.file(PurePosixPath("protocols", "__init__.py"), "protocols", protocols)
         resources_docstring = facades.docstring("resources", "The resources of the clients.")
@@ -3225,9 +3411,7 @@ class ClientRenderer:
             yield self.file(directory / "__init__.py", "package", facades.resource_package(resource))
             yield self.file(directory / "_sync.py", "resource", resources.resource(resource, asynchronous=False))
             yield self.file(directory / "_async.py", "resource", resources.resource(resource, asynchronous=True))
-        yield self.file(
-            PurePosixPath("types", "__init__.py"), "package", facades.docstring("types", "The types of the resources.")
-        )
+        yield self.file(PurePosixPath("types", "__init__.py"), "package", facades.types())
         types = _Types(self.plan, self.accessors, types=self.types)
         for resource in self.plan.resources:
             directory = PurePosixPath("types", *resource.parts)
@@ -3260,6 +3444,7 @@ class ClientRenderer:
             ),
             response_headers=any(response.headers for spec in operations for response in spec.responses),
             multipart_responses=any(media.kind == "multipart" for media in received),
+            extras=self.codecs.extras,
         )
         resources = _Resources(
             self.plan,
@@ -3298,12 +3483,17 @@ class ClientRenderer:
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         helpers = (*self.helper_files(resources), *webhooks)
         runtime = tuple(runtime_sources(capabilities.modules()))
-        documentation = PurePosixPath("_generated_docs")
-        readme = self.readme(capabilities, tuple(path for path, _ in runtime), bodies=bool(facades.body_groups))
+        readme = self.readme(
+            capabilities, tuple(path for path, _ in runtime), resources, bodies=bool(facades.body_groups)
+        )
         return (
             *files,
             *(RenderedFile(path=path, kind="runtime", text=text, verbatim=True) for path, text in runtime),
             *helpers,
-            self.file(documentation / "README.md", "readme", readme),
-            self.file(documentation / "runtime.md", "documentation", self.runtime_documentation(capabilities)),
+            self.file(PurePosixPath("README.md"), "readme", readme),
+            self.file(
+                PurePosixPath("_generated_docs", "runtime.md"),
+                "documentation",
+                self.runtime_documentation(capabilities),
+            ),
         )

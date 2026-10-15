@@ -5,8 +5,14 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from pydantic import MISSING, ConfigDict
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class Tally:
+    total: int | MISSING = MISSING
 
 
 @dataclass
@@ -20,16 +26,40 @@ class Error:
     message: str
 
 
-class FieldGreetingsGetQueryModeParameter(StrEnum):
+class GreetingsGetQueryModeParameter(StrEnum):
     bare = 'bare'
     result = 'result'
     value = 'value'
 
 
-FieldGreetingsGetResponse = TypeAliasType("FieldGreetingsGetResponse", str)
+GreetingsGetResponse = TypeAliasType("GreetingsGetResponse", str)
 
 
-FieldDocumentsIdGetPathIdParameter = TypeAliasType("FieldDocumentsIdGetPathIdParameter", int)
+DocumentsIdGetPathIdParameter = TypeAliasType("DocumentsIdGetPathIdParameter", int)
 
 
-FieldPetsIdGetPathIdParameter = TypeAliasType("FieldPetsIdGetPathIdParameter", int)
+PetsIdGetPathIdParameter = TypeAliasType("PetsIdGetPathIdParameter", int)
+
+
+TextGetResponse = TypeAliasType("TextGetResponse", str)
+
+
+TextHeadResponse = TypeAliasType("TextHeadResponse", str)
+
+
+BytesGetResponse = TypeAliasType("BytesGetResponse", bytes)
+
+
+class ProblemsGetQueryModeParameter(StrEnum):
+    bare = 'bare'
+    result = 'result'
+    invalid = 'invalid'
+
+
+NotesGetQueryEmptyParameter = TypeAliasType("NotesGetQueryEmptyParameter", bool)
+
+
+NotesGetResponse = TypeAliasType("NotesGetResponse", str | None)
+
+
+ChosenGetResponse = TypeAliasType("ChosenGetResponse", str)

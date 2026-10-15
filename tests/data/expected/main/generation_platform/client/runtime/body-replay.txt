@@ -1,32 +1,32 @@
 # retries pydantic_v2.BaseModel
-  bytes retained = FieldIdempotentPostResponse(root='ok')
+  bytes retained = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
-  borrowed entry offset = FieldIdempotentPostResponse(root='ok')
+  borrowed entry offset = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'payload'), ('POST', b'/hop-0', b'payload'), ('POST', b'/idempotent', b'payload')] pending=0
     caller file open=True offset=14 reads=[7, 7, 7]
-  next call offset = FieldIdempotentPostResponse(root='ok')
+  next call offset = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'fix-payload')] pending=0
-  file grown between attempts = FieldIdempotentPostResponse(root='ok')
+  file grown between attempts = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
     grown file size=20 reads=[14, 14]
   file closed between attempts ! DecodeError: DecodeError(operation_id='postIdempotent', reason='body_not_replayable', location='body') [operation_id='postIdempotent', location=('body',), body_bytes=b'', truncated=False, cause=ValueError('I/O operation on closed file.')] body_not_replayable
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
-  native path replay = FieldIdempotentPostResponse(root='ok')
+  native path replay = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/hop-0', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
-  nonseekable file ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
+  nonseekable file ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=IdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
-  native iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
+  native iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=IdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
-  303 drops consumed body = FieldIdempotentPostResponse(root='ok')
+  303 drops consumed body = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('GET', b'/hop-0', b'')] pending=0
-  async bytes = FieldIdempotentPostResponse(root='ok')
+  async bytes = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
-  async file = FieldIdempotentPostResponse(root='ok')
+  async file = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'payload'), ('POST', b'/idempotent', b'payload')] pending=0
-  async path = FieldIdempotentPostResponse(root='ok')
+  async path = IdempotentPostResponse(root='ok')
     wire=[('POST', b'/idempotent', b'native payload'), ('POST', b'/idempotent', b'native payload')] pending=0
-  async native iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
+  async native iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=IdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
-  async native async iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=FieldIdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
+  async native async iterator ! InternalServerError: Error code: 503 - ok [operation_id='postIdempotent', status_code=503, body=IdempotentPostResponse(root='ok'), body_bytes=b'ok', truncated=False]
     wire=[('POST', b'/idempotent', b'native payload')] pending=1
     async caller file open=True offset=14 reads=[7, 7]

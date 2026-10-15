@@ -58,7 +58,7 @@ class Board(Struct):
     fixed: dict[str, int] | None | UnsetType = UNSET
 
 
-FieldScoresGetQueryPlayersParameter: TypeAlias = dict[str, Player] | None
+ScoresGetQueryPlayersParameter: TypeAlias = dict[str, Player] | None
 
 
-FieldScoresPostRequest: TypeAlias = dict[str, int] | None
+ScoresPostRequest: TypeAlias = dict[str, int] | None

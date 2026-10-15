@@ -1,15 +1,15 @@
 $ datamodel-codegen --generate-client httpx2 --output-format json
 kind generation; output <root>/models.py
+target {"package": "client", "dependencies": ["httpx2>=2.13.0", "typing-extensions>=4.16", "pydantic>=2.14.0"], "readme": "client/README.md", "usage": "from client import Client\n\nwith Client(base_url=...) as client:\n    client.pets.list_pets(...)"}
+file client/README.md; matches published True
 file client/__init__.py; matches published True
 file client/_async_client.py; matches published True
 file client/_client.py; matches published True
 file client/_generated/__init__.py; matches published True
 file client/_generated/model_bindings.py; matches published True
-file client/_generated_docs/README.md; matches published True
 file client/_generated_docs/runtime.md; matches published True
 file client/_operations.py; matches published True
 file client/errors.py; matches published True
-file client/model_codecs.py; matches published True
 file client/options.py; matches published True
 file client/py.typed; matches published True
 file client/resources/__init__.py; matches published True
@@ -25,13 +25,16 @@ runtime files match published True
 $ datamodel-codegen --all-jobs --output-format json
 job server
 kind generation; output <root>/models.py
+target {"package": "server", "dependencies": ["fastapi>=0.141.1", "pydantic>=2.14.0", "typing-extensions>=4.16"], "readme": "server/README.md", "entrypoint": {"app": "server.main:app", "path": "server/main.py"}, "implementation": [{"module": "services.pets", "name": "Pets", "path": "services/pets.py", "created": true}]}
 file models.py; matches published True
 file server/README.md; matches published True
 file server/__init__.py; matches published True
 file server/_generated/__init__.py; matches published True
 file server/_generated/contract.py; matches published True
+file server/_generated/openapi.json; matches published True
 file server/_generated/openapi.py; matches published True
 file server/application.py; matches published True
+file server/main.py; matches published True
 file server/py.typed; matches published True
 file server/routers/__init__.py; matches published True
 file server/routers/pets.py; matches published True
@@ -39,16 +42,16 @@ file server/services.py; matches published True
 runtime files match published True
 job client
 kind generation; output <root>/models.py
+target {"package": "client", "dependencies": ["httpx2>=2.13.0", "typing-extensions>=4.16", "pydantic>=2.14.0"], "readme": "client/README.md", "usage": "from client import Client\n\nwith Client(base_url=...) as client:\n    client.pets.list_pets(...)"}
+file client/README.md; matches published True
 file client/__init__.py; matches published True
 file client/_async_client.py; matches published True
 file client/_client.py; matches published True
 file client/_generated/__init__.py; matches published True
 file client/_generated/model_bindings.py; matches published True
-file client/_generated_docs/README.md; matches published True
 file client/_generated_docs/runtime.md; matches published True
 file client/_operations.py; matches published True
 file client/errors.py; matches published True
-file client/model_codecs.py; matches published True
 file client/options.py; matches published True
 file client/py.typed; matches published True
 file client/resources/__init__.py; matches published True

@@ -1,0 +1,5 @@
+dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.14.0
+installed model libraries pydantic
+mypy publication_client and publication_client_models.py: clean
+pyright publication_client and publication_client_models.py: clean
+ty publication_client and publication_client_models.py: clean

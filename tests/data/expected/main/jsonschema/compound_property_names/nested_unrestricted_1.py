@@ -8,12 +8,8 @@ from pydantic import Field, RootModel
 
 
 class Root1(RootModel[Any]):
-    root: Any = Field(..., pattern='^a')
+    root: Any
 
 
-class Root2(RootModel[Any]):
-    root: Any = Field(..., pattern='^b')
-
-
-class Root(RootModel[dict[Any | Root1 | Root2, Any]]):
-    root: dict[Any | Root1 | Root2, Any] = Field(..., title='Root')
+class Root(RootModel[dict[Any | Root1, Any]]):
+    root: dict[Any | Root1, Any] = Field(..., title='Root')

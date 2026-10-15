@@ -99,6 +99,19 @@ paths:
       operationId: postEmpty
       responses:
         "204": {description: Done.}
+  /texts:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getText
+      responses:
+        "200":
+          description: A text or null.
+          headers:
+            X-Rate: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {type: [string, "null"], maxLength: 5}
 components:
   schemas:
     Thing:

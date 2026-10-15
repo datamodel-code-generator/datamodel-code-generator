@@ -641,14 +641,14 @@
         "context": {
           "imports": "from typing import Final\n\nimport models",
           "codec_imports": [
-            "from .._runtime.model_codecs.native import PydanticCodec",
-            "from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec"
+            "from .._runtime.model_codecs.pydantic_models import PydanticCodec",
+            "from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec"
           ],
           "models_annotation": "Final[dict[type, Model]]",
           "models": [
             {
               "type": "models.Pet",
-              "value": "Model((Field('name', 'name'),), True)"
+              "value": "Model((Field('name', 'name'),))"
             },
             {
               "type": "models.日本",
@@ -658,8 +658,8 @@
           "codecs": [
             {
               "name": "codec_0",
-              "annotation": "Final[StdlibCodec[models.Pet]]",
-              "value": "StdlibCodec(models.Pet, MODELS)",
+              "annotation": "Final[TypedDictCodec[models.Pet]]",
+              "value": "TypedDictCodec(models.Pet, MODELS)",
               "description": "Codec of /paths/~1pets/get response_body (response 200 application/json)."
             },
             {
@@ -676,7 +676,7 @@
         "context": {
           "imports": "from typing import Final\n\nimport models",
           "codec_imports": [
-            "from .._runtime.model_codecs.native import PydanticCodec"
+            "from .._runtime.model_codecs.pydantic_models import PydanticCodec"
           ],
           "models_annotation": "",
           "models": [],
@@ -758,7 +758,7 @@
         "context": {
           "package": "client",
           "public_modules": "options, bodies, errors, and response types",
-          "reference": "runtime.md",
+          "reference": "_generated_docs/runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",
           "backend": "pydantic_v2.BaseModel",
@@ -769,13 +769,18 @@
               "name": "get",
               "method": "GET",
               "path": "/pets/{petId}",
+              "reference": "/paths/~1pets~1{petId}/get",
               "body_arguments": "body",
-              "media": []
+              "media": [],
+              "signature": "def get(\n    *,\n    petId: str,\n    options: RequestOptions | None = None,\n) -> GetResponse: ...",
+              "overloads": false,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "create",
               "method": "POST",
               "path": "/pets",
+              "reference": "/paths/~1pets/post",
               "body_arguments": "body",
               "media": [
                 {
@@ -784,12 +789,16 @@
                 {
                   "media_type": "text/plain"
                 }
-              ]
+              ],
+              "signature": "def create(\n    *,\n    body: models.Pet | str,\n    media_type: Literal['application/json', 'text/plain'] | None = None,\n    options: RequestOptions | None = None,\n) -> CreateResponse: ...",
+              "overloads": true,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "update",
               "method": "PUT",
               "path": "/pets",
+              "reference": "/paths/~1pets/put",
               "body_arguments": "both",
               "media": [
                 {
@@ -810,7 +819,10 @@
                   "fields": [],
                   "reason": "its model has no writable field"
                 }
-              ]
+              ],
+              "signature": "def update(\n    *,\n    body: models.Pet | UNSET = UNSET,\n    name: str | UNSET = UNSET,\n    options: RequestOptions | None = None,\n) -> None: ...",
+              "overloads": false,
+              "module": "resources/pets/store/_sync.py"
             }
           ],
           "helpers": "{\"helper\": \"events\"}",
@@ -853,6 +865,30 @@
                 "pagination.py"
               ]
             }
+          ],
+          "example": {
+            "operation": "pets.get",
+            "server": "https://api.example.com/v1",
+            "arguments": "base_url=\"https://api.example.com/v1\", bearer=\"...\"",
+            "calls": [
+              "result = client.pets.get(petId=\"...\")"
+            ],
+            "awaited": [
+              "result = await client.pets.get(petId=\"...\")"
+            ],
+            "helper": null,
+            "secured": true,
+            "placeholders": true
+          },
+          "credentials": [
+            {
+              "name": "bearer",
+              "label": "bearer token"
+            },
+            {
+              "name": "api_key",
+              "label": "API key"
+            }
           ]
         }
       },
@@ -861,7 +897,7 @@
         "context": {
           "package": "client",
           "public_modules": "options, bodies, errors, and response types",
-          "reference": "runtime.md",
+          "reference": "_generated_docs/runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",
           "backend": "pydantic_v2.BaseModel",
@@ -885,7 +921,9 @@
           "dependencies": [],
           "security": [],
           "capabilities": [],
-          "runtime": []
+          "runtime": [],
+          "example": null,
+          "credentials": []
         }
       },
       {
@@ -893,7 +931,7 @@
         "context": {
           "package": "client",
           "public_modules": "options, bodies, errors, and response types",
-          "reference": "runtime.md",
+          "reference": "_generated_docs/runtime.md",
           "signature_style": "unpack",
           "body_arguments": "both",
           "backend": "pydantic_v2.BaseModel",
@@ -904,13 +942,18 @@
               "name": "get",
               "method": "GET",
               "path": "/pets/{petId}",
+              "reference": "/paths/~1pets~1{petId}/get",
               "body_arguments": "body",
-              "media": []
+              "media": [],
+              "signature": "def get(\n    *,\n    petId: str,\n    options: RequestOptions | None = None,\n) -> GetResponse: ...",
+              "overloads": false,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "create",
               "method": "POST",
               "path": "/pets",
+              "reference": "/paths/~1pets/post",
               "body_arguments": "body",
               "media": [
                 {
@@ -919,12 +962,16 @@
                 {
                   "media_type": "text/plain"
                 }
-              ]
+              ],
+              "signature": "def create(\n    *,\n    body: models.Pet | str,\n    media_type: Literal['application/json', 'text/plain'] | None = None,\n    options: RequestOptions | None = None,\n) -> CreateResponse: ...",
+              "overloads": true,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "update",
               "method": "PUT",
               "path": "/pets",
+              "reference": "/paths/~1pets/put",
               "body_arguments": "both",
               "media": [
                 {
@@ -945,7 +992,10 @@
                   "fields": [],
                   "reason": "its model has no writable field"
                 }
-              ]
+              ],
+              "signature": "def update(\n    *,\n    body: models.Pet | UNSET = UNSET,\n    name: str | UNSET = UNSET,\n    options: RequestOptions | None = None,\n) -> None: ...",
+              "overloads": false,
+              "module": "resources/pets/store/_sync.py"
             }
           ],
           "helpers": "{\"helper\": \"events\"}",
@@ -988,7 +1038,22 @@
                 "pagination.py"
               ]
             }
-          ]
+          ],
+          "example": {
+            "operation": "pets.get",
+            "server": "https://api.example.com/v1",
+            "arguments": "base_url=\"https://api.example.com/v1\"",
+            "calls": [
+              "result = client.pets.get(petId=1)"
+            ],
+            "awaited": [
+              "result = await client.pets.get(petId=1)"
+            ],
+            "helper": null,
+            "secured": false,
+            "placeholders": false
+          },
+          "credentials": []
         }
       },
       {
@@ -996,7 +1061,7 @@
         "context": {
           "package": "client",
           "public_modules": "options, bodies, errors, and response types",
-          "reference": "runtime.md",
+          "reference": "_generated_docs/runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",
           "backend": "pydantic_v2.BaseModel",
@@ -1007,13 +1072,18 @@
               "name": "get",
               "method": "GET",
               "path": "/pets/{petId}",
+              "reference": "/paths/~1pets~1{petId}/get",
               "body_arguments": "body",
-              "media": []
+              "media": [],
+              "signature": "def get(\n    *,\n    petId: str,\n    options: RequestOptions | None = None,\n) -> GetResponse: ...",
+              "overloads": false,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "create",
               "method": "POST",
               "path": "/pets",
+              "reference": "/paths/~1pets/post",
               "body_arguments": "body",
               "media": [
                 {
@@ -1022,12 +1092,16 @@
                 {
                   "media_type": "text/plain"
                 }
-              ]
+              ],
+              "signature": "def create(\n    *,\n    body: models.Pet | str,\n    media_type: Literal['application/json', 'text/plain'] | None = None,\n    options: RequestOptions | None = None,\n) -> CreateResponse: ...",
+              "overloads": true,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "update",
               "method": "PUT",
               "path": "/pets",
+              "reference": "/paths/~1pets/put",
               "body_arguments": "both",
               "media": [
                 {
@@ -1048,7 +1122,10 @@
                   "fields": [],
                   "reason": "its model has no writable field"
                 }
-              ]
+              ],
+              "signature": "def update(\n    *,\n    body: models.Pet | UNSET = UNSET,\n    name: str | UNSET = UNSET,\n    options: RequestOptions | None = None,\n) -> None: ...",
+              "overloads": false,
+              "module": "resources/pets/store/_sync.py"
             }
           ],
           "helpers": "{\"sse\": {}}",
@@ -1085,7 +1162,26 @@
                 "pagination.py"
               ]
             }
-          ]
+          ],
+          "example": {
+            "operation": "pets.get",
+            "server": "https://api.example.com/v1",
+            "arguments": "base_url=\"https://api.example.com/v1\"",
+            "calls": [
+              "with client.protocols.pets.events.open(petId=1) as stream:",
+              "    for event in stream:",
+              "        print(event.data)"
+            ],
+            "awaited": [
+              "async with await client.protocols.pets.events.open(petId=1) as stream:",
+              "    async for event in stream:",
+              "        print(event.data)"
+            ],
+            "helper": "pets.events",
+            "secured": false,
+            "placeholders": false
+          },
+          "credentials": []
         }
       },
       {
@@ -1093,7 +1189,7 @@
         "context": {
           "package": "client",
           "public_modules": "options, bodies, errors, and response types",
-          "reference": "runtime.md",
+          "reference": "_generated_docs/runtime.md",
           "signature_style": "explicit",
           "body_arguments": "body",
           "backend": "pydantic_v2.BaseModel",
@@ -1104,13 +1200,18 @@
               "name": "get",
               "method": "GET",
               "path": "/pets/{petId}",
+              "reference": "/paths/~1pets~1{petId}/get",
               "body_arguments": "body",
-              "media": []
+              "media": [],
+              "signature": "def get(\n    *,\n    petId: str,\n    options: RequestOptions | None = None,\n) -> GetResponse: ...",
+              "overloads": false,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "create",
               "method": "POST",
               "path": "/pets",
+              "reference": "/paths/~1pets/post",
               "body_arguments": "body",
               "media": [
                 {
@@ -1119,12 +1220,16 @@
                 {
                   "media_type": "text/plain"
                 }
-              ]
+              ],
+              "signature": "def create(\n    *,\n    body: models.Pet | str,\n    media_type: Literal['application/json', 'text/plain'] | None = None,\n    options: RequestOptions | None = None,\n) -> CreateResponse: ...",
+              "overloads": true,
+              "module": "resources/pets/_sync.py"
             },
             {
               "name": "update",
               "method": "PUT",
               "path": "/pets",
+              "reference": "/paths/~1pets/put",
               "body_arguments": "both",
               "media": [
                 {
@@ -1145,7 +1250,10 @@
                   "fields": [],
                   "reason": "its model has no writable field"
                 }
-              ]
+              ],
+              "signature": "def update(\n    *,\n    body: models.Pet | UNSET = UNSET,\n    name: str | UNSET = UNSET,\n    options: RequestOptions | None = None,\n) -> None: ...",
+              "overloads": false,
+              "module": "resources/pets/store/_sync.py"
             }
           ],
           "helpers": "{\"custom\": {}}",
@@ -1179,6 +1287,26 @@
               "modules": [
                 "pagination.py"
               ]
+            }
+          ],
+          "example": {
+            "operation": "pets.get",
+            "server": "https://api.example.com/v1",
+            "arguments": "base_url=\"https://api.example.com/v1\"",
+            "calls": [
+              "result = client.pets.get(petId=1)"
+            ],
+            "awaited": [
+              "result = await client.pets.get(petId=1)"
+            ],
+            "helper": null,
+            "secured": false,
+            "placeholders": false
+          },
+          "credentials": [
+            {
+              "name": "bearer",
+              "label": "bearer token"
             }
           ]
         }
@@ -2101,13 +2229,7 @@
                   "default": ""
                 }
               ],
-              "keywords": [
-                {
-                  "name": "options",
-                  "annotation": "WebhookOptions | None",
-                  "default": "None"
-                }
-              ],
+              "keywords": [],
               "returns": "models.Event",
               "docstring": "",
               "function": "decode_unsigned",
@@ -2119,10 +2241,6 @@
                 {
                   "keyword": "",
                   "value": "raw_body"
-                },
-                {
-                  "keyword": "options",
-                  "value": "options"
                 }
               ],
               "coroutine": false
@@ -2237,6 +2355,18 @@
           "settings": [],
           "arguments": [],
           "exports": []
+        }
+      }
+    ],
+    "authorize.jinja2": [
+      {
+        "name": "populated",
+        "context": {
+          "package": "app.server",
+          "entrypoint": "app.server.main",
+          "requirement_sets": "RequirementSets",
+          "credentials": "Credentials",
+          "imports": "from app.server import Credentials, RequirementSets"
         }
       }
     ],
@@ -2367,16 +2497,145 @@
         }
       }
     ],
-    "openapi.jinja2": [
+    "implementation.jinja2": [
+      {
+        "name": "asynchronous",
+        "context": {
+          "protocol": "PetsService",
+          "services": "app.server.services",
+          "entrypoint": "app.server.main",
+          "name": "Pets",
+          "base": "PetsService",
+          "methods": "the pets operations",
+          "protocol_methods": [
+            {
+              "name": "list_pets",
+              "asynchronous": true,
+              "parameters": [
+                {
+                  "name": "limit",
+                  "annotation": "int | None",
+                  "default": ""
+                }
+              ],
+              "returns": "models.Pets | HTTPResult[models.Pets | models.PetsGetResponse] | Response",
+              "docstring": "\"\"\"\n        Handle GET /pets.\n        \"\"\""
+            },
+            {
+              "name": "create_pets",
+              "asynchronous": true,
+              "parameters": [],
+              "returns": "None | HTTPResult[models.PetsPostResponse] | Response",
+              "docstring": "\"\"\"\n        Handle POST /pets.\n        \"\"\""
+            },
+            {
+              "name": "show_pet_by_id",
+              "asynchronous": true,
+              "parameters": [
+                {
+                  "name": "petId",
+                  "annotation": "str",
+                  "default": ""
+                }
+              ],
+              "returns": "models.Pets | HTTPResult[models.Pets | models.Error] | Response",
+              "docstring": "\"\"\"\n        Handle GET /pets/{petId}.\n        \"\"\""
+            }
+          ],
+          "imports": "from app import models\nfrom app.server import HTTPResult\nfrom app.server.services import PetsService\nfrom fastapi.responses import Response"
+        }
+      },
+      {
+        "name": "secured",
+        "context": {
+          "protocol": "DefaultService",
+          "services": "app.server.services",
+          "entrypoint": "app.server.main",
+          "name": "Default",
+          "base": "DefaultService[object]",
+          "methods": "the default operations",
+          "protocol_methods": [
+            {
+              "name": "get_keys",
+              "asynchronous": false,
+              "parameters": [
+                {
+                  "name": "principal",
+                  "annotation": "object",
+                  "default": ""
+                }
+              ],
+              "returns": "None | HTTPResult[None] | Response",
+              "docstring": "\"\"\"\n        Handle GET /keys.\n        \"\"\""
+            }
+          ],
+          "imports": "from app.server import HTTPResult\nfrom app.server.services import DefaultService\nfrom fastapi.responses import Response"
+        }
+      }
+    ],
+    "main.jinja2": [
       {
         "name": "populated",
         "context": {
-          "lines": [
-            "'{\\n'",
-            "'  \"title\": \"日本 {braces} \\\\\\\\\"\\n'",
-            "'}'"
-          ]
+          "app": "app.server.main:app",
+          "services": "app.services",
+          "implementations": [
+            {
+              "module": "app.services.authorize",
+              "name": "authorize",
+              "alias": "DefaultImplementation",
+              "keyword": "authorize"
+            },
+            {
+              "module": "app.services.default",
+              "name": "Default",
+              "alias": "Default",
+              "keyword": "default"
+            }
+          ],
+          "table": [
+            {
+              "keyword": "'app.services.default'",
+              "value": "'Default'"
+            },
+            {
+              "keyword": "'app.services.authorize'",
+              "value": "'authorize'"
+            }
+          ],
+          "missing": "missing_implementation",
+          "create_app": "create_app",
+          "arguments": [
+            {
+              "keyword": "default",
+              "value": "DefaultImplementation()"
+            },
+            {
+              "keyword": "authorize",
+              "value": "authorize"
+            }
+          ],
+          "imports": "from ._runtime.server.application import missing_implementation\nfrom .application import create_app"
         }
+      },
+      {
+        "name": "empty",
+        "context": {
+          "app": "app.server.main:app",
+          "services": "app.services",
+          "implementations": [],
+          "table": [],
+          "missing": "missing_implementation",
+          "create_app": "create_app",
+          "arguments": [],
+          "imports": "from .application import create_app"
+        }
+      }
+    ],
+    "openapi.jinja2": [
+      {
+        "name": "module",
+        "context": {}
       }
     ],
     "readme.jinja2": [
@@ -2413,40 +2672,84 @@
               "credential": "API key"
             }
           ],
-          "protocols": "Pets, Other",
           "services": [
             {
-              "implementation": "PetService",
-              "protocol": "Pets",
-              "secured": true,
-              "methods": "get and create"
+              "module": "app.services.default",
+              "name": "Default",
+              "implementation": "Default",
+              "method": "get"
             },
             {
-              "implementation": "OtherService",
-              "protocol": "Other",
-              "secured": false,
-              "methods": "list"
+              "module": "app.services.other",
+              "name": "Default",
+              "implementation": "Default_1",
+              "method": "list"
             }
           ],
-          "arguments": "pets=PetService(), authorize=authorize",
+          "arguments": "default=Default(), other=Default_1(), authorize=authorize",
           "forms": true,
-          "raw_request": true
+          "raw_request": true,
+          "app": "server.main:app",
+          "top_level": true,
+          "services_package": "services",
+          "owned": [
+            {
+              "module": "app.services.default",
+              "name": "Default",
+              "alias": "Default",
+              "keyword": "default",
+              "base": "DefaultService[object]",
+              "file": "../services/default.py",
+              "stub": "\u001fimplementation:services/default.py\u001f"
+            },
+            {
+              "module": "app.services.other",
+              "name": "Default",
+              "alias": "Default_1",
+              "keyword": "other",
+              "base": "OtherService",
+              "file": "../services/other.py",
+              "stub": "\u001fimplementation:services/other.py\u001f"
+            },
+            {
+              "module": "app.services.authorize",
+              "name": "authorize",
+              "alias": "authorize",
+              "keyword": "authorize",
+              "base": "",
+              "file": "../services/authorize.py",
+              "stub": "\u001fimplementation:services/authorize.py\u001f"
+            }
+          ],
+          "fakes": "default=FakeDefault(), other=FakeDefault_1(), authorize=authorize",
+          "dependencies": [
+            "fastapi>=0.141.1",
+            "pydantic>=2.14.0",
+            "typing-extensions>=4.16"
+          ]
         }
       },
       {
         "name": "empty",
         "context": {
           "title": "API 日本 {braces}",
-          "package": "server",
-          "model_package": "models",
+          "package": "app.server",
+          "model_package": "app.models",
           "backend": "pydantic_v2.BaseModel",
           "operations": [],
           "schemes": [],
-          "protocols": "",
           "services": [],
           "arguments": "",
           "forms": false,
-          "raw_request": false
+          "raw_request": false,
+          "app": "app.server.main:app",
+          "top_level": false,
+          "services_package": "app.services",
+          "owned": [],
+          "fakes": "",
+          "dependencies": [
+            "fastapi>=0.141.1"
+          ]
         }
       }
     ],
@@ -2473,6 +2776,7 @@
                 "function": "checked",
                 "method": "get_pet",
                 "label": "'The pets.get_pet method of GET /pets/{petId} 日本'",
+                "keywords": "('petId',)",
                 "asynchronous": true
               },
               "principal": {
@@ -2556,6 +2860,7 @@
                 "function": "checked",
                 "method": "list_pets",
                 "label": "'The pets.list_pets method of GET /pets'",
+                "keywords": "('limit', 'offset')",
                 "asynchronous": false
               },
               "principal": null,
@@ -2648,6 +2953,7 @@
                 "function": "checked",
                 "method": "get_pet",
                 "label": "'The pets.get_pet method of GET /pets/{petId} 日本'",
+                "keywords": "('petId',)",
                 "asynchronous": false
               },
               "principal": null,
@@ -2712,6 +3018,7 @@
                 "function": "checked",
                 "method": "list_pets",
                 "label": "'The pets.list_pets method of GET /pets'",
+                "keywords": "('limit', 'offset')",
                 "asynchronous": true
               },
               "principal": null,

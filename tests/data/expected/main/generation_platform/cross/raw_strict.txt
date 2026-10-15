@@ -1,0 +1,419 @@
+models shared True
+client msgspec_Struct warning UserWarning: msgspec checks all bytes members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; PagesPostRequest is generated without this constraint.
+# raw_strict in-process sync, in-process async
+download_report
+  > GET /reports
+  download_report()
+  < 200 text/csv
+  = b'id,name\n1,caf\xc3\xa9\n2,\xff\x00\n'
+upload_note
+  > POST /notes [text/plain]
+  upload_note(body=b'note \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain
+  = b'page \xff\x00'
+upload_sketch
+  > POST /sketches [text/plain]
+  upload_sketch(body=b'sketch \xff\x00')
+  < 200 text/plain
+  = b'sketch \xff\x00'
+upload_mark
+  > POST /marks [application/octet-stream]
+  upload_mark(body=Mark.final)
+  < 200 application/octet-stream
+  = Mark.final
+upload_mark refused
+  > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = Tag.final
+upload_tag refused
+  > POST /tags [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_stamp
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'\xff\x00ok')
+  < 200 application/octet-stream
+  = b'\xff\x00ok'
+upload_stamp too long
+  ! DecodeError: DecodeError(operation_id='uploadStamp', reason='unencodable', location='body') [operation_id='uploadStamp', location=('body',), body_bytes=b'', truncated=False, cause=1 validation error for StampsPostRequest
+  Data should have at most 4 bytes [type=bytes_too_long, input_value=b'far too long', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.14/v/bytes_too_long] unencodable
+upload_stamp too long past the client
+  > POST /stamps [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'bytes_too_long', 'loc': ['body'], 'msg': 'Data should have at most 4 bytes'}]})
+download_stamp too long
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='downloadStamp', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+download_raw_stamp too long
+  > GET /stamps/raw
+  download_raw_stamp()
+  < 200 application/octet-stream
+  ! DecodeError: DecodeError(status_code=200, operation_id='downloadRawStamp', reason='invalid_value') [operation_id='downloadRawStamp', body_bytes=b'far too long', truncated=False, cause=1 validation error for Stamp
+  Data should have at most 4 bytes [type=bytes_too_long, input_value=b'far too long', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.14/v/bytes_too_long] invalid_value
+# raw_strict in-process pydantic_v2_dataclass sync, in-process pydantic_v2_dataclass async
+download_report
+  > GET /reports
+  download_report()
+  < 200 text/csv
+  = b'id,name\n1,caf\xc3\xa9\n2,\xff\x00\n'
+upload_note
+  > POST /notes [text/plain]
+  upload_note(body=b'note \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain
+  = b'page \xff\x00'
+upload_sketch
+  > POST /sketches [text/plain]
+  upload_sketch(body=b'sketch \xff\x00')
+  < 200 text/plain
+  = b'sketch \xff\x00'
+upload_mark
+  > POST /marks [application/octet-stream]
+  upload_mark(body=Mark.final)
+  < 200 application/octet-stream
+  = Mark.final
+upload_mark refused
+  > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = Tag.final
+upload_tag refused
+  > POST /tags [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_stamp
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'\xff\x00ok')
+  < 200 application/octet-stream
+  = b'\xff\x00ok'
+upload_stamp too long
+  ! DecodeError: DecodeError(operation_id='uploadStamp', reason='unencodable', location='body') [operation_id='uploadStamp', location=('body',), body_bytes=b'', truncated=False, cause=1 validation error for constrained-bytes
+  Data should have at most 4 bytes [type=bytes_too_long, input_value=b'far too long', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.14/v/bytes_too_long] unencodable
+upload_stamp too long past the client
+  > POST /stamps [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'bytes_too_long', 'loc': ['body'], 'msg': 'Data should have at most 4 bytes'}]})
+download_stamp too long
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='downloadStamp', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+download_raw_stamp too long
+  > GET /stamps/raw
+  download_raw_stamp()
+  < 200 application/octet-stream
+  ! DecodeError: DecodeError(status_code=200, operation_id='downloadRawStamp', reason='invalid_value') [operation_id='downloadRawStamp', body_bytes=b'far too long', truncated=False, cause=1 validation error for constrained-bytes
+  Data should have at most 4 bytes [type=bytes_too_long, input_value=b'far too long', input_type=bytes]
+    For further information visit https://errors.pydantic.dev/2.14/v/bytes_too_long] invalid_value
+# raw_strict in-process dataclasses_dataclass sync, in-process dataclasses_dataclass async
+download_report
+  > GET /reports
+  download_report()
+  < 200 text/csv
+  = b'id,name\n1,caf\xc3\xa9\n2,\xff\x00\n'
+upload_note
+  > POST /notes [text/plain]
+  upload_note(body=b'note \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain
+  = b'page \xff\x00'
+upload_sketch
+  > POST /sketches [text/plain]
+  upload_sketch(body=b'sketch \xff\x00')
+  < 200 text/plain
+  = b'sketch \xff\x00'
+upload_mark
+  > POST /marks [application/octet-stream]
+  upload_mark(body=Mark.final)
+  < 200 application/octet-stream
+  = Mark.final
+upload_mark refused
+  > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = Tag.final
+upload_tag refused
+  > POST /tags [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_stamp
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'\xff\x00ok')
+  < 200 application/octet-stream
+  = b'\xff\x00ok'
+upload_stamp too long
+  > POST /stamps [application/octet-stream]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"bytes_too_long","loc":["body"],"msg":"<msg>"}]} [operation_id='uploadStamp', status_code=422, body=b'{"detail":[{"type":"bytes_too_long","loc":["body"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"bytes_too_long","loc":["body"],"msg":"<msg>"}]}', truncated=False]
+upload_stamp too long past the client
+  > POST /stamps [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'bytes_too_long', 'loc': ['body'], 'msg': 'Data should have at most 4 bytes'}]})
+download_stamp too long
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='downloadStamp', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+download_raw_stamp too long
+  > GET /stamps/raw
+  download_raw_stamp()
+  < 200 application/octet-stream
+  = b'far too long'
+# raw_strict in-process typing_TypedDict sync, in-process typing_TypedDict async
+download_report
+  > GET /reports
+  download_report()
+  < 200 text/csv
+  = b'id,name\n1,caf\xc3\xa9\n2,\xff\x00\n'
+upload_note
+  > POST /notes [text/plain]
+  upload_note(body=b'note \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain
+  = b'page \xff\x00'
+upload_sketch
+  > POST /sketches [text/plain]
+  upload_sketch(body=b'sketch \xff\x00')
+  < 200 text/plain
+  = b'sketch \xff\x00'
+upload_mark
+  > POST /marks [application/octet-stream]
+  upload_mark(body=Mark.final)
+  < 200 application/octet-stream
+  = 'final'
+upload_mark refused
+  > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = 'final'
+upload_tag refused
+  > POST /tags [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_stamp
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'\xff\x00ok')
+  < 200 application/octet-stream
+  = b'\xff\x00ok'
+upload_stamp too long
+  > POST /stamps [application/octet-stream]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"bytes_too_long","loc":["body"],"msg":"<msg>"}]} [operation_id='uploadStamp', status_code=422, body=b'{"detail":[{"type":"bytes_too_long","loc":["body"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"bytes_too_long","loc":["body"],"msg":"<msg>"}]}', truncated=False]
+upload_stamp too long past the client
+  > POST /stamps [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'bytes_too_long', 'loc': ['body'], 'msg': 'Data should have at most 4 bytes'}]})
+download_stamp too long
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='downloadStamp', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+download_raw_stamp too long
+  > GET /stamps/raw
+  download_raw_stamp()
+  < 200 application/octet-stream
+  = b'far too long'
+# raw_strict in-process msgspec_Struct sync, in-process msgspec_Struct async
+download_report
+  > GET /reports
+  download_report()
+  < 200 text/csv
+  = b'id,name\n1,caf\xc3\xa9\n2,\xff\x00\n'
+upload_note
+  > POST /notes [text/plain]
+  upload_note(body=b'note \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'note \xff\x00 caf\xc3\xa9'
+upload_draft
+  > POST /drafts [text/plain]
+  upload_draft(body=b'draft \xff\x00 caf\xc3\xa9')
+  < 200 text/plain
+  = b'draft \xff\x00 caf\xc3\xa9'
+upload_letter
+  > POST /letters [text/plain]
+  upload_letter(body=b'letter \xff\x00 caf\xc3\xa9')
+  < 200 text/csv
+  = b'letter \xff\x00 caf\xc3\xa9'
+upload_memo
+  > POST /memos [text/plain]
+  upload_memo(body=b'memo \xff\x00')
+  < 200 text/plain
+  = b'memo \xff\x00'
+upload_page
+  > POST /pages [text/plain]
+  upload_page(body=b'page \xff\x00')
+  < 200 text/plain
+  = b'page \xff\x00'
+upload_sketch
+  > POST /sketches [text/plain]
+  upload_sketch(body=b'sketch \xff\x00')
+  < 200 text/plain
+  = b'sketch \xff\x00'
+upload_mark
+  > POST /marks [application/octet-stream]
+  upload_mark(body=Mark.final)
+  < 200 application/octet-stream
+  = Mark.final
+upload_mark refused
+  > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = Tag.final
+upload_tag refused
+  > POST /tags [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_stamp
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'\xff\x00ok')
+  < 200 application/octet-stream
+  = b'\xff\x00ok'
+upload_stamp too long
+  ! DecodeError: DecodeError(operation_id='uploadStamp', reason='unencodable', location='body') [operation_id='uploadStamp', location=('body',), body_bytes=b'', truncated=False, cause=ValidationError('Expected `bytes` of length <= 4')] unencodable
+upload_stamp too long past the client
+  > POST /stamps [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'bytes_too_long', 'loc': ['body'], 'msg': 'Data should have at most 4 bytes'}]})
+download_stamp too long
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  > GET /stamps
+  download_stamp()
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='downloadStamp', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+download_raw_stamp too long
+  > GET /stamps/raw
+  download_raw_stamp()
+  < 200 application/octet-stream
+  ! DecodeError: DecodeError(status_code=200, operation_id='downloadRawStamp', reason='invalid_value') [operation_id='downloadRawStamp', body_bytes=b'far too long', truncated=False, cause=ValidationError('Expected `bytes` of length <= 4')] invalid_value

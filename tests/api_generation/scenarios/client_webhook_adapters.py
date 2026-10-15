@@ -703,13 +703,10 @@ def _calls(hooks: Adapters) -> None:
 
 
 def _limits(hooks: Adapters) -> None:
-    """Refuse wrong arguments and oversized deliveries before calling the verifier."""
+    """Refuse wrong arguments and oversized key sets before calling the verifier."""
     options = hooks.protocols.WebhookOptions
     many = hooks.key_set(*((f"key-{index}", _STRIPE_SECRET) for index in range(9)))
-    octets = sum(len(name) + len(value) for name, value in STRIPE_INVOICE.headers)
     for label, changes in (
-        ("body over limit", {"options": options(max_body_bytes=len(_INVOICE) - 1)}),
-        ("headers over limit", {"options": options(max_header_bytes=octets - 1)}),
         ("nine keys", {"keys": many}),
         ("nine keys allowed", {"keys": many, "options": options(max_keys=9)}),
         ("two signatures over the adapter's limit", {"options": options(max_signatures=1)}),
@@ -772,39 +769,27 @@ def webhook_unsigned(package: ModuleType, lines: list[str]) -> None:
     single, mapped = hooks.helper("unsigned.message"), hooks.helper("unsigned.event")
     lines.append(f"  public names={single.__all__} has verify={hasattr(single, 'verify')}")
     invoice = b'{"meta": {"type": "invoice.paid"}, "type": "invoice", "id": "in_1", "amount": 5}'
-    for label, module, body, options in (
-        ("message", single, b'{"test": 1}', None),
-        ("invoice by nested type", mapped, invoice, None),
-        (
-            "customer",
-            mapped,
-            b'{"meta": {"type": "customer.created"}, "type": "c", "id": "cus_1", "email": "a@b"}',
-            None,
-        ),
-        ("no type member", mapped, b'{"id": "in_1"}', None),
-        ("meta not an object", mapped, b'{"meta": 1}', None),
-        ("null type", mapped, b'{"meta": {"type": null}}', None),
-        ("numeric type", mapped, b'{"meta": {"type": 1}}', None),
-        ("list type", mapped, b'{"meta": {"type": ["invoice.paid"]}}', None),
-        ("unknown type", mapped, b'{"meta": {"type": "invoice.voided"}}', None),
-        ("type in another case", mapped, b'{"meta": {"type": "Invoice.paid"}}', None),
-        ("type with a space", mapped, b'{"meta": {"type": "invoice.paid "}}', None),
-        ("known type, invalid event", mapped, b'{"meta": {"type": "invoice.paid"}, "id": "in_1"}', None),
-        ("not JSON", mapped, b"{", None),
-        ("body at limit", single, b'{"test": 1}', {"max_body_bytes": 11}),
-        ("body over limit", single, b'{"test": 1}', {"max_body_bytes": 10}),
-        ("text body", single, '{"test": 1}', None),
-        ("bytearray body", single, bytearray(b'{"test": 1}'), None),
+    for label, module, body in (
+        ("message", single, b'{"test": 1}'),
+        ("invoice by nested type", mapped, invoice),
+        ("customer", mapped, b'{"meta": {"type": "customer.created"}, "type": "c", "id": "cus_1", "email": "a@b"}'),
+        ("no type member", mapped, b'{"id": "in_1"}'),
+        ("meta not an object", mapped, b'{"meta": 1}'),
+        ("null type", mapped, b'{"meta": {"type": null}}'),
+        ("numeric type", mapped, b'{"meta": {"type": 1}}'),
+        ("list type", mapped, b'{"meta": {"type": ["invoice.paid"]}}'),
+        ("unknown type", mapped, b'{"meta": {"type": "invoice.voided"}}'),
+        ("type in another case", mapped, b'{"meta": {"type": "Invoice.paid"}}'),
+        ("type with a space", mapped, b'{"meta": {"type": "invoice.paid "}}'),
+        ("known type, invalid event", mapped, b'{"meta": {"type": "invoice.paid"}, "id": "in_1"}'),
+        ("not JSON", mapped, b"{"),
+        ("text body", single, '{"test": 1}'),
+        ("bytearray body", single, bytearray(b'{"test": 1}')),
     ):
-        arguments = {} if options is None else {"options": hooks.protocols.WebhookOptions(**options)}
-        record(
-            lines,
-            label,
-            lambda module=module, body=body, arguments=arguments: module.decode_unverified(body, **arguments),
-        )
-    record(lines, "options mapping", lambda: single.decode_unverified(b'{"test": 1}', options={"max_body_bytes": 1}))
+        record(lines, label, lambda module=module, body=body: module.decode_unverified(body))
     positional = failure(lambda: single.decode_unverified(b'{"test": 1}', []))
-    lines.append(f"  headers argument={positional}")
+    options = failure(lambda: single.decode_unverified(b'{"test": 1}', options=None))
+    lines.append(f"  headers argument={positional} options argument={options}")
 
 
 def webhook_mapped_backends(package: ModuleType, lines: list[str]) -> None:

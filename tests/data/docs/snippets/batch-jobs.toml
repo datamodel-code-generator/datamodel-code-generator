@@ -1,0 +1,21 @@
+[tool.datamodel-codegen]
+input-file-type = "openapi"
+output-model-type = "pydantic_v2.BaseModel"
+openapi-scopes = ["schemas", "api"]
+preset = "<newest-standard-py312-preset>"
+disable-timestamp = true
+
+[tool.datamodel-codegen.profiles.server]
+generate-server = "fastapi"
+server-package = "app.server"
+server-model-package = "app.models"
+
+[tool.datamodel-codegen.jobs.schemas]
+input = "openapi.yaml"
+output = "client/schemas.py"
+
+[tool.datamodel-codegen.jobs.server]
+profile = "server"
+input = "openapi.yaml"
+output = "app/models.py"
+server-output = "app/server"

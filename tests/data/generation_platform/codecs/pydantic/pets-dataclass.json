@@ -5,6 +5,8 @@
   "cases": [
     {"name": "create-server-decode", "use": "/paths/~1pets/post request_body", "op": "decode",
      "value": {"name": "Mimi", "status": "new", "password": "pw"}},
+    {"name": "patch-server-decode-absent", "use": "/paths/~1pets~1{id}/patch request_body", "op": "decode",
+     "value": {"name": "B"}},
     {"name": "create-client-from-wire", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "from_wire",
      "value": {"id": 7, "name": "Mimi", "status": "new", "extra": true}},
     {"name": "create-client-encode-native", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode",

@@ -24,7 +24,15 @@
             "message": "MISSING: nested/server/README.md (file does not exist but should be generated)",
             "diff": null
           }
-        ]
+        ],
+        "target": {
+          "package": "server",
+          "dependencies": [
+            "fastapi>=0.141.1",
+            "pydantic>=2.14.0",
+            "typing-extensions>=4.16"
+          ]
+        }
       }
     },
     {
@@ -48,7 +56,15 @@
             "message": "MISSING: modular/server/services.py (should be generated)",
             "diff": null
           }
-        ]
+        ],
+        "target": {
+          "package": "server",
+          "dependencies": [
+            "fastapi>=0.141.1",
+            "pydantic>=2.14.0",
+            "typing-extensions>=4.16"
+          ]
+        }
       }
     }
   ]

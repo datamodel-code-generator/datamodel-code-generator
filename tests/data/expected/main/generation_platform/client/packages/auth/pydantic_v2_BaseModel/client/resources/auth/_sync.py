@@ -250,7 +250,7 @@ class AuthResource:
         theme: str,
         page: int,
         X_Trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
+        filter: models.ApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> CookieParametersResponse:
@@ -694,7 +694,7 @@ class AuthWithResponse:
         theme: str,
         page: int,
         X_Trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
+        filter: models.ApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[CookieParametersResponse]:
@@ -1138,7 +1138,7 @@ class AuthWithRawResponse:
         theme: str,
         page: int,
         X_Trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
+        filter: models.ApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -1582,7 +1582,7 @@ class AuthWithStreamingResponse:
         theme: str,
         page: int,
         X_Trace: str,
-        filter: models.FieldApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
+        filter: models.ApiKeyCookieParametersGetQueryFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/octet-stream'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

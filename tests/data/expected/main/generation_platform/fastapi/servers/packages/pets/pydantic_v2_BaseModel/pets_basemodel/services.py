@@ -25,11 +25,11 @@ class PetsService(Protocol):
         *,
         limit: int,
         tags: list[str] | None,
-        kind: pets_basemodel_models.FieldPetsGetQueryKindParameter | None,
+        kind: pets_basemodel_models.PetsGetQueryKindParameter | None,
         X_Request_Id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
-    ) -> pets_basemodel_models.FieldPetsGetResponse | HTTPResult[pets_basemodel_models.FieldPetsGetResponse | pets_basemodel_models.Error] | Response:
+    ) -> pets_basemodel_models.PetsGetResponse | HTTPResult[pets_basemodel_models.PetsGetResponse | pets_basemodel_models.Error] | Response:
         """
         Handle GET /pets.
         """
@@ -47,7 +47,7 @@ class PetsService(Protocol):
     @abstractmethod
     def list_my_pets(
         self,
-    ) -> pets_basemodel_models.FieldPetsMineGetResponse | HTTPResult[pets_basemodel_models.FieldPetsMineGetResponse] | Response:
+    ) -> pets_basemodel_models.PetsMineGetResponse | HTTPResult[pets_basemodel_models.PetsMineGetResponse] | Response:
         """
         Handle GET /pets/mine.
         """
@@ -79,7 +79,7 @@ class StoreService(Protocol):
     @abstractmethod
     def get_inventory(
         self,
-    ) -> pets_basemodel_models.FieldStoreInventoryGetResponse | HTTPResult[pets_basemodel_models.FieldStoreInventoryGetResponse] | Response:
+    ) -> pets_basemodel_models.StoreInventoryGetResponse | HTTPResult[pets_basemodel_models.StoreInventoryGetResponse] | Response:
         """
         Handle GET /store/inventory.
         """

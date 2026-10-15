@@ -44,7 +44,7 @@ class OrdersResource:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
@@ -70,7 +70,7 @@ class OrdersWithResponse:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
@@ -96,7 +96,7 @@ class OrdersWithRawResponse:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> RawResponse:
@@ -122,7 +122,7 @@ class OrdersWithStreamingResponse:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractContextManager[RawResponse]:

@@ -8,17 +8,17 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldCaseGetResponse]] = PydanticCodec(models.FieldCaseGetResponse)
+codec_0: Final[PydanticCodec[models.CaseGetResponse]] = PydanticCodec(models.CaseGetResponse)
 """Codec of /paths/~1case/get response_body (response 200 application/json)."""
 
-codec_1: Final[PydanticCodec[models.FieldCaseGetResponse1]] = PydanticCodec(models.FieldCaseGetResponse1)
+codec_1: Final[PydanticCodec[models.CaseGetResponse1]] = PydanticCodec(models.CaseGetResponse1)
 """Codec of /paths/~1case/additionalOperations/get response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticCodec[models.FieldCaseGetResponse2]] = PydanticCodec(models.FieldCaseGetResponse2)
+codec_2: Final[PydanticCodec[models.CaseGetResponse2]] = PydanticCodec(models.CaseGetResponse2)
 """Codec of /paths/~1case/additionalOperations/GeT response_body (response 200 application/json)."""
 
-codec_3: Final[PydanticCodec[models.FieldCaseQueryResponse]] = PydanticCodec(models.FieldCaseQueryResponse)
+codec_3: Final[PydanticCodec[models.CaseQueryResponse]] = PydanticCodec(models.CaseQueryResponse)
 """Codec of /paths/~1case/additionalOperations/query response_body (response 200 application/json)."""

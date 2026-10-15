@@ -10,11 +10,13 @@ import pytest
 pytest.importorskip("httpx2")
 
 from tests.api_generation.scenarios.client_allowreserved import reserved_version_report
+from tests.api_generation.support.client_generation import client_readme_report
 from tests.api_generation.support.client_runtime import client_copied_runtime_report
 from tests.api_generation.support.client_scenarios import BACKENDS, SCENARIOS, client_runtime_report
 from tests.conftest import assert_generated_modules_output, assert_output
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/runtime"
+README_EXAMPLES = Path(__file__).parents[1] / "data/expected/main/generation_platform/client/readme-examples"
 
 
 def test_client_copied_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -43,3 +45,13 @@ def test_client_runtime(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         assert_output(report, EXPECTED / f"{case}.txt")
         return
     assert_output(client_runtime_report(case, tmp_path), EXPECTED / f"{case}.txt")
+
+
+@pytest.mark.parametrize("case", ["pets", "auth", "streams", "sockets", "ndjson-split"])
+def test_client_readme_examples(case: str, tmp_path: Path) -> None:
+    """Run the quick start, asynchronous, and error examples of a client README as far as they run without an API.
+
+    The quick start calls the first operation that is a plain request and response; a client without one opens the
+    first operation that has a WebSocket or stream helper through that helper, as WebSockets and streams are read.
+    """
+    assert_output(client_readme_report(case, tmp_path), README_EXAMPLES / f"{case}.txt")

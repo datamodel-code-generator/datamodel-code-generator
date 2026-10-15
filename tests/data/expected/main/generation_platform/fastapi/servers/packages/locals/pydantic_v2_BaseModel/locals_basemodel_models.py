@@ -5,40 +5,40 @@ from __future__ import annotations
 
 from typing_extensions import TypeAliasType
 
-FieldRouterGetQueryWiringParameter = TypeAliasType("FieldRouterGetQueryWiringParameter", str)
+RouterGetQueryWiringParameter = TypeAliasType("RouterGetQueryWiringParameter", str)
 
 
-FieldRouterGetQueryRouterHandlerParameter = TypeAliasType("FieldRouterGetQueryRouterHandlerParameter", str)
+RouterGetQueryRouterHandlerParameter = TypeAliasType("RouterGetQueryRouterHandlerParameter", str)
 
 
-FieldRouterGetQueryRouterPrincipalParameter = TypeAliasType("FieldRouterGetQueryRouterPrincipalParameter", str)
+RouterGetQueryRouterPrincipalParameter = TypeAliasType("RouterGetQueryRouterPrincipalParameter", str)
 
 
-FieldRouterGetQueryRouterAuthorizeParameter = TypeAliasType("FieldRouterGetQueryRouterAuthorizeParameter", str)
+RouterGetQueryRouterAuthorizeParameter = TypeAliasType("RouterGetQueryRouterAuthorizeParameter", str)
 
 
-FieldRouterGetQueryApiKeyParameter = TypeAliasType("FieldRouterGetQueryApiKeyParameter", str)
+RouterGetQueryApiKeyParameter = TypeAliasType("RouterGetQueryApiKeyParameter", str)
 
 
-FieldRouterGetCookieParametersParameter = TypeAliasType("FieldRouterGetCookieParametersParameter", str)
+RouterGetCookieParametersParameter = TypeAliasType("RouterGetCookieParametersParameter", str)
 
 
-FieldWiringGetQueryRouterParameter = TypeAliasType("FieldWiringGetQueryRouterParameter", str)
+WiringGetQueryRouterParameter = TypeAliasType("WiringGetQueryRouterParameter", str)
 
 
-FieldWiringGetQueryContractParameter = TypeAliasType("FieldWiringGetQueryContractParameter", str)
+WiringGetQueryContractParameter = TypeAliasType("WiringGetQueryContractParameter", str)
 
 
-FieldWiringGetQueryDispatchParameter = TypeAliasType("FieldWiringGetQueryDispatchParameter", str)
+WiringGetQueryDispatchParameter = TypeAliasType("WiringGetQueryDispatchParameter", str)
 
 
-FieldWiringGetQueryCheckedParameter = TypeAliasType("FieldWiringGetQueryCheckedParameter", str)
+WiringGetQueryCheckedParameter = TypeAliasType("WiringGetQueryCheckedParameter", str)
 
 
-FieldWiringGetCookieWiringHandlerParameter = TypeAliasType("FieldWiringGetCookieWiringHandlerParameter", str)
+WiringGetCookieWiringHandlerParameter = TypeAliasType("WiringGetCookieWiringHandlerParameter", str)
 
 
-FieldSecurityGetQuerySecurityParameter = TypeAliasType("FieldSecurityGetQuerySecurityParameter", str)
+SecurityGetQuerySecurityParameter = TypeAliasType("SecurityGetQuerySecurityParameter", str)
 
 
-FieldSecurityGetQueryAuthenticateHandlerParameter = TypeAliasType("FieldSecurityGetQueryAuthenticateHandlerParameter", str)
+SecurityGetQueryAuthenticateHandlerParameter = TypeAliasType("SecurityGetQueryAuthenticateHandlerParameter", str)

@@ -44,7 +44,7 @@ class AsyncOrdersResource:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> GetOrderResponse:
@@ -70,7 +70,7 @@ class AsyncOrdersWithResponse:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[GetOrderResponse]:
@@ -96,7 +96,7 @@ class AsyncOrdersWithRawResponse:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -122,7 +122,7 @@ class AsyncOrdersWithStreamingResponse:
         self,
         *,
         orderId: int,
-        view: models.FieldOrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
+        view: models.OrdersOrderIdGetQueryViewParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

@@ -21,6 +21,7 @@ from datamodel_code_generator import (
     OpenAPIScope,
     PythonVersion,
     ServerType,
+    TargetPydanticVersion,
     generate,
     load_pyproject_config,
 )
@@ -95,7 +96,12 @@ def _as_text(root: Path, *path: str) -> Path:
 
 
 def _compare_written(modules: Any, root: Path) -> None:
-    """Compare every returned file with the file a write run left at the same path under root."""
+    """Compare every returned file with the file a write run left at the same path under root.
+
+    The write run also writes the stubs of the user's `services` modules, which a run without an output never returns.
+    """
+    for services in [path for path in root.rglob("services") if path.is_dir()]:
+        shutil.rmtree(services)
     python, other = _split(modules)
     assert_generated_modules_output(python, root)
     for path, text in other.items():
@@ -180,6 +186,11 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
             "--generate-client requires --client-package and --client-model-package",
         ),
         ({**SERVER, **CLIENT}, "--generate-server and --generate-client cannot be used together"),
+        ({**SERVER, "input_file_type": "auto"}, "--generate-server requires --input-file-type openapi, not auto"),
+        (
+            {**CLIENT, "input_file_type": InputFileType.JsonSchema},
+            "--generate-client requires --input-file-type openapi, not jsonschema",
+        ),
         ({**SERVER, "openapi_scopes": ["schemas"]}, "--generate-server requires --openapi-scopes to include api"),
         (
             {**SERVER, "output_model_type": "msgspec.Struct"},
@@ -191,6 +202,78 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         (
             {**SERVER, "target_python_version": "3.10"},
             "--target-python-version: The fastapi target needs a target Python version of 3.11 or later",
+        ),
+        (
+            {**SERVER, "target_pydantic_version": "2.12"},
+            (
+                "--target-pydantic-version: The fastapi target needs a target pydantic version of 2.14 or later; "
+                "leave it unset or use '2.14'"
+            ),
+        ),
+        (
+            {**CLIENT, "target_pydantic_version": TargetPydanticVersion.V2},
+            (
+                "--target-pydantic-version: The client target needs a target pydantic version of 2.14 or later; "
+                "leave it unset or use '2.14'"
+            ),
+        ),
+        (
+            {**CLIENT, "output_model_type": "pydantic_v2.dataclass", "use_missing_sentinel": False},
+            (
+                "The client target needs --use-missing-sentinel with --target-pydantic-version 2.14 for "
+                "'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None"
+            ),
+        ),
+        (
+            {**SERVER, "use_missing_sentinel": True, "target_pydantic_version": "2.11"},
+            (
+                "The fastapi target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the "
+                "models import MISSING from pydantic"
+            ),
+        ),
+        (
+            {
+                **CLIENT,
+                "use_missing_sentinel": True,
+                "output_model_type": "pydantic_v2.dataclass",
+                "target_pydantic_version": "2.12",
+            },
+            (
+                "The client target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the "
+                "models import MISSING from pydantic"
+            ),
+        ),
+        (
+            {**CLIENT, "output_model_type": "pydantic_v2.dataclass", "target_pydantic_version": "2.11"},
+            (
+                "The client target needs --target-pydantic-version 2.14 for --use-missing-sentinel, which it sets for "
+                "'pydantic_v2.dataclass' models, so that the models import MISSING from pydantic"
+            ),
+        ),
+        (
+            {
+                **CLIENT,
+                "output_model_type": "msgspec.Struct",
+                "use_msgspec_tagged_unions": False,
+                "use_msgspec_nullable_enum_alias": False,
+            },
+            (
+                "The client target needs --use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their "
+                "discriminated unions can be decoded; The client target needs --use-msgspec-nullable-enum-alias for "
+                "'msgspec.Struct' models, so that their enums that list null can be decoded"
+            ),
+        ),
+        (
+            {
+                **CLIENT,
+                "output_model_type": "msgspec.Struct",
+                "use_msgspec_tagged_unions": True,
+                "use_msgspec_nullable_enum_alias": False,
+            },
+            (
+                "The client target needs --use-msgspec-nullable-enum-alias for 'msgspec.Struct' models, so that their "
+                "enums that list null can be decoded"
+            ),
         ),
         (
             {**SERVER, "server_primary_responses": {"/paths/~1pets/post": {"status_code": 700}}},
@@ -216,9 +299,19 @@ def test_generate_server_options_without_selector(tmp_path: Path, monkeypatch: p
         "requires-package",
         "client-requires-package",
         "both",
+        "input-file-type",
+        "client-input-file-type",
         "api-scope",
         "backend",
         "target-python",
+        "target-pydantic",
+        "client-target-pydantic",
+        "client-dataclass-sentinel",
+        "sentinel-target-2.11",
+        "client-dataclass-sentinel-target",
+        "client-dataclass-implied-sentinel-target",
+        "client-msgspec-options",
+        "client-msgspec-nullable-enum-alias",
         "json-value",
         "package",
         "keyed",
@@ -457,3 +550,42 @@ def test_generate_client_without_output(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.chdir(write)
     generate(_client(write), **MODELS, **CLIENT, output=Path("models.py"), client_output=Path("client"))
     _compare_written(modules, write)
+
+
+@pytest.mark.parametrize(
+    ("backend", "given"),
+    [
+        (DataModelType.PydanticV2BaseModel, {}),
+        (
+            DataModelType.PydanticV2Dataclass,
+            {"use_missing_sentinel": True, "target_pydantic_version": TargetPydanticVersion.V2_14},
+        ),
+    ],
+    ids=["basemodel", "dataclass"],
+)
+def test_generate_server_implied_settings(
+    backend: DataModelType,
+    given: dict[str, Any],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Set the model settings the server needs that the arguments leave unset, silently, as generate() runs."""
+    monkeypatch.chdir(tmp_path)
+    source = _server(tmp_path)
+    unset = {key: value for key, value in MODELS.items() if key not in {"openapi_scopes", "target_python_version"}}
+    generate(
+        source,
+        **{**unset, "output_model_type": backend},
+        **SERVER,
+        output=Path("models.py"),
+        server_output=Path("server"),
+    )
+    printed = capsys.readouterr()
+    explicit = {**MODELS, "output_model_type": backend, **given}
+    generate(source, **explicit, output=Path("given.py"))
+    same = (tmp_path / "given.py").read_text(encoding="utf-8") == (tmp_path / "models.py").read_text(encoding="utf-8")
+    assert_output(
+        f"printed {printed.out + printed.err!r}; models equal those of a model-only run given the settings: {same}\n",
+        GENERATE / "implied.txt",
+    )

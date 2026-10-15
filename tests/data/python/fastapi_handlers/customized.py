@@ -23,8 +23,8 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append(f"handle_move_pet(petId={petId!r})")
             return server.HTTPResult(201, headers={"Location": f"/pets/{petId}"})
 
-    class Untagged(server.services.UntaggedService):
+    class Default(server.services.DefaultService):
         async def handle_get_health(self) -> None:
             calls.append("handle_get_health()")
 
-    return {"default": {"pets": Pets(), "untagged": Untagged()}}
+    return {"default": {"pets": Pets(), "default": Default()}}

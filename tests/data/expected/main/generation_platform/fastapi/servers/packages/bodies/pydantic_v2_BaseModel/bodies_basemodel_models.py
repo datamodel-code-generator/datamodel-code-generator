@@ -3,7 +3,8 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from enum import Enum
+from typing import Any, Dict
 
 from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
 
@@ -28,47 +29,94 @@ class Check(BaseModel):
     scores: list[conint(ge=0)] | None = None
 
 
-class FieldProfilesPostRequest(BaseModel):
+class Filter(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    color: str | None = None
+    minAge: conint(ge=0) | None = None
+
+
+class Search(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    filter: Filter | None = None
+    limit: int | None = None
+
+
+class Others(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    base: str | None = None
+
+
+class Level(Enum):
+    int_1 = 1
+    a = 'a'
+    bool_True = True
+
+
+class Choices(BaseModel):
+    either: Filter | str | None = None
+    level: Level | None = None
+    words: list[str] | str | None = None
+    lists: list[int] | list[str] | None = None
+
+
+class Anythings(BaseModel):
+    anything: Any | None = None
+    many: list[Any] | None = None
+
+
+class ProfilesPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     a: int | None = None
 
 
-class FieldProfilesPostRequest1(BaseModel):
+class ProfilesPostRequest1(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     b: str | None = None
 
 
-class FieldVariantsPostRequest(BaseModel):
+class VariantsPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     a: int | None = None
 
 
-class FieldVariantsPostRequest1(BaseModel):
+class VariantsPostRequest1(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     c: bool | None = None
 
 
-class FieldVariantsPostRequest2(BaseModel):
+class VariantsPostRequest2(BaseModel):
     tags: list[str] | None = None
 
 
-class FieldDocumentsPutRequest(RootModel[constr(max_length=5)]):
+class DocumentsPutRequest(RootModel[constr(max_length=5)]):
     root: constr(max_length=5)
 
 
-class FieldArchivesPutRequest(RootModel[constr(max_length=5)]):
+class ArchivesPutRequest(RootModel[constr(max_length=5)]):
     root: constr(max_length=5)
 
 
-class FieldFormsPostRequest(BaseModel):
+class FormsPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -80,19 +128,138 @@ class FieldFormsPostRequest(BaseModel):
     count: int | None = None
 
 
-class FieldNativeFormsPostRequest(BaseModel):
+class NativeFormsPostRequest(BaseModel):
     name: str
     count: int | None = 1
 
 
-class FieldUploadsPostRequest(BaseModel):
+class UploadsPostRequest(BaseModel):
     file: bytes
     note: str | None = None
 
 
-class FieldNotesPostRequest(RootModel[Item | None]):
+class SearchesPostRequest(BaseModel):
+    filter: Filter
+    filters: list[Filter] | None = None
+    tags: list[str] | None = None
+    limit: int | None = None
+
+
+class ChoiceFilesPostRequest(Choices):
+    file: bytes | None = None
+
+
+class ExtrasPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    name: str | None = None
+
+
+class ExtraListsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[Filter]],
+    }
+    name: str | None = None
+
+
+class ExtraCountsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, conint(ge=0)],
+    }
+    name: str | None = None
+
+
+class ExtraFilesPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[Filter]],
+    }
+    file: bytes | None = None
+    name: str | None = None
+
+
+class ExtraScoresPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[conint(ge=0)]],
+    }
+    name: str | None = None
+
+
+class ExtraBasesPostRequest(Others):
+    name: str | None = None
+
+
+class ClosedFormsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = None
+
+
+class NullableSearchesPostRequest(RootModel[Search | None]):
+    root: Search | None
+
+
+class ClosedPartsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = None
+
+
+class NotesPostRequest(RootModel[Item | None]):
     root: Item | None
 
 
-class FieldRawPostRequest(BaseModel):
+class LabelsPostRequest(RootModel[constr(max_length=5) | None]):
+    root: constr(max_length=5) | None
+
+
+class RawPostRequest(BaseModel):
     pass
+
+
+class AnythingExtrasPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    anything: Any | None = None
+
+
+class AnythingFilesPostRequest(Anythings):
+    file: bytes | None = None
+
+
+class UntypedOthersPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Any],
+    }
+    name: str | None = None
+
+
+class OpenOthersPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    name: str | None = None

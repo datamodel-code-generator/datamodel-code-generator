@@ -107,14 +107,14 @@ ShortLabelAlias = TypeAliasType(
 )
 
 
-FieldLabelsGetQueryPrefixParameter = TypeAliasType(
-    "FieldLabelsGetQueryPrefixParameter", Annotated[str, Field(min_length=1)]
+LabelsGetQueryPrefixParameter = TypeAliasType(
+    "LabelsGetQueryPrefixParameter", Annotated[str, Field(min_length=1)]
 )
 
 
-FieldLabelsGetResponse = TypeAliasType("FieldLabelsGetResponse", list[Label])
+LabelsGetResponse = TypeAliasType("LabelsGetResponse", list[Label])
 
 
-FieldLabelsGetResponse200XTotalHeader = TypeAliasType(
-    "FieldLabelsGetResponse200XTotalHeader", Annotated[int, Field(ge=0)]
+LabelsGetResponse200XTotalHeader = TypeAliasType(
+    "LabelsGetResponse200XTotalHeader", Annotated[int, Field(ge=0)]
 )

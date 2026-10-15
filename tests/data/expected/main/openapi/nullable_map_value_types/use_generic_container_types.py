@@ -65,8 +65,8 @@ class Board(BaseModel):
     fixed: Mapping[str, int] = None
 
 
-FieldScoresGetQueryPlayersParameter = TypeAliasType("FieldScoresGetQueryPlayersParameter", Mapping[str, Player] | None)
+ScoresGetQueryPlayersParameter = TypeAliasType("ScoresGetQueryPlayersParameter", Mapping[str, Player] | None)
 
 
-class FieldScoresPostRequest(RootModel[Mapping[str, int] | None]):
+class ScoresPostRequest(RootModel[Mapping[str, int] | None]):
     root: Mapping[str, int] | None

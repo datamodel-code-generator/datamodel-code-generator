@@ -76,10 +76,10 @@ class MismatchAlias(Mismatch):
 ShortLabelAlias: TypeAlias = str
 
 
-FieldLabelsGetQueryPrefixParameter: TypeAlias = str
+LabelsGetQueryPrefixParameter: TypeAlias = str
 
 
-FieldLabelsGetResponse: TypeAlias = list[Label]
+LabelsGetResponse: TypeAlias = list[Label]
 
 
-FieldLabelsGetResponse200XTotalHeader: TypeAlias = int
+LabelsGetResponse200XTotalHeader: TypeAlias = int

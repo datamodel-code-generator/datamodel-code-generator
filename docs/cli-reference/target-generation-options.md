@@ -47,7 +47,7 @@ overrides it for that operation.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-body-arguments both # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-body-arguments both # (1)!
     ```
 
     1. :material-arrow-left: `--client-body-arguments` - the option documented here
@@ -464,7 +464,7 @@ servers keep them.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-default-base-url https://api.example.com/v1 # (1)!
+    datamodel-codegen --input options-unserved.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-default-base-url https://api.example.com/v1 # (1)!
     ```
 
     1. :material-arrow-left: `--client-default-base-url` - the option documented here
@@ -603,7 +603,7 @@ generates.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--client-model-package` - the option documented here
@@ -929,7 +929,7 @@ such as `{"application/json": {"petName": "pet_name"}}`), and `runtime`: `reques
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-operations '{"/paths/~1pets/get": {"name": "list_all", "parameter_names": {"query:limit": "page_size"}}}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-operations '{"/paths/~1pets/get": {"name": "list_all", "parameter_names": {"query:limit": "page_size"}}}' # (1)!
     ```
 
     1. :material-arrow-left: `--client-operations` - the option documented here
@@ -1247,7 +1247,7 @@ directory, and the `client-output` key of pyproject.toml is relative to the pypr
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--client-output` - the option documented here
@@ -1564,7 +1564,7 @@ generation prints name the package by it; the package imports its own modules re
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--client-package` - the option documented here
@@ -1884,7 +1884,7 @@ references name resolve against the directory of the JSON file that holds them, 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-protocols protocols.json # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-protocols protocols.json # (1)!
     ```
 
     1. :material-arrow-left: `--client-protocols` - the option documented here
@@ -2103,7 +2103,8 @@ references name resolve against the directory of the JSON file that holds them, 
 Name the resources of tags (experimental).
 
 The JSON object, inline or in a file, maps a tag to the dotted namespace of the resource its operations join, such
-as `{"pets": "store.pets"}` for `client.store.pets`. Other operations join the resource of their first tag. In
+as `{"pets": "store.pets"}` for `client.store.pets`. Other operations join the resource of their first tag, and
+operations without a tag join the resource `default`. In
 pyproject.toml, `client-resource-names` is a table, and a command-line value replaces the whole table.
 
 **Option relationships:**
@@ -2113,7 +2114,7 @@ pyproject.toml, `client-resource-names` is a table, and a command-line value rep
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-resource-names '{"pets": "animals"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-resource-names '{"pets": "animals"}' # (1)!
     ```
 
     1. :material-arrow-left: `--client-resource-names` - the option documented here
@@ -2430,7 +2431,7 @@ against the document's URL when it is read from one.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-server-base-url https://api.example.com/ # (1)!
+    datamodel-codegen --input options-relative.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-server-base-url https://api.example.com/ # (1)!
     ```
 
     1. :material-arrow-left: `--client-server-base-url` - the option documented here
@@ -2561,8 +2562,8 @@ against the document's URL when it is read from one.
 
 Declare the arguments of the operation methods (experimental).
 
-`explicit` (the default) declares each argument as a keyword parameter; `unpack` declares one
-`**kwargs: Unpack[TypedDict]` per operation, whose keys are the same arguments.
+`explicit` (the default) declares each argument as a keyword parameter; `unpack` declares
+`**kwargs: Unpack[TypedDict]` with one TypedDict per overload of each operation, whose keys are the same arguments.
 
 **Option relationships:**
 
@@ -2571,7 +2572,7 @@ Declare the arguments of the operation methods (experimental).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-signature-style unpack # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-signature-style unpack # (1)!
     ```
 
     1. :material-arrow-left: `--client-signature-style` - the option documented here
@@ -2870,12 +2871,13 @@ or later. Like every client setting, it can also be set in `[tool.datamodel-code
 - **Requires:** [`--client-output`](target-generation-options.md#client-output) - `--generate-client` requires `--client-output`.
 - **Requires:** [`--client-package`](target-generation-options.md#client-package) - `--generate-client` requires `--client-package`.
 - **Requires:** [`--client-model-package`](target-generation-options.md#client-model-package) - `--generate-client` requires `--client-model-package`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-client` requires `--input-file-type openapi`.
 - **Conflicts:** [`--generate-server`](target-generation-options.md#generate-server) - `--generate-client` can not be used with `--generate-server`.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--generate-client` - the option documented here
@@ -3193,12 +3195,13 @@ pyproject.toml, here as `generate-server = "fastapi"`.
 - **Requires:** [`--server-output`](target-generation-options.md#server-output) - `--generate-server` requires `--server-output`.
 - **Requires:** [`--server-package`](target-generation-options.md#server-package) - `--generate-server` requires `--server-package`.
 - **Requires:** [`--server-model-package`](target-generation-options.md#server-model-package) - `--generate-server` requires `--server-model-package`.
+- **Requires:** [`--input-file-type`](base-options.md#input-file-type) = `openapi` - `--generate-server` requires `--input-file-type openapi`.
 - **Conflicts:** [`--generate-client`](target-generation-options.md#generate-client) - `--generate-server` can not be used with `--generate-client`.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--generate-server` - the option documented here
@@ -3293,7 +3296,7 @@ pyproject.toml, here as `generate-server = "fastapi"`.
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -3338,7 +3341,7 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-mode request # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-mode request # (1)!
     ```
 
     1. :material-arrow-left: `--server-body-mode` - the option documented here
@@ -3434,7 +3437,7 @@ for methods that read the body themselves. `--server-body-modes` overrides it fo
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -3480,7 +3483,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-modes '{"/paths/~1pets~1{name}/put": "request"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-body-modes '{"/paths/~1pets~1{name}/put": "request"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-body-modes` - the option documented here
@@ -3576,7 +3579,7 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -3621,7 +3624,7 @@ methods. `--server-handler-modes` overrides it for single operations.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-mode async # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-mode async # (1)!
     ```
 
     1. :material-arrow-left: `--server-handler-mode` - the option documented here
@@ -3716,7 +3719,7 @@ methods. `--server-handler-modes` overrides it for single operations.
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -3765,7 +3768,7 @@ table.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-modes '{"/paths/~1pets/post": "async"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-handler-modes '{"/paths/~1pets/post": "async"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-handler-modes` - the option documented here
@@ -3860,7 +3863,7 @@ table.
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -3905,7 +3908,7 @@ Each service method takes a `request` keyword argument as well as the operation'
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-include-request # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-include-request # (1)!
     ```
 
     1. :material-arrow-left: `--server-include-request` - the option documented here
@@ -4002,7 +4005,7 @@ Each service method takes a `request` keyword argument as well as the operation'
             *,
             request: Request,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -4049,7 +4052,7 @@ Choose how the server package lays out its routes (experimental).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-layout single # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-layout single # (1)!
     ```
 
     1. :material-arrow-left: `--server-layout` - the option documented here
@@ -4147,6 +4150,7 @@ Choose how the server package lays out its routes (experimental).
         list_pets_handler = checked(
             service.list_pets,
             'The service.list_pets method of GET /pets',
+            ('limit',),
         )
 
         def list_pets(
@@ -4165,7 +4169,7 @@ Choose how the server package lays out its routes (experimental).
             list_pets,
             methods=['GET'],
             status_code=200,
-            response_model=models.FieldPetsGetResponse,
+            response_model=models.PetsGetResponse,
             response_model_by_alias=True,
             response_model_exclude_unset=True,
             operation_id='listPets',
@@ -4183,6 +4187,7 @@ Choose how the server package lays out its routes (experimental).
         create_pet_handler = checked(
             service.create_pet,
             'The service.create_pet method of POST /pets',
+            ('body',),
         )
 
         def create_pet(
@@ -4219,6 +4224,7 @@ Choose how the server package lays out its routes (experimental).
         replace_pet_handler = checked(
             service.replace_pet,
             'The service.replace_pet method of PUT /pets/{name}',
+            ('name', 'body'),
         )
 
         def replace_pet(
@@ -4292,7 +4298,7 @@ generates.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--server-model-package` - the option documented here
@@ -4387,7 +4393,7 @@ generates.
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -4433,7 +4439,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-operation-names '{"/paths/~1pets/get": "list_all"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-operation-names '{"/paths/~1pets/get": "list_all"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-operation-names` - the option documented here
@@ -4528,7 +4534,7 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -4574,7 +4580,7 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--server-output` - the option documented here
@@ -4669,7 +4675,7 @@ directory, and the `server-output` key of pyproject.toml is relative to the pypr
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -4714,7 +4720,7 @@ generation prints name the package by it; the package imports its own modules re
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models # (1)!
     ```
 
     1. :material-arrow-left: `--server-package` - the option documented here
@@ -4809,7 +4815,7 @@ generation prints name the package by it; the package imports its own modules re
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -4855,7 +4861,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-parameter-names '{"/paths/~1pets/get": {"query:limit": "page_size"}}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-parameter-names '{"/paths/~1pets/get": {"query:limit": "page_size"}}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-parameter-names` - the option documented here
@@ -4950,7 +4956,7 @@ without a file against the working directory, and against the pyproject.toml dir
             self,
             *,
             page_size: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """
@@ -4985,9 +4991,12 @@ without a file against the working directory, and against the pyproject.toml dir
 
 Choose the response a bare return value of an operation takes (experimental).
 
-The JSON object, inline or in a file, maps operation references to an object with the `status_code` of a declared
-response and, when that response has several media types, its `media_type`. Without an entry, the server infers the
-primary response from the declared success responses. A relative document of an operation reference resolves against the JSON file that holds the reference, or
+The JSON object, inline or in a file, maps operation references to an object with a `status_code` and, when the
+response has several media types, its `media_type`. The `status_code` takes the response that declares that status
+exactly, by its range such as `2XX`, or as `default`. Without an entry, the primary response is `200` when the
+operation declares it, or else its lowest success status, or else its `2XX` or else its `default` response, sent as
+`200`, or else its lowest status; an operation that declares only other ranges, such as `4XX`, has none.
+A relative document of an operation reference resolves against the JSON file that holds the reference, or
 without a file against the working directory, and against the pyproject.toml directory for a table.
 
 **Option relationships:**
@@ -4997,7 +5006,7 @@ without a file against the working directory, and against the pyproject.toml dir
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-primary-responses '{"/paths/~1pets/post": {"status_code": 201}}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-primary-responses '{"/paths/~1pets/post": {"status_code": 201}}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-primary-responses` - the option documented here
@@ -5095,6 +5104,7 @@ without a file against the working directory, and against the pyproject.toml dir
         list_pets_handler = checked(
             pets.list_pets,
             'The pets.list_pets method of GET /pets',
+            ('limit',),
         )
 
         def list_pets(
@@ -5113,7 +5123,7 @@ without a file against the working directory, and against the pyproject.toml dir
             list_pets,
             methods=['GET'],
             status_code=200,
-            response_model=models.FieldPetsGetResponse,
+            response_model=models.PetsGetResponse,
             response_model_by_alias=True,
             response_model_exclude_unset=True,
             operation_id='listPets',
@@ -5131,6 +5141,7 @@ without a file against the working directory, and against the pyproject.toml dir
         create_pet_handler = checked(
             pets.create_pet,
             'The pets.create_pet method of POST /pets',
+            ('body',),
         )
 
         def create_pet(
@@ -5167,6 +5178,7 @@ without a file against the working directory, and against the pyproject.toml dir
         replace_pet_handler = checked(
             pets.replace_pet,
             'The pets.replace_pet method of PUT /pets/{name}',
+            ('name', 'body'),
         )
 
         def replace_pet(
@@ -5240,7 +5252,7 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-router-names '{"tag:pets": "animals"}' # (1)!
+    datamodel-codegen --input options.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-server fastapi --server-output server --server-package server --server-model-package models --server-router-names '{"tag:pets": "animals"}' # (1)!
     ```
 
     1. :material-arrow-left: `--server-router-names` - the option documented here
@@ -5335,7 +5347,7 @@ The JSON object, inline or in a file, maps group keys, such as `tag:pets` for th
             self,
             *,
             limit: int,
-        ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+        ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
             """
             Handle GET /pets.
             """

@@ -22,6 +22,10 @@ def {{ accessor.name }}(
     if ({{ check.value }} := {{ check.read }}) is None or isinstance({{ check.value }}, {{ check.unset }}):
 {%- elif check.unset %}
     if isinstance({{ check.value }} := {{ check.read }}, {{ check.unset }}):
+{%- elif check.missing and check.none %}
+    if ({{ check.value }} := {{ check.read }}) is None or {{ check.value }} is {{ check.missing }}:
+{%- elif check.missing %}
+    if ({{ check.value }} := {{ check.read }}) is {{ check.missing }}:
 {%- else %}
     if ({{ check.value }} := {{ check.read }}) is None:
 {%- endif %}

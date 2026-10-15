@@ -1,2 +1,8 @@
 Add the runtime dependencies of publication_client to your project:
   uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "msgspec>=0.21.1"
+Next steps: call the API with the client:
+  from publication_client import Client
+
+  with Client(base_url=...) as client:
+      client.pets.create_pet(...)
+See publication_client/README.md.

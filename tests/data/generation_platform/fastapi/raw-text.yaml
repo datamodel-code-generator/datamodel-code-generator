@@ -1,0 +1,195 @@
+openapi: 3.1.0
+info:
+  title: Raw text bodies
+  version: 1.0.0
+servers:
+  - url: https://raw.example.com
+paths:
+  /reports:
+    get:
+      operationId: downloadReport
+      responses:
+        '200':
+          description: The report as CSV, in whatever bytes it holds.
+          content:
+            text/csv:
+              schema: {type: string, format: binary}
+  /notes:
+    post:
+      operationId: uploadNote
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {$ref: '#/components/schemas/Note'}
+      responses:
+        '200':
+          description: The stored note.
+          content:
+            text/plain:
+              schema: {$ref: '#/components/schemas/Note'}
+  /drafts:
+    post:
+      operationId: uploadDraft
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              allOf:
+                - {type: string, format: binary}
+      responses:
+        '200':
+          description: The stored draft.
+          content:
+            text/plain:
+              schema:
+                anyOf:
+                  - {type: string, format: binary}
+  /letters:
+    post:
+      operationId: uploadLetter
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {$ref: '#/components/schemas/Letter'}
+      responses:
+        '200':
+          description: The stored letter.
+          content:
+            text/csv:
+              schema:
+                oneOf:
+                  - {$ref: '#/components/schemas/Note'}
+  /memos:
+    post:
+      operationId: uploadMemo
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              allOf:
+                - {type: string, format: binary}
+                - {maxLength: 16}
+      responses:
+        '200':
+          description: The stored memo, or nothing.
+          content:
+            text/plain:
+              schema:
+                anyOf:
+                  - {type: string, format: binary}
+                  - {type: 'null'}
+  /pages:
+    post:
+      operationId: uploadPage
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              anyOf:
+                - {type: string, format: binary}
+                - {type: string, format: binary, maxLength: 3}
+      responses:
+        '200':
+          description: The stored page, short or not.
+          content:
+            text/plain:
+              schema:
+                anyOf:
+                  - {$ref: '#/components/schemas/Note'}
+                  - allOf:
+                      - {type: string, format: binary}
+                      - {maxLength: 3}
+  /sketches:
+    post:
+      operationId: uploadSketch
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              allOf:
+                - {type: string}
+                - {format: binary}
+      responses:
+        '200':
+          description: The stored sketch.
+          content:
+            text/plain:
+              schema:
+                allOf:
+                  - {type: string}
+                  - {format: binary}
+  /marks:
+    post:
+      operationId: uploadMark
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {$ref: '#/components/schemas/Mark'}
+      responses:
+        '200':
+          description: The stored mark.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Mark'}
+  /tags:
+    post:
+      operationId: uploadTag
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {$ref: '#/components/schemas/Tag'}
+      responses:
+        '200':
+          description: The stored tag.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Tag'}
+  /stamps:
+    get:
+      operationId: downloadStamp
+      responses:
+        '200':
+          description: The current stamp, at most four bytes.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Stamp'}
+    post:
+      operationId: uploadStamp
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary, maxLength: 4}
+      responses:
+        '200':
+          description: The stored stamp.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Stamp'}
+  /stamps/raw:
+    get:
+      operationId: downloadRawStamp
+      responses:
+        '200':
+          description: The stamp as stored, at most four bytes.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Stamp'}
+components:
+  schemas:
+    Stamp: {type: string, format: binary, maxLength: 4}
+    Mark: {type: string, format: binary, enum: [draft, final]}
+    Tag: {format: binary, enum: [draft, final]}
+    Note: {type: string, format: binary}
+    Letter:
+      description: A note behind a wrapper.
+      allOf:
+        - {$ref: '#/components/schemas/Note'}

@@ -1,0 +1,113 @@
+models shared True
+# forms in-process sync, in-process async
+post_styles
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='a b', point=Point(x=1, y=-2), corner=Point(x=3, y=4), deep=Named(name='d&e=f'), spaced=['a', 'b+c'], piped=[1, 2], listed=[3, 4], path='a/b?c&d=e#f', meta=Named(name='café & co'), note='x & y+z'))
+  < 204 -
+  = None
+post_styles name only
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=None, corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = None
+post_styles empty arrays
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=None, corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = None
+post_styles delimiter in a value
+  ! DecodeError: DecodeError(operation_id='postStyles', reason='unencodable', location='body') [operation_id='postStyles', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] unencodable
+post_labels
+  > POST /labels [application/x-www-form-urlencoded]
+  post_labels(body=LabelsPostRequest(id=1, labels={'a': 'x', 'b c': 'ä'}))
+  < 204 -
+  = None
+post_labels labels only
+  > POST /labels [application/x-www-form-urlencoded]
+  post_labels(body=LabelsPostRequest(id=None, labels={'id2': 'y'}))
+  < 204 -
+  = None
+post_choices form
+  > POST /choices [application/x-www-form-urlencoded]
+  post_choices(body=Choice(ids=['a', 'b']), media_type='application/x-www-form-urlencoded')
+  < 204 -
+  = None
+post_choices JSON
+  > POST /choices [application/json]
+  post_choices(body=Choice(ids=['a b']), media_type='application/json')
+  < 204 -
+  = None
+post_texts
+  > POST /texts [multipart/form-data; boundary=<boundary>]
+  post_texts(body=TextsPostRequest(note='café', count=5, code='ab', ids=[1, 2]))
+  < 204 -
+  = None
+post_texts non-ASCII code
+  ! DecodeError: DecodeError(operation_id='postTexts', reason='unencodable', location='body') [operation_id='postTexts', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] unencodable
+post_images
+  > POST /images [multipart/form-data; boundary=<boundary>]
+  post_images(body=ImagesPostRequest(image=b'\x89PNG\r\n', thumbnails=[b'\x00one', b'\xfftwo'], caption='*café*'))
+  < 204 -
+  = None
+post_styled_parts
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  post_styled_parts(body=StyledPartsPostRequest(point=Point(x=1, y=-2), corner=Point(x=3, y=4), deep=Named(name='d&e=f [x]'), spaced=['a', 'b+c,d'], piped=[1, 2], listed=['a b', '%41|'], path='a/b?c', meta=Named(name='café')))
+  < 204 -
+  = None
+post_styled_parts comma in a comma-delimited value
+  ! DecodeError: DecodeError(operation_id='postStyledParts', reason='unencodable', location='body') [operation_id='postStyledParts', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A comma-delimited form-data value cannot contain a comma')] unencodable
+post_styled_parts space in a space-delimited value
+  ! DecodeError: DecodeError(operation_id='postStyledParts', reason='unencodable', location='body') [operation_id='postStyledParts', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] unencodable
+post_part_labels
+  > POST /part-labels [multipart/form-data; boundary=<boundary>]
+  post_part_labels(body=PartLabelsPostRequest(id=1, labels={'a': 'x,y', 'b c': 'ä'}))
+  < 204 -
+  = None
+/styles unknown member of a closed exploded object
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=Point(x=1, y=None), corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = (204, None)
+/styles exploded member of another kind
+  > POST /styles [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'point', 'x'])])
+/styles JSON content that is not JSON
+  > POST /styles [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('json_invalid', ['body', 'meta'])])
+/styles unpaired object member
+  > POST /styles [application/x-www-form-urlencoded]
+  < 400 application/json
+  = (400, None)
+/styles percent-encoded deepObject member
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=None, corner=None, deep=Named(name='a'), spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = (204, None)
+/styles piped item of another kind
+  > POST /styles [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'piped', 1])])
+/labels other member
+  > POST /labels [application/x-www-form-urlencoded]
+  post_labels(body=LabelsPostRequest(id=2, labels={'z': 'w'}))
+  < 204 -
+  = (204, None)
+/styled-parts unpaired object member
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  < 400 application/json
+  = (400, None)
+/styled-parts items of another kind
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'point', 'x']), ('int_parsing', ['body', 'piped', 1])])
+/styled-parts styled members sent as files
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  post_styled_parts(body=StyledPartsPostRequest(point=Point(x=5, y=None), corner=None, deep=Named(name='café'), spaced=None, piped=None, listed=None, path=None, meta=None))
+  < 204 -
+  = (204, None)
+/styled-parts styled member of a file not UTF-8
+  > POST /styled-parts [multipart/form-data; boundary=<boundary>]
+  < 400 application/json
+  = (400, None)

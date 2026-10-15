@@ -15,9 +15,9 @@ import models
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...bodies import MultipartBody
-from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions
 from ...responses import RawResponse, Response
+from ...types import JSONValue
 from ...types.default import (
     CreateOwnerResponse,
     CreatePetResponse,
@@ -288,7 +288,7 @@ class DefaultResource:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -307,7 +307,7 @@ class DefaultResource:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -673,7 +673,7 @@ class DefaultWithResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -692,7 +692,7 @@ class DefaultWithResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1058,7 +1058,7 @@ class DefaultWithRawResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1077,7 +1077,7 @@ class DefaultWithRawResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1443,7 +1443,7 @@ class DefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1462,7 +1462,7 @@ class DefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,

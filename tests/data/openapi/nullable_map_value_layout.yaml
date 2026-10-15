@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value layout
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Value:
+      type: object
+      properties:
+        id:
+          type: integer
+    stats.Item:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          id:
+            type: integer
+    stats.Rank:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Value"
+    Holder:
+      type: object
+      properties:
+        items:
+          $ref: "#/components/schemas/stats.Item"
+        ranks:
+          $ref: "#/components/schemas/stats.Rank"

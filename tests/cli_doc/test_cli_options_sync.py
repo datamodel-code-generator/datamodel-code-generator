@@ -212,6 +212,37 @@ def test_generate_option_section_preserves_an_explicit_input() -> None:
     _fail_if_present("--input schema.json --input", section, "duplicate placeholder input")
 
 
+@pytest.mark.parametrize(
+    ("input_schema", "usage"),
+    [
+        (
+            "generation_platform/client/cli/options.yaml",
+            "datamodel-codegen --input options.yaml --input-file-type openapi --client-body-arguments both",
+        ),
+        (None, "datamodel-codegen --input schema.json --input-file-type openapi --client-body-arguments both"),
+    ],
+)
+def test_generate_option_section_names_the_example_input(input_schema: str | None, usage: str) -> None:
+    """Usage commands name the input file the example renders, or the generic schema without one."""
+    section = generate_option_section(
+        "--client-body-arguments",
+        CLIDocOption(
+            option_name="--client-body-arguments",
+            examples=[
+                CLIDocExample(
+                    node_id="tests/api_generation/test_client_cli.py::test_client_cli_options",
+                    option_description="Choose how request bodies become method arguments.",
+                    input_schema=input_schema,
+                    cli_args=["--input-file-type", "openapi", "--client-body-arguments", "both"],
+                    is_primary=True,
+                ),
+            ],
+        ),
+    )
+
+    _fail_if_missing(usage, section, "example input usage")
+
+
 def test_documented_related_option_prefers_existing_generated_section() -> None:
     """Related links should target generated sections, not argparse's longest alias."""
     documented_options = frozenset({
@@ -579,9 +610,9 @@ def test_option_section_renders_implies_and_requires_metadata() -> None:
         in section
     )
     assert (
-        "- **Requires:** [`--output-model-type`](model-customization.md#output-model-type) = "
-        "`pydantic_v2.BaseModel` - `--use-missing-sentinel` is only supported for "
-        "`--output-model-type pydantic_v2.BaseModel`." in section
+        "- **Requires:** [`--output-model-type`](model-customization.md#output-model-type) - "
+        "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+        "or `pydantic_v2.dataclass`." in section
     )
 
 
@@ -655,7 +686,8 @@ def test_relationship_summary_lists_metadata_with_links() -> None:
         "--use-missing-sentinel implies row",
     )
     _fail_if_missing(
-        "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`.",
+        "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+        "or `pydantic_v2.dataclass`.",
         summary,
         "--use-missing-sentinel requires note",
     )

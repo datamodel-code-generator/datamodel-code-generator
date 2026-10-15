@@ -36,7 +36,7 @@ limit-server-decode: native 5 json=5
 create-client-serialize: json={"id":1,"name":"Mimi","status":"new","password":"pw","visits":0}
 created-server-serialize-snapshot: json={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com"},"born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2.0,"labels":["a","b"],"scores":{"x":1},"visits":0}
 created-client-convert: native Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0) json={"id":1,"name":"Mimi","status":"new","kind":"cat","visits":0}
-created-client-convert-long: native Pet(id=1, name='far too long a name', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0) json={"id":1,"name":"far too long a name","status":"new","kind":"cat","visits":0}
+created-client-convert-long: ValidationError
 created-client-convert-type: ValidationError
 create-client-serialize-long: json={"id":1,"name":"far too long a name","status":"new","visits":0}
 create-client-encode-long: json={"id":1,"name":"far too long a name","status":"new","visits":0}

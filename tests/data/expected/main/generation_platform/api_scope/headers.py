@@ -32,9 +32,9 @@ class SharedResponseXComponentHeader(RootModel[str]):
     root: str
 
 
-class FieldItemsGetResponse200XTraceHeader(RootModel[bool]):
+class ItemsGetResponse200XTraceHeader(RootModel[bool]):
     root: bool
 
 
-class FieldItemsGetResponse201XTraceHeader(RootModel[int]):
+class ItemsGetResponse201XTraceHeader(RootModel[int]):
     root: int

@@ -34,7 +34,7 @@ class ListPets:
         responses={
             "200": Declared(
                 media_type="application/json",
-                model=pets_type_checking_basemodel_models.FieldPetsGetResponse,
+                model=pets_type_checking_basemodel_models.PetsGetResponse,
             ),
             "default": Declared(
                 media_type="application/json",
@@ -64,7 +64,7 @@ class ListMyPets:
         responses={
             "200": Declared(
                 media_type="application/json",
-                model=pets_type_checking_basemodel_models.FieldPetsMineGetResponse,
+                model=pets_type_checking_basemodel_models.PetsMineGetResponse,
             )
         },
     )
@@ -103,7 +103,7 @@ class GetInventory:
         responses={
             "200": Declared(
                 media_type="application/json",
-                model=pets_type_checking_basemodel_models.FieldStoreInventoryGetResponse,
+                model=pets_type_checking_basemodel_models.StoreInventoryGetResponse,
             )
         },
     )

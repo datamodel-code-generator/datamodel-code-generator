@@ -91,7 +91,7 @@ def adapted(body: bytes, headers: list[tuple[str, str]], now: datetime) -> None:
     hmac_keys = KeySet(keys=(HmacKey(id="active", secret=b"secret"),))
     assert_type(mapped.verify(body, headers, hmac_keys, now=now), VerifiedWebhook[Invoice | Customer])
     assert_type(unsigned_event.decode_unverified(body), Invoice | Customer)
-    assert_type(unsigned_message.decode_unverified(body, options=None), Message)
+    assert_type(unsigned_message.decode_unverified(body), Message)
 
 
 async def awaited(body: bytes, headers: list[tuple[str, str]], now: datetime) -> None:

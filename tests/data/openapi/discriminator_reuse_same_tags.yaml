@@ -1,0 +1,67 @@
+openapi: 3.1.0
+info:
+  title: Unions that map the same tags to duplicated variants
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Owner:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/Pet"
+    Cat2:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    Dog2:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    Pet2:
+      oneOf:
+        - $ref: "#/components/schemas/Cat2"
+        - $ref: "#/components/schemas/Dog2"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/Cat2"
+          dog: "#/components/schemas/Dog2"
+    Owner2:
+      type: object
+      properties:
+        pet:
+          $ref: "#/components/schemas/Pet2"

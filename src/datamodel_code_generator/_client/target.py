@@ -5,12 +5,13 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING, Final, cast
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, NextSteps
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
 from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig
@@ -55,18 +56,16 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_documents import canonical_bytes, sha256
 from datamodel_code_generator._target_module import TargetModule, TypeNames
-from datamodel_code_generator._target_render import model_dependencies, pydantic_dependency
+from datamodel_code_generator._target_render import PYDANTIC_BACKENDS, model_dependencies, pydantic_dependency
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
     from datamodel_code_generator._client.codec_plan import CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
-    from datamodel_code_generator._client.plan import OperationSpec
+    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
@@ -194,11 +193,20 @@ class ClientTarget:
             use_schema_description=request.model_config.use_schema_description,
             use_single_line_docstring=request.model_config.use_single_line_docstring,
         )
-        return TargetRender(files=renderer.files(), dependencies=dependencies)
+        return TargetRender(files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan))
+
+
+def _next_steps(config: ClientGenerationConfig, plan: ClientPlan) -> NextSteps:
+    """Return the README and code that calls the first operation in a client's context."""
+    call = f"client.{spec.resource}.{spec.name}(...)" if (spec := next(iter(plan.operations), None)) else "..."
+    return NextSteps(
+        readme=Path("README.md"),
+        usage=f"from {config.package} import Client\n\nwith Client(base_url=...) as client:\n    {call}",
+    )
 
 
 def _backend_dependencies(backend: CodecBackend, model_imports: frozenset[str]) -> tuple[str, ...]:
-    if backend in {"pydantic_v2.BaseModel", "pydantic_v2.dataclass"}:
+    if backend in PYDANTIC_BACKENDS:
         return (pydantic_dependency(model_imports),)
     return (MSGSPEC,) if backend == "msgspec.Struct" else ()
 

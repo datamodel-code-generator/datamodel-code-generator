@@ -374,6 +374,12 @@ def _revalidated(cache: Caching, api: Any, exchange: Exchange, lines: list[str])
     fetched(lines, "aged stored", lambda: helper.fetch(userId=aged))
     fetched(lines, "aged revalidated by a 304 without Age", lambda: helper.fetch(userId=aged))
     fetched(lines, "fresh after the 304", lambda: helper.fetch(userId=aged))
+    named, tag = cache.user_id(26), {"etag": '"caf\u00e9"'.encode()}
+    stale, checked = {"cache-control": "max-age=0"}, {"cache-control": "max-age=60, no-cache"}
+    exchange.respond(user(26, **tag, **stale), user(26, **tag, **checked), user(26, "dog", **tag, **checked))
+    fetched(lines, "stale with a validator beyond ASCII, not stored", lambda: helper.fetch(userId=named))
+    fetched(lines, "no-cache with a validator beyond ASCII, stored", lambda: helper.fetch(userId=named))
+    fetched(lines, "fetched again without the validator", lambda: helper.fetch(userId=named))
 
 
 def _vary(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -419,29 +425,51 @@ def _miss(exchange: Exchange, call: Callable[[], Any]) -> Any:
 
 
 def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Return responses that must not be stored, removing the entries they supersede, and keep entries on errors."""
+    """Return responses that must not be stored, removing the entries they supersede, and keep entries on errors.
+
+    A private response naming fields is stored, and is fetched last so that it answers no other case. The response
+    setting a cookie comes through a client of its own, so the cookie its native jar keeps reaches no other case; a
+    redirect through that client shows HTTPX2 sending the jar's cookie to the hop.
+    """
     helper = api.protocols.users.profile
-    for label, response, limits in (
-        ("no-store", user(1, **{"cache-control": "no-store, max-age=60"}), None),
-        ("set-cookie", user(1, **{"cache-control": "max-age=60", "set-cookie": "a=1"}), None),
-        ("extension", user(1, **{"cache-control": "max-age=60, stale-while-revalidate=5"}), None),
-        ("malformed", user(1, **{"cache-control": "max-age=soon"}), None),
-        ("repeated", user(1, **{"cache-control": "max-age=1, max-age=2"}), None),
-        ("valued public", user(1, **{"cache-control": "public=1, max-age=60"}), None),
-        ("unquoted private", user(1, **{"cache-control": "private=x, max-age=60"}), None),
-        ("quoted private", user(1, **{"cache-control": 'private="a, b", max-age=60'}), None),
-        ("bad quoting", user(1, **{"cache-control": 'private="a'}), None),
-        ("too large", user(1, **{"cache-control": "max-age=60"}), 5),
-        ("unlisted status", user(1, status=203, **{"cache-control": "max-age=60"}), None),
-        ("no freshness or validator", user(1), None),
-    ):
+    follow = cache.options.RequestOptions(follow_redirects=True)
+
+    def unstored(helper: Any, label: str, response: Callable[[httpx2.Request], httpx2.Response]) -> None:
         argument = cache.user_id(10)
-        settings = None if limits is None else cache.protocols.CacheOptions(max_entry_bytes=limits)
         exchange.respond(user(10, etag='"s"', **{"cache-control": "max-age=0"}), response)
         fetched(lines, f"{label} after stale", partial(helper.fetch, userId=argument))
-        fetched(lines, label, partial(helper.fetch, userId=argument, cache_options=settings))
+        fetched(lines, label, partial(helper.fetch, userId=argument))
         exchange.respond(user(10))
         fetched(lines, f"{label} next", partial(helper.fetch, userId=argument))
+
+    unstored(helper, "no-store", user(1, **{"cache-control": "no-store, max-age=60"}))
+    with (
+        exchange.client() as native,
+        cache.package.Client(
+            http_client=native, **cache.stores(users__profile=cache.protocols.MemoryCacheStore())
+        ) as jarred,
+    ):
+        cookies = jarred.protocols.users.profile
+        unstored(cookies, "set-cookie", user(1, **{"cache-control": "max-age=60", "set-cookie": "a=1"}))
+        exchange.respond(raw_response(302, location="https://api.example.com/users/13"), user(13))
+        fetched(lines, "jar cookie on a redirect hop", lambda: cookies.fetch(userId=cache.user_id(12), options=follow))
+    for label, response in (
+        ("extension", user(1, **{"cache-control": "max-age=60, stale-while-revalidate=5"})),
+        ("malformed", user(1, **{"cache-control": "max-age=soon"})),
+        ("repeated", user(1, **{"cache-control": "max-age=1, max-age=2"})),
+        ("valued public", user(1, **{"cache-control": "public=1, max-age=60"})),
+        ("unquoted private", user(1, **{"cache-control": "private=x, max-age=60"})),
+        ("bad quoting", user(1, **{"cache-control": 'private="a'})),
+        ("unlisted status", user(1, status=203, **{"cache-control": "max-age=60"})),
+        ("no freshness or validator", user(1)),
+    ):
+        unstored(helper, label, response)
+    exchange.respond(
+        user(10, etag='"s"', **{"cache-control": "max-age=0"}),
+        user(1, **{"cache-control": 'private="a, b", max-age=60'}),
+    )
+    for label in ("quoted private after stale", "quoted private", "quoted private stored"):
+        fetched(lines, label, partial(helper.fetch, userId=cache.user_id(10)))
     eleven = cache.user_id(11)
     exchange.respond(
         user(11, **{"cache-control": "max-age=0"}, etag='"k"'),
@@ -460,7 +488,6 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         raw_response(302, location="https://api.example.com/users/13"),
         user(13, **{"cache-control": "max-age=60"}),
     )
-    follow = cache.options.RequestOptions(follow_redirects=True)
     fetched(lines, "redirected", lambda: helper.fetch(userId=twelve, options=follow))
     fetched(lines, "redirected again", lambda: helper.fetch(userId=twelve, options=follow))
     fourteen = cache.user_id(14)
@@ -570,6 +597,35 @@ class _Bearer(httpx2.Auth):
         yield request
 
 
+class _Signed(httpx2.Auth):
+    """A caller's own native Auth adding one header field of its own bytes."""
+
+    def __init__(self, name: bytes, value: bytes) -> None:
+        self.field = (name, value)
+
+    def auth_flow(self, request: httpx2.Request) -> Generator[httpx2.Request, httpx2.Response, None]:
+        request.headers = httpx2.Headers([*request.headers.raw, self.field])
+        yield request
+
+
+def _signed(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Key entries by the bytes an Auth adds, whatever text they read as; a name HTTPX2 cannot send fails natively."""
+    package, options = cache.package, cache.options
+    nine = argument(package, "getSecureUser", "path", "userId", 9)
+    fresh = {"cache-control": "max-age=60"}
+    exchange.respond(user(9, "latin-1", **fresh), user(9, "utf-8", **fresh))
+    store = cache.protocols.MemoryCacheStore()
+    with package.Client(http_client=native, cache_stores={"secure.profile": store}, bearer="token") as api:
+        for label, name, value in (
+            ("Latin-1 bytes an Auth adds", b"X-Sig", "caf\u00e9".encode("latin-1")),
+            ("the same bytes again", b"X-Sig", "caf\u00e9".encode("latin-1")),
+            ("UTF-8 bytes of the same text", b"X-Sig", "caf\u00e9".encode()),
+            ("header name beyond ASCII an Auth adds", "X-S\u00efg".encode("latin-1"), b"a"),
+        ):
+            signed = options.RequestOptions(auth=_Signed(name, value))
+            fetched(lines, label, lambda signed=signed: api.protocols.secure.profile.fetch(userId=nine, options=signed))
+
+
 def cache_stores(package: ModuleType, lines: list[str]) -> None:
     """Drive the store contract, memory stores, store failures, credentials, records, and client settings."""
     cache = Caching(package)
@@ -582,6 +638,7 @@ def cache_stores(package: ModuleType, lines: list[str]) -> None:
         _recorded(cache, native, exchange, lines)
         _credentials(cache, native, exchange, lines)
         _rounds(cache, native, exchange, lines)
+        _signed(cache, native, exchange, lines)
     run(lambda: _async_stores(cache, lines))
 
 
@@ -641,8 +698,8 @@ def _records(cache: Caching, lines: list[str]) -> None:
         "result status",
         lambda: protocols.CacheResult(data=1, source="network", response=info, network_status="1"),
     )
-    record(lines, "options", lambda: protocols.CacheOptions(max_entry_bytes=1, max_ttl=0.5))
-    record(lines, "options zero bytes", lambda: protocols.CacheOptions(max_entry_bytes=0))
+    record(lines, "options", lambda: protocols.CacheOptions(max_ttl=0.5))
+    record(lines, "options zero ttl", lambda: protocols.CacheOptions(max_ttl=0))
     record(lines, "options boolean ttl", lambda: protocols.CacheOptions(max_ttl=True))
     record(lines, "stores name", lambda: cache.package.Client(cache_stores={"no name": protocols.MemoryCacheStore()}))
     record(lines, "protocol error", lambda: errors.ProtocolDataError(reason="inconsistent"))
@@ -773,14 +830,14 @@ def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     client = package.Client(
         http_client=native,
         cache_stores={"users.profile": recording},
-        helper_defaults={"users.profile": protocols.CacheOptions(max_entry_bytes=5)},
+        helper_defaults={"users.profile": protocols.CacheOptions(max_ttl=1000)},
     )
     helper = client.protocols.users.profile
-    exchange.respond(user(3, **{"cache-control": "max-age=60"}), user(3, **{"cache-control": "max-age=60"}))
-    fetched(lines, "default entry limit", lambda: helper.fetch(userId=three))
-    raised = protocols.CacheOptions(max_entry_bytes=1000)
-    fetched(lines, "call entry limit", lambda: helper.fetch(userId=three, cache_options=raised))
-    fetched(lines, "call entry limit hit", lambda: helper.fetch(userId=three, cache_options=raised))
+    exchange.respond(user(3, etag='"c"', **{"cache-control": "max-age=100000", "age": "400"}), not_modified(etag='"c"'))
+    fetched(lines, "default freshness cap", lambda: helper.fetch(userId=three))
+    fetched(lines, "default freshness cap hit", lambda: helper.fetch(userId=three))
+    lowered = protocols.CacheOptions(max_ttl=300)
+    fetched(lines, "call freshness cap", lambda: helper.fetch(userId=three, cache_options=lowered))
     fetched(
         lines,
         "pagination options",

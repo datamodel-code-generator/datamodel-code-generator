@@ -1,0 +1,3 @@
+mypy bodies: clean
+pyright bodies: clean
+ty bodies: clean

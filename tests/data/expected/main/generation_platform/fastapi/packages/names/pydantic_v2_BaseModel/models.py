@@ -13,47 +13,47 @@ class Tag(RootModel[str]):
     root: str
 
 
-FieldUsersIdGetPathIdParameter = TypeAliasType("FieldUsersIdGetPathIdParameter", int)
+UsersIdGetPathIdParameter = TypeAliasType("UsersIdGetPathIdParameter", int)
 
 
-FieldUsersIdGetQueryIdParameter = TypeAliasType("FieldUsersIdGetQueryIdParameter", int)
+UsersIdGetQueryIdParameter = TypeAliasType("UsersIdGetQueryIdParameter", int)
 
 
-FieldUsersIdGetQueryBodyParameter = TypeAliasType("FieldUsersIdGetQueryBodyParameter", str)
+UsersIdGetQueryBodyParameter = TypeAliasType("UsersIdGetQueryBodyParameter", str)
 
 
-FieldUsersIdGetHeaderMediaTypeParameter = TypeAliasType("FieldUsersIdGetHeaderMediaTypeParameter", str)
+UsersIdGetHeaderMediaTypeParameter = TypeAliasType("UsersIdGetHeaderMediaTypeParameter", str)
 
 
-FieldUsersIdGetQueryDcgP0Parameter = TypeAliasType(
-    "FieldUsersIdGetQueryDcgP0Parameter",
+UsersIdGetQueryDcgP0Parameter = TypeAliasType(
+    "UsersIdGetQueryDcgP0Parameter",
     Annotated[str, Field(..., examples=['a', float('inf')])],
 )
 
 
-FieldUsersIdGetQueryParametersParameter = TypeAliasType("FieldUsersIdGetQueryParametersParameter", str)
+UsersIdGetQueryParametersParameter = TypeAliasType("UsersIdGetQueryParametersParameter", str)
 
 
-FieldUsersIdGetCookieSessionParameter = TypeAliasType("FieldUsersIdGetCookieSessionParameter", str)
+UsersIdGetCookieSessionParameter = TypeAliasType("UsersIdGetCookieSessionParameter", str)
 
 
-FieldUsersIdGetQueryGetUserByIdHandlerParameter = TypeAliasType("FieldUsersIdGetQueryGetUserByIdHandlerParameter", str)
+UsersIdGetQueryGetUserByIdHandlerParameter = TypeAliasType("UsersIdGetQueryGetUserByIdHandlerParameter", str)
 
 
-FieldUsersIdPutPathIdParameter = TypeAliasType("FieldUsersIdPutPathIdParameter", int)
+UsersIdPutPathIdParameter = TypeAliasType("UsersIdPutPathIdParameter", int)
 
 
-FieldUsersIdPutQueryPrincipalParameter = TypeAliasType("FieldUsersIdPutQueryPrincipalParameter", str)
+UsersIdPutQueryPrincipalParameter = TypeAliasType("UsersIdPutQueryPrincipalParameter", str)
 
 
-class FieldUsersIdPutRequest(BaseModel):
+class UsersIdPutRequest(BaseModel):
     id: str | None = None
 
 
-FieldFilesFileNameDcgP0GetPathFileNameParameter = TypeAliasType("FieldFilesFileNameDcgP0GetPathFileNameParameter", str)
+FilesFileNameDcgP0GetPathFileNameParameter = TypeAliasType("FilesFileNameDcgP0GetPathFileNameParameter", str)
 
 
-FieldFilesFileNameDcgP0GetPathDcgP0Parameter = TypeAliasType("FieldFilesFileNameDcgP0GetPathDcgP0Parameter", str)
+FilesFileNameDcgP0GetPathDcgP0Parameter = TypeAliasType("FilesFileNameDcgP0GetPathDcgP0Parameter", str)
 
 
-FieldFilesFileNameDcgP0GetQueryLimitParameter = TypeAliasType("FieldFilesFileNameDcgP0GetQueryLimitParameter", int)
+FilesFileNameDcgP0GetQueryLimitParameter = TypeAliasType("FilesFileNameDcgP0GetQueryLimitParameter", int)

@@ -10,7 +10,9 @@ render pydantic_v2.BaseModel
   server/_generated/__init__.py
   server/_generated/contract.py
   server/_generated/openapi.py
+  server/_generated/openapi.json
   server/services.py
+  server/main.py
   server/README.md
   server/_runtime/__init__.py (copied runtime)
   server/_runtime/model_codecs/__init__.py (copied runtime)

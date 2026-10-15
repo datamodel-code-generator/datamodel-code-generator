@@ -27,53 +27,47 @@ class Error(BaseModel):
     message: str
 
 
-FieldPetsGetQueryLimitParameter = TypeAliasType(
-    "FieldPetsGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
+PetsGetQueryLimitParameter = TypeAliasType(
+    "PetsGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
 )
 
 
-FieldPetsGetQueryTagsParameter = TypeAliasType(
-    "FieldPetsGetQueryTagsParameter", list[str]
-)
+PetsGetQueryTagsParameter = TypeAliasType("PetsGetQueryTagsParameter", list[str])
 
 
-class FieldPetsGetQueryKindParameter(StrEnum):
+class PetsGetQueryKindParameter(StrEnum):
     cat = "cat"
     dog = "dog"
 
 
-FieldPetsGetHeaderXRequestIdParameter = TypeAliasType(
-    "FieldPetsGetHeaderXRequestIdParameter", UUID
+PetsGetHeaderXRequestIdParameter = TypeAliasType(
+    "PetsGetHeaderXRequestIdParameter", UUID
 )
 
 
-FieldPetsGetQuerySinceParameter = TypeAliasType(
-    "FieldPetsGetQuerySinceParameter", AwareDatetime
-)
+PetsGetQuerySinceParameter = TypeAliasType("PetsGetQuerySinceParameter", AwareDatetime)
 
 
-FieldPetsGetCookieSessionParameter = TypeAliasType(
-    "FieldPetsGetCookieSessionParameter", str
-)
+PetsGetCookieSessionParameter = TypeAliasType("PetsGetCookieSessionParameter", str)
 
 
-class FieldPetsGetResponse(RootModel[list[Pet]]):
+class PetsGetResponse(RootModel[list[Pet]]):
     root: list[Pet]
 
 
-class FieldPetsMineGetResponse(RootModel[list[Pet]]):
+class PetsMineGetResponse(RootModel[list[Pet]]):
     root: list[Pet]
 
 
-FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
-    "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
+PetsPetIdGetPathPetIdParameter = TypeAliasType(
+    "PetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
 )
 
 
-FieldPetsPetIdDeletePathPetIdParameter = TypeAliasType(
-    "FieldPetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
+PetsPetIdDeletePathPetIdParameter = TypeAliasType(
+    "PetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
 )
 
 
-class FieldStoreInventoryGetResponse(RootModel[dict[str, int]]):
+class StoreInventoryGetResponse(RootModel[dict[str, int]]):
     root: dict[str, int]

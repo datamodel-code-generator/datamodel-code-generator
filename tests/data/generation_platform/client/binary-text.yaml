@@ -1,0 +1,331 @@
+openapi: 3.2.0
+info:
+  title: Binary text
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /envelopes/{key}:
+    post:
+      operationId: sendEnvelope
+      parameters:
+        - {name: key, in: path, required: true, schema: {type: string, format: binary}}
+        - {name: sig, in: query, schema: {type: string, format: binary}}
+        - {name: X-Sig, in: header, schema: {type: string, format: binary}}
+        - {name: token, in: cookie, schema: {type: string, format: binary}}
+        - name: filter
+          in: query
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Chunk'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Envelope'}
+      responses:
+        '200':
+          description: The stored envelope.
+          headers:
+            X-Digest:
+              schema: {type: string, format: binary}
+          content:
+            application/vnd.envelope+json:
+              schema:
+                type: object
+                additionalProperties: {type: string, format: binary}
+  /variants:
+    post:
+      operationId: sendVariant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - {type: integer}
+                - {type: string, format: binary}
+      responses:
+        '200':
+          description: The stored variant.
+          content:
+            application/json:
+              schema:
+                type: array
+                prefixItems:
+                  - {type: integer}
+                  - {type: string, format: binary}
+  /trees:
+    post:
+      operationId: sendTree
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Tree'}
+      responses:
+        '200':
+          description: The stored list.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Node'}
+  /forms:
+    post:
+      operationId: sendForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - {$ref: '#/components/schemas/Named'}
+                - type: object
+                  properties:
+                    payload: {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+                pages:
+                  type: array
+                  items: {type: string, format: binary}
+                meta: {$ref: '#/components/schemas/Chunk'}
+            encoding:
+              file:
+                headers:
+                  X-Part-Sig:
+                    schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /extras:
+    post:
+      operationId: uploadExtras
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+              additionalProperties: {$ref: '#/components/schemas/Chunk'}
+      responses:
+        '204':
+          description: Stored.
+  /chunks:
+    get:
+      operationId: streamChunks
+      responses:
+        '200':
+          description: The chunks.
+          content:
+            application/jsonl:
+              itemSchema: {$ref: '#/components/schemas/Chunk'}
+  /patterns:
+    post:
+      operationId: sendPatterns
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              patternProperties:
+                '^x-': {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /notes:
+    post:
+      operationId: sendNote
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {$ref: '#/components/schemas/Chunk'}
+      responses:
+        '204':
+          description: Stored.
+  /graphs:
+    post:
+      operationId: sendGraph
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Graph'}
+      responses:
+        '200':
+          description: An edge of the graph.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Edge'}
+  /anchors:
+    post:
+      operationId: sendAnchors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dynamic: {$dynamicRef: '#blob'}
+      responses:
+        '200':
+          description: The named blob.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labeled: {$ref: '#labeled'}
+  /pointers:
+    post:
+      operationId: sendPointer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to: {$dynamicRef: '#/components/schemas/Leaf'}
+      responses:
+        '204':
+          description: Stored.
+  /mixed:
+    post:
+      operationId: sendMixed
+      parameters:
+        - name: mark
+          in: query
+          content:
+            text/plain:
+              schema:
+                allOf:
+                  - {type: string, format: binary}
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              anyOf:
+                - {type: string, format: binary}
+                - {$ref: '#/components/schemas/Named'}
+      responses:
+        '200':
+          description: The stored lines.
+          content:
+            text/csv:
+              schema:
+                type: array
+                items: {type: string, format: binary}
+            text/event-stream:
+              itemSchema:
+                allOf:
+                  - {type: string, format: binary}
+  /combos:
+    post:
+      operationId: sendCombo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - {type: string}
+                - {format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /numbers:
+    post:
+      operationId: sendNumber
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: [string, integer], format: binary}
+      responses:
+        '204':
+          description: Stored.
+  /counts:
+    post:
+      operationId: sendCount
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              anyOf:
+                - {type: string, format: binary}
+                - {type: integer}
+      responses:
+        '204':
+          description: Stored.
+components:
+  schemas:
+    Chunk:
+      type: object
+      properties:
+        data: {type: string, format: binary}
+    Envelope:
+      type: object
+      properties:
+        chunks:
+          type: array
+          items: {$ref: '#/components/schemas/Chunk'}
+    Named:
+      type: object
+      properties:
+        name: {type: string}
+    Tree:
+      type: object
+      properties:
+        children:
+          type: array
+          items: {$ref: '#/components/schemas/Tree'}
+        leaf: {$ref: '#/components/schemas/Leaf'}
+    Leaf:
+      type: object
+      properties:
+        raw: {type: string, format: binary}
+    Node:
+      type: object
+      properties:
+        name: {type: string}
+        next: {$ref: '#/components/schemas/Node'}
+    Graph:
+      type: object
+      properties:
+        edges:
+          type: array
+          items: {$ref: '#/components/schemas/Edge'}
+        chunk: {$ref: '#/components/schemas/Chunk'}
+    Edge:
+      type: object
+      properties:
+        graph: {$ref: '#/components/schemas/Graph'}
+        label: {type: string}
+    Blob:
+      $dynamicAnchor: blob
+      type: object
+      properties:
+        octets: {type: string, format: binary}
+    Labeled:
+      $anchor: labeled
+      type: object
+      properties:
+        octets: {type: string, format: binary}

@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import MultipartForm, PartPlan
+from ._runtime.client.multipart import MultipartForm
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
@@ -17,6 +17,7 @@ from ._runtime.client.operations import (
     ServerPlan,
     empty_branch,
 )
+from ._runtime.client.parts import PartPlan
 from .types.default import UploadFilesResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
@@ -27,5 +28,5 @@ OPERATION_0: Final[OperationPlan[UploadFilesResponse]] = OperationPlan(
     path='/files',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('files', repeated=True), PartPlan('tags', repeated=True, codec=model_bindings.codec_0)), additional=PartPlan(''))),), default='multipart/form-data', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('files', repeated=True), PartPlan('tags', repeated=True, codec=model_bindings.codec_0)), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
 )

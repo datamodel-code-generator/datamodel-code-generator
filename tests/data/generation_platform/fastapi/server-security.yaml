@@ -54,7 +54,7 @@ paths:
   /session:
     get:
       operationId: getSession
-      security: [{cookie_key: []}, {oidc: [openid]}, {api_key: []}]
+      security: [{cookie_key: []}, {oidc: [openid]}, {api_key: []}, {basic: []}]
       responses:
         "204": {description: Done.}
   /custom:

@@ -8,13 +8,13 @@ from pets import AsyncClient, Client
 from pets.options import RequestOptions
 from pets.responses import Response
 from pets.types.pets import ListPetsResponse
-from pets_models import FieldPetsGetHeaderXTraceParameter
+from pets_models import PetsGetHeaderXTraceParameter
 
 
 class ListArguments(TypedDict):
     """Keywords of list_pets that a caller declares for itself."""
 
-    X_Trace: FieldPetsGetHeaderXTraceParameter
+    X_Trace: PetsGetHeaderXTraceParameter
     options: NotRequired[RequestOptions | None]
 
 

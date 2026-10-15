@@ -8,7 +8,13 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import DataModelType
-from tests.api_generation.support.fastapi_typing import fastapi_typing_report, fastapi_update_report
+from tests.api_generation.support.fastapi_typing import (
+    fastapi_bodies_report,
+    fastapi_missing_report,
+    fastapi_parameters_report,
+    fastapi_typing_report,
+    fastapi_update_report,
+)
 from tests.conftest import assert_output
 
 EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generation_platform" / "fastapi" / "typing"
@@ -27,6 +33,27 @@ def test_fastapi_typing_applications(backend: DataModelType, name: str, tmp_path
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(fastapi_typing_report(tmp_path, backend), EXPECTED / f"{name}.txt")
+
+
+def test_fastapi_typing_missing(tmp_path: Path) -> None:
+    """Check a service of Pydantic dataclasses that reads and leaves out unset members through MISSING."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(fastapi_missing_report(tmp_path), EXPECTED / "missing-dataclass.txt")
+
+
+def test_fastapi_typing_bodies(tmp_path: Path) -> None:
+    """Check the package of a server that reads its bodies through adapters, with its copied request runtime."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(fastapi_bodies_report(tmp_path), EXPECTED / "bodies.txt")
+
+
+def test_fastapi_typing_parameters(tmp_path: Path) -> None:
+    """Check the package of a server whose routes have renamed path parameters, with its copied route classes."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(fastapi_parameters_report(tmp_path), EXPECTED / "parameters.txt")
 
 
 def test_fastapi_typing_updates(tmp_path: Path) -> None:

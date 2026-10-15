@@ -6,9 +6,9 @@ from __future__ import annotations
 from pydantic import BaseModel, RootModel
 
 
-class FieldSearchQueryQuerystring(BaseModel):
+class SearchQueryQuerystring(BaseModel):
     value: int | None = None
 
 
-class FieldSearchCopyRequest(RootModel[str]):
+class SearchCopyRequest(RootModel[str]):
     root: str

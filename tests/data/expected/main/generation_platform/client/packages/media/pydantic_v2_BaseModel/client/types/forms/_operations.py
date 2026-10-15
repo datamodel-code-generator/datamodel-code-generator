@@ -11,13 +11,13 @@ import models
 
 from ...bodies import FormData, MultipartData
 
-SubmitFormResponse: TypeAlias = models.FieldFormsPostResponse
+SubmitFormResponse: TypeAlias = models.FormsPostResponse
 
 
 SubmitProfileResponse: TypeAlias = None
 
 
-ReadProfileResponse: TypeAlias = models.FieldProfilesGetResponse
+ReadProfileResponse: TypeAlias = models.ProfilesGetResponse
 
 
 SubmitAnythingResponse: TypeAlias = None
@@ -26,7 +26,7 @@ SubmitAnythingResponse: TypeAlias = None
 SubmitPartsResponse: TypeAlias = None
 
 
-ReadPartsResponse: TypeAlias = MultipartData[bytes] | models.FieldAttachmentsGetResponse
+ReadPartsResponse: TypeAlias = MultipartData[bytes] | models.AttachmentsGetResponse
 
 
 SubmitPairsResponse: TypeAlias = FormData

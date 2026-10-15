@@ -1,7 +1,7 @@
 # errors
 serve pydantic_v2.BaseModel
-service UntaggedService: list_codes, update_account
-service UntaggedService without its methods: TypeError
+service DefaultService: list_codes, update_account
+service DefaultService without its methods: TypeError
 app default
 > POST /accounts/1?limit=5
   update_account(id=1, limit=5, X_Token='long-token', session='long-session', body=Login(secret='long-secret'))

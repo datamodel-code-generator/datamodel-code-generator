@@ -1,5 +1,5 @@
 # retries pydantic_v2.BaseModel
-  typed status retry = (FieldSafeGetResponse(root='done'), 2)
+  typed status retry = (SafeGetResponse(root='done'), 2)
     events=[('request', 'GET', '/safe'), ('response', 503), ('request', 'GET', '/safe'), ('response', 200)] queued=0
   typed read failure never resent = ('APIConnectionError', None, 1, ())
   typed read failed response closes = 1
@@ -37,25 +37,25 @@
   sync wait interrupted = ('KeyboardInterrupt', None, None, ())
     wait durations=[30.0]
     events=[('request', 'GET', '/safe'), ('response', 503)] queued=1
-  key typed declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  key typed declared=True omitted = KeyedPostResponse(root='<call>')
   key admission = (['<call>', '<call>'], 1, 0)
-  key typed declared=True empty = FieldKeyedPostResponse(root='<call>')
+  key typed declared=True empty = KeyedPostResponse(root='<call>')
   key admission = (['<call>', '<call>'], 1, 0)
-  key typed declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  key typed declared=True UNSET = KeyedPostResponse(root='<call>')
   key admission = (['<call>', '<call>'], 1, 0)
-  key typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  key typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=KeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
   key admission = ([None], 1, 1)
-  key typed declared=True caller = FieldKeyedPostResponse(root='call-key')
+  key typed declared=True caller = KeyedPostResponse(root='call-key')
   key admission = (['call-key', 'call-key'], 1, 0)
-  key response declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  key response declared=True omitted = KeyedPostResponse(root='<call>')
   key admission = (['<call>', '<call>'], 1, 0)
-  key response declared=True empty = FieldKeyedPostResponse(root='<call>')
+  key response declared=True empty = KeyedPostResponse(root='<call>')
   key admission = (['<call>', '<call>'], 1, 0)
-  key response declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  key response declared=True UNSET = KeyedPostResponse(root='<call>')
   key admission = (['<call>', '<call>'], 1, 0)
-  key response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  key response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=KeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
   key admission = ([None], 1, 1)
-  key response declared=True caller = FieldKeyedPostResponse(root='call-key')
+  key response declared=True caller = KeyedPostResponse(root='call-key')
   key admission = (['call-key', 'call-key'], 1, 0)
   key buffered declared=True omitted = b'<call>'
   key admission = (['<call>', '<call>'], 1, 0)
@@ -77,23 +77,23 @@
   key admission = ([None], 1, 1)
   key stream declared=True caller = b'call-key'
   key admission = (['call-key', 'call-key'], 1, 0)
-  key typed declared=False omitted = FieldSafeGetResponse(root='absent')
+  key typed declared=False omitted = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
-  key typed declared=False empty = FieldSafeGetResponse(root='absent')
+  key typed declared=False empty = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
-  key typed declared=False UNSET = FieldSafeGetResponse(root='absent')
+  key typed declared=False UNSET = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
-  key typed declared=False None = FieldSafeGetResponse(root='absent')
+  key typed declared=False None = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
   key typed declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
   key admission = ([], 0, 2)
-  key response declared=False omitted = FieldSafeGetResponse(root='absent')
+  key response declared=False omitted = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
-  key response declared=False empty = FieldSafeGetResponse(root='absent')
+  key response declared=False empty = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
-  key response declared=False UNSET = FieldSafeGetResponse(root='absent')
+  key response declared=False UNSET = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
-  key response declared=False None = FieldSafeGetResponse(root='absent')
+  key response declared=False None = SafeGetResponse(root='absent')
   key admission = ([None, None], 1, 0)
   key response declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
   key admission = ([], 0, 2)
@@ -137,7 +137,7 @@
   key admission = ([None, None], 1, 0)
   key request stream declared=False caller ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
   key admission = ([], 0, 2)
-  concurrent automatic keys = ((FieldKeyedPostResponse(root='<call>'), None), (b'absent', None), (FieldKeyedPostResponse(root='<call>'), None), (b'absent', None))
+  concurrent automatic keys = ((KeyedPostResponse(root='<call>'), None), (b'absent', None), (KeyedPostResponse(root='<call>'), None), (b'absent', None))
   concurrent key admission = (['<call>', '<call>', None, None], 3, 0)
   async typed read failure never resent = ('APIConnectionError', None, 1, ())
   async failed response closes = 1
@@ -173,25 +173,25 @@
     events=[] queued=2
   async pre-send failure first response = (('APITimeoutError', 'phase_timeout', 1, ()), True, False, 1)
     events=[('request', 'POST', '/idempotent'), ('response', 503)] queued=1
-  async key typed declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  async key typed declared=True omitted = KeyedPostResponse(root='<call>')
   async key admission = (['<call>', '<call>'], 1, 0)
-  async key typed declared=True empty = FieldKeyedPostResponse(root='<call>')
+  async key typed declared=True empty = KeyedPostResponse(root='<call>')
   async key admission = (['<call>', '<call>'], 1, 0)
-  async key typed declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  async key typed declared=True UNSET = KeyedPostResponse(root='<call>')
   async key admission = (['<call>', '<call>'], 1, 0)
-  async key typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  async key typed declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=KeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
   async key admission = ([None], 1, 1)
-  async key typed declared=True caller = FieldKeyedPostResponse(root='call-key')
+  async key typed declared=True caller = KeyedPostResponse(root='call-key')
   async key admission = (['call-key', 'call-key'], 1, 0)
-  async key response declared=True omitted = FieldKeyedPostResponse(root='<call>')
+  async key response declared=True omitted = KeyedPostResponse(root='<call>')
   async key admission = (['<call>', '<call>'], 1, 0)
-  async key response declared=True empty = FieldKeyedPostResponse(root='<call>')
+  async key response declared=True empty = KeyedPostResponse(root='<call>')
   async key admission = (['<call>', '<call>'], 1, 0)
-  async key response declared=True UNSET = FieldKeyedPostResponse(root='<call>')
+  async key response declared=True UNSET = KeyedPostResponse(root='<call>')
   async key admission = (['<call>', '<call>'], 1, 0)
-  async key response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=FieldKeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
+  async key response declared=True None ! InternalServerError: Error code: 503 - absent [operation_id='postKeyed', status_code=503, body=KeyedPostResponse(root='absent'), body_bytes=b'absent', truncated=False]
   async key admission = ([None], 1, 1)
-  async key response declared=True caller = FieldKeyedPostResponse(root='call-key')
+  async key response declared=True caller = KeyedPostResponse(root='call-key')
   async key admission = (['call-key', 'call-key'], 1, 0)
   async key buffered declared=True omitted = b'<call>'
   async key admission = (['<call>', '<call>'], 1, 0)
@@ -213,23 +213,23 @@
   async key admission = ([None], 1, 1)
   async key stream declared=True caller = b'call-key'
   async key admission = (['call-key', 'call-key'], 1, 0)
-  async key typed declared=False omitted = FieldSafeGetResponse(root='absent')
+  async key typed declared=False omitted = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
-  async key typed declared=False empty = FieldSafeGetResponse(root='absent')
+  async key typed declared=False empty = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
-  async key typed declared=False UNSET = FieldSafeGetResponse(root='absent')
+  async key typed declared=False UNSET = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
-  async key typed declared=False None = FieldSafeGetResponse(root='absent')
+  async key typed declared=False None = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
   async key typed declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
   async key admission = ([], 0, 2)
-  async key response declared=False omitted = FieldSafeGetResponse(root='absent')
+  async key response declared=False omitted = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
-  async key response declared=False empty = FieldSafeGetResponse(root='absent')
+  async key response declared=False empty = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
-  async key response declared=False UNSET = FieldSafeGetResponse(root='absent')
+  async key response declared=False UNSET = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
-  async key response declared=False None = FieldSafeGetResponse(root='absent')
+  async key response declared=False None = SafeGetResponse(root='absent')
   async key admission = ([None, None], 1, 0)
   async key response declared=False caller ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
   async key admission = ([], 0, 2)
@@ -273,8 +273,8 @@
   async key admission = ([None, None], 1, 0)
   async key request stream declared=False caller ! ConfigurationError: ConfigurationError(reason='not_declared', field_path='idempotency_key') [field_path=('idempotency_key',)] not_declared
   async key admission = ([], 0, 2)
-  async concurrent automatic keys = [(FieldKeyedPostResponse(root='<call>'), None), (b'absent', None), (FieldKeyedPostResponse(root='<call>'), None), (b'absent', None)]
+  async concurrent automatic keys = [(KeyedPostResponse(root='<call>'), None), (b'absent', None), (KeyedPostResponse(root='<call>'), None), (b'absent', None)]
   async concurrent key admission = (['<call>', '<call>', None, None], 3, 0)
-  async automatic key retained through retry = FieldKeyedPostResponse(root='<call>')
-  async automatic key fresh next call = FieldKeyedPostResponse(root='<call>')
+  async automatic key retained through retry = KeyedPostResponse(root='<call>')
+  async automatic key fresh next call = KeyedPostResponse(root='<call>')
   async automatic key admission = (3, True, True)

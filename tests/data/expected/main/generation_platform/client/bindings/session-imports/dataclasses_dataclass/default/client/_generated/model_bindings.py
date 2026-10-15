@@ -9,7 +9,7 @@ import models
 from models import sub
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
@@ -19,20 +19,20 @@ MODELS: Final[dict[type, Model]] = {
     models.RootModel: Model((Field('id', 'id', omit_none=True),)),
 }
 
-codec_0: Final[StdlibCodec[models.RootModel]] = StdlibCodec(models.RootModel, MODELS)
+codec_0: Final[DataclassCodec[models.RootModel]] = DataclassCodec(models.RootModel, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.RootModel]] = StdlibCodec(models.RootModel, MODELS)
+codec_1: Final[DataclassCodec[models.RootModel]] = DataclassCodec(models.RootModel, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[sub.ChildModel]] = StdlibCodec(sub.ChildModel, MODELS)
+codec_2: Final[DataclassCodec[sub.ChildModel]] = DataclassCodec(sub.ChildModel, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[sub.ChildModel]] = StdlibCodec(sub.ChildModel, MODELS)
+codec_3: Final[DataclassCodec[sub.ChildModel]] = DataclassCodec(sub.ChildModel, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[sub.AnotherChild]] = StdlibCodec(sub.AnotherChild, MODELS)
+codec_4: Final[DataclassCodec[sub.AnotherChild]] = DataclassCodec(sub.AnotherChild, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[sub.AnotherChild]] = StdlibCodec(sub.AnotherChild, MODELS)
+codec_5: Final[DataclassCodec[sub.AnotherChild]] = DataclassCodec(sub.AnotherChild, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""

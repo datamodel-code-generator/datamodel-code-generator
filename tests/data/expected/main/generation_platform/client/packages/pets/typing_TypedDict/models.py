@@ -24,61 +24,61 @@ class Error(TypedDict):
     message: NotRequired[str]
 
 
-FieldPetsGetQueryLimitParameter: TypeAlias = int
+PetsGetQueryLimitParameter: TypeAlias = int
 
 
-FieldPetsGetQueryTagsParameter: TypeAlias = list[str]
+PetsGetQueryTagsParameter: TypeAlias = list[str]
 
 
-FieldPetsGetHeaderXTraceParameter: TypeAlias = str
+PetsGetHeaderXTraceParameter: TypeAlias = str
 
 
-FieldPetsGetCookieSessionParameter: TypeAlias = str
+PetsGetCookieSessionParameter: TypeAlias = str
 
 
-FieldPetsGetResponse: TypeAlias = list[Pet]
+PetsGetResponse: TypeAlias = list[Pet]
 
 
-FieldPetsGetResponse200XNextHeader: TypeAlias = str
+PetsGetResponse200XNextHeader: TypeAlias = str
 
 
-FieldPetsGetResponse200XRateHeader: TypeAlias = int
+PetsGetResponse200XRateHeader: TypeAlias = int
 
 
-FieldPetsPostRequest: TypeAlias = str
+PetsPostRequest: TypeAlias = str
 
 
-FieldPetsPetIdGetPathPetIdParameter: TypeAlias = int
+PetsPetIdGetPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdGetResponse: TypeAlias = str
+PetsPetIdGetResponse: TypeAlias = str
 
 
-FieldPetsPetIdHeadResponse200ETagHeader: TypeAlias = str
+PetsPetIdHeadResponse200ETagHeader: TypeAlias = str
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
+PetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdPhotoPutRequest: TypeAlias = bytes
+PetsPetIdPhotoPutRequest: TypeAlias = bytes
 
 
-FieldPetsPetIdPhotoPutResponse: TypeAlias = bytes
+PetsPetIdPhotoPutResponse: TypeAlias = bytes
 
 
-FieldPetsPetIdFilesPostPathPetIdParameter: TypeAlias = int
+PetsPetIdFilesPostPathPetIdParameter: TypeAlias = int
 
 
-class FieldPetsPetIdFilesPostRequest(TypedDict, closed=True):
+class PetsPetIdFilesPostRequest(TypedDict, closed=True):
     note: NotRequired[str]
     labels: NotRequired[list[str]]
     file: bytes
 
 
-FieldPetsPetIdFilesGetPathPetIdParameter: TypeAlias = int
+PetsPetIdFilesGetPathPetIdParameter: TypeAlias = int
 
 
-class FieldPetsPetIdFilesGetResponse(TypedDict, closed=True):
+class PetsPetIdFilesGetResponse(TypedDict, closed=True):
     note: NotRequired[str]
     labels: NotRequired[list[str]]
     file: bytes

@@ -28,17 +28,17 @@ class Point(BaseModel):
     x: int | None = None
 
 
-FieldValuesGetQueryAtParameter = TypeAliasType("FieldValuesGetQueryAtParameter", datetime)
+ValuesGetQueryAtParameter = TypeAliasType("ValuesGetQueryAtParameter", datetime)
 
 
-FieldValuesGetQueryStampParameter = TypeAliasType("FieldValuesGetQueryStampParameter", datetime)
+ValuesGetQueryStampParameter = TypeAliasType("ValuesGetQueryStampParameter", datetime)
 
 
-FieldValuesGetQueryCountParameter = TypeAliasType("FieldValuesGetQueryCountParameter", int)
+ValuesGetQueryCountParameter = TypeAliasType("ValuesGetQueryCountParameter", int)
 
 
-FieldValuesGetQueryHostParameter = TypeAliasType(
-    "FieldValuesGetQueryHostParameter",
+ValuesGetQueryHostParameter = TypeAliasType(
+    "ValuesGetQueryHostParameter",
     Annotated[
         str,
         Field(
@@ -48,7 +48,7 @@ FieldValuesGetQueryHostParameter = TypeAliasType(
 )
 
 
-FieldValuesGetQueryLabelParameter = TypeAliasType("FieldValuesGetQueryLabelParameter", str)
+ValuesGetQueryLabelParameter = TypeAliasType("ValuesGetQueryLabelParameter", str)
 
 
-FieldValuesGetQueryPointParameter = TypeAliasType("FieldValuesGetQueryPointParameter", Point)
+ValuesGetQueryPointParameter = TypeAliasType("ValuesGetQueryPointParameter", Point)

@@ -22,18 +22,18 @@ class Draft(TypedDict):
 RateLimitHeader: TypeAlias = int
 
 
-class FieldFormsPostRequest(TypedDict):
+class FormsPostRequest(TypedDict):
     name: str
     count: NotRequired[int]
     labels: NotRequired[list[str]]
 
 
-class FieldFormsPostResponse(TypedDict):
+class FormsPostResponse(TypedDict):
     name: NotRequired[str]
     count: NotRequired[int]
 
 
-class FieldProfilesPostRequest(TypedDict):
+class ProfilesPostRequest(TypedDict):
     name: str
     age: NotRequired[int]
     active: NotRequired[bool]
@@ -42,7 +42,7 @@ class FieldProfilesPostRequest(TypedDict):
     nickname: NotRequired[str | None]
 
 
-class FieldProfilesGetResponse(TypedDict, extra_items=int):
+class ProfilesGetResponse(TypedDict, extra_items=int):
     name: str
     age: NotRequired[int]
     score: NotRequired[float]
@@ -52,14 +52,14 @@ class FieldProfilesGetResponse(TypedDict, extra_items=int):
     address: NotRequired[Address]
 
 
-FieldAnythingPostRequest: TypeAlias = Any
+AnythingPostRequest: TypeAlias = Any
 
 
-class FieldAttachmentsGetResponse(TypedDict, closed=True):
+class AttachmentsGetResponse(TypedDict, closed=True):
     id: NotRequired[int]
 
 
-class FieldUploadsPostRequest(TypedDict, extra_items=int):
+class UploadsPostRequest(TypedDict, extra_items=int):
     id: int
     title: str
     count: NotRequired[int]
@@ -69,7 +69,7 @@ class FieldUploadsPostRequest(TypedDict, extra_items=int):
     pages: NotRequired[list[str]]
 
 
-class FieldUploadsGetResponse(TypedDict, extra_items=int):
+class UploadsGetResponse(TypedDict, extra_items=int):
     title: str
     count: NotRequired[int]
     tags: NotRequired[list[str]]
@@ -80,42 +80,42 @@ class FieldUploadsGetResponse(TypedDict, extra_items=int):
     secret: str
 
 
-class FieldUploadsGetResponse1(TypedDict, extra_items=bytes):
+class UploadsGetResponse1(TypedDict, extra_items=bytes):
     note: NotRequired[str]
 
 
-class FieldUploadsGetResponse2(TypedDict):
+class UploadsGetResponse2(TypedDict):
     photo: NotRequired[bytes]
 
 
-class FieldUploadsGetResponse3(TypedDict, closed=True):
+class UploadsGetResponse3(TypedDict, closed=True):
     photo: NotRequired[bytes]
 
 
-class FieldAvatarsPostRequest(TypedDict):
+class AvatarsPostRequest(TypedDict):
     caption: NotRequired[str]
     avatar: NotRequired[bytes]
 
 
-class FieldScansPostRequest(TypedDict, extra_items=bytes):
+class ScansPostRequest(TypedDict, extra_items=bytes):
     note: NotRequired[str]
 
 
-class FieldPhotosPostRequest(TypedDict, closed=True):
+class PhotosPostRequest(TypedDict, closed=True):
     photo: bytes
 
 
-class FieldLabelsPostRequest(TypedDict, extra_items=str):
+class LabelsPostRequest(TypedDict, extra_items=str):
     sheet: NotRequired[bytes]
 
 
-FieldFilesPostRequest: TypeAlias = bytes
+FilesPostRequest: TypeAlias = bytes
 
 
-FieldFilesPostRequest2: TypeAlias = str
+FilesPostRequest2: TypeAlias = str
 
 
-FieldFilesPostResponse: TypeAlias = bytes
+FilesPostResponse: TypeAlias = bytes
 
 
 class Filter(TypedDict):
@@ -123,7 +123,7 @@ class Filter(TypedDict):
     min: NotRequired[int]
 
 
-class FieldSearchesPostRequest(TypedDict):
+class SearchesPostRequest(TypedDict):
     term: NotRequired[str]
     filter: NotRequired[Filter]
     tags: NotRequired[list[str]]
@@ -133,7 +133,7 @@ class FieldSearchesPostRequest(TypedDict):
     extra: NotRequired[dict[str, str]]
 
 
-class FieldCoversPostRequest(TypedDict):
+class CoversPostRequest(TypedDict):
     note: NotRequired[str]
     size: NotRequired[int]
     meta: NotRequired[Address]
@@ -142,16 +142,16 @@ class FieldCoversPostRequest(TypedDict):
     extra: NotRequired[Any]
 
 
-FieldCoversPostRequestNoteXTraceEncodingHeader: TypeAlias = str
+CoversPostRequestNoteXTraceEncodingHeader: TypeAlias = str
 
 
-FieldCoversPostRequestMetaXMetaEncodingHeader: TypeAlias = int
+CoversPostRequestMetaXMetaEncodingHeader: TypeAlias = int
 
 
-FieldCoversPostRequestScansContentDispositionEncodingHeader: TypeAlias = str
+CoversPostRequestScansContentDispositionEncodingHeader: TypeAlias = str
 
 
-class FieldCardsPostRequest(TypedDict):
+class CardsPostRequest(TypedDict):
     title: NotRequired[str]
     count: NotRequired[int]
     tags: NotRequired[list[str]]
@@ -161,7 +161,7 @@ class Point(TypedDict, extra_items=int):
     x: NotRequired[int]
 
 
-class FieldStickersPostRequest(TypedDict):
+class StickersPostRequest(TypedDict):
     tags: NotRequired[list[str]]
     words: NotRequired[list[str]]
     sizes: NotRequired[list[int]]
@@ -175,15 +175,15 @@ class Bounds(TypedDict, extra_items=int):
     w: NotRequired[int]
 
 
-class FieldAlbumsPostRequest(TypedDict):
+class AlbumsPostRequest(TypedDict):
     photo: bytes
     bounds: NotRequired[Bounds]
     title: NotRequired[str]
     tags: NotRequired[list[str]]
 
 
-FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader: TypeAlias = str
+AlbumsPostRequestBoundsContentDispositionEncodingHeader: TypeAlias = str
 
 
-class FieldDocumentsIdGetPathIdParameter(TypedDict):
+class DocumentsIdGetPathIdParameter(TypedDict):
     key: NotRequired[str]

@@ -13,13 +13,13 @@ from pets.protocols import (
     UploadProgress,
     UploadSource,
 )
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.types.files import CompleteFileResponse
-from pets_models import FieldFilesPostHeaderTusResumableParameter
+from pets_models import FilesPostHeaderTusResumableParameter
 from typing_extensions import assert_type
 
 
-def uploads(client: Client, version: FieldFilesPostHeaderTusResumableParameter, path: Path) -> None:
+def uploads(client: Client, version: FilesPostHeaderTusResumableParameter, path: Path) -> None:
     """Start, advance, run, checkpoint, and resume uploads of bytes and files."""
     source: UploadSource = b"content"
     handle = client.protocols.files.upload.start(
@@ -43,7 +43,7 @@ def uploads(client: Client, version: FieldFilesPostHeaderTusResumableParameter, 
     assert_type(resumed, UploadHandle[CompleteFileResponse])
 
 
-async def async_uploads(client: AsyncClient, version: FieldFilesPostHeaderTusResumableParameter, path: Path) -> None:
+async def async_uploads(client: AsyncClient, version: FilesPostHeaderTusResumableParameter, path: Path) -> None:
     """Start, advance, run, and resume uploads with asyncio, from a bytearray and from a file."""
     source = bytearray(b"content")
     handle = await client.protocols.files.upload.start(source, Tus_Resumable=version)

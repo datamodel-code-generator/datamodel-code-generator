@@ -20,6 +20,7 @@
     "client-httpx2-max-nocov-e2e:windows-latest:2/3:",
     "client-httpx2-max-nocov-e2e:windows-latest:3/3:",
     "client-httpx2-min-nocov-e2e:macos-latest:/:",
+    "client-install-nocov-e2e:ubuntu-24.04:/:",
     "client-py311-e2e:ubuntu-24.04:/:",
     "client-py312-nocov-e2e:ubuntu-24.04:/:",
     "client-py314-nocov-e2e:ubuntu-24.04:/:",
@@ -97,6 +98,7 @@
     "py314-parallel:ubuntu-24.04:5/5:3.14",
     "pydantic200:ubuntu-24.04:/:",
     "pydantic20:ubuntu-24.04:/:",
+    "pydantic212:ubuntu-24.04:/:",
     "pydantic213:ubuntu-24.04:/:",
     "pydantic214:ubuntu-24.04:/:",
     "pydantic25:ubuntu-24.04:/:",
@@ -104,11 +106,16 @@
     "typing-nocov-e2e:ubuntu-24.04:2/5:",
     "typing-nocov-e2e:ubuntu-24.04:3/5:",
     "typing-nocov-e2e:ubuntu-24.04:4/5:",
-    "typing-nocov-e2e:ubuntu-24.04:5/5:"
+    "typing-nocov-e2e:ubuntu-24.04:5/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:1/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:2/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:3/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:4/5:",
+    "typing-pydantic214-nocov-e2e:ubuntu-24.04:5/5:"
   ],
-  "coverage_count": 42,
+  "coverage_count": 43,
   "coverage_needs_only_producers": true,
-  "coverage_unique": 42,
+  "coverage_unique": 43,
   "exclude_only_without_coverage": true,
   "exclude_tests": [
     "tests/main/test_payload_validation.py"
@@ -125,7 +132,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 96,
+  "job_count": 103,
   "permissions": {
     "contents": "read"
   },

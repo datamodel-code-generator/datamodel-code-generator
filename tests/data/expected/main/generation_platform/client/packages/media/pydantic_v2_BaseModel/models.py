@@ -23,18 +23,18 @@ class RateLimitHeader(RootModel[int]):
     root: int
 
 
-class FieldFormsPostRequest(BaseModel):
+class FormsPostRequest(BaseModel):
     name: str
     count: int | None = None
     labels: list[str] | None = None
 
 
-class FieldFormsPostResponse(BaseModel):
+class FormsPostResponse(BaseModel):
     name: str | None = None
     count: int | None = None
 
 
-class FieldProfilesPostRequest(BaseModel):
+class ProfilesPostRequest(BaseModel):
     name: str
     age: int | None = None
     active: bool | None = None
@@ -43,7 +43,7 @@ class FieldProfilesPostRequest(BaseModel):
     nickname: str | None = None
 
 
-class FieldProfilesGetResponse(BaseModel):
+class ProfilesGetResponse(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -59,18 +59,18 @@ class FieldProfilesGetResponse(BaseModel):
     address: Address | None = None
 
 
-class FieldAnythingPostRequest(RootModel[Any]):
+class AnythingPostRequest(RootModel[Any]):
     root: Any
 
 
-class FieldAttachmentsGetResponse(BaseModel):
+class AttachmentsGetResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     id: int | None = None
 
 
-class FieldUploadsPostRequest(BaseModel):
+class UploadsPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -86,7 +86,7 @@ class FieldUploadsPostRequest(BaseModel):
     pages: list[str] | None = None
 
 
-class FieldUploadsGetResponse(BaseModel):
+class UploadsGetResponse(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -103,7 +103,7 @@ class FieldUploadsGetResponse(BaseModel):
     secret: str
 
 
-class FieldUploadsGetResponse1(BaseModel):
+class UploadsGetResponse1(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -113,23 +113,23 @@ class FieldUploadsGetResponse1(BaseModel):
     note: str | None = None
 
 
-class FieldUploadsGetResponse2(BaseModel):
+class UploadsGetResponse2(BaseModel):
     photo: bytes | None = None
 
 
-class FieldUploadsGetResponse3(BaseModel):
+class UploadsGetResponse3(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     photo: bytes | None = None
 
 
-class FieldAvatarsPostRequest(BaseModel):
+class AvatarsPostRequest(BaseModel):
     caption: str | None = None
     avatar: bytes | None = None
 
 
-class FieldScansPostRequest(BaseModel):
+class ScansPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -139,14 +139,14 @@ class FieldScansPostRequest(BaseModel):
     note: str | None = None
 
 
-class FieldPhotosPostRequest(BaseModel):
+class PhotosPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     photo: bytes
 
 
-class FieldLabelsPostRequest(BaseModel):
+class LabelsPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -156,15 +156,15 @@ class FieldLabelsPostRequest(BaseModel):
     sheet: bytes | None = None
 
 
-class FieldFilesPostRequest(RootModel[bytes]):
+class FilesPostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldFilesPostRequest2(RootModel[str]):
+class FilesPostRequest2(RootModel[str]):
     root: str
 
 
-class FieldFilesPostResponse(RootModel[bytes]):
+class FilesPostResponse(RootModel[bytes]):
     root: bytes
 
 
@@ -173,7 +173,7 @@ class Filter(BaseModel):
     min: int | None = None
 
 
-class FieldSearchesPostRequest(BaseModel):
+class SearchesPostRequest(BaseModel):
     term: str | None = None
     filter: Filter | None = None
     tags: list[str] | None = None
@@ -183,7 +183,7 @@ class FieldSearchesPostRequest(BaseModel):
     extra: dict[str, str] | None = None
 
 
-class FieldCoversPostRequest(BaseModel):
+class CoversPostRequest(BaseModel):
     note: str | None = None
     size: int | None = None
     meta: Address | None = None
@@ -192,21 +192,21 @@ class FieldCoversPostRequest(BaseModel):
     extra: Any | None = None
 
 
-class FieldCoversPostRequestNoteXTraceEncodingHeader(RootModel[constr(pattern=r'^t')]):
+class CoversPostRequestNoteXTraceEncodingHeader(RootModel[constr(pattern=r'^t')]):
     root: constr(pattern=r'^t')
 
 
-class FieldCoversPostRequestMetaXMetaEncodingHeader(RootModel[int]):
+class CoversPostRequestMetaXMetaEncodingHeader(RootModel[int]):
     root: int
 
 
-class FieldCoversPostRequestScansContentDispositionEncodingHeader(
+class CoversPostRequestScansContentDispositionEncodingHeader(
     RootModel[constr(pattern=r'filename=')]
 ):
     root: constr(pattern=r'filename=')
 
 
-class FieldCardsPostRequest(BaseModel):
+class CardsPostRequest(BaseModel):
     title: str | None = None
     count: int | None = None
     tags: list[str] | None = None
@@ -222,7 +222,7 @@ class Point(BaseModel):
     x: int | None = None
 
 
-class FieldStickersPostRequest(BaseModel):
+class StickersPostRequest(BaseModel):
     tags: list[str] | None = None
     words: list[str] | None = None
     sizes: list[int] | None = None
@@ -242,18 +242,18 @@ class Bounds(BaseModel):
     w: int | None = None
 
 
-class FieldAlbumsPostRequest(BaseModel):
+class AlbumsPostRequest(BaseModel):
     photo: bytes
     bounds: Bounds | None = None
     title: str | None = None
     tags: list[str] | None = None
 
 
-class FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader(
+class AlbumsPostRequestBoundsContentDispositionEncodingHeader(
     RootModel[constr(pattern=r'name="[^b]')]
 ):
     root: constr(pattern=r'name="[^b]')
 
 
-class FieldDocumentsIdGetPathIdParameter(BaseModel):
+class DocumentsIdGetPathIdParameter(BaseModel):
     key: str | None = None

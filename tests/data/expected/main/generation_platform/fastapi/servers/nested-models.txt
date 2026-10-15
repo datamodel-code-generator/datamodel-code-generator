@@ -1,7 +1,7 @@
 # nested-models
 serve pydantic_v2.BaseModel
-service UntaggedService: get_value
-service UntaggedService without its methods: TypeError
+service DefaultService: get_value
+service DefaultService without its methods: TypeError
 > GET /values/7
   get_value(id=7, at=None, tags=None)
 < 200 application/json {"id":7}

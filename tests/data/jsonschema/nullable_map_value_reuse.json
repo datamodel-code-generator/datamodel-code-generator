@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Value": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    "Left": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      }
+    },
+    "Right": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

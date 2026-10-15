@@ -1,0 +1,66 @@
+{
+  "title": "EnumNamesBesideNull",
+  "type": "object",
+  "properties": {
+    "member_names": {
+      "type": "string",
+      "enum": [null, "x", "y"],
+      "x-enum-varnames": ["FIRST", "SECOND"],
+      "x-enum-descriptions": ["The first", "The second"]
+    },
+    "item_names": {
+      "type": "string",
+      "enum": [null, "x", "y"],
+      "x-enum-varnames": ["NIL", "FIRST", "SECOND"],
+      "x-enum-descriptions": ["Nothing", "The first", "The second"]
+    },
+    "inner_null": {
+      "type": ["string", "null"],
+      "enum": ["x", null, "y"],
+      "x-enumNames": ["FIRST", "SECOND"],
+      "x-enum-descriptions": ["The first", "Nothing", "The second"]
+    },
+    "null_member": {
+      "type": ["integer", "null"],
+      "enum": [1, null, 2],
+      "x-enum-varnames": ["ONE", "NIL", "TWO"]
+    },
+    "untyped": {
+      "enum": [1, null, 2],
+      "x-enum-varnames": ["ONE", "TWO"]
+    },
+    "repeated_names": {
+      "enum": [null, 1, 2],
+      "x-enum-varnames": ["A", "A", "A"]
+    },
+    "objects": {
+      "enum": [null, {"foo": 1}, {"bar": 2}]
+    },
+    "null_last": {
+      "type": "string",
+      "enum": ["x", "y", null],
+      "x-enumNames": ["FIRST", "SECOND", "NIL"]
+    },
+    "described_beside_null": {
+      "type": "string",
+      "enum": ["x", null, "y"],
+      "x-enum-descriptions": ["The first", "Nothing", "The second"]
+    },
+    "nullable_numbers": {
+      "type": "integer",
+      "nullable": true,
+      "enum": [null, 1, 2],
+      "x-enumNames": ["NIL", "ONE", "TWO"]
+    },
+    "undescribed_beside_null": {
+      "type": "string",
+      "enum": [null, "x"],
+      "x-enum-descriptions": [null, null]
+    },
+    "repeated_names_beside_null": {
+      "type": "string",
+      "enum": [null, "x", "y"],
+      "x-enum-varnames": ["A", "A", "B"]
+    }
+  }
+}

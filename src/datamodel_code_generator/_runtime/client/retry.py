@@ -7,11 +7,11 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
+from enum import Enum
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
-from .logical import Delivery
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -56,6 +56,14 @@ class RetryHeaders:
 
 
 EMPTY_RETRY_HEADERS: Final = RetryHeaders(None, None)
+
+
+class Delivery(Enum):
+    """How far a send got, which only retry and helper decisions read: never sent, possibly sent, or answered."""
+
+    NOT_SENT = "NOT_SENT"
+    MAYBE_SENT = "MAYBE_SENT"
+    RESPONSE_STARTED = "RESPONSE_STARTED"
 
 
 def _header(value: str | UNSET | None, declared: str | None, name: str) -> str | None:

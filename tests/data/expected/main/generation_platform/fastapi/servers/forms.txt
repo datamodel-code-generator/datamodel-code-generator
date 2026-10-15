@@ -1,18 +1,18 @@
 # forms
 serve pydantic_v2.BaseModel
-service UntaggedService: post_form, post_notes, upload, upload_many
-service UntaggedService without its methods: TypeError
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, post_spreads, search, upload, upload_many
+service DefaultService without its methods: TypeError
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a', count=1, tags=None))
+  post_form(FormsPostRequest(name='a', count=1, tags=None))
 < 204 - b''
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a', count=2, tags=['x', 'y']))
+  post_form(FormsPostRequest(name='a', count=2, tags=['x', 'y']))
 < 204 - b''
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a b c', count=3, tags=None))
+  post_form(FormsPostRequest(name='a b c', count=3, tags=None))
 < 204 - b''
 > POST /forms
-  post_form(FieldFormsPostRequest(name='b', count=1, tags=['x', 'x']))
+  post_form(FormsPostRequest(name='b', count=1, tags=['x', 'x']))
 < 204 - b''
 > POST /forms
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
@@ -23,27 +23,27 @@ service UntaggedService without its methods: TypeError
 > POST /forms
 < 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
 > POST /forms
-  post_form(FieldFormsPostRequest(name='%ZZ', count=1, tags=None))
+  post_form(FormsPostRequest(name='%ZZ', count=1, tags=None))
 < 204 - b''
 > POST /forms
 < 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
 > POST /notes
-  post_notes(FieldNotesPostRequest(a='1', b='two'))
+  post_notes(NotesPostRequest(a='1', b='two'))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'file body', note='n'))
+  upload(UploadsPostRequest(file=b'file body', note='n'))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'data', note=None))
+  upload(UploadsPostRequest(file=b'data', note=None))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'second', note=None))
+  upload(UploadsPostRequest(file=b'second', note=None))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'no name', note=None))
+  upload(UploadsPostRequest(file=b'no name', note=None))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'body', note='note body'))
+  upload(UploadsPostRequest(file=b'body', note='note body'))
 < 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
@@ -52,27 +52,107 @@ service UntaggedService without its methods: TypeError
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
 > POST /batches
-  upload_many(FieldBatchesPostRequest(files=[b'one', b'two'], label='l'))
+  upload_many(BatchesPostRequest(files=[b'one', b'two'], label='l'))
 < 204 - b''
 > POST /batches
-  upload_many(FieldBatchesPostRequest(files=[b'one'], label=None))
+  upload_many(BatchesPostRequest(files=[b'one'], label=None))
 < 204 - b''
 > POST /batches
 < 422 application/json [{"type": "missing", "loc": ["body", "files"]}]
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'blue', 'minAge': 3}, filters=[{'color': 'a', 'minAge': None}, {'color': None, 'minAge': 2}], tags=['a', 'b c'], file=b'data'))
+< 204 - b''
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'plain', 'minAge': None}, filters=None, tags=None, file=None))
+< 204 - b''
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'file', 'minAge': None}, filters=None, tags=None, file=None))
+< 204 - b''
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'kept', 'minAge': None}, filters=None, tags=None, file=None))
+< 204 - b''
+> POST /searches
+< 422 application/json [{"type": "json_invalid", "loc": ["body", "filter"]}]
+> POST /searches
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "filter", "minAge"]}, {"type": "string_type", "loc": ["body", "filters", 1, "color"]}, {"type": "json_invalid", "loc": ["body", "filters", 2]}, {"type": "json_invalid", "loc": ["body", "tags", 0]}]
+> POST /searches
+< 422 application/json [{"type": "model_type", "loc": ["body", "filter"]}]
+> POST /searches
+< 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]
+> POST /pets
+  post_pets(PetsPostRequest(pet={'kind': 'cat', 'meows': 2}, pets=[{'kind': 'dog', 'barks': None}, {'kind': 'cat', 'meows': None}]))
+< 204 - b''
+> POST /pets
+< 422 application/json [{"type": "union_tag_invalid", "loc": ["body", "pet"]}, {"type": "union_tag_invalid", "loc": ["body", "pets", 0]}]
+> POST /pets
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "pet", "dog", "barks"]}]
+> POST /extras
+  post_extras(ExtrasPostRequest(name='n', maxAge=None, first={'color': 'blue', 'minAge': 3}, second={'color': 'plain', 'minAge': None}, third={'color': 'file', 'minAge': None}))
+< 204 - b''
+> POST /extras
+  post_extras(ExtrasPostRequest(name='{', maxAge=None, first={'color': 'last', 'minAge': None}))
+< 204 - b''
+> POST /extras
+< 422 application/json [{"type": "json_invalid", "loc": ["body", "first"]}, {"type": "greater_than_equal", "loc": ["body", "second", "minAge"]}, {"type": "json_invalid", "loc": ["body", "third"]}, {"type": "model_type", "loc": ["body", "fourth"]}]
+> POST /extras
+  post_extras(ExtrasPostRequest(name='n', maxAge=None))
+< 204 - b''
+> POST /extra-lists
+  post_extra_lists(ExtraListsPostRequest(name='n', first=[{'color': 'a', 'minAge': None}, {'color': None, 'minAge': 2}], second=[{'color': None, 'minAge': None}]))
+< 204 - b''
+> POST /extra-lists
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", 1, "minAge"]}, {"type": "json_invalid", "loc": ["body", "first", 2]}, {"type": "model_type", "loc": ["body", "second", 0]}]
+> POST /extra-scores
+  post_extra_scores(ExtraScoresPostRequest(name='n', first=[1, 2], second=[3]))
+< 204 - b''
+> POST /extra-scores
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "first", 1]}, {"type": "int_parsing", "loc": ["body", "second", 0]}]
+> POST /extra-bases
+  post_extra_bases(ExtraBasesPostRequest(base='b', name='n', first={'color': 'blue', 'minAge': None}))
+< 204 - b''
+> POST /extra-bases
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", "minAge"]}, {"type": "json_invalid", "loc": ["body", "second"]}]
+> POST /extra-patterns
+  post_extra_patterns(ExtraPatternsPostRequest(name='n', first={'color': 'blue', 'minAge': None}))
+< 204 - b''
+> POST /extra-patterns
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", "minAge"]}]
+> POST /extra-profiles
+  post_extra_profiles(ExtraProfilesPostRequest(name='n', first=2), 'application/x-www-form-urlencoded')
+< 204 - b''
+> POST /extra-profiles
+  post_extra_profiles(ExtraProfilesPostRequest1(count=3, first=['01', '2']), 'application/x-www-form-urlencoded; profile=words')
+< 204 - b''
+> POST /extra-profiles
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "first"]}]
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'blue', 'minAge': 3}, ids=[1, 2], meta={'color': 'c', 'minAge': None}))
+< 204 - b''
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'a b', 'minAge': None}, ids=None, meta=None))
+< 204 - b''
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "filter", "minAge"]}, {"type": "int_parsing", "loc": ["body", "ids", 1]}]
+> POST /spreads
+< 422 application/json [{"type": "model_type", "loc": ["body", "meta"]}]
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "meta", "minAge"]}]
+> POST /spreads
+< 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]
 serve pydantic_v2.dataclass
-service UntaggedService: post_form, post_notes, upload, upload_many
-service UntaggedService without its methods: TypeError
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, post_spreads, search, upload, upload_many
+service DefaultService without its methods: TypeError
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a', count=1, tags=None))
+  post_form(FormsPostRequest(name='a', count=1, tags=MISSING))
 < 204 - b''
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a', count=2, tags=['x', 'y']))
+  post_form(FormsPostRequest(name='a', count=2, tags=['x', 'y']))
 < 204 - b''
 > POST /forms
-  post_form(FieldFormsPostRequest(name='a b c', count=3, tags=None))
+  post_form(FormsPostRequest(name='a b c', count=3, tags=MISSING))
 < 204 - b''
 > POST /forms
-  post_form(FieldFormsPostRequest(name='b', count=1, tags=['x', 'x']))
+  post_form(FormsPostRequest(name='b', count=1, tags=['x', 'x']))
 < 204 - b''
 > POST /forms
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "count"]}]
@@ -90,19 +170,19 @@ service UntaggedService without its methods: TypeError
   post_notes({'a': '1', 'b': 'two'})
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'file body', note='n'))
+  upload(UploadsPostRequest(file=b'file body', note='n'))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'data', note=None))
+  upload(UploadsPostRequest(file=b'data', note=MISSING))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'second', note=None))
+  upload(UploadsPostRequest(file=b'second', note=MISSING))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'no name', note=None))
+  upload(UploadsPostRequest(file=b'no name', note=MISSING))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'body', note='note body'))
+  upload(UploadsPostRequest(file=b'body', note='note body'))
 < 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
@@ -111,10 +191,90 @@ service UntaggedService without its methods: TypeError
 > POST /uploads
 < 422 application/json [{"type": "missing", "loc": ["body", "file"]}]
 > POST /batches
-  upload_many(FieldBatchesPostRequest(files=[b'one', b'two'], label='l'))
+  upload_many(BatchesPostRequest(files=[b'one', b'two'], label='l'))
 < 204 - b''
 > POST /batches
-  upload_many(FieldBatchesPostRequest(files=[b'one'], label=None))
+  upload_many(BatchesPostRequest(files=[b'one'], label=MISSING))
 < 204 - b''
 > POST /batches
 < 422 application/json [{"type": "missing", "loc": ["body", "files"]}]
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'blue', 'minAge': 3}, filters=[{'color': 'a', 'minAge': MISSING}, {'color': MISSING, 'minAge': 2}], tags=['a', 'b c'], file=b'data'))
+< 204 - b''
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'plain', 'minAge': MISSING}, filters=MISSING, tags=MISSING, file=MISSING))
+< 204 - b''
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'file', 'minAge': MISSING}, filters=MISSING, tags=MISSING, file=MISSING))
+< 204 - b''
+> POST /searches
+  search(SearchesPostRequest(filter={'color': 'kept', 'minAge': MISSING}, filters=MISSING, tags=MISSING, file=MISSING))
+< 204 - b''
+> POST /searches
+< 422 application/json [{"type": "json_invalid", "loc": ["body", "filter"]}]
+> POST /searches
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "filter", "minAge"]}, {"type": "string_type", "loc": ["body", "filters", 1, "color"]}, {"type": "json_invalid", "loc": ["body", "filters", 2]}, {"type": "json_invalid", "loc": ["body", "tags", 0]}]
+> POST /searches
+< 422 application/json [{"type": "dataclass_type", "loc": ["body", "filter"]}]
+> POST /searches
+< 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]
+> POST /pets
+  post_pets(PetsPostRequest(pet={'kind': 'cat', 'meows': 2}, pets=[{'kind': 'dog', 'barks': MISSING}, {'kind': 'cat', 'meows': MISSING}]))
+< 204 - b''
+> POST /pets
+< 422 application/json [{"type": "union_tag_invalid", "loc": ["body", "pet"]}, {"type": "union_tag_invalid", "loc": ["body", "pets", 0]}]
+> POST /pets
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "pet", "dog", "barks"]}]
+> POST /extras
+  post_extras(ExtrasPostRequest(name='n', maxAge=MISSING, first=Filter(color='blue', minAge=3), second=Filter(color='plain', minAge=MISSING), third=Filter(color='file', minAge=MISSING)))
+< 204 - b''
+> POST /extras
+  post_extras(ExtrasPostRequest(name='{', maxAge=MISSING, first=Filter(color='last', minAge=MISSING)))
+< 204 - b''
+> POST /extras
+< 422 application/json [{"type": "json_invalid", "loc": ["body", "first"]}, {"type": "greater_than_equal", "loc": ["body", "second", "minAge"]}, {"type": "json_invalid", "loc": ["body", "third"]}, {"type": "dataclass_type", "loc": ["body", "fourth"]}]
+> POST /extras
+  post_extras(ExtrasPostRequest(name='n', maxAge=MISSING))
+< 204 - b''
+> POST /extra-lists
+  post_extra_lists(ExtraListsPostRequest(name='n', first=[Filter(color='a', minAge=MISSING), Filter(color=MISSING, minAge=2)], second=[Filter(color=MISSING, minAge=MISSING)]))
+< 204 - b''
+> POST /extra-lists
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", 1, "minAge"]}, {"type": "json_invalid", "loc": ["body", "first", 2]}, {"type": "dataclass_type", "loc": ["body", "second", 0]}]
+> POST /extra-scores
+  post_extra_scores(ExtraScoresPostRequest(name='n', first=[1, 2], second=[3]))
+< 204 - b''
+> POST /extra-scores
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "first", 1]}, {"type": "int_parsing", "loc": ["body", "second", 0]}]
+> POST /extra-bases
+  post_extra_bases(ExtraBasesPostRequest(base='b', name='n', first=Filter(color='blue', minAge=MISSING)))
+< 204 - b''
+> POST /extra-bases
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", "minAge"]}, {"type": "json_invalid", "loc": ["body", "second"]}]
+> POST /extra-patterns
+  post_extra_patterns(ExtraPatternsPostRequest(name='n', first=Filter(color='blue', minAge=MISSING)))
+< 204 - b''
+> POST /extra-patterns
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "first", "minAge"]}]
+> POST /extra-profiles
+  post_extra_profiles(ExtraProfilesPostRequest(name='n', first=2), 'application/x-www-form-urlencoded')
+< 204 - b''
+> POST /extra-profiles
+  post_extra_profiles(ExtraProfilesPostRequest1(count=3, first=['01', '2']), 'application/x-www-form-urlencoded; profile=words')
+< 204 - b''
+> POST /extra-profiles
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "first"]}]
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'blue', 'minAge': 3}, ids=[1, 2], meta={'color': 'c', 'minAge': MISSING}))
+< 204 - b''
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'a b', 'minAge': MISSING}, ids=MISSING, meta=MISSING))
+< 204 - b''
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "filter", "minAge"]}, {"type": "int_parsing", "loc": ["body", "ids", 1]}]
+> POST /spreads
+< 422 application/json [{"type": "dataclass_type", "loc": ["body", "meta"]}]
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "meta", "minAge"]}]
+> POST /spreads
+< 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]

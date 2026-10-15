@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
 
 codec_0: Final[MsgspecCodec[models.Choice]] = MsgspecCodec(models.Choice)

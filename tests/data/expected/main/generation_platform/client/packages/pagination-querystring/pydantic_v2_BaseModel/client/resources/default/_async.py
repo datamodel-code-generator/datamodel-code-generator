@@ -43,7 +43,7 @@ class AsyncDefaultResource:
     async def search(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
+        criteria: models.SearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> SearchResponse:
@@ -60,7 +60,7 @@ class AsyncDefaultResource:
     async def lookup(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
+        filter: models.LookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> LookupResponse:
@@ -85,7 +85,7 @@ class AsyncDefaultWithResponse:
     async def search(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
+        criteria: models.SearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SearchResponse]:
@@ -102,7 +102,7 @@ class AsyncDefaultWithResponse:
     async def lookup(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
+        filter: models.LookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[LookupResponse]:
@@ -127,7 +127,7 @@ class AsyncDefaultWithRawResponse:
     async def search(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
+        criteria: models.SearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -144,7 +144,7 @@ class AsyncDefaultWithRawResponse:
     async def lookup(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
+        filter: models.LookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -169,7 +169,7 @@ class AsyncDefaultWithStreamingResponse:
     def search(
         self,
         *,
-        criteria: models.FieldSearchGetQuerystringCriteriaParameter | UNSET = UNSET,
+        criteria: models.SearchGetQuerystringCriteriaParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -186,7 +186,7 @@ class AsyncDefaultWithStreamingResponse:
     def lookup(
         self,
         *,
-        filter: models.FieldLookupGetQuerystringFilterParameter | UNSET = UNSET,
+        filter: models.LookupGetQuerystringFilterParameter | UNSET = UNSET,
         response_media_type: Literal['application/json'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

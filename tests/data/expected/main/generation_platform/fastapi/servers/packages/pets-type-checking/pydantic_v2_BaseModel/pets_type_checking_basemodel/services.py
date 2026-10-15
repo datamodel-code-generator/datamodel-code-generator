@@ -27,14 +27,14 @@ class PetsService(Protocol):
         *,
         limit: int,
         tags: list[str] | None,
-        kind: pets_type_checking_basemodel_models.FieldPetsGetQueryKindParameter | None,
+        kind: pets_type_checking_basemodel_models.PetsGetQueryKindParameter | None,
         X_Request_Id: UUID | None,
         since: AwareDatetime | None,
         session: str | None,
     ) -> (
-        pets_type_checking_basemodel_models.FieldPetsGetResponse
+        pets_type_checking_basemodel_models.PetsGetResponse
         | HTTPResult[
-            pets_type_checking_basemodel_models.FieldPetsGetResponse
+            pets_type_checking_basemodel_models.PetsGetResponse
             | pets_type_checking_basemodel_models.Error
         ]
         | Response
@@ -61,8 +61,8 @@ class PetsService(Protocol):
     def list_my_pets(
         self,
     ) -> (
-        pets_type_checking_basemodel_models.FieldPetsMineGetResponse
-        | HTTPResult[pets_type_checking_basemodel_models.FieldPetsMineGetResponse]
+        pets_type_checking_basemodel_models.PetsMineGetResponse
+        | HTTPResult[pets_type_checking_basemodel_models.PetsMineGetResponse]
         | Response
     ):
         """
@@ -104,8 +104,8 @@ class StoreService(Protocol):
     def get_inventory(
         self,
     ) -> (
-        pets_type_checking_basemodel_models.FieldStoreInventoryGetResponse
-        | HTTPResult[pets_type_checking_basemodel_models.FieldStoreInventoryGetResponse]
+        pets_type_checking_basemodel_models.StoreInventoryGetResponse
+        | HTTPResult[pets_type_checking_basemodel_models.StoreInventoryGetResponse]
         | Response
     ):
         """

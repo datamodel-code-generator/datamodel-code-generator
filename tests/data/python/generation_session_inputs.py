@@ -133,6 +133,7 @@ def run_generation_session(
     monkeypatch: pytest.MonkeyPatch | None = None,
     output: Path | None = None,
     api_scope: bool = True,
+    typed_nullable_map_values: bool = False,
 ) -> tuple[dict[str, object], int]:
     """Use the real accepted batch while preserving the independent S01 trace oracle.
 
@@ -148,6 +149,7 @@ def run_generation_session(
             collapse_root_models=True,
             output=output,
             openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api] if api_scope else None,
+            use_typed_nullable_map_values=typed_nullable_map_values,
         ).model_copy(update={"repair_invalid_dotted_stdout": True})
     )
     session = _session(source, session_type)
@@ -239,6 +241,9 @@ def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, sourc
                 raise RuntimeError(message)
             case "repair_parse" if attempt == 2:
                 message = "repair parse failed"
+                raise RuntimeError(message)
+            case "untyped_parse" if attempt == 2:
+                message = "untyped parse failed"
                 raise RuntimeError(message)
         return ordinary_parse(self, *args, **kwargs)
 

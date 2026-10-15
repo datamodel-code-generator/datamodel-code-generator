@@ -33,6 +33,7 @@ def _add_list_pets(
     list_pets_handler = checked(
         service.list_pets,
         'The service.list_pets method of GET /pets',
+        ('principal', 'limit', 'page', 'X_Trace'),
     )
 
     list_pets_authorize = wiring.authorizer()
@@ -87,6 +88,7 @@ def _add_create_pet(
     create_pet_handler = checked(
         service.create_pet,
         'The service.create_pet method of POST /pets',
+        ('principal', 'X_Trace', 'body'),
     )
 
     create_pet_authorize = wiring.authorizer()
@@ -139,6 +141,7 @@ def _add_list_owners(
     list_owners_handler = checked(
         service.list_owners,
         'The service.list_owners method of GET /owners',
+        ('principal', 'limit'),
     )
 
     list_owners_authorize = wiring.authorizer()
@@ -172,7 +175,7 @@ def _add_list_owners(
         list_owners,
         methods=['GET'],
         status_code=200,
-        response_model=models.FieldOwnersGetResponse,
+        response_model=models.OwnersGetResponse,
         response_model_by_alias=True,
         response_model_exclude_unset=True,
         operation_id='listOwners',

@@ -10,11 +10,12 @@ import os
 import re
 import shutil
 import sys
+import warnings
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.api_generation.support.client_generation import SOURCE, copy_references, generate_client
+from tests.api_generation.support.client_generation import SOURCE, copy_references, generate_client, generator_warnings
 from tests.api_generation.support.fixture_server import (
     AsyncLocalTransport,
     FixtureServer,
@@ -45,6 +46,7 @@ _ERROR_FIELDS: Final = (
     "sequence",
     "cause",
 )
+_OPENED: Final[list[Exchange]] = []
 
 
 def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
@@ -77,6 +79,7 @@ class Exchange:
         self.server: FixtureServer | None = None
         self.transports = 0
         self.gzipped: bytes | None = None
+        _OPENED.append(self)
 
     def respond(self, *responders: Callable[[httpx2.Request], httpx2.Response]) -> None:
         """Queue the responders of the next requests."""
@@ -315,6 +318,13 @@ def abroken(request: httpx2.Request) -> httpx2.Response:
     return httpx2.Response(200, headers={"content-type": "application/json"}, stream=_AsyncBrokenStream())
 
 
+def unused_responders() -> list[str]:
+    """Report the responders the exchanges opened since the last report left queued, and forget those exchanges."""
+    left = sum(len(exchange.responders) for exchange in _OPENED)
+    _OPENED.clear()
+    return [f"  unused responders: {left}"] if left else []
+
+
 def import_generated_client(package: str) -> ModuleType:
     """Import a client's copied runtime when requested, otherwise use the covered source runtime."""
     return import_generated(package, copied=os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1")
@@ -353,12 +363,15 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     package = f"{case_name.replace('-', '_')}_{backend.replace('.', '_').lower()}"
     root.mkdir(parents=True, exist_ok=True)
-    _generate(case, backend, root, package)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        _generate(case, backend, root, package)
     sys.path.insert(0, str(root))
-    lines = [f"# {case.get('expected', case_name)} {backend}"]
+    lines = [f"# {case.get('expected', case_name)} {backend}", *(f"  {line}" for line in generator_warnings(caught))]
     try:
         scenario(import_generated_client(package), lines)
     finally:
+        lines.extend(unused_responders())
         stop_servers()
         sys.path.remove(str(root))
         forget_generated(package)

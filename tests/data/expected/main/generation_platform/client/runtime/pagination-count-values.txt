@@ -1,4 +1,4 @@
-# pagination-counts pydantic_v2.BaseModel, pydantic_v2.dataclass
+# pagination-counts pydantic_v2.BaseModel
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=None, total=1, more=None, count=None, maybe_total=None, next_cursor=None, more_alias=None, more_uri=None, cursor_model=None, positive=None, floor=None, base_cursor=None)
@@ -13,10 +13,12 @@
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'1' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/count')] missing
+  total b'1' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1.0' = [1] continuation=None status=200 attempts=1
@@ -31,38 +33,43 @@
   total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'-1.0' = [1] continuation=None status=200 attempts=1
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/has_more')] missing
+  offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset 40.0 next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   position 40 = [41,42] continuation=41 status=200 attempts=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position 40 next = [42,43] continuation=42 status=200 attempts=1
+  position 40 next = [42,43] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position 40.0 = [41,42] continuation=None status=200 attempts=1
-  position 40.0 next = None
+  position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 40.0 next = [42,43] continuation=None status=200 attempts=1
   position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
   > GET https://api.example.com/users?position=9007199254740992.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -84,10 +91,12 @@
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'1' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/count')] missing
+  async total b'1' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1.0' = [1] continuation=None status=200 attempts=1
@@ -102,38 +111,200 @@
   async total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'-1.0' = [1] continuation=None status=200 attempts=1
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/has_more')] missing
+  async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async offset 40.0 next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async position 40 = [41,42] continuation=41 status=200 attempts=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position 40 next = [42,43] continuation=42 status=200 attempts=1
+  async position 40 next = [42,43] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position 40.0 = [41,42] continuation=None status=200 attempts=1
-  async position 40.0 next = None
+  async position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 40.0 next = [42,43] continuation=None status=200 attempts=1
+  async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
+  > GET https://api.example.com/users?position=9007199254740992.0
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 9007199254740993 = [9007199254740993,9007199254740994] continuation=9007199254740993 status=200 attempts=1
+  > GET https://api.example.com/users?position=9007199254740993
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 attempts=1
+# pagination-counts pydantic_v2.dataclass
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=MISSING, total=1, more=MISSING, count=MISSING, maybe_total=MISSING, next_cursor=MISSING, more_alias=MISSING, more_uri=MISSING, cursor_model=MISSING, positive=MISSING, floor=MISSING, base_cursor=MISSING)
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset total b'1.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=MISSING, total=1, more=MISSING, count=MISSING, maybe_total=MISSING, next_cursor=MISSING, more_alias=MISSING, more_uri=MISSING, cursor_model=MISSING, positive=MISSING, floor=MISSING, base_cursor=MISSING)
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset total b'1e0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users?offset=9007199254740991
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'1' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'1.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'1e0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'0.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'-0.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users?offset=40
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset 40.0 next = [43,44] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users?position=40.0
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 40 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 40 next = [42,43] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users?position=40.0
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 40.0 next = [42,43] continuation=None status=200 attempts=1
+  position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
+  > GET https://api.example.com/users?position=9007199254740992.0
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 9007199254740993 = [9007199254740993,9007199254740994] continuation=9007199254740993 status=200 attempts=1
+  > GET https://api.example.com/users?position=9007199254740993
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 9007199254740993 next = [9007199254740994,9007199254740995] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async ordinary total b'1.0' = UserPage(data=[User(id='1')], has_more=MISSING, total=1, more=MISSING, count=MISSING, maybe_total=MISSING, next_cursor=MISSING, more_alias=MISSING, more_uri=MISSING, cursor_model=MISSING, positive=MISSING, floor=MISSING, base_cursor=MISSING)
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async offset total b'1.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async ordinary total b'1e0' = UserPage(data=[User(id='1')], has_more=MISSING, total=1, more=MISSING, count=MISSING, maybe_total=MISSING, next_cursor=MISSING, more_alias=MISSING, more_uri=MISSING, cursor_model=MISSING, positive=MISSING, floor=MISSING, base_cursor=MISSING)
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async offset total b'1e0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users?offset=9007199254740991
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'1' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'1.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'1e0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'0.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'-0.0' = [1] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users?offset=40
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async offset 40.0 next = [43,44] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users?position=40.0
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 40 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 40 next = [42,43] continuation=None status=200 attempts=1
+  > GET https://api.example.com/users?position=40.0
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 40.0 next = [42,43] continuation=None status=200 attempts=1
   async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
   > GET https://api.example.com/users?position=9007199254740992.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -156,10 +327,12 @@
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'1' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/count')] missing
+  total b'1' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1.0' = [1] continuation=None status=200 attempts=1
@@ -174,38 +347,43 @@
   total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'-1.0' = [1] continuation=None status=200 attempts=1
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/has_more')] missing
+  offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset 40.0 next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   position 40 = [41,42] continuation=41 status=200 attempts=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position 40 next = [42,43] continuation=42 status=200 attempts=1
+  position 40 next = [42,43] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position 40.0 = [41,42] continuation=None status=200 attempts=1
-  position 40.0 next = None
+  position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 40.0 next = [42,43] continuation=None status=200 attempts=1
   position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -227,10 +405,12 @@
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'1' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/count')] missing
+  async total b'1' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1.0' = [1] continuation=None status=200 attempts=1
@@ -245,38 +425,43 @@
   async total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'-1.0' = [1] continuation=None status=200 attempts=1
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/has_more')] missing
+  async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async offset 40.0 next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async position 40 = [41,42] continuation=41 status=200 attempts=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position 40 next = [42,43] continuation=42 status=200 attempts=1
+  async position 40 next = [42,43] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position 40.0 = [41,42] continuation=None status=200 attempts=1
-  async position 40.0 next = None
+  async position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 40.0 next = [42,43] continuation=None status=200 attempts=1
   async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -299,10 +484,12 @@
   offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'1' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/count')] missing
+  total b'1' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1.0' = [1] continuation=None status=200 attempts=1
@@ -317,38 +504,43 @@
   total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'-1.0' = [1] continuation=None status=200 attempts=1
+  total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/has_more')] missing
+  offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset 40.0 next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   position 40 = [41,42] continuation=41 status=200 attempts=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position 40 next = [42,43] continuation=42 status=200 attempts=1
+  position 40 next = [42,43] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  position 40.0 = [41,42] continuation=None status=200 attempts=1
-  position 40.0 next = None
+  position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  position 40.0 next = [42,43] continuation=None status=200 attempts=1
   position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -370,10 +562,12 @@
   async offset total b'1e0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?offset=9007199254740991
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async exact large total boundary ['1']
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact large total boundary ['1', '1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'1' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/count')] missing
+  async total b'1' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1.0' = [1] continuation=None status=200 attempts=1
@@ -388,38 +582,43 @@
   async total b'-0.0' = [1] continuation=None status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'-1.0' = [1] continuation=None status=200 attempts=1
+  async total b'-1.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='value') [operation_id='listUsers', location=BodySelector(pointer='/count')] value
+  async total b'true' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async total b'1.5' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  async total b'null' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='null') [operation_id='listUsers', location=BodySelector(pointer='/count')] null
+  async total b'"1.0"' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.0' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  async total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async total b'9007199254740993.00000000000000000001' = [1] continuation=3 status=200 attempts=1
+  async total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
   > GET https://api.example.com/users?offset=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async offset 40.0 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='missing') [operation_id='listUsers', location=BodySelector(pointer='/has_more')] missing
+  async offset 40.0 = [41,42] continuation=42 status=200 attempts=1
+  > GET https://api.example.com/users?offset=42&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async offset 40.0 next = [43,44] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async position 40 = [41,42] continuation=41 status=200 attempts=1
   > GET https://api.example.com/users?position=41
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position 40 next = [42,43] continuation=42 status=200 attempts=1
+  async position 40 next = [42,43] continuation=None status=200 attempts=1
   > GET https://api.example.com/users?position=40.0
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async position 40.0 = [41,42] continuation=None status=200 attempts=1
-  async position 40.0 next = None
+  async position 40.0 = [41,42] continuation=41 status=200 attempts=1
+  > GET https://api.example.com/users?position=41
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async position 40.0 next = [42,43] continuation=None status=200 attempts=1
   async position 40.5 ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=ParameterTarget(location='query', name='position')] type
   > GET https://api.example.com/users?position=9007199254740993
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

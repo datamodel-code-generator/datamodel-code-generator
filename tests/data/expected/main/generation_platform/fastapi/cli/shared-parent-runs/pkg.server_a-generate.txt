@@ -1,0 +1,1 @@
+pkg/services: The server packages pkg.server_a, generated before, and pkg.server_b would both import their implementations from the pkg.services package: put each server package under a parent package of its own, or delete the directory pkg/server_a of pkg.server_a when it is no longer used

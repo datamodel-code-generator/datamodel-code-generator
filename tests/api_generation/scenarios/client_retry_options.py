@@ -321,6 +321,7 @@ def _vendor_headers(package: ModuleType, options: ModuleType, lines: list[str]) 
                 lambda view=view: view.retry.get_vendor(options=options.RequestOptions(retry=options.RetryOptions())),
             )
         lines.append(f"  vendor {label} arrivals={2 - len(exchange.responders)}")
+        exchange.responders.clear()
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
         for name in ("retry_after_ms_header", "should_retry_header"):
@@ -364,6 +365,8 @@ def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> No
             "explicit undeclared key",
             lambda: api.retry.get_safe(options=options.RequestOptions(idempotency_key="unbound")),
         )
+        for value in (" k ", "\tk", 5, b"k"):
+            record(lines, f"refused key {value!r}", lambda value=value: options.RequestOptions(idempotency_key=value))
     lines.append(
         f"  automatic keys count={len(observed)} same retry={observed[0] == observed[1]}"
         f" fresh call={observed[1] != observed[2]} suppressed={observed[3] is None}"
@@ -381,15 +384,21 @@ def _key_calls(package: ModuleType, options: ModuleType, lines: list[str]) -> No
     lines.append(f"  caller key observed={observed}")
 
 
-def _key_fields(server: NativeFixture) -> tuple[bytes, ...]:
+def _key_fields(server: NativeFixture, sent: int) -> tuple[bytes, ...] | None:
+    """Return the key fields of the request a call sent after `sent` earlier ones, or None when it sent none."""
+    if len(server.request_headers) == sent:
+        return None
     return tuple(value for name, value in server.request_headers[-1] if name.lower() == b"idempotency-key")
 
 
-_KEY_VALUES = ("a b", "a\tb", "a \t b", "clé", "\u00a0key\u00a0", "\ud7ffkey\ue000")
+_KEY_VALUES = ("a b", "a\tb", "a \t b", "clé", "\u00a0key\u00a0", "\ud7ffkey\ue000", "key\x7f", "a\r\nb")
 
 
 def _key_wire(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    """Send caller keys unchanged over HTTP/1.1 and HTTP/2 through injected HTTP clients configured for TLS."""
+    """Send caller keys unchanged over HTTP/1.1 and HTTP/2 through injected HTTP clients configured for TLS.
+
+    A key that is not ASCII header text is refused when its options are built, so its call sends nothing.
+    """
     for http2 in (False, True):
         server = NativeFixture(http2=http2)
         protocol = "h2" if http2 else "h1"
@@ -399,12 +408,13 @@ def _key_wire(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
                 package.Client(base_url=server.url, http_client=native) as api,
             ):
                 for value in _KEY_VALUES:
+                    sent = len(server.request_headers)
                     record(
                         lines,
                         f"key sync {protocol} value={value!r}",
                         lambda value=value: api.retry.post_keyed(options=options.RequestOptions(idempotency_key=value)),
                     )
-                    lines.append(f"  key wire={_key_fields(server)!r}")
+                    lines.append(f"  key wire={_key_fields(server, sent)!r}")
 
             async def calls(protocol: str = protocol, server: NativeFixture = server, http2: bool = http2) -> None:
                 async with (
@@ -412,6 +422,7 @@ def _key_wire(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
                     package.AsyncClient(base_url=server.url, http_client=native) as api,
                 ):
                     for value in _KEY_VALUES:
+                        sent = len(server.request_headers)
                         await arecord(
                             lines,
                             f"key async {protocol} value={value!r}",
@@ -419,7 +430,7 @@ def _key_wire(package: ModuleType, options: ModuleType, lines: list[str]) -> Non
                                 options=options.RequestOptions(idempotency_key=value)
                             ),
                         )
-                        lines.append(f"  key wire={_key_fields(server)!r}")
+                        lines.append(f"  key wire={_key_fields(server, sent)!r}")
 
             run(calls)
             lines.append(f"  key {protocol} arrivals={len(server.requests)} alpn={server.protocols}")

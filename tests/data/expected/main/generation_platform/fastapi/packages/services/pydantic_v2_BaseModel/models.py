@@ -7,15 +7,15 @@ from pydantic import RootModel
 from typing_extensions import TypeAliasType
 
 
-class FieldPetsGetResponse(RootModel[list[str]]):
+class PetsGetResponse(RootModel[list[str]]):
     root: list[str]
 
 
-FieldPetsPetIdDeletePathPetIdParameter = TypeAliasType("FieldPetsPetIdDeletePathPetIdParameter", int)
+PetsPetIdDeletePathPetIdParameter = TypeAliasType("PetsPetIdDeletePathPetIdParameter", int)
 
 
-FieldPetsPetIdMovesPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdMovesPostPathPetIdParameter", int)
+PetsPetIdMovesPostPathPetIdParameter = TypeAliasType("PetsPetIdMovesPostPathPetIdParameter", int)
 
 
-class FieldPetsPetIdMovesPostResponse201LocationHeader(RootModel[str]):
+class PetsPetIdMovesPostResponse201LocationHeader(RootModel[str]):
     root: str

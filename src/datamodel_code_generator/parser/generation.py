@@ -1135,13 +1135,23 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
-    def redirect_reference_users(self, old_reference: Reference, new_reference: Reference) -> None:
-        """Redirect every user of ``old_reference`` to ``new_reference``."""
+    def redirect_reference_users(self, old_reference: Reference, new_reference: Reference) -> list[DataType]:
+        """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users."""
         children = [child for child in old_reference.children[:] if hasattr(child, "replace_reference")]
         cache_owners = [self._cache_owners_for_data_type(child) for child in children]
         self._replace_reference_children(old_reference, new_reference)
         self._invalidate_owner_caches_many(cache_owners)
         self._invalidate_after_mutation()
+        return children
+
+    def has_users_in_other_modules(self, model: DataModel) -> bool:
+        """Return whether a model of another module uses ``model``, by a name that module already wrote."""
+        module = model.module_name
+        return any(
+            hasattr(child, "replace_reference")
+            and getattr(self._cache_owners_for_data_type(child)[1], "module_name", module) != module
+            for child in model.reference.children
+        )
 
     def redirect_model_reference_users(
         self,

@@ -8,16 +8,16 @@ from typing import Annotated
 from pydantic import Field
 from typing_extensions import TypeAliasType
 
-FieldItemsGetQueryOtherParameter = TypeAliasType(
-    "FieldItemsGetQueryOtherParameter", Annotated[str, Field(max_length=4)]
+ItemsGetQueryOtherParameter = TypeAliasType(
+    "ItemsGetQueryOtherParameter", Annotated[str, Field(max_length=4)]
 )
 
 
-FieldItemsGetQueryCodesParameter = TypeAliasType(
-    "FieldItemsGetQueryCodesParameter", list[Annotated[str, Field(max_length=4)]]
+ItemsGetQueryCodesParameter = TypeAliasType(
+    "ItemsGetQueryCodesParameter", list[Annotated[str, Field(max_length=4)]]
 )
 
 
-FieldItemsCodeGetPathCodeParameter = TypeAliasType(
-    "FieldItemsCodeGetPathCodeParameter", Annotated[str, Field(max_length=4)]
+ItemsCodeGetPathCodeParameter = TypeAliasType(
+    "ItemsCodeGetPathCodeParameter", Annotated[str, Field(max_length=4)]
 )

@@ -1,0 +1,9 @@
+# first run
+# narrowed run
+LeftoverFilesWarning: server: These Python files are not generated and are left in place: server/routers/store.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in services.
+# json run
+LeftoverFilesWarning: server: These Python files are not generated and are left in place: server/routers/store.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in services.
+# check run
+EXTRA: server/routers/store.py (no longer generated)
+# error run
+datamodel_code_generator.LeftoverFilesWarning: server: These Python files are not generated and are left in place: server/routers/store.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in services.

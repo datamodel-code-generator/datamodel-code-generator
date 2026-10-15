@@ -15,12 +15,12 @@ class Value:
     id: int
 
 
-FieldValuesIdGetPathIdParameter = TypeAliasType(
-    "FieldValuesIdGetPathIdParameter", Annotated[int, Field(ge=1)]
+ValuesIdGetPathIdParameter = TypeAliasType(
+    "ValuesIdGetPathIdParameter", Annotated[int, Field(ge=1)]
 )
 
 
-FieldValuesIdGetQueryAtParameter = TypeAliasType("FieldValuesIdGetQueryAtParameter", AwareDatetime)
+ValuesIdGetQueryAtParameter = TypeAliasType("ValuesIdGetQueryAtParameter", AwareDatetime)
 
 
-FieldValuesIdGetQueryTagsParameter = TypeAliasType("FieldValuesIdGetQueryTagsParameter", list[str])
+ValuesIdGetQueryTagsParameter = TypeAliasType("ValuesIdGetQueryTagsParameter", list[str])

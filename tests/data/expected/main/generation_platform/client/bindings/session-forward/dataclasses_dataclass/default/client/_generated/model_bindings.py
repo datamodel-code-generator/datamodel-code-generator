@@ -8,17 +8,17 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec
 
 
-codec_0: Final[StdlibCodec[models.First]] = StdlibCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.First]] = DataclassCodec(None, {})
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.First]] = StdlibCodec(None, MODELS)
+codec_1: Final[DataclassCodec[models.First]] = DataclassCodec(None, {})
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.Second]] = StdlibCodec(None, MODELS)
+codec_2: Final[DataclassCodec[models.Second]] = DataclassCodec(None, {})
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Second]] = StdlibCodec(None, MODELS)
+codec_3: Final[DataclassCodec[models.Second]] = DataclassCodec(None, {})
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""

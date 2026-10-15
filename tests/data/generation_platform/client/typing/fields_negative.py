@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pets import AsyncClient, Client
 from pets_models import (
-    FieldPetsPetIdOwnerPutPathPetIdParameter,
-    FieldPetsPetIdPatchPathPetIdParameter,
-    FieldPetsPetIdVisitsPostPathPetIdParameter,
+    PetsPetIdOwnerPutPathPetIdParameter,
+    PetsPetIdPatchPathPetIdParameter,
+    PetsPetIdVisitsPostPathPetIdParameter,
     Kind,
     NewPet,
 )
@@ -16,9 +16,9 @@ def refuse(
     client: Client,
     kind: Kind,
     body: NewPet,
-    pet: FieldPetsPetIdPatchPathPetIdParameter,
-    visit: FieldPetsPetIdVisitsPostPathPetIdParameter,
-    owner_id: FieldPetsPetIdOwnerPutPathPetIdParameter,
+    pet: PetsPetIdPatchPathPetIdParameter,
+    visit: PetsPetIdVisitsPostPathPetIdParameter,
+    owner_id: PetsPetIdOwnerPutPathPetIdParameter,
 ) -> None:
     pets = client.default
     pets.create_pet(body=body, name="Mimi", media_type="application/json")  # error

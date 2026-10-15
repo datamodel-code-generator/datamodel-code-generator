@@ -33,11 +33,11 @@
   client max_retries fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
   view max_retries fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
   call max_retries fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='max_retries') [field_path=('max_retries',)] out_of_range
-  client max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=FieldSafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
+  client max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=SafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
   client max_retries zero pending responses=1
-  view max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=FieldSafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
+  view max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=SafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
   view max_retries zero pending responses=1
-  call max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=FieldSafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
+  call max_retries zero ! InternalServerError: Error code: 503 - busy [operation_id='getSafe', status_code=503, body=SafeGetResponse(root='busy'), body_bytes=b'busy', truncated=False]
   call max_retries zero pending responses=1
   retry statuses bool ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
   retry statuses fractional ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.statuses') [field_path=('retry', 'statuses')] out_of_range
@@ -70,11 +70,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  retry nested client/view/view/call = FieldSafeGetResponse(root='merged')
+  retry nested client/view/view/call = SafeGetResponse(root='merged')
   merged retry statuses=[501, 501, 200] waits=(0.25, 0.5) pending responses=0
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  partial delay inherits larger maximum = FieldSafeGetResponse(root='valid inherited delay')
+  partial delay inherits larger maximum = SafeGetResponse(root='valid inherited delay')
   invalid delay after request merge ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='out_of_range', field_path='retry.max_delay') [operation_id='getSafe', field_path=('retry', 'max_delay')] out_of_range
   invalid delay after view merge ! ConfigurationError: ConfigurationError(reason='out_of_range', field_path='retry.max_delay') [field_path=('retry', 'max_delay')] out_of_range
   merged delay pending responses=0
@@ -87,29 +87,29 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  redirects and a retry within the final fields = (FieldSafeGetResponse(root='four sends'), 2)
+  redirects and a retry within the final fields = (SafeGetResponse(root='four sends'), 2)
   merged redirect pending responses=0
   > POST https://api.example.com/unsafe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, content-length: 17] b'removed after 303'
   > GET https://other.example.com/accepted
     [host: other.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream] b''
-  a view's redirect choice over the client's, and the call's over the view's = FieldUnsafePostResponse(root='inherited destination and method permission')
+  a view's redirect choice over the client's, and the call's over the view's = UnsafePostResponse(root='inherited destination and method permission')
   merged redirect permissions pending responses=0
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  vendor inherited declaration = FieldVendorGetResponse(root='accepted')
+  vendor inherited declaration = VendorGetResponse(root='accepted')
   vendor inherited declaration arrivals=2
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  vendor case-insensitive match = FieldVendorGetResponse(root='accepted')
+  vendor case-insensitive match = VendorGetResponse(root='accepted')
   vendor case-insensitive match arrivals=2
   > GET https://api.example.com/vendor
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  vendor disabled ! InternalServerError: Error code: 501 - vendor [operation_id='getVendor', status_code=501, body=FieldVendorGetResponse(root='vendor'), body_bytes=b'vendor', truncated=False]
+  vendor disabled ! InternalServerError: Error code: 501 - vendor [operation_id='getVendor', status_code=501, body=VendorGetResponse(root='vendor'), body_bytes=b'vendor', truncated=False]
   vendor disabled arrivals=1
   vendor mismatched retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getVendor', reason='invalid_value', field_path='retry.retry_after_ms_header') [operation_id='getVendor', field_path=('retry', 'retry_after_ms_header')] invalid_value
   vendor undeclared retry_after_ms_header ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='invalid_value', field_path='retry.retry_after_ms_header') [operation_id='getSafe', field_path=('retry', 'retry_after_ms_header')] invalid_value
@@ -119,68 +119,88 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 10] b'same bytes'
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 10] b'same bytes'
-  automatic key retained through retry = FieldKeyedPostResponse(root='accepted')
+  automatic key retained through retry = KeyedPostResponse(root='accepted')
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 8] b'new call'
-  automatic key fresh next call = FieldKeyedPostResponse(root='accepted')
+  automatic key fresh next call = KeyedPostResponse(root='accepted')
   > POST https://api.example.com/keyed
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain] b''
-  automatic key suppressed = FieldKeyedPostResponse(root='accepted')
+  automatic key suppressed = KeyedPostResponse(root='accepted')
   explicit undeclared key ! ConfigurationError: ConfigurationError(operation_id='getSafe', reason='not_declared', field_path='idempotency_key') [operation_id='getSafe', field_path=('idempotency_key',)] not_declared
+  refused key ' k ' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  refused key '\tk' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  refused key 5 ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  refused key b'k' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
   automatic keys count=4 same retry=True fresh call=True suppressed=True
   > POST https://api.example.com/keyed
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
   > POST https://api.example.com/keyed
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: caller-owned] b''
-  caller key retained through retry = FieldKeyedPostResponse(root='accepted')
+  caller key retained through retry = KeyedPostResponse(root='accepted')
   caller key observed=['caller-owned', 'caller-owned']
-  key sync h1 value='a b' = FieldKeyedPostResponse(root='ready')
+  key sync h1 value='a b' = KeyedPostResponse(root='ready')
   key wire=(b'a b',)
-  key sync h1 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  key sync h1 value='a\tb' = KeyedPostResponse(root='ready')
   key wire=(b'a\tb',)
-  key sync h1 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  key sync h1 value='a \t b' = KeyedPostResponse(root='ready')
   key wire=(b'a \t b',)
-  key sync h1 value='clé' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'cl\xc3\xa9',)
-  key sync h1 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xc2\xa0key\xc2\xa0',)
-  key sync h1 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
-  key async h1 value='a b' = FieldKeyedPostResponse(root='ready')
+  key sync h1 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h1 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='a b' = KeyedPostResponse(root='ready')
   key wire=(b'a b',)
-  key async h1 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  key async h1 value='a\tb' = KeyedPostResponse(root='ready')
   key wire=(b'a\tb',)
-  key async h1 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  key async h1 value='a \t b' = KeyedPostResponse(root='ready')
   key wire=(b'a \t b',)
-  key async h1 value='clé' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'cl\xc3\xa9',)
-  key async h1 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xc2\xa0key\xc2\xa0',)
-  key async h1 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
-  key h1 arrivals=12 alpn=[]
-  key sync h2 value='a b' = FieldKeyedPostResponse(root='ready')
+  key async h1 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h1 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key h1 arrivals=6 alpn=[]
+  key sync h2 value='a b' = KeyedPostResponse(root='ready')
   key wire=(b'a b',)
-  key sync h2 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  key sync h2 value='a\tb' = KeyedPostResponse(root='ready')
   key wire=(b'a\tb',)
-  key sync h2 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  key sync h2 value='a \t b' = KeyedPostResponse(root='ready')
   key wire=(b'a \t b',)
-  key sync h2 value='clé' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'cl\xc3\xa9',)
-  key sync h2 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xc2\xa0key\xc2\xa0',)
-  key sync h2 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
-  key async h2 value='a b' = FieldKeyedPostResponse(root='ready')
+  key sync h2 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key sync h2 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='a b' = KeyedPostResponse(root='ready')
   key wire=(b'a b',)
-  key async h2 value='a\tb' = FieldKeyedPostResponse(root='ready')
+  key async h2 value='a\tb' = KeyedPostResponse(root='ready')
   key wire=(b'a\tb',)
-  key async h2 value='a \t b' = FieldKeyedPostResponse(root='ready')
+  key async h2 value='a \t b' = KeyedPostResponse(root='ready')
   key wire=(b'a \t b',)
-  key async h2 value='clé' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'cl\xc3\xa9',)
-  key async h2 value='\xa0key\xa0' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xc2\xa0key\xc2\xa0',)
-  key async h2 value='\ud7ffkey\ue000' = FieldKeyedPostResponse(root='ready')
-  key wire=(b'\xed\x9f\xbfkey\xee\x80\x80',)
-  key h2 arrivals=12 alpn=['h2', 'h2']
+  key async h2 value='clé' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='\xa0key\xa0' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='\ud7ffkey\ue000' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='key\x7f' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key async h2 value='a\r\nb' ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='idempotency_key') [field_path=('idempotency_key',)] invalid_value
+  key wire=None
+  key h2 arrivals=6 alpn=['h2', 'h2']

@@ -8,42 +8,42 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Choice, Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Choice, Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.RequestBase: Model((Field('version', 'kind'),), True),
-    models.RequestV1: Model((Field('version', 'kind'), Field('request_id', 'request_id')), True),
-    models.RequestV2: Model((Field('version', 'kind'),), True),
+    models.RequestBase: Model((Field('version', 'kind'),)),
+    models.RequestV1: Model((Field('version', 'kind'), Field('request_id', 'request_id'))),
+    models.RequestV2: Model((Field('version', 'kind'),)),
 }
 
-codec_0: Final[StdlibCodec[models.Request]] = StdlibCodec(Choice((), 'version', (('v1', models.RequestV1), ('v2', models.RequestV2))), MODELS)
+codec_0: Final[TypedDictCodec[models.Request]] = TypedDictCodec(Choice((), 'version', (('v1', models.RequestV1), ('v2', models.RequestV2))), MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Request]] = StdlibCodec(Choice((), 'version', (('v1', models.RequestV1), ('v2', models.RequestV2))), MODELS)
+codec_1: Final[TypedDictCodec[models.Request]] = TypedDictCodec(Choice((), 'version', (('v1', models.RequestV1), ('v2', models.RequestV2))), MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.RequestVersionEnum]] = StdlibCodec(None, MODELS)
+codec_2: Final[TypedDictCodec[models.RequestVersionEnum]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.RequestVersionEnum]] = StdlibCodec(None, MODELS)
+codec_3: Final[TypedDictCodec[models.RequestVersionEnum]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.RequestBase]] = StdlibCodec(models.RequestBase, MODELS)
+codec_4: Final[TypedDictCodec[models.RequestBase]] = TypedDictCodec(models.RequestBase, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.RequestBase]] = StdlibCodec(models.RequestBase, MODELS)
+codec_5: Final[TypedDictCodec[models.RequestBase]] = TypedDictCodec(models.RequestBase, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.RequestV1]] = StdlibCodec(models.RequestV1, MODELS)
+codec_6: Final[TypedDictCodec[models.RequestV1]] = TypedDictCodec(models.RequestV1, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.RequestV1]] = StdlibCodec(models.RequestV1, MODELS)
+codec_7: Final[TypedDictCodec[models.RequestV1]] = TypedDictCodec(models.RequestV1, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""
 
-codec_8: Final[StdlibCodec[models.RequestV2]] = StdlibCodec(models.RequestV2, MODELS)
+codec_8: Final[TypedDictCodec[models.RequestV2]] = TypedDictCodec(models.RequestV2, MODELS)
 """Codec of /paths/~1bindings~14/post request_body (request application/json)."""
 
-codec_9: Final[StdlibCodec[models.RequestV2]] = StdlibCodec(models.RequestV2, MODELS)
+codec_9: Final[TypedDictCodec[models.RequestV2]] = TypedDictCodec(models.RequestV2, MODELS)
 """Codec of /paths/~1bindings~14/post response_body (response 200 application/json)."""

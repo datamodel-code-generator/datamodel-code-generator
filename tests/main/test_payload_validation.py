@@ -177,6 +177,7 @@ BACKEND_ACCEPTANCE_CASE_IDS = {
         "jsonschema/array_field_constraints.json",
         "openapi/api.yaml::components.schemas.Pet",
         "openapi/additional_properties.yaml::components.schemas.Error",
+        "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Cat",
     ),
     PayloadBackend.DATACLASSES: (
         "jsonschema/pydantic_v2_runtime_value.json",
@@ -770,21 +771,15 @@ def test_pydantic_v2_float_multiple_of_exclusions_are_version_gated(
     assert exclusion_reason is None
 
 
-@pytest.mark.parametrize(
-    ("backend", "min_version"),
-    [
-        (PayloadBackend.PYDANTIC_V2, PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN),
-        (PayloadBackend.PYDANTIC_V2_DATACLASS, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN),
-    ],
-)
+@pytest.mark.parametrize("backend", [PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS])
 @pytest.mark.allow_direct_assert
 def test_pydantic_v2_legacy_runtime_cross_module_lookaround_exclusions_are_version_gated(
-    backend: PayloadBackend, min_version: Version
+    backend: PayloadBackend,
 ) -> None:
-    """Cross-module lookaround validators need Pydantic 2.5+, or 2.8+ for compiled dataclass alias patterns."""
+    """Cross-module lookaround validators need Pydantic 2.5+ for both Pydantic backends."""
     case = SCHEMA_CASE_BY_ID["jsonschema/schema_validators_runtime_root_cross_module/a.json"]
     assert _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, Version("2.0.3"))
-    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, min_version) is None
+    assert _pydantic_v2_legacy_runtime_exclusion_reason(case, backend, PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN) is None
 
 
 @pytest.mark.parametrize(
@@ -794,7 +789,7 @@ def test_pydantic_v2_legacy_runtime_cross_module_lookaround_exclusions_are_versi
         ("jsonschema/use_decimal_for_multiple_of.json", Version("2.0.3"), PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN),
         (
             "jsonschema/root_alias_constraints/lookaround.json",
-            Version("2.7.4"),
+            Version("2.10.6"),
             PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN,
         ),
     ],
@@ -1334,24 +1329,54 @@ def test_payload_runtime_version_policies() -> None:
 
 
 @pytest.mark.parametrize(
-    ("case_id", "payload"),
-    json.loads((RUNTIME_COMPATIBILITY_PATH / "version_cases.json").read_text()).items(),
+    ("backend", "case_id", "payload", "invalid_payloads"),
+    [
+        *(
+            pytest.param(PayloadBackend.PYDANTIC_V2, case_id, payload, [], id=case_id)
+            for case_id, payload in json.loads((RUNTIME_COMPATIBILITY_PATH / "version_cases.json").read_text()).items()
+        ),
+        *(
+            pytest.param(
+                PayloadBackend(backend),
+                case_id,
+                payloads["valid"],
+                [payloads["invalid"]],
+                id=f"alias:{backend}:{case_id}",
+            )
+            for backend, cases in json.loads(
+                (RUNTIME_COMPATIBILITY_PATH / "alias_version_cases.json").read_text()
+            ).items()
+            for case_id, payloads in cases.items()
+        ),
+    ],
 )
 def test_payload_runtime_pydantic_version_witnesses(
-    case_id: str, payload: Any, generated_model_cache: dict[str, Any]
+    backend: PayloadBackend,
+    case_id: str,
+    payload: Any,
+    invalid_payloads: list[Any],
+    generated_model_cache: dict[str, Any],
 ) -> None:
-    """Verify old-runtime failures and restored round trips with actual Pydantic adapters."""
+    """Verify old-runtime failures and restored round trips with actual Pydantic adapters.
+
+    The payload target of Pydantic before 2.11 is 2, which keeps string lookaround patterns in type aliases:
+    every model or dataclass that reaches the alias selects the engine from Pydantic 2.5 on, also through a
+    nested model, the bases of a model it uses, or a ``RootModel``; a bare alias cannot.
+    """
     case = SCHEMA_CASE_BY_ID[case_id]
     validate_with_source_schema(case, payload)
-    if _pydantic_v2_legacy_runtime_exclusion_reason(case, PayloadBackend.PYDANTIC_V2):
-        with pytest.raises(PayloadAdapterError, match="look-around"):
-            generate_payload_runtime(case, generated_model_cache, PayloadBackend.PYDANTIC_V2)
+    if _pydantic_v2_legacy_runtime_exclusion_reason(case, backend):
+        with pytest.raises(PayloadAdapterError, match=r"look-around|backreferences"):
+            generate_payload_runtime(case, generated_model_cache, backend)
         return
-    adapter = load_generated_payload_adapter(case, generated_model_cache)
+    adapter = load_generated_payload_adapter(case, generated_model_cache, backend)
     validated = adapter.validate_python(payload)
+    for invalid_payload in invalid_payloads:
+        with pytest.raises(ValidationError, match="string_pattern_mismatch"):
+            adapter.validate_python(invalid_payload)
     if _pydantic_v2_legacy_runtime_exclusion_reason(
         case,
-        PayloadBackend.PYDANTIC_V2,
+        backend,
         exclusion_groups=PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS,
     ):
         with pytest.raises(UserWarning, match="serializer warnings"):
@@ -1362,7 +1387,7 @@ def test_payload_runtime_pydantic_version_witnesses(
 
 @pytest.mark.skipif(
     PYDANTIC_RUNTIME_VERSION < PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN,
-    reason="Pydantic before 2.8.0 cannot validate compiled patterns",
+    reason="Pydantic before 2.11.0 runs target 2, which keeps string patterns that a bare alias cannot validate",
 )
 def test_payload_runtime_dataclass_lookaround_alias(tmp_path: Path) -> None:
     """A bare dataclass alias compiles its lookaround pattern, so it validates without a consuming dataclass."""

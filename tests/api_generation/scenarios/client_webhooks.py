@@ -468,7 +468,7 @@ def _syntax(hooks: Webhooks) -> None:
 
 
 def _limits(hooks: Webhooks) -> None:
-    """Refuse oversized bodies, headers, key sets, and signature lists before decoding a signature."""
+    """Refuse oversized key sets and signature lists before decoding a signature."""
     options = hooks.protocols.WebhookOptions
     many = " ".join([_ZERO_SIGNATURE] * 8 + [STANDARD.headers[2][1]])
     hooks.check("nine signatures", STANDARD, headers=STANDARD.changed("webhook-signature", many))
@@ -476,11 +476,6 @@ def _limits(hooks: Webhooks) -> None:
     nine = hooks.key_set(*((f"key-{index}", STANDARD.secret) for index in range(9)))
     hooks.check("nine keys", STANDARD, keys=nine)
     hooks.check("nine keys allowed", STANDARD, keys=nine, options=options(max_keys=9))
-    hooks.check("body limit", STANDARD, options=options(max_body_bytes=len(STANDARD.body)))
-    hooks.check("body over limit", STANDARD, options=options(max_body_bytes=len(STANDARD.body) - 1))
-    octets = sum(len(name) + len(value) for name, value in STANDARD.headers)
-    hooks.check("header limit", STANDARD, options=options(max_header_bytes=octets))
-    hooks.check("headers over limit", STANDARD, options=options(max_header_bytes=octets - 1))
     hooks.check("one signature allowed", STANDARD, options=options(max_signatures=1))
 
 

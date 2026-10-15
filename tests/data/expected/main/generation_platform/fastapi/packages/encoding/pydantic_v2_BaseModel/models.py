@@ -25,84 +25,84 @@ class Blob(BaseModel):
     a: int | None = None
 
 
-FieldSearchGetCookieSessionParameter = TypeAliasType(
-    "FieldSearchGetCookieSessionParameter", Annotated[str, Field(min_length=2)]
+SearchGetCookieSessionParameter = TypeAliasType(
+    "SearchGetCookieSessionParameter", Annotated[str, Field(min_length=2)]
 )
 
 
-FieldSearchGetQueryCodeParameter = TypeAliasType(
-    "FieldSearchGetQueryCodeParameter", Annotated[str, Field(pattern=r'^[A-Z]+$')]
+SearchGetQueryCodeParameter = TypeAliasType(
+    "SearchGetQueryCodeParameter", Annotated[str, Field(pattern=r'^[A-Z]+$')]
 )
 
 
-FieldSearchGetQueryIdsParameter = TypeAliasType("FieldSearchGetQueryIdsParameter", list[int])
+SearchGetQueryIdsParameter = TypeAliasType("SearchGetQueryIdsParameter", list[int])
 
 
-FieldSearchGetHeaderXIdsParameter = TypeAliasType("FieldSearchGetHeaderXIdsParameter", list[int])
+SearchGetHeaderXIdsParameter = TypeAliasType("SearchGetHeaderXIdsParameter", list[int])
 
 
-FieldRatiosGetQueryRatiosParameter = TypeAliasType("FieldRatiosGetQueryRatiosParameter", list[float])
+RatiosGetQueryRatiosParameter = TypeAliasType("RatiosGetQueryRatiosParameter", list[float])
 
 
-FieldRatiosGetQueryLimitsParameter = TypeAliasType(
-    "FieldRatiosGetQueryLimitsParameter",
+RatiosGetQueryLimitsParameter = TypeAliasType(
+    "RatiosGetQueryLimitsParameter",
     Annotated[
         list[Annotated[int, Field(ge=1)]], Field([1, 2], examples=[[1]], title='Limits')
     ],
 )
 
 
-FieldRepeatIdAgainIdGetPathIdParameter = TypeAliasType("FieldRepeatIdAgainIdGetPathIdParameter", int)
+RepeatIdAgainIdGetPathIdParameter = TypeAliasType("RepeatIdAgainIdGetPathIdParameter", int)
 
 
-FieldNotesNoteIdGetPathNoteIdParameter = TypeAliasType("FieldNotesNoteIdGetPathNoteIdParameter", int)
+NotesNoteIdGetPathNoteIdParameter = TypeAliasType("NotesNoteIdGetPathNoteIdParameter", int)
 
 
-FieldFilesFileNameGetPathFileNameParameter = TypeAliasType(
-    "FieldFilesFileNameGetPathFileNameParameter",
+FilesFileNameGetPathFileNameParameter = TypeAliasType(
+    "FilesFileNameGetPathFileNameParameter",
     Annotated[str, Field(pattern=r'^[a-z]+\.txt$')],
 )
 
 
-FieldMenüItemGetPathItemParameter = TypeAliasType(
-    "FieldMenüItemGetPathItemParameter", Annotated[str, Field(pattern=r'^[a-z]+$')]
+MenüItemGetPathItemParameter = TypeAliasType(
+    "MenüItemGetPathItemParameter", Annotated[str, Field(pattern=r'^[a-z]+$')]
 )
 
 
-class FieldItemsLevelGetPathLevelParameter(IntEnum):
+class ItemsLevelGetPathLevelParameter(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-class FieldItemsLevelGetQueryModeParameter(IntEnum):
+class ItemsLevelGetQueryModeParameter(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-class FieldItemsLevelGetQueryRatioParameter(Enum):
+class ItemsLevelGetQueryRatioParameter(Enum):
     number_0_5 = 0.5
     number_1_5 = 1.5
 
 
-FieldItemsLevelGetHeaderXFlagParameter = TypeAliasType("FieldItemsLevelGetHeaderXFlagParameter", Literal[True])
+ItemsLevelGetHeaderXFlagParameter = TypeAliasType("ItemsLevelGetHeaderXFlagParameter", Literal[True])
 
 
-class FieldItemsLevelGetQueryKindParameter(StrEnum):
+class ItemsLevelGetQueryKindParameter(StrEnum):
     a = 'a'
     b = 'b'
 
 
-class FieldItemsLevelGetQueryTierParameter1(IntEnum):
+class ItemsLevelGetQueryTierParameter1(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-FieldItemsLevelGetQueryTierParameter = TypeAliasType("FieldItemsLevelGetQueryTierParameter", FieldItemsLevelGetQueryTierParameter1 | None)
+ItemsLevelGetQueryTierParameter = TypeAliasType("ItemsLevelGetQueryTierParameter", ItemsLevelGetQueryTierParameter1 | None)
 
 
-class FieldItemsLevelGetQueryLevelsParameterEnum(IntEnum):
+class ItemsLevelGetQueryLevelsParameterEnum(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-FieldItemsLevelGetQueryLevelsParameter = TypeAliasType("FieldItemsLevelGetQueryLevelsParameter", list[FieldItemsLevelGetQueryLevelsParameterEnum])
+ItemsLevelGetQueryLevelsParameter = TypeAliasType("ItemsLevelGetQueryLevelsParameter", list[ItemsLevelGetQueryLevelsParameterEnum])

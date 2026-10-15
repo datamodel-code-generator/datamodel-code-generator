@@ -7,4 +7,4 @@ from typing_extensions import TypeAliasType
 
 from . import common
 
-FieldItemsGetQueryCodesParameter = TypeAliasType("FieldItemsGetQueryCodesParameter", list[common.Code])
+ItemsGetQueryCodesParameter = TypeAliasType("ItemsGetQueryCodesParameter", list[common.Code])

@@ -4,8 +4,18 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 
 class ContainsTrueDefaultMinContains(BaseModel):
     values: list[str] = Field(..., min_length=1)
+    ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)
+    ref_tags: list[str] | None = Field(None, max_length=3, min_length=1)
+
+
+class Pair(RootModel[list[str]]):
+    root: list[str] = Field(..., min_length=1)
+
+
+class Tags(RootModel[list[str]]):
+    root: list[str] = Field(..., max_length=3)

@@ -1,0 +1,2 @@
+Error: services: The server packages server, generated before, and admin of job 'admin' would both import their implementations from the services package: put each server package under a parent package of its own, or delete the directory server of server when it is no longer used
+admin written: False

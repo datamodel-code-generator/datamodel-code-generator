@@ -58,6 +58,9 @@
 
 - [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, generated package, template values, and served OpenAPI document may change. See Experimenta...
 - [Python Client Generation](https://datamodel-code-generator.koxudaxi.dev/python-client/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
+- [Python Client Protocol Helpers](https://datamodel-code-generator.koxudaxi.dev/python-client-helpers/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
+- [Python Client Reference](https://datamodel-code-generator.koxudaxi.dev/python-client-reference/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
+- [Migrating from fastapi-code-generator](https://datamodel-code-generator.koxudaxi.dev/fastapi-code-generator-migration/): This guide is for projects that generate a FastAPI application with fastapi-code-generator (*fcg*, the `fastapi-codegen` command)
 
 
 ## CLI Reference

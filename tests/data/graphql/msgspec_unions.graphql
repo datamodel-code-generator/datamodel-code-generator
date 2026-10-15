@@ -1,0 +1,16 @@
+type Cat {
+  name: String
+}
+
+type Dog {
+  bark: Boolean
+}
+
+union Pet = Cat | Dog
+
+union Lone = Cat
+
+type Query {
+  pet: Pet
+  lone: Lone
+}

@@ -60,7 +60,7 @@ PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='header', name='x-cursor'), end_missing=True, end_null=True, empty_string_ends=True),
-    fingerprint='a51766c500c91f56c205ba3287b5d90c81f9f82f69fb42e8a445c04f9f9d3329',
+    fingerprint='2e5c06fe8859dee87d4f342b1fd82c1694ac5aa34f5cacca604374e64fac99cf',
 )
 
 
@@ -71,7 +71,7 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
-    fingerprint='d9d1f8a4d5b14106c6a76774753dcf96b93296bf8771429bd4dc46292bd55b19',
+    fingerprint='a3565b59f5e3837d2caa765a0a9996e6d4cdfc347b18e7850717ef648d5683c9',
     bindings=(PageBinding(target=ParameterTarget(location='header', name='X-Snapshot'), source='initial', selector=HeaderSelector(name='x-snapshot')), PageBinding(target=ParameterTarget(location='query', name='code'), source='previous', selector=StatusSelector()), PageBinding(target=ParameterTarget(location='query', name='limit'), literal=5), PageBinding(target=ParameterTarget(location='query', name='tags'), source='previous', selector=HeaderSelector(name='X-Tag', occurrence='all'))),
 )
 
@@ -95,5 +95,5 @@ PLAN_3: Final[PaginationPlan[models.User, ListFolderResponse]] = PaginationPlan(
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='path', name='folder'), end_missing=True, end_null=True, empty_string_ends=True),
-    fingerprint='289c8afbf0b2c6a841e63b1ba150ad8b16295a791f72612c805550fdf663a500',
+    fingerprint='4ac9d63af7f90a5401bb52bac108173cf1f907a38e2afe7d3ce3356238130015',
 )

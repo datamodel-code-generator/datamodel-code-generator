@@ -525,7 +525,10 @@ def _more(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: Res
 
 
 def _integer(value: object) -> int | None:
-    """Return a finite integer value without rounding it or treating a boolean as a count."""
+    """Return a finite integer value without rounding it or treating a boolean as a count.
+
+    A float is taken as the integer it holds; a page's JSON number is read from its text instead, by `_exact`.
+    """
     if isinstance(value, int):
         return None if isinstance(value, bool) else value
     return int(value) if isinstance(value, float) and value.is_integer() else None
@@ -540,8 +543,22 @@ def _numeral(text: str) -> int | str:
     return int(number) if number.is_finite() and number == number.to_integral_value() else text
 
 
-def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: ResponseInfo) -> int:
-    """Return the total item count a page gives: a nonnegative JSON integer, or a header of signed decimal digits."""
+def _exact(plan: PaginationPlan[T, P], read: Selector, content: bytes, info: ResponseInfo) -> int | None:
+    """Return the integer a page's JSON number spells, read again from the body's text, or None for a fraction.
+
+    The parsed page holds the number as a float, which may have rounded it, so it is read once more as a Decimal.
+    """
+    import json  # noqa: PLC0415 - Only a total spelled with a fraction or an exponent is read again.
+
+    number = cast("Decimal", _selected(plan, read, json.loads(content, parse_float=Decimal), info))
+    return int(number) if number == number.to_integral_value() else None
+
+
+def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, content: bytes, info: ResponseInfo) -> int:
+    """Return the total item count a page gives: a nonnegative JSON integer, or a header of signed decimal digits.
+
+    A JSON number with a fraction or an exponent counts only when its text is an integer, which is read exactly.
+    """
     value = _selected(plan, read, wire, info)
     if (
         isinstance(read, HeaderSelector)
@@ -553,7 +570,8 @@ def _total(plan: PaginationPlan[T, P], read: Selector, wire: JSONValue, info: Re
             value = int(value)
         except ValueError:
             raise _data_error(plan, info, "value", read) from None
-    if (count := _integer(value)) is None:
+    count = _exact(plan, read, content, info) if isinstance(value, float) and value.is_integer() else _integer(value)
+    if count is None:
         raise _data_error(plan, info, _unfit(value), read)
     if count < 0:
         raise _data_error(plan, info, "value", read)
@@ -775,7 +793,9 @@ class _Walk(Generic[T, P]):
             return
         self.started(_numeral(values[0]) if len(values) == 1 else list(values))
 
-    def advance(self, rule: CountPlan, count: int, wire: JSONValue, info: ResponseInfo) -> int | MISSING:
+    def advance(
+        self, rule: CountPlan, count: int, wire: JSONValue, content: bytes, info: ResponseInfo
+    ) -> int | MISSING:
         """Return the offset or page number the request after a page writes, or MISSING when the page is the last.
 
         The first page is at the walk's start. A page number ends at a page without items once a total counts the
@@ -789,7 +809,7 @@ class _Walk(Generic[T, P]):
             more = _more(plan, read, wire, info)
         else:
             assert rule.total is not None
-            total = _total(plan, rule.total, wire, info)
+            total = _total(plan, rule.total, wire, content, info)
             if rule.kind == "offset":
                 more = following - rule.first < total
             else:
@@ -858,8 +878,8 @@ class _Walk(Generic[T, P]):
             raise _data_error(plan, info, "type", rule.read)
         return _followed(plan, rule.read, reference, url, info, self.origins, stripped)
 
-    def build(
-        self, data: P, wire: JSONValue, _content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
+    def build(  # noqa: PLR0913, PLR0917
+        self, data: P, wire: JSONValue, content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
     ) -> tuple[Page[T, P], JSONValue | MISSING, tuple[JSONValue, ...]]:
         """Return a decoded page, what the next request writes, and its bindings' values.
 
@@ -882,7 +902,7 @@ class _Walk(Generic[T, P]):
         if isinstance(rule, CursorPlan):
             cursor = _ended(plan, rule, wire, info)
         elif isinstance(rule, CountPlan):
-            cursor = self.advance(rule, len(items), wire, info)
+            cursor = self.advance(rule, len(items), wire, content, info)
         else:
             cursor = self.follow(rule, wire, info, url, stripped)
         if cursor is MISSING:

@@ -8,22 +8,22 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldPetsGetQueryLimitParameter]] = PydanticCodec(models.FieldPetsGetQueryLimitParameter)
+codec_0: Final[PydanticCodec[models.PetsGetQueryLimitParameter]] = PydanticCodec(models.PetsGetQueryLimitParameter)
 """Codec of /paths/~1pets/get parameter (request query limit)."""
 
-codec_1: Final[PydanticCodec[models.FieldPetsGetQueryHomeAddressParameter]] = PydanticCodec(models.FieldPetsGetQueryHomeAddressParameter)
+codec_1: Final[PydanticCodec[models.PetsGetQueryHomeAddressParameter]] = PydanticCodec(models.PetsGetQueryHomeAddressParameter)
 """Codec of /paths/~1pets/get parameter (request query HomeAddress)."""
 
-codec_2: Final[PydanticCodec[models.FieldPetsGetQueryKindParameter]] = PydanticCodec(models.FieldPetsGetQueryKindParameter)
+codec_2: Final[PydanticCodec[models.PetsGetQueryKindParameter]] = PydanticCodec(models.PetsGetQueryKindParameter)
 """Codec of /paths/~1pets/get parameter (request query kind)."""
 
-codec_3: Final[PydanticCodec[models.FieldPetsGetResponse]] = PydanticCodec(models.FieldPetsGetResponse)
+codec_3: Final[PydanticCodec[models.PetsGetResponse]] = PydanticCodec(models.PetsGetResponse)
 """Codec of /paths/~1pets/get response_body (response 200 application/json)."""
 
-codec_4: Final[PydanticCodec[models.FieldPetsGetResponse200xNextHeader]] = PydanticCodec(models.FieldPetsGetResponse200xNextHeader)
+codec_4: Final[PydanticCodec[models.PetsGetResponse200xNextHeader]] = PydanticCodec(models.PetsGetResponse200xNextHeader)
 """Codec of /paths/~1pets/get response_header (response x-next 200)."""
 
 codec_5: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
@@ -35,7 +35,7 @@ codec_6: Final[PydanticCodec[models.PetForm]] = PydanticCodec(models.PetForm)
 codec_7: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
 """Codec of /paths/~1pets/post response_body (response default application/json)."""
 
-codec_8: Final[PydanticCodec[models.FieldPetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdGetPathPetIdParameter)
+codec_8: Final[PydanticCodec[models.PetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.PetsPetIdGetPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}/get parameter (request path petId)."""
 
 codec_9: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
@@ -44,7 +44,7 @@ codec_9: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
 codec_10: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
 """Codec of /paths/~1pets~1{petId}/get response_body (response default application/json)."""
 
-codec_11: Final[PydanticCodec[models.FieldPetsPetIdPutPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdPutPathPetIdParameter)
+codec_11: Final[PydanticCodec[models.PetsPetIdPutPathPetIdParameter]] = PydanticCodec(models.PetsPetIdPutPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}/put parameter (request path petId)."""
 
 codec_12: Final[PydanticCodec[models.PetForm]] = PydanticCodec(models.PetForm)
@@ -53,38 +53,38 @@ codec_12: Final[PydanticCodec[models.PetForm]] = PydanticCodec(models.PetForm)
 codec_13: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
 """Codec of /paths/~1pets~1{petId}/put response_body (response default application/json)."""
 
-codec_14: Final[PydanticCodec[models.FieldFoodPostRequest]] = PydanticCodec(models.FieldFoodPostRequest)
+codec_14: Final[PydanticCodec[models.FoodPostRequest]] = PydanticCodec(models.FoodPostRequest)
 """Codec of /paths/~1food/post request_body (request application/problem+json)."""
 
-codec_15: Final[PydanticCodec[models.FieldFoodPostResponse]] = PydanticCodec(models.FieldFoodPostResponse)
+codec_15: Final[PydanticCodec[models.FoodPostResponse]] = PydanticCodec(models.FoodPostResponse)
 """Codec of /paths/~1food/post response_body (response default application/problem+json)."""
 
-codec_16: Final[PydanticCodec[models.FieldFoodFoodIdGetPathFoodIdParameter]] = PydanticCodec(models.FieldFoodFoodIdGetPathFoodIdParameter)
+codec_16: Final[PydanticCodec[models.FoodFoodIdGetPathFoodIdParameter]] = PydanticCodec(models.FoodFoodIdGetPathFoodIdParameter)
 """Codec of /paths/~1food~1{food_id}/get parameter (request path food_id)."""
 
-codec_17: Final[PydanticCodec[models.FieldFoodFoodIdGetQueryMessageTextsParameter]] = PydanticCodec(models.FieldFoodFoodIdGetQueryMessageTextsParameter)
+codec_17: Final[PydanticCodec[models.FoodFoodIdGetQueryMessageTextsParameter]] = PydanticCodec(models.FoodFoodIdGetQueryMessageTextsParameter)
 """Codec of /paths/~1food~1{food_id}/get parameter (request query message_texts)."""
 
-codec_18: Final[PydanticCodec[models.FieldFoodFoodIdGetResponse]] = PydanticCodec(models.FieldFoodFoodIdGetResponse)
+codec_18: Final[PydanticCodec[models.FoodFoodIdGetResponse]] = PydanticCodec(models.FoodFoodIdGetResponse)
 """Codec of /paths/~1food~1{food_id}/get response_body (response 200 application/json)."""
 
 codec_19: Final[PydanticCodec[models.MyParamParameter]] = PydanticCodec(models.MyParamParameter)
 """Codec of /paths/~1foo/get parameter (request query foo)."""
 
-codec_20: Final[PydanticCodec[models.FieldFooGetResponse]] = PydanticCodec(models.FieldFooGetResponse)
+codec_20: Final[PydanticCodec[models.FooGetResponse]] = PydanticCodec(models.FooGetResponse)
 """Codec of /paths/~1foo/get response_body (response 200 application/json)."""
 
 codec_21: Final[PydanticCodec[models.PetForm]] = PydanticCodec(models.PetForm)
 """Codec of /paths/~1bar/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_22: Final[PydanticCodec[models.FieldUserGetResponse]] = PydanticCodec(models.FieldUserGetResponse)
+codec_22: Final[PydanticCodec[models.UserGetResponse]] = PydanticCodec(models.UserGetResponse)
 """Codec of /paths/~1user/get response_body (response 200 application/json)."""
 
-codec_23: Final[PydanticCodec[models.FieldUserPostRequest]] = PydanticCodec(models.FieldUserPostRequest)
+codec_23: Final[PydanticCodec[models.UserPostRequest]] = PydanticCodec(models.UserPostRequest)
 """Codec of /paths/~1user/post request_body (request application/json)."""
 
-codec_24: Final[PydanticCodec[models.FieldUsersGetResponse]] = PydanticCodec(models.FieldUsersGetResponse)
+codec_24: Final[PydanticCodec[models.UsersGetResponse]] = PydanticCodec(models.UsersGetResponse)
 """Codec of /paths/~1users/get response_body (response 200 application/json)."""
 
-codec_25: Final[PydanticCodec[models.FieldUsersPostRequest]] = PydanticCodec(models.FieldUsersPostRequest)
+codec_25: Final[PydanticCodec[models.UsersPostRequest]] = PydanticCodec(models.UsersPostRequest)
 """Codec of /paths/~1users/post request_body (request application/json)."""

@@ -1,0 +1,11 @@
+zoo.RobotDog {"kind": "any kind", "barks": true, "model": "rx"}: RobotDog(barks=True, kind='any kind', model='rx')
+zoo.RobotDog {"barks": true}: rejected
+app.ToyRobot {"kind": "toy", "model": "tx"}: ToyRobot(barks=UNSET, kind='toy', model='tx')
+app.ToyRobot {"kind": "dog"}: rejected
+app.Kitten {"kind": "tabby"}: Kitten(kind='tabby')
+app.Kitten {"kind": "longer than ten"}: rejected
+app.Parrot {"kind": "macaw", "wings": 2}: Parrot(wings=2, kind=<Kind.macaw: 'macaw'>)
+app.Parrot {"kind": "robin"}: rejected
+zoo.Pets {"kind": "dog", "barks": true}: Dog(barks=True)
+zoo.Pets {"kind": "cat"}: Cat()
+app.Shelter {"resident": {"kind": "tabby"}}: TypeError

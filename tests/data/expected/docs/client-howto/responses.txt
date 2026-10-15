@@ -1,0 +1,8 @@
+exit 0
+> GET https://eu.shelter.example/v1/pets?limit=20&tag=cat authorization: Bearer s3cret
+2 200 application/json req-7 1
+req-7 HeadersView(<3 headers>)
+> GET https://eu.shelter.example/v1/pets/99 authorization: Bearer s3cret
+404 {'message': '/pets/99 not found'}
+> GET https://eu.shelter.example/v1/pets?limit=20 authorization: Bearer s3cret
+200 70

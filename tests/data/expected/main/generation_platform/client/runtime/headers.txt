@@ -1,16 +1,16 @@
 # pets pydantic_v2.BaseModel
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, x-trace: t1] b''
-  client headers = FieldPetsGetResponse(root=[])
+  client headers = PetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-view: v1, x-trace: t1, cookie: session=s1] b''
-  view headers under the parameters = FieldPetsGetResponse(root=[])
+  view headers under the parameters = PetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: nested/1, x-view: v2, x-trace: t1] b''
-  nested view headers = FieldPetsGetResponse(root=[])
+  nested view headers = PetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-trace: call] b''
-  call headers over the parameters = FieldPetsGetResponse(root=[])
+  call headers over the parameters = PetsGetResponse(root=[])
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip;q=0.5, identity, accept: application/json, user-agent: custom/1, x-client: c, content-type: text/plain, content-length: 14] b'{"name":"fox"}'
   body relabeled = Pet(id=1, name='fox', tag=None)
@@ -50,8 +50,44 @@
   > POST https://raw.example.com/items
     [host: raw.example.com, accept-encoding: gzip, deflate, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="a"\r\n\r\n1\r\n--<boundary>--\r\n'
   raw parts unlabeled by the call = b'ok'
-  header value on two lines ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='LocalProtocolError') [operation_id='getPet', cause=LocalProtocolError("Illegal header value b'a\\r\\nb'")]
-  header value on two lines retry waits []
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: a<HTAB>b ~] b''
+  parameter text = PetsGetResponse(root=[])
+  > GET https://api.example.com/v1/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, x-a: a<HTAB>b ~, x-empty: ] b''
+  call header text = PetsGetResponse(root=[])
+  parameter non-ASCII ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header non-ASCII ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter DEL ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header DEL ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter first code point past ASCII ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header first code point past ASCII ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter no-break space ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header no-break space ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter lone surrogate ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header lone surrogate ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter on two lines ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header on two lines ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter NUL ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header NUL ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter ending in a space ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header ending in a space ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  parameter starting with HTAB ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  call header starting with HTAB ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  call header name with a space ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X A') [field_path=('headers', 'X A')] invalid_value
+  call header name not ASCII ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-Ä') [field_path=('headers', 'X-Ä')] invalid_value
+  call header name on two lines ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A\r\nX-B') [field_path=('headers', 'X-A\r\nX-B')] invalid_value
+  call header name int ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers') [field_path=('headers',)] invalid_value
+  call header value int ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  client header non-ASCII ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  view header non-ASCII ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='headers.X-A') [field_path=('headers', 'X-A')] invalid_value
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-sig: café] b''
+  > GET https://api.example.com/v1/pets/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-sig: café] b''
+  event hook's Latin-1 bytes on a retried call = Pet(id=3, name='fox', tag=None)
+  event hook's header value on two lines ! APIConnectionError: APIConnectionError(operation_id='getPet', cause='LocalProtocolError') [operation_id='getPet', cause=LocalProtocolError("Illegal header value b'a\\r\\nb'")]
+  event hook's header value on two lines retry waits []
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-call: 1] b''
   async call headers = Pet(id=3, name='fox', tag=None)

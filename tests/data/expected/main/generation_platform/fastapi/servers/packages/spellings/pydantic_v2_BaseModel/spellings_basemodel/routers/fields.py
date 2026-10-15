@@ -26,6 +26,7 @@ def _add_post_thing(
     post_thing_handler = checked(
         fields.post_thing,
         'The fields.post_thing method of POST /things',
+        ('body',),
     )
 
     def post_thing(
@@ -62,6 +63,7 @@ def _add_post_field(
     post_field_handler = checked(
         fields.post_field,
         'The fields.post_field method of POST /fields',
+        ('body',),
     )
 
     def post_field(

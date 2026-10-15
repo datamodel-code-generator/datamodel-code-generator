@@ -48,57 +48,57 @@ class StreamError(BaseModel):
     message: str | None = None
 
 
-FieldUsersGetQueryCursorParameter = TypeAliasType("FieldUsersGetQueryCursorParameter", str)
+UsersGetQueryCursorParameter = TypeAliasType("UsersGetQueryCursorParameter", str)
 
 
-FieldUsersGetQueryOffsetParameter = TypeAliasType("FieldUsersGetQueryOffsetParameter", int)
+UsersGetQueryOffsetParameter = TypeAliasType("UsersGetQueryOffsetParameter", int)
 
 
-FieldUsersGetQueryPageParameter = TypeAliasType("FieldUsersGetQueryPageParameter", int)
+UsersGetQueryPageParameter = TypeAliasType("UsersGetQueryPageParameter", int)
 
 
-FieldUsersGetHeaderSnapshotParameter = TypeAliasType("FieldUsersGetHeaderSnapshotParameter", str)
+UsersGetHeaderSnapshotParameter = TypeAliasType("UsersGetHeaderSnapshotParameter", str)
 
 
-class FieldUsersGetResponse200LinkHeader(RootModel[str]):
+class UsersGetResponse200LinkHeader(RootModel[str]):
     root: str
 
 
-class FieldUsersSearchPostRequest(BaseModel):
+class UsersSearchPostRequest(BaseModel):
     name: str | None = None
     cursor: str | None = None
 
 
-FieldTagsGetQueryItemsParameter = TypeAliasType("FieldTagsGetQueryItemsParameter", int)
+TagsGetQueryItemsParameter = TypeAliasType("TagsGetQueryItemsParameter", int)
 
 
-FieldTagsGetQueryCursorParameter = TypeAliasType("FieldTagsGetQueryCursorParameter", str)
+TagsGetQueryCursorParameter = TypeAliasType("TagsGetQueryCursorParameter", str)
 
 
-FieldLabelsGetQueryItemsParameter = TypeAliasType("FieldLabelsGetQueryItemsParameter", int)
+LabelsGetQueryItemsParameter = TypeAliasType("LabelsGetQueryItemsParameter", int)
 
 
-FieldJobsJobIdGetPathJobIdParameter = TypeAliasType("FieldJobsJobIdGetPathJobIdParameter", str)
+JobsJobIdGetPathJobIdParameter = TypeAliasType("JobsJobIdGetPathJobIdParameter", str)
 
 
-class FieldJobsJobIdGetResponse200RetryAfterHeader(RootModel[int]):
+class JobsJobIdGetResponse200RetryAfterHeader(RootModel[int]):
     root: int
 
 
-FieldJobsJobIdResultGetPathJobIdParameter = TypeAliasType("FieldJobsJobIdResultGetPathJobIdParameter", str)
+JobsJobIdResultGetPathJobIdParameter = TypeAliasType("JobsJobIdResultGetPathJobIdParameter", str)
 
 
-FieldEventsGetHeaderLastEventIDParameter = TypeAliasType("FieldEventsGetHeaderLastEventIDParameter", str)
+EventsGetHeaderLastEventIDParameter = TypeAliasType("EventsGetHeaderLastEventIDParameter", str)
 
 
-class FieldEventsGetResponse(RootModel[str]):
+class EventsGetResponse(RootModel[str]):
     root: str
 
 
-FieldRecordsGetQueryAfterParameter = TypeAliasType("FieldRecordsGetQueryAfterParameter", str)
+RecordsGetQueryAfterParameter = TypeAliasType("RecordsGetQueryAfterParameter", str)
 
 
-class FieldRecordsGetResponse(RootModel[str]):
+class RecordsGetResponse(RootModel[str]):
     root: str
 
 

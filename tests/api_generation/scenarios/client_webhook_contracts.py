@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _NOW: Final = datetime(2026, 9, 28, tzinfo=timezone.utc)
-_COUNTS: Final = ("max_body_bytes", "max_header_bytes", "max_keys", "max_signatures")
+_COUNTS: Final = ("max_keys", "max_signatures")
 _SECONDS: Final = ("past_tolerance", "future_tolerance")
 _IMPORT_PROBE: Final = """
 import importlib
@@ -109,8 +109,6 @@ def _records(protocols: ModuleType, options: ModuleType, lines: list[str]) -> No
         f"  options share UNSET={all(getattr(unresolved, name) is options.UNSET for name in (*_COUNTS, *_SECONDS))}"
     )
     resolved = protocols.ResolvedWebhookOptions(
-        max_body_bytes=8388608,
-        max_header_bytes=16384,
         max_keys=8,
         max_signatures=8,
         past_tolerance=300.0,
@@ -186,8 +184,6 @@ def _options(protocols: ModuleType, lines: list[str]) -> None:
         lines,
         "minimum limits",
         lambda: protocols.WebhookOptions(
-            max_body_bytes=1,
-            max_header_bytes=1,
             max_keys=1,
             max_signatures=1,
             past_tolerance=0,

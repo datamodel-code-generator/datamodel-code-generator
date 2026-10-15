@@ -9,12 +9,12 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.stdlib import (
+from .._runtime.model_codecs.stdlib_dataclasses import (
     Choice,
+    DataclassCodec,
     Field,
     Items,
     Model,
-    StdlibCodec,
     Values,
 )
 
@@ -30,20 +30,20 @@ MODELS: Final[dict[type, Model]] = {
     models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird))), omit_none=True),)),
 }
 
-codec_0: Final[StdlibCodec[models.Pet]] = StdlibCodec(Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog))), MODELS)
+codec_0: Final[DataclassCodec[models.Pet]] = DataclassCodec(Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog))), MODELS)
 """Codec of /paths/~1pets/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Pet]] = StdlibCodec(Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog))), MODELS)
+codec_1: Final[DataclassCodec[models.Pet]] = DataclassCodec(Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog))), MODELS)
 """Codec of /paths/~1pets/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.FieldPetsListGetResponse]] = StdlibCodec(Items(Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog)))), MODELS)
+codec_2: Final[DataclassCodec[models.PetsListGetResponse]] = DataclassCodec(Items(Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog)))), MODELS)
 """Codec of /paths/~1pets~1list/get response_body (response 200 application/json)."""
 
-codec_3: Final[StdlibCodec[models.Child]] = StdlibCodec(models.Child, MODELS)
+codec_3: Final[DataclassCodec[models.Child]] = DataclassCodec(models.Child, MODELS)
 """Codec of /paths/~1child/get response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.Holder]] = StdlibCodec(models.Holder, MODELS)
+codec_4: Final[DataclassCodec[models.Holder]] = DataclassCodec(models.Holder, MODELS)
 """Codec of /paths/~1holder/get response_body (response 200 application/json)."""
 
-codec_5: Final[StdlibCodec[models.Item]] = StdlibCodec(models.Item, MODELS)
+codec_5: Final[DataclassCodec[models.Item]] = DataclassCodec(models.Item, MODELS)
 """Codec of /paths/~1items/post request_body (request application/json)."""

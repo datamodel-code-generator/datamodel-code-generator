@@ -352,11 +352,13 @@ def _iter_aliased_from_import_lines(
     aliases: list[tuple[int, str, bool]],
     line_length: int,
 ) -> Iterator[str]:
+    """Keep aliased names, and plain names also imported under an alias, on their own lines like isort."""
     sorted_aliases = sorted(aliases, key=lambda item: _alias_sort_key(item[1]))
+    renamed = {_alias_imported_name(alias) for _, alias, is_aliased in aliases if is_aliased}
     chunk: list[str] = []
     chunk_group: int | None = None
     for group_index, alias, is_aliased in sorted_aliases:
-        if is_aliased:
+        if is_aliased or alias in renamed:
             if chunk:
                 yield _format_from_import(module, chunk, line_length)
                 chunk = []
@@ -858,10 +860,10 @@ def _can_parenthesize_field_value(annotation: ast.AST, target: str) -> bool:
 def _should_format_union_annotation(
     annotation: ast.AST,
     value: ast.AST | None,
-    target_prefix: str,
     annotation_prefix: str,
     line_length: int,
 ) -> TypeGuard[ast.BinOp]:
+    """Return whether to split a union annotation, which black does when `<annotation> = (` cannot open a value."""
     return (
         isinstance(annotation, ast.BinOp)
         and isinstance(annotation.op, ast.BitOr)
@@ -874,12 +876,8 @@ def _should_format_union_annotation(
             )
             or _contains_list_of_annotated(annotation)
             or (
-                len(f"{annotation_prefix} = {ast.unparse(value)}") > line_length
-                and len(target_prefix) > LONG_TARGET_PREFIX_LENGTH
-                and (_contains_annotated(annotation) or _is_simple_union_annotation(annotation))
-            )
-            or (
                 len(f"{annotation_prefix} = (") > line_length
+                and len(f"{annotation_prefix} = {ast.unparse(value)}") > line_length
                 and (_contains_annotated(annotation) or _is_simple_union_annotation(annotation))
             )
         )
@@ -1184,7 +1182,6 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
     if _should_format_union_annotation(
         statement.annotation,
         statement.value,
-        target_prefix,
         annotation_prefix,
         line_length,
     ):

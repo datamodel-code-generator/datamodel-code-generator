@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from pydantic import (
+    Base64Str,
     BaseModel,
     Field,
     RootModel,
@@ -29,56 +30,56 @@ class Form(BaseModel):
     counts: list[StrictInt] | None = None
 
 
-FieldValuesIdGetPathIdParameter = TypeAliasType("FieldValuesIdGetPathIdParameter", StrictInt)
+ValuesIdGetPathIdParameter = TypeAliasType("ValuesIdGetPathIdParameter", StrictInt)
 
 
-FieldValuesIdGetQueryCountParameter = TypeAliasType("FieldValuesIdGetQueryCountParameter", StrictInt)
+ValuesIdGetQueryCountParameter = TypeAliasType("ValuesIdGetQueryCountParameter", StrictInt)
 
 
-FieldValuesIdGetQueryBoundedParameter = TypeAliasType(
-    "FieldValuesIdGetQueryBoundedParameter", Annotated[StrictInt, Field(ge=0)]
+ValuesIdGetQueryBoundedParameter = TypeAliasType(
+    "ValuesIdGetQueryBoundedParameter", Annotated[StrictInt, Field(ge=0)]
 )
 
 
-FieldValuesIdGetQueryScoreParameter = TypeAliasType("FieldValuesIdGetQueryScoreParameter", StrictFloat)
+ValuesIdGetQueryScoreParameter = TypeAliasType("ValuesIdGetQueryScoreParameter", StrictFloat)
 
 
-FieldValuesIdGetQueryFlagParameter = TypeAliasType("FieldValuesIdGetQueryFlagParameter", StrictBool)
+ValuesIdGetQueryFlagParameter = TypeAliasType("ValuesIdGetQueryFlagParameter", StrictBool)
 
 
-FieldValuesIdGetQueryNameParameter = TypeAliasType("FieldValuesIdGetQueryNameParameter", StrictStr)
+ValuesIdGetQueryNameParameter = TypeAliasType("ValuesIdGetQueryNameParameter", StrictStr)
 
 
-FieldValuesIdGetQueryLabelParameter = TypeAliasType(
-    "FieldValuesIdGetQueryLabelParameter", Annotated[StrictStr, Field(min_length=2)]
+ValuesIdGetQueryLabelParameter = TypeAliasType(
+    "ValuesIdGetQueryLabelParameter", Annotated[StrictStr, Field(min_length=2)]
 )
 
 
-FieldValuesIdGetQueryCountsParameter = TypeAliasType("FieldValuesIdGetQueryCountsParameter", list[StrictInt])
+ValuesIdGetQueryCountsParameter = TypeAliasType("ValuesIdGetQueryCountsParameter", list[StrictInt])
 
 
-FieldValuesIdGetQueryNamesParameter = TypeAliasType("FieldValuesIdGetQueryNamesParameter", list[StrictStr])
+ValuesIdGetQueryNamesParameter = TypeAliasType("ValuesIdGetQueryNamesParameter", list[StrictStr])
 
 
-FieldValuesIdGetQueryPageParameter = TypeAliasType("FieldValuesIdGetQueryPageParameter", StrictInt)
+ValuesIdGetQueryPageParameter = TypeAliasType("ValuesIdGetQueryPageParameter", StrictInt)
 
 
-FieldValuesIdGetQueryMaybeParameter = TypeAliasType("FieldValuesIdGetQueryMaybeParameter", StrictInt | None)
+ValuesIdGetQueryMaybeParameter = TypeAliasType("ValuesIdGetQueryMaybeParameter", StrictInt | None)
 
 
-FieldValuesIdGetHeaderXTraceParameter = TypeAliasType("FieldValuesIdGetHeaderXTraceParameter", StrictInt)
+ValuesIdGetHeaderXTraceParameter = TypeAliasType("ValuesIdGetHeaderXTraceParameter", StrictInt)
 
 
-FieldValuesIdGetHeaderXTagParameter = TypeAliasType("FieldValuesIdGetHeaderXTagParameter", StrictStr)
+ValuesIdGetHeaderXTagParameter = TypeAliasType("ValuesIdGetHeaderXTagParameter", StrictStr)
 
 
-FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobParameter", bytes)
+ValuesIdGetQueryBlobParameter = TypeAliasType("ValuesIdGetQueryBlobParameter", Base64Str)
 
 
-FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVisitsParameter", StrictInt)
+ValuesIdGetCookieVisitsParameter = TypeAliasType("ValuesIdGetCookieVisitsParameter", StrictInt)
 
 
-class FieldUploadsPostRequest(BaseModel):
+class UploadsPostRequest(BaseModel):
     file: bytes
     count: StrictInt
     score: StrictFloat | None = None

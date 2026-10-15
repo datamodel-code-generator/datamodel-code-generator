@@ -9,10 +9,10 @@ from typing import TypeAlias
 
 import models
 
-ListPetsResponse: TypeAlias = models.FieldPetsGetResponse
+ListPetsResponse: TypeAlias = models.PetsGetResponse
 
 
-AddPetsResponse: TypeAlias = models.FieldPetsPostResponse
+AddPetsResponse: TypeAlias = models.PetsPostResponse
 
 
 CreateJobResponse: TypeAlias = models.Job

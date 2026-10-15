@@ -220,6 +220,7 @@ def _defaults(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
                 failure = describe(error)
             lines.append(f"  {label}: items={count} failure={failure} progress={progress(pager)}")
             pager.close()
+            quiet.responders.clear()
     for label, pagination in (
         ("default item budget", None),
         ("explicit item budget", protocols.PaginationOptions(max_items=values["explicit_items"])),
@@ -358,6 +359,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:
                 failure = describe(error)
             lines.append(f"  async {label}: items={count} failure={failure} progress={progress(pager)}")
             await pager.aclose()
+            quiet.responders.clear()
     for label, pagination in (
         ("default item budget", None),
         ("explicit item budget", protocols.PaginationOptions(max_items=values["explicit_items"])),

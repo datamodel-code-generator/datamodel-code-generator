@@ -55,7 +55,7 @@ class Board(TypedDict):
     fixed: NotRequired[dict[str, int]]
 
 
-FieldScoresGetQueryPlayersParameter: TypeAlias = dict[str, Player] | None
+ScoresGetQueryPlayersParameter: TypeAlias = dict[str, Player] | None
 
 
-FieldScoresPostRequest: TypeAlias = dict[str, int] | None
+ScoresPostRequest: TypeAlias = dict[str, int] | None

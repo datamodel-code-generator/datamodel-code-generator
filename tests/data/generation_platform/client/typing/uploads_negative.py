@@ -9,11 +9,11 @@ from pets import AsyncClient, Client
 from pets.options import RequestOptions
 from pets.protocols import AsyncUploadHandle, UploadHandle
 from pets.types.files import CompleteFileResponse
-from pets_models import FieldFilesPostHeaderTusResumableParameter
+from pets_models import FilesPostHeaderTusResumableParameter
 
 
 async def wrong_uploads(
-    client: Client, async_client: AsyncClient, version: FieldFilesPostHeaderTusResumableParameter, chunks: Iterator[bytes]
+    client: Client, async_client: AsyncClient, version: FilesPostHeaderTusResumableParameter, chunks: Iterator[bytes]
 ) -> None:
     """Reject each misuse of a helper, its handle, or a source."""
     source = b"content"

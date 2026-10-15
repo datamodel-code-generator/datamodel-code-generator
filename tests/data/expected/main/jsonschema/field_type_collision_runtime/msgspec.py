@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from msgspec import UNSET, Struct, UnsetType, field
+from msgspec import UNSET, Struct, UnsetType
 
 
 class Bar(Struct):
@@ -11,7 +11,7 @@ class Bar(Struct):
 
 
 class Leaf(Struct):
-    Bar_1: Bar | UnsetType = field(name='Bar', default=UNSET)
+    Bar: Bar | UnsetType = UNSET
 
 
 class Values(Struct):

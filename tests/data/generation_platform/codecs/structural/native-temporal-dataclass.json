@@ -8,6 +8,7 @@
   ],
   "options": {
     "use_standard_primitive_types": true,
+    "type_mappings": ["string+byte=binary"],
     "output_datetime_class": "datetime"
   },
   "cases": [

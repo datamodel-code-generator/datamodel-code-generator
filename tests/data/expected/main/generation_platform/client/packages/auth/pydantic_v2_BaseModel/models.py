@@ -7,132 +7,132 @@ from pydantic import BaseModel, ConfigDict, RootModel
 from typing_extensions import TypeAliasType
 
 
-class FieldInheritedGetResponse(RootModel[bytes]):
+class InheritedGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldAnonymousGetResponse(RootModel[bytes]):
+class AnonymousGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldEmptyGetResponse(RootModel[bytes]):
+class EmptyGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldOptionalGetResponse(RootModel[bytes]):
+class OptionalGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldOptionalTokenFirstGetResponse(RootModel[bytes]):
+class OptionalTokenFirstGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldAndGetResponse(RootModel[bytes]):
+class AndGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldOrGetResponse(RootModel[bytes]):
+class OrGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldAuthorizationOrGetResponse(RootModel[bytes]):
+class AuthorizationOrGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldApiKeyHeaderGetResponse(RootModel[bytes]):
+class ApiKeyHeaderGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldApiKeyQueryGetResponse(RootModel[bytes]):
+class ApiKeyQueryGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldApiKeyCookieGetResponse(RootModel[bytes]):
+class ApiKeyCookieGetResponse(RootModel[bytes]):
     root: bytes
 
 
-FieldApiKeyCookieParametersGetCookieThemeParameter = TypeAliasType("FieldApiKeyCookieParametersGetCookieThemeParameter", str)
+ApiKeyCookieParametersGetCookieThemeParameter = TypeAliasType("ApiKeyCookieParametersGetCookieThemeParameter", str)
 
 
-FieldApiKeyCookieParametersGetQueryPageParameter = TypeAliasType("FieldApiKeyCookieParametersGetQueryPageParameter", int)
+ApiKeyCookieParametersGetQueryPageParameter = TypeAliasType("ApiKeyCookieParametersGetQueryPageParameter", int)
 
 
-FieldApiKeyCookieParametersGetHeaderXTraceParameter = TypeAliasType("FieldApiKeyCookieParametersGetHeaderXTraceParameter", str)
+ApiKeyCookieParametersGetHeaderXTraceParameter = TypeAliasType("ApiKeyCookieParametersGetHeaderXTraceParameter", str)
 
 
-class FieldApiKeyCookieParametersGetQueryFilterParameter(BaseModel):
+class ApiKeyCookieParametersGetQueryFilterParameter(BaseModel):
     kind: str | None = None
 
 
-class FieldApiKeyCookieParametersGetResponse(RootModel[bytes]):
+class ApiKeyCookieParametersGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldBasicGetResponse(RootModel[bytes]):
+class BasicGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldBearerGetResponse(RootModel[bytes]):
+class BearerGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldAliasGetResponse(RootModel[bytes]):
+class AliasGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldOauthReadGetResponse(RootModel[bytes]):
+class OauthReadGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldOauthScopesGetResponse(RootModel[bytes]):
+class OauthScopesGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldOauthEmptyGetResponse(RootModel[bytes]):
+class OauthEmptyGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldOpenidReadGetResponse(RootModel[bytes]):
+class OpenidReadGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldChallengeLessGetResponse(RootModel[bytes]):
+class ChallengeLessGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldUnsafePostRequest(RootModel[bytes]):
+class UnsafePostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldUnsafePostResponse(RootModel[bytes]):
+class UnsafePostResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldIdempotentPostRequest(RootModel[bytes]):
+class IdempotentPostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldIdempotentPostResponse(RootModel[bytes]):
+class IdempotentPostResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldNeverGetResponse(RootModel[bytes]):
+class NeverGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldVendorGetResponse(RootModel[bytes]):
+class VendorGetResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldSignedPutRequest(RootModel[bytes]):
+class SignedPutRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldSignedPutResponse(RootModel[bytes]):
+class SignedPutResponse(RootModel[bytes]):
     root: bytes
 
 
-class FieldSignedMultipartPostRequest(BaseModel):
+class SignedMultipartPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -140,5 +140,5 @@ class FieldSignedMultipartPostRequest(BaseModel):
     note: str | None = None
 
 
-class FieldSignedMultipartPostResponse(RootModel[bytes]):
+class SignedMultipartPostResponse(RootModel[bytes]):
     root: bytes

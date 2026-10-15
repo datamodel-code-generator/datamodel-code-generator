@@ -197,3 +197,39 @@ async def _async_defaults(harness: Harness, defaults: dict[str, Any], lines: lis
                 await afetched(lines, f"async {label} next", partial(helper.next_page, first))
         exchange.respond(_answer("query", True), _answer("query", False))
         await adrained(lines, "async client default offset items", api.protocols.users.offsets.iterate())
+
+
+_EXACT_TOTALS = (
+    b"2.0E0",
+    b"9007199254740993.0",
+    b"9007199254740993.00000000000000000001",
+    b"1.0000000000000000001",
+    b"1e400",
+)
+
+
+def pagination_exact_totals(package: ModuleType, lines: list[str]) -> None:
+    """Read a total spelled with a fraction or an exponent from the body's text: exact when integral, else mistyped."""
+    harness = Harness(package)
+    exchange = Exchange(lines)
+    with exchange.client() as native, package.Client(http_client=native) as api:
+        start = harness.argument("listUsers", "query", "offset", 9007199254740991)
+        exchange.respond(*(_total_response(b"9007199254740993.0", "total") for _ in range(2)))
+        drained(lines, "exact total past the float boundary", api.protocols.users.items.iterate(offset=start))
+        for token in _EXACT_TOTALS:
+            exchange.respond(_total_response(token, "count"))
+            fetched(lines, f"total {token!r}", api.protocols.users.counted.page)
+    run(lambda: _async_exact_totals(harness, lines))
+
+
+async def _async_exact_totals(harness: Harness, lines: list[str]) -> None:
+    """Read the exact total through the async client."""
+    exchange = Exchange(lines)
+    async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
+        start = harness.argument("listUsers", "query", "offset", 9007199254740991)
+        exchange.respond(*(_total_response(b"9007199254740993.0", "total") for _ in range(2)))
+        await adrained(
+            lines, "async exact total past the float boundary", api.protocols.users.items.iterate(offset=start)
+        )
+        exchange.respond(_total_response(b"9007199254740993.00000000000000000001", "count"))
+        await afetched(lines, "async fractional total", api.protocols.users.counted.page)

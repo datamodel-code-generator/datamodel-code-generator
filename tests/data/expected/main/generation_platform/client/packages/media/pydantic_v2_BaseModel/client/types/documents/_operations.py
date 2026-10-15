@@ -13,9 +13,9 @@ from ..._generated import model_bindings
 from ..._runtime.client.codecs import HeaderBranch, ResponseHeaders, optional_header
 from ..._runtime.model_codecs.media import FieldPlan
 from ..._runtime.model_codecs.parameters import ParameterPlan
-from ...model_codecs import JSONValue
 from ...options import UNSET
 from ...responses import ResponseInfo
+from ...types import JSONValue
 
 StoreDocumentResponse: TypeAlias = JSONValue | str | None | models.Draft
 

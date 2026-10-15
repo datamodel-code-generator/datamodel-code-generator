@@ -13,8 +13,11 @@ class FastAPITemplates(TemplateOverlay):
     BUILTIN = Path(__file__).parent / "templates"
     ROLES = frozenset({
         "application.jinja2",
+        "authorize.jinja2",
         "contract.jinja2",
         "facade.jinja2",
+        "implementation.jinja2",
+        "main.jinja2",
         "openapi.jinja2",
         "readme.jinja2",
         "router.jinja2",

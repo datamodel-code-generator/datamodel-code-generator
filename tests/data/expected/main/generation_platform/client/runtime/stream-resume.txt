@@ -236,6 +236,25 @@ another reopen operation
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
     ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Resume-Token', occurrence='single')] missing
+  > GET https://api.example.com/events last-event-id=None
+  open answered no content
+  < closed
+    end
+  > GET https://api.example.com/events last-event-id=None
+  < closed
+  open answered a declared success without a body ! DecodeError: DecodeError(status_code=202, operation_id='streamEvents', reason='unexpected_media_type') [operation_id='streamEvents', body_bytes=b'', truncated=False] unexpected_media_type
+  > GET https://api.example.com/events last-event-id=None
+  reopen answered no content
+    1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
+  < closed
+    end
+    progress {'reconnects': 1}
+  > GET https://api.example.com/streams/s1?token=t3&mode=resume last-event-id='2'
+  resume answered no content
+  < closed
+    end
 bound path values
   > GET https://api.example.com/rooms/r0 last-event-id=None
   reopened with the shard
@@ -317,6 +336,13 @@ cursors a reopen cannot encode
     operation OperationRef(pointer='/paths/~1events/get', document=None) cause DecodeError context StreamInterruptedError
   checkpoint = {'cursor': '5 ', 'bound': [], 'expires_at': None}
   > GET https://api.example.com/events last-event-id=None
+  event ID beyond ASCII
+    1 message id='café' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', reason='value') [operation_id='streamEvents', location=ParameterTarget(location='header', name='Last-Event-ID'), cause=DecodeError()] value
+    operation OperationRef(pointer='/paths/~1events/get', document=None) cause DecodeError context StreamInterruptedError
+  checkpoint = {'cursor': 'café', 'bound': [], 'expires_at': None}
+  > GET https://api.example.com/events last-event-id=None
   object body cursor written to a query parameter
     1 other id=None retry=None data=UnknownEvent{'discriminator': 'other', 'raw_data': '{"id": {"a": 1}}'} raw='{"id": {"a": 1}}'
   < closed
@@ -349,7 +375,8 @@ refusals
   resume bound values of another count ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume an extra member ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume an expiry of another form ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
-  resume cursor the reopen cannot encode ! DecodeError: DecodeError(operation_id='streamEvents', reason='unencodable', location='header.Last-Event-ID') [operation_id='streamEvents', location=('header', 'Last-Event-ID'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  resume cursor the reopen cannot encode ! DecodeError: DecodeError(operation_id='streamEvents', reason='unencodable', location='header.Last-Event-ID') [operation_id='streamEvents', location=('header', 'Last-Event-ID'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  resume cursor beyond ASCII ! DecodeError: DecodeError(operation_id='streamEvents', reason='unencodable', location='header.Last-Event-ID') [operation_id='streamEvents', location=('header', 'Last-Event-ID'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
   object cursor ! DecodeError: DecodeError(operation_id='streamRecords', reason='unencodable', location='query.after') [operation_id='streamRecords', location=('query', 'after'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('The dict value does not have the string lexical kind')] unencodable
   > GET https://api.example.com/events last-event-id=None
   < closed
@@ -420,6 +447,17 @@ asyncio
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
   async resume without the token ! ProtocolDataError: ProtocolDataError(reason='missing') [location=HeaderSelector(name='X-Resume-Token', occurrence='single')] missing
+  > GET https://api.example.com/events last-event-id=None
+  async open answered no content
+  < closed
+    end
+  > GET https://api.example.com/events last-event-id=None
+  async reopen answered no content
+    1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
+  < closed
+    end
 stepped client clock
   > GET https://api.example.com/events last-event-id=None
   1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'

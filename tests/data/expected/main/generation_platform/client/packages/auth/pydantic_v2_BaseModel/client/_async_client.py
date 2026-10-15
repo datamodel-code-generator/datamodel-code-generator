@@ -21,9 +21,9 @@ from ._runtime.client.errors import add_secondary
 from ._runtime.client.multipart import MULTIPART_BODIES
 from ._runtime.model_codecs.unset import UNSET
 from .bodies import AsyncBodyInput
-from .model_codecs import JSONValue
 from .options import Clock, RequestOptions, RetryOptions, ServerSelection
 from .responses import AsyncRawResponse
+from .types import JSONValue
 
 if TYPE_CHECKING:
     from .resources.auth._async import AsyncAuthResource

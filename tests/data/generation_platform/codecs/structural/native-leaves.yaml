@@ -38,7 +38,7 @@ components:
         clock: {type: string, format: time}
         uid: {type: string, format: uuid}
         amount: {type: number, format: decimal}
-        content: {type: string, format: binary}
+        content: {type: string, format: byte}
         pair:
           type: array
           prefixItems: [{type: integer}, {type: string, format: date}]

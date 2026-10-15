@@ -1,26 +1,26 @@
 # emitted-defaults
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-quote
-  @@ -16 +16 @@
+  @@ -15 +15 @@
   -    mapping: Optional[Dict[str, bool]] = {'enabled': True}
   +    mapping: Optional[Dict[str, bool]] = {"enabled": True}
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-literal
-  @@ -14 +14 @@
+  @@ -13 +13 @@
   -    literal: Optional[int] = 4
   +    literal: Optional[int] = 5
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-factory
-  @@ -17 +17 @@
+  @@ -16 +16 @@
   -    factory: List[str] = Field(default_factory=list)
   +    factory: List[str] = Field(default_factory=set)
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-explicit_null
-  @@ -13 +13 @@
+  @@ -12 +12 @@
   -    explicit_null: Optional[str] = None
   +    explicit_null: Optional[str] = "value"
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-model
-  @@ -11 +11 @@
+  @@ -10 +10 @@
   -class Defaults(BaseModel):
   +class Defaults(Other):
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-lost-assignment
-  @@ -13 +13 @@
+  @@ -12 +12 @@
   -    explicit_null: Optional[str] = None
   +    explicit_null: Optional[str]
 rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-quote

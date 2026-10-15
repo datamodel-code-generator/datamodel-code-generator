@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info: {title: Primary model beside an external map value, version: "1"}
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        bag:
+          $ref: "external.yaml#/components/schemas/Bag"
+    Entries:
+      type: object
+      properties:
+        label:
+          type: string

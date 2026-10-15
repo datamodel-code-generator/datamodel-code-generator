@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value read and write models
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        tags:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              id:
+                type: integer
+                readOnly: true
+              v:
+                type: string
+        main:
+          $ref: "#/components/schemas/Tags"
+    Tags:
+      type: object
+      properties:
+        tid:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          writeOnly: true

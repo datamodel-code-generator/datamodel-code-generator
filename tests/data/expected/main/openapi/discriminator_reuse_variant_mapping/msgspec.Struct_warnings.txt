@@ -1,0 +1,2 @@
+msgspec cannot decode the discriminated union Aquarium: its Struct types Goldfish, Dog are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Aviary: its Struct types Parrot, Dog are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

@@ -31,6 +31,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 22] b'{"name":"n","count":1}'
   item with its count = None
 # discriminator-reuse dataclasses.dataclass
+  warning UserWarning: Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from PetsListGetResponse1, so these unions cannot decode it: Pet ('kitty').
+  warning UserWarning: Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from PetsListGetResponse1, so these unions cannot decode it: Pet ('doggo').
   > GET https://api.example.com/child
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   inherited pet c = Child(pet=Lion(kind='c', mane=True), pets_by_name={'a': Wolf(kind='d')}, note=None)
@@ -45,7 +47,7 @@
   held Fish = Holder(pet=Fish(kind='Fish', fins=2))
   > GET https://api.example.com/holder
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  held Bird ! DecodeError: DecodeError(status_code=200, operation_id='getHolder', reason='invalid_value') [operation_id='getHolder', body_bytes=b'{"pet":{"kind":"Bird"}}', truncated=False, cause=KeyError('Bird')] invalid_value
+  held Bird = Holder(pet=Bird(kind='Bird'))
   > GET https://api.example.com/holder
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   held null = Holder(pet=None)

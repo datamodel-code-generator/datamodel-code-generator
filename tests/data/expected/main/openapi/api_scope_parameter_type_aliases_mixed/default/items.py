@@ -5,12 +5,12 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from . import FieldItemsGetQueryCodeParameter, common
+from . import ItemsGetQueryCodeParameter, common
 
 
 class Item(BaseModel):
     code: common.Code | None = None
-    alias: FieldItemsGetQueryCodeParameter | None = None
+    alias: ItemsGetQueryCodeParameter | None = None
 
 
 class Page(BaseModel):

@@ -32,6 +32,7 @@ def _add_post_day(
     post_day_handler = checked(
         days.post_day,
         'The days.post_day method of POST /days',
+        ('principal', 'body'),
     )
 
     post_day_authorize = wiring.authorizer()
@@ -45,7 +46,7 @@ def _add_post_day(
             ((), (('bearer', ()),), (('basic', ()),)),
             {'bearer': bearer, 'basic': basic},
             post_day_authorize,
-            'Bearer, Basic',
+            'Bearer, Basic charset="UTF-8"',
         )
 
     def post_day(

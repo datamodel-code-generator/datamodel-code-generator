@@ -121,7 +121,7 @@ def parameter_kinds(package: ModuleType, lines: list[str]) -> None:
             ("read fields of text", _pairs(*_TEXTS), _FORM),
             ("read parts", _parts(*_FIELDS), "multipart/form-data; boundary=b1"),
             ("read parts of text", _parts(*_TEXTS[:-2], _FIELDS[-2], _TEXTS[-1]), "multipart/form-data; boundary=b1"),
-            ("read parts of text in an untyped member", _parts(*_TEXTS[-2:]), "multipart/form-data; boundary=b1"),
+            ("read parts of text alone", _parts(*_TEXTS[-2:]), "multipart/form-data; boundary=b1"),
         ):
             exchange.respond(raw_response(200, content, media))
             record(lines, label, lambda: api.values.save_values(body=body))

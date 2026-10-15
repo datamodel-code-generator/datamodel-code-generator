@@ -1,14 +1,17 @@
-template count: 8
+template count: 11
 application.jinja2
+authorize.jinja2
 contract.jinja2
 facade.jinja2
+implementation.jinja2
+main.jinja2
 openapi.jinja2
 readme.jinja2
 router.jinja2
 security.jinja2
 services.jinja2
 
-nodes: Call, For, Getattr, If, Macro, Name, Output, Template, TemplateData
+nodes: Call, Compare, For, Getattr, If, Macro, Name, Not, Operand, Output, Template, TemplateData
 filters:
 tests:
 globals:

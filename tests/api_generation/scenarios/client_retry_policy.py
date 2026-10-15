@@ -710,6 +710,7 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
             delays = tuple(waits.delays)
             lines.append(f"    delays={delays!r} expected={expected!r} match={delays == expected}")
+        exchange.responders.clear()
 
 
 def _frozen(options: ModuleType) -> dict[str, object]:

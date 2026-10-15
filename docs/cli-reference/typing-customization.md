@@ -36,6 +36,7 @@
 | [`--use-tuple-for-fixed-length-arrays`](#use-tuple-for-fixed-length-arrays) | Generate tuple types for homogeneous fixed-length arrays. |
 | [`--use-type-alias`](#use-type-alias) | Use TypeAlias instead of root models for type definitions (e... |
 | [`--use-type-alias-type`](#use-type-alias-type) | Use runtime TypeAliasType objects for aliases before Python ... |
+| [`--use-typed-nullable-map-values`](#use-typed-nullable-map-values) | Type the values of nullable maps as their schemas say instea... |
 | [`--use-union-operator`](#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 
@@ -69,7 +70,7 @@ even in multiple inheritance scenarios where two parent schemas define the same 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allof-class-hierarchy always # (1)!
+    datamodel-codegen --input allof_root_model_constraints.json --allof-class-hierarchy always # (1)!
     ```
 
     1. :material-arrow-left: `--allof-class-hierarchy` - the option documented here
@@ -408,7 +409,7 @@ other properties separate.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allof-merge-mode constraints # (1)!
+    datamodel-codegen --input allof_root_model_constraints.json --allof-merge-mode constraints # (1)!
     ```
 
     1. :material-arrow-left: `--allof-merge-mode` - the option documented here
@@ -1054,7 +1055,7 @@ postponed evaluation of annotations (PEP 563).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-future-imports --target-python-version 3.10 # (1)!
+    datamodel-codegen --input keep_model_order_field_references.json --disable-future-imports --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--disable-future-imports` - the option documented here
@@ -1125,7 +1126,7 @@ of Enum classes for all enumerations.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enum-field-as-literal all # (1)!
+    datamodel-codegen --input enums.graphql --enum-field-as-literal all # (1)!
     ```
 
     1. :material-arrow-left: `--enum-field-as-literal` - the option documented here
@@ -1605,7 +1606,7 @@ You can pass the mapping either inline as JSON or as a path to a JSON file.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enum-field-as-literal-map '{"status": "literal"}' # (1)!
+    datamodel-codegen --input enum_field_as_literal_map.json --enum-field-as-literal-map '{"status": "literal"}' # (1)!
     ```
 
     1. :material-arrow-left: `--enum-field-as-literal-map` - the option documented here
@@ -1692,7 +1693,7 @@ defined enum members.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --ignore-enum-constraints # (1)!
+    datamodel-codegen --input enums.graphql --ignore-enum-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--ignore-enum-constraints` - the option documented here
@@ -1828,7 +1829,7 @@ across Python target versions.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --target-python-version 3.10 --import-overrides '{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}' # (1)!
+    datamodel-codegen --input datetime.json --output-model-type typing.TypedDict --target-python-version 3.10 --import-overrides '{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}' # (1)!
     ```
 
     1. :material-arrow-left: `--import-overrides` - the option documented here
@@ -1896,7 +1897,7 @@ Use this option for compatibility with type checkers that don't yet support PEP 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --no-use-closed-typed-dict # (1)!
+    datamodel-codegen --input typed_dict_closed.json --output-model-type typing.TypedDict --no-use-closed-typed-dict # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-closed-typed-dict` - the option documented here
@@ -1957,7 +1958,7 @@ Python 3.11+, falling back to standard Enum classes instead.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-python-version 3.11 --no-use-specialized-enum # (1)!
+    datamodel-codegen --input enums.graphql --target-python-version 3.11 --no-use-specialized-enum # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-specialized-enum` - the option documented here
@@ -2244,7 +2245,7 @@ versions or when explicit typing imports are preferred.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-use-standard-collections # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --no-use-standard-collections # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-standard-collections` - the option documented here
@@ -2456,7 +2457,7 @@ for older Python versions or when explicit typing imports are preferred.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-use-union-operator # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --no-use-union-operator # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-union-operator` - the option documented here
@@ -2666,7 +2667,7 @@ or 'FutureDate' for future dates only. This is a Pydantic v2 only feature.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-date-class PastDate # (1)!
+    datamodel-codegen --input date_class.yaml --output-date-class PastDate # (1)!
     ```
 
     1. :material-arrow-left: `--output-date-class` - the option documented here
@@ -2725,7 +2726,7 @@ or 'datetime' for standard Python datetime objects.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-datetime-class AwareDatetime # (1)!
+    datamodel-codegen --input datetime.yaml --output-datetime-class AwareDatetime # (1)!
     ```
 
     1. :material-arrow-left: `--output-datetime-class` - the option documented here
@@ -2794,7 +2795,7 @@ in Pydantic models, ensuring values match exactly without automatic conversion.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-types str bytes int float bool # (1)!
+    datamodel-codegen --input strict_types.json --strict-types str bytes int float bool # (1)!
     ```
 
     1. :material-arrow-left: `--strict-types` - the option documented here
@@ -2871,9 +2872,9 @@ in Pydantic models, ensuring values match exactly without automatic conversion.
         BaseModel,
         Field,
         StrictBool,
-        StrictBytes,
         StrictInt,
         StrictStr,
+        conbytes,
         confloat,
         conint,
         constr,
@@ -2893,7 +2894,7 @@ in Pydantic models, ensuring values match exactly without automatic conversion.
         weight: confloat(ge=0.0, strict=True) | None = None
         score: confloat(ge=1e-08, strict=True) | None = None
         active: StrictBool | None = None
-        photo: StrictBytes | None = None
+        photo: conbytes(min_length=100, strict=True) | None = None
     ```
 
     <!-- fmt: on -->
@@ -2911,7 +2912,7 @@ The `--type-mappings` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --type-mappings binary=string # (1)!
+    datamodel-codegen --input type_mappings.json --output-model-type pydantic_v2.BaseModel --type-mappings binary=string # (1)!
     ```
 
     1. :material-arrow-left: `--type-mappings` - the option documented here
@@ -2997,7 +2998,7 @@ instead of generating them.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --type-overrides '{"CustomType": "my_app.types.CustomType"}' # (1)!
+    datamodel-codegen --input type_overrides_test.json --type-overrides '{"CustomType": "my_app.types.CustomType"}' # (1)!
     ```
 
     1. :material-arrow-left: `--type-overrides` - the option documented here
@@ -3080,7 +3081,7 @@ generated type to enforce uniqueness for array schemas.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-annotated # (1)!
+    datamodel-codegen --input annotated.graphql --output-model-type pydantic_v2.BaseModel --use-annotated # (1)!
     ```
 
     1. :material-arrow-left: `--use-annotated` - the option documented here
@@ -3489,7 +3490,7 @@ parameters based on `additionalProperties` constraints in the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --use-closed-typed-dict # (1)!
+    datamodel-codegen --input typed_dict_closed.json --output-model-type typing.TypedDict --use-closed-typed-dict # (1)!
     ```
 
     1. :material-arrow-left: `--use-closed-typed-dict` - the option documented here
@@ -3548,7 +3549,7 @@ precise decimal arithmetic when validating values against the constraint.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-decimal-for-multiple-of # (1)!
+    datamodel-codegen --input use_decimal_for_multiple_of.json --use-decimal-for-multiple-of # (1)!
     ```
 
     1. :material-arrow-left: `--use-decimal-for-multiple-of` - the option documented here
@@ -3635,7 +3636,7 @@ otherwise imports from `typing`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-generic-container-types # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --use-generic-container-types # (1)!
     ```
 
     1. :material-arrow-left: `--use-generic-container-types` - the option documented here
@@ -3846,7 +3847,7 @@ conint/confloat with ge/le parameters.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-non-positive-negative-number-constrained-types # (1)!
+    datamodel-codegen --input use_non_positive_negative.json --use-non-positive-negative-number-constrained-types # (1)!
     ```
 
     1. :material-arrow-left: `--use-non-positive-negative-number-constrained-types` - the option documented here
@@ -4021,7 +4022,7 @@ item schemas. This helps generate stricter type hints for unstructured values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --target-python-version 3.10 --use-object-type # (1)!
+    datamodel-codegen --input use_object_type.json --output-model-type typing.TypedDict --target-python-version 3.10 --use-object-type # (1)!
     ```
 
     1. :material-arrow-left: `--use-object-type` - the option documented here
@@ -4093,7 +4094,7 @@ If you need a different datetime class for `date-time` fields, use
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-pendulum # (1)!
+    datamodel-codegen --input use_pendulum.json --use-pendulum # (1)!
     ```
 
     1. :material-arrow-left: `--use-pendulum` - the option documented here
@@ -4164,7 +4165,7 @@ instead of class definitions, improving mypy type inference.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-root-model-type-alias --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input root_model_type_alias.json --use-root-model-type-alias --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-root-model-type-alias` - the option documented here
@@ -4241,7 +4242,7 @@ This is the default behavior for Python 3.11+ targets.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-python-version 3.11 --use-specialized-enum # (1)!
+    datamodel-codegen --input subclass_enum.json --target-python-version 3.11 --use-specialized-enum # (1)!
     ```
 
     1. :material-arrow-left: `--use-specialized-enum` - the option documented here
@@ -4382,7 +4383,7 @@ code for Python 3.10+ where built-in types support subscripting.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-standard-collections # (1)!
+    datamodel-codegen --input root_model_with_additional_properties.json --use-standard-collections # (1)!
     ```
 
     1. :material-arrow-left: `--use-standard-collections` - the option documented here
@@ -4594,7 +4595,7 @@ output types. Pydantic already uses these types by default.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --use-standard-primitive-types # (1)!
+    datamodel-codegen --input use_standard_primitive_types.json --output-model-type dataclasses.dataclass --use-standard-primitive-types # (1)!
     ```
 
     1. :material-arrow-left: `--use-standard-primitive-types` - the option documented here
@@ -4662,7 +4663,7 @@ are optional.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --use-total-false-for-typed-dict --use-frozen-field # (1)!
+    datamodel-codegen --input use_total_false_for_typed_dict.json --output-model-type typing.TypedDict --use-total-false-for-typed-dict --use-frozen-field # (1)!
     ```
 
     1. :material-arrow-left: `--use-total-false-for-typed-dict` - the option documented here
@@ -4917,7 +4918,7 @@ with `minItems == maxItems == len(items)`, generate a tuple type instead of a li
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-tuple-for-fixed-items # (1)!
+    datamodel-codegen --input items_array_tuple.json --use-tuple-for-fixed-items # (1)!
     ```
 
     1. :material-arrow-left: `--use-tuple-for-fixed-items` - the option documented here
@@ -4975,7 +4976,7 @@ list. An empty fixed-length array becomes `tuple[()]`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-tuple-for-fixed-length-arrays --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input fixed_length_array_tuples.yaml --use-tuple-for-fixed-length-arrays --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--use-tuple-for-fixed-length-arrays` - the option documented here
@@ -5130,7 +5131,7 @@ syntax. This feature is experimental.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-type-alias # (1)!
+    datamodel-codegen --input type_alias.graphql --use-type-alias # (1)!
     ```
 
     1. :material-arrow-left: `--use-type-alias` - the option documented here
@@ -5339,7 +5340,7 @@ continues to use native `type` statements.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type typing.TypedDict --use-type-alias-type --target-python-version 3.10 # (1)!
+    datamodel-codegen --input type_alias.json --output-model-type typing.TypedDict --use-type-alias-type --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--use-type-alias-type` - the option documented here
@@ -5466,6 +5467,304 @@ continues to use native `type` statements.
 
 ---
 
+## `--use-typed-nullable-map-values` {#use-typed-nullable-map-values}
+
+Type the values of nullable maps as their schemas say instead of Any.
+
+A nullable map here is a schema whose type array lists `object` alone or with `null`, such as
+`type: [object, "null"]` or `type: [object]`, and that declares its values with `additionalProperties`. Without the
+`--use-typed-nullable-map-values` flag the output keeps the 0.83.0 form, `dict[str, Any] | None`, or
+`dict[str, Any]` when the type array has no `null`, whatever the values are. A map made nullable by `nullable: true`
+and a map typed `type: object` keep their typed values either way.
+
+With the flag the values follow their schema, such as `dict[str, int] | None` or `dict[str, Player] | None`, and an
+object value gets a model named after the map, such as `Teams1` for the values of `Teams`. Those value models take
+the names left free, so the other models keep their 0.83.0 names, and options keyed by class name, such as
+`--base-class-map` or `--aliases`, apply to the final names. Typed values change more than the maps themselves:
+`--reuse-model` makes a value model and the models equal to it one model, which can leave out a schema's class, and
+no longer makes nullable maps with different values subclasses of each other, and `--collapse-root-models` collapses
+the root models that the values use. When typing the values would change the modules written, the values of the
+whole run stay untyped.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input nullable_map_value_types.yaml --use-typed-nullable-map-values --output-model-type pydantic_v2.BaseModel # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-typed-nullable-map-values` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Nullable map value types
+      version: "1.0"
+    paths:
+      /scores:
+        get:
+          operationId: listScores
+          parameters:
+            - name: players
+              in: query
+              schema:
+                type: [object, "null"]
+                additionalProperties:
+                  $ref: "#/components/schemas/Player"
+          responses:
+            "200":
+              description: The scores.
+        post:
+          operationId: replaceScores
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: [object, "null"]
+                  additionalProperties:
+                    type: integer
+          responses:
+            "200":
+              description: The stored scores.
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/Scores"
+    components:
+      schemas:
+        Player:
+          type: object
+          properties:
+            name:
+              type: string
+        Scores:
+          type: [object, "null"]
+          additionalProperties:
+            type: integer
+        NullFirstScores:
+          type: ["null", object]
+          additionalProperties:
+            type: integer
+        ObjectOnlyScores:
+          type: [object]
+          additionalProperties:
+            type: integer
+        Players:
+          type: [object, "null"]
+          additionalProperties:
+            $ref: "#/components/schemas/Player"
+        Teams:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              captain:
+                $ref: "#/components/schemas/Player"
+        Rounds:
+          type: [object, "null"]
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+        Seasons:
+          type: [object, "null"]
+          additionalProperties:
+            type: [object, "null"]
+            additionalProperties:
+              type: number
+        Labels:
+          type: [object, "null"]
+          additionalProperties:
+            type: string
+            minLength: 1
+        Board:
+          type: object
+          required:
+            - scores
+          properties:
+            scores:
+              type: [object, "null"]
+              additionalProperties:
+                type: integer
+            players:
+              type: [object, "null"]
+              additionalProperties:
+                $ref: "#/components/schemas/Player"
+            teams:
+              type: [object, "null"]
+              additionalProperties:
+                type: object
+                properties:
+                  captain:
+                    $ref: "#/components/schemas/Player"
+            history:
+              type: array
+              items:
+                type: [object, "null"]
+                additionalProperties:
+                  type: integer
+            plain:
+              type: object
+              additionalProperties:
+                type: integer
+            nullable_array:
+              type: [array, "null"]
+              items:
+                type: integer
+            untyped:
+              type: [object, "null"]
+              additionalProperties: true
+            fixed:
+              type: [object, "null"]
+              additionalProperties:
+                type: integer
+              const:
+                x: 1
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  nullable_map_value_types.yaml
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel, constr
+
+
+        class Player(BaseModel):
+            name: str | None = None
+
+
+        class Scores(RootModel[dict[str, int] | None]):
+            root: dict[str, int] | None
+
+
+        class NullFirstScores(RootModel[dict[str, int] | None]):
+            root: dict[str, int] | None
+
+
+        class ObjectOnlyScores(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class Players(RootModel[dict[str, Player] | None]):
+            root: dict[str, Player] | None
+
+
+        class Teams1(BaseModel):
+            captain: Player | None = None
+
+
+        class Teams(RootModel[dict[str, Teams1] | None]):
+            root: dict[str, Teams1] | None
+
+
+        class Rounds(RootModel[dict[str, list[int]] | None]):
+            root: dict[str, list[int]] | None
+
+
+        class Seasons(RootModel[dict[str, dict[str, float] | None] | None]):
+            root: dict[str, dict[str, float] | None] | None
+
+
+        class Labels(RootModel[dict[str, constr(min_length=1)] | None]):
+            root: dict[str, constr(min_length=1)] | None
+
+
+        class Teams2(BaseModel):
+            captain: Player | None = None
+
+
+        class Board(BaseModel):
+            scores: dict[str, int] | None
+            players: dict[str, Player] | None = None
+            teams: dict[str, Teams2] | None = None
+            history: list[dict[str, int] | None] | None = None
+            plain: dict[str, int] | None = None
+            nullable_array: list[int] | None = None
+            untyped: dict[str, Any] | None = None
+            fixed: dict[str, int] = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  nullable_map_value_types.yaml
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Player(BaseModel):
+            name: str | None = None
+
+
+        class Scores(RootModel[dict[str, Any] | None]):
+            root: dict[str, Any] | None
+
+
+        class NullFirstScores(RootModel[dict[str, Any] | None]):
+            root: dict[str, Any] | None
+
+
+        class ObjectOnlyScores(RootModel[dict[str, Any]]):
+            root: dict[str, Any]
+
+
+        class Players(RootModel[dict[str, Any] | None]):
+            root: dict[str, Any] | None
+
+
+        class Teams(RootModel[dict[str, Any] | None]):
+            root: dict[str, Any] | None
+
+
+        class Rounds(RootModel[dict[str, Any] | None]):
+            root: dict[str, Any] | None
+
+
+        class Seasons(RootModel[dict[str, Any] | None]):
+            root: dict[str, Any] | None
+
+
+        class Labels(RootModel[dict[str, Any] | None]):
+            root: dict[str, Any] | None
+
+
+        class Board(BaseModel):
+            scores: dict[str, Any] | None
+            players: dict[str, Any] | None = None
+            teams: dict[str, Any] | None = None
+            history: list[dict[str, Any] | None] | None = None
+            plain: dict[str, int] | None = None
+            nullable_array: list[int] | None = None
+            untyped: dict[str, Any] | None = None
+            fixed: dict[str, int] = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-union-operator` {#use-union-operator}
 
 Use | operator for Union types (PEP 604).
@@ -5481,7 +5780,7 @@ This is the default behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-annotated --use-union-operator # (1)!
+    datamodel-codegen --input annotated.graphql --output-model-type pydantic_v2.BaseModel --use-annotated --use-union-operator # (1)!
     ```
 
     1. :material-arrow-left: `--use-union-operator` - the option documented here
@@ -5556,7 +5855,7 @@ to true, enforcing uniqueness at the type level.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-unique-items-as-set --field-constraints # (1)!
+    datamodel-codegen --input api_constrained.yaml --use-unique-items-as-set --field-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--use-unique-items-as-set` - the option documented here

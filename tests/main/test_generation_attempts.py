@@ -33,7 +33,12 @@ def test_generation_attempt_lifetime(case: dict[str, str], tmp_path: Path, monke
         blocked.write_text("not a directory")
         output = blocked / "models.py"
     observation, retained = run_generation_session(
-        source, failure=failure, monkeypatch=monkeypatch, output=output, api_scope=case.get("api") != "false"
+        source,
+        failure=failure,
+        monkeypatch=monkeypatch,
+        output=output,
+        api_scope=case.get("api") != "false",
+        typed_nullable_map_values=case.get("typed_nullable_map_values") == "true",
     )
     expected = EXPECTED / ("windows" if sys.platform == "win32" and failure == "emit" else "")
     assert_output(json.dumps(observation, indent=2) + "\n", expected / f"attempt_{case['name']}.txt")

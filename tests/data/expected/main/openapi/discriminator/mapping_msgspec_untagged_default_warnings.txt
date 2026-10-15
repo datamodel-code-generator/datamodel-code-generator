@@ -1,0 +1,5 @@
+Cat is a variant of discriminated unions that map 'petType' to different tags: it keeps 'cat' from Pet, so these unions cannot decode it: Animal ('feline').
+msgspec cannot decode the discriminated union Pet: its Struct types Cat, Dog are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Animal: its Struct types Cat, Bird are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Kinded: its Struct types Cat, Dog are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Owner.shape: its Struct types Circle, Square are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

@@ -43,12 +43,12 @@ class _Fields:
 
     def pet_id(self, operation: str) -> Any:
         """Return the pet id of an operation's path, which a Pydantic model wraps and other backends alias."""
-        declared = getattr(self.models, f"FieldPetsPetId{operation}PathPetIdParameter")
+        declared = getattr(self.models, f"PetsPetId{operation}PathPetIdParameter")
         return getattr(declared, "__value__", declared)(1)
 
     def tag(self, value: str) -> Any:
         """Return a query tag of the create operation, which a Pydantic model wraps and other backends alias."""
-        declared = self.models.FieldPetsPostQueryTagParameter
+        declared = self.models.PetsPostQueryTagParameter
         return getattr(declared, "__value__", declared)(value)
 
     def kind(self) -> Any:
@@ -57,7 +57,7 @@ class _Fields:
 
     def no_owner(self) -> Any:
         """Return a null owner body: the root model of None that a Pydantic model wraps it in, or None."""
-        declared = self.models.FieldOwnersPostRequest
+        declared = self.models.OwnersPostRequest
         return declared(None) if hasattr(declared, "model_fields") else None
 
     def birth(self) -> object:

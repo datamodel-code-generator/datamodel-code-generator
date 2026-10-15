@@ -1,4 +1,5 @@
 {
+  "jsonschema/enum_names_beside_null.json": "jsonschema/enum_names_beside_null_payload_warnings.txt",
   "jsonschema/numeric_allof_types/format_decimal.json": "jsonschema/numeric_allof_types/format_decimal_warnings.txt",
   "jsonschema/numeric_allof_types/format_double.json": "jsonschema/numeric_allof_types/format_double_warnings.txt",
   "jsonschema/numeric_allof_types/format_float.json": "jsonschema/numeric_allof_types/format_float_warnings.txt"

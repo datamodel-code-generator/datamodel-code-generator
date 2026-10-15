@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from shop_models import FieldOrdersGetResponse, Order
+from shop_models import OrdersGetResponse, Order
 
 from shop import create_app
 from shop.services import OrdersService
 
 
 class Orders(OrdersService):
-    def list_orders(self, *, limit: int | None) -> FieldOrdersGetResponse:
+    def list_orders(self, *, limit: int | None) -> OrdersGetResponse:
         orders = [Order(id=1, total=3), Order(id=2, total=5)]
-        return FieldOrdersGetResponse(orders if limit is None else orders[:limit])
+        return OrdersGetResponse(orders if limit is None else orders[:limit])
 
     def get_order(self, *, id: int) -> Order:  # noqa: A002
         return Order(id=id, total=3)

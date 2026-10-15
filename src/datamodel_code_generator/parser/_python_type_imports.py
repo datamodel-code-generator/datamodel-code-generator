@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -32,6 +33,7 @@ class _StructuredImportAliasState:
     reserved_names: set[str]
     used_names: set[str]
     aliased_imports: dict[_ImportKey, Import]
+    template_import_keys: set[_ImportKey]
 
     def collect_import(self, imports_by_name: _ImportsByName, import_: Import) -> None:
         """Record an exact import identity under its effective binding name."""
@@ -117,6 +119,26 @@ def _collect_field_runtime_imports(state: _StructuredImportAliasState, models: I
                 state.collect_import(state.structured_imports_by_name, import_)
 
 
+def _alias_following_import_counts(model: DataModel) -> Counter[_ImportKey]:
+    """Count the imports a model holds for consumers that follow an alias.
+
+    Each further import of the same identity is named by template text such as ``Field(...)``,
+    which may sit in the same model, so its binding stays.
+    """
+    counts = Counter(
+        python_type_import_key(base_class.import_) for base_class in model.base_classes if base_class.import_
+    )
+    for field in model.fields:
+        counts.update(map(python_type_import_key, field.runtime_expression_imports))
+        for data_type in field.data_type.all_data_types:
+            if data_type.import_:
+                counts[python_type_import_key(data_type.import_)] += 1
+            if data_type.python_type:
+                counts.update(map(python_type_import_key, data_type.python_type.imports))
+            counts.update(map(python_type_import_key, data_type.runtime_expression_imports))
+    return counts
+
+
 def _collect_model_context_imports(
     state: _StructuredImportAliasState,
     models: Iterable[DataModel],
@@ -132,9 +154,15 @@ def _collect_model_context_imports(
         # This public aggregate contains field, base, default, backend, and
         # additional imports. Unaliased structured identities are classified
         # above; an established alias remains the canonical module binding.
+        alias_following_counts: Counter[_ImportKey] | None = None
         for import_ in model.imports:
-            if python_type_import_key(import_) in structured_import_keys and not import_.alias:
-                continue
+            if (key := python_type_import_key(import_)) in structured_import_keys and not import_.alias:
+                if alias_following_counts is None:
+                    alias_following_counts = _alias_following_import_counts(model)
+                if alias_following_counts[key]:
+                    alias_following_counts[key] -= 1
+                    continue
+                state.template_import_keys.add(key)
             state.collect_ordinary_import(import_)
     for import_aggregate in import_aggregates:
         for from_, imported_names in import_aggregate.items():
@@ -161,7 +189,7 @@ def resolve_structured_import_aliases(
     """Prefer established module bindings and alias structured imports around them."""
     reserved_names = set(all_model_field_names)
     reserved_names.update(model.class_name for model in models)
-    state = _StructuredImportAliasState({}, {}, {}, {}, reserved_names, set(reserved_names), {})
+    state = _StructuredImportAliasState({}, {}, {}, {}, reserved_names, set(reserved_names), {}, set())
     _collect_data_type_imports(state, data_types, all_model_field_names)
     _collect_field_runtime_imports(state, models)
     _collect_model_context_imports(state, models, import_aggregates)
@@ -179,11 +207,8 @@ def resolve_structured_import_aliases(
                 )
             else:
                 state.aliased_imports[key] = ordinary_import
-        elif ordinary_import.binding_name in state.reserved_names:
-            state.alias_import(
-                ordinary_import,
-                state.unique_alias(ordinary_import.binding_name, field_collision=True),
-            )
+        elif (name := ordinary_import.binding_name) in state.reserved_names and key not in state.template_import_keys:
+            state.alias_import(ordinary_import, state.unique_alias(name, field_collision=True))
 
     for import_ in state.ordinary_field_alias_candidates.values():
         if python_type_import_key(import_) in state.aliased_imports:

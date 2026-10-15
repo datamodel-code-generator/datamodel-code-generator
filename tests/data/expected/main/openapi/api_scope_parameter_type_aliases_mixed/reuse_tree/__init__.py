@@ -6,12 +6,12 @@ from __future__ import annotations
 from typing_extensions import TypeAliasType
 
 from . import common
-from .shared import FieldItemsGetQueryCodeParameter
+from .shared import ItemsGetQueryCodeParameter
 
-FieldItemsGetQueryOtherParameter = TypeAliasType("FieldItemsGetQueryOtherParameter", FieldItemsGetQueryCodeParameter)
-
-
-FieldItemsGetQueryCodesParameter = TypeAliasType("FieldItemsGetQueryCodesParameter", list[common.Code])
+ItemsGetQueryOtherParameter = TypeAliasType("ItemsGetQueryOtherParameter", ItemsGetQueryCodeParameter)
 
 
-FieldItemsCodeGetPathCodeParameter = TypeAliasType("FieldItemsCodeGetPathCodeParameter", FieldItemsGetQueryCodeParameter)
+ItemsGetQueryCodesParameter = TypeAliasType("ItemsGetQueryCodesParameter", list[common.Code])
+
+
+ItemsCodeGetPathCodeParameter = TypeAliasType("ItemsCodeGetPathCodeParameter", ItemsGetQueryCodeParameter)

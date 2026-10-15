@@ -1,0 +1,260 @@
+openapi: 3.1.0
+info: {title: Server nullable results, version: "1.0"}
+paths:
+  /texts:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getText
+      responses:
+        "200":
+          description: A text or null.
+          headers:
+            X-Rate: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {type: [string, "null"], maxLength: 5}
+        "201":
+          description: A thing or null.
+          content:
+            application/json:
+              schema: {anyOf: [{$ref: "#/components/schemas/Thing"}, {type: "null"}]}
+        "202":
+          description: A thing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+        "203":
+          description: A plain text or nothing.
+          content:
+            text/plain:
+              schema: {type: [string, "null"]}
+        2XX:
+          description: Any value.
+          content:
+            application/json: {}
+        4XX:
+          description: A color or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Color"}
+        default:
+          description: A pet or null.
+          content:
+            application/problem+json:
+              schema: {$ref: "#/components/schemas/Pet"}
+    head:
+      operationId: headText
+      responses:
+        "200":
+          description: A text or null.
+          content:
+            application/json:
+              schema: {type: [string, "null"]}
+  /lists:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getList
+      responses:
+        "200":
+          description: Numbers or null.
+          content:
+            application/json:
+              schema: {type: [array, "null"], items: {type: integer}}
+  /names:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getName
+      responses:
+        "200":
+          description: A name or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Name"}
+  /values:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getValue
+      responses:
+        "200":
+          description: Any value.
+          content:
+            application/json:
+              schema: {}
+  /anything:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getAnything
+      responses:
+        "200":
+          description: Any value.
+          content:
+            application/json: {}
+  /pets:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: A pet or null.
+          content:
+            application/vnd.pet+json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /things:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getThing
+      responses:
+        "200":
+          description: A thing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+  /notes:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getNote
+      responses:
+        "200":
+          description: A plain text or nothing.
+          content:
+            text/plain:
+              schema: {type: [string, "null"]}
+  /memos:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    post:
+      operationId: postMemo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "200":
+          description: A memo or null.
+          content:
+            application/json:
+              schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+  /ranges:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getRange
+      responses:
+        2XX:
+          description: A text or null under any success status.
+          content:
+            application/json:
+              schema: {type: [string, "null"]}
+  /accepted:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getAccepted
+      responses:
+        2XX:
+          description: A thing under any success status.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+  /defaults:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getDefault
+      responses:
+        default:
+          description: A thing under any status.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Thing"}
+  /errors:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getError
+      responses:
+        4XX:
+          description: A client error.
+          content:
+            text/plain:
+              schema: {type: string}
+  /oks:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getOk
+      responses:
+        "200":
+          description: ok or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ok"}
+        4XX:
+          description: ok or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ok"}
+    post:
+      operationId: postOk
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Ok"}
+      responses:
+        "200":
+          description: ok or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ok"}
+  /any-aliases:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    get:
+      operationId: getAnyAlias
+      responses:
+        "200":
+          description: Any value.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AnyAlias"}
+    post:
+      operationId: postAnyAlias
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AnyAlias"}
+      responses:
+        "200":
+          description: Any value.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AnyAlias"}
+  /counts:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    post:
+      operationId: postCount
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Count"}
+      responses:
+        "204": {description: Counted.}
+components:
+  schemas:
+    Thing: {type: object, required: [id], properties: {id: {type: integer}}}
+    Pet: {type: [object, "null"], required: [name], properties: {name: {type: string}}}
+    Name: {type: [string, "null"]}
+    Color: {enum: [red, blue, null]}
+    Ok: {type: string, x-python-type: "typing.Literal['ok', None]"}
+    AnyAlias: {type: string, x-python-type: "typing_extensions.Any"}
+    Count: {type: integer, x-python-type: "typing.Literal[1, 3]"}

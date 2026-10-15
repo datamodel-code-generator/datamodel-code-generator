@@ -4,3 +4,4 @@ source 3.1.0 ['/items/{item-id}/parts/{part}', '/adapters', '/repeat/{id}/again/
 servers [{'url': '/api'}]
 kept True
 metadata {'title': 'Mine', 'version': '2'} [{'url': 'https://prod.example.com'}]
+titles ['A', 'B', 'A']

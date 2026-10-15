@@ -27,3 +27,111 @@ paths:
         - {name: need, in: query, required: true, schema: {type: [integer, "null"]}}
       responses:
         "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "200":
+          description: A note or null.
+          content:
+            application/json:
+              schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+  /forms:
+    post:
+      operationId: postForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: [object, "null"]
+              required: [name]
+              properties: {name: {type: string}, tags: {type: array, items: {type: string}}, count: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /uploads:
+    post:
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: [object, "null"]
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                note: {type: string}
+                meta: {type: object, properties: {size: {type: integer}}}
+      responses:
+        "204": {description: Done.}
+  /extended:
+    post:
+      operationId: postExtended
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [object, "null"], allOf: [{required: [text], properties: {text: {type: string}}}]}
+      responses:
+        "200":
+          description: An extended note or null.
+          content:
+            application/json:
+              schema: {type: [object, "null"], allOf: [{$ref: "#/components/schemas/Note"}, {properties: {tag: {type: string}}}]}
+  /drafts:
+    post:
+      operationId: postDraft
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204": {description: Done.}
+  /variants:
+    post:
+      operationId: postVariant
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+          application/vnd.note+json:
+            schema: {type: [object, "null"], required: [text], properties: {text: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /versions:
+    post:
+      operationId: postVersion
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Note"}
+          application/vnd.note+json:
+            schema: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204": {description: Done.}
+  /texts:
+    post:
+      operationId: postText
+      requestBody:
+        content:
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
+  /values:
+    post:
+      operationId: postValue
+      requestBody:
+        content:
+          application/json: {}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Note: {type: object, required: [text], properties: {text: {type: string}}}

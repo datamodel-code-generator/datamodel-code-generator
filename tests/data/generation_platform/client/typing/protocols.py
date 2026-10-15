@@ -7,7 +7,7 @@ from typing import Literal
 
 from pets import AsyncClient, Client
 from pets.errors import ConfigurationError, ProtocolDataError, SessionLimitError, StreamInterruptedError
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.options import UNSET
 from pets.protocols import (
     AsyncMemoryCacheStore,

@@ -16,8 +16,8 @@ from ._runtime.server.responses import HTTPResult
 PrincipalT_contra = TypeVar("PrincipalT_contra", contravariant=True)
 
 
-class UntaggedService(Protocol[PrincipalT_contra]):
-    """Implement the untagged operations: subclass this Protocol, or give an object its methods."""
+class DefaultService(Protocol[PrincipalT_contra]):
+    """Implement the default operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
     def get_keys(

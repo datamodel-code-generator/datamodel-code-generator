@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value model name map
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        tags:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              id:
+                type: integer
+    Tags:
+      type: object
+      properties:
+        label:
+          type: string

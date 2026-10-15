@@ -9,13 +9,13 @@ from typing_extensions import NotRequired, TypedDict
 from pets import Client
 from pets.options import RequestOptions
 from pets.types.pets import ListPetsResponse
-from pets_models import FieldPetsGetHeaderXTraceParameter
+from pets_models import PetsGetHeaderXTraceParameter
 
 
 class ListArguments(TypedDict):
     """Keywords of list_pets that a caller declares for itself."""
 
-    X_Trace: FieldPetsGetHeaderXTraceParameter
+    X_Trace: PetsGetHeaderXTraceParameter
     options: NotRequired[RequestOptions | None]
 
 
@@ -34,7 +34,7 @@ class Lister(Protocol):
 class TracedLister(Protocol):
     """A callable that takes only the trace."""
 
-    def __call__(self, *, X_Trace: FieldPetsGetHeaderXTraceParameter) -> ListPetsResponse: ...
+    def __call__(self, *, X_Trace: PetsGetHeaderXTraceParameter) -> ListPetsResponse: ...
 
 
 def forward(client: Client, arguments: ColoredArguments) -> None:

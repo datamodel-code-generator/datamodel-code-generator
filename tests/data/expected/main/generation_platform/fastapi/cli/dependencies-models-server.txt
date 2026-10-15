@@ -1,2 +1,6 @@
 Add the runtime dependencies of models.server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+Next steps: implement the stubs in models/services/store.py, then run the server:
+  uv add uvicorn && uv run uvicorn models.server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev --entrypoint models.server.main:app
+See models/server/README.md.

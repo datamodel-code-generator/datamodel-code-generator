@@ -195,7 +195,7 @@ def test_imported_model_classes_are_not_returned() -> None:
 
 
 @pytest.mark.parametrize("cache_size", [0, 128])
-@pytest.mark.parametrize("module_name", [None, "dynamic_root_aliases"])
+@pytest.mark.parametrize("module_name", [None, "dynamic_root_aliases", "tests.data.dynamic_models"])
 @pytest.mark.parametrize("module_split_mode", [None, ModuleSplitMode.Single])
 @pytest.mark.parametrize("use_aliases", [False, True], ids=["classes", "aliases"])
 def test_generated_root_model_aliases(
@@ -227,6 +227,7 @@ def test_generated_root_model_aliases(
         assert_generated_modules_output(generated, expected / "modules")
 
     original_module = ImportedIntegerRoot.__module__
+    registered_module = sys.modules.get(module_name or "")
     with assert_inputs_not_mutated({"schema": schema, "config": config}):
         models = generate_dynamic_models(schema, config=config, cache_size=cache_size, module_name=module_name)
         repeated = generate_dynamic_models(schema, config=config, cache_size=cache_size, module_name=module_name)
@@ -264,6 +265,7 @@ def test_generated_root_model_aliases(
         if module_split_mode is None or module_name
         else models["PlainObject"].__module__.startswith("_dcg_dynamic_"),
         "imported_target_error": str(error.value),
+        "registered_module_restored": sys.modules.get(module_name or "") is registered_module,
     }
     assert_output(
         f"{json.dumps(actual, indent=2)}\n",
@@ -563,6 +565,42 @@ def test_module_name_is_applied_for_same_schema_with_different_runtime_modules()
     assert runtime_model.model_validate({"name": "Alice"}).model_dump(mode="json") == {"name": "Alice"}
     assert other_runtime_model.__module__ == "other_runtime_models"
     assert other_runtime_model.model_validate({"name": "Bob"}).model_dump(mode="json") == {"name": "Bob"}
+
+
+@pytest.mark.parametrize(
+    ("module_name", "base_class"),
+    [
+        ("tests.data.dynamic_models.runtime_custom_base", "tests.data.dynamic_models.runtime_custom_base.CustomBase"),
+        ("runtime_missing_package.models", None),
+    ],
+    ids=["importable", "missing-package"],
+)
+def test_module_name_of_importable_module(
+    module_name: str, base_class: str | None, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Import a module that module_name names before the generated code imports from it, instead of masking it."""
+    monkeypatch.delitem(sys.modules, module_name, raising=False)
+    config = GenerateConfig(
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        **({"base_class": base_class} if base_class else {}),
+    )
+    model = generate_dynamic_models(
+        make_object_schema({"name": {"type": "string"}}, required=["name"]),
+        config=config,
+        cache_size=0,
+        module_name=module_name,
+    )["Model"]
+    actual = {
+        "model_module": model.__module__,
+        "bases": [f"{base.__module__}.{base.__qualname__}" for base in model.__bases__],
+        "validated": model.model_validate({"name": "Alice"}).model_dump(mode="json"),
+        "module_imported": module_name in sys.modules,
+    }
+    assert_output(
+        f"{json.dumps(actual, indent=2)}\n",
+        EXPECTED_PATH / f"module_name_{request.node.callspec.id}.txt",
+    )
 
 
 def test_target_model_names_filters_single_model() -> None:

@@ -1,0 +1,26 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value class keys
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        tags:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              label:
+                type: string
+              color:
+                type: string
+    Tags:
+      type: object
+      properties:
+        label:
+          type: string
+        color:
+          type: string

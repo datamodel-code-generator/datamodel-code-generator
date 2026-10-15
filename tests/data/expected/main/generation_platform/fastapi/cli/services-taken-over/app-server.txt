@@ -1,0 +1,17 @@
+check success False
+difference changed services/__init__.py
+json file services/__init__.py as written True
+BOM kept True
+Add the runtime dependencies of app.server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+app/services/__init__.py now names app.server instead of app.old: update the imports of the services modules from app.old to app.server.
+Next steps: run the server with your services in app/services/pets.py, app/services/store.py:
+  uv add uvicorn && uv run uvicorn app.server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev --entrypoint app.server.main:app
+See app/server/README.md.
+"""Your implementations of app.server, which app.server.main imports.
+
+datamodel-code-generator wrote this file once and never overwrites it, or the modules beside it."""
+
+# Yours
+Error: app/services: The server packages app.server, generated before, and app.other would both import their implementations from the app.services package: put each server package under a parent package of its own, or delete the directory app/server of app.server when it is no longer used

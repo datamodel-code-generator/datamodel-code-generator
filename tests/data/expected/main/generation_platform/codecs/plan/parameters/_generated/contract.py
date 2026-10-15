@@ -39,10 +39,10 @@ class GetPages:
     class Parameters:
         """The adapter parameters of get_pages."""
 
-        pager: plan_parameters_models.FieldPagesGetQueryPagerParameter | None
+        pager: plan_parameters_models.PagesGetQueryPagerParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='pager', plan=ParameterPlan(location='query', name='pager', style='form', explode=True, shape='object', fields=(FieldPlan('size', 'integer'),), reserved_names=('page',)), adapter=TypeAdapter(plan_parameters_models.FieldPagesGetQueryPagerParameter)),),
+        arguments=(ParameterArgument(name='pager', plan=ParameterPlan(location='query', name='pager', style='form', explode=True, shape='object', fields=(FieldPlan('size', 'integer'),), reserved_names=('page',)), adapter=TypeAdapter(plan_parameters_models.PagesGetQueryPagerParameter)),),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -58,10 +58,10 @@ class GetOptions:
     class Parameters:
         """The adapter parameters of get_options."""
 
-        opts: plan_parameters_models.FieldOptionsGetQueryOptsParameter | None
+        opts: plan_parameters_models.OptionsGetQueryOptsParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='opts', plan=ParameterPlan(location='query', name='opts', style='form', explode=True, shape='object', additional=FieldPlan('', 'string')), adapter=TypeAdapter(plan_parameters_models.FieldOptionsGetQueryOptsParameter)),),
+        arguments=(ParameterArgument(name='opts', plan=ParameterPlan(location='query', name='opts', style='form', explode=True, shape='object', additional=FieldPlan('', 'string')), adapter=TypeAdapter(plan_parameters_models.OptionsGetQueryOptsParameter)),),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -77,10 +77,10 @@ class GetMore:
     class Parameters:
         """The adapter parameters of get_more."""
 
-        more: plan_parameters_models.FieldMoreGetQueryMoreParameter | None
+        more: plan_parameters_models.MoreGetQueryMoreParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='more', plan=ParameterPlan(location='query', name='more', style='form', explode=True, shape='object', additional=FieldPlan('', 'string')), adapter=TypeAdapter(plan_parameters_models.FieldMoreGetQueryMoreParameter)),),
+        arguments=(ParameterArgument(name='more', plan=ParameterPlan(location='query', name='more', style='form', explode=True, shape='object', additional=FieldPlan('', 'string')), adapter=TypeAdapter(plan_parameters_models.MoreGetQueryMoreParameter)),),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -96,15 +96,15 @@ class GetHeaders:
     class Parameters:
         """The adapter parameters of get_headers."""
 
-        flag: plan_parameters_models.FieldHeadersGetHeaderFlagParameter | None
-        ratio: plan_parameters_models.FieldHeadersGetHeaderRatioParameter | None
+        flag: plan_parameters_models.HeadersGetHeaderFlagParameter | None
+        ratio: plan_parameters_models.HeadersGetHeaderRatioParameter | None
         shaped: Any | None
         counts: dict[str, int] | None
         anyMap: dict[str, Any] | None
         plain: str | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='flag', plan=ParameterPlan(location='header', name='flag', style='simple', kind='boolean', reserved_names=('anyMap', 'counts', 'mode', 'plain', 'ratio', 'shaped')), adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderFlagParameter)), ParameterArgument(name='ratio', plan=ParameterPlan(location='header', name='ratio', style='simple', kind='number', reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'shaped')), adapter=TypeAdapter(plan_parameters_models.FieldHeadersGetHeaderRatioParameter)), ParameterArgument(name='shaped', plan=ParameterPlan(location='header', name='shaped', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'ratio')), adapter=TypeAdapter(Any)), ParameterArgument(name='counts', plan=ParameterPlan(location='header', name='counts', style='simple', explode=True, shape='object', additional=FieldPlan('', 'integer'), reserved_names=('anyMap', 'flag', 'mode', 'plain', 'ratio', 'shaped')), adapter=TypeAdapter(dict[str, int])), ParameterArgument(name='anyMap', plan=ParameterPlan(location='header', name='anyMap', style='simple', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('counts', 'flag', 'mode', 'plain', 'ratio', 'shaped')), adapter=TypeAdapter(dict[str, Any])), ParameterArgument(name='plain', plan=ParameterPlan(location='header', name='plain', content_media_type='text/plain'))),
+        arguments=(ParameterArgument(name='flag', plan=ParameterPlan(location='header', name='flag', style='simple', kind='boolean', reserved_names=('anyMap', 'counts', 'mode', 'plain', 'ratio', 'shaped')), adapter=TypeAdapter(plan_parameters_models.HeadersGetHeaderFlagParameter)), ParameterArgument(name='ratio', plan=ParameterPlan(location='header', name='ratio', style='simple', kind='number', reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'shaped')), adapter=TypeAdapter(plan_parameters_models.HeadersGetHeaderRatioParameter)), ParameterArgument(name='shaped', plan=ParameterPlan(location='header', name='shaped', style='simple', shape='object', additional=FieldPlan('', 'string'), reserved_names=('anyMap', 'counts', 'flag', 'mode', 'plain', 'ratio')), adapter=TypeAdapter(Any)), ParameterArgument(name='counts', plan=ParameterPlan(location='header', name='counts', style='simple', explode=True, shape='object', additional=FieldPlan('', 'integer'), reserved_names=('anyMap', 'flag', 'mode', 'plain', 'ratio', 'shaped')), adapter=TypeAdapter(dict[str, int])), ParameterArgument(name='anyMap', plan=ParameterPlan(location='header', name='anyMap', style='simple', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('counts', 'flag', 'mode', 'plain', 'ratio', 'shaped')), adapter=TypeAdapter(dict[str, Any])), ParameterArgument(name='plain', plan=ParameterPlan(location='header', name='plain', content_media_type='text/plain'))),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
@@ -130,10 +130,10 @@ class GetKinds:
         only: list[int] | None
         maybe: list[int] | None
         whatever: Any | None
-        prices: plan_parameters_models.FieldKindsGetHeaderPricesParameter | None
+        prices: plan_parameters_models.KindsGetHeaderPricesParameter | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='amounts', plan=ParameterPlan(location='header', name='amounts', style='simple', shape='array', reserved_names=('amount', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[Decimal])), ParameterArgument(name='scales', plan=ParameterPlan(location='header', name='scales', style='simple', shape='array', kind='number', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'whatever')), adapter=TypeAdapter(list[int | float])), ParameterArgument(name='anything', plan=ParameterPlan(location='header', name='anything', style='simple', reserved_names=('amount', 'amounts', 'anyItems', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(Any)), ParameterArgument(name='noItems', plan=ParameterPlan(location='header', name='noItems', style='simple', shape='array', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[Any])), ParameterArgument(name='anyItems', plan=ParameterPlan(location='header', name='anyItems', style='simple', shape='array', reserved_names=('amount', 'amounts', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[Any])), ParameterArgument(name='loose', plan=ParameterPlan(location='header', name='loose', style='simple', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(str | Any)), ParameterArgument(name='composed', plan=ParameterPlan(location='header', name='composed', style='simple', shape='array', kind='integer', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[int])), ParameterArgument(name='only', plan=ParameterPlan(location='header', name='only', style='simple', shape='array', kind='integer', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[int])), ParameterArgument(name='maybe', plan=ParameterPlan(location='header', name='maybe', style='simple', shape='array', kind='integer', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[int] | None)), ParameterArgument(name='whatever', plan=ParameterPlan(location='header', name='whatever', style='simple', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales')), adapter=TypeAdapter(Any)), ParameterArgument(name='prices', plan=ParameterPlan(location='header', name='prices', style='simple', explode=True, shape='object', fields=(FieldPlan('net', 'string'), FieldPlan('count', 'integer')), additional=FieldPlan('', 'string'), reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'scales', 'whatever')), adapter=TypeAdapter(plan_parameters_models.FieldKindsGetHeaderPricesParameter))),
+        arguments=(ParameterArgument(name='amounts', plan=ParameterPlan(location='header', name='amounts', style='simple', shape='array', reserved_names=('amount', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[Decimal])), ParameterArgument(name='scales', plan=ParameterPlan(location='header', name='scales', style='simple', shape='array', kind='number', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'whatever')), adapter=TypeAdapter(list[int | float])), ParameterArgument(name='anything', plan=ParameterPlan(location='header', name='anything', style='simple', reserved_names=('amount', 'amounts', 'anyItems', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(Any)), ParameterArgument(name='noItems', plan=ParameterPlan(location='header', name='noItems', style='simple', shape='array', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[Any])), ParameterArgument(name='anyItems', plan=ParameterPlan(location='header', name='anyItems', style='simple', shape='array', reserved_names=('amount', 'amounts', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[Any])), ParameterArgument(name='loose', plan=ParameterPlan(location='header', name='loose', style='simple', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(str | Any)), ParameterArgument(name='composed', plan=ParameterPlan(location='header', name='composed', style='simple', shape='array', kind='integer', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[int])), ParameterArgument(name='only', plan=ParameterPlan(location='header', name='only', style='simple', shape='array', kind='integer', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[int])), ParameterArgument(name='maybe', plan=ParameterPlan(location='header', name='maybe', style='simple', shape='array', kind='integer', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'mixed', 'noItems', 'only', 'prices', 'scales', 'whatever')), adapter=TypeAdapter(list[int] | None)), ParameterArgument(name='whatever', plan=ParameterPlan(location='header', name='whatever', style='simple', reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'prices', 'scales')), adapter=TypeAdapter(Any)), ParameterArgument(name='prices', plan=ParameterPlan(location='header', name='prices', style='simple', explode=True, shape='object', fields=(FieldPlan('net', 'string'), FieldPlan('count', 'integer')), additional=FieldPlan('', 'string'), reserved_names=('amount', 'amounts', 'anyItems', 'anything', 'composed', 'loose', 'maybe', 'mixed', 'noItems', 'only', 'scales', 'whatever')), adapter=TypeAdapter(plan_parameters_models.KindsGetHeaderPricesParameter))),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(

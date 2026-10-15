@@ -52,7 +52,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_public(self, **arguments: object) -> None:
             record("get_public", arguments)
 
-    class Untagged(server.services.UntaggedService):
+    class Default(server.services.DefaultService):
         async def get_maybe(self, **arguments: object) -> None:
             record("get_maybe", arguments)
 
@@ -68,10 +68,10 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     async def later() -> None:
         record("later", {})
 
-    default = {"pets": Pets(), "public": Public(), "untagged": Untagged()}
+    default = {"pets": Pets(), "public": Public(), "default": Default()}
     awaitables = {
         "public": _Variant(default["public"], get_public=lambda **_: _Pending()),
-        "untagged": _Variant(default["untagged"], put_pet=lambda **_: later()),
+        "default": _Variant(default["default"], put_pet=lambda **_: later()),
     }
     shapes = dict.fromkeys(("authorize-lambda", "authorize-wrapped", "authorize-partial"), default)
     return {"default": default, "async": default, "awaitables": {**default, **awaitables}, **shapes}
@@ -159,11 +159,11 @@ def builds(server: ModuleType, models: ModuleType, calls: list[str]) -> Iterator
     secured = {"authorize": settings(server, models, calls)["default"]["authorize"]}
     build = partial(server.build_router, **default)
     create = partial(server.create_app, **default, **secured)
-    untagged = default["untagged"]
+    group = default["default"]
     yield "no-authorize", partial(build, authorize=None)
-    yield "missing-method", partial(build, untagged=object(), **secured)
-    yield "sync-in-async", partial(build, untagged=_Variant(untagged, get_maybe=untagged.put_pet), **secured)
-    yield "async-in-sync", partial(build, untagged=_Variant(untagged, put_pet=untagged.get_maybe), **secured)
+    yield "missing-method", partial(build, default=object(), **secured)
+    yield "sync-in-async", partial(build, default=_Variant(group, get_maybe=group.put_pet), **secured)
+    yield "async-in-sync", partial(build, default=_Variant(group, put_pet=group.get_maybe), **secured)
     for label, value in (
         ("unknown", {"/paths/~1pets/get": []}),
         ("none", {"list_pets": None}),

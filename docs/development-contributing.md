@@ -97,6 +97,11 @@ Tests go through the public `generate()` function or the `datamodel-codegen` CLI
 internal objects, and use mocks only for abnormal paths (injected faults, marked with
 `@pytest.mark.abnormal_path`) and external services.
 
+A generated client copies the codec module of its own model backend only. The dataclass and TypedDict modules,
+`_runtime/model_codecs/stdlib_dataclasses.py` and `stdlib_typeddicts.py`, are derived from `stdlib.py.jinja2` beside
+them: edit that source and run `python scripts/build_stdlib_codecs.py`. Its `--check` option, which
+`tests/model_codecs/test_wire_values.py` runs, fails when a module differs from what the source derives.
+
 Expected output lives under `tests/data/expected/main/generation_platform/`:
 
 - `client/packages/<case>/<backend>/` and `fastapi/packages/<case>/<backend>/` hold generated packages, including
@@ -104,7 +109,11 @@ Expected output lives under `tests/data/expected/main/generation_platform/`:
 - `client/bindings/<case>/<backend>/<variant>/client/_generated/model_bindings.py` pins the model bindings each
   case generates.
 - `client/capabilities/*.txt` and the other `*.txt` reports list copied runtime modules by name. Line counts appear
-  only in `minimal`.
+  only in `minimal`. Each capability report also lists the modules the package imports from outside the standard
+  library: those of the printed dependencies, then the others, which only those dependencies' own requirements may
+  provide.
+- `client/typing/dependencies/*.txt` hold the checkers' findings for a package of each backend where only its
+  printed dependencies are installed.
 - Reports hold listings, diagnostics, and outcomes. Generated source is pinned as files at its generated path, not
   embedded in a report.
 

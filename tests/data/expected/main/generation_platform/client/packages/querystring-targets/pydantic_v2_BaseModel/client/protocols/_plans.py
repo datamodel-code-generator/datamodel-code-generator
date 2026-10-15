@@ -52,7 +52,7 @@ PLAN_0: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='header', name='X-Cursor'), end_missing=True, empty_string_ends=True),
-    fingerprint='64c7fb5f76009475b309c908f6bfcecbc509102e9b5b4a82c21d53d32c457fb1',
+    fingerprint='4ed5bf7d911a6ee149865a2956a17b965f6b63107350768f8e981a7c21636188',
 )
 
 
@@ -63,7 +63,7 @@ PLAN_1: Final[PaginationPlan[str, SearchResponse]] = PaginationPlan(
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='header', name='x-cursor'), end_missing=True, empty_string_ends=True),
-    fingerprint='dc1c53dfcdba5448472573739bd416de836e4f2acd8e9043051ecafd4d42c817',
+    fingerprint='ae6d622b2dc484ce6ce4237d99348ae00568848782e8fc9898f547b24220197e',
     bindings=(PageBinding(target=ParameterTarget(location='path', name='scope'), literal='everything'), PageBinding(target=QuerystringTarget(name='criteria', pointer='/limit'), literal=50)),
 )
 
@@ -93,7 +93,6 @@ PLAN_3: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     append_operation=OperationRef(pointer='/paths/~1files~1{fileId}/patch'),
     append=_operations.OPERATION_6,
     offset=ParameterTarget(location='header', name='Upload-Offset'),
-    max_chunk_bytes=4,
     partial_commit=True,
     size=ParameterTarget(location='header', name='Upload-Length'),
     probe_bindings=(PageBinding(target=ParameterTarget(location='path', name='fileId'), source='initial', selector=BodySelector(pointer='/id')), PageBinding(target=QuerystringTarget(name='detail', pointer='/kind'), literal='offset')),

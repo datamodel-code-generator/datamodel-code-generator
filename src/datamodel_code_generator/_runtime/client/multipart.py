@@ -16,6 +16,7 @@ from io import UnsupportedOperation
 from os import SEEK_END, SEEK_SET, urandom
 from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, TypeAlias, TypeVar, cast
 
+import httpx2
 from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
@@ -27,32 +28,20 @@ from .bodies import AsyncBinaryBody, SyncBinaryBody, is_binary_input, next_chunk
 from .body_sources import BinaryBodies, BodyBindings, BoundBody
 from .errors import DecodeError
 from .logical import in_thread
-from .media import encode_text, most_specific, normalized, with_charset
+from .media import encode_text
+from .parts import MEDIA_OUTSIDE_ENCODING, PartPlan
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable, Iterator
-    from typing import Any, Protocol
+    from typing import Any
 
     from ..model_codecs.media import JSONValue
     from .bodies import BinaryContent, BinarySource
     from .content import AsyncContent, BodyEntry, SyncContent
 
-    class PartCodec(Protocol):
-        """The codec of a sent member's values, as the generated operation registry binds it."""
-
-        def dump(self, value: Any) -> object:
-            """Return the JSON value of a value."""
-            ...
-
-        @property
-        def errors(self) -> tuple[type[Exception], ...]:
-            """Return the failures of the codec's backend."""
-            ...
-
 
 PartT = TypeVar("PartT")
 PartT_co = TypeVar("PartT_co", covariant=True)
-PartKind: TypeAlias = Literal["string", "integer", "number", "boolean", "json"]
 ContentT_co = TypeVar("ContentT_co", bound="SyncBinaryBody | AsyncBinaryBody", covariant=True)
 Entry: TypeAlias = tuple[str, str | None, object, str | None, tuple[tuple[str, str], ...]]
 
@@ -61,18 +50,19 @@ _PART: Final = "A multipart part must be a FieldPart or a FilePart named by a st
 _SYNC: Final = (
     "A multipart file part must be read synchronously: bytes, a binary file object, a path, or an iterable of bytes"
 )
-_MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
 _DISPOSITION: Final = "A part's Content-Disposition comes from its name and filename, so its headers may not name it"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
 _OCTETS: Final = "application/octet-stream"
+_JSON: Final = "application/json"
 _FORM_DATA: Final = "multipart/form-data"
 
 
 class FieldPart(Generic[PartT_co]):
     """A form-data part that is not a file: a named value, sent with the media type and headers it names.
 
-    A string is sent as it is, another scalar as JSON text, and an object or array as JSON; UNSET leaves it out.
+    A string is sent as it is, another scalar as JSON text, and an object or array as JSON; UNSET or None leaves it
+    out, as a form cannot write null.
     """
 
     __slots__ = ("_content_type", "_headers", "_name", "_value")
@@ -199,47 +189,6 @@ else:
     )
 
 
-class PartPlan:
-    """How one form-data member is sent or read: its kind, repeats, codec, media types, and style.
-
-    A received part is read in its lexical kind, or as JSON. A sent value is encoded by the codec, when the member
-    has one, and each item of a repeated member becomes its own part. The media types of the member's encoding bound
-    the media type a part names, and the first concrete one is its default. A member whose encoding gives a query
-    style writes a part for each name and value that style gives its value.
-    """
-
-    __slots__ = ("codec", "content_types", "kind", "name", "repeated", "style")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        name: str,
-        kind: PartKind = "string",
-        *,
-        repeated: bool = False,
-        codec: PartCodec | None = None,
-        content_types: tuple[str, ...] = (),
-        style: ParameterPlan | None = None,
-    ) -> None:
-        """Keep the member's name, kind, repeats, codec, media, and style."""
-        self.name = name
-        self.kind: PartKind = kind
-        self.repeated = repeated
-        self.codec = codec
-        self.content_types = content_types
-        self.style = style
-
-    def media(self, named: str | None) -> str | None:
-        """Return the media type of a part: the one it names within the encoding's, or the encoding's default.
-
-        A named media type is sent normalized, with the charset of the declared type it falls within when it names none.
-        """
-        if named is None:
-            return next((media for media in self.content_types if "*" not in media.partition(";")[0]), None)
-        if (wanted := normalized(named)) is None or (declared := most_specific(wanted, self.content_types)) is None:
-            raise ParameterEncodingError(_MEDIA)
-        return with_charset(wanted, declared)
-
-
 _ANY: Final = PartPlan("")
 
 
@@ -323,21 +272,21 @@ def native_files(entries: Iterable[Entry], contents: Iterable[object] | None = N
     ]
 
 
-def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | FormParts, str | None]:
+def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | FormParts, str]:
     """Return a body's bytes, or else its streamed parts, and its media type with a new boundary.
 
     The media type is the one the call sends, multipart/form-data without one, its other parameters kept. A body
-    without parts has no media type, as HTTPX2 sends none. A part header naming Content-Disposition is refused, as
-    HTTPX2 writes it itself, and HTTPX2 checks every part's name and headers before any file input is opened.
+    without parts is its close delimiter alone, which HTTPX2 would not send. A part header naming Content-Disposition
+    is refused, as HTTPX2 writes it itself, and HTTPX2 checks every part's name and headers before any file input is
+    opened.
     """
-    import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
-
     if any(key.lower() == "content-disposition" for _, _, _, _, headers in entries for key, _ in headers):
         raise _malformed(None, ValueError(_DISPOSITION))
+    boundary = urandom(16).hex()
+    sent = f"{media_type or _FORM_DATA}; boundary={boundary}"
+    if not entries:
+        return f"--{boundary}--\r\n".encode(), sent
     try:
-        if not entries:
-            return b"", None
-        sent = f"{media_type or _FORM_DATA}; boundary={urandom(16).hex()}"
         if all(type(content) is bytes for _, _, content, _, _ in entries):
             return httpx2.Request("POST", "/", headers={"Content-Type": sent}, files=native_files(entries)).read(), sent
         httpx2.Request("POST", "/", files=native_files(entries, (b"" for _ in entries)))
@@ -346,25 +295,34 @@ def _encoded(entries: list[Entry], media_type: str | None) -> tuple[bytes | Form
     return FormParts(tuple(entries), sent), sent
 
 
-def encode_multipart(
-    value: JSONValue,
-    content_types: Mapping[str, str] | None = None,
-    styled: Mapping[str, ParameterPlan] | None = None,
-    sent: str | None = None,
-) -> tuple[bytes | FormParts, str | None]:
+def _shaped(plan: PartPlan | None) -> Literal["application/json"] | None:
+    """Return the media type a member's plan gives each value: JSON for the JSON kind, else the value's shape's."""
+    return _JSON if plan is not None and plan.kind == "json" else None
+
+
+def encode_multipart(value: JSONValue, form: MultipartForm, sent: str | None = None) -> tuple[bytes | FormParts, str]:
     """Encode an object as ordered form-data parts, repeating a part for each array member; an empty one writes none.
 
-    The body is sent in the media type `sent` names. A member with an encoding's media type is written in it. A member
-    in `styled` writes a part for each name and value its query style gives, without percent-encoding, and no two
-    members may then write parts of the same name.
+    A form cannot write null, so a None member is left out as an unset one is.
+
+    The body is sent in the media type `sent` names. A member with an encoding's media type in the form is written in
+    it. A member the form encodes writes a part for each name and value its query style gives, without
+    percent-encoding, and no two members may then write parts of the same name. A member the form plans, or else any
+    member when it plans the others, is written as its plan says: a part for each item only when it repeats, as JSON
+    when it is of the JSON kind.
     """
     if not isinstance(value, Mapping):
         msg = "A multipart form value must be an object"
         raise ParameterEncodingError(msg)
+    content_types = dict(form.content_types)
+    styled = {plan.name: plan for plan in form.encoded}
+    plans = {plan.name: plan for plan in form.parts or ()}
     entries: list[Entry] = []
     owners: dict[str, str] = {}
     for name, item in value.items():
-        if styled and (style := styled.get(name)) is not None:
+        if item is None:
+            continue
+        if (style := styled.get(name)) is not None:
             pairs = part_pairs(style, item)
             if any(owners.setdefault(key, name) != name for key, _ in pairs):
                 raise ParameterEncodingError(_CLAIMED)
@@ -372,9 +330,9 @@ def encode_multipart(
             continue
         if styled and owners.setdefault(name, name) != name:
             raise ParameterEncodingError(_CLAIMED)
-        declared = None if content_types is None else content_types.get(name)
-        for member in item if isinstance(item, list) else (item,):
-            content, media_type = multipart_member(member, declared)
+        plan = plans.get(name, form.additional)
+        for member in item if isinstance(item, list) and (plan is None or plan.repeated) else (item,):
+            content, media_type = multipart_member(member, content_types.get(name) or _shaped(plan))
             entries.append(_entry(name, content, media_type))
     return _encoded(entries, sent)
 
@@ -388,12 +346,12 @@ def _errors(plan: PartPlan) -> tuple[type[Exception], ...]:
 
 
 def _field(part: FieldPart[object], plan: PartPlan) -> list[Entry]:
-    """Return a field part's entries, one for each item of a repeated member and none for UNSET.
+    """Return a field part's entries, one for each item of a repeated member and none for UNSET or None.
 
     A styled member writes a part for each name and value its style gives, without percent-encoding, in the charset of
     the media type its part names, UTF-8 without one.
     """
-    if (value := part.value) is UNSET:
+    if (value := part.value) is UNSET or value is None:
         return []
     try:
         wire = cast("JSONValue", value if (codec := plan.codec) is None else codec.dump(value))
@@ -418,7 +376,7 @@ def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
     if plan.content_types:
         content, media_type = multipart_member(item, plan.media(part.content_type))
     else:
-        content, shaped = multipart_member(item)
+        content, shaped = multipart_member(item, _shaped(plan))
         media_type = part.content_type or shaped
     return _entry(part.name, content, media_type, part.headers)
 
@@ -429,7 +387,7 @@ def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> E
     try:
         media_type = plan.media(part.content_type) if plan.content_types else part.content_type
         if media_type is None and plan.content_types:
-            raise ParameterEncodingError(_MEDIA)
+            raise ParameterEncodingError(MEDIA_OUTSIDE_ENCODING)
     except (CodecError, TypeError, AttributeError) as error:
         raise _malformed(part.name, error) from None
     return _entry(part.name, part.content, media_type or _OCTETS, part.headers, part.filename)
@@ -453,7 +411,7 @@ def encode_parts(
     plans: tuple[PartPlan, ...] | None = None,
     additional: PartPlan | None = None,
     sent: str | None = None,
-) -> tuple[bytes | FormParts, str | None]:
+) -> tuple[bytes | FormParts, str]:
     """Encode the parts a call gives in their order, each by the plan of its member when the schema has them.
 
     A file part without a media type is sent as application/octet-stream, and the body in the media type `sent` names.
@@ -515,8 +473,6 @@ class MultipartAttempt:
 
         A threaded attempt, one with a file the call opened from a path, is read in a thread in async mode.
         """
-        import httpx2  # noqa: PLC0415 - The generator imports this module's plans without HTTPX2.
-
         self._threaded = threaded
         native = httpx2.Request(
             "POST",
@@ -550,7 +506,8 @@ class MultipartForm:
     """How a form-data body is written: the parts a call gives, checked by its members' plans, or an object's members.
 
     An object's members are written in the media types of their encodings, and a member in `encoded` writes a part for
-    each name and value its query style gives.
+    each name and value its query style gives. With `members`, `parts` plans the members written as JSON, or every
+    member when `additional` plans the other properties as JSON.
     """
 
     parts: tuple[PartPlan, ...] | None = None
@@ -559,16 +516,11 @@ class MultipartForm:
     content_types: tuple[tuple[str, str], ...] = ()
     encoded: tuple[ParameterPlan, ...] = ()
 
-    def encode(self, value: object, sent: str) -> tuple[bytes | FormParts, str | None]:
+    def encode(self, value: object, sent: str) -> tuple[bytes | FormParts, str]:
         """Return the body and its media type, which keeps the sent type's parameters beside its boundary."""
         if not self.members:
             return encode_parts(value, self.parts, self.additional, sent)
-        return encode_multipart(
-            cast("JSONValue", value),
-            dict(self.content_types) if self.content_types else None,
-            {plan.name: plan for plan in self.encoded} if self.encoded else None,
-            sent,
-        )
+        return encode_multipart(cast("JSONValue", value), self, sent)
 
 
 class BoundParts(BoundBody):

@@ -1,5 +1,7 @@
 # first run
+LeftoverFilesWarning: server: These Python files are not generated and are left in place: server/services/__init__.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in services.
 UserWarning: <root>/server/services.py: The generated module is shadowed by the existing package directory <root>/server/services, which Python imports instead. Remove the stale directory to import the generated module.
 # unchanged run
+LeftoverFilesWarning: server: These Python files are not generated and are left in place: server/services/__init__.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in services.
 UserWarning: <root>/server/services.py: The generated module is shadowed by the existing package directory <root>/server/services, which Python imports instead. Remove the stale directory to import the generated module.
 # check run

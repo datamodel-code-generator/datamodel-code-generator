@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import httpx2
 
-from .errors import APIConnectionError, APITimeoutError, DecodeError
-from .logical import Delivery
+from .errors import APIConnectionError, APITimeoutError, ConfigurationError, DecodeError
+from .retry import Delivery
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterable, Iterator
+    from collections.abc import AsyncIterator, Collection, Iterator
 
     from .responses import ResponseInfo
     from .timing import ResolvedTimeoutOptions
@@ -51,13 +51,23 @@ def transport_retry_reason(
 
 
 def request_fields(request: httpx2.Request) -> list[tuple[str, str]]:
-    """Return a native request's header fields in the case they are sent, decoded as the SDK encoded them."""
-    return [(name.decode(), value.decode()) for name, value in request.headers.raw]
+    """Return a native request's header fields in the case they are sent, decoded as the SDK encoded them.
+
+    The SDK writes ASCII only; a byte an Auth or an event hook added reads as its Latin-1 character.
+    """
+    return [(name.decode("latin-1"), value.decode("latin-1")) for name, value in request.headers.raw]
 
 
-def wire_fields(fields: Iterable[tuple[str, str]]) -> list[tuple[bytes, bytes]]:
-    """Encode header fields as UTF-8, so non-ASCII values are sent as they are given."""
-    return [(name.encode(), value.encode()) for name, value in fields]
+def wire_fields(fields: Collection[tuple[str, str]]) -> list[tuple[bytes, bytes]]:
+    """Encode header fields as ASCII, refusing any other text before it is sent, with the header as the field path.
+
+    The error keeps no value.
+    """
+    try:
+        return [(name.encode("ascii"), value.encode("ascii")) for name, value in fields]
+    except UnicodeEncodeError as error:
+        unsent = next(name for name, value in fields if error.object in {name, value})
+        raise ConfigurationError(field_path=("headers", unsent), reason="invalid_value") from None
 
 
 def _malformed(error: httpx2.DecodingError, info: ResponseInfo, operation_id: str | None) -> DecodeError:

@@ -5,16 +5,16 @@ from __future__ import annotations
 
 from typing_extensions import TypeAliasType
 
-FieldItemsItemIdGetQueryCursorParameter = TypeAliasType("FieldItemsItemIdGetQueryCursorParameter", str)
+ItemsItemIdGetQueryCursorParameter = TypeAliasType("ItemsItemIdGetQueryCursorParameter", str)
 
 
-FieldItemsItemIdGetHeaderCursorParameter = TypeAliasType("FieldItemsItemIdGetHeaderCursorParameter", str)
+ItemsItemIdGetHeaderCursorParameter = TypeAliasType("ItemsItemIdGetHeaderCursorParameter", str)
 
 
-FieldItemsItemIdGetPathItemIdParameter = TypeAliasType("FieldItemsItemIdGetPathItemIdParameter", int)
+ItemsItemIdGetPathItemIdParameter = TypeAliasType("ItemsItemIdGetPathItemIdParameter", int)
 
 
-FieldSharedGetQueryLimitParameter = TypeAliasType("FieldSharedGetQueryLimitParameter", int)
+SharedGetQueryLimitParameter = TypeAliasType("SharedGetQueryLimitParameter", int)
 
 
-FieldItemsGetHeaderLimitParameter = TypeAliasType("FieldItemsGetHeaderLimitParameter", int)
+ItemsGetHeaderLimitParameter = TypeAliasType("ItemsGetHeaderLimitParameter", int)

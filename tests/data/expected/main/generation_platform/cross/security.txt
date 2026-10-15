@@ -5,7 +5,7 @@ list_pets with the header key
   authorize(requirement_sets=((('api_key', ()),),), credentials={'api_key': 'key-1'})
   list_pets(principal='principal of api_key')
   < 200 application/json
-  = FieldPetsGetResponse(root=['Mimi'])
+  = PetsGetResponse(root=['Mimi'])
 list_pets with a rejected key
   > GET /v2/pets
   authorize(requirement_sets=((('api_key', ()),),), credentials={'api_key': 'revoked'})
@@ -50,6 +50,12 @@ put_pet with the query key and Basic
   put_pet(principal='principal of basic, query_key', petId=3)
   < 204 -
   = None
+put_pet with the query key and Basic beyond ASCII
+  > PUT /v2/pets/4?key=key+3
+  authorize(requirement_sets=((('query_key', ()), ('basic', ())),), credentials={'query_key': 'key 3', 'basic': HTTPBasicCredentials(username='ü', password='pässword')})
+  put_pet(principal='principal of basic, query_key', petId=4)
+  < 204 -
+  = None
 get_session with the cookie key
   > GET /v2/session
   authorize(requirement_sets=((('cookie_key', ()),),), credentials={'cookie_key': 'cookie-1'})
@@ -68,3 +74,30 @@ get_session with the header key
   get_session(principal='principal of api_key')
   < 204 -
   = None
+get_session with a header key beyond ASCII
+  > GET /v2/session
+  < 401 application/json
+  = 401
+get_session with a cookie key beyond ASCII
+  > GET /v2/session
+  < 401 application/json
+  = 401
+get_session with an OpenID token beyond ASCII
+  > GET /v2/session
+  < 401 application/json
+  = 401
+get_session with Basic beyond ASCII
+  > GET /v2/session
+  < 401 application/json
+  = 401
+get_session with a header key beyond ASCII and the cookie key
+  > GET /v2/session
+  authorize(requirement_sets=((('cookie_key', ()),),), credentials={'cookie_key': 'cookie-1'})
+  get_session(principal='principal of cookie_key')
+  < 204 -
+  = 204
+get_maybe with a bearer token beyond ASCII
+  > GET /v2/maybe
+  get_maybe(principal=None, principal_1=None)
+  < 204 -
+  = 204

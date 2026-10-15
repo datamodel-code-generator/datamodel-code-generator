@@ -3,25 +3,25 @@
   helper protocols keyword=False
   > GET https://api.example.com/v1/pets?limit=5&tags=a%20b&tags=c
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=s1] b''
-  list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
+  list = PetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1, cookie: session=a%20b+c] b''
-  cookie as given = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
+  cookie as given = PetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
   cookie delimiter ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='cookie.session') [operation_id='listPets', location=('cookie', 'session'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A cookie name must be a token and its value unquoted cookie octets')] unencodable
   cookie non-ASCII ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='cookie.session') [operation_id='listPets', location=('cookie', 'session'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A cookie name must be a token and its value unquoted cookie octets')] unencodable
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list response = Response(FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)]), 200, 'application/json', None, [('x-rate', '10'), ('content-length', '34'), ('content-type', 'application/json')])
+  list response = Response(PetsGetResponse(root=[Pet(id=1, name='cat', tag=None)]), 200, 'application/json', None, [('x-rate', '10'), ('content-length', '34'), ('content-type', 'application/json')])
   info 200 application/json None HeadersView(<3 headers>)
   header X-Next = UNSET
-  header x-rate = FieldPetsGetResponse200XRateHeader(root=10)
+  header x-rate = PetsGetResponse200XRateHeader(root=10)
   header X-Other ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Other') [operation_id='listPets', location=('header', 'X-Other'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   header missing ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False] invalid_header
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False, cause=1 validation error for FieldPetsGetResponse200XRateHeader
+  header invalid ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_header', location='header.X-Rate') [operation_id='listPets', location=('header', 'X-Rate'), body_bytes=b'', truncated=False, cause=1 validation error for PetsGetResponse200XRateHeader
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='many', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/int_parsing] invalid_header
   > GET https://api.example.com/v1/pets
@@ -86,12 +86,12 @@
   list success media ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='unexpected_media_type') [operation_id='listPets', body_bytes=b'[]', truncated=False] unexpected_media_type
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_syntax') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=1 validation error for FieldPetsGetResponse
+  list success syntax ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_syntax') [operation_id='listPets', body_bytes=b'[', truncated=False, cause=1 validation error for PetsGetResponse
   Invalid JSON: EOF while parsing a list at line 1 column 1 [type=json_invalid, input_value=b'[', input_type=bytes]
     For further information visit https://errors.pydantic.dev/<version>/v/json_invalid] invalid_syntax
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
-  list success value ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=2 validation errors for FieldPetsGetResponse
+  list success value ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"id":"one"}]', truncated=False, cause=2 validation errors for PetsGetResponse
 0.id
   Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='one', input_type=str]
     For further information visit https://errors.pydantic.dev/<version>/v/int_parsing
@@ -102,8 +102,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
   list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
-  list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
-  list lone surrogate ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  list lone surrogate ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = Pet(id=2, name='dog', tag=None)
@@ -129,10 +129,10 @@
   get again = Pet(id=3, name='fox', tag=None)
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  get text = FieldPetsPetIdGetResponse(root='fox')
+  get text = PetsPetIdGetResponse(root='fox')
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
-  get flowed = FieldPetsPetIdGetResponse(root='fox')
+  get flowed = PetsPetIdGetResponse(root='fox')
   > GET https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   get text mismatch ! DecodeError: DecodeError(status_code=200, operation_id='getPet', reason='unexpected_media_type') [operation_id='getPet', body_bytes=b'{"id":3,"name":"fox"}', truncated=False, media_type='application/json'] unexpected_media_type
@@ -159,7 +159,7 @@
   > HEAD https://api.example.com/v1/pets/3
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   head = Response(None, 200, None, None, [('etag', '"v1"')])
-  head etag = FieldPetsPetIdHeadResponse200ETagHeader(root='"v1"')
+  head etag = PetsPetIdHeadResponse200ETagHeader(root='"v1"')
   > PUT https://api.example.com/v1/pets/3/photo
     [host: api.example.com, accept-encoding: gzip, deflate, accept: image/*, content-type: application/octet-stream, content-length: 2] b'\x00\x01'
   upload = b'\x89PNG'
@@ -242,7 +242,7 @@
   client unknown keyword TypeError notes []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
+  async list = PetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: text/plain, content-length: 3] b'dog'
   async create = Response(Pet(id=2, name='dog', tag=None), 201, 'application/json', None, [('content-length', '21'), ('content-type', 'application/json')])
@@ -362,8 +362,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t1] b''
   list success empty ! DecodeError: DecodeError(status_code=204, operation_id='listPets', reason='missing_body') [operation_id='listPets', body_bytes=b'', truncated=False] missing_body
   list missing ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False] unencodable
-  list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
-  list lone surrogate ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  list invalid ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+  list lone surrogate ! DecodeError: DecodeError(operation_id='listPets', reason='unencodable', location='header.X-Trace') [operation_id='listPets', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
   create = {'id': 2, 'name': 'dog'}

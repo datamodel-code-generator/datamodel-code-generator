@@ -5,7 +5,15 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field, StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic import (
+    MISSING,
+    Base64Str,
+    Field,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    StrictStr,
+)
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -15,67 +23,66 @@ Size = TypeAliasType("Size", Annotated[int, Field(ge=1, strict=True)])
 @dataclass
 class Form:
     count: StrictInt
-    score: StrictFloat | None = None
-    flag: StrictBool | None = None
-    name: StrictStr | None = None
-    counts: list[StrictInt] | None = None
+    score: StrictFloat | MISSING = MISSING
+    flag: StrictBool | MISSING = MISSING
+    name: StrictStr | MISSING = MISSING
+    counts: list[StrictInt] | MISSING = MISSING
 
 
-FieldValuesIdGetPathIdParameter = TypeAliasType("FieldValuesIdGetPathIdParameter", StrictInt)
+ValuesIdGetPathIdParameter = TypeAliasType("ValuesIdGetPathIdParameter", StrictInt)
 
 
-FieldValuesIdGetQueryCountParameter = TypeAliasType("FieldValuesIdGetQueryCountParameter", StrictInt)
+ValuesIdGetQueryCountParameter = TypeAliasType("ValuesIdGetQueryCountParameter", StrictInt)
 
 
-FieldValuesIdGetQueryBoundedParameter = TypeAliasType(
-    "FieldValuesIdGetQueryBoundedParameter", Annotated[int, Field(ge=0, strict=True)]
+ValuesIdGetQueryBoundedParameter = TypeAliasType(
+    "ValuesIdGetQueryBoundedParameter", Annotated[int, Field(ge=0, strict=True)]
 )
 
 
-FieldValuesIdGetQueryScoreParameter = TypeAliasType("FieldValuesIdGetQueryScoreParameter", StrictFloat)
+ValuesIdGetQueryScoreParameter = TypeAliasType("ValuesIdGetQueryScoreParameter", StrictFloat)
 
 
-FieldValuesIdGetQueryFlagParameter = TypeAliasType("FieldValuesIdGetQueryFlagParameter", StrictBool)
+ValuesIdGetQueryFlagParameter = TypeAliasType("ValuesIdGetQueryFlagParameter", StrictBool)
 
 
-FieldValuesIdGetQueryNameParameter = TypeAliasType("FieldValuesIdGetQueryNameParameter", StrictStr)
+ValuesIdGetQueryNameParameter = TypeAliasType("ValuesIdGetQueryNameParameter", StrictStr)
 
 
-FieldValuesIdGetQueryLabelParameter = TypeAliasType(
-    "FieldValuesIdGetQueryLabelParameter",
-    Annotated[str, Field(min_length=2, strict=True)],
+ValuesIdGetQueryLabelParameter = TypeAliasType(
+    "ValuesIdGetQueryLabelParameter", Annotated[str, Field(min_length=2, strict=True)]
 )
 
 
-FieldValuesIdGetQueryCountsParameter = TypeAliasType("FieldValuesIdGetQueryCountsParameter", list[StrictInt])
+ValuesIdGetQueryCountsParameter = TypeAliasType("ValuesIdGetQueryCountsParameter", list[StrictInt])
 
 
-FieldValuesIdGetQueryNamesParameter = TypeAliasType("FieldValuesIdGetQueryNamesParameter", list[StrictStr])
+ValuesIdGetQueryNamesParameter = TypeAliasType("ValuesIdGetQueryNamesParameter", list[StrictStr])
 
 
-FieldValuesIdGetQueryPageParameter = TypeAliasType("FieldValuesIdGetQueryPageParameter", StrictInt)
+ValuesIdGetQueryPageParameter = TypeAliasType("ValuesIdGetQueryPageParameter", StrictInt)
 
 
-FieldValuesIdGetQueryMaybeParameter = TypeAliasType("FieldValuesIdGetQueryMaybeParameter", StrictInt | None)
+ValuesIdGetQueryMaybeParameter = TypeAliasType("ValuesIdGetQueryMaybeParameter", StrictInt | None)
 
 
-FieldValuesIdGetHeaderXTraceParameter = TypeAliasType("FieldValuesIdGetHeaderXTraceParameter", StrictInt)
+ValuesIdGetHeaderXTraceParameter = TypeAliasType("ValuesIdGetHeaderXTraceParameter", StrictInt)
 
 
-FieldValuesIdGetHeaderXTagParameter = TypeAliasType("FieldValuesIdGetHeaderXTagParameter", StrictStr)
+ValuesIdGetHeaderXTagParameter = TypeAliasType("ValuesIdGetHeaderXTagParameter", StrictStr)
 
 
-FieldValuesIdGetQueryBlobParameter = TypeAliasType("FieldValuesIdGetQueryBlobParameter", bytes)
+ValuesIdGetQueryBlobParameter = TypeAliasType("ValuesIdGetQueryBlobParameter", Base64Str)
 
 
-FieldValuesIdGetCookieVisitsParameter = TypeAliasType("FieldValuesIdGetCookieVisitsParameter", StrictInt)
+ValuesIdGetCookieVisitsParameter = TypeAliasType("ValuesIdGetCookieVisitsParameter", StrictInt)
 
 
 @dataclass
-class FieldUploadsPostRequest:
+class UploadsPostRequest:
     file: bytes
     count: StrictInt
-    score: StrictFloat | None = None
-    flag: StrictBool | None = None
-    note: StrictStr | None = None
-    counts: list[StrictInt] | None = None
+    score: StrictFloat | MISSING = MISSING
+    flag: StrictBool | MISSING = MISSING
+    note: StrictStr | MISSING = MISSING
+    counts: list[StrictInt] | MISSING = MISSING

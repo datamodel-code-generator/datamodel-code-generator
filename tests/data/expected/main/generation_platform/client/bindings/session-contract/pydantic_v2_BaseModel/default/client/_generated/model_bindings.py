@@ -9,20 +9,20 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldRecordsIdPostHeaderTraceParameter]] = (
-    PydanticCodec(models.FieldRecordsIdPostHeaderTraceParameter)
+codec_0: Final[PydanticCodec[models.RecordsIdPostHeaderTraceParameter]] = PydanticCodec(
+    models.RecordsIdPostHeaderTraceParameter
 )
 """Codec of /paths/~1records~1{id}/post parameter (request header trace)."""
 
-codec_1: Final[PydanticCodec[models.FieldRecordsIdPostQueryFilterParameter]] = (
-    PydanticCodec(models.FieldRecordsIdPostQueryFilterParameter)
+codec_1: Final[PydanticCodec[models.RecordsIdPostQueryFilterParameter]] = PydanticCodec(
+    models.RecordsIdPostQueryFilterParameter
 )
 """Codec of /paths/~1records~1{id}/post parameter (request query filter application/json)."""
 
-codec_2: Final[PydanticCodec[models.FieldRecordsIdPostPathIdParameter]] = PydanticCodec(
-    models.FieldRecordsIdPostPathIdParameter
+codec_2: Final[PydanticCodec[models.RecordsIdPostPathIdParameter]] = PydanticCodec(
+    models.RecordsIdPostPathIdParameter
 )
 """Codec of /paths/~1records~1{id}/post parameter (request path id)."""
 
@@ -43,21 +43,21 @@ codec_6: Final[PydanticCodec[models.Record]] = PydanticCodec(models.Record)
 codec_7: Final[PydanticCodec[models.Record]] = PydanticCodec(models.Record)
 """Codec of /paths/~1records~1{id}/post response_body (response 201 application/json)."""
 
-codec_8: Final[PydanticCodec[models.FieldRecordsIdPostResponse201LocationHeader]] = (
-    PydanticCodec(models.FieldRecordsIdPostResponse201LocationHeader)
+codec_8: Final[PydanticCodec[models.RecordsIdPostResponse201LocationHeader]] = (
+    PydanticCodec(models.RecordsIdPostResponse201LocationHeader)
 )
 """Codec of /paths/~1records~1{id}/post response_header (response Location 201)."""
 
-codec_9: Final[PydanticCodec[models.FieldRecordsIdPostResponse201XLimitHeader]] = (
-    PydanticCodec(models.FieldRecordsIdPostResponse201XLimitHeader)
+codec_9: Final[PydanticCodec[models.RecordsIdPostResponse201XLimitHeader]] = (
+    PydanticCodec(models.RecordsIdPostResponse201XLimitHeader)
 )
 """Codec of /paths/~1records~1{id}/post response_header (response X-Limit 201)."""
 
 codec_10: Final[PydanticCodec[models.Problem]] = PydanticCodec(models.Problem)
 """Codec of /paths/~1records~1{id}/post response_body (response 4XX application/problem+json)."""
 
-codec_11: Final[PydanticCodec[models.FieldRecordsIdPostPathIdParameter]] = (
-    PydanticCodec(models.FieldRecordsIdPostPathIdParameter)
+codec_11: Final[PydanticCodec[models.RecordsIdPostPathIdParameter]] = PydanticCodec(
+    models.RecordsIdPostPathIdParameter
 )
 """Codec of /paths/~1records~1{id}/get parameter (request path id)."""
 

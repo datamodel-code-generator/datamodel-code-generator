@@ -31,42 +31,42 @@ class Error:
     message: str
 
 
-FieldPetsGetQueryLimitParameter = TypeAliasType(
-    "FieldPetsGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
+PetsGetQueryLimitParameter = TypeAliasType(
+    "PetsGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
 )
 
 
-FieldPetsGetQueryTagsParameter = TypeAliasType("FieldPetsGetQueryTagsParameter", list[str])
+PetsGetQueryTagsParameter = TypeAliasType("PetsGetQueryTagsParameter", list[str])
 
 
-class FieldPetsGetQueryKindParameter(StrEnum):
+class PetsGetQueryKindParameter(StrEnum):
     cat = 'cat'
     dog = 'dog'
 
 
-FieldPetsGetHeaderXRequestIdParameter = TypeAliasType("FieldPetsGetHeaderXRequestIdParameter", UUID)
+PetsGetHeaderXRequestIdParameter = TypeAliasType("PetsGetHeaderXRequestIdParameter", UUID)
 
 
-FieldPetsGetQuerySinceParameter = TypeAliasType("FieldPetsGetQuerySinceParameter", AwareDatetime)
+PetsGetQuerySinceParameter = TypeAliasType("PetsGetQuerySinceParameter", AwareDatetime)
 
 
-FieldPetsGetCookieSessionParameter = TypeAliasType("FieldPetsGetCookieSessionParameter", str)
+PetsGetCookieSessionParameter = TypeAliasType("PetsGetCookieSessionParameter", str)
 
 
-FieldPetsGetResponse = TypeAliasType("FieldPetsGetResponse", list[Pet])
+PetsGetResponse = TypeAliasType("PetsGetResponse", list[Pet])
 
 
-FieldPetsMineGetResponse = TypeAliasType("FieldPetsMineGetResponse", list[Pet])
+PetsMineGetResponse = TypeAliasType("PetsMineGetResponse", list[Pet])
 
 
-FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
-    "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
+PetsPetIdGetPathPetIdParameter = TypeAliasType(
+    "PetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
 )
 
 
-FieldPetsPetIdDeletePathPetIdParameter = TypeAliasType(
-    "FieldPetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
+PetsPetIdDeletePathPetIdParameter = TypeAliasType(
+    "PetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
 )
 
 
-FieldStoreInventoryGetResponse = TypeAliasType("FieldStoreInventoryGetResponse", dict[str, int])
+StoreInventoryGetResponse = TypeAliasType("StoreInventoryGetResponse", dict[str, int])

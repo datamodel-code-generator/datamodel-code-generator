@@ -51,6 +51,35 @@ paths:
         - {name: X-Tags, in: header, schema: {type: array, items: {type: string}}}
       responses:
         "204": {description: Done.}
+  /header-text:
+    get:
+      operationId: getHeaderText
+      parameters:
+        - {name: X-Name, in: header, schema: {type: string}}
+        - {name: X-Items, in: header, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: X-Label, in: header, schema: {$ref: "#/components/schemas/Named"}}
+        - {name: X-Kind, in: header, schema: {type: string, enum: [plain, "caf\u00e9"]}}
+        - {name: X-Note, in: header, content: {text/plain: {schema: {type: string}}}}
+        - {name: X-Named, in: header, content: {application/json: {schema: {$ref: "#/components/schemas/Named"}}}}
+      responses:
+        "204": {description: Done.}
+  /literal/a%20b%C3%A9/{id}:
+    get:
+      operationId: getLiteral
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /labelled-text:
+    post:
+      operationId: postLabelledText
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {type: string}
+      responses:
+        "204": {description: Done.}
   /cookies:
     get:
       operationId: getCookies
@@ -84,3 +113,9 @@ components:
       properties:
         x: {type: integer}
         y: {type: integer}
+    Named:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: {type: string}

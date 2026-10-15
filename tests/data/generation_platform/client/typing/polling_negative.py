@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.options import RequestOptions
 from pets.protocols import AsyncLroHandle, CancelReceipt, LroHandle
 from pets.types.jobs import GetJobResponse, GetReportResponse

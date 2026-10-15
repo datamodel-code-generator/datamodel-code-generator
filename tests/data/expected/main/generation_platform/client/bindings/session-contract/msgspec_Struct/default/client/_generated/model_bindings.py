@@ -9,20 +9,20 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
-codec_0: Final[MsgspecCodec[models.FieldRecordsIdPostHeaderTraceParameter]] = (
-    MsgspecCodec(models.FieldRecordsIdPostHeaderTraceParameter)
+codec_0: Final[MsgspecCodec[models.RecordsIdPostHeaderTraceParameter]] = MsgspecCodec(
+    models.RecordsIdPostHeaderTraceParameter
 )
 """Codec of /paths/~1records~1{id}/post parameter (request header trace)."""
 
-codec_1: Final[MsgspecCodec[models.FieldRecordsIdPostQueryFilterParameter]] = (
-    MsgspecCodec(models.FieldRecordsIdPostQueryFilterParameter)
+codec_1: Final[MsgspecCodec[models.RecordsIdPostQueryFilterParameter]] = MsgspecCodec(
+    models.RecordsIdPostQueryFilterParameter
 )
 """Codec of /paths/~1records~1{id}/post parameter (request query filter application/json)."""
 
-codec_2: Final[MsgspecCodec[models.FieldRecordsIdPostPathIdParameter]] = MsgspecCodec(
-    models.FieldRecordsIdPostPathIdParameter
+codec_2: Final[MsgspecCodec[models.RecordsIdPostPathIdParameter]] = MsgspecCodec(
+    models.RecordsIdPostPathIdParameter
 )
 """Codec of /paths/~1records~1{id}/post parameter (request path id)."""
 
@@ -41,21 +41,21 @@ codec_6: Final[MsgspecCodec[models.Record]] = MsgspecCodec(models.Record)
 codec_7: Final[MsgspecCodec[models.Record]] = MsgspecCodec(models.Record)
 """Codec of /paths/~1records~1{id}/post response_body (response 201 application/json)."""
 
-codec_8: Final[MsgspecCodec[models.FieldRecordsIdPostResponse201LocationHeader]] = (
-    MsgspecCodec(models.FieldRecordsIdPostResponse201LocationHeader)
+codec_8: Final[MsgspecCodec[models.RecordsIdPostResponse201LocationHeader]] = (
+    MsgspecCodec(models.RecordsIdPostResponse201LocationHeader)
 )
 """Codec of /paths/~1records~1{id}/post response_header (response Location 201)."""
 
-codec_9: Final[MsgspecCodec[models.FieldRecordsIdPostResponse201XLimitHeader]] = (
-    MsgspecCodec(models.FieldRecordsIdPostResponse201XLimitHeader)
+codec_9: Final[MsgspecCodec[models.RecordsIdPostResponse201XLimitHeader]] = (
+    MsgspecCodec(models.RecordsIdPostResponse201XLimitHeader)
 )
 """Codec of /paths/~1records~1{id}/post response_header (response X-Limit 201)."""
 
 codec_10: Final[MsgspecCodec[models.Problem]] = MsgspecCodec(models.Problem)
 """Codec of /paths/~1records~1{id}/post response_body (response 4XX application/problem+json)."""
 
-codec_11: Final[MsgspecCodec[models.FieldRecordsIdPostPathIdParameter]] = MsgspecCodec(
-    models.FieldRecordsIdPostPathIdParameter
+codec_11: Final[MsgspecCodec[models.RecordsIdPostPathIdParameter]] = MsgspecCodec(
+    models.RecordsIdPostPathIdParameter
 )
 """Codec of /paths/~1records~1{id}/get parameter (request path id)."""
 

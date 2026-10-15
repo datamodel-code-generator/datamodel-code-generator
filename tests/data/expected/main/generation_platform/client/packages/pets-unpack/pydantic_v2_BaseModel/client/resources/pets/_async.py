@@ -132,7 +132,7 @@ class AsyncPetsResource:
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments2],
-    ) -> models.FieldPetsPetIdGetResponse: ...
+    ) -> models.PetsPetIdGetResponse: ...
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments3],
@@ -271,7 +271,7 @@ class AsyncPetsWithResponse:
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments2],
-    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
+    ) -> Response[models.PetsPetIdGetResponse]: ...
     async def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments3],

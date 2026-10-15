@@ -16,7 +16,7 @@ class Base(TypedDict):
     custom: NotRequired[CustomType]
 
 
-class FieldGetResponse(TypedDict):
+class RootGetResponse(TypedDict):
     id: NotRequired[int]
     native: NotRequired[UUID]
     custom: NotRequired[CustomType]

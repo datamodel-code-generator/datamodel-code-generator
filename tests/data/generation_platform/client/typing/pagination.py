@@ -15,7 +15,7 @@ from pets.protocols import (
     ProtocolProgress,
 )
 from pets.responses import ResponseInfo
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.types.labels import ListLabelsResponse
 from pets.types.users import ListUsersResponse, SearchUsersResponse
 from pets_models import Label, User, UserQuery

@@ -8,7 +8,7 @@ from __future__ import annotations
 from custom_dates import AwareDatetime
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
 codec_0: Final[PydanticCodec[AwareDatetime]] = PydanticCodec(AwareDatetime)

@@ -32,10 +32,10 @@
     "SharedResponseXComponentHeader": {
       "type": "string"
     },
-    "FieldItemsGetResponse200XTraceHeader": {
+    "ItemsGetResponse200XTraceHeader": {
       "type": "boolean"
     },
-    "FieldItemsGetResponse201XTraceHeader": {
+    "ItemsGetResponse201XTraceHeader": {
       "type": "integer"
     }
   }

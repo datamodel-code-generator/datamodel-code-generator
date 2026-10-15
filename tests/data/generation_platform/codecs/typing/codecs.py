@@ -8,12 +8,11 @@ from msgspec import Struct
 from pydantic import BaseModel
 from typing_extensions import TypedDict, assert_type
 
-from datamodel_code_generator._runtime.model_codecs.native import (
-    MsgspecCodec,
-    PydanticCodec,
-    PydanticDataclassCodec,
-)
-from datamodel_code_generator._runtime.model_codecs.stdlib import StdlibCodec
+from datamodel_code_generator._runtime.model_codecs.msgspec_structs import MsgspecCodec
+from datamodel_code_generator._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
+from datamodel_code_generator._runtime.model_codecs.pydantic_models import PydanticCodec
+from datamodel_code_generator._runtime.model_codecs.stdlib_dataclasses import DataclassCodec
+from datamodel_code_generator._runtime.model_codecs.stdlib_typeddicts import TypedDictCodec
 
 
 class Owner(BaseModel):
@@ -49,7 +48,7 @@ def exercise_dataclass(codec: PydanticDataclassCodec[Tag]) -> None:
     assert_type(codec.dump(tag), object)
 
 
-def exercise_stdlib(codec: StdlibCodec[Tag], record: StdlibCodec[TagRecord]) -> None:
+def exercise_stdlib(codec: DataclassCodec[Tag], record: TypedDictCodec[TagRecord]) -> None:
     tag = codec.decode(b'{"name":"a"}')
     assert_type(tag, Tag)
     assert_type(codec.convert({"name": "a"}), Tag)

@@ -32,3 +32,40 @@ paths:
         - {name: y, in: path, required: true, schema: {type: string}}
       responses:
         "204": {description: Done.}
+  /h/{i}:
+    get:
+      operationId: stray
+      parameters:
+        - {name: i, in: path, required: true, schema: {type: string}}
+        - {name: portion, in: path, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /k%2Fl:
+    get:
+      operationId: encodedSlash
+      responses:
+        "204": {description: Done.}
+  /m%7bn%7D/{o}:
+    get:
+      operationId: encodedBraces
+      parameters:
+        - {name: o, in: path, required: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /p%20q/{r}:
+    get:
+      operationId: encodedSpace
+      parameters:
+        - {name: r, in: path, required: true, schema: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /s t:
+    get:
+      operationId: spacedText
+      responses:
+        "204": {description: Done.}
+  /s%20t:
+    get:
+      operationId: encodedText
+      responses:
+        "204": {description: Done.}

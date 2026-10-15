@@ -13,11 +13,11 @@ from typing import Annotated, Final, List, Literal, Optional, TypedDict
 from fastapi import params
 from pydantic import StringConstraints, TypeAdapter
 from spellings_exact_basemodel_models import (
+    CountsGetResponse,
     Day,
-    FieldCountsGetResponse,
-    FieldPetsGetResponse,
     Pair,
     Pet,
+    PetsGetResponse,
     Query,
     Response,
     Tag,
@@ -53,7 +53,7 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=FieldPetsGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=PetsGetResponse)},
     )
 
 
@@ -61,7 +61,7 @@ class ListCounts:
     """Plans of the list_counts operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=FieldCountsGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=CountsGetResponse)},
     )
 
 

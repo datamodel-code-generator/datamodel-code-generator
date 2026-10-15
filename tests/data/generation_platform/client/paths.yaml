@@ -117,3 +117,11 @@ paths:
       responses:
         '204':
           description: Found.
+  '/literal/a\b|c^[d]?#%zz%20 é/{name}':
+    get:
+      operationId: getLiteral
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.

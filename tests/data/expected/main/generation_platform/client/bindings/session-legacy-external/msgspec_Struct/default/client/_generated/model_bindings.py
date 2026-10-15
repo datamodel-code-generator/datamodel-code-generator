@@ -8,11 +8,11 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
 
-codec_0: Final[MsgspecCodec[models.FieldExternalPostRequestItem]] = MsgspecCodec(models.FieldExternalPostRequestItem)
+codec_0: Final[MsgspecCodec[models.ExternalPostRequestItem]] = MsgspecCodec(models.ExternalPostRequestItem)
 """Codec of /paths/~1external/post request_body (request application/json)."""
 
-codec_1: Final[MsgspecCodec[models.FieldExternalPostResponseItem]] = MsgspecCodec(models.FieldExternalPostResponseItem)
+codec_1: Final[MsgspecCodec[models.ExternalPostResponseItem]] = MsgspecCodec(models.ExternalPostResponseItem)
 """Codec of /paths/~1external/post response_body (response 200 application/json)."""

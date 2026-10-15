@@ -1,15 +1,15 @@
 # security
 serve pydantic_v2.BaseModel
+service DefaultService: get_custom, get_maybe, get_session, put_pet
+service DefaultService without its methods: TypeError
 service PetsService: list_pets
 service PetsService without its methods: TypeError
 service PublicService: get_public
 service PublicService without its methods: TypeError
-service UntaggedService: get_custom, get_maybe, get_session, put_pet
-service UntaggedService without its methods: TypeError
 build no-authorize: TypeError: An authorize callback is required because the selected operations use security
 build missing-method: AttributeError: 'object' object has no attribute 'get_maybe'
-build sync-in-async: TypeError: The untagged.get_maybe method of GET /maybe is a plain method, but the operation's handler mode needs a coroutine function
-build async-in-sync: TypeError: The untagged.put_pet method of PUT /pets/{petId} is a coroutine function, but the operation's handler mode needs a plain method
+build sync-in-async: TypeError: The default.get_maybe method of GET /maybe is a plain method, but the operation's handler mode needs a coroutine function
+build async-in-sync: TypeError: The default.put_pet method of PUT /pets/{petId} is a coroutine function, but the operation's handler mode needs a plain method
 build operation-dependencies-unknown: ValueError: operation_dependencies names no operation of this router: /paths/~1pets/get
 build operation-dependencies-none: TypeError: operation_dependencies['list_pets'] must be a sequence of Depends(...) values
 build operation-dependencies-items: TypeError: operation_dependencies['list_pets'] must be a sequence of Depends(...) values
@@ -90,11 +90,11 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > PUT /pets/1
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Bearer, APIKey, Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Bearer, APIKey, Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1?key=k
   global /pets/1
   authorize [(('query_key', ()), ('basic', ()))]
@@ -104,11 +104,11 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > PUT /pets/1?key=k
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Bearer, APIKey, Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1
   global /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),)]
@@ -135,10 +135,30 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 < 204 - b''
 > GET /session
   global /session
+  authorize [(('api_key', ()),), (('basic', ()),)]
+    credentials ['api_key=abc', 'basic=user']
+  get_session(principal='user-api_key')
+< 204 - b''
+> GET /session
+  global /session
   authorize [(('api_key', ()),)]
     credentials ['api_key=abc']
   get_session(principal='user-api_key')
 < 204 - b''
+> GET /session
+  global /session
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey, Bearer, Basic charset="UTF-8"
+> GET /session
+  global /session
+  authorize [(('basic', ()),)]
+    credentials ['basic=ü']
+  get_session(principal='user-basic')
+< 204 - b''
+> GET /session
+  global /session
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey, Bearer, Basic charset="UTF-8"
 > GET /custom
   global /custom
   authorize [(('digest', ()),)]

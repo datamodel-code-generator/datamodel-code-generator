@@ -1,7 +1,7 @@
 # strict
 serve pydantic_v2.BaseModel
-service UntaggedService: get_values, post_form, upload
-service UntaggedService without its methods: TypeError
+service DefaultService: get_values, post_form, upload
+service DefaultService without its methods: TypeError
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
 < 204 - b''
@@ -32,8 +32,8 @@ service UntaggedService without its methods: TypeError
 < 422 application/json [{"type": "int_type", "loc": ["query", "maybe"]}]
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["header", "X-Trace"]}]
-> GET /values/5?blob=abc&size=3
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob=b'abc', visits=None)
+> GET /values/5?blob=YWJj&size=3
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob='abc', visits=None)
 < 204 - b''
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=3)
@@ -58,16 +58,16 @@ service UntaggedService without its methods: TypeError
 > POST /forms
 < 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}, {"type": "int_type", "loc": ["body", "counts", 1]}]
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'file body', count=2, score=2.5, flag=True, note='n', counts=[1, 2]))
+  upload(UploadsPostRequest(file=b'file body', count=2, score=2.5, flag=True, note='n', counts=[1, 2]))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'file body', count=3, score=None, flag=None, note=None, counts=None))
+  upload(UploadsPostRequest(file=b'file body', count=3, score=None, flag=None, note=None, counts=None))
 < 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}]
 serve pydantic_v2.dataclass
-service UntaggedService: get_values, post_form, upload
-service UntaggedService without its methods: TypeError
+service DefaultService: get_values, post_form, upload
+service DefaultService without its methods: TypeError
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=None)
 < 204 - b''
@@ -98,8 +98,8 @@ service UntaggedService without its methods: TypeError
 < 422 application/json [{"type": "int_type", "loc": ["query", "maybe"]}]
 > GET /values/5
 < 422 application/json [{"type": "int_type", "loc": ["header", "X-Trace"]}]
-> GET /values/5?blob=abc&size=3
-  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob=b'abc', visits=None)
+> GET /values/5?blob=YWJj&size=3
+  get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=3, maybe=None, X_Trace=None, X_Tag=None, blob='abc', visits=None)
 < 204 - b''
 > GET /values/5
   get_values(id=5, count=None, bounded=None, score=None, flag=None, name=None, label=None, counts=None, names=None, page=1, size=10, maybe=None, X_Trace=None, X_Tag=None, blob=None, visits=3)
@@ -119,15 +119,15 @@ service UntaggedService without its methods: TypeError
   post_form(Form(count=2, score=2.5, flag=True, name='n', counts=[1, 2]))
 < 204 - b''
 > POST /forms
-  post_form(Form(count=3, score=None, flag=None, name=None, counts=None))
+  post_form(Form(count=3, score=MISSING, flag=MISSING, name=MISSING, counts=MISSING))
 < 204 - b''
 > POST /forms
 < 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}, {"type": "int_type", "loc": ["body", "counts", 1]}]
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'file body', count=2, score=2.5, flag=True, note='n', counts=[1, 2]))
+  upload(UploadsPostRequest(file=b'file body', count=2, score=2.5, flag=True, note='n', counts=[1, 2]))
 < 204 - b''
 > POST /uploads
-  upload(FieldUploadsPostRequest(file=b'file body', count=3, score=None, flag=None, note=None, counts=None))
+  upload(UploadsPostRequest(file=b'file body', count=3, score=MISSING, flag=MISSING, note=MISSING, counts=MISSING))
 < 204 - b''
 > POST /uploads
 < 422 application/json [{"type": "int_type", "loc": ["body", "count"]}, {"type": "bool_type", "loc": ["body", "flag"]}]

@@ -1,11 +1,11 @@
 # querystring pydantic_v2.BaseModel
   > GET https://search.example.com/search?term=a+b&page=2
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  search = FieldSearchGetResponse(root=['a'])
+  search = SearchGetResponse(root=['a'])
   > GET https://search.example.com/search
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  search all = FieldSearchGetResponse(root=[])
+  search all = SearchGetResponse(root=[])
   > GET https://search.example.com/search?term=a+b&page=3&sort=name
     [host: search.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  search with an extra query = FieldSearchGetResponse(root=[])
+  search with an extra query = SearchGetResponse(root=[])
   lookup with a non-finite member ! DecodeError: DecodeError(operation_id='lookup', reason='unencodable', location='querystring.filter') [operation_id='lookup', location=('querystring', 'filter'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A value must be a finite JSON number')] unencodable

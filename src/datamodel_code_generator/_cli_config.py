@@ -521,13 +521,11 @@ def _apply_implicit_cli_config_values(
     cli_config_args: Mapping[str, _RawConfigValue],
 ) -> None:
     """Apply CLI defaults after pyproject, command-line, and preset values have merged."""
-    explicit_fields = {field.replace("-", "_") for field in pyproject_config} | set(cli_config_args)
-    if config.output_model_type is DataModelType.MsgspecStruct and "use_annotated" not in explicit_fields:
-        config.use_annotated = True
+    from datamodel_code_generator.base_config import implied_model_settings  # noqa: PLC0415
 
-    if "field_constraints" in explicit_fields:
-        return
-    config.field_constraints = config.use_annotated
+    explicit_fields = {field.replace("-", "_") for field in pyproject_config} | set(cli_config_args)
+    for name, value in implied_model_settings(config, explicit_fields).items():
+        setattr(config, name, value)
 
 
 def _template_data(config: Config) -> defaultdict[str, dict[str, Any]] | None:

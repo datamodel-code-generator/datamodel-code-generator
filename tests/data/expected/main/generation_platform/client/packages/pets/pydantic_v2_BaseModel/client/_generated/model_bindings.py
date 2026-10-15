@@ -9,27 +9,27 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldPetsGetQueryLimitParameter]] = PydanticCodec(models.FieldPetsGetQueryLimitParameter)
+codec_0: Final[PydanticCodec[models.PetsGetQueryLimitParameter]] = PydanticCodec(models.PetsGetQueryLimitParameter)
 """Codec of /paths/~1pets/get parameter (request query limit)."""
 
-codec_1: Final[PydanticCodec[models.FieldPetsGetQueryTagsParameter]] = PydanticCodec(models.FieldPetsGetQueryTagsParameter)
+codec_1: Final[PydanticCodec[models.PetsGetQueryTagsParameter]] = PydanticCodec(models.PetsGetQueryTagsParameter)
 """Codec of /paths/~1pets/get parameter (request query tags)."""
 
-codec_2: Final[PydanticCodec[models.FieldPetsGetHeaderXTraceParameter]] = PydanticCodec(models.FieldPetsGetHeaderXTraceParameter)
+codec_2: Final[PydanticCodec[models.PetsGetHeaderXTraceParameter]] = PydanticCodec(models.PetsGetHeaderXTraceParameter)
 """Codec of /paths/~1pets/get parameter (request header X-Trace)."""
 
-codec_3: Final[PydanticCodec[models.FieldPetsGetCookieSessionParameter]] = PydanticCodec(models.FieldPetsGetCookieSessionParameter)
+codec_3: Final[PydanticCodec[models.PetsGetCookieSessionParameter]] = PydanticCodec(models.PetsGetCookieSessionParameter)
 """Codec of /paths/~1pets/get parameter (request cookie session)."""
 
-codec_4: Final[PydanticCodec[models.FieldPetsGetResponse]] = PydanticCodec(models.FieldPetsGetResponse)
+codec_4: Final[PydanticCodec[models.PetsGetResponse]] = PydanticCodec(models.PetsGetResponse)
 """Codec of /paths/~1pets/get response_body (response 200 application/json)."""
 
-codec_5: Final[PydanticCodec[models.FieldPetsGetResponse200XNextHeader]] = PydanticCodec(models.FieldPetsGetResponse200XNextHeader)
+codec_5: Final[PydanticCodec[models.PetsGetResponse200XNextHeader]] = PydanticCodec(models.PetsGetResponse200XNextHeader)
 """Codec of /paths/~1pets/get response_header (response X-Next 200)."""
 
-codec_6: Final[PydanticCodec[models.FieldPetsGetResponse200XRateHeader]] = PydanticCodec(models.FieldPetsGetResponse200XRateHeader)
+codec_6: Final[PydanticCodec[models.PetsGetResponse200XRateHeader]] = PydanticCodec(models.PetsGetResponse200XRateHeader)
 """Codec of /paths/~1pets/get response_header (response X-Rate 200)."""
 
 codec_7: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
@@ -38,7 +38,7 @@ codec_7: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
 codec_8: Final[PydanticCodec[models.NewPet]] = PydanticCodec(models.NewPet)
 """Codec of /paths/~1pets/post request_body (request application/json)."""
 
-codec_9: Final[PydanticCodec[models.FieldPetsPostRequest]] = PydanticCodec(models.FieldPetsPostRequest)
+codec_9: Final[PydanticCodec[models.PetsPostRequest]] = PydanticCodec(models.PetsPostRequest)
 """Codec of /paths/~1pets/post request_body (request text/plain)."""
 
 codec_10: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
@@ -47,31 +47,31 @@ codec_10: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
 codec_11: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
 """Codec of /paths/~1pets/post response_body (response 4XX application/json)."""
 
-codec_12: Final[PydanticCodec[models.FieldPetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdGetPathPetIdParameter)
+codec_12: Final[PydanticCodec[models.PetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.PetsPetIdGetPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}/get parameter (request path petId)."""
 
 codec_13: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
 """Codec of /paths/~1pets~1{petId}/get response_body (response 200 application/json)."""
 
-codec_14: Final[PydanticCodec[models.FieldPetsPetIdGetResponse]] = PydanticCodec(models.FieldPetsPetIdGetResponse)
+codec_14: Final[PydanticCodec[models.PetsPetIdGetResponse]] = PydanticCodec(models.PetsPetIdGetResponse)
 """Codec of /paths/~1pets~1{petId}/get response_body (response 200 text/plain)."""
 
-codec_15: Final[PydanticCodec[models.FieldPetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdGetPathPetIdParameter)
+codec_15: Final[PydanticCodec[models.PetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.PetsPetIdGetPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}/delete parameter (request path petId)."""
 
-codec_16: Final[PydanticCodec[models.FieldPetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdGetPathPetIdParameter)
+codec_16: Final[PydanticCodec[models.PetsPetIdGetPathPetIdParameter]] = PydanticCodec(models.PetsPetIdGetPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}/head parameter (request path petId)."""
 
-codec_17: Final[PydanticCodec[models.FieldPetsPetIdHeadResponse200ETagHeader]] = PydanticCodec(models.FieldPetsPetIdHeadResponse200ETagHeader)
+codec_17: Final[PydanticCodec[models.PetsPetIdHeadResponse200ETagHeader]] = PydanticCodec(models.PetsPetIdHeadResponse200ETagHeader)
 """Codec of /paths/~1pets~1{petId}/head response_header (response ETag 200)."""
 
-codec_18: Final[PydanticCodec[models.FieldPetsPetIdPhotoPutPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdPhotoPutPathPetIdParameter)
+codec_18: Final[PydanticCodec[models.PetsPetIdPhotoPutPathPetIdParameter]] = PydanticCodec(models.PetsPetIdPhotoPutPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1photo/put parameter (request path petId)."""
 
-codec_19: Final[PydanticCodec[models.FieldPetsPetIdFilesPostPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdFilesPostPathPetIdParameter)
+codec_19: Final[PydanticCodec[models.PetsPetIdFilesPostPathPetIdParameter]] = PydanticCodec(models.PetsPetIdFilesPostPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1files/post parameter (request path petId)."""
 
-codec_20: Final[PydanticCodec[models.FieldPetsPetIdFilesGetPathPetIdParameter]] = PydanticCodec(models.FieldPetsPetIdFilesGetPathPetIdParameter)
+codec_20: Final[PydanticCodec[models.PetsPetIdFilesGetPathPetIdParameter]] = PydanticCodec(models.PetsPetIdFilesGetPathPetIdParameter)
 """Codec of /paths/~1pets~1{petId}~1files/get parameter (request path petId)."""
 
 codec_21: Final[PydanticCodec[str]] = PydanticCodec(str)

@@ -20,6 +20,7 @@ COVERAGE_ENVS = (
     "pydantic200",
     "pydantic20",
     "pydantic25",
+    "pydantic212",
     "pydantic213",
     "pydantic214",
     "graphqlcore33",

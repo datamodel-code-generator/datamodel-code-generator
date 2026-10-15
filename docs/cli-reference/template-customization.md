@@ -64,7 +64,7 @@ is useful when using custom types defined in external modules (e.g.,
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --additional-imports datetime.datetime,datetime.date,mymodule.myclass.MyCustomPythonClass # (1)!
+    datamodel-codegen --input additional-imports.graphql --additional-imports datetime.datetime,datetime.date,mymodule.myclass.MyCustomPythonClass # (1)!
     ```
 
     1. :material-arrow-left: `--additional-imports` - the option documented here
@@ -158,7 +158,7 @@ The `@` prefix is optional and will be added automatically if missing.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --class-decorators @dataclass_json --additional-imports dataclasses_json.dataclass_json # (1)!
+    datamodel-codegen --input simple_frozen_test.json --output-model-type dataclasses.dataclass --class-decorators @dataclass_json --additional-imports dataclasses_json.dataclass_json # (1)!
     ```
 
     1. :material-arrow-left: `--class-decorators` - the option documented here
@@ -231,7 +231,7 @@ headers, or other metadata to generated files.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-file-header "# Copyright 2024 MyCompany" # (1)!
+    datamodel-codegen --input no_alias.json --custom-file-header "# Copyright 2024 MyCompany" # (1)!
     ```
 
     1. :material-arrow-left: `--custom-file-header` - the option documented here
@@ -318,7 +318,7 @@ timestamp, version, and command metadata. The default `replace` mode preserves e
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-file-header "# Copyright {year}" --custom-file-header-mode prepend --disable-timestamp --enable-version-header # (1)!
+    datamodel-codegen --input simple_string.json --custom-file-header "# Copyright {year}" --custom-file-header-mode prepend --disable-timestamp --enable-version-header # (1)!
     ```
 
     1. :material-arrow-left: `--custom-file-header-mode` - the option documented here
@@ -375,7 +375,7 @@ to be inserted at the top of generated Python files.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-file-header-path custom_file_header.txt # (1)!
+    datamodel-codegen --input api.yaml --custom-file-header-path custom_file_header.txt # (1)!
     ```
 
     1. :material-arrow-left: `--custom-file-header-path` - the option documented here
@@ -659,7 +659,7 @@ formatting rules beyond what black/isort provide.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-formatters tests.data.python.custom_formatters.add_comment # (1)!
+    datamodel-codegen --input custom-scalar-types.graphql --custom-formatters tests.data.python.custom_formatters.add_comment # (1)!
     ```
 
     1. :material-arrow-left: `--custom-formatters` - the option documented here
@@ -741,7 +741,7 @@ configuration to user-defined formatter modules.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-formatters-kwargs formatter_kwargs.json # (1)!
+    datamodel-codegen --input pet_simple.json --custom-formatters-kwargs formatter_kwargs.json # (1)!
     ```
 
     1. :material-arrow-left: `--custom-formatters-kwargs` - the option documented here
@@ -807,7 +807,7 @@ to the templates.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --custom-template-dir templates --extra-template-data openapi/extra_data.json # (1)!
+    datamodel-codegen --input api.yaml --custom-template-dir templates --extra-template-data openapi/extra_data.json # (1)!
     ```
 
     1. :material-arrow-left: `--custom-template-dir` - the option documented here
@@ -1132,7 +1132,7 @@ The `--disable-appending-item-suffix` flag configures the code generation behavi
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-appending-item-suffix --field-constraints # (1)!
+    datamodel-codegen --input api_constrained.yaml --disable-appending-item-suffix --field-constraints # (1)!
     ```
 
     1. :material-arrow-left: `--disable-appending-item-suffix` - the option documented here
@@ -1481,7 +1481,7 @@ The `--disable-timestamp` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --disable-timestamp # (1)!
+    datamodel-codegen --input pattern.json --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--disable-timestamp` - the option documented here
@@ -1559,7 +1559,7 @@ values are shown as `<redacted>`, and `--url` like the `filename` line without i
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-command-header # (1)!
+    datamodel-codegen --input api.yaml --enable-command-header # (1)!
     ```
 
     1. :material-arrow-left: `--enable-command-header` - the option documented here
@@ -1839,7 +1839,7 @@ recognize the `@generated` marker.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-generated-header-marker # (1)!
+    datamodel-codegen --input api.yaml --enable-generated-header-marker # (1)!
     ```
 
     1. :material-arrow-left: `--enable-generated-header-marker` - the option documented here
@@ -2117,7 +2117,7 @@ The `--enable-version-header` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-version-header # (1)!
+    datamodel-codegen --input api.yaml --enable-version-header # (1)!
     ```
 
     1. :material-arrow-left: `--enable-version-header` - the option documented here
@@ -2400,7 +2400,7 @@ model settings like Config classes, enabling customization beyond standard optio
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-template-data openapi/extra_data.json # (1)!
+    datamodel-codegen --input api.yaml --extra-template-data openapi/extra_data.json # (1)!
     ```
 
     1. :material-arrow-left: `--extra-template-data` - the option documented here
@@ -2693,7 +2693,7 @@ See the formatter guides for installation and custom-template limitations.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --formatters isort # (1)!
+    datamodel-codegen --input pet_simple.json --formatters isort # (1)!
     ```
 
     1. :material-arrow-left: `--formatters` - the option documented here
@@ -2770,7 +2770,7 @@ are unsupported and generation fails fast.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --generate-schema-validators --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
+    datamodel-codegen --input schema_validators.json --generate-schema-validators --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--generate-schema-validators` - the option documented here
@@ -3229,7 +3229,7 @@ The `--no-treat-dot-as-module` flag prevents splitting dotted schema names.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --no-treat-dot-as-module # (1)!
+    datamodel-codegen --input treat_dot_as_module_single --no-treat-dot-as-module # (1)!
     ```
 
     1. :material-arrow-left: `--no-treat-dot-as-module` - the option documented here
@@ -3301,7 +3301,7 @@ require manual `model_rebuild()` calls for cross-module runtime references.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --no-use-type-checking-imports --disable-timestamp # (1)!
+    datamodel-codegen --input modular.yaml --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --no-use-type-checking-imports --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--no-use-type-checking-imports` - the option documented here
@@ -3688,7 +3688,7 @@ shared base class that owns schema-derived runtime validators. It is only used w
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --generate-schema-validators --schema-validator-base-class-name SharedSchemaValidatorBase --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
+    datamodel-codegen --input schema_validators_custom_base_class_name.json --generate-schema-validators --schema-validator-base-class-name SharedSchemaValidatorBase --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--schema-validator-base-class-name` - the option documented here
@@ -3819,7 +3819,7 @@ additional validator backends without adding them in this release.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --schema-validator-type pydantic-v2 --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
+    datamodel-codegen --input schema_validators.json --schema-validator-type pydantic-v2 --output-model-type pydantic_v2.BaseModel --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--schema-validator-type` - the option documented here
@@ -4280,7 +4280,7 @@ The `--strict-dotted-module-names` flag applies only to automatic module inferen
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-dotted-module-names # (1)!
+    datamodel-codegen --input invalid_dotted_schema_name.yaml --strict-dotted-module-names # (1)!
     ```
 
     1. :material-arrow-left: `--strict-dotted-module-names` - the option documented here
@@ -4361,7 +4361,7 @@ The `--treat-dot-as-module` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --treat-dot-as-module # (1)!
+    datamodel-codegen --input treat_dot_as_module_single --treat-dot-as-module # (1)!
     ```
 
     1. :material-arrow-left: `--treat-dot-as-module` - the option documented here
@@ -4433,7 +4433,7 @@ helps maintain consistency with codebases that prefer double-quote formatting.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-double-quotes # (1)!
+    datamodel-codegen --input all_of_any_of_base_class_ref.json --use-double-quotes # (1)!
     ```
 
     1. :material-arrow-left: `--use-double-quotes` - the option documented here
@@ -4600,7 +4600,7 @@ modules are generated. For single-file output, the difference is minimal.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-exact-imports # (1)!
+    datamodel-codegen --input pet_simple.json --use-exact-imports # (1)!
     ```
 
     1. :material-arrow-left: `--use-exact-imports` - the option documented here
@@ -4664,7 +4664,7 @@ for multi-module Pydantic output where runtime imports might otherwise be preser
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --use-type-checking-imports --disable-timestamp # (1)!
+    datamodel-codegen --input modular.yaml --output-model-type pydantic_v2.BaseModel --formatters ruff-check ruff-format --use-type-checking-imports --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--use-type-checking-imports` - the option documented here
@@ -5055,7 +5055,7 @@ This allows injecting custom validation logic into generated models.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --validators tests/data/jsonschema/field_validators_config.json --output-model-type pydantic_v2.BaseModel --use-annotated --disable-timestamp # (1)!
+    datamodel-codegen --input field_validators.json --validators tests/data/jsonschema/field_validators_config.json --output-model-type pydantic_v2.BaseModel --use-annotated --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--validators` - the option documented here
@@ -5133,7 +5133,7 @@ single-line strings in the generated code.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --wrap-string-literal # (1)!
+    datamodel-codegen --input long_description.json --wrap-string-literal # (1)!
     ```
 
     1. :material-arrow-left: `--wrap-string-literal` - the option documented here

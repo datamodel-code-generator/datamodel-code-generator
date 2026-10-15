@@ -6,14 +6,16 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+import sys
+from collections.abc import Awaitable, Callable, Coroutine, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeGuard, TypeVar, cast
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Final, NoReturn, TypeAlias, TypeGuard, TypeVar, cast
 from urllib.parse import unquote_to_bytes
 
 from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.params import Depends
 from fastapi.routing import APIRoute
 from starlette.concurrency import run_in_threadpool
@@ -23,10 +25,14 @@ from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
     from starlette.requests import Request
+    from starlette.responses import Response
     from starlette.types import Receive, Scope, Send
 
 MethodT = TypeVar("MethodT")
 _REQUEST_VALUES: Final = frozenset({"input", "ctx", "url"})
+_LOCATIONS: Final = {"path": 0, "query": 1, "header": 2, "cookie": 3}
+"""The order of FastAPI's records by location; a body comes after every parameter."""
+_REJECTED: Final = "datamodel_code_generator.rejected"
 _PERCENT: Final = ord("%")
 _SLASH: Final = "\udc2f"
 """Stands for an encoded slash while a route matches; no decoded path holds a lone surrogate."""
@@ -68,8 +74,84 @@ class RawPathRouter(APIRouter):
         return path, match, child_scope
 
 
+def malformed_request() -> HTTPException:
+    """Return the error for request data that no declared parameter or media form can represent."""
+    return HTTPException(status_code=400, detail="Invalid request")
+
+
+class ParameterReader:
+    """A dependency that reads parameters FastAPI cannot: its route reports the records it rejects with FastAPI's."""
+
+    __slots__ = ()
+
+
+class _RejectedReadError(RequestValidationError, AttributeError):
+    """The records of a Rejected value raised by reading a parameter value from it, which FastAPI answers with 422.
+
+    It is an AttributeError too, as reading an attribute raises it.
+    """
+
+
+@dataclass(frozen=True, slots=True)
+class Rejected:
+    """The records of the parameters a request carries in forms their declarations reject, left by a ParameterReader.
+
+    Whichever raises them first takes them: the route with FastAPI's own records, or the endpoint when FastAPI found
+    none, through `accepted` or by reading a value of the record it stands for, as a route of a custom template that
+    leaves `accepted` out does before it calls the method.
+    """
+
+    records: list[dict[str, object]]
+
+    def take(self) -> list[dict[str, object]]:
+        """Return the records, leaving none to raise again."""
+        records = self.records.copy()
+        self.records.clear()
+        return records
+
+    def __getattr__(self, name: str) -> NoReturn:
+        """Raise the records for a parameter value read from the record; a special name is missing, as elsewhere."""
+        if name.startswith("__"):
+            raise AttributeError(name)
+        raise _RejectedReadError(self.take())
+
+
+def reject(scope: MutableMapping[str, Any], records: list[dict[str, object]]) -> Rejected:
+    """Leave the records of rejected parameters on a request's scope, and return them as a Rejected value."""
+    scope[_REJECTED] = rejected = Rejected(records)
+    return rejected
+
+
 class RawPathRoute(APIRoute):
-    """An APIRoute of a RawPathRouter: it puts the slashes back in the path and its values before the endpoint runs."""
+    """An APIRoute of a RawPathRouter: it puts the slashes back in the path and its values before the endpoint runs.
+
+    A route with a ParameterReader dependency reports the records the reader leaves with FastAPI's own, and one with
+    header or cookie parameters that FastAPI reads answers 400 for a request whose value of one of them is not ASCII,
+    as a reader answers for the headers and cookies it reads.
+    """
+
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        """Return FastAPI's handler, which checks the text of its headers and raises a reader's records with its own."""
+        handler = super().get_route_handler()
+        endpoint = self.dependant  # codespell:ignore dependant
+        headers = _names(endpoint.header_params, lower=True)
+        cookies = _names(endpoint.cookie_params, lower=False)
+        readers = any(isinstance(dependency.call, ParameterReader) for dependency in endpoint.dependencies)
+        if not (headers or cookies or readers):
+            return handler
+
+        async def reported(request: Request) -> Response:
+            if (headers or cookies) and not _ascii(request.scope["headers"], headers, cookies):
+                raise malformed_request()
+            try:
+                return await handler(request)
+            except RequestValidationError as error:
+                if not isinstance(left := request.scope.get(_REJECTED), Rejected) or not (records := left.take()):
+                    raise
+                merged = sorted([*error.errors(), *records], key=_location)
+                raise RequestValidationError(merged, body=error.body, endpoint_ctx=error.endpoint_ctx) from None
+
+        return reported
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Restore the decoded path and the path parameter values, then handle the request."""
@@ -80,6 +162,64 @@ class RawPathRoute(APIRoute):
                 for name, value in scope["path_params"].items()
             }
         await super().handle(scope, receive, send)
+
+
+def wire_named(names: Mapping[str, str]) -> type[RawPathRoute]:
+    """Return a RawPathRoute class whose validation errors locate renamed path placeholders by their wire names.
+
+    FastAPI reads a path parameter by the name its placeholder has in the route path, and locates its records by that
+    name. `names` gives the wire name of each renamed placeholder FastAPI reads; only a request that fails validation
+    looks one up, before any exception handler receives the error.
+    """
+
+    class WireNamedRoute(RawPathRoute):
+        def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+            handler = super().get_route_handler()
+
+            async def named(request: Request) -> Response:
+                try:
+                    return await handler(request)
+                except RequestValidationError as error:
+                    for record in error.errors():
+                        match record:
+                            case {"loc": ("path", str(), *_)} if (wire := names.get(record["loc"][1])) is not None:
+                                record["loc"] = ("path", wire, *record["loc"][2:])
+                            case _:
+                                pass
+                    raise
+
+            return named
+
+    return WireNamedRoute
+
+
+def _names(fields: Iterable[Any], *, lower: bool) -> frozenset[bytes]:
+    """Return the names FastAPI reads parameters by, as raw header bytes: header names compare case-insensitively."""
+    return frozenset((field.alias.lower() if lower else field.alias).encode("latin-1", "replace") for field in fields)
+
+
+def _ascii(lines: Iterable[tuple[bytes, bytes]], headers: frozenset[bytes], cookies: frozenset[bytes]) -> bool:
+    """Return whether the request's values of the named headers and cookies are ASCII, as RFC 9110 and 6265 write them.
+
+    A cookie is found as Starlette finds it: a `;`-separated pair of a `Cookie` header, its name stripped.
+    """
+    for name, value in lines:
+        if value.isascii():
+            continue
+        if name in headers or (
+            name == b"cookie"
+            and any(
+                separator and key.strip() in cookies and not text.isascii()
+                for key, separator, text in (pair.partition(b"=") for pair in value.split(b";"))
+            )
+        ):
+            return False
+    return True
+
+
+def _location(record: Mapping[str, Any]) -> int:
+    """Return where a record's location comes in FastAPI's order: path, query, header, and cookie, then the rest."""
+    return _LOCATIONS.get((record.get("loc") or ("",))[0], len(_LOCATIONS))
 
 
 def _segmented(scope: Scope) -> str | None:
@@ -158,17 +298,91 @@ def error_handlers(exception_handlers: Mapping[Any, Any] | None) -> dict[Any, An
     return {RequestValidationError: validation_error_handler, **(exception_handlers or {})}
 
 
-def checked(method: MethodT, label: str, *, asynchronous: bool = False) -> MethodT:
-    """Return a service method for its operation, refusing a coroutine function where a plain one runs or the reverse.
+def checked(
+    method: MethodT, label: str, keywords: tuple[str, ...] | None = None, *, asynchronous: bool = False
+) -> MethodT:
+    """Return a service method for its operation, refusing one that its route cannot call as the route calls it.
 
-    A mismatch would skip the method body or fail after it ran, so it stops the registration.
+    A coroutine function where a plain one runs, or the reverse, would skip the method body or fail after it ran, and a
+    signature that does not take the keyword arguments the route passes, `keywords`, would fail on every request:
+    either stops the registration. A wider signature, with defaults or `**kwargs`, takes them. A route of a custom
+    template that names no keywords is not checked for them, and neither is a callable without a signature.
     """
-    if _coroutine_function(method) is asynchronous:
+    if _coroutine_function(method) is not asynchronous:
+        kinds = ("a coroutine function", "a plain method")
+        found, needed = reversed(kinds) if asynchronous else kinds
+        msg = f"{label} is {found}, but the operation's handler mode needs {needed}"
+        raise TypeError(msg)
+    if keywords is None:
         return method
-    kinds = ("a coroutine function", "a plain method")
-    found, needed = reversed(kinds) if asynchronous else kinds
-    msg = f"{label} is {found}, but the operation's handler mode needs {needed}"
-    raise TypeError(msg)
+    try:
+        signature = _signature(cast("Callable[..., object]", method))
+    except ValueError:
+        return method
+    try:
+        signature.bind(**dict.fromkeys(keywords))
+    except TypeError as error:
+        name = getattr(method, "__qualname__", repr(method))
+        passed = ", ".join(keywords) or "none"
+        msg = f"{label}, {name}, cannot take the keyword arguments its route passes ({passed}): {error}"
+        raise TypeError(msg) from None
+    return method
+
+
+def _signature(method: Callable[..., object]) -> inspect.Signature:
+    """Return a method's own signature, not that of a function it wraps, without evaluating its annotations."""
+    if sys.version_info >= (3, 14):  # pragma: >=3.14 cover
+        from annotationlib import Format  # noqa: PLC0415
+
+        return inspect.signature(method, follow_wrapped=False, annotation_format=Format.FORWARDREF)
+    return inspect.signature(method, follow_wrapped=False)  # pragma: <3.14 cover
+
+
+def missing_implementation(error: ImportError, implementations: Mapping[str, str]) -> None:
+    """Raise an error naming what to write when the entrypoint could not import a module or name of yours.
+
+    `implementations` maps each module the entrypoint imports to the class or function it imports from it. Any other
+    import error, such as one in a module that an implementation imports, returns for the caller to re-raise unchanged.
+    Files are named where they are, relative to the working directory when they lie inside it.
+    """
+    package = __name__.partition("._runtime.")[0]
+    entrypoint = f"{package}.main"
+    root = Path(str(sys.modules[package].__file__)).parent
+    readme = f"see Next steps in {_shown(root / 'README.md')}"
+    name = error.name or ""
+    if isinstance(error, ModuleNotFoundError):
+        missing = {
+            module: item for module, item in implementations.items() if name in {module, module.rpartition(".")[0]}
+        }
+        if not missing:
+            return
+        files = [] if name in missing else [_shown(_file(root, package, name).with_suffix("") / "__init__.py")]
+        files.extend(f"{_shown(_file(root, package, module))} defining {item}" for module, item in missing.items())
+        msg = (
+            f"No module named {name!r}: create {', '.join(files)}, which {entrypoint} imports. Generating the "
+            f"server again writes missing modules with stubs; {readme}"
+        )
+    elif (
+        (item := implementations.get(name)) is not None
+        and getattr(error, "name_from", item) == item
+        and not hasattr(module := sys.modules.get(name), item)
+    ):
+        where = _shown(Path(str(getattr(module, "__file__", None) or _file(root, package, name))))
+        msg = f"{name} defines no {item}, which {entrypoint} imports: define it in {where}; {readme}"
+    else:
+        return
+    raise ImportError(msg, name=name) from error
+
+
+def _file(root: Path, package: str, module: str) -> Path:
+    """Return the file a module of the package's parent package would have, beside the package's directory."""
+    parent = package.rpartition(".")[0]
+    return root.parent.joinpath(*module.removeprefix(f"{parent}." if parent else "").split(".")).with_suffix(".py")
+
+
+def _shown(path: Path) -> str:
+    """Return a path relative to the working directory when it lies inside it."""
+    return (path.relative_to(cwd) if path.is_relative_to(cwd := Path.cwd()) else path).as_posix()
 
 
 def _is_sequence(value: object) -> TypeIs[Sequence[object]]:

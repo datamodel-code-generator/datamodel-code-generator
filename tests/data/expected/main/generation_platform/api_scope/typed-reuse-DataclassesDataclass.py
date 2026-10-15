@@ -17,7 +17,7 @@ class Base:
 
 
 @dataclass
-class FieldGetResponse:
+class RootGetResponse:
     id: int | None = None
     native: UUID | None = None
     custom: CustomType | None = None

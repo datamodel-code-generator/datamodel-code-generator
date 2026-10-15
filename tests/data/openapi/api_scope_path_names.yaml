@@ -1,0 +1,149 @@
+openapi: 3.1.0
+info:
+  title: API scope path names
+  version: 1.0.0
+paths:
+  /:
+    get:
+      responses:
+        '200':
+          description: Service status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /pets:
+    get:
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            maximum: 100
+        - name: $filter
+          in: query
+          schema:
+            type: string
+            maxLength: 20
+      responses:
+        '200':
+          description: Pets
+          headers:
+            x-next:
+              schema:
+                type: string
+                maxLength: 200
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+  /pets/{petId}:
+    get:
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-z]+$
+      responses:
+        '200':
+          description: Pet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pet_name:
+                    type: string
+                  PetKind:
+                    type: string
+                    enum:
+                      - dog
+                      - cat
+  /2fa:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+      responses:
+        '204':
+          description: Verified
+  /a-b:
+    get:
+      responses:
+        '200':
+          description: Dash
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dash:
+                    type: string
+  /a_b:
+    get:
+      responses:
+        '200':
+          description: Underscore
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  underscore:
+                    type: string
+  /{a}/b:
+    get:
+      parameters:
+        - name: a
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Braces
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  braces:
+                    type: string
+  /ペット:
+    get:
+      responses:
+        '200':
+          description: Non-ASCII path
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  名前:
+                    type: string
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+    PetsGetResponse:
+      type: object
+      description: A component that has the name the /pets GET response derives.
+      properties:
+        total:
+          type: integer

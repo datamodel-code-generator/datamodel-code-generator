@@ -27,13 +27,17 @@ def _dotted(value: object) -> bool:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class TargetConfig:
-    """Hold the settings every single target shares; concrete targets add their own fields."""
+    """Hold the settings every single target shares; concrete targets add their own fields.
+
+    A target that serves its source document reads no local file the document would publish.
+    """
 
     output: Path
     package: str
     model_package: str
 
     _option_prefix: ClassVar[str | None] = None
+    _serves_source: ClassVar[bool] = False
 
     def __post_init__(self) -> None:
         """Reject values and combinations the shared contract does not allow, in field order."""

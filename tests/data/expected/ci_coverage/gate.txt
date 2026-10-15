@@ -49,6 +49,166 @@
     "results_match": true,
     "stderr": ""
   },
+  "mid-stack:check:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:check:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:check:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:coverage:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:coverage:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:coverage:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:e2e:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:e2e:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:e2e:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:empty": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:skipped": {
+    "exit": 0,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-coverage:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-coverage:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-coverage:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-formatter-coverage:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-formatter-coverage:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-formatter-coverage:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-formatter-subset:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-formatter-subset:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-formatter-subset:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-http-backends-nocov:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-http-backends-nocov:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-http-backends-nocov:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-http-backends:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-http-backends:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-http-backends:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-nocov:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-nocov:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard-nocov:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard:cancelled": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard:failure": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
+  "mid-stack:test-shard:success": {
+    "exit": 1,
+    "results_match": true,
+    "stderr": ""
+  },
   "success": {
     "exit": 0,
     "results_match": true,

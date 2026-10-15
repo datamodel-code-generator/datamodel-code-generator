@@ -11,15 +11,16 @@ from decimal import Decimal
 from typing import List, Literal, Optional, Protocol, Union
 
 from fastapi.responses import Response
+from pydantic import Base64Str
 from spellings_exact_basemodel_models import Response as Response_1
 from spellings_exact_basemodel_models import Tag
 from spellings_exact_basemodel_models import (
+    CountsGetResponse,
     Day,
-    FieldCountsGetResponse,
     FieldModel,
-    FieldPetsGetResponse,
     Pair,
     Pet,
+    PetsGetResponse,
     Query,
 )
 from typing_extensions import TypeVar
@@ -41,7 +42,7 @@ class PetsService(Protocol):
         self,
         *,
         invalid: Optional[bool],
-    ) -> Union[FieldPetsGetResponse, HTTPResult[FieldPetsGetResponse], Response]:
+    ) -> Union[PetsGetResponse, HTTPResult[PetsGetResponse], Response]:
         """
         Handle GET /pets.
         """
@@ -51,7 +52,7 @@ class PetsService(Protocol):
         self,
         *,
         invalid: Optional[bool],
-    ) -> Union[FieldCountsGetResponse, HTTPResult[FieldCountsGetResponse], Response]:
+    ) -> Union[CountsGetResponse, HTTPResult[CountsGetResponse], Response]:
         """
         Handle GET /counts.
         """
@@ -97,7 +98,7 @@ class PetsService(Protocol):
         code: Optional[str],
         codes: Optional[List[str]],
         step: Optional[Decimal],
-        raw: Optional[bytes],
+        raw: Optional[Base64Str],
         day: Optional[date],
         filter: Optional[Query],
         pair: Optional[Pair],

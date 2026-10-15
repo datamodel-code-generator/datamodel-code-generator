@@ -1,0 +1,30 @@
+"""Serve the application with your services: `uvicorn {{ app }}`.
+
+Generation overwrites this module. It imports your implementations from {{ services }}, as Next steps in README.md
+describes, and passes them to create_app; to pass others, such as fakes in tests, call create_app yourself.
+"""
+
+{{ imports }}
+{%- if implementations %}
+
+try:
+{%- for item in implementations %}
+    from {{ item.module }} import {{ item.name }}{% if item.alias != item.name %} as {{ item.alias }}{% endif %}
+{%- endfor %}
+except ImportError as error:
+    {{ missing }}(
+        error,
+        {
+{%- for entry in table %}
+            {{ entry.keyword }}: {{ entry.value }},
+{%- endfor %}
+        },
+    )
+    raise
+{%- endif %}
+
+app = {{ create_app }}(
+{%- for argument in arguments %}
+    {{ argument.keyword }}={{ argument.value }},
+{%- endfor %}
+)

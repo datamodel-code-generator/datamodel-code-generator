@@ -10,19 +10,19 @@ from typing_extensions import TypeAliasType
 
 from . import common
 
-FieldItemsGetQueryCodeParameter = TypeAliasType(
-    "FieldItemsGetQueryCodeParameter", Annotated[str, Field(max_length=4)]
+ItemsGetQueryCodeParameter = TypeAliasType(
+    "ItemsGetQueryCodeParameter", Annotated[str, Field(max_length=4)]
 )
 
 
-FieldItemsGetQueryOtherParameter = TypeAliasType(
-    "FieldItemsGetQueryOtherParameter", Annotated[str, Field(max_length=4)]
+ItemsGetQueryOtherParameter = TypeAliasType(
+    "ItemsGetQueryOtherParameter", Annotated[str, Field(max_length=4)]
 )
 
 
-FieldItemsGetQueryCodesParameter = TypeAliasType("FieldItemsGetQueryCodesParameter", list[common.Code])
+ItemsGetQueryCodesParameter = TypeAliasType("ItemsGetQueryCodesParameter", list[common.Code])
 
 
-FieldItemsCodeGetPathCodeParameter = TypeAliasType(
-    "FieldItemsCodeGetPathCodeParameter", Annotated[str, Field(max_length=4)]
+ItemsCodeGetPathCodeParameter = TypeAliasType(
+    "ItemsCodeGetPathCodeParameter", Annotated[str, Field(max_length=4)]
 )

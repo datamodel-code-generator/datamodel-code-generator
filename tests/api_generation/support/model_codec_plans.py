@@ -17,9 +17,9 @@ PLANS = Path(__file__).parents[2] / "data" / "generation_platform" / "codecs" / 
 BACKEND = "pydantic_v2.BaseModel"
 PINNED = (("application.py",), ("_generated", "contract.py"))
 PARAMETER_MODELS = {
-    "/paths/~1items/get/parameters/0/schema": "FieldItemsGetQueryLimitParameter",
+    "/paths/~1items/get/parameters/0/schema": "ItemsGetQueryLimitParameter",
     "/paths/~1pets~1%7BpetId%7D/get/parameters/1/schema": "Filter",
-    "/paths/~1pets~1%7BpetId%7D/parameters/0/schema": "FieldPetsPetIdGetPathPetIdParameter",
+    "/paths/~1pets~1%7BpetId%7D/parameters/0/schema": "PetsPetIdGetPathPetIdParameter",
 }
 
 

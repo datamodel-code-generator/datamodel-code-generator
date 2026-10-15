@@ -117,7 +117,7 @@ class FilesResource:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -126,7 +126,7 @@ class FilesResource:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
@@ -135,7 +135,7 @@ class FilesResource:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -144,7 +144,7 @@ class FilesResource:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -152,7 +152,7 @@ class FilesResource:
     def store_file(
         self,
         *,
-        body: models.Address | SyncBinaryBody | models.FieldFilesPostRequest2,
+        body: models.Address | SyncBinaryBody | models.FilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -287,7 +287,7 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: None = None,
         options: RequestOptions | None = None,
@@ -296,7 +296,7 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: Literal['application/json'],
         options: RequestOptions | None = None,
@@ -305,7 +305,7 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: Literal['image/png'],
         options: RequestOptions | None = None,
@@ -314,7 +314,7 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: str,
         options: RequestOptions | None = None,
@@ -322,7 +322,7 @@ class FilesWithResponse:
     def store_file(
         self,
         *,
-        body: models.Address | SyncBinaryBody | models.FieldFilesPostRequest2,
+        body: models.Address | SyncBinaryBody | models.FilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -403,7 +403,7 @@ class FilesWithRawResponse:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -411,7 +411,7 @@ class FilesWithRawResponse:
     def store_file(
         self,
         *,
-        body: models.Address | SyncBinaryBody | models.FieldFilesPostRequest2,
+        body: models.Address | SyncBinaryBody | models.FilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -492,7 +492,7 @@ class FilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: models.FieldFilesPostRequest2,
+        body: models.FilesPostRequest2,
         media_type: str,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,
@@ -500,7 +500,7 @@ class FilesWithStreamingResponse:
     def store_file(
         self,
         *,
-        body: models.Address | SyncBinaryBody | models.FieldFilesPostRequest2,
+        body: models.Address | SyncBinaryBody | models.FilesPostRequest2,
         media_type: str | None = None,
         response_media_type: str | None = None,
         options: RequestOptions | None = None,

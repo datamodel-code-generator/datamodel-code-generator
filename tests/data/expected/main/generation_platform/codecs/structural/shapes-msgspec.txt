@@ -1,3 +1,6 @@
+warning UserWarning: msgspec.Meta does not take ge on Decimal; Values.amount is generated without this constraint.
+warning UserWarning: msgspec cannot decode the union AnimalsAnyPutRequest: its Struct types Cat, Dog are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+warning UserWarning: msgspec cannot decode the union KinPutRequest: its Struct types Animal, Cat are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
 use /paths/~1animals~1any/put request_body: MsgspecCodec
 use /paths/~1kin/put request_body: MsgspecCodec
 use /paths/~1tree/put request_body: MsgspecCodec

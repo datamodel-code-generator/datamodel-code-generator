@@ -7,11 +7,11 @@ from pydantic import RootModel
 from typing_extensions import TypeAliasType
 
 
-class FieldPetsGetResponse(RootModel[list[str]]):
+class PetsGetResponse(RootModel[list[str]]):
     root: list[str]
 
 
-FieldMaybeGetQueryPrincipalParameter = TypeAliasType("FieldMaybeGetQueryPrincipalParameter", str)
+MaybeGetQueryPrincipalParameter = TypeAliasType("MaybeGetQueryPrincipalParameter", str)
 
 
-FieldPetsPetIdPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPutPathPetIdParameter", int)
+PetsPetIdPutPathPetIdParameter = TypeAliasType("PetsPetIdPutPathPetIdParameter", int)

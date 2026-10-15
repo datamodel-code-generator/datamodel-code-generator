@@ -1,1 +1,1 @@
-"{\n  \"version\": 1,\n  \"format\": \"json\",\n  \"kind\": \"check\",\n  \"success\": true,\n  \"content\": \"\",\n  \"differences\": []\n}\n"
+"{\n  \"version\": 1,\n  \"format\": \"json\",\n  \"kind\": \"check\",\n  \"success\": true,\n  \"content\": \"\",\n  \"differences\": [],\n  \"target\": {\n    \"package\": \"models.server\",\n    \"dependencies\": [\n      \"fastapi>=0.141.1\",\n      \"pydantic>=2.14.0\",\n      \"typing-extensions>=4.16\"\n    ]\n  }\n}\n"

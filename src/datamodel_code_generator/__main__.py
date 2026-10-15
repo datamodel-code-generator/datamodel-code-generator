@@ -143,6 +143,7 @@ from datamodel_code_generator._cli_config import (
 from datamodel_code_generator._format_types import Formatter, PythonVersion
 from datamodel_code_generator._project_config import (
     _PYPROJECT_JSON_CONFIG_FIELDS,
+    _PYPROJECT_MODEL_JSON_CONFIG_FIELDS,
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
     _normalize_pyproject_config,
@@ -180,6 +181,7 @@ if TYPE_CHECKING:
         CheckDifferencePayload,
         CommandOutputKind,
         GeneratedFilePayload,
+        TargetPayload,
     )
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.validators import ModelValidators
@@ -963,16 +965,23 @@ def _record_raw_profile_dependencies(
 def _record_raw_job_config_dependencies(
     config: Mapping[Any, Any], base_path: Path, dependencies: WatchDependencies
 ) -> None:
-    """Register raw local inputs and JSON option files for failed-plan recovery."""
+    """Register raw local inputs and JSON option files for failed-plan recovery.
+
+    As in a planned job, the JSON files of model options stay relative to the working directory.
+    """
     from datamodel_code_generator.watch_dependencies import _JSON_CONFIG_FIELDS  # noqa: PLC0415
 
     for raw_name, raw_value in config.items():
-        if not isinstance(raw_name, str) or raw_name.replace("-", "_") not in (_JSON_CONFIG_FIELDS | {"input"}):
+        if not isinstance(raw_name, str) or (name := raw_name.replace("-", "_")) not in (
+            _JSON_CONFIG_FIELDS | {"input"}
+        ):
             continue
         if not isinstance(raw_value, str | Path):
             continue
         path = Path(raw_value)
-        dependencies.add_recovery_file(path if path.is_absolute() else base_path / path)
+        dependencies.add_recovery_file(
+            path if path.is_absolute() or name in _PYPROJECT_MODEL_JSON_CONFIG_FIELDS else base_path / path
+        )
 
 
 def _plan_jobs_unchecked(args: Namespace) -> BatchPlan:
@@ -1243,15 +1252,13 @@ def _compare_directories(
 
     Two inputs can generate a single-module file at the directory path: it is compared as the file at that path.
     """
+    from datamodel_code_generator._leftover_files import python_files  # noqa: PLC0415
+
     changed_files: list[DirectoryChangedFile] = []
 
     generated_files = {path.relative_to(generated_dir) for path in generated_dir.rglob("*.py")}
 
-    actual_files: set[Path] = set()
-    if actual_dir.exists():
-        for path in actual_dir.rglob("*.py"):
-            if "__pycache__" not in path.parts:
-                actual_files.add(path.relative_to(actual_dir))
+    actual_files = python_files(actual_dir)
 
     if comparison.input_diff:
         for files, output in ((generated_files, generated_dir), (actual_files, actual_dir)):
@@ -1495,10 +1502,11 @@ def _check_output_json(
     content: str,
     differences: list[CheckDifferencePayload],
     kind: Literal["check", "input-diff"] = "check",
+    target: TargetPayload | None = None,
 ) -> str:
     from datamodel_code_generator._structured_output import check_output_json  # noqa: PLC0415
 
-    return check_output_json(success=success, content=content, differences=differences, kind=kind)
+    return check_output_json(success=success, content=content, differences=differences, kind=kind, target=target)
 
 
 def _write_comparison_output(
@@ -1506,8 +1514,9 @@ def _write_comparison_output(
     output_format: str | None,
     *,
     kind: Literal["check", "input-diff"] = "check",
+    target: TargetPayload | None = None,
 ) -> None:
-    """Write a common comparison report in text or structured JSON."""
+    """Write a common comparison report in text or structured JSON, with the target of a server or client run."""
     if output_format == "json":
         sys.stdout.write(
             _check_output_json(
@@ -1515,6 +1524,7 @@ def _write_comparison_output(
                 content=comparison.content,
                 differences=comparison.differences,
                 kind=kind,
+                target=target,
             )
             + "\n"
         )
@@ -1681,8 +1691,9 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
     from datamodel_code_generator.base_config import (  # noqa: PLC0415
         _TARGET_SELECTORS,
         _flag,
-        _missing_target_options,
         _option_list,
+        _selected_target,
+        _target_options_error,
     )
 
     explicit = _explicit_config_args(namespace)
@@ -1700,7 +1711,9 @@ def _target_usage_errors(config: Config, namespace: Namespace) -> list[str]:
         if flags
     ]:
         return errors
-    return [] if (missing := _missing_target_options(config)) is None else [missing]
+    if config.input_model and (selected := _selected_target(config)) is not None:
+        return [f"{_flag(selected[0])} cannot be used with --input-model"]
+    return [] if (problem := _target_options_error(config)) is None else [problem]
 
 
 def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None:
@@ -1807,14 +1820,18 @@ def _run_target(  # noqa: PLR0913, PLR0917
     batch: list[Any] | None = None,
     lock: Any = None,
     job: str = "",
+    implied: dict[str, Any] | None = None,
+    announced: dict[str, Any] | None = None,
 ) -> Exit:
     """Hand the selected generation target to its runner, which reports every diagnostic.
 
     A batch `job` plans the target into `batch` for publication with the batch, recording into the batch's lock.
+    `implied` holds the settings the target set, which the config already has, and `announced` those its notice names:
+    a watch names them on its first run only.
     """
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
-    return Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job))
+    return Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job, implied or {}, announced or {}))
 
 
 def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -2204,7 +2221,7 @@ def _run_jobs_json(
     """Spool validated job payloads until generation and publication both succeed."""
     from pydantic import ValidationError  # noqa: PLC0415
 
-    from datamodel_code_generator._structured_output import BatchJobPayload  # noqa: PLC0415
+    from datamodel_code_generator._structured_output import BatchJobPayload, batch_job_json  # noqa: PLC0415
 
     try:
         with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as batch_spool:
@@ -2255,7 +2272,10 @@ def _run_jobs_json(
                         )
                         return Exit.ERROR
                     json.dump(
-                        job_payload.model_dump(mode="json"), batch_spool, ensure_ascii=False, separators=(",", ":")
+                        batch_job_json(job_payload),
+                        batch_spool,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
                     )
                     batch_spool.write("\n")
 
@@ -2762,11 +2782,14 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         )
         return Exit.ERROR
 
-    from datamodel_code_generator.base_config import _selected_target  # noqa: PLC0415
+    from datamodel_code_generator.base_config import _selected_target, implied_target_settings  # noqa: PLC0415
 
     if _selected_target(config) is not None:
+        if implied := implied_target_settings(config, config.model_fields_set):
+            config = config.model_copy(update=implied)
         if (refusal := _apply_model_run_options(config, namespace, pyproject_config)) is not None:
             return refusal
+        announced = implied if start_watch or not config.watch else {}
         lock = None
         if _batch_targets is None:
             try:
@@ -2779,11 +2802,15 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         elif (job_locks := cast("_RemoteLockTransaction | None", _remote_locks)) is not None:
             lock = job_locks.collector_for(cast("_RemoteLockPlan", _bound_remote_lock_plan))
         if not config.watch or watch_dependencies is None:
-            return _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
+            return _run_target(
+                args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job, implied, announced
+            )
         # A batch job never watches (watch is an outer setting), so this run owns its lock plan and its intent.
         _, remote_lock_intent = _watch_remote_lock_setup(config, pyproject_path, watch_dependencies, None)
         with watch_dependencies.generation() as generation:
-            result = _run_target(args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job)
+            result = _run_target(
+                args, namespace, config, pyproject_path, _batch_targets, lock, _batch_job, implied, announced
+            )
             generation.failed = result is not Exit.OK
         if result is Exit.OK:
             watch_dependencies._commit_remote_lock_intent(cast("set[Path]", remote_lock_intent))  # noqa: SLF001

@@ -1,0 +1,79 @@
+# missing-sentinel pydantic_v2.BaseModel
+  unset members Pet(name='a', owner=None, tag=None, nick=None, color=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"a","owner":null}'
+  json unset members = Pet(name='a', owner=None, tag=None, nick=None, color=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"name":"a","owner":null,"nick":null}'
+  json nullable null = Pet(name='a', owner=None, tag=None, nick=None, color=None)
+  > POST https://api.example.com/login
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 8] b'user=ann'
+  form unset members = None
+  > POST https://api.example.com/login
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 22] b'user=ann&remember=true'
+  form null member = None
+  > PUT https://api.example.com/profile
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 126] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nann\r\n--<boundary>--\r\n'
+  profile unset members = None
+  > PUT https://api.example.com/profile
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 126] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nann\r\n--<boundary>--\r\n'
+  profile null member = None
+  > POST https://api.example.com/upload
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 249] b'--<boundary>\r\nContent-Disposition: form-data; name="file"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="tag"\r\n\r\nt\r\n--<boundary>--\r\n'
+  multipart null field part = None
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  absent response members = PetsGetResponse(root=[Pet(name='a', owner=None, tag=None, nick=None, color=None)])
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  null non-nullable member = PetsGetResponse(root=[Pet(name='a', owner=None, tag=None, nick=None, color=None)])
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  enum null member = PetsGetResponse(root=[Pet(name='a', owner=None, tag=None, nick=None, color=None)])
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  enum unknown member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"a","owner":null,"color":"blue"}]', truncated=False, cause=1 validation error for PetsGetResponse
+0.color
+  Input should be 'red', 'green' or None [type=enum, input_value='blue', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_value
+# missing-sentinel pydantic_v2.dataclass
+  unset members Pet(name='a', owner=None, tag=MISSING, nick=MISSING, color=MISSING)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 25] b'{"name":"a","owner":null}'
+  json unset members = Pet(name='a', owner=None, tag=MISSING, nick=MISSING, color=MISSING)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"name":"a","owner":null,"nick":null}'
+  json nullable null = Pet(name='a', owner=None, tag=MISSING, nick=None, color=MISSING)
+  > POST https://api.example.com/login
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 8] b'user=ann'
+  form unset members = None
+  > POST https://api.example.com/login
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 22] b'user=ann&remember=true'
+  form null member = None
+  > PUT https://api.example.com/profile
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 126] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nann\r\n--<boundary>--\r\n'
+  profile unset members = None
+  > PUT https://api.example.com/profile
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 126] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nann\r\n--<boundary>--\r\n'
+  profile null member = None
+  > POST https://api.example.com/upload
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 249] b'--<boundary>\r\nContent-Disposition: form-data; name="file"\r\nContent-Type: application/octet-stream\r\n\r\nx\r\n--<boundary>\r\nContent-Disposition: form-data; name="tag"\r\n\r\nt\r\n--<boundary>--\r\n'
+  multipart null field part = None
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  absent response members = [Pet(name='a', owner=None, tag=MISSING, nick=MISSING, color=MISSING)]
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  null non-nullable member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"a","owner":null,"tag":null}]', truncated=False, cause=1 validation error for list[Pet]
+0.tag
+  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/<version>/v/string_type] invalid_value
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  enum null member = [Pet(name='a', owner=None, tag=MISSING, nick=MISSING, color=<Color.NoneType_None: None>)]
+  > GET https://api.example.com/pets?filter%5Bstatus%5D=x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  enum unknown member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"a","owner":null,"color":"blue"}]', truncated=False, cause=1 validation error for list[Pet]
+0.color
+  Input should be 'red', 'green' or None [type=enum, input_value='blue', input_type=str]
+    For further information visit https://errors.pydantic.dev/<version>/v/enum] invalid_value

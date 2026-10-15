@@ -15,10 +15,10 @@ from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...options import UNSET
 from ...responses import ResponseInfo
 
-ParameterResponse: TypeAlias = models.FieldParameterPostResponse
+ParameterResponse: TypeAlias = models.ParameterPostResponse
 
 
-_PARAMETER_HEADERS: Final[ResponseHeaders[models.FieldParameterPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_PARAMETER_HEADERS: Final[ResponseHeaders[models.ParameterPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'parameter',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_2, missing=optional_header)),)),),
@@ -29,15 +29,15 @@ def decode_parameter_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldParameterPostResponse200XIdempotencyHeader | UNSET:
+) -> models.ParameterPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of parameter from a response's metadata."""
     return _PARAMETER_HEADERS.decode(info, name)
 
 
-ApiKeyResponse: TypeAlias = models.FieldApiKeyPostResponse
+ApiKeyResponse: TypeAlias = models.ApiKeyPostResponse
 
 
-_API_KEY_HEADERS: Final[ResponseHeaders[models.FieldApiKeyPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_API_KEY_HEADERS: Final[ResponseHeaders[models.ApiKeyPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'api_key',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_4, missing=optional_header)),)),),
@@ -48,15 +48,15 @@ def decode_api_key_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldApiKeyPostResponse200XIdempotencyHeader | UNSET:
+) -> models.ApiKeyPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of api_key from a response's metadata."""
     return _API_KEY_HEADERS.decode(info, name)
 
 
-BearerResponse: TypeAlias = models.FieldBearerPostResponse
+BearerResponse: TypeAlias = models.BearerPostResponse
 
 
-_BEARER_HEADERS: Final[ResponseHeaders[models.FieldBearerPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_BEARER_HEADERS: Final[ResponseHeaders[models.BearerPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'bearer',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_6, missing=optional_header)),)),),
@@ -67,15 +67,15 @@ def decode_bearer_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldBearerPostResponse200XIdempotencyHeader | UNSET:
+) -> models.BearerPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of bearer from a response's metadata."""
     return _BEARER_HEADERS.decode(info, name)
 
 
-OauthResponse: TypeAlias = models.FieldOauthPostResponse
+OauthResponse: TypeAlias = models.OauthPostResponse
 
 
-_OAUTH_HEADERS: Final[ResponseHeaders[models.FieldOauthPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_OAUTH_HEADERS: Final[ResponseHeaders[models.OauthPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'oauth',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_8, missing=optional_header)),)),),
@@ -86,15 +86,15 @@ def decode_oauth_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldOauthPostResponse200XIdempotencyHeader | UNSET:
+) -> models.OauthPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of oauth from a response's metadata."""
     return _OAUTH_HEADERS.decode(info, name)
 
 
-OpenidResponse: TypeAlias = models.FieldOpenidPostResponse
+OpenidResponse: TypeAlias = models.OpenidPostResponse
 
 
-_OPENID_HEADERS: Final[ResponseHeaders[models.FieldOpenidPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_OPENID_HEADERS: Final[ResponseHeaders[models.OpenidPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'openid',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_10, missing=optional_header)),)),),
@@ -105,15 +105,15 @@ def decode_openid_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldOpenidPostResponse200XIdempotencyHeader | UNSET:
+) -> models.OpenidPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of openid from a response's metadata."""
     return _OPENID_HEADERS.decode(info, name)
 
 
-CookieResponse: TypeAlias = models.FieldCookiePostResponse
+CookieResponse: TypeAlias = models.CookiePostResponse
 
 
-_COOKIE_HEADERS: Final[ResponseHeaders[models.FieldCookiePostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_COOKIE_HEADERS: Final[ResponseHeaders[models.CookiePostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'cookie',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_12, missing=optional_header)),)),),
@@ -124,15 +124,15 @@ def decode_cookie_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldCookiePostResponse200XIdempotencyHeader | UNSET:
+) -> models.CookiePostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of cookie from a response's metadata."""
     return _COOKIE_HEADERS.decode(info, name)
 
 
-QueryResponse: TypeAlias = models.FieldQueryPostResponse
+QueryResponse: TypeAlias = models.QueryPostResponse
 
 
-_QUERY_HEADERS: Final[ResponseHeaders[models.FieldQueryPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_QUERY_HEADERS: Final[ResponseHeaders[models.QueryPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'query',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_14, missing=optional_header)),)),),
@@ -143,15 +143,15 @@ def decode_query_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldQueryPostResponse200XIdempotencyHeader | UNSET:
+) -> models.QueryPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of query from a response's metadata."""
     return _QUERY_HEADERS.decode(info, name)
 
 
-IgnoredResponse: TypeAlias = models.FieldIgnoredPostResponse
+IgnoredResponse: TypeAlias = models.IgnoredPostResponse
 
 
-_IGNORED_HEADERS: Final[ResponseHeaders[models.FieldIgnoredPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_IGNORED_HEADERS: Final[ResponseHeaders[models.IgnoredPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'ignored',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_16, missing=optional_header)),)),),
@@ -162,15 +162,15 @@ def decode_ignored_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldIgnoredPostResponse200XIdempotencyHeader | UNSET:
+) -> models.IgnoredPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of ignored from a response's metadata."""
     return _IGNORED_HEADERS.decode(info, name)
 
 
-DirectionResponse: TypeAlias = models.FieldDirectionPostResponse
+DirectionResponse: TypeAlias = models.DirectionPostResponse
 
 
-_DIRECTION_HEADERS: Final[ResponseHeaders[models.FieldDirectionPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_DIRECTION_HEADERS: Final[ResponseHeaders[models.DirectionPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'direction',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_19, missing=optional_header)),)),),
@@ -181,15 +181,15 @@ def decode_direction_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldDirectionPostResponse200XIdempotencyHeader | UNSET:
+) -> models.DirectionPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of direction from a response's metadata."""
     return _DIRECTION_HEADERS.decode(info, name)
 
 
-UnusedResponse: TypeAlias = models.FieldUnusedPostResponse
+UnusedResponse: TypeAlias = models.UnusedPostResponse
 
 
-_UNUSED_HEADERS: Final[ResponseHeaders[models.FieldUnusedPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_UNUSED_HEADERS: Final[ResponseHeaders[models.UnusedPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
     'unused',
     frozenset({'200'}),
     (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_21, missing=optional_header)),)),),
@@ -200,6 +200,6 @@ def decode_unused_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Idempotency'],
-) -> models.FieldUnusedPostResponse200XIdempotencyHeader | UNSET:
+) -> models.UnusedPostResponse200XIdempotencyHeader | UNSET:
     """Decode one declared response header of unused from a response's metadata."""
     return _UNUSED_HEADERS.decode(info, name)

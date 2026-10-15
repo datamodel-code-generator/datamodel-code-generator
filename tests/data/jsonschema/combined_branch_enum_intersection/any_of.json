@@ -1,0 +1,72 @@
+{
+  "title": "Task",
+  "type": "object",
+  "required": [
+    "command"
+  ],
+  "properties": {
+    "command": {
+      "type": "string",
+      "enum": [
+        "run",
+        "restart"
+      ]
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "x-enum-varnames": [
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "fast"
+      ]
+    },
+    "previousTaskId": {
+      "type": "string"
+    }
+  },
+  "anyOf": [
+    {
+      "properties": {
+        "command": {
+          "enum": [
+            "run"
+          ]
+        },
+        "level": {
+          "enum": [
+            "high",
+            "low"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "command": {
+          "enum": [
+            "restart"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "slow"
+          ]
+        }
+      },
+      "required": [
+        "previousTaskId"
+      ]
+    }
+  ]
+}

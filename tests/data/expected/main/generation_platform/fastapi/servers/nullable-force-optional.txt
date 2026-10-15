@@ -1,0 +1,204 @@
+# nullable-force-optional
+serve pydantic_v2.BaseModel
+service DefaultService: post_anything, post_choice, post_color, post_draft, post_extended, post_id, post_item, post_list, post_name, post_note, post_text, post_value
+service DefaultService without its methods: TypeError
+> POST /texts
+  post_text(body=TextsPostRequest(root=None))
+< 204 - b''
+> POST /texts
+  post_text(body=TextsPostRequest(root='a'))
+< 204 - b''
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_too_long", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_type", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /lists
+  post_list(body=ListsPostRequest(root=None))
+< 204 - b''
+> POST /lists
+  post_list(body=ListsPostRequest(root=[1, 2]))
+< 204 - b''
+> POST /lists
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /choices
+  post_choice(body=ChoicesPostRequest(root=None))
+< 204 - b''
+> POST /choices
+  post_choice(body=ChoicesPostRequest(root=Item(name='a')))
+< 204 - b''
+> POST /choices
+  post_choice(body=ChoicesPostRequest(root=3))
+< 204 - b''
+> POST /choices
+< 422 application/json [{"type": "model_type", "loc": ["body", "Item"]}, {"type": "int_parsing", "loc": ["body", "int"]}]
+> POST /colors
+  post_color(body=Color(root=None))
+< 204 - b''
+> POST /colors
+  post_color(body=Color(root=<ColorEnum.red: 'red'>))
+< 204 - b''
+> POST /colors
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /names
+  post_name(body=Name(root=None))
+< 204 - b''
+> POST /names
+  post_name(body=Name(root='a'))
+< 204 - b''
+> POST /names
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /values
+  post_value(body=ValuesPostRequest(root=None))
+< 204 - b''
+> POST /values
+  post_value(body=ValuesPostRequest(root={'any': [1, None]}))
+< 204 - b''
+> POST /values
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /anything
+  post_anything(body=None)
+< 204 - b''
+> POST /anything
+  post_anything(body=[1, 'a'])
+< 204 - b''
+> POST /anything
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+  post_item(body=Item(name='a'))
+< 204 - b''
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /ids
+  post_id(body=IdsPostRequest(root=None))
+< 204 - b''
+> POST /ids
+  post_id(body=IdsPostRequest(root=UUID('00000000-0000-0000-0000-000000000001')))
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''
+> POST /drafts
+  post_draft(body=DraftsPostRequest(root='a'))
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''
+serve pydantic_v2.dataclass
+service DefaultService: post_anything, post_choice, post_color, post_draft, post_extended, post_id, post_item, post_list, post_name, post_note, post_text, post_value
+service DefaultService without its methods: TypeError
+> POST /texts
+  post_text(body=None)
+< 204 - b''
+> POST /texts
+  post_text(body='a')
+< 204 - b''
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_too_long", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "string_type", "loc": ["body"]}]
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /texts
+< 422 application/json [{"type": "json_invalid", "loc": ["body"]}]
+> POST /texts
+< 415 application/json {"detail":"Unsupported media type"}
+> POST /lists
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /lists
+  post_list(body=[1, 2])
+< 204 - b''
+> POST /lists
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /choices
+  post_choice(body=None)
+< 204 - b''
+> POST /choices
+  post_choice(body=Item(name='a'))
+< 204 - b''
+> POST /choices
+  post_choice(body=3)
+< 204 - b''
+> POST /choices
+< 422 application/json [{"type": "dataclass_type", "loc": ["body", "Item"]}, {"type": "int_parsing", "loc": ["body", "int"]}]
+> POST /colors
+  post_color(body=None)
+< 204 - b''
+> POST /colors
+  post_color(body=<ColorEnum.red: 'red'>)
+< 204 - b''
+> POST /colors
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /names
+  post_name(body=None)
+< 204 - b''
+> POST /names
+  post_name(body='a')
+< 204 - b''
+> POST /names
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /values
+  post_value(body=None)
+< 204 - b''
+> POST /values
+  post_value(body={'any': [1, None]})
+< 204 - b''
+> POST /values
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /anything
+  post_anything(body=None)
+< 204 - b''
+> POST /anything
+  post_anything(body=[1, 'a'])
+< 204 - b''
+> POST /anything
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /items
+  post_item(body=Item(name='a'))
+< 204 - b''
+> POST /items
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /ids
+  post_id(body=None)
+< 204 - b''
+> POST /ids
+  post_id(body=UUID('00000000-0000-0000-0000-000000000001'))
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''
+> POST /drafts
+  post_draft(body='a')
+< 204 - b''
+> POST /drafts
+  post_draft(body=None)
+< 204 - b''

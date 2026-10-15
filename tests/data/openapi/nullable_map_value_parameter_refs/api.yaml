@@ -1,0 +1,56 @@
+openapi: 3.1.0
+info:
+  title: Parameters that reference models
+  version: "1.0"
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: scores
+          in: query
+          schema:
+            $ref: "#/components/schemas/Scores"
+        - name: mixed
+          in: query
+          schema:
+            title: Mixed
+            type: [object, "null"]
+            properties:
+              owner:
+                $ref: "#/components/schemas/Owner"
+            additionalProperties:
+              $ref: "#/components/schemas/Meta"
+        - name: region
+          in: query
+          schema:
+            $ref: "external.yaml#/components/schemas/Region"
+      responses:
+        "200":
+          description: The items.
+components:
+  schemas:
+    Scores:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Player"
+    Player:
+      type: object
+      properties:
+        name:
+          type: string
+    Owner:
+      type: object
+      properties:
+        contact:
+          $ref: "#/components/schemas/Contact"
+    Contact:
+      type: object
+      properties:
+        email:
+          type: string
+    Meta:
+      type: object
+      properties:
+        note:
+          type: string

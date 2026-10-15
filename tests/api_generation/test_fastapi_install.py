@@ -52,7 +52,7 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     environment = tmp_path / "environment"
     subprocess.run(["uv", "venv", "--quiet", "--python", sys.executable, environment], check=True)
     python = environment / ("Scripts" if os.name == "nt" else "bin") / "python"
-    dependencies = shlex.split(notice.splitlines()[-1])[2:]
+    dependencies = shlex.split(notice.splitlines()[1])[2:]
     subprocess.run(["uv", "pip", "install", "--quiet", "--python", python, *dependencies], check=True)
     served = subprocess.run([python, "app.py"], capture_output=True, text=True, check=False)
     assert_output(served.stdout + served.stderr, EXPECTED / "served.txt")

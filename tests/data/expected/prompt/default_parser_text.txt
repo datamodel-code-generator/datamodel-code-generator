@@ -58,6 +58,7 @@
 - `--use-tuple-for-fixed-length-arrays`: Generate tuple types for homogeneous fixed-length arrays.
 - `--use-type-alias`: Use TypeAlias instead of root models for type definitions (experimental).
 - `--use-type-alias-type`: Use runtime TypeAliasType objects for aliases before Python 3.12 (experimental).
+- `--use-typed-nullable-map-values`: Type the values of nullable maps as their schemas say instead of Any.
 - `--use-union-operator`: Use | operator for Union types (PEP 604).
 - `--use-unique-items-as-set`: Generate set types for arrays with uniqueItems constraint.
 
@@ -136,7 +137,9 @@
 - `--use-default-kwarg`: Use default= keyword argument instead of positional argument for fields with defaults.
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
-- `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for optional fields without defaults.
+- `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
+- `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.

@@ -1,3 +1,19 @@
+Add the runtime dependencies of client to your project:
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.14.0"
+Next steps: call the API with the client:
+  from client import Client
+
+  with Client(base_url=...) as client:
+      client.pets.find_all(...)
+See <project>/client/README.md.
+Add the runtime dependencies of client to your project:
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.14.0"
+Next steps: call the API with the client:
+  from client import Client
+
+  with Client(base_url=...) as client:
+      client.pets.find_pets(...)
+See service/README.md.
 # project/client/resources/pets/_sync.py
 find_all(limit, cursor, response_media_type, options)
 create_pet(body, media_type, response_media_type, options)

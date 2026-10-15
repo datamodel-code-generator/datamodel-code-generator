@@ -10,7 +10,7 @@ from . import common, shared
 
 class Item(BaseModel):
     code: common.Code | None = None
-    alias: shared.FieldItemsGetQueryCodeParameter | None = None
+    alias: shared.ItemsGetQueryCodeParameter | None = None
 
 
 class Page(BaseModel):

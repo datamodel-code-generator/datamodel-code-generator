@@ -11,6 +11,7 @@ from typing import Literal, Protocol
 
 import spellings_basemodel_models
 from fastapi.responses import Response
+from pydantic import Base64Str
 from typing_extensions import TypeVar
 
 import tests.data.python.fastapi_handlers.spelling_types as tests_data_python_fastapi_handlers_spelling_types
@@ -29,7 +30,7 @@ class PetsService(Protocol):
         self,
         *,
         invalid: bool | None,
-    ) -> spellings_basemodel_models.FieldPetsGetResponse | HTTPResult[spellings_basemodel_models.FieldPetsGetResponse] | Response:
+    ) -> spellings_basemodel_models.PetsGetResponse | HTTPResult[spellings_basemodel_models.PetsGetResponse] | Response:
         """
         Handle GET /pets.
         """
@@ -39,7 +40,7 @@ class PetsService(Protocol):
         self,
         *,
         invalid: bool | None,
-    ) -> spellings_basemodel_models.FieldCountsGetResponse | HTTPResult[spellings_basemodel_models.FieldCountsGetResponse] | Response:
+    ) -> spellings_basemodel_models.CountsGetResponse | HTTPResult[spellings_basemodel_models.CountsGetResponse] | Response:
         """
         Handle GET /counts.
         """
@@ -85,7 +86,7 @@ class PetsService(Protocol):
         code: str | None,
         codes: list[spellings_basemodel_models.Code] | None,
         step: float | None,
-        raw: bytes | None,
+        raw: Base64Str | None,
         day: date | None,
         filter: spellings_basemodel_models.Query | None,
         pair: spellings_basemodel_models.Pair | None,

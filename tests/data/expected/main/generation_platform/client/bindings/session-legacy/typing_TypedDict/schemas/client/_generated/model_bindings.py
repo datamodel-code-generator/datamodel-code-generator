@@ -8,22 +8,22 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Item: Model((Field('value', 'value'),), True),
+    models.Item: Model((Field('value', 'value'),)),
 }
 
-codec_0: Final[StdlibCodec[models.Item]] = StdlibCodec(models.Item, MODELS)
+codec_0: Final[TypedDictCodec[models.Item]] = TypedDictCodec(models.Item, MODELS)
 """Codec of /paths/~1items/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Item]] = StdlibCodec(models.Item, MODELS)
+codec_1: Final[TypedDictCodec[models.Item]] = TypedDictCodec(models.Item, MODELS)
 """Codec of /paths/~1items/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.FieldInlinePostRequest]] = StdlibCodec(None, MODELS)
+codec_2: Final[TypedDictCodec[models.InlinePostRequest]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1inline/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.FieldInlinePostResponse]] = StdlibCodec(None, MODELS)
+codec_3: Final[TypedDictCodec[models.InlinePostResponse]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1inline/post response_body (response 200 application/json)."""

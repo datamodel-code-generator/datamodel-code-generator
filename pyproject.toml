@@ -35,7 +35,7 @@ dependencies = [
   "inflect>=4.1,<8",
   "isort>=4.3.21,<9; sys_platform!='emscripten'",
   "jinja2>=2.10.1,<4",
-  "pydantic>=2,<3; python_version<'3.14'",
+  "pydantic>=2,!=2.10,!=2.10.1,!=2.10.2,<3; python_version<'3.14'",
   "pydantic>=2.12,<3; python_version>='3.14'",
   "pyyaml>=6.0.1",
   "tomli>=2.2.1,<3; python_version<'3.11'",
@@ -291,6 +291,7 @@ ini_options.filterwarnings = [
   "ignore:^.*Dataclass .* has a field ordering conflict due to inheritance.*:UserWarning",
   "ignore:^.*Default formatters will change to builtin.*:FutureWarning",
   "ignore:^.*Field name `name` is duplicated on Pet.*",
+  "ignore:^.* has a required field after a field with a default.*:UserWarning",
   "ignore:^.*format of 'unknown-type' not understood for 'string' - using default.*",
   "ignore:^.*is empty or not a dict. Skipping this file.*:UserWarning",
   """\

@@ -1,0 +1,15 @@
+Feline {"kind": "cat", "name": "Tom"}: Cat
+Feline {"kind": "kitty"}: rejected
+Feline {"kind": "dog"}: Dog
+Pet {"kind": "kitty", "name": "Tom"}: Kitten
+Pet {"kind": "cat"}: rejected
+Pet {"kind": "reuse"}: rejected
+Pet {"kind": "dog"}: Dog
+Aquarium {"kind": "goldie", "fins": 2}: TypeError
+Aquarium {"kind": "reuse"}: TypeError
+Aquarium {"kind": "dog"}: TypeError
+Basket {"pet": {"kind": "kitty"}}: Basket
+Basket {"pet": {"kind": "cat"}}: rejected
+Basket {"pet": {"kind": "dog"}}: Basket
+Aviary {"kind": "bird", "wings": 2}: TypeError
+Aviary {"kind": "dog"}: TypeError

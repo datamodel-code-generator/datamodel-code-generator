@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info: {title: Form encodings 3.0, version: "1.0"}
+servers:
+  - {url: https://encodings.example.com}
+paths:
+  /parts:
+    post:
+      operationId: postParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                point: {$ref: "#/components/schemas/Point"}
+                ids: {type: array, items: {type: integer}}
+                note: {type: string}
+                tags: {type: array, items: {type: string}}
+            encoding:
+              point: {style: deepObject, explode: true, contentType: application/json}
+              ids: {style: pipeDelimited}
+              note: {explode: false, contentType: "text/plain; charset=utf-8"}
+              tags: {style: form, explode: false}
+      responses:
+        "204": {description: Done.}
+  /form:
+    post:
+      operationId: postForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: pipeDelimited}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Point:
+      type: object
+      properties:
+        x: {type: integer}
+        y: {type: integer}

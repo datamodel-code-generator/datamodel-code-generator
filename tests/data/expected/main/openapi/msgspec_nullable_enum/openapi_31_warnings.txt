@@ -1,0 +1,2 @@
+msgspec cannot decode the enum Color: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the enum Size: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.

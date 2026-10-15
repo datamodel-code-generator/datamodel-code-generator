@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Local
+  version: 1.0.0
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "served-local/parts/library.yaml#/Order"

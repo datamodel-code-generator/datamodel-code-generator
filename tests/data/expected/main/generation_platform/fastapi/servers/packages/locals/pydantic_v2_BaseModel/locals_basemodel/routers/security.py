@@ -27,6 +27,7 @@ def _add_authenticate(
     authenticate_handler_1 = checked(
         security_1.authenticate,
         'The security.authenticate method of GET /security',
+        ('principal', 'security', 'authenticate_handler'),
     )
 
     authenticate_authorize = wiring.authorizer()

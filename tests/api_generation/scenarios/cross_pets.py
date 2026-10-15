@@ -55,7 +55,7 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
 def calls(kit: Kit) -> Calls:
     """Return every operation's calls: each argument set, a typed error, a declared default, and a refused body."""
     api, models = kit.api, kit.models
-    kind = models.FieldPetsGetQueryKindParameter.cat
+    kind = models.PetsGetQueryKindParameter.cat
     since = datetime(2026, 10, 1, 12, 30, tzinfo=timezone.utc)
     request_id = UUID("12345678-1234-5678-1234-567812345678")
     return [

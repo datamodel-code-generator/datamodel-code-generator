@@ -9,58 +9,58 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldSafeGetResponse]] = PydanticCodec(models.FieldSafeGetResponse)
+codec_0: Final[PydanticCodec[models.SafeGetResponse]] = PydanticCodec(models.SafeGetResponse)
 """Codec of /paths/~1safe/get response_body (response 200 text/plain)."""
 
-codec_1: Final[PydanticCodec[models.FieldSafeGetResponse]] = PydanticCodec(models.FieldSafeGetResponse)
+codec_1: Final[PydanticCodec[models.SafeGetResponse]] = PydanticCodec(models.SafeGetResponse)
 """Codec of /paths/~1safe/get response_body (response default text/plain)."""
 
-codec_2: Final[PydanticCodec[models.FieldUnsafePostResponse]] = PydanticCodec(models.FieldUnsafePostResponse)
+codec_2: Final[PydanticCodec[models.UnsafePostResponse]] = PydanticCodec(models.UnsafePostResponse)
 """Codec of /paths/~1unsafe/post response_body (response 200 text/plain)."""
 
-codec_3: Final[PydanticCodec[models.FieldUnsafePostResponse]] = PydanticCodec(models.FieldUnsafePostResponse)
+codec_3: Final[PydanticCodec[models.UnsafePostResponse]] = PydanticCodec(models.UnsafePostResponse)
 """Codec of /paths/~1unsafe/post response_body (response default text/plain)."""
 
-codec_4: Final[PydanticCodec[models.FieldIdempotentPostResponse]] = PydanticCodec(models.FieldIdempotentPostResponse)
+codec_4: Final[PydanticCodec[models.IdempotentPostResponse]] = PydanticCodec(models.IdempotentPostResponse)
 """Codec of /paths/~1idempotent/post response_body (response 200 text/plain)."""
 
-codec_5: Final[PydanticCodec[models.FieldIdempotentPostResponse]] = PydanticCodec(models.FieldIdempotentPostResponse)
+codec_5: Final[PydanticCodec[models.IdempotentPostResponse]] = PydanticCodec(models.IdempotentPostResponse)
 """Codec of /paths/~1idempotent/post response_body (response default text/plain)."""
 
-codec_6: Final[PydanticCodec[models.FieldKeyedPostResponse]] = PydanticCodec(models.FieldKeyedPostResponse)
+codec_6: Final[PydanticCodec[models.KeyedPostResponse]] = PydanticCodec(models.KeyedPostResponse)
 """Codec of /paths/~1keyed/post response_body (response 200 text/plain)."""
 
-codec_7: Final[PydanticCodec[models.FieldKeyedPostResponse]] = PydanticCodec(models.FieldKeyedPostResponse)
+codec_7: Final[PydanticCodec[models.KeyedPostResponse]] = PydanticCodec(models.KeyedPostResponse)
 """Codec of /paths/~1keyed/post response_body (response default text/plain)."""
 
-codec_8: Final[PydanticCodec[models.FieldKeyOnlyPostResponse]] = PydanticCodec(models.FieldKeyOnlyPostResponse)
+codec_8: Final[PydanticCodec[models.KeyOnlyPostResponse]] = PydanticCodec(models.KeyOnlyPostResponse)
 """Codec of /paths/~1key-only/post response_body (response 200 text/plain)."""
 
-codec_9: Final[PydanticCodec[models.FieldKeyOnlyPostResponse]] = PydanticCodec(models.FieldKeyOnlyPostResponse)
+codec_9: Final[PydanticCodec[models.KeyOnlyPostResponse]] = PydanticCodec(models.KeyOnlyPostResponse)
 """Codec of /paths/~1key-only/post response_body (response default text/plain)."""
 
-codec_10: Final[PydanticCodec[models.FieldNeverGetResponse]] = PydanticCodec(models.FieldNeverGetResponse)
+codec_10: Final[PydanticCodec[models.NeverGetResponse]] = PydanticCodec(models.NeverGetResponse)
 """Codec of /paths/~1never/get response_body (response 200 text/plain)."""
 
-codec_11: Final[PydanticCodec[models.FieldNeverGetResponse]] = PydanticCodec(models.FieldNeverGetResponse)
+codec_11: Final[PydanticCodec[models.NeverGetResponse]] = PydanticCodec(models.NeverGetResponse)
 """Codec of /paths/~1never/get response_body (response default text/plain)."""
 
-codec_12: Final[PydanticCodec[models.FieldNeverPostResponse]] = PydanticCodec(models.FieldNeverPostResponse)
+codec_12: Final[PydanticCodec[models.NeverPostResponse]] = PydanticCodec(models.NeverPostResponse)
 """Codec of /paths/~1never/post response_body (response 200 text/plain)."""
 
-codec_13: Final[PydanticCodec[models.FieldNeverPostResponse]] = PydanticCodec(models.FieldNeverPostResponse)
+codec_13: Final[PydanticCodec[models.NeverPostResponse]] = PydanticCodec(models.NeverPostResponse)
 """Codec of /paths/~1never/post response_body (response default text/plain)."""
 
-codec_14: Final[PydanticCodec[models.FieldVendorGetResponse]] = PydanticCodec(models.FieldVendorGetResponse)
+codec_14: Final[PydanticCodec[models.VendorGetResponse]] = PydanticCodec(models.VendorGetResponse)
 """Codec of /paths/~1vendor/get response_body (response 200 text/plain)."""
 
-codec_15: Final[PydanticCodec[models.FieldVendorGetResponse]] = PydanticCodec(models.FieldVendorGetResponse)
+codec_15: Final[PydanticCodec[models.VendorGetResponse]] = PydanticCodec(models.VendorGetResponse)
 """Codec of /paths/~1vendor/get response_body (response default text/plain)."""
 
-codec_16: Final[PydanticCodec[models.FieldKeyedSafeGetResponse]] = PydanticCodec(models.FieldKeyedSafeGetResponse)
+codec_16: Final[PydanticCodec[models.KeyedSafeGetResponse]] = PydanticCodec(models.KeyedSafeGetResponse)
 """Codec of /paths/~1keyed-safe/get response_body (response 200 text/plain)."""
 
-codec_17: Final[PydanticCodec[models.FieldKeyedSafeGetResponse]] = PydanticCodec(models.FieldKeyedSafeGetResponse)
+codec_17: Final[PydanticCodec[models.KeyedSafeGetResponse]] = PydanticCodec(models.KeyedSafeGetResponse)
 """Codec of /paths/~1keyed-safe/get response_body (response default text/plain)."""

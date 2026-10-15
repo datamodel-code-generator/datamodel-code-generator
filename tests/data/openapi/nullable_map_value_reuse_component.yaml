@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value reuse component
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Base:
+      type: object
+      properties:
+        id:
+          type: integer
+    Thing:
+      type: object
+      properties:
+        attrs:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              id:
+                type: integer
+    Attrs:
+      type: object
+      properties:
+        id:
+          type: integer

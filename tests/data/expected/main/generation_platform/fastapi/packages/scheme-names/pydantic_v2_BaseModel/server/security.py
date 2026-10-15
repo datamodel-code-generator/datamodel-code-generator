@@ -3,9 +3,11 @@
 
 """Security dependencies of this package, one for each scheme; override one with app.dependency_overrides."""
 
-from fastapi.security import APIKeyHeader, APIKeyQuery, HTTPBasic
+from fastapi.security import APIKeyQuery
 
-api_key = APIKeyHeader(
+from ._runtime.server.security import ASCIIAPIKeyHeader, OptionalHTTPBasic
+
+api_key = ASCIIAPIKeyHeader(
     name='X-Key',
     scheme_name='api-key',
     auto_error=False,
@@ -19,7 +21,7 @@ api_key_1 = APIKeyQuery(
 )
 
 
-wiring = HTTPBasic(
+wiring = OptionalHTTPBasic(
     scheme_name='wiring',
     auto_error=False,
 )

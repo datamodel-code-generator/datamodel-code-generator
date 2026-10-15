@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import ast
+import warnings
 from typing import TYPE_CHECKING
 
 import black
+import msgspec
 import pytest
 
+from tests.conftest import assert_output
 from tests.main.conftest import (
+    DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPECTED_GRAPHQL_PATH,
     GRAPHQL_DATA_PATH,
     LEGACY_BLACK_SKIP,
+    _generated_model,
     assert_generated_model_json_validation,
     run_main_and_assert,
     target_pydantic_args,
@@ -82,6 +87,59 @@ def test_main_graphql_different_types_of_fields(output_file: Path) -> None:
         input_file_type="graphql",
         assert_func=assert_file_content,
         expected_file="different_types_of_fields.py",
+    )
+
+
+def test_main_graphql_msgspec_field_type_collision_list(output_file: Path) -> None:
+    """Write a type hidden by a field of its class as a quoted name inside a typing generic for Python 3.10."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "same_named_list.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file="same_named_list_msgspec_no_future_imports.py",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--disable-future-imports",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        skip_code_validation=True,
+    )
+    payload_path = DATA_PATH / "payloads" / "field_type_collision_graphql"
+    with _generated_model(output_file, "field_type_collision_graphql", "Holder") as model:
+        parsed = msgspec.json.decode((payload_path / "valid.json").read_text(encoding="utf-8"), type=model)
+        assert_output(f"{msgspec.json.encode(parsed).decode()}\n", payload_path / "runtime.txt")
+
+
+def test_main_graphql_msgspec_unions(output_file: Path) -> None:
+    """Report a GraphQL union of several msgspec Structs, which msgspec cannot decode untagged."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=GRAPHQL_DATA_PATH / "msgspec_unions.graphql",
+            output_path=output_file,
+            input_file_type="graphql",
+            assert_func=assert_file_content,
+            expected_file="msgspec_unions.py",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_GRAPHQL_PATH / "msgspec_unions_warnings.txt",
     )
 
 
@@ -163,6 +221,45 @@ def test_main_graphql_field_enum_default(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="field_default_enum.py",
         input_file_type="graphql",
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_file", "extra_args", "expected_name", "enum_name"),
+    [
+        (
+            "field-default-enum.graphql",
+            ["--output-model-type", "typing.TypedDict"],
+            "list_item_enum_typed_dict",
+            "Color",
+        ),
+        (
+            "field-default-enum.graphql",
+            ["--output-model-type", "pydantic_v2.BaseModel", "--enum-field-as-literal", "all"],
+            "list_item_enum_literal_pydantic_v2",
+            "Color",
+        ),
+        (
+            "github-api-issue-states.graphql",
+            ["--output-model-type", "typing.TypedDict"],
+            "github_api_issue_states",
+            "IssueState",
+        ),
+    ],
+)
+def test_main_graphql_collapse_root_models_keeps_list_item_enums(
+    output_file: Path, input_file: str, extra_args: list[str], expected_name: str, enum_name: str
+) -> None:
+    """Keep the enum alias that GraphQL list items name when collapsing root models."""
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="graphql",
+        assert_func=assert_file_content,
+        expected_file=f"collapse_root_models_{expected_name}.py",
+        extra_args=[*extra_args, "--collapse-root-models", "--disable-timestamp", "--formatters", "builtin"],
+        importable_module_name=f"generated_graphql_collapse_{expected_name}",
+        importable_module_attribute=enum_name,
     )
 
 

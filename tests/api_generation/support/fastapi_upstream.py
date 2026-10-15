@@ -43,6 +43,33 @@ class _Uploads:
     def upload_many(self, **_: object) -> None:
         return None
 
+    def search(self, **_: object) -> None:
+        return None
+
+    def post_pets(self, **_: object) -> None:
+        return None
+
+    def post_extras(self, **_: object) -> None:
+        return None
+
+    def post_extra_lists(self, **_: object) -> None:
+        return None
+
+    def post_extra_scores(self, **_: object) -> None:
+        return None
+
+    def post_extra_bases(self, **_: object) -> None:
+        return None
+
+    def post_extra_patterns(self, **_: object) -> None:
+        return None
+
+    def post_extra_profiles(self, **_: object) -> None:
+        return None
+
+    def post_spreads(self, **_: object) -> None:
+        return None
+
 
 def _scope(length: int) -> dict[str, Any]:
     return {
@@ -120,7 +147,7 @@ def fastapi_upstream_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     try:
         server, _ = _import(package)
         uploads = _Uploads()
-        app = server.create_app(untagged=uploads)
+        app = server.create_app(default=uploads)
         parsed = _observe(monkeypatch)
         lines = [
             f"{name}: {_outcome(app, uploads, parsed, length, scenario)}"

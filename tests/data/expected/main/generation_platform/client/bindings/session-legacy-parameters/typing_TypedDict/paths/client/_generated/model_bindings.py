@@ -8,25 +8,25 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Item: Model((Field('x', 'x'),), True),
+    models.Item: Model((Field('x', 'x'),)),
 }
 
-codec_0: Final[StdlibCodec[models.FieldXGetQueryQParameter]] = StdlibCodec(None, MODELS)
+codec_0: Final[TypedDictCodec[models.XGetQueryQParameter]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1x/get parameter (request query q)."""
 
-codec_1: Final[StdlibCodec[models.FieldXGetQueryOptionalParameter]] = StdlibCodec(None, MODELS)
+codec_1: Final[TypedDictCodec[models.XGetQueryOptionalParameter]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1x/get parameter (request query optional)."""
 
-codec_2: Final[StdlibCodec[models.FieldXGetQueryFilterParameter]] = StdlibCodec(None, MODELS)
+codec_2: Final[TypedDictCodec[models.XGetQueryFilterParameter]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1x/get parameter (request query filter application/json)."""
 
-codec_3: Final[StdlibCodec[models.LimitParameter]] = StdlibCodec(None, MODELS)
+codec_3: Final[TypedDictCodec[models.LimitParameter]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1x/get parameter (request query limit)."""
 
-codec_4: Final[StdlibCodec[models.Item]] = StdlibCodec(models.Item, MODELS)
+codec_4: Final[TypedDictCodec[models.Item]] = TypedDictCodec(models.Item, MODELS)
 """Codec of /paths/~1x/get response_body (response 200 application/json)."""

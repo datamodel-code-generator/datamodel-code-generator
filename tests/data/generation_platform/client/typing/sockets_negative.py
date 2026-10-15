@@ -5,14 +5,14 @@ from __future__ import annotations
 from pets import AsyncClient, Client
 from pets.options import RequestOptions
 from pets.protocols import Message, WebSocketSession
-from pets_models import ClientMessage, FieldRoomsRoomSocketGetPathRoomParameter, ServerMessage
+from pets_models import ClientMessage, RoomsRoomSocketGetPathRoomParameter, ServerMessage
 
 
 async def wrong_sockets(
     client: Client,
     async_client: AsyncClient,
     message: Message[ServerMessage],
-    room: FieldRoomsRoomSocketGetPathRoomParameter,
+    room: RoomsRoomSocketGetPathRoomParameter,
 ) -> None:
     """Reject each misuse of a helper, its session, or its messages."""
     await async_client.protocols.rooms.chat.connect(room=room)  # error

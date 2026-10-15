@@ -23,29 +23,29 @@ class Secret(BaseModel):
     token: str
 
 
-class FieldCreatedPostResponse(RootModel[str]):
+class CreatedPostResponse(RootModel[str]):
     root: str
 
 
-class FieldCreatedPostResponse201LocationHeader(RootModel[str]):
+class CreatedPostResponse201LocationHeader(RootModel[str]):
     root: str
 
 
-class FieldCreatedPostResponse201XRateHeader(RootModel[conint(ge=0)]):
+class CreatedPostResponse201XRateHeader(RootModel[conint(ge=0)]):
     root: conint(ge=0)
 
 
-class FieldCreatedPostResponse201XNoteHeader(RootModel[str]):
+class CreatedPostResponse201XNoteHeader(RootModel[str]):
     root: str
 
 
-class FieldRangesGetResponse(RootModel[str]):
+class RangesGetResponse(RootModel[str]):
     root: str
 
 
-class FieldDownloadGetResponse(RootModel[str]):
+class DownloadGetResponse(RootModel[str]):
     root: str
 
 
-class FieldDownloadGetResponse303LocationHeader(RootModel[str]):
+class DownloadGetResponse303LocationHeader(RootModel[str]):
     root: str

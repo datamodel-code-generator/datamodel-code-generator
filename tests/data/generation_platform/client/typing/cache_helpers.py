@@ -19,7 +19,7 @@ from pets.types.users import (
     GetUserResponse,
     ListUsersResponse,
 )
-from pets_models import FieldSecureUsersUserIdGetPathUserIdParameter, FieldUsersUserIdGetPathUserIdParameter
+from pets_models import SecureUsersUserIdGetPathUserIdParameter, UsersUserIdGetPathUserIdParameter
 from typing_extensions import Literal, assert_type
 
 
@@ -37,8 +37,8 @@ def stores() -> tuple[CacheStore, AsyncCacheStore]:
 def fetch(
     client: Client,
     entry: CacheEntry,
-    three: FieldUsersUserIdGetPathUserIdParameter,
-    one: FieldSecureUsersUserIdGetPathUserIdParameter,
+    three: UsersUserIdGetPathUserIdParameter,
+    one: SecureUsersUserIdGetPathUserIdParameter,
 ) -> None:
     """Fetch typed results and read their metadata."""
     helper = client.protocols.users.profile
@@ -56,7 +56,7 @@ def fetch(
     del wider
 
 
-async def afetch(client: AsyncClient, three: FieldUsersUserIdGetPathUserIdParameter) -> None:
+async def afetch(client: AsyncClient, three: UsersUserIdGetPathUserIdParameter) -> None:
     """Await the asyncio helpers, keeping the same result types."""
     helper = client.protocols.users.profile
     assert_type(await helper.fetch(userId=three), CacheResult[GetUserResponse])

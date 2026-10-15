@@ -23,7 +23,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"},
     "abort": {
@@ -60,7 +59,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -88,7 +86,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -116,7 +113,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -144,7 +140,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -172,7 +167,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -200,7 +194,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -228,7 +221,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -256,7 +248,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -278,7 +269,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -306,7 +296,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -335,7 +324,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -364,7 +352,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -393,7 +380,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -421,7 +407,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -449,7 +434,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -477,7 +461,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -505,7 +488,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -533,7 +515,6 @@
       ],
       "offset": {"in": "path", "name": "fileId"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -562,7 +543,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -591,7 +571,6 @@
       "offset": {"in": "header", "name": "Upload-Offset"},
       "length": {"in": "header", "name": "upload-offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -620,7 +599,6 @@
       "offset": {"in": "cookie", "name": "session"},
       "length": {"in": "body", "pointer": ""}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -649,7 +627,6 @@
       "offset": {"in": "header", "name": "X-Note"},
       "length": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -678,7 +655,6 @@
       "offset": {"in": "header", "name": "Upload-Offset"},
       "checksum": {"target": {"in": "header", "name": "upload-offset"}, "algorithm": "md5"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -707,7 +683,6 @@
       "offset": {"in": "header", "name": "Upload-Offset"},
       "checksum": {"target": {"in": "cookie", "name": "session"}, "algorithm": "md5"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -736,7 +711,6 @@
       "offset": {"in": "header", "name": "Upload-Offset"},
       "checksum": {"target": {"in": "header", "name": "X-Count"}, "algorithm": "md5"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -765,7 +739,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -793,7 +766,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {
       "kind": "operation",
@@ -831,7 +803,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {
       "kind": "operation",
@@ -870,7 +841,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {
       "kind": "operation",
@@ -909,7 +879,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {
       "kind": "operation",

@@ -1,4 +1,4 @@
-"""Render acquired native codec types and thin stdlib field maps for one client package."""
+"""Render the codecs of one client package's model backend, with thin field maps for a stdlib backend."""
 
 from __future__ import annotations
 
@@ -6,7 +6,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client._compiled_templates import model_bindings as model_bindings_template
-from datamodel_code_generator._client.codec_plan import Choice, Class, Fixed, Items, Values
+from datamodel_code_generator._client.codec_plan import (
+    CODEC_RUNTIMES,
+    EXTRAS,
+    EXTRAS_MODULE,
+    Choice,
+    Class,
+    Fixed,
+    Items,
+    Values,
+)
 from datamodel_code_generator._client.facade import statement
 from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_module import TargetModule
@@ -14,17 +23,11 @@ from datamodel_code_generator._target_render import call, display
 from datamodel_code_generator._target_templates import templated
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._client.codec_plan import ClientCodecs, CodecKind, Shape
+    from datamodel_code_generator._client.codec_plan import ClientCodecs, Shape
     from datamodel_code_generator._target_contract import TypeUseId
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Templated
 
-_CODECS: Final[dict[CodecKind, str]] = {
-    "pydantic": "PydanticCodec",
-    "pydantic_dataclass": "PydanticDataclassCodec",
-    "msgspec": "MsgspecCodec",
-    "stdlib": "StdlibCodec",
-}
 _NAMES: Final = (
     "Class",
     "Items",
@@ -34,7 +37,8 @@ _NAMES: Final = (
     "Field",
     "Model",
     "MODELS",
-    *_CODECS.values(),
+    EXTRAS,
+    *(runtime.codec for runtime in CODEC_RUNTIMES.values()),
 )
 
 
@@ -82,10 +86,10 @@ class _Renderer:
     def __init__(self, plan: ClientCodecs, types: TypeNames) -> None:
         self.plan = plan
         self.module = TargetModule(types, (*_NAMES, *(f"codec_{index}" for index in range(len(plan.uses)))), level=1)
-        self.stdlib: set[str] = set()
+        self.records: set[str] = set()
 
     def call(self, name: str, *values: str, **keywords: str) -> str:
-        self.stdlib.add(name)
+        self.records.add(name)
         return call(name, (*values, *(f"{key}={item}" for key, item in keywords.items())))
 
     def shape(self, shape: Shape) -> str:
@@ -104,12 +108,9 @@ class _Renderer:
         return "None"
 
     def render(self) -> RenderedBindings:
-        codecs = sorted({_CODECS[use.kind] for use in self.plan.uses if use.kind != "stdlib"})
+        runtime = self.plan.runtime
         models: list[ModelEntry] = []
-        annotation = ""
-        if any(use.kind == "stdlib" for use in self.plan.uses):
-            self.stdlib.add("StdlibCodec")
-            self.stdlib.add("Model")
+        if runtime.mapped and self.plan.uses:
             for model in self.plan.models:
                 name = self.module.symbol(model.symbol)
                 fields = display(
@@ -122,28 +123,28 @@ class _Renderer:
                     )
                     for field in model.fields
                 )
-                models.append(ModelEntry(name, self.call("Model", fields, *(("True",) if model.keyed else ()))))
-            annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]"
+                models.append(ModelEntry(name, self.call("Model", fields)))
+        annotation = f"{self.module.name('typing', 'Final')}[dict[type, Model]]" if models else ""
+        registry = "MODELS" if models else "{}"
         accessors = []
         entries = []
         for index, use in enumerate(self.plan.uses):
-            codec = _CODECS[use.kind]
+            codec = runtime.codec
             static = self.module.hint(use.type)
             arguments = (
-                (self.shape(use.shape), "MODELS")
-                if use.kind == "stdlib"
-                else (self.module.hint(use.type, static=False),)
+                (self.shape(use.shape), registry) if runtime.mapped else (self.module.hint(use.type, static=False),)
             )
+            if use.extras:
+                arguments = (*arguments, EXTRAS)
             final = self.module.name("typing", "Final")
             entries.append(
                 Codec(f"codec_{index}", f"{final}[{codec}[{static}]]", call(codec, arguments), _description(use.use))
             )
             accessors.append(UseAccessors(use.use, f"codec_{index}"))
-        imports = [
-            statement(f".._runtime.model_codecs.{module}", names)
-            for module, names in (("native", codecs), ("stdlib", sorted(self.stdlib)))
-            if names
-        ]
+        names = sorted({runtime.codec, *self.records})
+        imports = [statement(f".._runtime.model_codecs.{runtime.module}", names)] if self.plan.uses else []
+        if self.plan.extras:
+            imports.append(statement(f".._runtime.model_codecs.{EXTRAS_MODULE}", [EXTRAS]))
         source = templated(
             "model_bindings.jinja2",
             model_bindings_template.render,

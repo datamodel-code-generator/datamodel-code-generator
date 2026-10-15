@@ -13,26 +13,26 @@ class Login(BaseModel):
     secret: constr(min_length=8)
 
 
-FieldAccountsIdPostPathIdParameter = TypeAliasType(
-    "FieldAccountsIdPostPathIdParameter", Annotated[int, Field(ge=1)]
+AccountsIdPostPathIdParameter = TypeAliasType(
+    "AccountsIdPostPathIdParameter", Annotated[int, Field(ge=1)]
 )
 
 
-FieldAccountsIdPostQueryLimitParameter = TypeAliasType(
-    "FieldAccountsIdPostQueryLimitParameter", Annotated[int, Field(le=10)]
+AccountsIdPostQueryLimitParameter = TypeAliasType(
+    "AccountsIdPostQueryLimitParameter", Annotated[int, Field(le=10)]
 )
 
 
-FieldAccountsIdPostHeaderXTokenParameter = TypeAliasType(
-    "FieldAccountsIdPostHeaderXTokenParameter", Annotated[str, Field(min_length=8)]
+AccountsIdPostHeaderXTokenParameter = TypeAliasType(
+    "AccountsIdPostHeaderXTokenParameter", Annotated[str, Field(min_length=8)]
 )
 
 
-FieldAccountsIdPostCookieSessionParameter = TypeAliasType(
-    "FieldAccountsIdPostCookieSessionParameter", Annotated[str, Field(min_length=8)]
+AccountsIdPostCookieSessionParameter = TypeAliasType(
+    "AccountsIdPostCookieSessionParameter", Annotated[str, Field(min_length=8)]
 )
 
 
-FieldCodesGetQueryCodesParameter = TypeAliasType(
-    "FieldCodesGetQueryCodesParameter", list[Annotated[str, Field(min_length=8)]]
+CodesGetQueryCodesParameter = TypeAliasType(
+    "CodesGetQueryCodesParameter", list[Annotated[str, Field(min_length=8)]]
 )

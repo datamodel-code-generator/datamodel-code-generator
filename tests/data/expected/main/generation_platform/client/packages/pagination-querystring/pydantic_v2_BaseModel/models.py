@@ -6,23 +6,23 @@ from __future__ import annotations
 from pydantic import BaseModel, RootModel
 
 
-class FieldSearchGetQuerystringCriteriaParameter(BaseModel):
+class SearchGetQuerystringCriteriaParameter(BaseModel):
     term: str | None = None
     page: int | None = None
 
 
-class FieldSearchGetResponse(RootModel[list[str]]):
+class SearchGetResponse(RootModel[list[str]]):
     root: list[str]
 
 
-class FieldSearchGetResponse200XNextHeader(RootModel[str]):
+class SearchGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-class FieldLookupGetQuerystringFilterParameter(BaseModel):
+class LookupGetQuerystringFilterParameter(BaseModel):
     term: str | None = None
     page: int | None = None
 
 
-class FieldLookupGetResponse(RootModel[list[str]]):
+class LookupGetResponse(RootModel[list[str]]):
     root: list[str]

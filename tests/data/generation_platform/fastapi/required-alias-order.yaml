@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info: {title: Required alias order, version: "1.0"}
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "200":
+          description: The created pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [plain, first-name, count]
+      properties:
+        plain: {type: string}
+        nick: {type: string, default: x}
+        first-name: {type: string}
+        opt-alias: {type: string}
+        count: {type: integer, minimum: 1, description: Number of pets.}

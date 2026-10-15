@@ -31,4 +31,4 @@ class NumberConstraintsOnNonNumbers(Struct):
     number_minimum: Annotated[float, Meta(ge=5.0)] | UnsetType = UNSET
     integer_maximum: Annotated[int, Meta(le=10)] | UnsetType = UNSET
     string_or_number_minimum: str | StringOrNumberMinimumNumber | UnsetType = UNSET
-    untyped_minimum: Annotated[Any, Meta(ge=5)] | UnsetType = UNSET
+    untyped_minimum: Any | UnsetType = UNSET

@@ -29,8 +29,6 @@ QUICK_START_TARGET_PYTHON_VERSION = "3.12"
 PRESET_VERSION_DATE_LENGTH = 8
 QUICK_START_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED PRESET QUICK START -->"
 QUICK_START_END_MARKER = "<!-- END AUTO-GENERATED PRESET QUICK START -->"
-FASTAPI_QUICK_START_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED FASTAPI QUICK START -->"
-FASTAPI_QUICK_START_END_MARKER = "<!-- END AUTO-GENERATED FASTAPI QUICK START -->"
 FASTAPI_PYTHON_API_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED FASTAPI PYTHON API -->"
 FASTAPI_PYTHON_API_END_MARKER = "<!-- END AUTO-GENERATED FASTAPI PYTHON API -->"
 README_SUPPORTED_INPUT_BEGIN_MARKER = "<!-- BEGIN AUTO-GENERATED README SUPPORTED INPUT -->"
@@ -205,12 +203,7 @@ def _generate_docs(preset_names_doc: GeneratedDoc) -> tuple[GeneratedDoc, ...]:
         GeneratedDoc(
             DOCS_FASTAPI_SERVER_PATH,
             _replace_marked_section(
-                _replace_marked_section(
-                    DOCS_FASTAPI_SERVER_PATH.read_text(encoding="utf-8"),
-                    FASTAPI_QUICK_START_BEGIN_MARKER,
-                    FASTAPI_QUICK_START_END_MARKER,
-                    _render_fastapi_quick_start(standard_preset_name),
-                ),
+                DOCS_FASTAPI_SERVER_PATH.read_text(encoding="utf-8"),
                 FASTAPI_PYTHON_API_BEGIN_MARKER,
                 FASTAPI_PYTHON_API_END_MARKER,
                 _render_fastapi_python_api(standard_preset_name),
@@ -261,6 +254,10 @@ PRESET_NAMES: Final[tuple[PresetName, ...]] = {names_literal}
 
 
 def _replace_marked_section(markdown_text: str, begin_marker: str, end_marker: str, generated: str) -> str:
+    """Replace the text between two markers, indenting it, and the end marker, as the begin marker's line is.
+
+    A begin marker inside a content tab or an admonition keeps its generated block in that container.
+    """
     if (start := markdown_text.find(begin_marker)) == -1:
         msg = f"Could not find generated section begin marker: {begin_marker}"
         raise ValueError(msg)
@@ -268,7 +265,10 @@ def _replace_marked_section(markdown_text: str, begin_marker: str, end_marker: s
     if (end := markdown_text.find(end_marker, content_start)) == -1:
         msg = f"Could not find generated section end marker after {begin_marker}: {end_marker}"
         raise ValueError(msg)
-    return markdown_text[:content_start] + "\n" + generated.rstrip() + "\n" + markdown_text[end:]
+    line_prefix = markdown_text[markdown_text.rfind("\n", 0, start) + 1 : start]
+    indent = line_prefix if line_prefix.isspace() else ""
+    body = "\n".join(f"{indent}{line}" if line else "" for line in generated.rstrip().splitlines())
+    return f"{markdown_text[:content_start]}\n{body}\n{indent}{markdown_text[end:]}"
 
 
 def _render_readme_supported_input() -> str:
@@ -336,25 +336,6 @@ def _render_shell_command(command: tuple[str, ...]) -> str:
     return "\n".join(lines)
 
 
-def _render_fastapi_quick_start(preset_name: str) -> str:
-    return f"""```bash
-datamodel-codegen \\
-  --input openapi.yaml \\
-  --input-file-type openapi \\
-  --openapi-scopes schemas api \\
-  --output-model-type pydantic_v2.BaseModel \\
-  --preset {preset_name} \\
-  --output models.py \\
-  --generate-server fastapi \\
-  --server-output server \\
-  --server-package server \\
-  --server-model-package models
-```
-
-The preset supplies the model options, as in the model [quick start](getting-started.md).
-"""
-
-
 def _render_fastapi_python_api(preset_name: str) -> str:
     return f"""```python
 from pathlib import Path
@@ -367,11 +348,11 @@ generate(
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
     preset="{preset_name}",
-    output=Path("models.py"),
+    output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
-    server_output=Path("server"),
-    server_package="server",
-    server_model_package="models",
+    server_output=Path("app/server"),
+    server_package="app.server",
+    server_model_package="app.models",
 )
 ```
 """

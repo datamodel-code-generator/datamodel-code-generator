@@ -1,0 +1,29 @@
+# forms-by-name
+serve pydantic_v2.BaseModel
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, post_spreads, search, upload, upload_many
+service DefaultService without its methods: TypeError
+> POST /extras
+  post_extras(ExtrasPostRequest(name=None, max_age=3, first={'color': 'blue', 'min_age': None}))
+< 204 - b''
+> POST /extras
+  post_extras(ExtrasPostRequest(name=None, max_age=3, first={'color': 'blue', 'min_age': None}))
+< 204 - b''
+> POST /extras
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "max_age"]}]
+> POST /extra-scores
+  post_extra_scores(ExtraScoresPostRequest(name=None, maxAge=[1], max_age=[2]))
+< 204 - b''
+serve pydantic_v2.dataclass
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, post_spreads, search, upload, upload_many
+service DefaultService without its methods: TypeError
+> POST /extras
+  post_extras(ExtrasPostRequest(name=MISSING, max_age=3, first=Filter(color='blue', min_age=MISSING)))
+< 204 - b''
+> POST /extras
+  post_extras(ExtrasPostRequest(name=MISSING, max_age=3, first=Filter(color='blue', min_age=MISSING)))
+< 204 - b''
+> POST /extras
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "max_age"]}]
+> POST /extra-scores
+  post_extra_scores(ExtraScoresPostRequest(name=MISSING, maxAge=[1], max_age=[2]))
+< 204 - b''

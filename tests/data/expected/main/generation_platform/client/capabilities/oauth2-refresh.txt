@@ -1,6 +1,8 @@
 # oauth2-refresh
 backend pydantic_v2.BaseModel
-dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.13.5
+dependencies httpx2>=2.13.0 typing-extensions>=4.16 pydantic>=2.14.0
+imports of the dependencies httpx2 pydantic typing_extensions
+other third-party imports anyio pydantic_core
 copied runtime
   __init__.py
   client/__init__.py
@@ -25,15 +27,15 @@ copied runtime
   model_codecs/__init__.py
   model_codecs/errors.py
   model_codecs/media.py
-  model_codecs/native.py
   model_codecs/parameters.py
+  model_codecs/pydantic_adapters.py
+  model_codecs/pydantic_models.py
   model_codecs/unset.py
-total 26 modules
+total 27 modules
 public files
   publication_client/__init__.py
   publication_client/auth.py
   publication_client/errors.py
-  publication_client/model_codecs.py
   publication_client/options.py
   publication_client/resources/__init__.py
   publication_client/resources/pets/__init__.py

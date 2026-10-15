@@ -15,47 +15,58 @@ class Problem(BaseModel):
     title: str
 
 
-FieldResultsGetQueryCaseParameter = TypeAliasType("FieldResultsGetQueryCaseParameter", str)
+ResultsGetQueryCaseParameter = TypeAliasType("ResultsGetQueryCaseParameter", str)
 
 
-class FieldResultsGetResponse(RootModel[str]):
+class ResultsGetResponse(RootModel[str]):
     root: str
 
 
-class FieldResultsGetResponse200XRateHeader(RootModel[conint(ge=0)]):
+class ResultsGetResponse200XRateHeader(RootModel[conint(ge=0)]):
     root: conint(ge=0)
 
 
-class FieldResultsGetResponse201LocationHeader(RootModel[str]):
+class ResultsGetResponse201LocationHeader(RootModel[str]):
     root: str
 
 
-FieldPlainGetQueryCaseParameter = TypeAliasType("FieldPlainGetQueryCaseParameter", str)
+PlainGetQueryCaseParameter = TypeAliasType("PlainGetQueryCaseParameter", str)
 
 
-class FieldPlainGetResponse(RootModel[constr(max_length=3)]):
+class PlainGetResponse(RootModel[constr(max_length=3)]):
     root: constr(max_length=3)
 
 
-FieldLatinGetQueryCaseParameter = TypeAliasType("FieldLatinGetQueryCaseParameter", str)
+LatinGetQueryCaseParameter = TypeAliasType("LatinGetQueryCaseParameter", str)
 
 
-class FieldLatinGetResponse(RootModel[str]):
+class LatinGetResponse(RootModel[str]):
     root: str
 
 
-FieldNothingGetQueryCaseParameter = TypeAliasType("FieldNothingGetQueryCaseParameter", str)
+NothingGetQueryCaseParameter = TypeAliasType("NothingGetQueryCaseParameter", str)
 
 
-class FieldNothingGetResponse(BaseModel):
+class NothingGetResponse(BaseModel):
     pass
 
 
-FieldBlobGetQueryCaseParameter = TypeAliasType("FieldBlobGetQueryCaseParameter", str)
+BlobGetQueryCaseParameter = TypeAliasType("BlobGetQueryCaseParameter", str)
 
 
-class FieldBlobGetResponse(RootModel[bytes]):
+class BlobGetResponse(RootModel[bytes]):
     root: bytes
 
 
-FieldEmptyPostQueryCaseParameter = TypeAliasType("FieldEmptyPostQueryCaseParameter", str)
+EmptyPostQueryCaseParameter = TypeAliasType("EmptyPostQueryCaseParameter", str)
+
+
+TextsGetQueryCaseParameter = TypeAliasType("TextsGetQueryCaseParameter", str)
+
+
+class TextsGetResponse(RootModel[constr(max_length=5) | None]):
+    root: constr(max_length=5) | None
+
+
+class TextsGetResponse200XRateHeader(RootModel[int]):
+    root: int

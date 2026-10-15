@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Nullable",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "object",
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/leaf"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "leaf": {
+      "type": "object",
+      "properties": {
+        "Bar": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Bar"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Bar": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

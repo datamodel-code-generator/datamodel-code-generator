@@ -8,11 +8,11 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldExternalPostRequestItem]] = PydanticCodec(models.FieldExternalPostRequestItem)
+codec_0: Final[PydanticCodec[models.ExternalPostRequestItem]] = PydanticCodec(models.ExternalPostRequestItem)
 """Codec of /paths/~1external/post request_body (request application/json)."""
 
-codec_1: Final[PydanticCodec[models.FieldExternalPostResponseItem]] = PydanticCodec(models.FieldExternalPostResponseItem)
+codec_1: Final[PydanticCodec[models.ExternalPostResponseItem]] = PydanticCodec(models.ExternalPostResponseItem)
 """Codec of /paths/~1external/post response_body (response 200 application/json)."""

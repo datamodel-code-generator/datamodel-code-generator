@@ -1,0 +1,16 @@
+openapi: 3.0.3
+info: {title: T, version: "1.0"}
+paths: {}
+components:
+  schemas:
+    PerPage: {type: integer, minimum: 1, maximum: 100, description: Page size.}
+    Annotated:
+      type: object
+      properties:
+        id: {type: integer}
+    Update:
+      type: object
+      properties:
+        annotateds:
+          type: array
+          items: {type: object, properties: {value: {type: string}}}

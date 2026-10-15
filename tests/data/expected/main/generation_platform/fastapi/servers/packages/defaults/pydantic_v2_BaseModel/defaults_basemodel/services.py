@@ -14,8 +14,8 @@ from fastapi.responses import Response
 from ._runtime.server.responses import HTTPResult
 
 
-class UntaggedService(Protocol):
-    """Implement the untagged operations: subclass this Protocol, or give an object its methods."""
+class DefaultService(Protocol):
+    """Implement the default operations: subclass this Protocol, or give an object its methods."""
 
     @abstractmethod
     def get_values(
@@ -28,13 +28,13 @@ class UntaggedService(Protocol):
         words: list[str],
         X_Level: int,
         tags: defaults_basemodel_models.Tags,
-        labels: defaults_basemodel_models.FieldValuesGetQueryLabelsParameter,
-        rows: defaults_basemodel_models.FieldValuesGetQueryRowsParameter | None,
+        labels: defaults_basemodel_models.ValuesGetQueryLabelsParameter,
+        rows: defaults_basemodel_models.ValuesGetQueryRowsParameter | None,
         marks: defaults_basemodel_models.Tags,
         notes: defaults_basemodel_models.Notes,
-        extras: defaults_basemodel_models.FieldValuesGetQueryExtrasParameter | None,
+        extras: defaults_basemodel_models.ValuesGetQueryExtrasParameter | None,
         color: defaults_basemodel_models.Color,
-        tone: defaults_basemodel_models.FieldValuesGetQueryToneParameter,
+        tone: defaults_basemodel_models.ValuesGetQueryToneParameter,
         shade: defaults_basemodel_models.Shade,
         colors: list[defaults_basemodel_models.Color],
         sized: int | None,

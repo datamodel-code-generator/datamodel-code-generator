@@ -2,7 +2,7 @@ mypy pets and adapter_helpers.py: clean
 pyright pets and adapter_helpers.py: clean
 ty pets and adapter_helpers.py: clean
 adapter_helpers_negative.py 10 marked lines
-mypy adapter_helpers_negative.py: 9/10 marked lines with one error, 0 elsewhere, 0 in other files
+mypy adapter_helpers_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
   56 misc
   57 misc
   58 misc
@@ -11,7 +11,6 @@ mypy adapter_helpers_negative.py: 9/10 marked lines with one error, 0 elsewhere,
   61 arg-type
   62 arg-type
   63 attr-defined
-  64 arg-type
   64 call-arg
   65 arg-type
 pyright adapter_helpers_negative.py: 9/10 marked lines with one error, 0 elsewhere, 0 in other files

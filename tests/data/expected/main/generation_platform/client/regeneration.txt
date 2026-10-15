@@ -1,15 +1,14 @@
 # generate v1
   file api.yaml
+  file pets/README.md
   file pets/__init__.py
   file pets/_async_client.py
   file pets/_client.py
   file pets/_generated/__init__.py
   file pets/_generated/model_bindings.py
-  file pets/_generated_docs/README.md
   file pets/_generated_docs/runtime.md
   file pets/_operations.py
   file pets/errors.py
-  file pets/model_codecs.py
   file pets/options.py
   file pets/py.typed
   file pets/resources/__init__.py
@@ -26,21 +25,20 @@
   file pets/types/pets/__init__.py
   file pets/types/pets/_operations.py
   file pets_models.py
-  runtime files 23
+  runtime files 24
 # add pets/extensions.py, edit pets/_client.py, and write pets/resources/orders/__init__.py
 # generate v2
   file api.yaml
+  file pets/README.md
   file pets/__init__.py
   file pets/_async_client.py
   file pets/_client.py
   file pets/_generated/__init__.py
   file pets/_generated/model_bindings.py
-  file pets/_generated_docs/README.md
   file pets/_generated_docs/runtime.md
   file pets/_operations.py
   file pets/errors.py
   file pets/extensions.py
-  file pets/model_codecs.py
   file pets/options.py
   file pets/py.typed
   file pets/resources/__init__.py
@@ -62,7 +60,8 @@
   file pets/types/pets/__init__.py
   file pets/types/pets/_operations.py
   file pets_models.py
-  runtime files 23
+  runtime files 24
+  LeftoverFilesWarning: <root>/pets: These Python files are not generated and are left in place: <root>/pets/extensions.py, <root>/pets/resources/archive/__init__.py, <root>/pets/resources/archive/_async.py, <root>/pets/resources/archive/_sync.py, <root>/pets/types/archive/__init__.py, <root>/pets/types/archive/_operations.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.
   pets/extensions.py unchanged True
   pets/_client.py still edited False
   pets/resources/orders/__init__.py still foreign False

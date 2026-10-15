@@ -70,6 +70,7 @@ class FastAPITarget:
         _check_links(plan, request)
         source = SourceDocument(request.lease)
         document = source.text(spec.contract for spec in plan.operations)
+        dependencies = _dependencies(plan, request.model_imports)
         renderer = ServerRenderer(
             config=config,
             backend=_BACKENDS[request.model_config.output_model_type],
@@ -81,12 +82,18 @@ class FastAPITarget:
             document=document,
             use_schema_description=request.model_config.use_schema_description,
             use_single_line_docstring=request.model_config.use_single_line_docstring,
+            dependencies=dependencies,
         )
         files = renderer.files()
         for problem in source.problems:
             output = shown(config.output, request.shown_root).as_posix()
             warnings.warn(f"{output}: {problem}", DocumentationAnnotationWarning, stacklevel=2)
-        return TargetRender(files=files, dependencies=_dependencies(plan, request.model_imports))
+        return TargetRender(
+            files=files,
+            dependencies=dependencies,
+            implementations=renderer.implementations(),
+            next_steps=renderer.next_steps(),
+        )
 
 
 def _check_links(plan: ServerPlan, request: TargetRequest) -> None:

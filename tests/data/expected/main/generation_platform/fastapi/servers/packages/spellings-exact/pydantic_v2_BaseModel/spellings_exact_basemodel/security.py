@@ -3,15 +3,15 @@
 
 """Security dependencies of this package, one for each scheme; override one with app.dependency_overrides."""
 
-from fastapi.security import HTTPBasic, HTTPBearer
+from ._runtime.server.security import ASCIIHTTPBearer, OptionalHTTPBasic
 
-bearer = HTTPBearer(
+bearer = ASCIIHTTPBearer(
     scheme_name='bearer',
     auto_error=False,
 )
 
 
-basic = HTTPBasic(
+basic = OptionalHTTPBasic(
     scheme_name='basic',
     auto_error=False,
 )

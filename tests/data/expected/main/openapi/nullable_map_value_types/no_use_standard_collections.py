@@ -64,8 +64,8 @@ class Board(BaseModel):
     fixed: Dict[str, int] = None
 
 
-FieldScoresGetQueryPlayersParameter = TypeAliasType("FieldScoresGetQueryPlayersParameter", Dict[str, Player] | None)
+ScoresGetQueryPlayersParameter = TypeAliasType("ScoresGetQueryPlayersParameter", Dict[str, Player] | None)
 
 
-class FieldScoresPostRequest(RootModel[Dict[str, int] | None]):
+class ScoresPostRequest(RootModel[Dict[str, int] | None]):
     root: Dict[str, int] | None

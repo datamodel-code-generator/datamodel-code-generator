@@ -3,27 +3,113 @@
 
 from __future__ import annotations
 
+from typing import Annotated, Literal
+
+from pydantic import MISSING, ConfigDict, Field, conint
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
 
+@dataclass(config=ConfigDict(extra='allow'))
+class Others:
+    base: str | MISSING = MISSING
+
+
 @dataclass
-class FieldFormsPostRequest:
+class Filter:
+    color: str | MISSING = MISSING
+    minAge: conint(ge=0) | MISSING = MISSING
+
+
+@dataclass
+class Cat:
+    kind: Literal['cat']
+    meows: int | MISSING = MISSING
+
+
+@dataclass
+class Dog:
+    kind: Literal['dog']
+    barks: int | MISSING = MISSING
+
+
+@dataclass
+class FormsPostRequest:
     name: str
     count: int | None = 1
-    tags: list[str] | None = None
+    tags: list[str] | MISSING = MISSING
 
 
-FieldNotesPostRequest = TypeAliasType("FieldNotesPostRequest", dict[str, str])
+NotesPostRequest = TypeAliasType("NotesPostRequest", dict[str, str])
 
 
 @dataclass
-class FieldUploadsPostRequest:
+class UploadsPostRequest:
     file: bytes
-    note: str | None = None
+    note: str | MISSING = MISSING
 
 
 @dataclass
-class FieldBatchesPostRequest:
+class BatchesPostRequest:
     files: list[bytes]
-    label: str | None = None
+    label: str | MISSING = MISSING
+
+
+@dataclass
+class SearchesPostRequest:
+    filter: Filter
+    filters: list[Filter] | MISSING = MISSING
+    tags: list[str] | MISSING = MISSING
+    file: bytes | MISSING = MISSING
+
+
+Pets = TypeAliasType("Pets", Annotated[Cat | Dog, Field(..., discriminator='kind')])
+
+
+@dataclass
+class PetsPostRequest:
+    pet: Cat | Dog = Field(..., discriminator='kind')
+    pets: list[Pets] | MISSING = MISSING
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class ExtrasPostRequest:
+    name: str | MISSING = MISSING
+    maxAge: int | MISSING = MISSING
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class ExtraListsPostRequest:
+    name: str | MISSING = MISSING
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class ExtraScoresPostRequest:
+    name: str | MISSING = MISSING
+
+
+@dataclass
+class ExtraBasesPostRequest(Others):
+    name: str | MISSING = MISSING
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class ExtraPatternsPostRequest:
+    name: str | MISSING = MISSING
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class ExtraProfilesPostRequest:
+    name: str | MISSING = MISSING
+
+
+@dataclass(config=ConfigDict(extra='allow'))
+class ExtraProfilesPostRequest1:
+    count: int | MISSING = MISSING
+
+
+@dataclass
+class SpreadsPostRequest:
+    filter: Filter
+    ids: list[int] | MISSING = MISSING
+    meta: Filter | MISSING = MISSING

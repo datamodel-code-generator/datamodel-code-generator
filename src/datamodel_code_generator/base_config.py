@@ -56,6 +56,8 @@ from datamodel_code_generator.enums import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Set as AbstractSet
+
     from datamodel_code_generator._source import DirectoryInputFilter
     from datamodel_code_generator.preset_names import PresetName as PresetNameValue
 else:
@@ -96,10 +98,11 @@ def _selected_target(config: Any) -> tuple[str, str] | None:
     return next((item for item in _TARGET_SELECTORS if getattr(config, item[0]) is not None), None)
 
 
-def _missing_target_options(config: Any, *, output: bool = True) -> str | None:
-    """Return why the target a config selects cannot run without the options it requires, or None when it can.
+def _target_options_error(config: Any, *, output: bool = True) -> str | None:
+    """Return why the target a config selects cannot run with its options, or None when it can.
 
-    Without `output`, the package directory is not required: a run that writes nothing does not use it.
+    A target needs its required options and an input explicitly typed as OpenAPI. Without `output`, the package
+    directory is not required: a run that writes nothing does not use it.
     """
     if (selected := _selected_target(config)) is None:
         return None
@@ -107,7 +110,56 @@ def _missing_target_options(config: Any, *, output: bool = True) -> str | None:
     required = _TARGET_REQUIRED if output else _TARGET_REQUIRED[1:]
     if missing := [_flag(field) for name in required if getattr(config, field := f"{prefix}{name}") is None]:
         return f"{_flag(selector)} requires {_option_list(missing)}"
+    if (input_file_type := InputFileType(config.input_file_type)) is not InputFileType.OpenAPI:
+        return f"{_flag(selector)} requires --input-file-type openapi, not {input_file_type.value}"
     return None
+
+
+def implied_model_settings(config: Any, explicit: AbstractSet[str]) -> dict[str, bool]:
+    """Return the constraint settings a config leaves unset, with the values its other settings imply.
+
+    A setting is unset unless `explicit` names it. msgspec models use `Annotated` constraints, `use_annotated` writes
+    the constraints as field constraints, and an unset `field_constraints` follows `use_annotated`, so the command
+    line and `generate()` keep the same constraints.
+    """
+    use_annotated = config.use_annotated
+    implied: dict[str, bool] = {}
+    if "use_annotated" not in explicit and DataModelType(config.output_model_type) is DataModelType.MsgspecStruct:
+        implied["use_annotated"] = use_annotated = True
+    if use_annotated or "field_constraints" not in explicit:
+        implied["field_constraints"] = use_annotated
+    return implied
+
+
+def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str, Any]:
+    """Return the model settings a server or client target needs that a config leaves unset, with the values it implies.
+
+    A setting is unset unless `explicit` names it, the fields an option, a configuration key, a `generate()` argument,
+    or a preset set. The target needs the `api` scope, Python 3.11, and its backend's settings: the MISSING sentinel
+    with pydantic 2.14 for Pydantic dataclasses, pydantic 2.14 for any sentinel, and the decodable unions and enums of
+    msgspec. A setting that was set keeps its value, which the target refuses when it cannot use it.
+    """
+    from datamodel_code_generator.enums import DataModelType, OpenAPIScope, TargetPydanticVersion  # noqa: PLC0415
+
+    implied: dict[str, Any] = {}
+    scopes = list(config.openapi_scopes or (OpenAPIScope.Schemas,))
+    if "openapi_scopes" not in explicit and OpenAPIScope.Api not in scopes:
+        implied["openapi_scopes"] = [*scopes, OpenAPIScope.Api]
+    if "target_python_version" not in explicit and not config.target_python_version.has_strenum:
+        implied["target_python_version"] = PythonVersion.PY_311
+    backend = DataModelType(config.output_model_type)
+    switches = {
+        DataModelType.PydanticV2Dataclass: ("use_missing_sentinel",),
+        DataModelType.MsgspecStruct: ("use_msgspec_tagged_unions", "use_msgspec_nullable_enum_alias"),
+    }.get(backend, ())
+    implied.update((name, True) for name in switches if name not in explicit and not getattr(config, name))
+    if (
+        implied.get("use_missing_sentinel", config.use_missing_sentinel)
+        and backend in {DataModelType.PydanticV2BaseModel, DataModelType.PydanticV2Dataclass}
+        and "target_pydantic_version" not in explicit
+    ):
+        implied["target_pydantic_version"] = TargetPydanticVersion.V2_14
+    return implied
 
 
 class BaseGenerateConfig(BaseModel):
@@ -182,6 +234,9 @@ class BaseGenerateConfig(BaseModel):
     ignore_enum_constraints: bool = False
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False
+    use_msgspec_tagged_unions: bool = False
+    use_msgspec_nullable_enum_alias: bool = False
+    use_typed_nullable_map_values: bool = False
     set_default_enum_member: bool = False
     use_subclass_enum: bool = False
     use_specialized_enum: bool = True

@@ -1,0 +1,142 @@
+openapi: 3.1.0
+info:
+  title: API scope references with siblings
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            $ref: '#/components/schemas/Kind'
+            description: The kind to list
+            default: dog
+        - name: tag
+          in: query
+          schema:
+            $ref: '#/components/schemas/Tag'
+            x-internal: true
+            deprecated: true
+        - name: code
+          in: query
+          schema:
+            $ref: '#/components/schemas/Tag'
+            minLength: 2
+      responses:
+        '200':
+          description: Pets
+          headers:
+            x-kind:
+              schema:
+                $ref: '#/components/schemas/Kind'
+                title: Kind header
+                example: cat
+            x-tag:
+              schema:
+                $ref: '#/components/schemas/Tag'
+                maxLength: 8
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pets'
+                description: All pets
+                examples:
+                  - - name: Rex
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                x-amazon-apigateway-integration:
+                  passthroughBehavior: when_no_templates
+                  type: aws_proxy
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+              description: The pet to add
+              x-body-name: pet
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+                properties:
+                  id:
+                    type: integer
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+                nullable: true
+  /pets/{petId}:
+    put:
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Tag'
+            title: Pet id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+              allOf:
+                - required:
+                    - name
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+                readOnly: true
+                externalDocs:
+                  url: https://example.com/pets
+components:
+  schemas:
+    Kind:
+      type: string
+      enum:
+        - dog
+        - cat
+    Tag:
+      type: string
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        withExt:
+          $ref: '#/components/schemas/Error'
+          x-amazon-apigateway-integration:
+            type: aws_proxy
+        withDesc:
+          $ref: '#/components/schemas/Error'
+          description: The last error
+    Pets:
+      type: array
+      items:
+        $ref: '#/components/schemas/Pet'
+    Error:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: integer
+        message:
+          type: string

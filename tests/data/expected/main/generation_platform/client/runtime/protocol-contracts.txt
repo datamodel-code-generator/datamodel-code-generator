@@ -325,16 +325,16 @@
   errors dir = ['ProtocolDataError']
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  configured client list = FieldPetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
+  configured client list = PetsGetResponse(root=[Pet(id=1, name='cat', tag=None)])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  configured view list = FieldPetsGetResponse(root=[])
+  configured view list = PetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  default helper settings list = FieldPetsGetResponse(root=[])
+  default helper settings list = PetsGetResponse(root=[])
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async configured client list = FieldPetsGetResponse(root=[Pet(id=2, name='dog', tag=None)])
+  async configured client list = PetsGetResponse(root=[Pet(id=2, name='dog', tag=None)])
 # pets-protocols pydantic_v2.dataclass
   client imports load protocols=[]
   dir lists lazy names=(True, True)
@@ -662,7 +662,7 @@
   errors dir = ['ProtocolDataError']
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  configured client list = [Pet(id=1, name='cat', tag=None)]
+  configured client list = [Pet(id=1, name='cat', tag=MISSING)]
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
   configured view list = []
@@ -671,7 +671,7 @@
   default helper settings list = []
   > GET https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
-  async configured client list = [Pet(id=2, name='dog', tag=None)]
+  async configured client list = [Pet(id=2, name='dog', tag=MISSING)]
 # pets-protocols dataclasses.dataclass
   client imports load protocols=[]
   dir lists lazy names=(True, True)

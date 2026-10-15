@@ -1,5 +1,5 @@
-use /paths/~1choices/post request_body: StdlibCodec
-use /paths/~1choices/post response_body 200: StdlibCodec
+use /paths/~1choices/post request_body: TypedDictCodec
+use /paths/~1choices/post response_body 200: TypedDictCodec
 choice-server-decode: native {'color_or_count': 'red', 'word_or_list': 'w', 'maybe_or_flag': None} json={"color_or_count":"red","word_or_list":"w","maybe_or_flag":null}
 choice-server-decode-numbers: native {'color_or_count': 3, 'word_or_list': [1, 2], 'maybe_or_flag': True} json={"color_or_count":3,"word_or_list":[1,2],"maybe_or_flag":true}
 choice-server-decode-dated: native {'word_or_list': 5, 'maybe_or_flag': '2020-01-02'} json={"word_or_list":5,"maybe_or_flag":"2020-01-02"}

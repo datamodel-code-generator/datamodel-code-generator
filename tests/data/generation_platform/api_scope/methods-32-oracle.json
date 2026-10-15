@@ -1,6 +1,6 @@
 {
   "$defs": {
-    "FieldSearchQueryQuerystring": {
+    "SearchQueryQuerystring": {
       "type": "object",
       "properties": {
         "value": {

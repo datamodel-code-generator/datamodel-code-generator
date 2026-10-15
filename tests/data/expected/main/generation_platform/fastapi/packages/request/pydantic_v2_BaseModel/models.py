@@ -15,5 +15,5 @@ class Account(BaseModel):
     name: str
 
 
-class FieldTextPostRequest(RootModel[constr(max_length=10)]):
+class TextPostRequest(RootModel[constr(max_length=10)]):
     root: constr(max_length=10)

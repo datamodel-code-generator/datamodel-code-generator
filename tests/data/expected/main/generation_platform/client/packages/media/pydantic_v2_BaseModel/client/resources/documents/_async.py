@@ -13,9 +13,9 @@ import models
 
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
-from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
+from ...types import JSONValue
 from ...types.documents import (
     ReadDocumentResponse,
     ReplaceNoteResponse,
@@ -150,7 +150,7 @@ class AsyncDocumentsResource:
     async def read_document(
         self,
         *,
-        id: models.FieldDocumentsIdGetPathIdParameter,
+        id: models.DocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
         X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
@@ -338,7 +338,7 @@ class AsyncDocumentsWithResponse:
     async def read_document(
         self,
         *,
-        id: models.FieldDocumentsIdGetPathIdParameter,
+        id: models.DocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
         X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
@@ -472,7 +472,7 @@ class AsyncDocumentsWithRawResponse:
     async def read_document(
         self,
         *,
-        id: models.FieldDocumentsIdGetPathIdParameter,
+        id: models.DocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
         X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,
@@ -606,7 +606,7 @@ class AsyncDocumentsWithStreamingResponse:
     def read_document(
         self,
         *,
-        id: models.FieldDocumentsIdGetPathIdParameter,
+        id: models.DocumentsIdGetPathIdParameter,
         filter: JSONValue | UNSET = UNSET,
         X_Mode: str | UNSET = UNSET,
         response_media_type: Literal['application/vnd.api+json'] | None = None,

@@ -8,20 +8,20 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldEventsGetResponse]] = PydanticCodec(models.FieldEventsGetResponse)
+codec_0: Final[PydanticCodec[models.EventsGetResponse]] = PydanticCodec(models.EventsGetResponse)
 """Codec of /paths/~1events/get response_body (response 200 application/json)."""
 
-codec_1: Final[PydanticCodec[models.FieldEventsEventIdGetPathEventIdParameter]] = PydanticCodec(models.FieldEventsEventIdGetPathEventIdParameter)
+codec_1: Final[PydanticCodec[models.EventsEventIdGetPathEventIdParameter]] = PydanticCodec(models.EventsEventIdGetPathEventIdParameter)
 """Codec of /paths/~1events~1{eventId}/get parameter (request path eventId)."""
 
-codec_2: Final[PydanticCodec[models.FieldEventsEventIdGetQueryFieldsParameter]] = PydanticCodec(models.FieldEventsEventIdGetQueryFieldsParameter)
+codec_2: Final[PydanticCodec[models.EventsEventIdGetQueryFieldsParameter]] = PydanticCodec(models.EventsEventIdGetQueryFieldsParameter)
 """Codec of /paths/~1events~1{eventId}/get parameter (request query fields)."""
 
 codec_3: Final[PydanticCodec[models.Event]] = PydanticCodec(models.Event)
 """Codec of /paths/~1events~1{eventId}/get response_body (response 200 application/json)."""
 
-codec_4: Final[PydanticCodec[models.FieldEventsEventIdGetResponse200XRateLimitHeader]] = PydanticCodec(models.FieldEventsEventIdGetResponse200XRateLimitHeader)
+codec_4: Final[PydanticCodec[models.EventsEventIdGetResponse200XRateLimitHeader]] = PydanticCodec(models.EventsEventIdGetResponse200XRateLimitHeader)
 """Codec of /paths/~1events~1{eventId}/get response_header (response X-Rate-Limit 200)."""

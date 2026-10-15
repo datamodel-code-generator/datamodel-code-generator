@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Mapped binary
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /records:
+    post:
+      operationId: storeRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Record'}
+      responses:
+        '204':
+          description: Stored.
+  /digests:
+    post:
+      operationId: storeDigest
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              anyOf:
+                - {type: string, format: byte}
+                - {type: string, format: binary}
+      responses:
+        '204':
+          description: Stored.
+components:
+  schemas:
+    Record:
+      type: object
+      properties:
+        checksum: {type: string, format: byte}
+        secret: {type: string, format: password}

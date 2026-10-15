@@ -22,8 +22,8 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     string_minimum: str | None = None
     string_length_and_minimum: str | None = Field(None, min_length=2)
     date_maximum: date | None = None
-    date_time_exclusive_minimum: AwareDatetime | None = None
-    time_exclusive_maximum: time | None = None
+    date_time_exclusive_minimum: AwareDatetime | None = Field(None, gt=5)
+    time_exclusive_maximum: time | None = Field(None, lt=10)
     boolean_multiple_of: bool | None = None
     nullable_string_minimum: str | None = None
     array_minimum: list[str] | None = None
@@ -32,4 +32,4 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     number_minimum: float | None = Field(None, ge=5.0)
     integer_maximum: int | None = Field(None, le=10)
     string_or_number_minimum: str | confloat(ge=5.0) | None = None
-    untyped_minimum: Any | None = Field(None, ge=5)
+    untyped_minimum: Any | None = None

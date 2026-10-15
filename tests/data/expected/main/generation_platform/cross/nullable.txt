@@ -1,0 +1,176 @@
+models shared True
+# nullable in-process sync, in-process async
+get_text None
+  > GET /texts?case=none
+  get_text(case='none')
+  < 200 application/json
+  = Response(None, 200, 'application/json')
+get_text None value
+  > GET /texts?case=none
+  get_text(case='none')
+  < 200 application/json
+  = None
+get_text null result
+  > GET /texts?case=result
+  get_text(case='result')
+  < 200 application/json
+  = (Response(None, 200, 'application/json'), 5)
+get_text null result value
+  > GET /texts?case=result
+  get_text(case='result')
+  < 200 application/json
+  = None
+get_text value
+  > GET /texts?case=word
+  get_text(case='word')
+  < 200 application/json
+  = 'abc'
+get_text 201
+  > GET /texts?case=created
+  get_text(case='created')
+  < 201 application/json
+  = Response(None, 201, 'application/json')
+get_text 2XX
+  > GET /texts?case=partial
+  get_text(case='partial')
+  < 206 application/json
+  = Response(None, 206, 'application/json')
+get_text 4XX
+  > GET /texts?case=missing
+  get_text(case='missing')
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - null [operation_id='getText', status_code=404, body=<Color.NoneType_None: None>, body_bytes=b'null', truncated=False]
+get_text default
+  > GET /texts?case=broken
+  get_text(case='broken')
+  < 500 application/problem+json
+  ! InternalServerError: Error code: 500 - null [operation_id='getText', status_code=500, body_bytes=b'null', truncated=False]
+head_text
+  > HEAD /texts?case=none
+  head_text(case='none')
+  < 200 -
+  = Response(None, 200, None)
+get_list None
+  > GET /lists?case=none
+  get_list(case='none')
+  < 200 application/json
+  = None
+get_list value
+  > GET /lists?case=numbers
+  get_list(case='numbers')
+  < 200 application/json
+  = [1, 2]
+get_name None
+  > GET /names?case=none
+  get_name(case='none')
+  < 200 application/json
+  = None
+get_value None
+  > GET /values?case=none
+  get_value(case='none')
+  < 200 application/json
+  = Response(None, 200, 'application/json')
+get_anything None
+  > GET /anything?case=none
+  get_anything(case='none')
+  < 200 application/json
+  = Response(None, 200, 'application/json')
+get_anything null result
+  > GET /anything?case=result
+  get_anything(case='result')
+  < 200 application/json
+  = None
+get_pet None
+  > GET /pets?case=none
+  get_pet(case='none')
+  < 200 application/vnd.pet+json
+  = Response(None, 200, 'application/vnd.pet+json')
+get_thing
+  > GET /things?case=thing
+  get_thing(case='thing')
+  < 200 application/json
+  = Thing(id=1)
+post_memo None
+  > POST /memos?case=none [application/json]
+  post_memo(case='none', body=None)
+  < 200 application/json
+  = None
+post_memo value
+  > POST /memos?case=memo [application/json]
+  post_memo(case='memo', body=MemosPostRequest(text='a'))
+  < 200 application/json
+  = MemosPostResponse(text='m')
+post_memo refused
+  > POST /memos?case=none [application/json]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"missing","loc":["body","text"],"msg":"<msg>"}]} [operation_id='postMemo', status_code=422, body=b'{"detail":[{"type":"missing","loc":["body","text"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"missing","loc":["body","text"],"msg":"<msg>"}]}', truncated=False]
+get_range None
+  > GET /ranges?case=none
+  get_range(case='none')
+  < 200 application/json
+  = Response(None, 200, 'application/json')
+get_range value
+  > GET /ranges?case=word
+  get_range(case='word')
+  < 200 application/json
+  = 'abc'
+get_accepted
+  > GET /accepted?case=thing
+  get_accepted(case='thing')
+  < 200 application/json
+  = Response(Thing(id=1), 200, 'application/json')
+get_default None
+  > GET /defaults?case=none
+  get_default(case='none')
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='getDefault', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False, cause=DecodeError()]
+get_default value
+  > GET /defaults?case=thing
+  get_default(case='thing')
+  < 200 application/json
+  = Response(Thing(id=1), 200, 'application/json')
+get_error bare
+  > GET /errors?case=word
+  get_error(case='word')
+  < 500 text/plain; charset=utf-8
+  ! InternalServerError: Error code: 500 - Internal Server Error [operation_id='getError', status_code=500, body=b'Internal Server Error', body_bytes=b'Internal Server Error', truncated=False]
+get_error 4XX
+  > GET /errors?case=missing
+  get_error(case='missing')
+  < 404 -
+  ! NotFoundError: Error code: 404 [operation_id='getError', status_code=404, body=b'', body_bytes=b'', truncated=False, cause=DecodeError()]
+get_ok None
+  > GET /oks?case=none
+  get_ok(case='none')
+  < 200 application/json
+  = None
+get_ok 4XX
+  > GET /oks?case=missing
+  get_ok(case='missing')
+  < 404 application/json
+  ! NotFoundError: Error code: 404 - null [operation_id='getOk', status_code=404, body_bytes=b'null', truncated=False]
+get_any_alias None
+  > GET /any-aliases?case=none
+  get_any_alias(case='none')
+  < 200 application/json
+  = None
+post_ok None
+  > POST /oks?case=none [application/json]
+  post_ok(case='none', body=None)
+  < 200 application/json
+  = None
+post_any_alias None
+  > POST /any-aliases?case=none [application/json]
+  post_any_alias(case='none', body=None)
+  < 200 application/json
+  = None
+post_count None
+  > POST /counts?case=none
+  post_count(case='none', body=None)
+  < 204 -
+  = None
+post_count value
+  > POST /counts?case=none [application/json]
+  post_count(case='none', body=3)
+  < 204 -
+  = None

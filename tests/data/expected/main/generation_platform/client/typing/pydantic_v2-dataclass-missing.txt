@@ -1,0 +1,16 @@
+mypy pets and missing.py: clean
+pyright pets and missing.py: clean
+ty pets and missing.py: clean
+missing_negative.py 3 marked lines
+mypy missing_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
+  9 arg-type
+  10 arg-type
+  11 assignment
+pyright missing_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
+  9 reportArgumentType
+  10 reportArgumentType
+  11 reportAssignmentType
+ty missing_negative.py: 3/3 marked lines with one error, 0 elsewhere, 0 in other files
+  9 invalid-argument-type
+  10 invalid-argument-type
+  11 invalid-assignment

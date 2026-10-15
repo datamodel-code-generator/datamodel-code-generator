@@ -14,9 +14,9 @@
 {{ decorator }}
 {% endfor -%}
 
-{#- Use base_type_hint in generic when regex_engine is set to avoid evaluating pattern before config is processed -#}
+{#- Use base_type_hint in generic when regex_engine is set to avoid evaluating pattern before config is processed, and Any when it would reach a string pattern type alias, which a base type hint still names -#}
 {%- set use_base_type = config and config.regex_engine -%}
-class {{ class_name }}({%- if schema_runtime_validation_use_base -%}{{ schema_runtime_validation_base_class_name }}, {% endif -%}{{ base_class }}{%- if fields -%}[{{get_type_hint(fields, use_base_type)}}]{%- endif -%}{%- if sequence_base_class is defined -%}, {{ sequence_base_class }}{%- endif -%}):{% if comment is defined %}  # {{ comment }}{% endif %}
+class {{ class_name }}({%- if schema_runtime_validation_use_base -%}{{ schema_runtime_validation_base_class_name }}, {% endif -%}{{ base_class }}{%- if fields -%}[{% if string_pattern_alias_reached %}Any{% else %}{{get_type_hint(fields, use_base_type)}}{% endif %}]{%- endif -%}{%- if sequence_base_class is defined -%}, {{ sequence_base_class }}{%- endif -%}):{% if comment is defined %}  # {{ comment }}{% endif %}
 {%- if description %}
     {{ description }}
 {%- endif %}

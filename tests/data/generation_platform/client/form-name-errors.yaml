@@ -1,0 +1,177 @@
+openapi: 3.1.0
+info: {title: Form name errors, version: "1.0"}
+servers:
+  - {url: https://forms.example.com}
+paths:
+  /absorbing-form:
+    post:
+      operationId: postAbsorbingForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                page: {type: object, properties: {size: {type: integer}}}
+                filter: {type: object, additionalProperties: {type: string}}
+            encoding:
+              page: {explode: true}
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-parts:
+    post:
+      operationId: postAbsorbingParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+                deep: {type: object, properties: {name: {type: string}}}
+            encoding:
+              labels: {explode: true}
+              deep: {style: deepObject, explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-extras:
+    post:
+      operationId: postAbsorbingExtras
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+              additionalProperties: {type: integer}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-allowed:
+    post:
+      operationId: postAbsorbingAllowed
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+              additionalProperties: true
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-extra-parts:
+    post:
+      operationId: postAbsorbingExtraParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+              additionalProperties: {type: integer}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-kept:
+    post:
+      operationId: postAbsorbingKept
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-kept-parts:
+    post:
+      operationId: postAbsorbingKeptParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-kept-wrapped:
+    post:
+      operationId: postAbsorbingKeptWrapped
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/KeptFilters'
+                - type: 'null'
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-derived:
+    post:
+      operationId: postAbsorbingDerived
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/ClosedFilters'}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-inherited:
+    post:
+      operationId: postAbsorbingInherited
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/InheritedFilters'}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    KeptFilters:
+      type: object
+      properties:
+        filter: {type: object, additionalProperties: {type: string}}
+    OpenFilters:
+      type: object
+      properties:
+        filter: {type: object, additionalProperties: {type: string}}
+      additionalProperties: true
+    ClosedFilters:
+      allOf:
+        - $ref: '#/components/schemas/OpenFilters'
+      additionalProperties: false
+    InheritedFilters:
+      allOf:
+        - $ref: '#/components/schemas/OpenFilters'
+        - type: object
+          properties:
+            page: {type: integer}

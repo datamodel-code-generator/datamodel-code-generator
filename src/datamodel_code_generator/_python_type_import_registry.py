@@ -490,9 +490,23 @@ def get_qualified_python_type_import_path(qualified_name: str, target_version: t
     return qualified_name
 
 
+@lru_cache(maxsize=256)
+def is_known_python_type_path(path: str) -> bool:
+    """Return whether a bare builtin name or a dotted path names a type this registry lists for any target."""
+    module, separator, type_name = path.rpartition(".")
+    if not separator or module == "builtins":
+        return type_name in _PYTHON_BUILTIN_TYPE_NAMES
+    return (
+        any(module == known_module and type_name in names for known_module, names in _TARGET_STABLE_PYTHON_TYPE_MODULES)
+        or _PYTHON_TYPE_IMPORT_PATHS.get(type_name) == path
+        or ((backport := _PYTHON_TYPE_BACKPORTS.get(type_name)) is not None and backport[1] == module)
+    )
+
+
 __all__ = [
     "PythonTypeUnavailableError",
     "get_python_type_import_path",
     "get_qualified_python_type_import_path",
+    "is_known_python_type_path",
     "is_python_builtin_type_name",
 ]

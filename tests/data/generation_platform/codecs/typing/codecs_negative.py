@@ -8,8 +8,10 @@ from msgspec import Struct
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from datamodel_code_generator._runtime.model_codecs.native import MsgspecCodec, PydanticCodec
-from datamodel_code_generator._runtime.model_codecs.stdlib import StdlibCodec
+from datamodel_code_generator._runtime.model_codecs.msgspec_structs import MsgspecCodec
+from datamodel_code_generator._runtime.model_codecs.pydantic_models import PydanticCodec
+from datamodel_code_generator._runtime.model_codecs.stdlib_dataclasses import DataclassCodec
+from datamodel_code_generator._runtime.model_codecs.stdlib_typeddicts import TypedDictCodec
 
 
 class Owner(BaseModel):
@@ -36,8 +38,8 @@ def exercise_pydantic(codec: PydanticCodec[Owner]) -> None:
     _dumped: Owner = codec.dump(Owner(name="a"))  # error
 
 
-def exercise_stdlib(codec: StdlibCodec[Tag], record: StdlibCodec[TagRecord]) -> None:
-    _widened: StdlibCodec[object] = codec  # error
+def exercise_stdlib(codec: DataclassCodec[Tag], record: TypedDictCodec[TagRecord]) -> None:
+    _widened: DataclassCodec[object] = codec  # error
     codec.encode(Owner(name="a"))  # error
     record.encode(Tag("a"))  # error
     _tag: Tag = record.decode(b'{"name":"a"}')  # error

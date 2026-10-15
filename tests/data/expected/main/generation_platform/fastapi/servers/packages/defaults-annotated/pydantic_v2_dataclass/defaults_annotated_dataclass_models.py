@@ -35,70 +35,59 @@ Colors = TypeAliasType(
 )
 
 
-FieldValuesGetQueryDepthParameter = TypeAliasType(
-    "FieldValuesGetQueryDepthParameter", Annotated[int | None, Field(ge=0)]
+ValuesGetQueryDepthParameter = TypeAliasType(
+    "ValuesGetQueryDepthParameter", Annotated[int | None, Field(ge=0)]
 )
 
 
-FieldValuesGetQueryBoundedParameter = TypeAliasType(
-    "FieldValuesGetQueryBoundedParameter", Annotated[int, Field(ge=0)]
+ValuesGetQueryBoundedParameter = TypeAliasType(
+    "ValuesGetQueryBoundedParameter", Annotated[int, Field(ge=0)]
 )
 
 
-FieldValuesGetQueryPageParameter = TypeAliasType("FieldValuesGetQueryPageParameter", int)
+ValuesGetQueryPageParameter = TypeAliasType("ValuesGetQueryPageParameter", int)
 
 
-FieldValuesGetQueryWordsParameterItem = TypeAliasType(
-    "FieldValuesGetQueryWordsParameterItem", Annotated[str, Field(min_length=1)]
+ValuesGetQueryWordsParameterItem = TypeAliasType(
+    "ValuesGetQueryWordsParameterItem", Annotated[str, Field(min_length=1)]
 )
 
 
-FieldValuesGetQueryWordsParameter = TypeAliasType(
-    "FieldValuesGetQueryWordsParameter",
+ValuesGetQueryWordsParameter = TypeAliasType(
+    "ValuesGetQueryWordsParameter",
     Annotated[
-        list[FieldValuesGetQueryWordsParameterItem],
-        Field(default_factory=lambda: ['a']),
+        list[ValuesGetQueryWordsParameterItem], Field(default_factory=lambda: ['a'])
     ],
 )
 
 
-FieldValuesGetHeaderXLevelParameter = TypeAliasType(
-    "FieldValuesGetHeaderXLevelParameter", Annotated[int, Field(ge=0)]
+ValuesGetHeaderXLevelParameter = TypeAliasType(
+    "ValuesGetHeaderXLevelParameter", Annotated[int, Field(ge=0)]
 )
 
 
-FieldValuesGetQueryLabelsParameter = TypeAliasType(
-    "FieldValuesGetQueryLabelsParameter",
+ValuesGetQueryLabelsParameter = TypeAliasType(
+    "ValuesGetQueryLabelsParameter",
     Annotated[list[str], Field(default_factory=lambda: ['x'], min_length=1)],
 )
 
 
-FieldValuesGetQueryRowsParameter = TypeAliasType(
-    "FieldValuesGetQueryRowsParameter", Annotated[list[int] | None, Field(min_length=1)]
+ValuesGetQueryRowsParameter = TypeAliasType(
+    "ValuesGetQueryRowsParameter", Annotated[list[int] | None, Field(min_length=1)]
 )
 
 
-FieldValuesGetQueryMarksParameter = TypeAliasType("FieldValuesGetQueryMarksParameter", Tags)
-
-
-FieldValuesGetQueryExtrasParameter = TypeAliasType(
-    "FieldValuesGetQueryExtrasParameter",
-    Annotated[list[str], Field(default_factory=list)],
+ValuesGetQueryExtrasParameter = TypeAliasType(
+    "ValuesGetQueryExtrasParameter", Annotated[list[str], Field(default_factory=list)]
 )
 
 
-FieldValuesGetQueryColorParameter = TypeAliasType("FieldValuesGetQueryColorParameter", Color)
-
-
-class FieldValuesGetQueryToneParameter(StrEnum):
+class ValuesGetQueryToneParameter(StrEnum):
     red = 'red'
     blue = 'blue'
 
 
-FieldValuesGetQuerySizedParameter = TypeAliasType("FieldValuesGetQuerySizedParameter", Size)
-
-
-FieldValuesGetHeaderXColorsParameter = TypeAliasType(
-    "FieldValuesGetHeaderXColorsParameter",
+ValuesGetHeaderXColorsParameter = TypeAliasType(
+    "ValuesGetHeaderXColorsParameter",
     Annotated[list[Color], Field(default_factory=lambda: ['blue'])],
 )

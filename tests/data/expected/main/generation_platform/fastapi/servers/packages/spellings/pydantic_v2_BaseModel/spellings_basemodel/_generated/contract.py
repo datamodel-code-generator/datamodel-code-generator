@@ -43,7 +43,7 @@ class ListPets:
     """Plans of the list_pets operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.FieldPetsGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.PetsGetResponse)},
     )
 
 
@@ -51,7 +51,7 @@ class ListCounts:
     """Plans of the list_counts operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.FieldCountsGetResponse)},
+        responses={'200': Declared(media_type='application/json', model=spellings_basemodel_models.CountsGetResponse)},
     )
 
 

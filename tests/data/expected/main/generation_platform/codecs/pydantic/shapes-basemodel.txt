@@ -1,12 +1,12 @@
-animal-client-cat: native FieldAnimalsPostRequest(root=Cat(id=3, name=None, nick_name=None, meow=True)) set=['root'] json={"id":3,"meow":true}
+animal-client-cat: native AnimalsPostRequest(root=Cat(id=3, name=None, nick_name=None, meow=True)) set=['root'] json={"id":3,"meow":true}
 animal-server-dog: HTTP 422 {"detail":[{"type":"missing","loc":["body","Cat","id"],"msg":"Field required"},{"type":"missing","loc":["body","Cat","meow"],"msg":"Field required"},{"type":"extra_forbidden","loc":["body","Cat","bark"],"msg":"Extra inputs are not permitted"},{"type":"missing","loc":["body","Dog","id"],"msg":"Field required"}]}
 animal-server-dog-extra: HTTP 422 {"detail":[{"type":"missing","loc":["body","Cat","id"],"msg":"Field required"},{"type":"extra_forbidden","loc":["body","Cat","bark"],"msg":"Extra inputs are not permitted"},{"type":"missing","loc":["body","Dog","id"],"msg":"Field required"}]}
 animal-server-both: HTTP 422 {"detail":[{"type":"missing","loc":["body","Cat","id"],"msg":"Field required"},{"type":"missing","loc":["body","Cat","meow"],"msg":"Field required"},{"type":"missing","loc":["body","Dog","id"],"msg":"Field required"},{"type":"missing","loc":["body","Dog","bark"],"msg":"Field required"}]}
-animal-client-decode-cat: native FieldAnimalsPostResponse(root=Cat(id=1, name=None, nick_name=None, meow=True)) set=['root'] json={"id":1,"meow":true}
-animal-client-decode-dog: native FieldAnimalsPostResponse(root=Dog(id=2, name=None, nick_name=None, bark=3)) set=['root'] json={"id":2,"bark":3}
-animal-client-decode-null: native FieldAnimalsPostResponse(root=None) set=['root'] json=null
-animal-server-encode-dog: native FieldAnimalsPostResponse(root=Dog(id=2, name=None, nick_name=None, bark=3)) set=['root'] json={"id":2,"bark":3}
-animal-server-encode-null: native FieldAnimalsPostResponse(root=None) set=['root'] json=null
+animal-client-decode-cat: native AnimalsPostResponse(root=Cat(id=1, name=None, nick_name=None, meow=True)) set=['root'] json={"id":1,"meow":true}
+animal-client-decode-dog: native AnimalsPostResponse(root=Dog(id=2, name=None, nick_name=None, bark=3)) set=['root'] json={"id":2,"bark":3}
+animal-client-decode-null: native AnimalsPostResponse(root=None) set=['root'] json=null
+animal-server-encode-dog: native AnimalsPostResponse(root=Dog(id=2, name=None, nick_name=None, bark=3)) set=['root'] json={"id":2,"bark":3}
+animal-server-encode-null: native AnimalsPostResponse(root=None) set=['root'] json=null
 tree-client-decode: native Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=(1, 'a@example.com'), contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) set=['children', 'index', 'pair', 'value'] json={"value":1,"children":[{"value":2}],"pair":[1,"a@example.com"],"index":{"a":{"value":3}}}
 tree-server-encode: native Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=(1, 'a@example.com'), contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) set=['children', 'index', 'pair', 'value'] json={"value":1,"children":[{"value":2}],"pair":[1,"a@example.com"],"index":{"a":{"value":3}}}
 tree-server-snapshot-presence: native Node(value=1, children=[Node(value=2, children=None, pair=None, contact=None, index=None)], pair=(1, 'a@example.com'), contact=None, index={'a': Node(value=3, children=None, pair=None, contact=None, index=None)}) set=['children', 'index', 'pair', 'value'] json={"value":1,"children":[{"value":2}],"pair":[1,"a@example.com"],"index":{"a":{"value":3}}}
@@ -33,8 +33,8 @@ values-server-snapshot-nested: PydanticSerializationError Error serializing to J
 values-server-encode-nested: PydanticSerializationError Error serializing to JSON: ValueError: Circular reference detected (depth exceeded)
 mixed-server-decode: native Mixed(root=Small(size='small', contact=None)) set=['root'] json={"size":"small"}
 mixed-server-decode-native: HTTP 422 {"detail":[{"type":"value_error","loc":["body","small","contact"],"msg":"value is not a valid email address: The part after the @-sign is not valid. It should have a period."}]}
-kin-server-encode-cat: native FieldKinGetResponse(root=Cat(id=1, name=None, nick_name=None, meow=True)) set=['root'] json={"id":1,"meow":true}
-kin-server-encode-dog: native FieldKinGetResponse(root=Dog(id=2, name=None, nick_name=None, bark=3)) set=['root'] json={"id":2}
-animals-client-convert: native FieldAnimalsPostResponse(root=Cat(id=1, name='Tom', nick_name=None, meow=True)) set=['root'] json={"id":1,"name":"Tom","meow":true}
+kin-server-encode-cat: native KinGetResponse(root=Cat(id=1, name=None, nick_name=None, meow=True)) set=['root'] json={"id":1,"meow":true}
+kin-server-encode-dog: native KinGetResponse(root=Dog(id=2, name=None, nick_name=None, bark=3)) set=['root'] json={"id":2}
+animals-client-convert: native AnimalsPostResponse(root=Cat(id=1, name='Tom', nick_name=None, meow=True)) set=['root'] json={"id":1,"name":"Tom","meow":true}
 values-client-serialize-nested: PydanticSerializationError Error serializing to JSON: ValueError: Circular reference detected (depth exceeded)
 values-client-convert-nested: ValidationError model_type@[]

@@ -15,8 +15,8 @@
   result source ! ValueError: source must be network, fresh_cache, or revalidated []
   result response ! TypeError: response has the wrong type []
   result status ! TypeError: network_status has the wrong type []
-  options = CacheOptions(max_entry_bytes=1, max_ttl=0.5)
-  options zero bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_entry_bytes') [field_path=('max_entry_bytes',)] invalid_value
+  options = CacheOptions(max_ttl=0.5)
+  options zero ttl ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_ttl') [field_path=('max_ttl',)] invalid_value
   options boolean ttl ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_ttl') [field_path=('max_ttl',)] invalid_value
   stores name ! ConfigurationError: ConfigurationError(reason='unknown_field', field_path='cache_stores.no name') [field_path=('cache_stores', 'no name')] unknown_field
   protocol error = ProtocolDataError: ProtocolDataError(reason='inconsistent') [] inconsistent
@@ -69,14 +69,15 @@
     get key=32
   > GET https://api.example.com/users/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  default entry limit = network 3:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
+    set status=200 vary=('accept-language',) values=1 bytes=21 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=True
+  default freshness cap = network 3:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"c"'), ('cache-control', 'max-age=100000'), ('age', '400'), ('content-length', '21'), ('content-type', 'application/json')]
+    get key=32
+  default freshness cap hit = fresh_cache 3:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('etag', '"c"'), ('cache-control', 'max-age=100000'), ('content-type', 'application/json'), ('Content-Length', '21')]
     get key=32
   > GET https://api.example.com/users/3
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-    set status=200 vary=('accept-language',) values=1 bytes=21 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True
-  call entry limit = network 3:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
-    get key=32
-  call entry limit hit = fresh_cache 3:cat status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "c"] b''
+    set status=200 vary=('accept-language',) values=1 bytes=21 headers=['cache-control', 'content-type', 'etag', 'Content-Length'] fresh=True
+  call freshness cap = revalidated 3:cat status=200 network=304 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=100000'), ('content-type', 'application/json'), ('etag', '"c"'), ('Content-Length', '21')]
   pagination options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='cache_options') [field_path=('cache_options',)] invalid_value
   text options ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
   closed client ! ConfigurationError: ConfigurationError(operation_id='getUser', reason='client_closed', field_path='client.closed') [operation_id='getUser', field_path=('client', 'closed')] client_closed
@@ -276,6 +277,14 @@
   > GET https://api.example.com/users/7
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-hooked: yes] b''
   header a request hook adds again = network 7:hooked again status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'private, max-age=60'), ('content-length', '30'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-sig: café] b''
+  Latin-1 bytes an Auth adds = network 9:latin-1 status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+  the same bytes again = fresh_cache 9:latin-1 status=200 network=None attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '25')]
+  > GET https://api.example.com/secure/users/9
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-sig: café] b''
+  UTF-8 bytes of the same text = network 9:utf-8 status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '23'), ('content-type', 'application/json')]
+  header name beyond ASCII an Auth adds ! APIConnectionError: APIConnectionError(operation_id='getSecureUser', cause='LocalProtocolError') [operation_id='getSecureUser', cause=LocalProtocolError("Illegal header name b'X-S\\xefg'")]
     get key=32
   > GET https://api.example.com/users/24
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

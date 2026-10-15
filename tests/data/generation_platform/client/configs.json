@@ -332,5 +332,23 @@
         }
       }
     }
+  },
+  "reserved-type-name": {
+    "options": {
+      "resource_names": {
+        "pets": "JSONValue"
+      },
+      "operations": {
+        "/paths/~1pets/get": {
+          "resource": "JSONValue.listing"
+        },
+        "/paths/~1pets~1{petId}/get": {
+          "resource": "lookup.JSONValue"
+        },
+        "/paths/~1pets~1{petId}/delete": {
+          "resource": "lookup.Aux"
+        }
+      }
+    }
   }
 }

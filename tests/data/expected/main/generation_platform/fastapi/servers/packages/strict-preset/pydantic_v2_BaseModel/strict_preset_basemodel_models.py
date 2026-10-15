@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from pydantic import (
+    Base64Str,
     BaseModel,
     ConfigDict,
     Field,
@@ -32,52 +33,52 @@ class Form(BaseModel):
     counts: list[StrictInt] | None = None
 
 
-type FieldValuesIdGetPathIdParameter = StrictInt
+type ValuesIdGetPathIdParameter = StrictInt
 
 
-type FieldValuesIdGetQueryCountParameter = StrictInt
+type ValuesIdGetQueryCountParameter = StrictInt
 
 
-type FieldValuesIdGetQueryBoundedParameter = Annotated[StrictInt, Field(ge=0)]
+type ValuesIdGetQueryBoundedParameter = Annotated[StrictInt, Field(ge=0)]
 
 
-type FieldValuesIdGetQueryScoreParameter = StrictFloat
+type ValuesIdGetQueryScoreParameter = StrictFloat
 
 
-type FieldValuesIdGetQueryFlagParameter = StrictBool
+type ValuesIdGetQueryFlagParameter = StrictBool
 
 
-type FieldValuesIdGetQueryNameParameter = StrictStr
+type ValuesIdGetQueryNameParameter = StrictStr
 
 
-type FieldValuesIdGetQueryLabelParameter = Annotated[StrictStr, Field(min_length=2)]
+type ValuesIdGetQueryLabelParameter = Annotated[StrictStr, Field(min_length=2)]
 
 
-type FieldValuesIdGetQueryCountsParameter = list[StrictInt]
+type ValuesIdGetQueryCountsParameter = list[StrictInt]
 
 
-type FieldValuesIdGetQueryNamesParameter = list[StrictStr]
+type ValuesIdGetQueryNamesParameter = list[StrictStr]
 
 
-type FieldValuesIdGetQueryPageParameter = StrictInt
+type ValuesIdGetQueryPageParameter = StrictInt
 
 
-type FieldValuesIdGetQueryMaybeParameter = StrictInt | None
+type ValuesIdGetQueryMaybeParameter = StrictInt | None
 
 
-type FieldValuesIdGetHeaderXTraceParameter = StrictInt
+type ValuesIdGetHeaderXTraceParameter = StrictInt
 
 
-type FieldValuesIdGetHeaderXTagParameter = StrictStr
+type ValuesIdGetHeaderXTagParameter = StrictStr
 
 
-type FieldValuesIdGetQueryBlobParameter = bytes
+type ValuesIdGetQueryBlobParameter = Base64Str
 
 
-type FieldValuesIdGetCookieVisitsParameter = StrictInt
+type ValuesIdGetCookieVisitsParameter = StrictInt
 
 
-class FieldUploadsPostRequest(BaseModel):
+class UploadsPostRequest(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )

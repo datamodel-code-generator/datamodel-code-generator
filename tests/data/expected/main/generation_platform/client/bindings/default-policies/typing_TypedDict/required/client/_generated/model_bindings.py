@@ -8,16 +8,16 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Defaults: Model((Field('implicit', 'implicit'), Field('schema_null', 'schema_null'), Field('override_null', 'override_null'), Field('nullable', 'nullable'), Field('required_value', 'required_value'), Field('required_nullable', 'required_nullable')), True),
+    models.Defaults: Model((Field('implicit', 'implicit'), Field('schema_null', 'schema_null'), Field('override_null', 'override_null'), Field('nullable', 'nullable'), Field('required_value', 'required_value'), Field('required_nullable', 'required_nullable'))),
 }
 
-codec_0: Final[StdlibCodec[models.Defaults]] = StdlibCodec(models.Defaults, MODELS)
+codec_0: Final[TypedDictCodec[models.Defaults]] = TypedDictCodec(models.Defaults, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Defaults]] = StdlibCodec(models.Defaults, MODELS)
+codec_1: Final[TypedDictCodec[models.Defaults]] = TypedDictCodec(models.Defaults, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""

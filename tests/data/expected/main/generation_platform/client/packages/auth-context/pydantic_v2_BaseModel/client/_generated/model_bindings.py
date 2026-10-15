@@ -9,10 +9,10 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldInheritedPostHeaderXIdempotencyParameter]] = PydanticCodec(models.FieldInheritedPostHeaderXIdempotencyParameter)
+codec_0: Final[PydanticCodec[models.InheritedPostHeaderXIdempotencyParameter]] = PydanticCodec(models.InheritedPostHeaderXIdempotencyParameter)
 """Codec of /paths/~1inherited/post parameter (request header X-Idempotency)."""
 
-codec_1: Final[PydanticCodec[models.FieldExplicitPostHeaderXIdempotencyParameter]] = PydanticCodec(models.FieldExplicitPostHeaderXIdempotencyParameter)
+codec_1: Final[PydanticCodec[models.ExplicitPostHeaderXIdempotencyParameter]] = PydanticCodec(models.ExplicitPostHeaderXIdempotencyParameter)
 """Codec of /paths/~1explicit/post parameter (request header X-Idempotency)."""

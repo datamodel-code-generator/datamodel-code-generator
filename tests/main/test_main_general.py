@@ -159,6 +159,24 @@ def test_collapse_root_models_retry_normalizes_sentinel_without_cause(mocker: Mo
     assert parse_with_disposal.call_count == 2
 
 
+@pytest.mark.abnormal_path("injects a failure no input can cause into the untyped parse of nullable map values")
+@pytest.mark.allow_direct_assert("counts the parser disposals that no generated output shows")
+def test_failed_untyped_nullable_map_parse_disposes_the_typed_parser(mocker: MockerFixture) -> None:
+    """Release the typed parser when parsing the nullable map values again untyped fails."""
+    mocker.patch.object(datamodel_code_generator, "_parse_again", side_effect=_GenerateParseAbort)
+    dispose = mocker.spy(OpenAPIParser, "dispose")
+
+    with pytest.raises(_GenerateParseAbort):
+        generate(
+            OPEN_API_DATA_PATH / "nullable_map_value_cycle.yaml",
+            input_file_type=InputFileType.OpenAPI,
+            output_model_type=DataModelType.PydanticV2Dataclass,
+            use_typed_nullable_map_values=True,
+        )
+
+    assert dispose.call_count == 1
+
+
 @freeze_time("2019-07-26")
 def test_collapse_root_models_retry_preserves_circular_schema_output(mocker: MockerFixture) -> None:
     """Retry a real circular-root schema without changing its generated output."""

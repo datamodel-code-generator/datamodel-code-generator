@@ -12,43 +12,43 @@ class NewItem(BaseModel):
     item_count: int | None = Field(None, alias='itemCount')
 
 
-FieldItemsItemIdGetPathItemIdParameter = TypeAliasType("FieldItemsItemIdGetPathItemIdParameter", int)
+ItemsItemIdGetPathItemIdParameter = TypeAliasType("ItemsItemIdGetPathItemIdParameter", int)
 
 
-FieldItemsItemIdGetQueryItemIdParameter = TypeAliasType("FieldItemsItemIdGetQueryItemIdParameter", int)
+ItemsItemIdGetQueryItemIdParameter = TypeAliasType("ItemsItemIdGetQueryItemIdParameter", int)
 
 
-FieldItemsItemIdGetHeaderItemIdParameter = TypeAliasType("FieldItemsItemIdGetHeaderItemIdParameter", int)
+ItemsItemIdGetHeaderItemIdParameter = TypeAliasType("ItemsItemIdGetHeaderItemIdParameter", int)
 
 
-FieldItemsItemIdGetHeaderXRequestIdParameter = TypeAliasType("FieldItemsItemIdGetHeaderXRequestIdParameter", str)
+ItemsItemIdGetHeaderXRequestIdParameter = TypeAliasType("ItemsItemIdGetHeaderXRequestIdParameter", str)
 
 
-FieldItemsItemIdGetQueryPageSizeParameter = TypeAliasType("FieldItemsItemIdGetQueryPageSizeParameter", int)
+ItemsItemIdGetQueryPageSizeParameter = TypeAliasType("ItemsItemIdGetQueryPageSizeParameter", int)
 
 
-FieldItemsItemIdGetQueryField2faParameter = TypeAliasType("FieldItemsItemIdGetQueryField2faParameter", str)
+ItemsItemIdGetQueryField2faParameter = TypeAliasType("ItemsItemIdGetQueryField2faParameter", str)
 
 
-FieldItemsItemIdGetQueryClassParameter = TypeAliasType("FieldItemsItemIdGetQueryClassParameter", str)
+ItemsItemIdGetQueryClassParameter = TypeAliasType("ItemsItemIdGetQueryClassParameter", str)
 
 
-FieldItemsItemIdGetQueryRequestParameter = TypeAliasType("FieldItemsItemIdGetQueryRequestParameter", str)
+ItemsItemIdGetQueryRequestParameter = TypeAliasType("ItemsItemIdGetQueryRequestParameter", str)
 
 
-FieldItemsItemIdGetQueryBodyParameter = TypeAliasType("FieldItemsItemIdGetQueryBodyParameter", str)
+ItemsItemIdGetQueryBodyParameter = TypeAliasType("ItemsItemIdGetQueryBodyParameter", str)
 
 
-FieldItemsItemIdGetQuerySelfParameter = TypeAliasType("FieldItemsItemIdGetQuerySelfParameter", str)
+ItemsItemIdGetQuerySelfParameter = TypeAliasType("ItemsItemIdGetQuerySelfParameter", str)
 
 
-FieldItemsItemIdGetCookieSessionIdParameter = TypeAliasType("FieldItemsItemIdGetCookieSessionIdParameter", str)
+ItemsItemIdGetCookieSessionIdParameter = TypeAliasType("ItemsItemIdGetCookieSessionIdParameter", str)
 
 
-FieldItemsItemIdGetQueryItemId1Parameter = TypeAliasType("FieldItemsItemIdGetQueryItemId1Parameter", int)
+ItemsItemIdGetQueryItemId1Parameter = TypeAliasType("ItemsItemIdGetQueryItemId1Parameter", int)
 
 
-FieldItemsPostQueryNameParameter = TypeAliasType("FieldItemsPostQueryNameParameter", str)
+ItemsPostQueryNameParameter = TypeAliasType("ItemsPostQueryNameParameter", str)
 
 
-FieldItemsItemIdTagsDeletePathItemIdParameter = TypeAliasType("FieldItemsItemIdTagsDeletePathItemIdParameter", int)
+ItemsItemIdTagsDeletePathItemIdParameter = TypeAliasType("ItemsItemIdTagsDeletePathItemIdParameter", int)

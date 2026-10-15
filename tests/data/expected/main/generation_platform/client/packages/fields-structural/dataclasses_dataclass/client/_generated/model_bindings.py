@@ -9,7 +9,12 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.stdlib import Choice, Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import (
+    Choice,
+    DataclassCodec,
+    Field,
+    Model,
+)
 
 MODELS: Final[dict[type, Model]] = {
     models.PetForm: Model((Field('name', 'name'), Field('tag', 'tag', omit_none=True))),
@@ -21,53 +26,53 @@ MODELS: Final[dict[type, Model]] = {
     models.NewPet: Model((Field('name', 'name'), Field('kind', 'kind', models.Kind), Field('tag', 'tag', omit_none=True), Field('birthDate', 'birthDate', omit_none=True), Field('owner', 'owner', models.Owner, omit_none=True), Field('id', 'id', omit_none=True), Field('secret', 'secret', omit_none=True))),
 }
 
-codec_0: Final[StdlibCodec[models.FieldPetsPostQueryTagParameter]] = StdlibCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.PetsPostQueryTagParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets/post parameter (request query tag)."""
 
-codec_1: Final[StdlibCodec[models.NewPet]] = StdlibCodec(models.NewPet, MODELS)
+codec_1: Final[DataclassCodec[models.NewPet]] = DataclassCodec(models.NewPet, MODELS)
 """Codec of /paths/~1pets/post request_body (request application/json)."""
 
-codec_2: Final[StdlibCodec[models.PetForm]] = StdlibCodec(models.PetForm, MODELS)
+codec_2: Final[DataclassCodec[models.PetForm]] = DataclassCodec(models.PetForm, MODELS)
 """Codec of /paths/~1pets/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_3: Final[StdlibCodec[models.Pet]] = StdlibCodec(models.Pet, MODELS)
+codec_3: Final[DataclassCodec[models.Pet]] = DataclassCodec(models.Pet, MODELS)
 """Codec of /paths/~1pets/post response_body (response 201 application/json)."""
 
-codec_4: Final[StdlibCodec[models.FieldPetsPetIdPatchPathPetIdParameter]] = StdlibCodec(None, MODELS)
+codec_4: Final[DataclassCodec[models.PetsPetIdPatchPathPetIdParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets~1{petId}/patch parameter (request path petId)."""
 
-codec_5: Final[StdlibCodec[models.PetPatch]] = StdlibCodec(models.PetPatch, MODELS)
+codec_5: Final[DataclassCodec[models.PetPatch]] = DataclassCodec(models.PetPatch, MODELS)
 """Codec of /paths/~1pets~1{petId}/patch request_body (request application/json)."""
 
-codec_6: Final[StdlibCodec[models.FieldPetsPetIdVisitsPostPathPetIdParameter]] = StdlibCodec(None, MODELS)
+codec_6: Final[DataclassCodec[models.PetsPetIdVisitsPostPathPetIdParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets~1{petId}~1visits/post parameter (request path petId)."""
 
-codec_7: Final[StdlibCodec[models.Visit]] = StdlibCodec(models.Visit, MODELS)
+codec_7: Final[DataclassCodec[models.Visit]] = DataclassCodec(models.Visit, MODELS)
 """Codec of /paths/~1pets~1{petId}~1visits/post request_body (request application/json)."""
 
-codec_8: Final[StdlibCodec[models.FieldPetsPetIdOwnerPutPathPetIdParameter]] = StdlibCodec(None, MODELS)
+codec_8: Final[DataclassCodec[models.PetsPetIdOwnerPutPathPetIdParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets~1{petId}~1owner/put parameter (request path petId)."""
 
-codec_9: Final[StdlibCodec[models.Owner]] = StdlibCodec(models.Owner, MODELS)
+codec_9: Final[DataclassCodec[models.Owner]] = DataclassCodec(models.Owner, MODELS)
 """Codec of /paths/~1pets~1{petId}~1owner/put request_body (request application/json)."""
 
-codec_10: Final[StdlibCodec[models.FieldOwnersPostRequest]] = StdlibCodec(Choice((('object', models.Owner),)), MODELS)
+codec_10: Final[DataclassCodec[models.OwnersPostRequest]] = DataclassCodec(Choice((('object', models.Owner),)), MODELS)
 """Codec of /paths/~1owners/post request_body (request application/json)."""
 
-codec_11: Final[StdlibCodec[models.FieldPetsPetIdLabelsPutPathPetIdParameter]] = StdlibCodec(None, MODELS)
+codec_11: Final[DataclassCodec[models.PetsPetIdLabelsPutPathPetIdParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets~1{petId}~1labels/put parameter (request path petId)."""
 
-codec_12: Final[StdlibCodec[models.Labels]] = StdlibCodec(models.Labels, MODELS)
+codec_12: Final[DataclassCodec[models.Labels]] = DataclassCodec(models.Labels, MODELS)
 """Codec of /paths/~1pets~1{petId}~1labels/put request_body (request application/json)."""
 
-codec_13: Final[StdlibCodec[models.FieldPetsPetIdPhotoPutPathPetIdParameter]] = StdlibCodec(None, MODELS)
+codec_13: Final[DataclassCodec[models.PetsPetIdPhotoPutPathPetIdParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets~1{petId}~1photo/put parameter (request path petId)."""
 
-codec_14: Final[StdlibCodec[models.FieldPetsPetIdRecordsPutPathPetIdParameter]] = StdlibCodec(None, MODELS)
+codec_14: Final[DataclassCodec[models.PetsPetIdRecordsPutPathPetIdParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets~1{petId}~1records/put parameter (request path petId)."""
 
-codec_15: Final[StdlibCodec[models.Pet]] = StdlibCodec(models.Pet, MODELS)
+codec_15: Final[DataclassCodec[models.Pet]] = DataclassCodec(models.Pet, MODELS)
 """Codec of /paths/~1pets~1{petId}~1records/put request_body (request application/json)."""
 
-codec_16: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_16: Final[DataclassCodec[str]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1pets~1{petId}~1photo/put request_body (request caption multipart/form-data)."""

@@ -2,25 +2,25 @@
 +++ models.py (expected)
 @@ -51,21 +51,3 @@
  
- class FieldPetsGetResponse(RootModel[list[Pet]]):
+ class PetsGetResponse(RootModel[list[Pet]]):
      root: list[Pet]
 -
 -
--class FieldPetsMineGetResponse(RootModel[list[Pet]]):
+-class PetsMineGetResponse(RootModel[list[Pet]]):
 -    root: list[Pet]
 -
 -
--FieldPetsPetIdGetPathPetIdParameter = TypeAliasType(
--    "FieldPetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
+-PetsPetIdGetPathPetIdParameter = TypeAliasType(
+-    "PetsPetIdGetPathPetIdParameter", Annotated[int, Field(ge=1)]
 -)
 -
 -
--FieldPetsPetIdDeletePathPetIdParameter = TypeAliasType(
--    "FieldPetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
+-PetsPetIdDeletePathPetIdParameter = TypeAliasType(
+-    "PetsPetIdDeletePathPetIdParameter", Annotated[int, Field(ge=1)]
 -)
 -
 -
--class FieldStoreInventoryGetResponse(RootModel[dict[str, int]]):
+-class StoreInventoryGetResponse(RootModel[dict[str, int]]):
 -    root: dict[str, int]
 --- server/_generated/contract.py
 +++ server/_generated/contract.py (expected)
@@ -45,7 +45,7 @@
 -    """Plans of the list_my_pets operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={'200': Declared(media_type='application/json', model=models.FieldPetsMineGetResponse)},
+-        responses={'200': Declared(media_type='application/json', model=models.PetsMineGetResponse)},
 -    )
 -
 -
@@ -70,128 +70,8 @@
 -    """Plans of the get_inventory operation."""
 -
 -    RESPONSES: Final = OperationResponses(
--        responses={'200': Declared(media_type='application/json', model=models.FieldStoreInventoryGetResponse)},
+-        responses={'200': Declared(media_type='application/json', model=models.StoreInventoryGetResponse)},
 -    )
---- server/_generated/openapi.py
-+++ server/_generated/openapi.py (expected)
-@@ -141,117 +141,6 @@
-     '     }\n'
-     '    }\n'
-     '   }\n'
--    '  },\n'
--    '  "/pets/mine": {\n'
--    '   "get": {\n'
--    '    "operationId": "listMyPets",\n'
--    '    "tags": [\n'
--    '     "pets"\n'
--    '    ],\n'
--    '    "responses": {\n'
--    '     "200": {\n'
--    '      "description": "The caller\'s pets.",\n'
--    '      "content": {\n'
--    '       "application/json": {\n'
--    '        "schema": {\n'
--    '         "type": "array",\n'
--    '         "items": {\n'
--    '          "$ref": "#/components/schemas/Pet"\n'
--    '         }\n'
--    '        }\n'
--    '       }\n'
--    '      }\n'
--    '     }\n'
--    '    }\n'
--    '   }\n'
--    '  },\n'
--    '  "/pets/{petId}": {\n'
--    '   "get": {\n'
--    '    "operationId": "getPet",\n'
--    '    "tags": [\n'
--    '     "pets"\n'
--    '    ],\n'
--    '    "parameters": [\n'
--    '     {\n'
--    '      "name": "petId",\n'
--    '      "in": "path",\n'
--    '      "required": true,\n'
--    '      "schema": {\n'
--    '       "type": "integer",\n'
--    '       "format": "int64",\n'
--    '       "minimum": 1\n'
--    '      }\n'
--    '     }\n'
--    '    ],\n'
--    '    "responses": {\n'
--    '     "200": {\n'
--    '      "description": "The pet.",\n'
--    '      "content": {\n'
--    '       "application/json": {\n'
--    '        "schema": {\n'
--    '         "$ref": "#/components/schemas/Pet"\n'
--    '        }\n'
--    '       }\n'
--    '      }\n'
--    '     },\n'
--    '     "404": {\n'
--    '      "description": "Missing.",\n'
--    '      "content": {\n'
--    '       "application/json": {\n'
--    '        "schema": {\n'
--    '         "$ref": "#/components/schemas/Error"\n'
--    '        }\n'
--    '       }\n'
--    '      }\n'
--    '     }\n'
--    '    }\n'
--    '   },\n'
--    '   "delete": {\n'
--    '    "operationId": "deletePet",\n'
--    '    "tags": [\n'
--    '     "pets"\n'
--    '    ],\n'
--    '    "parameters": [\n'
--    '     {\n'
--    '      "name": "petId",\n'
--    '      "in": "path",\n'
--    '      "required": true,\n'
--    '      "schema": {\n'
--    '       "type": "integer",\n'
--    '       "format": "int64",\n'
--    '       "minimum": 1\n'
--    '      }\n'
--    '     }\n'
--    '    ],\n'
--    '    "responses": {\n'
--    '     "204": {\n'
--    '      "description": "Deleted."\n'
--    '     }\n'
--    '    }\n'
--    '   }\n'
--    '  },\n'
--    '  "/store/inventory": {\n'
--    '   "get": {\n'
--    '    "operationId": "getInventory",\n'
--    '    "tags": [\n'
--    '     "store"\n'
--    '    ],\n'
--    '    "responses": {\n'
--    '     "200": {\n'
--    '      "description": "Counts by status.",\n'
--    '      "content": {\n'
--    '       "application/json": {\n'
--    '        "schema": {\n'
--    '         "type": "object",\n'
--    '         "additionalProperties": {\n'
--    '          "type": "integer"\n'
--    '         }\n'
--    '        }\n'
--    '       }\n'
--    '      }\n'
--    '     }\n'
--    '    }\n'
--    '   }\n'
-     '  }\n'
-     ' },\n'
-     ' "components": {\n'
 --- server/application.py
 +++ server/application.py (expected)
 @@ -11,14 +11,12 @@
@@ -244,6 +124,27 @@
              operation_dependencies=operation_dependencies,
              prefix=prefix,
          )
+--- server/main.py
++++ server/main.py (expected)
+@@ -12,18 +12,15 @@
+ 
+ try:
+     from services.pets import Pets
+-    from services.store import Store
+ except ImportError as error:
+     missing_implementation(
+         error,
+         {
+             'services.pets': 'Pets',
+-            'services.store': 'Store',
+         },
+     )
+     raise
+ 
+ app = create_app(
+     pets=Pets(),
+-    store=Store(),
+ )
 --- server/routers/pets.py
 +++ server/routers/pets.py (expected)
 @@ -8,8 +8,7 @@
@@ -256,7 +157,7 @@
  from pydantic import AwareDatetime, Field
  
  from .._generated import contract
-@@ -101,117 +100,11 @@
+@@ -103,120 +102,11 @@
      )
  
  
@@ -268,6 +169,7 @@
 -    list_my_pets_handler = checked(
 -        pets.list_my_pets,
 -        'The pets.list_my_pets method of GET /pets/mine',
+-        (),
 -    )
 -
 -    def list_my_pets() -> object:
@@ -281,7 +183,7 @@
 -        list_my_pets,
 -        methods=['GET'],
 -        status_code=200,
--        response_model=models.FieldPetsMineGetResponse,
+-        response_model=models.PetsMineGetResponse,
 -        response_model_by_alias=True,
 -        response_model_exclude_unset=True,
 -        operation_id='listMyPets',
@@ -299,6 +201,7 @@
 -    get_pet_handler = checked(
 -        pets.get_pet,
 -        'The pets.get_pet method of GET /pets/{petId}',
+-        ('petId',),
 -    )
 -
 -    def get_pet(
@@ -335,6 +238,7 @@
 -    delete_pet_handler = checked(
 -        pets.delete_pet,
 -        'The pets.delete_pet method of DELETE /pets/{petId}',
+-        ('petId',),
 -    )
 -
 -    def delete_pet(
@@ -385,7 +289,7 @@
 -    @abstractmethod
 -    def list_my_pets(
 -        self,
--    ) -> models.FieldPetsMineGetResponse | HTTPResult[models.FieldPetsMineGetResponse] | Response:
+-    ) -> models.PetsMineGetResponse | HTTPResult[models.PetsMineGetResponse] | Response:
 -        """
 -        Handle GET /pets/mine.
 -        """
@@ -417,14 +321,206 @@
 -    @abstractmethod
 -    def get_inventory(
 -        self,
--    ) -> models.FieldStoreInventoryGetResponse | HTTPResult[models.FieldStoreInventoryGetResponse] | Response:
+-    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
 -        """
 -        Handle GET /store/inventory.
 -        """
 EXTRA: server/routers/store.py (no longer generated)
+--- server/_generated/openapi.json
++++ server/_generated/openapi.json (expected)
+@@ -123,117 +123,6 @@
+      }
+     }
+    }
+-  },
+-  "/pets/mine": {
+-   "get": {
+-    "operationId": "listMyPets",
+-    "tags": [
+-     "pets"
+-    ],
+-    "responses": {
+-     "200": {
+-      "description": "The caller's pets.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "type": "array",
+-         "items": {
+-          "$ref": "#/components/schemas/Pet"
+-         }
+-        }
+-       }
+-      }
+-     }
+-    }
+-   }
+-  },
+-  "/pets/{petId}": {
+-   "get": {
+-    "operationId": "getPet",
+-    "tags": [
+-     "pets"
+-    ],
+-    "parameters": [
+-     {
+-      "name": "petId",
+-      "in": "path",
+-      "required": true,
+-      "schema": {
+-       "type": "integer",
+-       "format": "int64",
+-       "minimum": 1
+-      }
+-     }
+-    ],
+-    "responses": {
+-     "200": {
+-      "description": "The pet.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "$ref": "#/components/schemas/Pet"
+-        }
+-       }
+-      }
+-     },
+-     "404": {
+-      "description": "Missing.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "$ref": "#/components/schemas/Error"
+-        }
+-       }
+-      }
+-     }
+-    }
+-   },
+-   "delete": {
+-    "operationId": "deletePet",
+-    "tags": [
+-     "pets"
+-    ],
+-    "parameters": [
+-     {
+-      "name": "petId",
+-      "in": "path",
+-      "required": true,
+-      "schema": {
+-       "type": "integer",
+-       "format": "int64",
+-       "minimum": 1
+-      }
+-     }
+-    ],
+-    "responses": {
+-     "204": {
+-      "description": "Deleted."
+-     }
+-    }
+-   }
+-  },
+-  "/store/inventory": {
+-   "get": {
+-    "operationId": "getInventory",
+-    "tags": [
+-     "store"
+-    ],
+-    "responses": {
+-     "200": {
+-      "description": "Counts by status.",
+-      "content": {
+-       "application/json": {
+-        "schema": {
+-         "type": "object",
+-         "additionalProperties": {
+-          "type": "integer"
+-         }
+-        }
+-       }
+-      }
+-     }
+-    }
+-   }
+   }
+  },
+  "components": {
 --- server/README.md
 +++ server/README.md (expected)
-@@ -14,10 +14,6 @@
+@@ -15,7 +15,6 @@
+ | Module | File | Defines |
+ | --- | --- | --- |
+ | `services.pets` | `../services/pets.py` | `class Pets(PetsService)` |
+-| `services.store` | `../services/store.py` | `class Store(StoreService)` |
+ 
+ The file paths are relative to this README.
+ Replace each stub with your code, then run the application with an ASGI server, from the directory that holds the top-level package (add `--app-dir src` for a `src` layout):
+@@ -75,63 +74,6 @@
+         Handle POST /pets.
+         """
+         raise NotImplementedError
+-
+-    def list_my_pets(
+-        self,
+-    ) -> models.PetsMineGetResponse | HTTPResult[models.PetsMineGetResponse] | Response:
+-        """
+-        Handle GET /pets/mine.
+-        """
+-        raise NotImplementedError
+-
+-    def get_pet(
+-        self,
+-        *,
+-        petId: int,
+-    ) -> models.Pet | HTTPResult[models.Pet | models.Error] | Response:
+-        """
+-        Handle GET /pets/{petId}.
+-        """
+-        raise NotImplementedError
+-
+-    def delete_pet(
+-        self,
+-        *,
+-        petId: int,
+-    ) -> None | HTTPResult[None] | Response:
+-        """
+-        Handle DELETE /pets/{petId}.
+-        """
+-        raise NotImplementedError
+-```
+-
+-### `services.store`
+-
+-```python
+-"""Implement StoreService of server.services; server.main imports Store from this module.
+-
+-datamodel-code-generator wrote this module once, with a stub for each method, and never overwrites it. Generating the
+-server again updates the Protocol, so type checkers point at the methods to change.
+-"""
+-
+-from __future__ import annotations
+-
+-import models
+-from fastapi.responses import Response
+-from server import HTTPResult
+-from server.services import StoreService
+-
+-
+-class Store(StoreService):
+-    """Implement the store operations."""
+-
+-    def get_inventory(
+-        self,
+-    ) -> models.StoreInventoryGetResponse | HTTPResult[models.StoreInventoryGetResponse] | Response:
+-        """
+-        Handle GET /store/inventory.
+-        """
+-        raise NotImplementedError
+ ```
+ 
+ ## Dependencies
+@@ -156,10 +98,6 @@
  | --- | --- | --- | --- | --- |
  | `PetsService` | `list_pets` | GET | `/pets` | `/paths/~1pets/get` |
  | `PetsService` | `create_pet` | POST | `/pets` | `/paths/~1pets/post` |
@@ -435,32 +531,34 @@ EXTRA: server/routers/store.py (no longer generated)
  
  `operation_dependencies` takes the method names, the keys of `OperationDependencies`; the per-operation generation settings, such as `--server-handler-modes`, take the operation references.
  
-@@ -31,18 +27,14 @@
+@@ -180,19 +118,14 @@
  
- ```python
  from server import create_app
--from server.services import PetsService, StoreService
-+from server.services import PetsService
+ from services.pets import Pets
+-from services.store import Store
  
  
- class Pets(PetsService):
--    """Implement `list_pets`, `create_pet`, `list_my_pets`, `get_pet`, and `delete_pet`."""
-+    """Implement `list_pets` and `create_pet`."""
+ class FakePets(Pets):
+     """Override the methods the test calls, such as `list_pets`."""
  
  
--class Store(StoreService):
--    """Implement `get_inventory`."""
+-class FakeStore(Store):
+-    """Override the methods the test calls, such as `get_inventory`."""
 -
 -
--app = create_app(pets=Pets(), store=Store())
-+app = create_app(pets=Pets())
+ def test_app() -> None:
+-    with TestClient(create_app(pets=FakePets(), store=FakeStore())) as client:
++    with TestClient(create_app(pets=FakePets())) as client:
+         ...
  ```
  
- Run the application with any ASGI server, such as `uvicorn app:app` for a module named `app.py`.
-@@ -55,7 +47,7 @@
- from server import build_router
+@@ -204,10 +137,9 @@
  
- app = FastAPI(lifespan=lifespan, exception_handlers=exception_handlers)
+ from server import build_router
+ from services.pets import Pets
+-from services.store import Store
+ 
+ app = FastAPI()
 -app.include_router(build_router(pets=Pets(), store=Store()))
 +app.include_router(build_router(pets=Pets()))
  ```

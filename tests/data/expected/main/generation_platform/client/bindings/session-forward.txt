@@ -10,7 +10,7 @@ render dataclasses.dataclass default
   model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
   models.py
-  model_bindings.py dataclasses_dataclass/default
+  model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
   models.py
   model_bindings.py msgspec_Struct/default

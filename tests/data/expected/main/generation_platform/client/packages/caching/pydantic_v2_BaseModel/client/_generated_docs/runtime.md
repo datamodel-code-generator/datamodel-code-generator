@@ -2,6 +2,7 @@
 
 Import `Client` and `AsyncClient` from `client` and the records below from
 `client.options`. Async calls require asyncio.
+The [README](../README.md) of the package shows how to call its operations.
 
 ## Layered options and budgets
 
@@ -15,7 +16,9 @@ one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client
 The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
 give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
 the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
-names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+names compare case-insensitively and query names exactly. A header's name is an HTTP token and its value HTAB, SP, and
+visible ASCII without whitespace at either end, as an idempotency key is: any other raises `ConfigurationError` where
+the setting is given.
 A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
 multipart one without a boundary keeps the body's.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
@@ -98,7 +101,6 @@ stores.
 
 | Limit | Effective default |
 |---|---|
-| stored body per entry | 2 MiB |
 | freshness of any entry | 300 seconds |
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
@@ -115,7 +117,8 @@ authenticated and an anonymous one a helper declared anonymous; anything else ra
 reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
 transport, are not in the key: give such a client a store of its own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
-and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
+and a 304 without a usable entry raises `ProtocolDataError`. A validator a header cannot carry as ASCII text is never
+sent, and its entry is fetched again without it. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
 allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `SDKError` with the reason
 `store_failed` and never resend a request.

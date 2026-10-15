@@ -116,6 +116,8 @@ reviewed-safe use_generic_base_class
 reviewed-safe use_generic_container_types
 reviewed-safe use_inline_field_description
 reviewed-safe use_missing_sentinel
+reviewed-safe use_msgspec_nullable_enum_alias
+reviewed-safe use_msgspec_tagged_unions
 reviewed-safe use_non_positive_negative_number_constrained_types
 reviewed-safe use_object_type
 reviewed-safe use_one_literal_as_default
@@ -136,6 +138,7 @@ reviewed-safe use_tuple_for_fixed_items
 reviewed-safe use_tuple_for_fixed_length_arrays
 reviewed-safe use_type_alias
 reviewed-safe use_type_checking_imports
+reviewed-safe use_typed_nullable_map_values
 reviewed-safe use_union_operator
 reviewed-safe use_unique_items_as_set
 reviewed-safe validation

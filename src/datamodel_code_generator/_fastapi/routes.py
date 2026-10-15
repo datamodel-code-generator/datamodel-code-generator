@@ -6,6 +6,7 @@ import keyword
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
+from urllib.parse import unquote
 
 from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence
 
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import OperationContract
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+_UNMATCHABLE: Final = re.compile(r"%(?:2[Ff]|7[BbDd])")
 _SLOT_PREFIX: Final = "dcg_p"
 BUILDER_NAMES: Final = frozenset({
     "ROUTES",
@@ -98,15 +100,29 @@ class RoutePath:
         return bool(self.placeholders)
 
     def shape(self) -> str:
-        """Return the path with every placeholder erased, which identifies routes FastAPI cannot tell apart."""
+        """Return the routed path with every placeholder erased, which identifies routes FastAPI cannot tell apart.
+
+        Its literal text is decoded, as the route matches it, so `/a b` and `/a%20b` have one shape.
+        """
+        return _PLACEHOLDER.sub("{}", self.route_path)
+
+    def written(self) -> str:
+        """Return the path as the document writes it, with every placeholder erased."""
         return _PLACEHOLDER.sub("{}", self.path)
 
 
 def placeholders(path: str) -> tuple[str, ...]:
-    """Return a path template's placeholder names in order, rejecting braces FastAPI cannot route."""
+    """Return a path template's placeholder names in order, rejecting braces FastAPI cannot route.
+
+    Starlette routes by the percent-decoded path, so literal text that encodes `/`, `{`, or `}` is refused too: no
+    route of decoded text matches it as a client sends it.
+    """
     names = tuple(_PLACEHOLDER.findall(path))
     if _PLACEHOLDER.sub("", path).count("{") or _PLACEHOLDER.sub("", path).count("}"):
         msg = "The path has an unmatched brace"
+        raise RouteError(msg)
+    if any(_UNMATCHABLE.search(text) for text in _PLACEHOLDER.split(path)[::2]):
+        msg = "The path's literal text encodes '/', '{', or '}', which a route cannot match"
         raise RouteError(msg)
     for name in names:
         if not name or ":" in name:
@@ -116,7 +132,11 @@ def placeholders(path: str) -> tuple[str, ...]:
 
 
 def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePath:
-    """Rename placeholders Starlette cannot match by their wire names, keeping ordinary identifiers unchanged."""
+    """Rename placeholders Starlette cannot match by their wire names, keeping ordinary identifiers unchanged.
+
+    The literal text between them is registered percent-decoded, as Starlette matches the decoded path, so a route
+    of `/files/a%20b` matches the request a client sends for it.
+    """
     names = placeholders(path)
     if len(set(names)) != len(names) and not repeatable:
         msg = "OpenAPI 3.2 does not allow a placeholder twice in one path"
@@ -138,9 +158,9 @@ def route_path(path: str, taken: Iterable[str], *, repeatable: bool) -> RoutePat
                 index += 1
             index += 1
             slots.append(PathSlot(wire_name=name, slot=slot, occurrence=occurrence))
-        parts.extend((path[position : match.start()], f"{{{slot}}}"))
+        parts.extend((unquote(path[position : match.start()]), f"{{{slot}}}"))
         position = match.end()
-    parts.append(path[position:])
+    parts.append(unquote(path[position:]))
     return RoutePath(path=path, route_path="".join(parts), placeholders=names, slots=tuple(slots))
 
 
@@ -156,19 +176,12 @@ def tags(operation: OperationContract) -> tuple[str, ...]:
 
 
 def group_key(operation: OperationContract, *, single: bool) -> str:
-    """Return the group of an operation: its first tag, untagged, or all for the single layout."""
+    """Return the group of an operation: its first tag, default without tags, or all for the single layout."""
     if single:
         return "all"
-    return f"tag:{found[0]}" if (found := tags(operation)) else "untagged"
+    return f"tag:{found[0]}" if (found := tags(operation)) else "default"
 
 
 def group_basis(key: str) -> str:
-    """Return the text a group's default name derives from: its first tag, untagged, or service for all."""
-    match key:
-        case "all":
-            return "service"
-        case "untagged":
-            return key
-        case _:
-            pass
-    return key.removeprefix("tag:")
+    """Return the text a group's default name derives from: its first tag, default, or service for all."""
+    return "service" if key == "all" else key.removeprefix("tag:")

@@ -8,13 +8,14 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_extras import extras_serializer
 
 
-codec_0: Final[PydanticDataclassCodec[models.Payload]] = PydanticDataclassCodec(models.Payload)
+codec_0: Final[PydanticDataclassCodec[models.Payload]] = PydanticDataclassCodec(models.Payload, extras_serializer)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[PydanticDataclassCodec[models.Payload]] = PydanticDataclassCodec(models.Payload)
+codec_1: Final[PydanticDataclassCodec[models.Payload]] = PydanticDataclassCodec(models.Payload, extras_serializer)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
 codec_2: Final[PydanticDataclassCodec[models.Dictionary]] = PydanticDataclassCodec(models.Dictionary)
@@ -29,8 +30,8 @@ codec_4: Final[PydanticDataclassCodec[models.Choice]] = PydanticDataclassCodec(m
 codec_5: Final[PydanticDataclassCodec[models.Choice]] = PydanticDataclassCodec(models.Choice)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticDataclassCodec[models.Required]] = PydanticDataclassCodec(models.Required)
+codec_6: Final[PydanticDataclassCodec[models.Required]] = PydanticDataclassCodec(models.Required, extras_serializer)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[PydanticDataclassCodec[models.Required]] = PydanticDataclassCodec(models.Required)
+codec_7: Final[PydanticDataclassCodec[models.Required]] = PydanticDataclassCodec(models.Required, extras_serializer)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""

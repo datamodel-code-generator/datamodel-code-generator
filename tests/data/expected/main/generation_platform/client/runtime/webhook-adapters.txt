@@ -2,7 +2,7 @@
   import <package>.protocols loads []
   import <package>.webhooks loads []
   import <package>.webhooks.unsigned.message loads ['webhook_events']
-    decode_unverified hints=['options', 'raw_body', 'return']
+    decode_unverified hints=['raw_body', 'return']
   import <package>.webhooks.stripe.event loads ['webhook_events', 'adapters']
     verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return', 'verifier']
     verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'return', 'verifier']
@@ -77,15 +77,11 @@
   cancellation propagated=True calls=1 cause=None
   cancellation async propagated=True calls=1 cause=None
   call: calls=1 body is given=True headers=(('Content-Type', 'application/json'), ('Stripe-Signature', 't=1614265330,v1=dc518e47589d1bfd353029d070e8cd3f2896fdfafd829e64996fcd51b6c6de7b')) keys are given=True now is given=True
-  limits=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
+  limits=ResolvedWebhookOptions(max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
   call async: calls=1 body is given=True headers=(('Content-Type', 'application/json'), ('Stripe-Signature', 't=1614265330,v1=dc518e47589d1bfd353029d070e8cd3f2896fdfafd829e64996fcd51b6c6de7b')) keys are given=True now is given=True
-  limits async=ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
+  limits async=ResolvedWebhookOptions(max_keys=8, max_signatures=2, past_tolerance=300.0, future_tolerance=30.0)
   opaque keys = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted'
   opaque key reads=[] keys passed are given=True
-  body over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
-    verifier calls in both modes=0
-  headers over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
-    verifier calls in both modes=0
   nine keys = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
     verifier calls in both modes=0
   nine keys allowed = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0'

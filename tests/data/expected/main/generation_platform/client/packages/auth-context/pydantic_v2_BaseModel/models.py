@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing_extensions import TypeAliasType
 
-FieldInheritedPostHeaderXIdempotencyParameter = TypeAliasType("FieldInheritedPostHeaderXIdempotencyParameter", str)
+InheritedPostHeaderXIdempotencyParameter = TypeAliasType("InheritedPostHeaderXIdempotencyParameter", str)
 
 
-FieldExplicitPostHeaderXIdempotencyParameter = TypeAliasType("FieldExplicitPostHeaderXIdempotencyParameter", str)
+ExplicitPostHeaderXIdempotencyParameter = TypeAliasType("ExplicitPostHeaderXIdempotencyParameter", str)

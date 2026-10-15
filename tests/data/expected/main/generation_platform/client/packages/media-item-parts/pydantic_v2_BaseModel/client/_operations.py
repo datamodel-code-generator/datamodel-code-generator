@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import MultipartForm, PartPlan
+from ._runtime.client.multipart import MultipartForm
 from ._runtime.client.multipart_responses import object_branch
 from ._runtime.client.operations import (
     BodyMedia,
@@ -17,6 +17,7 @@ from ._runtime.client.operations import (
     ResponseDecoder,
     ServerPlan,
 )
+from ._runtime.client.parts import PartPlan
 from .types.default import SendPartsResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)

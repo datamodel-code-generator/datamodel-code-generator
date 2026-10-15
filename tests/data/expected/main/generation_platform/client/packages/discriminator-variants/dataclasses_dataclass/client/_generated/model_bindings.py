@@ -9,12 +9,12 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.stdlib import (
+from .._runtime.model_codecs.stdlib_dataclasses import (
     Choice,
+    DataclassCodec,
     Field,
     Items,
     Model,
-    StdlibCodec,
     Values,
 )
 
@@ -27,24 +27,24 @@ MODELS: Final[dict[type, Model]] = {
     models.Fish: Model((Field('kind', 'kind'), Field('fins', 'fins', omit_none=True))),
     models.Bird: Model((Field('kind', 'kind'),)),
     models.Item: Model((Field('name', 'name'), Field('count', 'count'))),
-    models.ChildResponse: Model((Field('pet', 'pet', Choice((), 'kind', (('#-datamodel-code-generator-#-read-write-response-#-special-#', models.LionResponse), ('d', models.Wolf)))), Field('pets_by_name', 'pets_by_name', Values(Choice((), 'kind', (('#-datamodel-code-generator-#-read-write-response-#-special-#', models.LionResponse), ('d', models.Wolf))))), Field('note', 'note', omit_none=True))),
+    models.ChildResponse: Model((Field('pet', 'pet', Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf)))), Field('pets_by_name', 'pets_by_name', Values(Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf))))), Field('note', 'note', omit_none=True))),
     models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird))), omit_none=True),)),
 }
 
-codec_0: Final[StdlibCodec[models.PetRequest]] = StdlibCodec(Choice((), 'kind', (('#-datamodel-code-generator-#-read-write-request-#-special-#', models.CatRequest), ('Dog', models.Dog))), MODELS)
+codec_0: Final[DataclassCodec[models.PetRequest]] = DataclassCodec(Choice((), 'kind', (('Cat', models.CatRequest), ('Dog', models.Dog))), MODELS)
 """Codec of /paths/~1pets/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.PetResponse]] = StdlibCodec(Choice((), 'kind', (('#-datamodel-code-generator-#-read-write-response-#-special-#', models.CatResponse), ('Dog', models.Dog))), MODELS)
+codec_1: Final[DataclassCodec[models.PetResponse]] = DataclassCodec(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog))), MODELS)
 """Codec of /paths/~1pets/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.FieldPetsListGetResponseResponse]] = StdlibCodec(Items(Choice((), 'kind', (('#-datamodel-code-generator-#-read-write-response-#-special-#', models.CatResponse), ('Dog', models.Dog)))), MODELS)
+codec_2: Final[DataclassCodec[models.PetsListGetResponseResponse]] = DataclassCodec(Items(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog)))), MODELS)
 """Codec of /paths/~1pets~1list/get response_body (response 200 application/json)."""
 
-codec_3: Final[StdlibCodec[models.ChildResponse]] = StdlibCodec(models.ChildResponse, MODELS)
+codec_3: Final[DataclassCodec[models.ChildResponse]] = DataclassCodec(models.ChildResponse, MODELS)
 """Codec of /paths/~1child/get response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.Holder]] = StdlibCodec(models.Holder, MODELS)
+codec_4: Final[DataclassCodec[models.Holder]] = DataclassCodec(models.Holder, MODELS)
 """Codec of /paths/~1holder/get response_body (response 200 application/json)."""
 
-codec_5: Final[StdlibCodec[models.Item]] = StdlibCodec(models.Item, MODELS)
+codec_5: Final[DataclassCodec[models.Item]] = DataclassCodec(models.Item, MODELS)
 """Codec of /paths/~1items/post request_body (request application/json)."""

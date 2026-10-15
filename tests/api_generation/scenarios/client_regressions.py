@@ -1,13 +1,22 @@
-"""Exercise error-only operations and JSON failure contexts through generated clients and real HTTP exchanges."""
+"""Exercise error-only, modelless and JSON failure operations through generated clients and real HTTP exchanges."""
 
 from __future__ import annotations
 
+import base64
 import importlib
 import json
 from typing import TYPE_CHECKING, Any
 
 from tests.api_generation.support.client_generation import SOURCE
-from tests.api_generation.support.client_runtime import Exchange, arecord, json_response, raw_response, record, run
+from tests.api_generation.support.client_runtime import (
+    Exchange,
+    arecord,
+    json_response,
+    raw_response,
+    record,
+    request_body,
+    run,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -29,6 +38,54 @@ def no_success(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(raw_response(409))
         record(lines, "metadata error", api.archives.with_response.create_archive)
     run(lambda: _async_no_success(package, exchange, lines))
+
+
+def route_text(package: ModuleType, lines: list[str]) -> None:
+    """Import the helpers of a route that holds quotes and a backslash, and fetch through one."""
+    for module, name in (("_helpers", "NotesCurrentCache"), ("_async_helpers", "AsyncNotesCurrentCache")):
+        helper = getattr(importlib.import_module(f"{package.__name__}.protocols.{module}"), name)
+        lines.extend((f"  {name} {helper.__doc__}", f"  {name}.fetch {helper.fetch.__doc__}"))
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        exchange.respond(json_response(200, "note"))
+        record(lines, "fetch", lambda: api.protocols.notes.current.fetch().data)
+
+
+def _encoded(value: bytes) -> str:
+    """Return the base64 text of bytes."""
+    return base64.b64encode(value).decode()
+
+
+def _modelless(package: ModuleType) -> Iterator[tuple[str, str, Any, object]]:
+    """Yield each modelless operation's label, method, native body, and JSON result."""
+    yield (
+        "inline bytes",
+        "put_blob",
+        request_body(package, "putBlob", None, _encoded(b"\xff\x00\xfe")),
+        _encoded(b"\x80\xc3"),
+    )
+    yield "alias bytes", "put_alias", request_body(package, "putAlias", None, _encoded(b"\x00caf\xe9")), _encoded(b"")
+    chunks = request_body(package, "putChunks", None, [_encoded(b"\xfe"), _encoded(b"ok")])
+    yield "bytes items", "put_chunks", chunks, [_encoded(b"\xc0\xaf"), _encoded(b"\xff")]
+    yield "integer", "put_count", request_body(package, "putCount", None, 7), "seven"
+
+
+def modelless_bodies(package: ModuleType, lines: list[str]) -> None:
+    """Send and decode base64 bytes, bytes-only aliases and scalars of a package with no model classes."""
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for label, name, body, result in _modelless(package):
+            exchange.respond(json_response(200, result))
+            record(lines, label, lambda name=name, body=body: getattr(api.blobs, name)(body=body))
+    run(lambda: _async_modelless_bodies(package, exchange, lines))
+
+
+async def _async_modelless_bodies(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    """Send and decode the modelless bodies asynchronously."""
+    async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
+        for label, name, body, result in _modelless(package):
+            exchange.respond(json_response(200, result))
+            await arecord(lines, f"async {label}", lambda name=name, body=body: getattr(api.blobs, name)(body=body))
 
 
 def _responses() -> Iterator[tuple[str, str, Any]]:

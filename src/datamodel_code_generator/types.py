@@ -47,6 +47,7 @@ from pydantic import (
 from pydantic_core import core_schema
 from typing_extensions import TypeIs
 
+from datamodel_code_generator import imports as generator_imports
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -85,6 +86,10 @@ OPTIONAL_PREFIX = f"{OPTIONAL}["
 _RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY = "_runtime_expression_imports"
 _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
+_RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
+_REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
+_NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
+_LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
 
 
 class DefaultValueRecipe(Enum):
@@ -162,7 +167,9 @@ __getattr__ = create_module_getattr(
 if TYPE_CHECKING:
     import builtins
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from types import ModuleType
 
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.enums import StrictTypes
 
@@ -612,6 +619,9 @@ class DataType(_BaseModel):
                 object.__setattr__(new_obj, field_name, copied_value)
         new_obj._set_runtime_expression_imports(self.runtime_expression_imports)
         new_obj._set_forward_reference(self._is_forward_reference)
+        for key in (_REFERENCE_NULL_DATA_TYPE_KEY, _NULL_STRIPPED_DATA_TYPE_KEY):
+            if key in self.__dict__:
+                new_obj.__dict__[key] = True
         if (enum_member_literal_reference := self._enum_member_literal_reference) is not None:
             new_obj._set_enum_member_literal_reference(enum_member_literal_reference)
 
@@ -760,7 +770,8 @@ class DataType(_BaseModel):
         use_standard_collections = self.use_standard_collections
         yield (self.is_optional and not self.use_union_operator, IMPORT_OPTIONAL)
         yield (len(self.data_types) > 1 and not self.use_union_operator, IMPORT_UNION)
-        yield ((bool(self.literals) or bool(self.enum_member_literals)) and not self.alias, IMPORT_LITERAL)
+        has_literal = (bool(self.literals) or bool(self.enum_member_literals)) and not self.alias
+        yield (has_literal, self._literal_import if has_literal else IMPORT_LITERAL)
         yield (bool(self.discriminator), IMPORT_ANNOTATED)
         yield (self.is_frozen_set and not use_standard_collections, IMPORT_FROZEN_SET)
         yield (self.is_mapping and use_standard_collections, IMPORT_ABC_MAPPING)
@@ -794,6 +805,26 @@ class DataType(_BaseModel):
             self.__dict__[_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY] = imports
             return
         self.__dict__.pop(_RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY, None)
+
+    @property
+    def _literal_import(self) -> Import:
+        """Return the import that ``Literal`` is written through."""
+        return self.__dict__.get(_LITERAL_IMPORT_DATA_TYPE_KEY, IMPORT_LITERAL)
+
+    @property
+    def _literal_name(self) -> str:
+        """Return the name that ``Literal`` is written as."""
+        import_ = self.__dict__.get(_LITERAL_IMPORT_DATA_TYPE_KEY)
+        return LITERAL if import_ is None else import_.binding_name
+
+    def _set_literal_import(self, import_: Import) -> None:
+        """Write ``Literal`` through an import bound under another name, as when a model of the module holds it."""
+        self.__dict__[_LITERAL_IMPORT_DATA_TYPE_KEY] = import_
+
+    @property
+    def _is_quoted_reference(self) -> bool:
+        """Return whether the referenced model is written as a quoted name."""
+        return (reference := self.reference) is not None and self.alias == f'"{reference.short_name}"'
 
     @property
     def _is_forward_reference(self) -> bool:
@@ -929,9 +960,9 @@ class DataType(_BaseModel):
             type_ = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
         elif self.enum_member_literals:
             parts = [f"{enum_class}.{member}" for enum_class, member in self.enum_member_literals]
-            type_ = f"{LITERAL}[{', '.join(parts)}]"
+            type_ = f"{self._literal_name}[{', '.join(parts)}]"
         elif self.literals:
-            type_ = f"{LITERAL}[{', '.join(repr(literal) for literal in self.literals)}]"
+            type_ = f"{self._literal_name}[{', '.join(repr(literal) for literal in self.literals)}]"
         elif self.reference:
             type_ = self.reference.short_name
             type_ = self._get_wrapped_reference_type_hint(type_)
@@ -954,8 +985,7 @@ class DataType(_BaseModel):
             )
 
         data_types: list[str] = []
-        for data_type in self.data_types:
-            data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
+        for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint):
             if not data_type_type or data_type_type in data_types:
                 continue
 
@@ -977,13 +1007,30 @@ class DataType(_BaseModel):
             self.import_ = self.import_ or IMPORT_ANY
         elif len(data_types) == 1:
             type_ = data_types[0]
-        elif self.use_union_operator:
-            type_ = UNION_OPERATOR_DELIMITER.join(data_types)
         else:
-            type_ = f"{UNION_PREFIX}{UNION_DELIMITER.join(data_types)}]"
+            type_ = self._join_union_member_type_hints(data_types)
 
         if wrap_discriminator and (discriminator := self.discriminator):
             type_ = self._wrap_discriminator_type_hint(type_, discriminator)
+        return type_
+
+    def _iter_union_member_type_hints(self, *, use_base_type_hint: bool) -> Iterator[str]:
+        """Yield the hints of union members, spreading a member union that renders as a plain union."""
+        for data_type in self.data_types:
+            data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
+            if (rendered := data_type.__dict__.get(_RENDERED_UNION_MEMBERS_KEY)) and rendered[0] == data_type_type:
+                yield from rendered[1]
+            else:
+                yield data_type_type
+
+    def _join_union_member_type_hints(self, data_types: list[str]) -> str:
+        """Join union member hints, remembering them so that an enclosing union can spread this one."""
+        type_ = (
+            UNION_OPERATOR_DELIMITER.join(data_types)
+            if self.use_union_operator
+            else f"{UNION_PREFIX}{UNION_DELIMITER.join(data_types)}]"
+        )
+        self.__dict__[_RENDERED_UNION_MEMBERS_KEY] = (type_, tuple(data_types))
         return type_
 
     def _render_ordered_union_type_hint(
@@ -994,8 +1041,7 @@ class DataType(_BaseModel):
     ) -> str:
         data_types: list[str] = []
         seen_data_types: set[str] = set()
-        for data_type in self.data_types:
-            data_type_type = data_type.base_type_hint if use_base_type_hint else data_type.type_hint
+        for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint):
             if not data_type_type or data_type_type in seen_data_types:
                 continue
             seen_data_types.add(data_type_type)
@@ -1007,10 +1053,8 @@ class DataType(_BaseModel):
                 self.import_ = self.import_ or IMPORT_ANY
             case 1:
                 type_ = data_types[0]
-            case _ if self.use_union_operator:
-                type_ = UNION_OPERATOR_DELIMITER.join(data_types)
             case _:
-                type_ = f"{UNION_PREFIX}{UNION_DELIMITER.join(data_types)}]"
+                type_ = self._join_union_member_type_hints(data_types)
 
         if wrap_discriminator and (discriminator := self.discriminator):
             type_ = self._wrap_discriminator_type_hint(type_, discriminator)
@@ -1023,8 +1067,19 @@ class DataType(_BaseModel):
         source = self.reference.source
         if getattr(source, "is_alias", False):
             return
-        if getattr(source, "nullable", False):
-            self.is_optional = True
+        if self.is_optional or not getattr(source, "nullable", False) or _NULL_STRIPPED_DATA_TYPE_KEY in self.__dict__:
+            return
+        self.is_optional = True
+        self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
+
+    def _strip_null(self, *, own: bool) -> None:
+        """Drop the None of the type, for good when it is the type's own rather than its nullable model's.
+
+        A None that only the referenced model admits comes back with the next type hint.
+        """
+        if own or (self.is_optional and _REFERENCE_NULL_DATA_TYPE_KEY not in self.__dict__):
+            self.__dict__[_NULL_STRIPPED_DATA_TYPE_KEY] = True
+        self.is_optional = False
 
     def _wrap_dict_type_hint(
         self,
@@ -1265,6 +1320,72 @@ def _create_context_data_type(  # noqa: PLR0913, PLR0917
     return context_data_type
 
 
+NUMBER_KEYWORDS: frozenset[str] = frozenset({
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "multipleOf",
+})
+NUMBER_BOUND_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS - {"multipleOf"}
+LENGTH_KEYWORDS: frozenset[str] = frozenset({"minLength", "maxLength"})
+STRING_KEYWORDS: frozenset[str] = LENGTH_KEYWORDS | {"pattern"}
+ARRAY_KEYWORDS: frozenset[str] = frozenset({"minItems", "maxItems", "uniqueItems"})
+SEQUENCE_KEYWORDS: frozenset[str] = ARRAY_KEYWORDS | LENGTH_KEYWORDS
+TYPE_DEPENDENT_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
+_NO_KEYWORDS: frozenset[str] = frozenset()
+_UNION_PATHS: frozenset[str] = frozenset({"typing.Union", "typing.Optional", UNION, OPTIONAL})
+_QUALIFIER_PATHS: frozenset[str] = frozenset({"typing.Annotated", "typing.Final", IMPORT_ANNOTATED.import_, "Final"})
+_LITERAL_VALUE_TYPE_PATHS: Mapping[type, str] = MappingProxyType({
+    str: "str",
+    bytes: "bytes",
+    int: "int",
+    float: "float",
+})
+_STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
+    "typing.Text": "str",
+    "typing.List": "list",
+    "typing.Tuple": "tuple",
+    "typing.Set": "set",
+    "typing.FrozenSet": "frozenset",
+    "typing.AbstractSet": "frozenset",
+    "collections.abc.Set": "frozenset",
+    "typing.Deque": "collections.deque",
+    **{f"typing.{name}": f"collections.abc.{name}" for name in ("Sized", "Iterable", "Generator", "ByteString")},
+    **{
+        f"{module}.{name}": path
+        for module in ("typing", "collections.abc")
+        for name, path in (
+            ("Sequence", "list"),
+            ("MutableSequence", "list"),
+            ("Collection", "list"),
+            ("MutableSet", "set"),
+        )
+    },
+})
+
+
+def _standard_type_path(path: str) -> str:
+    """Return the path that classifies a type: unprefixed builtins, typing_extensions as typing, resolved aliases."""
+    path = path.removeprefix("builtins.")
+    if path.startswith("typing_extensions."):
+        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
+            is_known_python_type_path,
+        )
+
+        if is_known_python_type_path(typing_path := f"typing.{path.removeprefix('typing_extensions.')}"):
+            path = typing_path
+    return _STANDARD_CLASS_PATHS.get(path, path)
+
+
+@cache
+def _import_paths(module: ModuleType) -> frozenset[str]:
+    """Return the import path of every type or name a generator imports module declares."""
+    return frozenset(
+        f"{import_.from_}.{import_.import_}" for import_ in vars(module).values() if isinstance(import_, Import)
+    )
+
+
 class DataTypeManager(ABC):
     """Abstract base class for managing type mappings in code generation.
 
@@ -1279,6 +1400,30 @@ class DataTypeManager(ABC):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     DEFAULT_VALUE_DESCRIPTORS: ClassVar[Mapping[tuple[str | None, str], DefaultValueDescriptor]] = MappingProxyType({})
+    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
+        "int": NUMBER_KEYWORDS,
+        "float": NUMBER_KEYWORDS,
+        "decimal.Decimal": NUMBER_KEYWORDS,
+        "datetime.timedelta": NUMBER_BOUND_KEYWORDS,
+        "datetime.datetime": NUMBER_BOUND_KEYWORDS,
+        "datetime.time": NUMBER_BOUND_KEYWORDS,
+        "str": STRING_KEYWORDS,
+        "bytes": STRING_KEYWORDS,
+        "list": SEQUENCE_KEYWORDS,
+        "set": SEQUENCE_KEYWORDS,
+        "frozenset": SEQUENCE_KEYWORDS,
+        "tuple": SEQUENCE_KEYWORDS,
+        "collections.deque": SEQUENCE_KEYWORDS,
+        "collections.abc.Sized": SEQUENCE_KEYWORDS,
+        "collections.abc.Iterable": SEQUENCE_KEYWORDS,
+        "collections.abc.Generator": SEQUENCE_KEYWORDS,
+        "collections.abc.ByteString": STRING_KEYWORDS,
+        "typing.AnyStr": STRING_KEYWORDS,
+    })
+    KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
+    ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
+    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = True
+    LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = True
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -1363,6 +1508,129 @@ class DataTypeManager(ABC):
         if (kwargs := data_type.kwargs) is not None:
             copied_data_type.kwargs = deepcopy(kwargs)
         return copied_data_type
+
+    @staticmethod
+    def _shape_constraint_keywords(data_type: DataType) -> frozenset[str] | None:
+        """Return the keywords a container or a referenced model takes, or None for any other type."""
+        if data_type.is_dict or data_type.is_mapping:
+            return _NO_KEYWORDS
+        if any((
+            data_type.is_list,
+            data_type.is_set,
+            data_type.is_frozen_set,
+            data_type.is_sequence,
+            data_type.is_tuple,
+        )):
+            return SEQUENCE_KEYWORDS
+        return TYPE_DEPENDENT_KEYWORDS if data_type.reference else None
+
+    @classmethod
+    def constraint_keywords(cls, data_type: DataType) -> frozenset[str]:
+        """Return the type-dependent keywords that every member of an emitted type takes in this output model."""
+        if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
+            return keywords
+        if data_type.data_types:
+            return frozenset.intersection(*map(cls.constraint_keywords, data_type.data_types))
+        if data_type.python_type is None:
+            import_ = data_type.import_
+            return cls.type_constraint_keywords(
+                f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or ""
+            )
+        return cls._annotation_constraint_keywords(data_type.python_type.expression)
+
+    @classmethod
+    def _annotation_constraint_keywords(cls, expression: PythonTypeExpr) -> frozenset[str]:
+        """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies.
+
+        A ``Literal`` takes the keywords every value other than ``None`` takes as an instance of its type, where a
+        ``bool`` takes none and a nested ``Literal`` contributes its values.
+        """
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            PythonTypeBoundName,
+            PythonTypeEllipsis,
+            PythonTypeSubscript,
+            PythonTypeUnion,
+            iter_python_type_expr_qualified_names,
+            python_type_expr_arguments,
+            python_type_expr_base_name,
+        )
+
+        base = expression.base if isinstance(expression, PythonTypeSubscript) else expression
+        path = _standard_type_path(
+            f"{base.import_from}.{base.import_name}"
+            if isinstance(base, PythonTypeBoundName) and base.import_from
+            else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base)
+        )
+        members = None
+        if isinstance(expression, PythonTypeUnion) or (base is not expression and path in _UNION_PATHS):
+            if not cls.ANNOTATION_UNIONS_TAKE_CONSTRAINTS:
+                return _NO_KEYWORDS
+            members = tuple(
+                member
+                for member in python_type_expr_arguments(expression)
+                if python_type_expr_base_name(member) != NONE
+            )
+        elif base is not expression and path in _QUALIFIER_PATHS:
+            members = python_type_expr_arguments(expression)[:1]
+        if members is not None:
+            return (
+                frozenset.intersection(*map(cls._annotation_constraint_keywords, members)) if members else _NO_KEYWORDS
+            )
+        if path == "typing.Literal" and base is not expression:
+            if not cls.LITERALS_TAKE_CONSTRAINTS:
+                return _NO_KEYWORDS
+            value_paths = set(cls._literal_value_paths(expression))
+            return (
+                frozenset.intersection(*map(cls.type_constraint_keywords, value_paths)) if value_paths else _NO_KEYWORDS
+            )
+        if (
+            path == "tuple"
+            and base is not expression
+            and not cls.FIXED_TUPLES_TAKE_LENGTH
+            and not any(isinstance(argument, PythonTypeEllipsis) for argument in python_type_expr_arguments(expression))
+        ):
+            return _NO_KEYWORDS
+        return cls.type_constraint_keywords(path)
+
+    @staticmethod
+    def _literal_value_paths(expression: PythonTypeExpr) -> Iterator[str]:
+        """Yield the type path of each value of a ``Literal`` other than ``None``, or ``""`` for an unclassified one."""
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            PythonTypeLiteralValue,
+            PythonTypeSubscript,
+            python_type_expr_arguments,
+            python_type_expr_base_name,
+        )
+
+        for argument in python_type_expr_arguments(expression):
+            if isinstance(argument, PythonTypeSubscript) and python_type_expr_base_name(argument) == "Literal":
+                yield from DataTypeManager._literal_value_paths(argument)
+            elif python_type_expr_base_name(argument) != NONE:
+                yield (
+                    _LITERAL_VALUE_TYPE_PATHS.get(type(argument.value), "")
+                    if isinstance(argument, PythonTypeLiteralValue)
+                    else ""
+                )
+
+    @classmethod
+    def type_constraint_keywords(cls, path: str) -> frozenset[str]:
+        """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
+
+        The table lists the keywords that the output model enforces on a type across its supported versions.
+        A typing alias or an abstract collection takes what the builtin or standard-library class it stands for takes.
+        A known type is a Python builtin, a standard-library type of the import registry or a type that the
+        generator itself imports; a type the generator cannot classify keeps the keywords the schema declares.
+        """
+        path = _standard_type_path(path)
+        if (keywords := cls.CONSTRAINT_KEYWORDS.get(path)) is not None:
+            return keywords
+        if not path or any(path in _import_paths(module) for module in cls.KNOWN_TYPE_IMPORTS):
+            return _NO_KEYWORDS
+        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
+            is_known_python_type_path,
+        )
+
+        return _NO_KEYWORDS if is_known_python_type_path(path) else TYPE_DEPENDENT_KEYWORDS
 
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType:  # noqa: FBT001
         """Create a DataType from a fully qualified Python path."""

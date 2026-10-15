@@ -2,7 +2,7 @@
 +++ server/models.py (expected)
 @@ -69,4 +69,3 @@
  
- class FieldStoreInventoryGetResponse(RootModel[dict[str, int]]):
+ class StoreInventoryGetResponse(RootModel[dict[str, int]]):
      root: dict[str, int]
 -# changed
 --- server/services.py

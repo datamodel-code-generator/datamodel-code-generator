@@ -11,19 +11,19 @@ from fastapi import APIRouter, FastAPI, params
 from ._generated.contract import OperationDependencies
 from ._generated.openapi import serve_source_openapi
 from ._runtime.server.application import build, error_handlers, validation_error_handler
-from .routers import untagged
-from .services import UntaggedService
+from .routers import default
+from .services import DefaultService
 
 ROUTES: Final = (
-    *untagged.LITERAL_ROUTES,
-    *untagged.TEMPLATED_ROUTES,
+    *default.LITERAL_ROUTES,
+    *default.TEMPLATED_ROUTES,
 )
 INFO: Final[dict[str, Any]] = {'title': 'Defaults', 'version': '1.0'}
 
 
 def build_router(
     *,
-    untagged: UntaggedService,
+    default: DefaultService,
     dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -31,7 +31,7 @@ def build_router(
     """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
-        services={'untagged': untagged},
+        services={'default': default},
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
         prefix=prefix,
@@ -40,7 +40,7 @@ def build_router(
 
 def create_app(
     *,
-    untagged: UntaggedService,
+    default: DefaultService,
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
     source_openapi: bool = True,
@@ -55,7 +55,7 @@ def create_app(
     app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
-            untagged=untagged,
+            default=default,
             operation_dependencies=operation_dependencies,
             prefix=prefix,
         )

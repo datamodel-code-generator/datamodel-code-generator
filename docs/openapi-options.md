@@ -72,6 +72,24 @@ models.
     `LimitParameter(5)`, or read its `.root` uses the plain value instead. See
     [Root Models and Type Aliases](root-model-and-type-alias.md#api-scope-parameters).
 
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, a model derived from a schema inside `paths` is named after the operation without
+    the `Field` prefix 0.83.0 put before it: `FieldPetsGetResponse` is now `PetsGetResponse`. The separators of a
+    path are dropped, `/` alone becomes `Root` (`RootGetResponse`), and a name that starts with a digit keeps `Field`
+    (`Field2faCodesGetResponse` for `/2fa/codes`). A derived name that a component schema already holds takes a
+    numeric suffix, so a component `OrdersGetResponse` keeps its name and the model of `GET /orders` becomes
+    `OrdersGetResponse1`. Code that imports a derived model by its old name uses the new one instead. Component
+    schemas and `$ref` targets keep their names.
+
+!!! note "Changed in 0.84.0"
+    With `--openapi-scopes api`, a `$ref` beside only annotations in a parameter, request body, or response schema
+    is the referenced model itself, not a derived `RootModel` that wraps it, as it is for a property. The siblings
+    that count as annotations are `description`, `title`, `examples`, `example`, `default`, `deprecated`, `readOnly`,
+    `writeOnly`, `externalDocs`, `$comment`, and `x-` extensions. A `$ref` beside a keyword that changes its values,
+    such as `minLength`, `maxItems`, or `properties`, still has a derived model, and so does one beside
+    only `nullable: true`, unlike a property where it becomes `Optional`. See
+    [Root Models and Type Aliases](root-model-and-type-alias.md#api-scope-references).
+
 Adding other scopes alongside `api` does not repeat schema generation. `--openapi-include-paths` filters root paths and their reachable
 callbacks; webhooks and standalone components retain their declarations.
 

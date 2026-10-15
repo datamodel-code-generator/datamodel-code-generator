@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
@@ -19,26 +19,26 @@ MODELS: Final[dict[type, Model]] = {
     models.Leaf: Model((Field('root', 'root', omit_none=True), Field('shared-key', 'shared_key'), Field('right', 'right', omit_none=True), Field('left', 'left', omit_none=True), Field('leaf-key', 'leaf_key', omit_none=True))),
 }
 
-codec_0: Final[StdlibCodec[models.A]] = StdlibCodec(models.A, MODELS)
+codec_0: Final[DataclassCodec[models.A]] = DataclassCodec(models.A, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.A]] = StdlibCodec(models.A, MODELS)
+codec_1: Final[DataclassCodec[models.A]] = DataclassCodec(models.A, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.B]] = StdlibCodec(models.B, MODELS)
+codec_2: Final[DataclassCodec[models.B]] = DataclassCodec(models.B, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.B]] = StdlibCodec(models.B, MODELS)
+codec_3: Final[DataclassCodec[models.B]] = DataclassCodec(models.B, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.C]] = StdlibCodec(models.C, MODELS)
+codec_4: Final[DataclassCodec[models.C]] = DataclassCodec(models.C, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.C]] = StdlibCodec(models.C, MODELS)
+codec_5: Final[DataclassCodec[models.C]] = DataclassCodec(models.C, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.Leaf]] = StdlibCodec(models.Leaf, MODELS)
+codec_6: Final[DataclassCodec[models.Leaf]] = DataclassCodec(models.Leaf, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.Leaf]] = StdlibCodec(models.Leaf, MODELS)
+codec_7: Final[DataclassCodec[models.Leaf]] = DataclassCodec(models.Leaf, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""

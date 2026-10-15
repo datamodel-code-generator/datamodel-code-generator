@@ -9,28 +9,28 @@ from typing import TypeAlias
 
 import models
 
-GetSafeResponse: TypeAlias = models.FieldSafeGetResponse
+GetSafeResponse: TypeAlias = models.SafeGetResponse
 
 
-PostUnsafeResponse: TypeAlias = models.FieldUnsafePostResponse
+PostUnsafeResponse: TypeAlias = models.UnsafePostResponse
 
 
-PostIdempotentResponse: TypeAlias = models.FieldIdempotentPostResponse
+PostIdempotentResponse: TypeAlias = models.IdempotentPostResponse
 
 
-PostKeyedResponse: TypeAlias = models.FieldKeyedPostResponse
+PostKeyedResponse: TypeAlias = models.KeyedPostResponse
 
 
-PostKeyOnlyResponse: TypeAlias = models.FieldKeyOnlyPostResponse
+PostKeyOnlyResponse: TypeAlias = models.KeyOnlyPostResponse
 
 
-GetNeverResponse: TypeAlias = models.FieldNeverGetResponse
+GetNeverResponse: TypeAlias = models.NeverGetResponse
 
 
-PostNeverResponse: TypeAlias = models.FieldNeverPostResponse
+PostNeverResponse: TypeAlias = models.NeverPostResponse
 
 
-GetVendorResponse: TypeAlias = models.FieldVendorGetResponse
+GetVendorResponse: TypeAlias = models.VendorGetResponse
 
 
-GetKeyedSafeResponse: TypeAlias = models.FieldKeyedSafeGetResponse
+GetKeyedSafeResponse: TypeAlias = models.KeyedSafeGetResponse

@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import date
 from enum import StrEnum
 
-from pydantic import ConfigDict, constr
+from pydantic import MISSING, ConfigDict, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -23,30 +23,30 @@ class Named:
 
 @dataclass
 class PetForm(Named):
-    tag: str | None = None
+    tag: str | MISSING = MISSING
 
 
 @dataclass
 class PetPatch:
-    name: str | None = None
-    tag: str | None = None
+    name: str | MISSING = MISSING
+    tag: str | None | MISSING = MISSING
 
 
 @dataclass
 class Visit:
-    note: str | None = None
-    options: list[str] | None = None
+    note: str | MISSING = MISSING
+    options: list[str] | MISSING = MISSING
 
 
 @dataclass
 class Owner:
     email: str
-    nickName: str | None = None
+    nickName: str | MISSING = MISSING
 
 
 @dataclass(config=ConfigDict(extra='allow'))
 class Labels:
-    size: str | None = None
+    size: str | MISSING = MISSING
 
 
 @dataclass
@@ -63,45 +63,45 @@ class ByKind:
 class Pet:
     id: int
     name: str
-    tag: str | None = None
+    tag: str | None | MISSING = MISSING
 
 
-FieldPetsPostQueryTagParameter = TypeAliasType("FieldPetsPostQueryTagParameter", str)
+PetsPostQueryTagParameter = TypeAliasType("PetsPostQueryTagParameter", str)
 
 
-FieldPetsPetIdPatchPathPetIdParameter = TypeAliasType("FieldPetsPetIdPatchPathPetIdParameter", int)
+PetsPetIdPatchPathPetIdParameter = TypeAliasType("PetsPetIdPatchPathPetIdParameter", int)
 
 
-FieldPetsPetIdVisitsPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdVisitsPostPathPetIdParameter", int)
+PetsPetIdVisitsPostPathPetIdParameter = TypeAliasType("PetsPetIdVisitsPostPathPetIdParameter", int)
 
 
-FieldPetsPetIdOwnerPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdOwnerPutPathPetIdParameter", int)
+PetsPetIdOwnerPutPathPetIdParameter = TypeAliasType("PetsPetIdOwnerPutPathPetIdParameter", int)
 
 
-FieldOwnersPostRequest = TypeAliasType("FieldOwnersPostRequest", Owner | None)
+OwnersPostRequest = TypeAliasType("OwnersPostRequest", Owner | None)
 
 
-FieldPetsPetIdLabelsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdLabelsPutPathPetIdParameter", int)
+PetsPetIdLabelsPutPathPetIdParameter = TypeAliasType("PetsPetIdLabelsPutPathPetIdParameter", int)
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int)
+PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("PetsPetIdPhotoPutPathPetIdParameter", int)
 
 
 @dataclass
-class FieldPetsPetIdPhotoPutRequest:
+class PetsPetIdPhotoPutRequest:
     photo: bytes
-    caption: str | None = None
+    caption: str | MISSING = MISSING
 
 
-FieldPetsPetIdRecordsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdRecordsPutPathPetIdParameter", int)
+PetsPetIdRecordsPutPathPetIdParameter = TypeAliasType("PetsPetIdRecordsPutPathPetIdParameter", int)
 
 
 @dataclass
 class NewPet:
     name: constr(max_length=8)
     kind: Kind
-    tag: str | None = None
-    birthDate: date | None = None
-    owner: Owner | None = None
-    id: int | None = None
-    secret: str | None = None
+    tag: str | None | MISSING = MISSING
+    birthDate: date | MISSING = MISSING
+    owner: Owner | MISSING = MISSING
+    id: int | MISSING = MISSING
+    secret: str | MISSING = MISSING

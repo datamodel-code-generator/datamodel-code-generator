@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
 
 codec_0: Final[MsgspecCodec[models.ItemRequest]] = MsgspecCodec(models.ItemRequest)
@@ -29,8 +29,8 @@ codec_4: Final[MsgspecCodec[models.ItemRequest]] = MsgspecCodec(models.ItemReque
 codec_5: Final[MsgspecCodec[models.ItemResponse]] = MsgspecCodec(models.ItemResponse)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_6: Final[MsgspecCodec[str]] = MsgspecCodec(str)
+codec_6: Final[MsgspecCodec[models.Value]] = MsgspecCodec(models.Value)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_7: Final[MsgspecCodec[str]] = MsgspecCodec(str)
+codec_7: Final[MsgspecCodec[models.Value]] = MsgspecCodec(models.Value)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""

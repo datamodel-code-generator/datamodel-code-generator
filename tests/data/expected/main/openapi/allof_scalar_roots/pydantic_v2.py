@@ -96,14 +96,14 @@ class ShortLabelAlias(RootModel[constr(min_length=1, max_length=7)]):
     )
 
 
-FieldLabelsGetQueryPrefixParameter = TypeAliasType(
-    "FieldLabelsGetQueryPrefixParameter", Annotated[str, Field(min_length=1)]
+LabelsGetQueryPrefixParameter = TypeAliasType(
+    "LabelsGetQueryPrefixParameter", Annotated[str, Field(min_length=1)]
 )
 
 
-class FieldLabelsGetResponse(RootModel[list[Label]]):
+class LabelsGetResponse(RootModel[list[Label]]):
     root: list[Label]
 
 
-class FieldLabelsGetResponse200XTotalHeader(RootModel[conint(ge=0)]):
+class LabelsGetResponse200XTotalHeader(RootModel[conint(ge=0)]):
     root: conint(ge=0)

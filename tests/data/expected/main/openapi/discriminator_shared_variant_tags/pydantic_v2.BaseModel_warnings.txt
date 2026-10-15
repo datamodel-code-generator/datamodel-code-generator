@@ -1,0 +1,6 @@
+Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'cat' from Pet, so these unions cannot decode it: Animal ('feline').
+Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'dog' from Pet, so these unions cannot decode it: Animal ('canine').
+Fish is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Fish' from Pond, so these unions cannot decode it: Sea ('fin').
+Circle is a variant of discriminated unions that map 'shape' to different tags: it keeps 'disc' from Drawing, so these unions cannot decode it: Figure ('circle', 'round').
+Eel is a variant of discriminated unions that map 'kind' to different tags: it keeps 'swim' from Ocean, so these unions cannot decode it: Lake ('Eel').
+Ring is a variant of discriminated unions that map 'shape' to different tags: it keeps 'ring', 'hoop' from Seal, so these unions cannot decode it: Emblem ('band', 'loop').

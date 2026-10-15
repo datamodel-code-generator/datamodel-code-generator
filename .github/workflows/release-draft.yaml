@@ -483,12 +483,12 @@ jobs:
             EXISTING_BODY=$(gh release view "$BC_SOURCE_TAG_RAW" --repo "$GITHUB_REPOSITORY" --json body --jq '.body // ""')
             # Extract existing Breaking Changes section content
             # Use awk for precise extraction - stops at any ## header that's not "## Breaking Changes"
-            if echo "$EXISTING_BODY" | grep -q '^## Breaking Changes$'; then
-              EXISTING_BC=$(echo "$EXISTING_BODY" | awk '
+            if grep -q '^## Breaking Changes$' <<<"$EXISTING_BODY"; then
+              EXISTING_BC=$(awk '
                 /^## Breaking Changes$/ { found=1; next }
                 found && /^## / { exit }
                 found { print }
-              ')
+              ' <<<"$EXISTING_BODY")
             fi
           fi
 

@@ -1,6 +1,6 @@
 # pets-protocols pydantic_v2.BaseModel
   ConfigurationError: base=SDKError reason=binding_mismatch
-    fields=attempt_count,cause,elapsed,field_path,helper_id,info,operation_id,reason,source_pointer,source_uri
+    fields=attempt_count,cause,elapsed,field_path,helper_id,info,operation_id,reason
     context=True/True retained=True
     str=ConfigurationError(operation_id='webhook', reason='binding_mismatch', field_path='private-webhook-marker') secret=True
   ProtocolDataError: base=SDKError reason=malformed

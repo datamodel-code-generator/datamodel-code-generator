@@ -42,8 +42,122 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Error"}
+  /things:
+    post:
+      operationId: createThing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "200":
+          description: Existing.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /text:
+    get:
+      operationId: getText
+      responses:
+        "200":
+          description: The pet or its text.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            text/plain:
+              schema: {type: string}
+    head:
+      operationId: headText
+      responses:
+        "200":
+          description: The pet or its text.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            text/plain:
+              schema: {type: string}
+  /latin:
+    get:
+      operationId: getLatin
+      responses:
+        "200":
+          description: The pet or Latin-1 text.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            text/plain; charset=iso-8859-1: {}
+  /bytes:
+    get:
+      operationId: getBytes
+      responses:
+        "200":
+          description: The pet or its bytes.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            application/octet-stream:
+              schema: {type: string, format: binary}
+  /problems:
+    get:
+      operationId: getProblem
+      parameters:
+        - {name: mode, in: query, schema: {type: string, enum: [bare, result, invalid]}}
+      responses:
+        "200":
+          description: The pet or a problem.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            application/problem+json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /notes:
+    get:
+      operationId: getNote
+      parameters:
+        - {name: empty, in: query, schema: {type: boolean}}
+      responses:
+        "200":
+          description: The pet or a note.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            application/vnd.note+json:
+              schema: {type: [string, "null"]}
+  /chosen:
+    get:
+      operationId: getChosen
+      responses:
+        "200":
+          description: Text or the pet.
+          content:
+            text/plain:
+              schema: {type: string}
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /tallies:
+    get:
+      operationId: getTally
+      responses:
+        "200":
+          description: The pet or a tally with extra members.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+            application/vnd.tally+json:
+              schema: {$ref: "#/components/schemas/Tally"}
 components:
   schemas:
+    Tally:
+      type: object
+      properties:
+        total: {type: integer}
+      additionalProperties: true
     Pet:
       type: object
       required: [id, name]

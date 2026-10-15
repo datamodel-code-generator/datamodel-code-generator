@@ -1,4 +1,12 @@
 Add the runtime dependencies of server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
-Add the runtime dependencies of admin to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+Next steps: implement the stubs in services/pets.py, services/store.py, then run the server:
+  uv add uvicorn && uv run uvicorn server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev server/main.py
+See server/README.md.
+Add the runtime dependencies of back.admin to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+Next steps: implement the stubs in back/services/pets.py, back/services/store.py, then run the server:
+  uv add uvicorn && uv run uvicorn back.admin.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev --entrypoint back.admin.main:app
+See back/admin/README.md.

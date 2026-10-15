@@ -1,0 +1,29 @@
+# pagination-counts pydantic_v2.BaseModel
+  > GET https://api.example.com/users?offset=9007199254740991
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  exact total past the float boundary ['1', '1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'2.0E0' = [1] continuation=3 status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'9007199254740993.0' = [1] continuation=3 status=200 attempts=1
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'9007199254740993.00000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'1.0000000000000000001' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  total b'1e400' ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type
+  > GET https://api.example.com/users?offset=9007199254740991
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?offset=9007199254740992
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async exact total past the float boundary ['1', '1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async fractional total ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', reason='type') [operation_id='listUsers', location=BodySelector(pointer='/count')] type

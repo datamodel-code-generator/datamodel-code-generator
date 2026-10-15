@@ -151,6 +151,11 @@
           },
           "title": "Differences",
           "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/TargetPayload",
+          "description": "The package and runtime dependencies of a server or client generation; absent for models only.",
+          "title": "Target"
         }
       },
       "required": [
@@ -365,6 +370,26 @@
       "title": "DeprecationsOutputPayload",
       "type": "object"
     },
+    "EntrypointPayload": {
+      "additionalProperties": false,
+      "description": "The entrypoint module of a generated server and the import string of the ASGI application it defines.",
+      "properties": {
+        "app": {
+          "title": "App",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "app",
+        "path"
+      ],
+      "title": "EntrypointPayload",
+      "type": "object"
+    },
     "ExperimentalItemPayload": {
       "additionalProperties": false,
       "description": "One experimental feature entry emitted by --list-experimental --output-format json.",
@@ -492,6 +517,58 @@
       "title": "GeneratedFilePayload",
       "type": "object"
     },
+    "GeneratedTargetPayload": {
+      "additionalProperties": false,
+      "description": "The package a server or client generation writes, its runtime requirements, and what to do with it next.",
+      "properties": {
+        "package": {
+          "title": "Package",
+          "type": "string"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "implied": {
+          "$ref": "#/$defs/ImpliedPayload",
+          "description": "The settings the target needs that the run left unset and the values it gave them, keyed as pyproject.toml keys them; absent when it implied none.",
+          "title": "Implied"
+        },
+        "readme": {
+          "description": "The README of the package, which describes the next steps.",
+          "title": "Readme",
+          "type": "string"
+        },
+        "entrypoint": {
+          "$ref": "#/$defs/EntrypointPayload",
+          "description": "The module that serves a generated server's application; absent for a client.",
+          "title": "Entrypoint"
+        },
+        "implementation": {
+          "description": "The modules of the user's that a generated server's entrypoint imports; absent for a client.",
+          "items": {
+            "$ref": "#/$defs/ImplementationPayload"
+          },
+          "title": "Implementation",
+          "type": "array"
+        },
+        "usage": {
+          "description": "Code that calls the first operation of a generated client; absent for a server.",
+          "title": "Usage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "package",
+        "dependencies",
+        "readme"
+      ],
+      "title": "GeneratedTargetPayload",
+      "type": "object"
+    },
     "GenerationPayload": {
       "additionalProperties": false,
       "description": "Structured JSON payload emitted by generation mode --output-format json.",
@@ -528,6 +605,11 @@
           },
           "title": "Files",
           "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/GeneratedTargetPayload",
+          "description": "The package and runtime dependencies of a server or client generation; absent for models only.",
+          "title": "Target"
         }
       },
       "required": [
@@ -538,6 +620,77 @@
         "files"
       ],
       "title": "GenerationPayload",
+      "type": "object"
+    },
+    "ImplementationPayload": {
+      "additionalProperties": false,
+      "description": "A module of the user's that a generated server's entrypoint imports, and the class or function it imports.\n\nGeneration writes the module with stubs only while it is missing; `created` says whether this run wrote it.",
+      "properties": {
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "created": {
+          "title": "Created",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "module",
+        "name",
+        "path",
+        "created"
+      ],
+      "title": "ImplementationPayload",
+      "type": "object"
+    },
+    "ImpliedPayload": {
+      "additionalProperties": false,
+      "description": "The model settings a server or client target set because the run left them unset, keyed as pyproject.toml keys.\n\nEach key is absent unless the target set it.",
+      "properties": {
+        "openapi-scopes": {
+          "description": "The scopes, with api added to the default ones.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Openapi-Scopes",
+          "type": "array"
+        },
+        "target-python-version": {
+          "description": "The target Python version, 3.11.",
+          "title": "Target-Python-Version",
+          "type": "string"
+        },
+        "use-missing-sentinel": {
+          "description": "The MISSING sentinel, on for pydantic_v2.dataclass models.",
+          "title": "Use-Missing-Sentinel",
+          "type": "boolean"
+        },
+        "target-pydantic-version": {
+          "description": "The target pydantic version, 2.14, for models with the MISSING sentinel.",
+          "title": "Target-Pydantic-Version",
+          "type": "string"
+        },
+        "use-msgspec-tagged-unions": {
+          "description": "Tagged unions, on for msgspec.Struct models.",
+          "title": "Use-Msgspec-Tagged-Unions",
+          "type": "boolean"
+        },
+        "use-msgspec-nullable-enum-alias": {
+          "description": "Nullable enum aliases, on for msgspec.Struct models.",
+          "title": "Use-Msgspec-Nullable-Enum-Alias",
+          "type": "boolean"
+        }
+      },
+      "title": "ImpliedPayload",
       "type": "object"
     },
     "OptionMetadataPayload": {
@@ -749,6 +902,34 @@
         "config"
       ],
       "title": "PyprojectConfigOutputPayload",
+      "type": "object"
+    },
+    "TargetPayload": {
+      "additionalProperties": false,
+      "description": "The package a server or client generation renders and the requirements it needs at run time.",
+      "properties": {
+        "package": {
+          "title": "Package",
+          "type": "string"
+        },
+        "dependencies": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "implied": {
+          "$ref": "#/$defs/ImpliedPayload",
+          "description": "The settings the target needs that the run left unset and the values it gave them, keyed as pyproject.toml keys them; absent when it implied none.",
+          "title": "Implied"
+        }
+      },
+      "required": [
+        "package",
+        "dependencies"
+      ],
+      "title": "TargetPayload",
       "type": "object"
     }
   },

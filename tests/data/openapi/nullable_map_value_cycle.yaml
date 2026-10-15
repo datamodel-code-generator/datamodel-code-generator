@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value cycle
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    a.A:
+      type: object
+      properties:
+        v:
+          $ref: "#/components/schemas/Value"
+    c.CMap:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Value"
+    Value:
+      type: object
+      required: [name]
+      properties:
+        a:
+          $ref: "#/components/schemas/a.A"
+        cmap:
+          $ref: "#/components/schemas/c.CMap"
+        name:
+          type: string
+          minLength: 1

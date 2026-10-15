@@ -171,6 +171,10 @@ PYDANTIC_V2_DATACLASS_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/field_name_shadows_class_name.json": (
         "pydantic dataclass validation resolves a generated field/type name collision to the field value"
     ),
+    "jsonschema/type_alias_annotated/shadowed_imports.json": (
+        "pydantic Decimal multipleOf validation fails on schema-valid numbers whose quotient exceeds the default "
+        "28-digit Decimal precision, such as 2.5e+27 for multipleOf 0.25"
+    ),
     "openapi/enum_models.yaml::components.schemas.nestedNullableEnum": (
         "pydantic dataclass schema construction warns for defaults attached to nullable enum aliases"
     ),
@@ -197,27 +201,10 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         ),
         "msgspec conversion rejects unions containing multiple string-like key types",
     ),
-    **dict.fromkeys(
-        (
-            "jsonschema/compound_property_names/nonstring_complex_patterns.json",
-            "jsonschema/compound_property_names/nonstring_length.json",
-            "jsonschema/compound_property_names/nonstring_literal.json",
-            "jsonschema/compound_property_names/nonstring_lookbehind.json",
-            "jsonschema/compound_property_names/unconstrained_oneof.json",
-            "jsonschema/compound_property_names/unrestricted_type_union.json",
-            "jsonschema/compound_property_names/unsupported_mixed.json",
-            "jsonschema/compound_property_names/unsupported_nonstring.json",
-            "jsonschema/compound_property_names/unsupported_nonstring_union.json",
-            "jsonschema/compound_property_names/unsupported_one_constrained.json",
-            "jsonschema/compound_property_names/unsupported_oneof.json",
-        ),
-        "msgspec conversion rejects string constraint metadata on generated non-string property-name aliases",
-    ),
-    **dict.fromkeys(
-        ("jsonschema/root_alias_constraints/null_pattern.json",),
-        "msgspec conversion rejects constraint metadata on generated null-only aliases",
-    ),
     "jsonschema/type_union_constraints/enum_field.json": (
+        "msgspec conversion only supports Enum classes with homogeneous str or int values"
+    ),
+    "jsonschema/enum_names_beside_null.json": (
         "msgspec conversion only supports Enum classes with homogeneous str or int values"
     ),
     **dict.fromkeys(
@@ -343,9 +330,6 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "openapi/enum_models.yaml::components.schemas.version": (
         "msgspec conversion does not accept nullable enum aliases generated from OpenAPI schemas"
     ),
-    "jsonschema/nullable_enum_literal_typed_dict.json": (
-        "msgspec conversion only supports Enum classes with homogeneous str or int values"
-    ),
     "jsonschema/oneof_const_enum_bool.json": (
         "msgspec conversion only supports Enum classes with homogeneous str or int values"
     ),
@@ -376,10 +360,12 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         "msgspec conversion cannot evaluate generated enum field/type name collisions"
     ),
     "jsonschema/strict_types_matrix.json": (
-        "msgspec conversion rejects numeric constraint metadata attached to Decimal types"
+        "msgspec generation warns that it leaves Decimal bounds out of Meta; "
+        "test_main_msgspec_meta_unsupported_types decodes such models"
     ),
     "jsonschema/anyof_const_with_constraints.json": (
-        "msgspec conversion rejects constrained scalar unions that differ from JSON Schema branch semantics"
+        "msgspec generation warns that it leaves the constraints of union members of one type out of Meta; "
+        "test_main_msgspec_union_member_constraints decodes such models"
     ),
     "jsonschema/invalid_model_name.json": (
         "msgspec conversion does not accept nullable alias shapes generated for this schema"
@@ -407,11 +393,13 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/reduce_duplicate_field_types.json": (
         "msgspec conversion requires tagged Struct unions for combined object schemas"
     ),
-    "jsonschema/ref_merge_additional_properties.json": (
-        "msgspec conversion rejects length metadata attached to generated Literal types"
-    ),
-    "jsonschema/ref_merge_field_metadata.json": (
-        "msgspec conversion rejects length metadata attached to generated Literal types"
+    **dict.fromkeys(
+        (
+            "jsonschema/ref_merge_additional_properties.json",
+            "jsonschema/ref_merge_field_metadata.json",
+        ),
+        "msgspec generation warns that it leaves Literal lengths out of Meta; "
+        "test_main_msgspec_meta_unsupported_types decodes such models",
     ),
     "jsonschema/reuse_model_collapse_root_models_constraints.json": (
         "msgspec conversion requires tagged Struct unions for combined object schemas"

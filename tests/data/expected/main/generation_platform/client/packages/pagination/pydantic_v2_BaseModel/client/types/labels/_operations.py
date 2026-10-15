@@ -15,10 +15,10 @@ from ..._runtime.model_codecs.parameters import ParameterPlan
 from ...options import UNSET
 from ...responses import ResponseInfo
 
-ListLabelsResponse: TypeAlias = models.FieldLabelsGetResponse
+ListLabelsResponse: TypeAlias = models.LabelsGetResponse
 
 
-_LIST_LABELS_HEADERS: Final[ResponseHeaders[models.FieldLabelsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
+_LIST_LABELS_HEADERS: Final[ResponseHeaders[models.LabelsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabels',
     frozenset({'200'}),
     (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_15, missing=optional_header)),)),),
@@ -29,7 +29,7 @@ def decode_list_labels_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> models.FieldLabelsGetResponse200XNextHeader | UNSET:
+) -> models.LabelsGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_labels from a response's metadata."""
     return _LIST_LABELS_HEADERS.decode(info, name)
 
@@ -37,7 +37,7 @@ def decode_list_labels_header(
 ListLabelSetsResponse: TypeAlias = models.LabelList
 
 
-_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[models.FieldLabelSetsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
+_LIST_LABEL_SETS_HEADERS: Final[ResponseHeaders[models.LabelSetsGetResponse200XNextHeader, UNSET]] = ResponseHeaders(
     'listLabelSets',
     frozenset({'200'}),
     (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_18, missing=optional_header)),)),),
@@ -48,6 +48,6 @@ def decode_list_label_sets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> models.FieldLabelSetsGetResponse200XNextHeader | UNSET:
+) -> models.LabelSetsGetResponse200XNextHeader | UNSET:
     """Decode one declared response header of list_label_sets from a response's metadata."""
     return _LIST_LABEL_SETS_HEADERS.decode(info, name)

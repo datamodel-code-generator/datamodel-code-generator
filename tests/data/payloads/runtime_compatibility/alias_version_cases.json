@@ -1,0 +1,59 @@
+{
+  "pydantic_v2": {
+    "jsonschema/type_alias_lookaround/nested.json": {
+      "valid": {"inner": {"first": "abc", "second": "abc"}},
+      "invalid": {"inner": {"second": "badly"}}
+    },
+    "jsonschema/type_alias_lookaround/siblings.json": {
+      "valid": {"first": {"code": "abc"}, "second": {"code": "abc", "count": 1}},
+      "invalid": {"second": {"code": "badly"}}
+    },
+    "jsonschema/type_alias_lookaround/inherited.json": {
+      "valid": {"left": {"code": "abc", "x": 1}, "right": {"code": "abc", "y": 2}},
+      "invalid": {"right": {"code": "badly"}}
+    },
+    "jsonschema/type_alias_lookaround/annotated_root.json": {
+      "valid": {"data": {"k": "abc"}},
+      "invalid": {"data": {"k": "badly"}}
+    }
+  },
+  "pydantic_v2_dataclass": {
+    "jsonschema/collapse_root_models_lookaround.json": {
+      "valid": {
+        "code": "abc",
+        "codes": ["abc"],
+        "either": "abc",
+        "byName": {"key": "abc"},
+        "other": {"own": "ok", "code": "abc"}
+      },
+      "invalid": {"code": "badly"}
+    },
+    "jsonschema/collapse_root_models_lookaround_inheritance.json": {
+      "valid": {"own": "ok", "code": "abc"},
+      "invalid": {"code": "badly"}
+    },
+    "jsonschema/collapse_root_models_lookaround_root.json": {
+      "valid": {"codes": ["abc"]},
+      "invalid": {"codes": ["badly"]}
+    },
+    "jsonschema/rust_unsupported_pattern.json": {
+      "valid": {"pair": "aa", "doubled": "aa", "plain": "abc", "holder": {"name": "abc"}},
+      "invalid": {"pair": "ab"}
+    },
+    "jsonschema/lookaround_anyof_nullable.json": {"valid": {"value": "aB"}, "invalid": {"value": "ab"}},
+    "jsonschema/nested_lookaround_array.json": {"valid": {"codes": ["A1"]}, "invalid": {"codes": ["a1"]}},
+    "jsonschema/root_alias_constraints/lookaround.json": {"valid": "a", "invalid": "b"},
+    "jsonschema/type_alias_lookaround/nested.json": {
+      "valid": {"inner": {"first": "abc", "second": "abc"}},
+      "invalid": {"inner": {"second": "badly"}}
+    },
+    "jsonschema/type_alias_lookaround/siblings.json": {
+      "valid": {"first": {"code": "abc"}, "second": {"code": "abc", "count": 1}},
+      "invalid": {"second": {"code": "badly"}}
+    },
+    "jsonschema/type_alias_lookaround/inherited.json": {
+      "valid": {"left": {"code": "abc", "x": 1}, "right": {"code": "abc", "y": 2}},
+      "invalid": {"right": {"code": "badly"}}
+    }
+  }
+}

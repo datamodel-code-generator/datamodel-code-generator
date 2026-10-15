@@ -1,0 +1,1 @@
+LeftoverFilesWarning: server: These Python files are not generated and are left in place: server/routers/store.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in services.

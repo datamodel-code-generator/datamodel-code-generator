@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from pydantic import MISSING
 from pydantic.dataclasses import dataclass
 
 from . import name as name_1
@@ -12,6 +13,6 @@ from . import owner as owner_1
 @dataclass
 class Pet:
     name: name_1.Name
-    id: int | None = None
-    secret: str | None = None
-    owner: owner_1.Owner | None = None
+    id: int | MISSING = MISSING
+    secret: str | MISSING = MISSING
+    owner: owner_1.Owner | MISSING = MISSING

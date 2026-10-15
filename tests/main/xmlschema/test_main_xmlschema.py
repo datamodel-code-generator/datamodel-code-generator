@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import codecs
 import json
+import warnings
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -448,16 +449,25 @@ def test_main_xmlschema_output_model_types(
     expected_name: str,
 ) -> None:
     """Generate representative XML Schema models across supported output backends."""
-    run_main_and_assert(
-        input_path=XML_SCHEMA_DATA_PATH / "advanced_constructs.xsd",
-        output_path=output_file,
-        input_file_type="xmlschema",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/advanced_constructs_{expected_name}.py",
-        extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
-        force_exec_validation=True,
-        importable_module_name=f"generated_xmlschema_{expected_name}",
-        importable_module_attribute="Zoo",
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "advanced_constructs.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            assert_func=assert_file_content,
+            expected_file=f"output_model_types/advanced_constructs_{expected_name}.py",
+            extra_args=[*BACKEND_GOLDEN_TARGET_ARGS, "--output-model-type", output_model_type],
+            force_exec_validation=True,
+            importable_module_name=f"generated_xmlschema_{expected_name}",
+            importable_module_attribute="Zoo",
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_XML_SCHEMA_PATH / "output_model_types" / f"advanced_constructs_{expected_name}_warnings.txt",
     )
 
 
@@ -1062,6 +1072,50 @@ def test_xmlschema_pattern_alternatives(
 
 
 @pytest.mark.parametrize(
+    ("extra_args", "expected_file"),
+    [
+        ([], "pattern_alternatives_simple_pydantic_type_alias.py"),
+        (["--field-constraints"], "pattern_alternatives_simple_pydantic_type_alias_field_constraints.py"),
+    ],
+)
+def test_xmlschema_compiled_pattern_alias_without_regex_engine(
+    output_file: Path, extra_args: list[str], expected_file: str
+) -> None:
+    """Leave ``regex_engine`` off the models that use a type alias whose XSD pattern is already compiled.
+
+    Targets before Pydantic 2.8 keep JSON Schema patterns as strings in type aliases, so their users select the
+    engine. Combined XSD patterns are compiled for every target, ``2`` included, so they need Pydantic 2.8, from which
+    they validate without a config. ``--field-constraints`` keeps the compiled pattern in ``Field()``.
+    """
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "pattern_alternatives_simple.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-type-alias",
+            "--target-pydantic-version",
+            "2",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_pattern_alternatives_simple_type_alias",
+        model_name="Root",
+        valid_json=json.dumps({"value": "ABC"}),
+        invalid_json=json.dumps({"value": "ABC\n"}),
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
+@pytest.mark.parametrize(
     ("name", "backend", "extra_args"),
     [
         (
@@ -1076,7 +1130,11 @@ def test_xmlschema_pattern_alternatives(
         ),
         ("constrained", "pydantic_v2.dataclass", []),
         ("collapsed", "pydantic_v2.BaseModel", ["--field-constraints", "--collapse-root-models"]),
-        ("collapsed_dataclass", "pydantic_v2.dataclass", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapsed_dataclass",
+            "pydantic_v2.dataclass",
+            ["--field-constraints", "--collapse-root-models", "--target-pydantic-version", "2.14"],
+        ),
         (
             "custom_alias",
             "pydantic_v2.BaseModel",
@@ -1217,11 +1275,10 @@ def test_xsd_property_reuse(name: str, entrypoint: str, output_file: Path) -> No
 def test_xsd_ordinary_fields_runtime(backend: DataModelType, entrypoint: str, output_file: Path) -> None:
     """Keep field order and usable generated types across all supported backends."""
     source = XML_SCHEMA_DATA_PATH / "field_name_collisions/ordinary.xsd"
-    suffix = "_cli" if entrypoint == "cli" and backend == DataModelType.MsgspecStruct else ""
     expected = (
         "field_name_collisions/ordinary.py"
         if backend == DataModelType.PydanticV2BaseModel
-        else f"field_name_collisions/ordinary_{backend.name}{suffix}.py"
+        else f"field_name_collisions/ordinary_{backend.name}.py"
     )
     if entrypoint == "cli":
         run_main_and_assert(

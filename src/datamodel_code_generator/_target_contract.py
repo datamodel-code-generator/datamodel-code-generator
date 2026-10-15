@@ -313,7 +313,8 @@ class ModelFieldFacts:
     """Keep adopted model semantics separate from each original wire occurrence.
 
     `schema_null` says the None the field's annotation accepts comes from its schema's nullability or its own type,
-    rather than from an optional fallback or the model configuration.
+    rather than from an optional fallback or the model configuration. `annotation_null` says the emitted annotation
+    accepts None at all, whether its type holds None or the field adds it.
     """
 
     required: bool
@@ -325,6 +326,7 @@ class ModelFieldFacts:
     type: TypeView
     backend: BackendFieldFacts
     schema_null: bool
+    annotation_null: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -470,13 +472,17 @@ class EncodingFacts:
 
     `types` are the JSON types it declares, None when it declares none; `value` is its shape as one parameter value,
     `form` as URL-encoded members, and `members` each property's shape as one parameter value, by the location of the
-    property's schema.
+    property's schema. `extras` is where a form's object schema types the values of its other properties: in a schema
+    of its own, or in one of a schema it references or combines with allOf. `declared` says that schema allows them
+    as `true` or a schema, where one that leaves them unsaid allows them by default.
     """
 
     types: frozenset[str] | None
     value: TextShape
     form: TextShape
     members: tuple[tuple[SourceLocation, TextShape], ...] = ()
+    extras: KindSite | None = None
+    declared: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -487,7 +493,12 @@ class TypeUseBinding:
     schema of a multipart body says of its parts, `encoding` how a parameter, header or form schema is written as
     text, and `keywords` the title, description, deprecation, examples and default a parameter's schema declares.
     `argument` spells the type a parameter's argument takes: its type with each alias and root model by the type it
-    stands for.
+    stands for. `binary` is where the first string the models type as raw bytes sits that the use carries as text:
+    in a JSON, text or URL-encoded media, an item schema, a parameter or header, or a multipart part that holds no
+    files. `octets` says the models type the whole value of a text or binary media as such strings alone, none
+    written as base64, which the media carries as the raw body, and `checked` that the models constrain those bytes,
+    which the targets then validate by the model. `text` says a binary media's schema is written as one binary string
+    that its models type as text, such as an enum of strings, which the media carries as text read by the model.
     """
 
     id: TypeUseId
@@ -501,6 +512,10 @@ class TypeUseBinding:
     encoding: EncodingFacts | None = None
     keywords: tuple[tuple[str, FrozenLiteral], ...] = ()
     argument: ModelHint | None = None
+    binary: SourceLocation | None = None
+    octets: bool = False
+    checked: bool = False
+    text: bool = False
 
 
 @dataclass(frozen=True, slots=True)

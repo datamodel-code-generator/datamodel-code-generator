@@ -5,10 +5,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Annotated
 
-from msgspec import UNSET, Meta, Struct, UnsetType
+from msgspec import UNSET, Struct, UnsetType
 
 
 class Model(Struct):
-    p: Annotated[Decimal, Meta(ge=0.5, le=100, multiple_of=0.01)] | UnsetType = UNSET
+    p: Decimal | UnsetType = UNSET

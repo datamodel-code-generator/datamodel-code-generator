@@ -1,0 +1,14 @@
+msgspec checks all bytes members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; Upload.page is generated without this constraint.
+msgspec checks all str members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; Upload.name is generated without this constraint.
+msgspec checks all int members of a union against the constraints of each of them, so le of one member would reject values another member accepts; Upload.count is generated without this constraint.
+msgspec checks all str members of a union against the constraints of each of them, so max_length, min_length of one member would reject values another member accepts; Upload.label is generated without these constraints.
+msgspec checks all str members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; Upload.tags is generated without this constraint.
+msgspec checks all str members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; Upload.nickname is generated without this constraint.
+msgspec checks all str members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; Upload.alias is generated without this constraint.
+msgspec decodes every integer as the int member of a union that has a float member too, so le of the int member would reject integers the float member accepts; Upload.amount is generated without this constraint.
+msgspec decodes every integer as the int member of a union that has a float member too, so le of the int member would reject integers the float member accepts; Upload.ratio is generated without this constraint.
+msgspec decodes every integer as the int member of a union that has a float member too, so multiple_of of the int member would reject integers the float member accepts; Upload.half is generated without this constraint.
+msgspec decodes every integer as the int member of a union that has a float member too, so ge of the int member would reject integers the float member accepts; Upload.floor is generated without this constraint.
+msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; Upload.shared is generated without this constraint.
+msgspec checks all str members of a union against the constraints of each of them, so max_length, min_length, pattern of one member would reject values another member accepts; Upload.apart is generated without these constraints.
+msgspec checks all str members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; Upload.mixed is generated without this constraint.

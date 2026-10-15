@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: Mapped union members
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: A pet told apart by a discriminator whose values only the mapping declares.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - $ref: "#/components/schemas/Dog"
+                discriminator:
+                  propertyName: kind
+                  mapping:
+                    cat: "#/components/schemas/Cat"
+                    dog: "#/components/schemas/Dog"
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [kind, lives]
+      properties:
+        kind:
+          type: string
+        lives:
+          type: integer
+    Dog:
+      type: object
+      required: [kind, good]
+      properties:
+        kind:
+          type: string
+        good:
+          type: boolean

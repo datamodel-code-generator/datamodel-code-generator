@@ -132,7 +132,7 @@ class PetsResource:
     def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments2],
-    ) -> models.FieldPetsPetIdGetResponse: ...
+    ) -> models.PetsPetIdGetResponse: ...
     def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments3],
@@ -271,7 +271,7 @@ class PetsWithResponse:
     def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments2],
-    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
+    ) -> Response[models.PetsPetIdGetResponse]: ...
     def get_pet(
         self,
         **kwargs: Unpack[Operation2Arguments3],

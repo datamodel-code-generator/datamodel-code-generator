@@ -8,16 +8,16 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
 
-codec_0: Final[PydanticDataclassCodec[models.FieldXGetQueryQParameter]] = PydanticDataclassCodec(models.FieldXGetQueryQParameter)
+codec_0: Final[PydanticDataclassCodec[models.XGetQueryQParameter]] = PydanticDataclassCodec(models.XGetQueryQParameter)
 """Codec of /paths/~1x/get parameter (request query q)."""
 
-codec_1: Final[PydanticDataclassCodec[models.FieldXGetQueryOptionalParameter]] = PydanticDataclassCodec(models.FieldXGetQueryOptionalParameter)
+codec_1: Final[PydanticDataclassCodec[models.XGetQueryOptionalParameter]] = PydanticDataclassCodec(models.XGetQueryOptionalParameter)
 """Codec of /paths/~1x/get parameter (request query optional)."""
 
-codec_2: Final[PydanticDataclassCodec[models.FieldXGetQueryFilterParameter]] = PydanticDataclassCodec(models.FieldXGetQueryFilterParameter)
+codec_2: Final[PydanticDataclassCodec[models.XGetQueryFilterParameter]] = PydanticDataclassCodec(models.XGetQueryFilterParameter)
 """Codec of /paths/~1x/get parameter (request query filter application/json)."""
 
 codec_3: Final[PydanticDataclassCodec[models.LimitParameter]] = PydanticDataclassCodec(models.LimitParameter)

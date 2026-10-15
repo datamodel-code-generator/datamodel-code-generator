@@ -59,3 +59,178 @@ paths:
                 label: {type: string}
       responses:
         "204": {description: Done.}
+  /searches:
+    post:
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [filter]
+              properties:
+                filter: {$ref: "#/components/schemas/Filter"}
+                filters: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+                tags: {type: array, items: {type: string}}
+                file: {type: string, format: binary}
+            encoding:
+              tags: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /pets:
+    post:
+      operationId: postPets
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [pet]
+              properties:
+                pet:
+                  oneOf: [{$ref: "#/components/schemas/Cat"}, {$ref: "#/components/schemas/Dog"}]
+                  discriminator: {propertyName: kind}
+                pets:
+                  type: array
+                  items:
+                    oneOf: [{$ref: "#/components/schemas/Cat"}, {$ref: "#/components/schemas/Dog"}]
+                    discriminator: {propertyName: kind}
+      responses:
+        "204": {description: Done.}
+  /extras:
+    post:
+      operationId: postExtras
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                maxAge: {type: integer}
+              additionalProperties: {$ref: "#/components/schemas/Filter"}
+      responses:
+        "204": {description: Done.}
+  /extra-lists:
+    post:
+      operationId: postExtraLists
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+      responses:
+        "204": {description: Done.}
+  /extra-scores:
+    post:
+      operationId: postExtraScores
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: array, items: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /extra-bases:
+    post:
+      operationId: postExtraBases
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Others"}
+                - {type: object, properties: {name: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /extra-patterns:
+    post:
+      operationId: postExtraPatterns
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              patternProperties: {"^x-": {type: string}}
+              additionalProperties: {$ref: "#/components/schemas/Filter"}
+      responses:
+        "204": {description: Done.}
+  /extra-profiles:
+    post:
+      operationId: postExtraProfiles
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: integer}
+          application/x-www-form-urlencoded; profile=words:
+            schema:
+              type: object
+              properties:
+                count: {type: integer}
+              additionalProperties: {type: array, items: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /spreads:
+    post:
+      operationId: postSpreads
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [filter]
+              properties:
+                filter: {$ref: "#/components/schemas/Filter"}
+                ids: {type: array, items: {type: integer}}
+                meta: {$ref: "#/components/schemas/Filter"}
+            encoding:
+              filter: {explode: true}
+              ids: {style: pipeDelimited}
+              meta: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Others:
+      type: object
+      properties:
+        base: {type: string}
+      additionalProperties: {$ref: "#/components/schemas/Filter"}
+    Filter:
+      type: object
+      properties:
+        color: {type: string}
+        minAge: {type: integer, minimum: 0}
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: cat}
+        meows: {type: integer}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {const: dog}
+        barks: {type: integer}

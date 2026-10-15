@@ -6,10 +6,25 @@
     "userName": "display_name"
   },
   "apply_default_values_for_required_fields": true,
+  "base_class_map": {
+    "Tier": "root_base.Base"
+  },
+  "custom_formatters": [
+    "tests.data.python.custom_formatters.replace_text"
+  ],
+  "custom_formatters_kwargs": {
+    "append": "\n# root kwargs\n"
+  },
   "default_value_overrides": {
-    "Sample.count": 7
+    "Tier.count": 7
   },
   "disable_timestamp": true,
+  "duplicate_name_suffix": {
+    "enum": "Root"
+  },
+  "enum_field_as_literal_map": {
+    "level": "literal"
+  },
   "extra_template_data": {
     "Sample": {}
   },
@@ -17,6 +32,29 @@
   "formatters": [
     "builtin"
   ],
+  "import_overrides": {
+    "Field": "root_fields"
+  },
+  "model_name_map": {
+    "Sample": "Tier"
+  },
+  "serialization_aliases": {
+    "userName": "root_out"
+  },
   "settings_path": "$PROJECT",
-  "target_python_version": "3.11"
+  "target_python_version": "3.11",
+  "type_overrides": {
+    "Tier.note": "root_types.Note"
+  },
+  "validators": {
+    "Tier": {
+      "validators": [
+        {
+          "field": "userName",
+          "function": "root_checks.check_name",
+          "mode": "before"
+        }
+      ]
+    }
+  }
 }

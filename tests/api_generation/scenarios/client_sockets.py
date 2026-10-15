@@ -40,6 +40,8 @@ _UPGRADE: Final = (
     b"Sec-WebSocket-Accept: {accept}\r\n\r\n"
 )
 _LARGE: Final = "x" * (32 * 1024 * 1024)
+_OVER_DEFAULT: Final = json.dumps({"kind": "said", "text": "x" * (128 * 1024)})
+_RAISED: Final = 1024 * 1024
 _PROBLEM: Final = (("Content-Type", "application/json"),)
 _INVALID: Final = (("WWW-Authenticate", 'Bearer error="invalid_token"'),)
 
@@ -349,18 +351,23 @@ def _refusals(harness: _Harness, api: Any) -> None:
 def _decoding(harness: _Harness, api: Any) -> None:
     """Refuse messages that do not decode as declared, closing with 1002, and values that do not encode."""
     lines, server = harness.lines, harness.server
-    for label, talk, helper in (
-        ("not JSON", _sending("{broken"), "chat"),
-        ("refused by its schema", _sending('{"kind": "said"}'), "chat"),
-        ("binary frame for text", _sending(_JOINED.encode()), "chat"),
-        ("text frame for bytes", _sending("text"), "feed"),
-        ("large undecodable", _sending(json_error_body("large syntax").decode()), "chat"),
+    for label, talk, helper, limits in (
+        ("not JSON", _sending("{broken"), "chat", None),
+        ("refused by its schema", _sending('{"kind": "said"}'), "chat", None),
+        ("binary frame for text", _sending(_JOINED.encode()), "chat", None),
+        ("text frame for bytes", _sending("text"), "feed", None),
+        (
+            "large undecodable",
+            _sending(json_error_body("large syntax").decode()),
+            "chat",
+            harness.ws(max_message_bytes=_RAISED),
+        ),
     ):
         (play,) = server.play(Play(talk=talk))
         session = (
-            api.protocols.rooms.chat.connect(room=harness.room())
+            api.protocols.rooms.chat.connect(room=harness.room(), ws_options=limits)
             if helper == "chat"
-            else api.protocols.feed.text.connect()
+            else api.protocols.feed.text.connect(ws_options=limits)
         )
         try:
             session.receive()
@@ -380,7 +387,10 @@ def _decoding(harness: _Harness, api: Any) -> None:
 
 
 def _limits(harness: _Harness, api: Any) -> None:
-    """Refuse a message over its limit with 1009, end an idle wait with 1001, and report an abnormal closure."""
+    """Refuse a message over its limit with 1009, end an idle wait with 1001, and report an abnormal closure.
+
+    A message over HTTPX2's default limit is refused while the option is unset, and received under a raised one.
+    """
     lines, server, options = harness.lines, harness.server, harness.options
     chat = api.protocols.rooms.chat
     for label, play, arguments in (
@@ -389,6 +399,7 @@ def _limits(harness: _Harness, api: Any) -> None:
             Play(talk=_sending(json.dumps({"kind": "said", "text": "x" * 64}))),
             {"ws_options": harness.ws(max_message_bytes=32)},
         ),
+        ("message over HTTPX2's default limit", Play(talk=_sending(_OVER_DEFAULT)), {}),
         ("idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
         ("idle inherited", Play(), {"options": options.RequestOptions(timeout=httpx2.Timeout(None, read=0.05))}),
         (
@@ -404,6 +415,11 @@ def _limits(harness: _Harness, api: Any) -> None:
         record(lines, label, session.receive)
         record(lines, f"{label} again", session.receive)
         harness.report(play)
+    (play,) = server.play(Play(talk=_sending(_OVER_DEFAULT)))
+    with chat.connect(room=harness.room(), ws_options=harness.ws(max_message_bytes=_RAISED)) as session:
+        message = session.receive()
+        lines.append(f"  under a raised limit = {type(message.data).__name__} of {len(message.raw)} bytes")
+    harness.report(play)
     (play,) = server.play(Play(talk=_sending(_JOINED, code=4001, reason="kicked")))
     session = chat.connect(room=harness.room())
     try:
@@ -719,6 +735,19 @@ def _trusted() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def _refusing_url() -> Iterator[str]:
+    """Yield a URL whose port no socket listens on, held by a connected socket so no other server takes it meanwhile.
+
+    A port held by a socket bound without listening is no refusal on macOS, which drops the SYN until the connect
+    times out; with no listening socket and no unconnected one bound to the port, every platform refuses at once.
+    """
+    with socket.create_server(("127.0.0.1", 0)) as listener, socket.socket() as holder:
+        holder.bind(("127.0.0.1", 0))
+        holder.connect(listener.getsockname())
+        yield f"https://127.0.0.1:{holder.getsockname()[1]}"
+
+
 def _client_close(harness: _Harness) -> None:
     """Close a client with sessions open: each session closes first, as its own close does, then the HTTP client."""
     lines, server = harness.lines, harness.server
@@ -809,9 +838,7 @@ def _handshakes(harness: _Harness) -> None:
         finally:
             peer.stop()
     _deadline_open(harness, once)
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        url = f"https://127.0.0.1:{probe.getsockname()[1]}"
+    with _refusing_url() as url:
         for retry in (1, 0):
             with harness.api(url) as api:
                 record(
@@ -898,9 +925,7 @@ async def _messages(session: Any) -> list[object]:
 async def _async_refused(harness: _Harness) -> None:
     """Retry an asyncio handshake refused before sending, within its session budget."""
     lines = harness.lines
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        url = f"https://127.0.0.1:{probe.getsockname()[1]}"
+    with _refusing_url() as url:
         async with harness.async_api(url) as api:
             await aconnected(lines, "async refused connection", api.protocols.feed.text.connect)
 
@@ -958,6 +983,7 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
             Play(),
             {"ws_options": harness.ws(idle_timeout=None, total_timeout=1.0)},
         ),
+        ("async message over HTTPX2's default limit", Play(talk=_sending(_OVER_DEFAULT)), {}),
         ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
         ("async server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
     ):
@@ -969,10 +995,13 @@ async def _async_failures(harness: _Harness, api: Any) -> None:
             lambda session, label=label: arecord(lines, label, session.receive),
         )
         await harness.areport(play)
-    for label, text in (("async decode failure", "syntax"), ("async large decode failure", "large syntax")):
+    for label, text, limits in (
+        ("async decode failure", "syntax", None),
+        ("async large decode failure", "large syntax", harness.ws(max_message_bytes=_RAISED)),
+    ):
         (play,) = server.play(Play(talk=_sending(json_error_body(text).decode())))
         try:
-            async with chat.connect(room=harness.room()) as session:
+            async with chat.connect(room=harness.room(), ws_options=limits) as session:
                 await session.receive()
         except harness.errors.DecodeError as failure:
             lines.append(_decode_failure(f"{label} left the block", failure))

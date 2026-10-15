@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import ConfigDict
+from pydantic import MISSING, ConfigDict
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -12,78 +12,78 @@ from typing_extensions import TypeAliasType
 class Pet:
     id: int
     name: str
-    tag: str | None = None
+    tag: str | None | MISSING = MISSING
 
 
 @dataclass
 class NewPet:
     name: str
-    tag: str | None = None
+    tag: str | MISSING = MISSING
 
 
 @dataclass
 class Error:
     code: int
-    message: str | None = None
+    message: str | MISSING = MISSING
 
 
-FieldPetsGetQueryLimitParameter = TypeAliasType("FieldPetsGetQueryLimitParameter", int)
+PetsGetQueryLimitParameter = TypeAliasType("PetsGetQueryLimitParameter", int)
 
 
-FieldPetsGetQueryTagsParameter = TypeAliasType("FieldPetsGetQueryTagsParameter", list[str])
+PetsGetQueryTagsParameter = TypeAliasType("PetsGetQueryTagsParameter", list[str])
 
 
-FieldPetsGetHeaderXTraceParameter = TypeAliasType("FieldPetsGetHeaderXTraceParameter", str)
+PetsGetHeaderXTraceParameter = TypeAliasType("PetsGetHeaderXTraceParameter", str)
 
 
-FieldPetsGetCookieSessionParameter = TypeAliasType("FieldPetsGetCookieSessionParameter", str)
+PetsGetCookieSessionParameter = TypeAliasType("PetsGetCookieSessionParameter", str)
 
 
-FieldPetsGetResponse = TypeAliasType("FieldPetsGetResponse", list[Pet])
+PetsGetResponse = TypeAliasType("PetsGetResponse", list[Pet])
 
 
-FieldPetsGetResponse200XNextHeader = TypeAliasType("FieldPetsGetResponse200XNextHeader", str)
+PetsGetResponse200XNextHeader = TypeAliasType("PetsGetResponse200XNextHeader", str)
 
 
-FieldPetsGetResponse200XRateHeader = TypeAliasType("FieldPetsGetResponse200XRateHeader", int)
+PetsGetResponse200XRateHeader = TypeAliasType("PetsGetResponse200XRateHeader", int)
 
 
-FieldPetsPostRequest = TypeAliasType("FieldPetsPostRequest", str)
+PetsPostRequest = TypeAliasType("PetsPostRequest", str)
 
 
-FieldPetsPetIdGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdGetPathPetIdParameter", int)
+PetsPetIdGetPathPetIdParameter = TypeAliasType("PetsPetIdGetPathPetIdParameter", int)
 
 
-FieldPetsPetIdGetResponse = TypeAliasType("FieldPetsPetIdGetResponse", str)
+PetsPetIdGetResponse = TypeAliasType("PetsPetIdGetResponse", str)
 
 
-FieldPetsPetIdHeadResponse200ETagHeader = TypeAliasType("FieldPetsPetIdHeadResponse200ETagHeader", str)
+PetsPetIdHeadResponse200ETagHeader = TypeAliasType("PetsPetIdHeadResponse200ETagHeader", str)
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int)
+PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("PetsPetIdPhotoPutPathPetIdParameter", int)
 
 
-FieldPetsPetIdPhotoPutRequest = TypeAliasType("FieldPetsPetIdPhotoPutRequest", bytes)
+PetsPetIdPhotoPutRequest = TypeAliasType("PetsPetIdPhotoPutRequest", bytes)
 
 
-FieldPetsPetIdPhotoPutResponse = TypeAliasType("FieldPetsPetIdPhotoPutResponse", bytes)
+PetsPetIdPhotoPutResponse = TypeAliasType("PetsPetIdPhotoPutResponse", bytes)
 
 
-FieldPetsPetIdFilesPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesPostPathPetIdParameter", int)
-
-
-@dataclass(config=ConfigDict(extra='forbid'))
-class FieldPetsPetIdFilesPostRequest:
-    file: bytes
-    note: str | None = None
-    labels: list[str] | None = None
-
-
-FieldPetsPetIdFilesGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesGetPathPetIdParameter", int)
+PetsPetIdFilesPostPathPetIdParameter = TypeAliasType("PetsPetIdFilesPostPathPetIdParameter", int)
 
 
 @dataclass(config=ConfigDict(extra='forbid'))
-class FieldPetsPetIdFilesGetResponse:
+class PetsPetIdFilesPostRequest:
     file: bytes
-    note: str | None = None
-    labels: list[str] | None = None
+    note: str | MISSING = MISSING
+    labels: list[str] | MISSING = MISSING
+
+
+PetsPetIdFilesGetPathPetIdParameter = TypeAliasType("PetsPetIdFilesGetPathPetIdParameter", int)
+
+
+@dataclass(config=ConfigDict(extra='forbid'))
+class PetsPetIdFilesGetResponse:
+    file: bytes
+    note: str | MISSING = MISSING
+    labels: list[str] | MISSING = MISSING

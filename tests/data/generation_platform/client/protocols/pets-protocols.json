@@ -76,7 +76,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 4,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },

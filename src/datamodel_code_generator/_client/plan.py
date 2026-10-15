@@ -17,9 +17,18 @@ from datamodel_code_generator._client.config import absolute
 from datamodel_code_generator._client.model_facts import ALIASES
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, RESERVED_ARGUMENTS, RESERVED_MEMBERS
 from datamodel_code_generator._client.security import CredentialSpec, SecurityPlanner
-from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
+from datamodel_code_generator._openapi_codec_plan import takes_null
+from datamodel_code_generator._openapi_wire_plan import (
+    body_kind,
+    content_types,
+    declared_media,
+    form_extras,
+    form_styled,
+    parameter_plans,
+    property_members,
+)
 from datamodel_code_generator._runtime.client.media import most_specific
-from datamodel_code_generator._runtime.client.multipart import PartPlan
+from datamodel_code_generator._runtime.client.parts import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
     BuiltinType,
@@ -34,7 +43,13 @@ from datamodel_code_generator._target_contract import (
     TypeUseBinding,
     UnionType,
 )
-from datamodel_code_generator._target_naming import WINDOWS_DEVICES, NameScope, explicit_name, operation_basis
+from datamodel_code_generator._target_naming import (
+    WINDOWS_DEVICES,
+    NameScope,
+    explicit_name,
+    operation_basis,
+    path_placeholders,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping
@@ -49,7 +64,6 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._client.model_facts import ModelFacts
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.client.multipart import PartKind
     from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
@@ -85,7 +99,6 @@ _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
 _MAX_ERROR: Final = 599
 _CONFIG_CODES: Final = frozenset({"E_CONFIG_VALUE", "E_CONFIG_CONFLICT", "E_OPERATION_REF"})
-_STYLED: Final = ("style", "explode", "allowReserved")
 _DEFAULTS: Final = {"bool": ("bool",), "int": ("int",), "float": ("int", "float"), "str": ("str",)}
 
 
@@ -109,11 +122,15 @@ class MediaSpec:
 
     A form-data body or response whose schema has file parts is sent or read as parts: `members` plans each
     declared member, and `extra` any other part, which no plan allows when the schema allows no other properties.
+    One sent or read whole has `parts`: of a response, how each member is read, and of a body, the members it
+    writes as JSON. Its `additional_part` plans any other part: of a response, how it is read, and of a body, that
+    it is written as JSON. A sent JSON body is `null` when its schema admits JSON null, as its model types it.
     """
 
     media_type: str
     kind: MediaKind
     use: TypeUseBinding | None
+    null: bool = False
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
     encoded: tuple[ParameterPlan, ...] = ()
@@ -181,6 +198,11 @@ class ServerSpec:
 
     url: str
     variables: tuple[tuple[str, str, tuple[str, ...]], ...] = ()
+
+    @property
+    def default_url(self) -> str:
+        """Return the URL a call sends to without a server selection: each variable at its default."""
+        return _defaulted(self.url, self.variables).rstrip("/")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -379,6 +401,16 @@ class Planner:
         self.problems: list[Diagnostic] = []
         self.security = SecurityPlanner(request.batch, self.problems)
         self.settings = self.resolved()
+        tags = {found[0] for operation in request.operations if (found := _tags(operation))}
+        self.problems.extend(
+            _problem(
+                "E_CONFIG_VALUE",
+                f"The tag {item.tag!r} is the first tag of no operation",
+                option_path=f"resource_names[{index}]",
+            )
+            for index, item in enumerate(config.resource_names)
+            if item.tag not in tags
+        )
         self.raise_problems()
         self.namespaces = self.tag_namespaces()
 
@@ -506,39 +538,40 @@ class Planner:
             )
 
     def resource(self, operation: OperationContract, setting: ClientOperationConfig | None) -> str:
-        """Return the operation's resource namespace: explicit, its first tag's mapped or derived name, or default.
+        """Return the operation's resource namespace: explicit, or its first tag's mapped or derived name.
 
-        Each other tag derives a new name beside the clients' members; a Windows device name needs an explicit one.
+        Operations without a tag share the name `default` derives. Each other tag derives a new name beside the
+        clients' members; a Windows device name needs an explicit one.
         """
         if setting is not None and setting.resource is not None:
             return setting.resource
-        if not (tags := _tags(operation)):
-            return "default"
-        if (mapped := self.resource_names.get(tags[0])) is not None:
+        if (tags := _tags(operation)) and (mapped := self.resource_names.get(tags[0])) is not None:
             return mapped
-        return self.namespaces[tags[0]]
+        return self.namespaces[tags[0] if tags else None]
 
-    def tag_namespaces(self) -> dict[str, str]:
+    def tag_namespaces(self) -> dict[str | None, str]:
         """Name the resource of each first tag that no setting names, apart from the clients' members and each other.
 
-        A Windows device name needs an explicit one.
+        The operations without a tag form one more resource, under the key None, whose name derives from `default`
+        among the tags' names. A resource's place is its first operation, whether or not the operation's own
+        setting moves it to another resource, as the server orders its groups. A Windows device name needs an
+        explicit one where an operation stays in its resource.
         """
-        first: dict[str, OperationContract] = {}
+        first: dict[str | None, OperationContract] = {}
+        staying: dict[str | None, OperationContract] = {}
         for operation in self.request.operations:
-            setting = self.settings.get(operation.id.use_site.pointer)
-            if (
-                (setting is None or setting.resource is None)
-                and (tags := _tags(operation))
-                and tags[0] not in self.resource_names
-            ):
-                first.setdefault(tags[0], operation)
-        bases = [self.names.function(tag) for tag in first]
+            if (tag := tags[0] if (tags := _tags(operation)) else None) not in self.resource_names:
+                first.setdefault(tag, operation)
+                setting = self.settings.get(operation.id.use_site.pointer)
+                if setting is None or setting.resource is None:
+                    staying.setdefault(tag, operation)
+        bases = [self.names.function("default" if tag is None else tag) for tag in first]
         names = self.names.claim(
             NameScope(RESERVED_MEMBERS, folded=True),
             [(base, _local(operation), ()) for operation, base in zip(first.values(), bases, strict=True)],
         )
-        for (tag, operation), namespace in zip(first.items(), names, strict=True):
-            if namespace.casefold() in WINDOWS_DEVICES:
+        for tag, namespace in zip(first, names, strict=True):
+            if namespace.casefold() in WINDOWS_DEVICES and (operation := staying.get(tag)) is not None:
                 message = f"The tag {tag!r} of {_label(operation)} needs an explicit resource name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return dict(zip(first, names, strict=True))
@@ -677,14 +710,24 @@ class Planner:
             for location, name in explicit
         )
         paths = {spec.wire_name for spec in specs if spec.location == "path"}
+        template = path_placeholders(operation.path)
         self.problems.extend(
             _problem(
                 "E_METADATA_REQUIRED",
                 f"The path placeholder {placeholder!r} of {_label(operation)} has no path parameter",
                 operation.id.use_site,
             )
-            for placeholder in dict.fromkeys(_PLACEHOLDER.findall(operation.path))
+            for placeholder in dict.fromkeys(template)
             if placeholder not in paths
+        )
+        self.problems.extend(
+            _problem(
+                "E_METADATA_REQUIRED",
+                f"The path parameter {declaration.name!r} of {_label(operation)} names no path placeholder",
+                declaration.use_site,
+            )
+            for declaration in operation.parameters
+            if fact(declaration, "in") == "path" and declaration.name not in template
         )
         return tuple(specs)
 
@@ -704,16 +747,23 @@ class Planner:
         """Return the first type use of a declaration."""
         return next((self.uses[use] for use in uses if use in self.uses), None)
 
+    def _declared(self, operation: OperationContract, declaration: WireDeclaration) -> str:
+        """Return a media declaration's normalized type, reporting a key that no Content-Type header carries."""
+        media_type, problem = declared_media(declaration.name or "")
+        if problem is not None:
+            message = f"The media type {declaration.name!r} of {_label(operation)} {problem}"
+            self.problems.append(_problem("E_METADATA_REQUIRED", message, declaration.use_site))
+        return media_type
+
+    def _takes_null(self, use: TypeUseBinding | None) -> bool:
+        """Return whether a JSON body's type admits null, as the server decides it: no schema, or a type that does."""
+        return use is None or takes_null(use.type, self.facts.symbols, self.facts.members)
+
     def media(self, operation: OperationContract, declaration: WireDeclaration, *, request: bool) -> MediaSpec:
         """Return one media declaration with its normalized type, kind, type use, and form member plans."""
-        try:
-            media_type = normalize_media_type(declaration.name or "")
-        except ValueError:
-            message = f"The media type {declaration.name!r} of {_label(operation)} is not a media type"
-            self.problems.append(_problem("E_METADATA_REQUIRED", message, declaration.use_site))
-            media_type = declaration.name or ""
-        kind = media_kind(media_type)
+        media_type = self._declared(operation, declaration)
         use = self.use(declaration.schemas)
+        kind = body_kind(media_type, use)
         essence = media_type.partition(";")[0]
         if (reason := _unsupported(kind, essence, use, request=request)) is not None:
             message = f"The {media_type} media of {_label(operation)} {reason}"
@@ -732,12 +782,13 @@ class Planner:
         styles_of = self.styles.get(use.id, {}) if request and use is not None else {}
         members: tuple[PartSpec, ...] | None = None
         extra: PartSpec | None = None
+        parts: tuple[PartPlan, ...] = ()
+        additional_part: PartPlan | None = None
         if reason is None and essence == _FORM_DATA and use is not None and use.schema is not None:
-            members, extra = (
-                self._sent(use, use.schema, media_of=media_of, styles_of=styles_of)
-                if request
-                else self._received(use, use.schema)
-            )
+            if request:
+                members, extra, parts, additional_part = self._sent(use, media_of=media_of, styles_of=styles_of)
+            else:
+                members, extra = self._received(use, use.schema)
             if members is None:
                 encoded = tuple(styles_of.values())
                 self.problems.extend(
@@ -753,13 +804,13 @@ class Planner:
                         for header in headers_of.get(encoding.name or "", ())
                     )
                 )
-        parts, additional_part = (
-            self._part_plans(use) if kind == "multipart" and not request and members is None else ((), None)
-        )
+        if kind == "multipart" and not request and members is None:
+            parts, additional_part = self._part_plans(use)
         return MediaSpec(
             media_type=media_type,
             kind=kind,
             use=use,
+            null=request and kind == "json" and self._takes_null(use),
             fields=fields,
             additional=additional,
             encoded=encoded,
@@ -790,8 +841,8 @@ class Planner:
             label = f"The {name} encoding of the {media_type} media of {_label(operation)}"
             if name in members and (headers := self._part_headers(encoding)):
                 headers_of[name] = headers
-            styled = any(fact(encoding, key) is not None for key in _STYLED)
-            match _content_types(encoding):
+            styled = form_styled(encoding, self.wire.version, multipart=True)
+            match content_types(encoding):
                 case _ if name not in members:
                     self.problems.append(_problem("E_METADATA_REQUIRED", f"{label} names no member", encoding.use_site))
                 case _ if styled and members[name].file:
@@ -826,49 +877,48 @@ class Planner:
             and (plan := self.header_plans.get(use.id)) is not None
         )
 
-    def _extra_use(self, body: TypeUseBinding, extra: SchemaSite) -> TypeUseBinding | None:
-        """Return the use the other properties of a body are read or sent by, when their schema is bound."""
-        return schema_use(self._schemas, extra.location, body.id.direction, extra.target)
-
     def _sent(
         self,
         use: TypeUseBinding,
-        site: SourceLocation,
         *,
         media_of: Mapping[str, tuple[str, ...]],
         styles_of: Mapping[str, ParameterPlan],
-    ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
+    ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None, tuple[PartPlan, ...], PartPlan | None]:
         """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
 
-        A member holding no files takes values of its field's type, which the part's own type use validates, and a
-        styled member writes the parts its style gives rather than one for each item.
+        A member holding no files takes values of its field's type, which the part's own type use validates. It
+        repeats as that type says, and one whose type has no one kind, or takes any value without an encoding's media
+        type, is written as JSON; a styled member writes the parts its style gives rather than one for each item. The
+        other properties a schema types are written by the same rule, by the type of their values, and those it allows
+        without a type as JSON too. A body sent whole
+        comes with the plans of the members it writes as JSON, then that of its other properties when they are JSON,
+        which every declared member's plan then tells apart from them.
         """
         parts = _parts(use)
         declared_extra = parts.extra
-        additional: PartSpec | None = PartSpec(plan=PartPlan(""))
+        additional: PartSpec | None = PartSpec(plan=PartPlan("", "json" if declared_extra is None else "string"))
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema) and declared_extra.file:
             additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated), file=True)
-        elif (
-            isinstance(declared_extra, PartSchema)
-            and (typed := self._extra_use(use, extra := _site(declared_extra, site))) is not None
-        ):
+        elif (extras := form_extras(self.wire.kinds, use)) is not None:
+            text = extras.kind is not None and not self.wire.kinds.untyped(extras.leaf)
             additional = PartSpec(
-                plan=PartPlan("", repeated=declared_extra.repeated), use=_part_use(use, extra.location, None, typed)
+                plan=PartPlan("", "string" if text else "json", repeated=extras.repeated),
+                use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.type, None)),
             )
         declared = dict(parts.members)
-        members = _members(use)
-        if not any(declared[name].file for name, _, _ in members) and (additional is None or not additional.file):
-            return None, None
         specs: list[PartSpec] = []
-        for name, member, facts in members:
+        for name, member, facts in _members(use):
             part = declared[name]
+            kind, leaf, repeated = self.wire.kinds.member(facts.type)
+            text = kind is not None and (name in styles_of or name in media_of or not self.wire.kinds.untyped(leaf))
             specs.append(
                 PartSpec(
                     plan=PartPlan(
                         name,
-                        repeated=name not in styles_of and part.repeated,
+                        "string" if part.file or text else "json",
+                        repeated=name not in styles_of and (part.repeated if part.file else repeated),
                         content_types=media_of.get(name, ()),
                         style=styles_of.get(name),
                     ),
@@ -878,15 +928,24 @@ class Planner:
                     file=part.file,
                 )
             )
-        return tuple(specs), additional
+        if any(spec.file for spec in specs) or (additional is not None and additional.file):
+            return tuple(specs), additional, (), None
+        others = None if additional is None or additional.plan.kind != "json" else additional.plan
+        written = tuple(
+            PartPlan(spec.plan.name, spec.plan.kind, repeated=spec.plan.repeated)
+            for spec in specs
+            if spec.plan.style is None and (others is not None or spec.plan.kind == "json")
+        )
+        return None, None, written, others
 
     def _received(
         self, use: TypeUseBinding, site: SourceLocation
     ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
         """Return the member plans of a form-data response with file parts, or None when its object is read whole.
 
-        A part holding no file is read by the type use of its schema, or of its items' schema when its member repeats;
-        a part of an untyped extra keeps its bytes, as a file part does.
+        A part holding no file is read by the type use of its schema, or of its items' schema when its member repeats.
+        Any other part is read by the type of the other properties' values, as a request writes it, and a part of an
+        untyped extra keeps its bytes, as a file part does.
         """
         parts = _parts(use)
         declared = dict(parts.members)
@@ -897,16 +956,23 @@ class Planner:
         ):
             return None, None
         additional: PartSpec | None = PartSpec(plan=PartPlan("", repeated=True), file=True)
+        extras = form_extras(self.wire.kinds, use)
         if declared_extra == "closed":
             additional = None
+        elif extras is not None and not (isinstance(declared_extra, PartSchema) and declared_extra.file):
+            additional = PartSpec(
+                plan=PartPlan("", extras.kind or "json", repeated=extras.repeated),
+                use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.leaf, None)),
+            )
         elif isinstance(declared_extra, PartSchema):
-            additional = self._read(use, "", _site(declared_extra, site).location, declared_extra, required=False)
+            additional = self._read(use, "", _site(declared_extra, site).location, declared_extra, None, required=False)
         return tuple(
             self._read(
                 use,
                 name,
                 member,
                 declared[name],
+                facts.type,
                 required=facts.required and not facts.write_only,
                 excluded=facts.write_only,
             )
@@ -919,6 +985,7 @@ class Planner:
         name: str,
         location: SourceLocation,
         part: PartSchema,
+        value: TypeView | None,
         *,
         required: bool,
         excluded: bool = False,
@@ -928,7 +995,7 @@ class Planner:
             return PartSpec(
                 plan=PartPlan(name, repeated=part.repeated), file=True, required=required, excluded=excluded
             )
-        plan = self._part_plan(name, location, part)
+        plan = self._part_plan(name, value, part)
         read = _site(part, location, items=plan.repeated)
         bound = schema_use(self._schemas, read.location, body.id.direction, read.target) or TypeUseBinding(
             body.id, "not_generated", None, None
@@ -944,21 +1011,28 @@ class Planner:
         parts = _parts(use)
         declared = dict(parts.members)
         plans = tuple(
-            self._part_plan(member.wire_name, member.schema, declared[member.wire_name])
+            self._part_plan(
+                member.wire_name,
+                None if (facts := member.model_facts) is None else facts.type,
+                declared[member.wire_name],
+            )
             for member in use.members
             if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
         )
         if (declared_extra := parts.extra) == "closed":
             return plans, None
-        if isinstance(declared_extra, PartSchema):
-            return plans, self._part_plan("", _site(declared_extra, use.schema).location, declared_extra)
-        return plans, PartPlan("")
+        if (extras := form_extras(self.wire.kinds, use)) is not None:
+            return plans, PartPlan("", extras.kind or "json", repeated=extras.repeated)
+        untyped = PartPlan("")
+        return plans, self._part_plan("", None, declared_extra) if isinstance(declared_extra, PartSchema) else untyped
 
-    def _part_plan(self, name: str, location: SourceLocation, part: PartSchema) -> PartPlan:
-        """Return how one member's parts are read: a scalar's lexical kind, or JSON, repeated for an array."""
-        steps = ("items",) if part.repeated else ()
-        kind: PartKind = (self.wire.kinds.at((location, steps)) if part.text else None) or "json"
-        return PartPlan(name, kind, repeated=part.repeated)
+    def _part_plan(self, name: str, value: TypeView | None, part: PartSchema) -> PartPlan:
+        """Return how one member's parts are read: text of its type's kind, or JSON, repeated as its type says.
+
+        A member no type is bound for is read as JSON, one part for each item when its schema is an array.
+        """
+        kind, _, repeated = (None, None, part.repeated) if value is None else self.wire.kinds.member(value)
+        return PartPlan(name, kind or "json", repeated=repeated)
 
     def body(
         self, operation: OperationContract, declaration: WireDeclaration, setting: ClientOperationConfig | None
@@ -1262,16 +1336,6 @@ def _part_use(
     )
 
 
-def _content_types(encoding: WireDeclaration) -> tuple[str, ...] | None:
-    """Return the media types an encoding's contentType lists, none without one, or None when one is no media type."""
-    if (declared := fact(encoding, "contentType")) is None:
-        return ()
-    try:
-        return tuple(normalize_media_type(item.strip()) for item in str(declared).split(","))
-    except ValueError:
-        return None
-
-
 def _encoded(media: WireDeclaration) -> WireDeclaration | None:
     """Return the first encoding of a multipart response, which no builtin reader applies."""
     return next(
@@ -1350,23 +1414,20 @@ def part_uses(plan: ClientPlan) -> Iterator[TypeUseBinding]:
         yield from (part.use for item in media for part in member_parts(item) if part.use is not None)
 
 
+def _coded(media: MediaSpec) -> bool:
+    """Return whether a body's codec reads or writes it: any but raw bytes the models leave unconstrained, or parts."""
+    return media.members is None and (media.kind != "binary" or (media.use is not None and media.use.checked))
+
+
 def plan_uses(plan: ClientPlan) -> Iterator[TypeUseId]:
     """Yield every type use whose codec the client binds: parameters, bodies or their parts, responses, and headers."""
     for spec in plan.operations:
         yield from (parameter.use.id for parameter in spec.parameters if parameter.use is not None)
         if spec.body is not None:
-            yield from (
-                media.use.id
-                for media in spec.body.media
-                if media.use is not None and media.kind != "binary" and media.members is None
-            )
+            yield from (media.use.id for media in spec.body.media if media.use is not None and _coded(media))
         for response in spec.responses:
             if not response.bodyless:
-                yield from (
-                    media.use.id
-                    for media in response.media
-                    if media.use is not None and media.kind != "binary" and media.members is None
-                )
+                yield from (media.use.id for media in response.media if media.use is not None and _coded(media))
             yield from (header.use.id for header in response.headers if header.use is not None)
     yield from (use.id for use in part_uses(plan))
 
@@ -1380,14 +1441,18 @@ def encoding_header_uses(request: TargetRequest) -> Iterator[TypeUseId]:
 
 
 def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDeclaration, ...]]]:
-    """Yield the uses of the selected operations' form-data request bodies with the encodings that give a style."""
+    """Yield the uses of the selected operations' form-data request bodies with the encodings that give a style.
+
+    OpenAPI 3.0 gives none: it ignores a style for multipart/form-data.
+    """
+    version = request.batch.openapi
     for operation in request.operations:
         for media in () if operation.request_body is None else operation.request_body.children:
             if _essence(media.name or "") == _FORM_DATA and (
                 encodings := tuple(
                     child
                     for child in media.children
-                    if child.kind == "encoding" and any(fact(child, key) is not None for key in _STYLED)
+                    if child.kind == "encoding" and form_styled(child, version, multipart=True)
                 )
             ):
                 yield from ((use, encodings) for use in media.schemas)

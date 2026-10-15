@@ -138,5 +138,28 @@
     "options": {},
     "cli": [],
     "python": "3.10"
+  },
+  {
+    "name": "nullable",
+    "schema": "nullable",
+    "options": {
+      "use_msgspec_nullable_enum_alias": true
+    },
+    "cli": [
+      "--use-msgspec-nullable-enum-alias"
+    ],
+    "python": "3.10"
+  },
+  {
+    "name": "nullable_literal",
+    "schema": "nullable",
+    "options": {
+      "enum_field_as_literal": "all"
+    },
+    "cli": [
+      "--enum-field-as-literal",
+      "all"
+    ],
+    "python": "3.10"
   }
 ]

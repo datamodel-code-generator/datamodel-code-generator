@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info: {title: Server nullable bodies, version: "1.0"}
+paths:
+  /texts:
+    post:
+      operationId: postText
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: string, nullable: true, maxLength: 5}
+      responses:
+        "204": {description: Done.}
+  /lists:
+    post:
+      operationId: postList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: array, nullable: true, items: {type: integer}}
+      responses:
+        "204": {description: Done.}
+  /choices:
+    post:
+      operationId: postChoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {nullable: true, oneOf: [{$ref: "#/components/schemas/Item"}, {type: integer}]}
+      responses:
+        "204": {description: Done.}
+  /colors:
+    post:
+      operationId: postColor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Color"}
+      responses:
+        "204": {description: Done.}
+  /names:
+    post:
+      operationId: postName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Name"}
+      responses:
+        "204": {description: Done.}
+  /values:
+    post:
+      operationId: postValue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {}
+      responses:
+        "204": {description: Done.}
+  /anything:
+    post:
+      operationId: postAnything
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+      responses:
+        "204": {description: Done.}
+  /items:
+    post:
+      operationId: postItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Item"}
+      responses:
+        "204": {description: Done.}
+  /ids:
+    post:
+      operationId: postId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: string, format: uuid}
+      responses:
+        "204": {description: Done.}
+  /drafts:
+    post:
+      operationId: postDraft
+      requestBody:
+        content:
+          application/json:
+            schema: {type: string, nullable: true}
+      responses:
+        "204": {description: Done.}
+  /notes:
+    post:
+      operationId: postNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+              required: [text]
+              properties:
+                text: {type: string}
+                replies: {type: array, items: {type: object, nullable: true, properties: {text: {type: string}}}}
+      responses:
+        "204": {description: Done.}
+  /extended:
+    post:
+      operationId: postExtended
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+              allOf: [{$ref: "#/components/schemas/Item"}, {properties: {note: {type: string}}}]
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Item: {type: object, required: [name], properties: {name: {type: string}}}
+    Name: {type: string, nullable: true}
+    Color: {type: string, nullable: true, enum: [red, blue, null]}

@@ -3,11 +3,15 @@ Error: could not publish batch output: No space left on device
   outputs []
 # the batch publishes
 Add the runtime dependencies of server to your project:
-  uv add "fastapi>=0.141.1" "pydantic>=2.13.5" "typing-extensions>=4.16"
-  outputs ['models.py', 'schemas.py', 'server']
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+Next steps: implement the stubs in services/pets.py, services/store.py, then run the server:
+  uv add uvicorn && uv run uvicorn server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev server/main.py
+See server/README.md.
+  outputs ['models.py', 'schemas.py', 'server', 'services']
 # the server job's services.py cannot be replaced
 Error: could not publish batch output: No space left on device
-  outputs ['models.py', 'schemas.py', 'server']
+  outputs ['models.py', 'schemas.py', 'server', 'services']
   schemas.py still edited True
   models.py still edited True
   server/services.py still edited True

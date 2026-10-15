@@ -28,7 +28,6 @@ def project(tmp_path: Path) -> Iterator[Path]:
     """Copy external project inputs and isolate project discovery."""
     project = shutil.copytree(DATA_PATH, tmp_path / "project")
     (project / ".git").mkdir()
-    (project / "child").mkdir()
     with chdir(project):
         yield project
 
@@ -76,14 +75,14 @@ def test_load_pyproject_config_errors(case: dict[str, Any], project: Path) -> No
         load_pyproject_config(profile=case.get("profile"), overrides=case.get("overrides"))
 
 
-def test_load_pyproject_config_cli_parity(project: Path) -> None:
-    """The CLI shares project-relative JSON loading and produces the same models."""
+def test_cli_reads_pyproject_json_files_from_working_directory(project: Path) -> None:
+    """The CLI reads the JSON option files that pyproject.toml names from the working directory, as 0.83.0 did."""
     shutil.copyfile(project / "json_files.toml", project / "pyproject.toml")
     with chdir(project / "child"):
         run_main_and_assert(
             input_path=project / "schema.json",
             output_path=project / "cli.py",
-            expected_file="json_files.py",
+            expected_file="json_files_working_directory.py",
             assert_func=create_assert_file_content(EXPECTED_PATH),
             transform=str.rstrip,
         )

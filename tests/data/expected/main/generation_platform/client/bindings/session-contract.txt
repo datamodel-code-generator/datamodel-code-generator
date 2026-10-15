@@ -23,7 +23,7 @@ change pydantic_v2.BaseModel default decorator
   @@ -14,0 +15 @@
   +@custom_decorator
 change pydantic_v2.BaseModel default symbol-shadow
-  @@ -55,0 +56,2 @@
+  @@ -53,0 +54,2 @@
   +
   +from builtins import str as Record
 change pydantic_v2.BaseModel default import-identity

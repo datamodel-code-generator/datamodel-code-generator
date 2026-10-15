@@ -98,6 +98,143 @@ No errors! 🎉
 
 ---
 
+## 🔢 Which fields keep number keywords
+
+`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` are written on a field in two cases.
+
+**The schema holds a number.** The schema type is `number` or `integer`, or the type and format map to a number type
+(`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps to one). All five keywords
+are written, as `con*` types by default and as `Field()` arguments with `--field-constraints` or `--use-annotated`.
+
+**The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
+`duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
+written as `Any`, which takes no number keyword. Pydantic models and dataclasses write these keywords only as `Field()`
+arguments, so this case needs `--field-constraints` or `--use-annotated` (root models and type aliases follow the same
+options); without them such a field has no bound. `msgspec.Struct` writes them as `Meta(...)`.
+
+In both cases `msgspec.Struct` writes a keyword only when msgspec accepts it on the Python type, as the msgspec column
+of the tables below lists, because msgspec cannot decode a model whose `Meta(...)` holds any other. A keyword it
+leaves out, such as `minimum` on the `Decimal` of format `decimal`, is named with its field in a warning.
+msgspec checks `multipleOf` on a `float` by its floating-point remainder, so `msgspec.Struct` writes it on a `float`
+only for a divisor a float represents exactly, such as `2`, `0.5` or `1.5`; a divisor such as `0.01`, whose multiples
+msgspec would reject, is left out with the same warning.
+msgspec checks all members of a union that it decodes as one Python type against the constraints of each of them, so
+in `anyOf: [{type: string, format: binary}, {type: string, format: binary, maxLength: 3}]` the `maxLength` of one
+branch would reject the bytes the other branch accepts. `msgspec.Struct` writes such members without `Meta(...)`, so
+the field takes the values of every branch (`bytes` here), and names the keywords it leaves out in the same warning;
+members of different types, such as `str` and `int`, keep their constraints. msgspec counts the members of an alias of
+a union, or of a type and `null`, as members of the union that names it, so a branch that references such a schema is
+written as the alias's members there, while the alias keeps its `Meta(...)`. msgspec also decodes every integer as the
+`int` member of a union that has a `float` member, so in
+`anyOf: [{type: integer, maximum: 3}, {type: number, minimum: 5}]` the `maximum` would reject `6`, which the number
+branch accepts; the `int` member is written without its constraints, with the same warning, unless they admit every
+integer the `float` members admit.
+
+| Python type | Pydantic | msgspec |
+|-------------|----------|---------|
+| `int`, `float` | all five keywords | all five keywords |
+| `Decimal` | all five keywords | none |
+| `timedelta` | the four bounds, read as seconds | none |
+| `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
+| `time` | the four bounds, read as seconds since midnight | none |
+| a type the generator does not know (`fractions.Fraction`, a class of your own) or a model that the schema references | all five keywords | all five keywords |
+| any other known type: `str`, `bytes`, `bool`, `None`, `date`, `UUID`, `Any`, `object`, paths, IP addresses, lists, dicts and other containers | none | none |
+
+`multipleOf` is not written on `timedelta`, `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field,
+and later versions ignore the keyword or fail on valid values. A `date` takes no number keyword in any Pydantic
+version. `msgspec` accepts number constraints on `int` and `float` only, so a type the generator does not know has to
+be one of them at runtime, for example a `NewType` of `int`.
+Pydantic 2.11 cannot build a `time` field that has a number bound; use Pydantic 2.12 or later for such schemas.
+
+A known type is a Python builtin, a standard-library type, or a type the generator itself imports; its row above
+decides. A `typing` alias or an abstract collection is read as the class it stands for (`typing.List`,
+`collections.abc.Sequence` and `collections.abc.Collection` as `list`), and `Annotated[T, ...]` or `Final[T]` as `T`;
+a `typing_extensions` name that `typing` also exports is read as the `typing` name. Any other `typing` or
+`collections.abc` name, such as `typing.SupportsInt` or `collections.abc.Callable`, is a known type that takes no
+number keyword. A union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the
+keywords in Pydantic models and `int | str` does not; `msgspec` writes no type-dependent keyword (number, string or
+array) on an `x-python-type` union. A `Literal` is read like a union of the types of its values (`str`, `bytes`, `int`,
+`float` or `bool`, with the values of a nested `Literal` and without `None`), so `Literal[1, 2.5]` and
+`Literal[1, None]` keep the number keywords in Pydantic models, while `Literal["a", 1]` and `Literal[True, False]` keep
+none; `msgspec` accepts no constraint on a `Literal`. Custom templates receive the same values as the built-in ones.
+
+A named schema whose `allOf` merges into one scalar type, such as
+`{"allOf": [{"type": "string", "format": "duration"}, {"minimum": 0}]}`, is a root model of that type and follows the
+same table.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {"type": "string", "x-python-type": "int", "minimum": 0},
+    "wait": {"type": "string", "format": "duration", "minimum": 0},
+    "at": {"type": "string", "format": "date-time", "minimum": 0},
+    "day": {"type": "string", "format": "date", "minimum": 0}
+  }
+}
+```
+
+With `--field-constraints`:
+
+```python
+class Model(BaseModel):
+    count: int | None = Field(None, ge=0)
+    wait: timedelta | None = Field(None, ge=0)
+    at: AwareDatetime | None = Field(None, ge=0)
+    day: date | None = None
+```
+
+## 🔤 Which fields keep string and array keywords
+
+`minLength`, `maxLength` and `pattern` hold for strings, and `minItems`, `maxItems` and `uniqueItems` hold for arrays.
+They follow the same two cases as number keywords: a schema type `string` takes the string keywords and a schema type
+`array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
+without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
+"pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
+`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds. As for number
+keywords, `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept on the Python type, such
+as `pattern` on `bytes` or `minLength` on the `Literal` of a `const`.
+
+A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
+keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
+`list`, and `Literal["a", "bb", None]` and `Literal[b"a", b"bb"]` take those of `str` and `bytes` in Pydantic models.
+
+| Python type | Pydantic | msgspec |
+|-------------|----------|---------|
+| `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
+| `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
+| `conbytes`, `EmailStr`, `SecretStr` | `minLength`, `maxLength` | none |
+| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
+| `deque` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | none |
+| `collections.abc.Sized`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
+| `typing.AnyStr`, `collections.abc.ByteString` | `minLength`, `maxLength`, `pattern` | none |
+| a type the generator does not know or a model that the schema references | all of them | all of them |
+| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts, other `typing` and `collections.abc` names such as `Container`, `Reversible` and `Buffer` | none | none |
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {"type": "string", "minLength": 2},
+    "any": {"minLength": 2},
+    "count": {"type": "integer", "pattern": "^1"},
+    "tags": {"items": {"type": "string"}, "minItems": 1, "pattern": "^a"}
+  }
+}
+```
+
+With `--field-constraints`:
+
+```python
+class Model(BaseModel):
+    code: str | None = Field(None, min_length=2)
+    any: Any | None = None
+    count: int | None = None
+    tags: list[str] | None = Field(None, min_length=1)
+```
+
+---
+
 ## 📖 See Also
 
 - 🖥️ [CLI Reference: `--field-constraints`](cli-reference/field-customization.md#field-constraints) - Detailed CLI option documentation with examples

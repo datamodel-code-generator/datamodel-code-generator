@@ -56,6 +56,19 @@ paths:
       responses:
         '204':
           description: A form-data body that is no object.
+  /union-parts:
+    post:
+      operationId: postUnionParts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              anyOf:
+                - {type: object, properties: {a: {type: integer}}}
+                - {type: object, properties: {b: {type: string}}}
+      responses:
+        '204':
+          description: A form-data body that is one of several objects.
   /form-data-encodings:
     post:
       operationId: postFormDataEncodings
@@ -73,6 +86,7 @@ paths:
                 f: {type: string, format: binary}
                 g: {type: object}
                 h: {type: string, format: binary}
+                i: {type: string}
             encoding:
               other: {contentType: text/plain}
               a:
@@ -85,6 +99,7 @@ paths:
               e: {contentType: 'text/*'}
               f: {contentType: 'image/*'}
               g: {contentType: text/plain}
+              i: {contentType: 'application/json; a="x,y"'}
               h: {style: form}
       responses:
         '204':
@@ -124,6 +139,19 @@ paths:
       responses:
         '204':
           description: An invalid media type.
+  /labelled:
+    post:
+      operationId: postLabelled
+      requestBody:
+        content:
+          "text/plain; label=\"caf\u00e9\"":
+            schema: {type: string}
+      responses:
+        "200":
+          description: Done.
+          content:
+            "application/json; v=\"\u00e9\"":
+              schema: {type: string}
   /item-text-parts:
     get:
       operationId: readItemTextParts

@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info: {title: d, version: "1"}
+servers: [{url: "https://api.example.com"}]
+paths:
+  /pets:
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Pet"}
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /list:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/Cat"
+                    - $ref: "#/components/schemas/Dog"
+                  discriminator:
+                    propertyName: petType
+  /owner:
+    get:
+      operationId: getOwner
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Owner"}
+  /bare:
+    get:
+      operationId: getBare
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Cat"
+                  - $ref: "#/components/schemas/Dog"
+                discriminator:
+                  propertyName: petType
+                  mapping:
+                    kitty: "#/components/schemas/Cat"
+                    doggo: "#/components/schemas/Dog"
+components:
+  schemas:
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Owner:
+      type: object
+      properties:
+        pets:
+          type: array
+          items: {$ref: "#/components/schemas/Pet"}
+        main: {$ref: "#/components/schemas/Pet"}
+        inline:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Dog"
+          discriminator:
+            propertyName: petType
+    Cat:
+      type: object
+      required: [petType, name]
+      properties:
+        petType: {type: string}
+        name: {type: string}
+        lives: {type: integer, readOnly: true}
+    Dog:
+      type: object
+      required: [petType]
+      properties:
+        petType: {type: string}
+        bark: {type: boolean}

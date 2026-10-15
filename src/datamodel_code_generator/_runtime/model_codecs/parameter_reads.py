@@ -131,13 +131,14 @@ def _last(values: list[bytes]) -> bytes | UNSET:
     return values[-1] if values else UNSET
 
 
+def _member(plan: ParameterPlan, declared: set[str], name: str) -> bool:
+    """Return whether an exploded object parameter takes a pair of this name as one of its members."""
+    return name in declared or (plan.additional is not None and name not in plan.reserved_names)
+
+
 def _exploded_object(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONValue | UNSET:
     declared = {item.name for item in plan.fields}
-    members = [
-        (name, text)
-        for name, text in pairs
-        if name in declared or (plan.additional is not None and name not in plan.reserved_names)
-    ]
+    members = [(name, text) for name, text in pairs if _member(plan, declared, name)]
     return _object(plan, members) if members else UNSET
 
 
@@ -169,11 +170,7 @@ def _decode_query(plan: ParameterPlan, pairs: list[tuple[str, bytes]]) -> JSONVa
 
 def _decode_header(plan: ParameterPlan, values: list[bytes]) -> JSONValue | UNSET:
     """Decode the first value of a scalar header, as Starlette reads one, or every value of a container."""
-    try:
-        texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
-    except UnicodeDecodeError:
-        msg = "A header value must be UTF-8"
-        raise MalformedError(msg) from None
+    texts = [value.decode().strip(_OWS) for value in (values[:1] if plan.shape == "scalar" else values)]
     if not texts:
         return UNSET
     if plan.shape == "scalar":
@@ -191,14 +188,6 @@ def _decode_cookie(plan: ParameterPlan, pairs: list[tuple[str, str]]) -> JSONVal
     if plan.shape == "array":
         return [typed(text, plan.kind) for text in matching] or UNSET
     return typed(matching[-1], plan.kind) if matching else UNSET
-
-
-def _utf8(raw: bytes) -> str:
-    try:
-        return raw.decode()
-    except UnicodeDecodeError:
-        msg = "A parameter value must be UTF-8"
-        raise MalformedError(msg) from None
 
 
 def _decode_querystring(plan: ParameterPlan, raw: bytes | None) -> JSONValue | UNSET:
@@ -227,23 +216,44 @@ def _decode_query_value(plan: ParameterPlan, fragments: tuple[ParameterFragment,
 
 
 def _decode_header_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
+    """Decode a header from every occurrence of its name, each of which must be ASCII, as RFC 9110 writes header text.
+
+    JSON content is JSON text in ASCII, its escapes standing for any other character.
+    """
     key = plan.name.lower().encode("latin-1")
     values = [item.value for item in fragments if (item.name or b"").lower() == key]
+    if not all(value.isascii() for value in values):
+        msg = "A header value must be ASCII"
+        raise MalformedError(msg)
     if plan.content_media_type is None:
         return _decode_header(plan, values)
     if not values:
         return UNSET
-    return _utf8(values[0]).strip(_OWS)
+    return values[0].decode().strip(_OWS)
 
 
 def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment, ...]) -> JSONValue | UNSET:
-    if plan.style == "form" and plan.shape != "scalar":
-        pairs = [
-            (percent_decode(item.name or b"", plus=False), percent_decode(item.value, plus=False)) for item in fragments
-        ]
-    else:
-        pairs = [(_utf8(item.name or b""), _utf8(item.value)) for item in fragments]
-    return _decode_cookie(plan, pairs)
+    """Decode a cookie parameter from the cookies it reads, each of which must be ASCII, as RFC 6265 writes cookies.
+
+    Other cookies are left unread. Arrays and objects keep the `form` style's percent-encoding, of UTF-8 text.
+    """
+    form = plan.style == "form" and plan.shape != "scalar"
+    named = [
+        (percent_decode(item.name or b"", plus=False) if form else (item.name or b"").decode("latin-1"), item)
+        for item in fragments
+    ]
+    declared = {item.name for item in plan.fields}
+    read = [
+        (name, item)
+        for name, item in named
+        if (_member(plan, declared, name) if plan.shape == "object" else name == plan.name)
+    ]
+    if not all((item.name or b"").isascii() and item.value.isascii() for _, item in read):
+        msg = "A cookie must be ASCII"
+        raise MalformedError(msg)
+    return _decode_cookie(
+        plan, [(name, percent_decode(item.value, plus=False) if form else item.value.decode()) for name, item in read]
+    )
 
 
 def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> JSONValue | UNSET:

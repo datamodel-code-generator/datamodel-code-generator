@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import MISSING, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -18,21 +18,21 @@ Name = TypeAliasType("Name", Annotated[str, Field(min_length=1)])
 @dataclass
 class Owner:
     name: str
-    email: str | None = None
+    email: str | MISSING = MISSING
 
 
-FieldOwnersGetResponse = TypeAliasType("FieldOwnersGetResponse", list[Owner])
+OwnersGetResponse = TypeAliasType("OwnersGetResponse", list[Owner])
 
 
 @dataclass
 class PetRequest:
     name: Name
-    secret: str | None = None
-    owner: Owner | None = None
+    secret: str | MISSING = MISSING
+    owner: Owner | MISSING = MISSING
 
 
 @dataclass
 class PetResponse:
     name: Name
-    id: int | None = None
-    owner: Owner | None = None
+    id: int | MISSING = MISSING
+    owner: Owner | MISSING = MISSING

@@ -39,7 +39,7 @@ components:
       properties:
         data:
           type: string
-          format: binary
+          format: byte
         queue:
           type: array
           items:

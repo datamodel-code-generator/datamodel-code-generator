@@ -43,7 +43,9 @@
 | [`--use-default-kwarg`](#use-default-kwarg) | Use default= keyword argument instead of positional argument... |
 | [`--use-frozen-field`](#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly p... |
 | [`--use-generic-base-class`](#use-generic-base-class) | Generate a shared base class with model configuration to avo... |
-| [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for optional fields without ... |
+| [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel... |
+| [`--use-msgspec-nullable-enum-alias`](#use-msgspec-nullable-enum-alias) | Write a msgspec.Struct enum that lists null as an Enum and a... |
+| [`--use-msgspec-tagged-unions`](#use-msgspec-tagged-unions) | Write a msgspec.Struct discriminated union as tagged structs... |
 | [`--use-one-literal-as-default`](#use-one-literal-as-default) | Use single literal value as default when enum has only one o... |
 | [`--use-root-model-sequence-interface`](#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes im... |
 | [`--use-serialize-as-any`](#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
@@ -81,7 +83,7 @@ depend on the generator of the installed Pydantic.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --snake-case-field --alias-generator to_camel --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input alias_generator.json --snake-case-field --alias-generator to_camel --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--alias-generator` - the option documented here
@@ -158,7 +160,7 @@ The `--allow-extra-fields` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-extra-fields # (1)!
+    datamodel-codegen --input api.yaml --allow-extra-fields # (1)!
     ```
 
     1. :material-arrow-left: `--allow-extra-fields` - the option documented here
@@ -461,7 +463,7 @@ exactly.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name __ParsedModel --allow-leading-underscore-class-name --disable-timestamp # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name __ParsedModel --allow-leading-underscore-class-name --disable-timestamp # (1)!
     ```
 
     1. :material-arrow-left: `--allow-leading-underscore-class-name` - the option documented here
@@ -540,7 +542,7 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --allow-population-by-field-name # (1)!
+    datamodel-codegen --input api.yaml --allow-population-by-field-name # (1)!
     ```
 
     1. :material-arrow-left: `--allow-population-by-field-name` - the option documented here
@@ -838,7 +840,7 @@ The `--base-class` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --base-class custom_module.Base # (1)!
+    datamodel-codegen --input api.yaml --base-class custom_module.Base # (1)!
     ```
 
     1. :material-arrow-left: `--base-class` - the option documented here
@@ -1136,7 +1138,7 @@ adding `BaseModel`. Ensure your mixins inherit from `BaseModel` if needed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --base-class-map '{"Person": "custom.bases.PersonBase", "Animal": "custom.bases.AnimalBase"}' # (1)!
+    datamodel-codegen --input base_class_map.json --base-class-map '{"Person": "custom.bases.PersonBase", "Animal": "custom.bases.AnimalBase"}' # (1)!
     ```
 
     1. :material-arrow-left: `--base-class-map` - the option documented here
@@ -1220,7 +1222,7 @@ naming convention than what's in the schema.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name ValidModelName # (1)!
+    datamodel-codegen --input invalid_model_name.json --class-name ValidModelName # (1)!
     ```
 
     1. :material-arrow-left: `--class-name` - the option documented here
@@ -1303,7 +1305,7 @@ prefix or suffix specified by --class-name-prefix or --class-name-suffix:
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-suffix Schema --class-name-affix-scope models # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-suffix Schema --class-name-affix-scope models # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-affix-scope` - the option documented here
@@ -1387,7 +1389,7 @@ code or avoiding conflicts with existing classes.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-prefix Api # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-prefix Api # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-prefix` - the option documented here
@@ -1471,7 +1473,7 @@ classes (e.g., adding 'Schema' or 'Model' suffix).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --class-name-suffix Schema # (1)!
+    datamodel-codegen --input class_name_affix.json --class-name-suffix Schema # (1)!
     ```
 
     1. :material-arrow-left: `--class-name-suffix` - the option documented here
@@ -1555,7 +1557,7 @@ by replacing all references to duplicate models with the canonical model.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --collapse-reuse-models # (1)!
+    datamodel-codegen --input duplicate_models.json --reuse-model --collapse-reuse-models # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-reuse-models` - the option documented here
@@ -1629,7 +1631,7 @@ model types (Pydantic v2, dataclass, TypedDict, msgspec) handle const fields.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --collapse-root-models # (1)!
+    datamodel-codegen --input const.yaml --collapse-root-models # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-root-models` - the option documented here
@@ -1836,7 +1838,7 @@ root models. 'child' keeps the inner model's name, 'parent' uses the wrapper's n
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --collapse-root-models --collapse-root-models-name-strategy child # (1)!
+    datamodel-codegen --input collapse_root_models_name_strategy_child.json --collapse-root-models --collapse-root-models-name-strategy child # (1)!
     ```
 
     1. :material-arrow-left: `--collapse-root-models-name-strategy` - the option documented here
@@ -1913,7 +1915,7 @@ control over dataclass generation.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --dataclass-arguments '{"slots": true, "order": true}' # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --output-model-type dataclasses.dataclass --dataclass-arguments '{"slots": true, "order": true}' # (1)!
     ```
 
     1. :material-arrow-left: `--dataclass-arguments` - the option documented here
@@ -2251,7 +2253,7 @@ For example, `{"model": "Schema"}` changes `Item1` to `ItemSchema`.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --duplicate-name-suffix '{"model": "Schema"}' # (1)!
+    datamodel-codegen --input input.json --duplicate-name-suffix '{"model": "Schema"}' # (1)!
     ```
 
     1. :material-arrow-left: `--duplicate-name-suffix` - the option documented here
@@ -2339,7 +2341,7 @@ The `--enable-faux-immutability` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --enable-faux-immutability # (1)!
+    datamodel-codegen --input api.yaml --enable-faux-immutability # (1)!
     ```
 
     1. :material-arrow-left: `--enable-faux-immutability` - the option documented here
@@ -2652,7 +2654,7 @@ The `--force-optional` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --force-optional # (1)!
+    datamodel-codegen --input api.yaml --force-optional # (1)!
     ```
 
     1. :material-arrow-left: `--force-optional` - the option documented here
@@ -2936,7 +2938,7 @@ keyword-only arguments.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --frozen-dataclasses # (1)!
+    datamodel-codegen --input simple_frozen_test.json --output-model-type dataclasses.dataclass --frozen-dataclasses # (1)!
     ```
 
     1. :material-arrow-left: `--frozen-dataclasses` - the option documented here
@@ -3011,7 +3013,7 @@ same schema produce the same ordering, which keeps diffs stable.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --keep-model-order # (1)!
+    datamodel-codegen --input inheritance_forward_ref.json --keep-model-order # (1)!
     ```
 
     1. :material-arrow-left: `--keep-model-order` - the option documented here
@@ -3202,7 +3204,7 @@ positional argument errors.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass --frozen-dataclasses --keyword-only --target-python-version 3.10 # (1)!
+    datamodel-codegen --input simple-star-wars.graphql --output-model-type dataclasses.dataclass --frozen-dataclasses --keyword-only --target-python-version 3.10 # (1)!
     ```
 
     1. :material-arrow-left: `--keyword-only` - the option documented here
@@ -3597,7 +3599,7 @@ to the model's ConfigDict json_schema_extra.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-extra-keys x-custom-metadata # (1)!
+    datamodel-codegen --input model_extras.json --model-extra-keys x-custom-metadata # (1)!
     ```
 
     1. :material-arrow-left: `--model-extra-keys` - the option documented here
@@ -3656,7 +3658,7 @@ from the schema to the model's ConfigDict json_schema_extra with the x- prefix s
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-extra-keys-without-x-prefix x-custom-metadata x-version # (1)!
+    datamodel-codegen --input model_extras.json --model-extra-keys-without-x-prefix x-custom-metadata x-version # (1)!
     ```
 
     1. :material-arrow-left: `--model-extra-keys-without-x-prefix` - the option documented here
@@ -3722,7 +3724,7 @@ of being silently suffixed.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --model-name-map '{"#/definitions/Foo": "RenamedFoo", "Bar": "RenamedBar", "model-name": "OriginalMapped"}' # (1)!
+    datamodel-codegen --input model_name_map.json --model-name-map '{"#/definitions/Foo": "RenamedFoo", "Bar": "RenamedBar", "model-name": "OriginalMapped"}' # (1)!
     ```
 
     1. :material-arrow-left: `--model-name-map` - the option documented here
@@ -3828,7 +3830,7 @@ under `primary-first`, a primary name is one the root document declares.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --naming-strategy parent-prefixed # (1)!
+    datamodel-codegen --input input.json --naming-strategy parent-prefixed # (1)!
     ```
 
     1. :material-arrow-left: `--naming-strategy` - the option documented here
@@ -3925,7 +3927,7 @@ for the generated code. Supported values include `pydantic_v2.BaseModel`,
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input null_and_array.json --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--output-model-type` - the option documented here
@@ -4499,7 +4501,7 @@ appears in different contexts within an OpenAPI specification.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --parent-scoped-naming --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
+    datamodel-codegen --input duplicate_models2.yaml --parent-scoped-naming --use-operation-id-as-name --openapi-scopes paths schemas parameters # (1)!
     ```
 
     1. :material-arrow-left: `--parent-scoped-naming` - the option documented here
@@ -4655,7 +4657,7 @@ code duplication in the output.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model # (1)!
+    datamodel-codegen --input duplicate_enum.json --reuse-model # (1)!
     ```
 
     1. :material-arrow-left: `--reuse-model` - the option documented here
@@ -4777,7 +4779,7 @@ The `--reuse-scope` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --reuse-model --reuse-scope tree # (1)!
+    datamodel-codegen --input reuse_scope_tree --reuse-model --reuse-scope tree # (1)!
     ```
 
     1. :material-arrow-left: `--reuse-scope` - the option documented here
@@ -4896,7 +4898,7 @@ object is just a container for $defs and not a meaningful model itself.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --skip-root-model # (1)!
+    datamodel-codegen --input skip_root_model_test.json --output-model-type pydantic_v2.BaseModel --skip-root-model # (1)!
     ```
 
     1. :material-arrow-left: `--skip-root-model` - the option documented here
@@ -4961,7 +4963,7 @@ where optional fields have defaults but cannot accept `None` values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strict-nullable # (1)!
+    datamodel-codegen --input nullable.yaml --strict-nullable # (1)!
     ```
 
     1. :material-arrow-left: `--strict-nullable` - the option documented here
@@ -5203,7 +5205,7 @@ default to None.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --strip-default-none # (1)!
+    datamodel-codegen --input api.yaml --strip-default-none # (1)!
     ```
 
     1. :material-arrow-left: `--strip-default-none` - the option documented here
@@ -5483,14 +5485,17 @@ Output never depends on the Pydantic installed with datamodel-code-generator.
   `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
 - **2.12**: The 2.11 forms plus features that require Pydantic 2.12+, such as `--use-missing-sentinel`
 - **2.14**: The 2.12 forms, with `--use-missing-sentinel` importing `MISSING` from `pydantic` instead of the
-  `pydantic.experimental.missing_sentinel` path that Pydantic 2.14 deprecates
+  `pydantic.experimental.missing_sentinel` path that Pydantic 2.14 deprecates, Python's regex engine for
+  `bytes` patterns the Rust engine rejects, which Pydantic compiles from 2.14 on, and required
+  `pydantic_v2.dataclass` fields written as `= Field(...)` placed before the fields with defaults of the same
+  class, the order `inspect.signature` needs on Pydantic 2.13+
 
 See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-pydantic-version 2.11 --allow-population-by-field-name --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input person.json --target-pydantic-version 2.11 --allow-population-by-field-name --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--target-pydantic-version` - the option documented here
@@ -5577,7 +5582,7 @@ This affects import statements and type annotation syntax in generated code.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --target-python-version 3.10 --use-standard-collections # (1)!
+    datamodel-codegen --input person.json --target-python-version 3.10 --use-standard-collections # (1)!
     ```
 
     1. :material-arrow-left: `--target-python-version` - the option documented here
@@ -5663,7 +5668,7 @@ their discriminator tag, a separate mode that cannot be combined with
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --union-mode left_to_right --output-model-type pydantic_v2.BaseModel # (1)!
+    datamodel-codegen --input combine_any_of_object.json --union-mode left_to_right --output-model-type pydantic_v2.BaseModel # (1)!
     ```
 
     1. :material-arrow-left: `--union-mode` - the option documented here
@@ -5792,7 +5797,7 @@ as `str = 'value'`, not `str | None = 'value'`, unless the schema allows null.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-default # (1)!
+    datamodel-codegen --input use_default_with_const.json --output-model-type pydantic_v2.BaseModel --use-default # (1)!
     ```
 
     1. :material-arrow-left: `--use-default` - the option documented here
@@ -5878,7 +5883,7 @@ not executed to determine whether a factory is usable.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-default-factory-for-optional-nested-models # (1)!
+    datamodel-codegen --input default_factory_nested_model.json --use-default-factory-for-optional-nested-models # (1)!
     ```
 
     1. :material-arrow-left: `--use-default-factory-for-optional-nested-models` - the option documented here
@@ -6030,7 +6035,7 @@ default values.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-default-kwarg # (1)!
+    datamodel-codegen --input annotated.graphql --use-default-kwarg # (1)!
     ```
 
     1. :material-arrow-left: `--use-default-kwarg` - the option documented here
@@ -6105,7 +6110,7 @@ The `--use-frozen-field` flag generates frozen field definitions:
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-frozen-field # (1)!
+    datamodel-codegen --input use_frozen_field.json --use-frozen-field # (1)!
     ```
 
     1. :material-arrow-left: `--use-frozen-field` - the option documented here
@@ -6201,7 +6206,7 @@ Generate a shared base class with model configuration to avoid repetition (DRY).
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --extra-fields forbid --output-model-type pydantic_v2.BaseModel --use-generic-base-class # (1)!
+    datamodel-codegen --input extra_fields.json --extra-fields forbid --output-model-type pydantic_v2.BaseModel --use-generic-base-class # (1)!
     ```
 
     1. :material-arrow-left: `--use-generic-base-class` - the option documented here
@@ -6303,23 +6308,23 @@ Generate a shared base class with model configuration to avoid repetition (DRY).
 
 ## `--use-missing-sentinel` {#use-missing-sentinel}
 
-Use Pydantic's MISSING sentinel for optional fields without defaults.
+Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
 
 The `--use-missing-sentinel` flag generates `MISSING` as the default for optional
-Pydantic v2 fields that do not define a schema default. This preserves the
-difference between an omitted field and a nullable field set to `None`.
+Pydantic v2 BaseModel or dataclass fields that do not define a schema default. This
+preserves the difference between an omitted field and a nullable field set to `None`.
 
 **Related:** [`--strict-nullable`](#strict-nullable), [`--target-pydantic-version`](#target-pydantic-version)
 
 **Option relationships:**
 
 - **Implies:** [`--target-pydantic-version`](model-customization.md#target-pydantic-version) = `2.12`
-- **Requires:** [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel` - `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`.
+- **Requires:** [`--output-model-type`](model-customization.md#output-model-type) - `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`.
 
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-missing-sentinel # (1)!
+    datamodel-codegen --input missing_sentinel.json --output-model-type pydantic_v2.BaseModel --use-missing-sentinel # (1)!
     ```
 
     1. :material-arrow-left: `--use-missing-sentinel` - the option documented here
@@ -6391,6 +6396,337 @@ difference between an omitted field and a nullable field set to `None`.
 
 ---
 
+## `--use-msgspec-nullable-enum-alias` {#use-msgspec-nullable-enum-alias}
+
+Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
+
+The `--use-msgspec-nullable-enum-alias` flag only applies to `--output-model-type msgspec.Struct`; other output
+model types ignore it. Client generation (`--generate-client`) with `msgspec.Struct` models requires it.
+
+Without the flag the output keeps the 0.83.0 form of an enum that lists `null` without `type: string` or
+`nullable: true`, such as `type: [integer, "null"]` with `enum: [1, 2, null]`: an Enum class with a `None` member
+such as `NoneType_None = None`. msgspec cannot decode such an Enum, because its members must be all `str` or all
+`int` values, and the `IntEnum` written for `type: integer` cannot be imported at all.
+
+With the flag the enum is written as a `type: string` or `nullable` enum is: an Enum class with an `Enum` suffix and
+without the `None` member, and the schema name becomes a type alias of that class or `None`, so that msgspec decodes
+the members and `null`. Code that used `Size.int_1` or `Size.NoneType_None` uses `SizeEnum.int_1` and `None`
+instead. The default of a field of the enum is then its raw value, also with `--set-default-enum-member`, and an
+enum that lists only `null` becomes the alias `None`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input msgspec_nullable_enum_31.yaml --use-msgspec-nullable-enum-alias --output-model-type msgspec.Struct # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-msgspec-nullable-enum-alias` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info: {title: Nullable enums, version: "1"}
+    paths: {}
+    components:
+      schemas:
+        Color:
+          type: [string, "null"]
+          enum: [red, green, null]
+        Size:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          default: 1
+        Pet:
+          type: object
+          required: [name, color]
+          properties:
+            name: {type: string}
+            color: {$ref: "#/components/schemas/Color"}
+            size: {$ref: "#/components/schemas/Size"}
+            sizes: {type: array, items: {$ref: "#/components/schemas/Size"}}
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_nullable_enum_31.yaml
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Annotated, TypeAlias
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class ColorEnum(Enum):
+            red = 'red'
+            green = 'green'
+
+
+        Color: TypeAlias = ColorEnum | None
+
+
+        class SizeEnum(Enum):
+            int_1 = 1
+            int_2 = 2
+
+
+        Size: TypeAlias = Annotated[SizeEnum | None, 1]
+
+
+        class Pet(Struct):
+            name: str
+            color: Color
+            size: Size | UnsetType = 1
+            sizes: list[Size] | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_nullable_enum_31.yaml
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class Color(Enum):
+            red = 'red'
+            green = 'green'
+            NoneType_None = None
+
+
+        class Size(Enum):
+            int_1 = 1
+            int_2 = 2
+            NoneType_None = None
+
+
+        class Pet(Struct):
+            name: str
+            color: Color
+            size: Size | UnsetType = 1
+            sizes: list[Size] | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--use-msgspec-tagged-unions` {#use-msgspec-tagged-unions}
+
+Write a msgspec.Struct discriminated union as tagged structs as a whole.
+
+The `--use-msgspec-tagged-unions` flag only applies to `--output-model-type msgspec.Struct`; other output model
+types ignore it. Client generation (`--generate-client`) with `msgspec.Struct` models requires it.
+
+Without the flag the output keeps the 0.83.0 form. A variant gets `tag_field`/`tag` only when its discriminator
+property is a single literal (such as a `const`) equal to the discriminator value, or when a second discriminated
+union uses the variant, and such a tag names the generated field, which differs from the property name when the
+field is renamed. Any other variant, whose value comes from the discriminator `mapping`, an `enum` or the schema
+name, keeps the discriminator as a `Literal` field: `Cat(petType='cat')` and `cat.petType` work and `Cat` decodes
+alone, but msgspec raises `TypeError` for the union `Cat | Dog`, because it only decodes unions of tagged structs.
+
+With the flag a union is tagged as a whole: every variant gets the property name of the document as `tag_field`
+and its value as `tag`, so the union decodes. msgspec does not allow a field named like `tag_field`, so the
+discriminator is then neither a field nor a constructor argument: `Cat(petType='cat')` raises `TypeError`,
+`cat.petType` raises `AttributeError`, and `Cat` decoded alone accepts a payload without `petType`.
+
+When a variant cannot take exactly one tag for the union, or a base or derived struct of a variant keeps the
+property as a field, the union tags none of its variants and a warning names the reason: its variants keep
+`Literal` fields, the ones with a `const` included. A variant that another union tags keeps that tag.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input direct.json --use-msgspec-tagged-unions --output-model-type msgspec.Struct # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-msgspec-tagged-unions` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "openapi": "3.0.3",
+      "info": {
+        "title": "Discriminator field aliases",
+        "version": "1"
+      },
+      "paths": {},
+      "components": {
+        "schemas": {
+          "Cat": {
+            "type": "object",
+            "properties": {
+              "petType": {
+                "type": "string",
+                "enum": [
+                  "cat"
+                ]
+              },
+              "meow": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "petType"
+            ]
+          },
+          "Dog": {
+            "type": "object",
+            "properties": {
+              "petType": {
+                "type": "string",
+                "enum": [
+                  "dog"
+                ]
+              },
+              "bark": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "petType"
+            ]
+          },
+          "Pet": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Cat"
+              },
+              {
+                "$ref": "#/components/schemas/Dog"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "petType",
+              "mapping": {
+                "cat": "#/components/schemas/Cat",
+                "dog": "#/components/schemas/Dog"
+              }
+            }
+          },
+          "Unrelated": {
+            "type": "object",
+            "properties": {
+              "petType": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  direct.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import TypeAlias
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class PetType(Enum):
+            cat = 'cat'
+
+
+        class Cat(Struct, tag_field='petType', tag='cat'):
+            meow: str | UnsetType = UNSET
+
+
+        class PetType1(Enum):
+            dog = 'dog'
+
+
+        class Dog(Struct, tag_field='petType', tag='dog'):
+            bark: str | UnsetType = UNSET
+
+
+        Pet: TypeAlias = Cat | Dog
+
+
+        class Unrelated(Struct):
+            petType: str | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  direct.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal, TypeAlias
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class PetType(Enum):
+            cat = 'cat'
+
+
+        class Cat(Struct):
+            petType: Literal['cat']
+            meow: str | UnsetType = UNSET
+
+
+        class PetType1(Enum):
+            dog = 'dog'
+
+
+        class Dog(Struct):
+            petType: Literal['dog']
+            bark: str | UnsetType = UNSET
+
+
+        Pet: TypeAlias = Cat | Dog
+
+
+        class Unrelated(Struct):
+            petType: str | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-one-literal-as-default` {#use-one-literal-as-default}
 
 Use single literal value as default when enum has only one option.
@@ -6400,7 +6736,7 @@ The `--use-one-literal-as-default` flag configures the code generation behavior.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-one-literal-as-default --enum-field-as-literal one # (1)!
+    datamodel-codegen --input enum_models.yaml --use-one-literal-as-default --enum-field-as-literal one # (1)!
     ```
 
     1. :material-arrow-left: `--use-one-literal-as-default` - the option documented here
@@ -6733,7 +7069,7 @@ instead of silently ignoring this option.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --output-model-type pydantic_v2.BaseModel --use-root-model-sequence-interface --class-name Pets # (1)!
+    datamodel-codegen --input root_model_sequence_interface.json --output-model-type pydantic_v2.BaseModel --use-root-model-sequence-interface --class-name Pets # (1)!
     ```
 
     1. :material-arrow-left: `--use-root-model-sequence-interface` - the option documented here
@@ -6821,7 +7157,7 @@ polymorphic types and inheritance hierarchies.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-serialize-as-any # (1)!
+    datamodel-codegen --input serialize_as_any.yaml --use-serialize-as-any # (1)!
     ```
 
     1. :material-arrow-left: `--use-serialize-as-any` - the option documented here
@@ -6931,7 +7267,7 @@ type, providing better type safety and IDE support.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input schema.json --use-subclass-enum # (1)!
+    datamodel-codegen --input enums.graphql --use-subclass-enum # (1)!
     ```
 
     1. :material-arrow-left: `--use-subclass-enum` - the option documented here

@@ -6,9 +6,9 @@ from __future__ import annotations
 from pydantic import BaseModel, RootModel
 
 
-class FieldSearchQueryRequest(BaseModel):
+class SearchQueryRequest(BaseModel):
     text: str
 
 
-class FieldSearchQueryResponse(RootModel[list[str]]):
+class SearchQueryResponse(RootModel[list[str]]):
     root: list[str]

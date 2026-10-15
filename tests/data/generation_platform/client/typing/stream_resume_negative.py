@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.protocols import EventStream
 from pets_models import Created
 

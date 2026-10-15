@@ -1,10 +1,10 @@
 # unions-legacy pydantic_v2.BaseModel
   > GET https://api.example.com/shapes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  circle = FieldShapesGetResponse(root=Circle(radius=1))
+  circle = ShapesGetResponse(root=Circle(radius=1))
   > GET https://api.example.com/shapes
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  square = FieldShapesGetResponse(root=Square(side=2))
+  square = ShapesGetResponse(root=Square(side=2))
   > GET https://api.example.com/holders
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   holder circle = RefHolder(b=1, shape=Circle(radius=1))

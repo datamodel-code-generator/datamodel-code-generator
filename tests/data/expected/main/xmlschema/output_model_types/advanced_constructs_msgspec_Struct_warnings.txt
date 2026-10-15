@@ -1,0 +1,2 @@
+msgspec cannot decode the union Zoo.animal: its Struct types Cat, Dog are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Zoo.vehicle: its Struct types Vehicle, Car are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

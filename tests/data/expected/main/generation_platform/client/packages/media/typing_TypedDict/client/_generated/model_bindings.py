@@ -9,147 +9,147 @@ from typing import Any, Final
 
 import models
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 MODELS: Final[dict[type, Model]] = {
-    models.Address: Model((Field('city', 'city'), Field('codes', 'codes')), True),
-    models.Draft: Model((Field('id', 'id'), Field('title', 'title'), Field('secret', 'secret')), True),
-    models.FieldFormsPostRequest: Model((Field('name', 'name'), Field('count', 'count'), Field('labels', 'labels')), True),
-    models.FieldFormsPostResponse: Model((Field('name', 'name'), Field('count', 'count')), True),
-    models.FieldProfilesPostRequest: Model((Field('name', 'name'), Field('age', 'age'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address), Field('nickname', 'nickname')), True),
-    models.FieldProfilesGetResponse: Model((Field('name', 'name'), Field('age', 'age'), Field('score', 'score'), Field('ratio', 'ratio'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address)), True),
-    models.FieldAttachmentsGetResponse: Model((Field('id', 'id'),), True),
-    models.Filter: Model((Field('name', 'name'), Field('min', 'min')), True),
-    models.FieldSearchesPostRequest: Model((Field('term', 'term'), Field('filter', 'filter', models.Filter), Field('tags', 'tags'), Field('ids', 'ids'), Field('meta', 'meta', models.Address), Field('path', 'path'), Field('extra', 'extra')), True),
-    models.FieldCardsPostRequest: Model((Field('title', 'title'), Field('count', 'count'), Field('tags', 'tags')), True),
-    models.Point: Model((Field('x', 'x'),), True),
-    models.FieldStickersPostRequest: Model((Field('tags', 'tags'), Field('words', 'words'), Field('sizes', 'sizes'), Field('filter', 'filter', models.Filter), Field('point', 'point', models.Point), Field('label', 'label'), Field('y', 'y')), True),
-    models.Bounds: Model((Field('w', 'w'),), True),
-    models.FieldDocumentsIdGetPathIdParameter: Model((Field('key', 'key'),), True),
+    models.Address: Model((Field('city', 'city'), Field('codes', 'codes'))),
+    models.Draft: Model((Field('id', 'id'), Field('title', 'title'), Field('secret', 'secret'))),
+    models.FormsPostRequest: Model((Field('name', 'name'), Field('count', 'count'), Field('labels', 'labels'))),
+    models.FormsPostResponse: Model((Field('name', 'name'), Field('count', 'count'))),
+    models.ProfilesPostRequest: Model((Field('name', 'name'), Field('age', 'age'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address), Field('nickname', 'nickname'))),
+    models.ProfilesGetResponse: Model((Field('name', 'name'), Field('age', 'age'), Field('score', 'score'), Field('ratio', 'ratio'), Field('active', 'active'), Field('tags', 'tags'), Field('address', 'address', models.Address))),
+    models.AttachmentsGetResponse: Model((Field('id', 'id'),)),
+    models.Filter: Model((Field('name', 'name'), Field('min', 'min'))),
+    models.SearchesPostRequest: Model((Field('term', 'term'), Field('filter', 'filter', models.Filter), Field('tags', 'tags'), Field('ids', 'ids'), Field('meta', 'meta', models.Address), Field('path', 'path'), Field('extra', 'extra'))),
+    models.CardsPostRequest: Model((Field('title', 'title'), Field('count', 'count'), Field('tags', 'tags'))),
+    models.Point: Model((Field('x', 'x'),)),
+    models.StickersPostRequest: Model((Field('tags', 'tags'), Field('words', 'words'), Field('sizes', 'sizes'), Field('filter', 'filter', models.Filter), Field('point', 'point', models.Point), Field('label', 'label'), Field('y', 'y'))),
+    models.Bounds: Model((Field('w', 'w'),)),
+    models.DocumentsIdGetPathIdParameter: Model((Field('key', 'key'),)),
 }
 
-codec_0: Final[StdlibCodec[models.FieldFormsPostRequest]] = StdlibCodec(models.FieldFormsPostRequest, MODELS)
+codec_0: Final[TypedDictCodec[models.FormsPostRequest]] = TypedDictCodec(models.FormsPostRequest, MODELS)
 """Codec of /paths/~1forms/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_1: Final[StdlibCodec[models.FieldFormsPostResponse]] = StdlibCodec(models.FieldFormsPostResponse, MODELS)
+codec_1: Final[TypedDictCodec[models.FormsPostResponse]] = TypedDictCodec(models.FormsPostResponse, MODELS)
 """Codec of /paths/~1forms/post response_body (response 200 application/x-www-form-urlencoded)."""
 
-codec_2: Final[StdlibCodec[models.FieldProfilesPostRequest]] = StdlibCodec(models.FieldProfilesPostRequest, MODELS)
+codec_2: Final[TypedDictCodec[models.ProfilesPostRequest]] = TypedDictCodec(models.ProfilesPostRequest, MODELS)
 """Codec of /paths/~1profiles/post request_body (request multipart/form-data)."""
 
-codec_3: Final[StdlibCodec[models.FieldProfilesGetResponse]] = StdlibCodec(models.FieldProfilesGetResponse, MODELS)
+codec_3: Final[TypedDictCodec[models.ProfilesGetResponse]] = TypedDictCodec(models.ProfilesGetResponse, MODELS)
 """Codec of /paths/~1profiles/get response_body (response 200 multipart/form-data)."""
 
-codec_4: Final[StdlibCodec[models.FieldAnythingPostRequest]] = StdlibCodec(None, MODELS)
+codec_4: Final[TypedDictCodec[models.AnythingPostRequest]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1anything/post request_body (request multipart/form-data)."""
 
-codec_5: Final[StdlibCodec[models.FieldAttachmentsGetResponse]] = StdlibCodec(models.FieldAttachmentsGetResponse, MODELS)
+codec_5: Final[TypedDictCodec[models.AttachmentsGetResponse]] = TypedDictCodec(models.AttachmentsGetResponse, MODELS)
 """Codec of /paths/~1attachments/get response_body (response 202 multipart/form-data)."""
 
-codec_6: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
+codec_6: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
 """Codec of /paths/~1avatars/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
+codec_7: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
 """Codec of /paths/~1files/post request_body (request application/json)."""
 
-codec_8: Final[StdlibCodec[models.FieldFilesPostRequest2]] = StdlibCodec(None, MODELS)
+codec_8: Final[TypedDictCodec[models.FilesPostRequest2]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1files/post request_body (request text/*)."""
 
-codec_9: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
+codec_9: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
 """Codec of /paths/~1files/post response_body (response 200 application/json)."""
 
-codec_10: Final[StdlibCodec[models.FieldSearchesPostRequest]] = StdlibCodec(models.FieldSearchesPostRequest, MODELS)
+codec_10: Final[TypedDictCodec[models.SearchesPostRequest]] = TypedDictCodec(models.SearchesPostRequest, MODELS)
 """Codec of /paths/~1searches/post request_body (request application/x-www-form-urlencoded)."""
 
-codec_11: Final[StdlibCodec[models.FieldCardsPostRequest]] = StdlibCodec(models.FieldCardsPostRequest, MODELS)
+codec_11: Final[TypedDictCodec[models.CardsPostRequest]] = TypedDictCodec(models.CardsPostRequest, MODELS)
 """Codec of /paths/~1cards/post request_body (request multipart/form-data)."""
 
-codec_12: Final[StdlibCodec[models.FieldStickersPostRequest]] = StdlibCodec(models.FieldStickersPostRequest, MODELS)
+codec_12: Final[TypedDictCodec[models.StickersPostRequest]] = TypedDictCodec(models.StickersPostRequest, MODELS)
 """Codec of /paths/~1stickers/post request_body (request multipart/form-data)."""
 
-codec_13: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
+codec_13: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)
 """Codec of /paths/~1documents/post request_body (request application/vnd.api+json)."""
 
-codec_14: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
+codec_14: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)
 """Codec of /paths/~1documents/post response_body (response 3XX application/json)."""
 
-codec_15: Final[StdlibCodec[models.FieldDocumentsIdGetPathIdParameter]] = StdlibCodec(models.FieldDocumentsIdGetPathIdParameter, MODELS)
+codec_15: Final[TypedDictCodec[models.DocumentsIdGetPathIdParameter]] = TypedDictCodec(models.DocumentsIdGetPathIdParameter, MODELS)
 """Codec of /paths/~1documents~1{id}/get parameter (request path id application/json)."""
 
-codec_16: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
+codec_16: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)
 """Codec of /paths/~1documents~1{id}/get response_body (response 200 application/vnd.api+json)."""
 
-codec_17: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
+codec_17: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)
 """Codec of /paths/~1documents~1{id}/get response_header (response X-Draft 200)."""
 
-codec_18: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
+codec_18: Final[TypedDictCodec[int]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/post request_body (request id multipart/form-data)."""
 
-codec_19: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_19: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/post request_body (request title multipart/form-data)."""
 
-codec_20: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
+codec_20: Final[TypedDictCodec[int]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/post request_body (request count multipart/form-data)."""
 
-codec_21: Final[StdlibCodec[list[str]]] = StdlibCodec(None, MODELS)
+codec_21: Final[TypedDictCodec[list[str]]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/post request_body (request tags multipart/form-data)."""
 
-codec_22: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
+codec_22: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
 """Codec of /paths/~1uploads/post request_body (request meta multipart/form-data)."""
 
-codec_23: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
+codec_23: Final[TypedDictCodec[int]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/post request_body (request multipart/form-data)."""
 
-codec_24: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_24: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/get response_body (response title 200 multipart/form-data)."""
 
-codec_25: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
+codec_25: Final[TypedDictCodec[int]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/get response_body (response count 200 multipart/form-data)."""
 
-codec_26: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_26: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/get response_body (response tags 200 multipart/form-data)."""
 
-codec_27: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
+codec_27: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
 """Codec of /paths/~1uploads/get response_body (response meta 200 multipart/form-data)."""
 
-codec_28: Final[StdlibCodec[models.Draft]] = StdlibCodec(models.Draft, MODELS)
+codec_28: Final[TypedDictCodec[models.Draft]] = TypedDictCodec(models.Draft, MODELS)
 """Codec of /paths/~1uploads/get response_body (response draft 200 multipart/form-data)."""
 
-codec_29: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_29: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/get response_body (response secret 200 multipart/form-data)."""
 
-codec_30: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
+codec_30: Final[TypedDictCodec[int]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/get response_body (response 200 multipart/form-data)."""
 
-codec_31: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_31: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1uploads/get response_body (response note 201 multipart/form-data)."""
 
-codec_32: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_32: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1avatars/post request_body (request caption multipart/form-data)."""
 
-codec_33: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_33: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1scans/post request_body (request note multipart/form-data)."""
 
-codec_34: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_34: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1labels/post request_body (request multipart/form-data)."""
 
-codec_35: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_35: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1covers/post request_body (request note multipart/form-data)."""
 
-codec_36: Final[StdlibCodec[int]] = StdlibCodec(None, MODELS)
+codec_36: Final[TypedDictCodec[int]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1covers/post request_body (request size multipart/form-data)."""
 
-codec_37: Final[StdlibCodec[models.Address]] = StdlibCodec(models.Address, MODELS)
+codec_37: Final[TypedDictCodec[models.Address]] = TypedDictCodec(models.Address, MODELS)
 """Codec of /paths/~1covers/post request_body (request meta multipart/form-data)."""
 
-codec_38: Final[StdlibCodec[Any]] = StdlibCodec(None, MODELS)
+codec_38: Final[TypedDictCodec[Any]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1covers/post request_body (request extra multipart/form-data)."""
 
-codec_39: Final[StdlibCodec[models.Bounds]] = StdlibCodec(models.Bounds, MODELS)
+codec_39: Final[TypedDictCodec[models.Bounds]] = TypedDictCodec(models.Bounds, MODELS)
 """Codec of /paths/~1albums/post request_body (request bounds multipart/form-data)."""
 
-codec_40: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_40: Final[TypedDictCodec[str]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1albums/post request_body (request title multipart/form-data)."""
 
-codec_41: Final[StdlibCodec[list[str]]] = StdlibCodec(None, MODELS)
+codec_41: Final[TypedDictCodec[list[str]]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1albums/post request_body (request tags multipart/form-data)."""

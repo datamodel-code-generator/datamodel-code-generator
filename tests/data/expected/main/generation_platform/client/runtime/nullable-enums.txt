@@ -1,0 +1,50 @@
+# nullable-enums dataclasses.dataclass
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  decode null and members = [Pet(name='Mimi', color=None, size=None), Pet(name='Rex', color=<Color.red: 'red'>, size=<Size.int_2: 2>), Pet(name='Tom', color=<Color.green: 'green'>, size=None)]
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  refuse an unknown string member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"Bad","color":"blue"}]', truncated=False, cause=ValueError("'blue' is not a valid Color")] invalid_value
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  refuse an unknown integer member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"Bad","color":null,"size":3}]', truncated=False, cause=ValueError('3 is not a valid Size')] invalid_value
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","color":null}'
+  send Mimi = Pet(name='Mimi', color=None, size=None)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"name":"Rex","color":"red","size":2}'
+  send Rex = Pet(name='Rex', color=<Color.red: 'red'>, size=<Size.int_2: 2>)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 30] b'{"name":"Tom","color":"green"}'
+  send Tom = Pet(name='Tom', color=<Color.green: 'green'>, size=None)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async decode null and members = [Pet(name='Mimi', color=None, size=None), Pet(name='Rex', color=<Color.red: 'red'>, size=<Size.int_2: 2>), Pet(name='Tom', color=<Color.green: 'green'>, size=None)]
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async refuse an unknown member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"Bad","color":"blue"}]', truncated=False, cause=ValueError("'blue' is not a valid Color")] invalid_value
+# nullable-enums msgspec.Struct
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  decode null and members = [Pet(name='Mimi', color=None, size=UNSET), Pet(name='Rex', color=<ColorEnum.red: 'red'>, size=<SizeEnum.int_2: 2>), Pet(name='Tom', color=<ColorEnum.green: 'green'>, size=None)]
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  refuse an unknown string member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"Bad","color":"blue"}]', truncated=False, cause=ValidationError("Invalid enum value 'blue' - at `$[0].color`")] invalid_value
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  refuse an unknown integer member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"Bad","color":null,"size":3}]', truncated=False, cause=ValidationError('Invalid enum value 3 - at `$[0].size`')] invalid_value
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","color":null}'
+  send Mimi = Pet(name='Mimi', color=None, size=UNSET)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 37] b'{"name":"Rex","color":"red","size":2}'
+  send Rex = Pet(name='Rex', color=<ColorEnum.red: 'red'>, size=<SizeEnum.int_2: 2>)
+  > POST https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 42] b'{"name":"Tom","color":"green","size":null}'
+  send Tom = Pet(name='Tom', color=<ColorEnum.green: 'green'>, size=None)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async decode null and members = [Pet(name='Mimi', color=None, size=UNSET), Pet(name='Rex', color=<ColorEnum.red: 'red'>, size=<SizeEnum.int_2: 2>), Pet(name='Tom', color=<ColorEnum.green: 'green'>, size=None)]
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async refuse an unknown member ! DecodeError: DecodeError(status_code=200, operation_id='listPets', reason='invalid_value') [operation_id='listPets', body_bytes=b'[{"name":"Bad","color":"blue"}]', truncated=False, cause=ValidationError("Invalid enum value 'blue' - at `$[0].color`")] invalid_value

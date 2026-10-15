@@ -114,7 +114,7 @@ PLAN_0: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True),
-    fingerprint='8d857b9018e63736ee2aace94bcded78bd536adf930e34b126bd95c646a9615e',
+    fingerprint='30e03d8eb21e125965383d182c8237723cb31e5e8912b7da7126dc6388e6c6e4',
 )
 
 
@@ -125,7 +125,7 @@ PLAN_1: Final[PaginationPlan[models.User, ListUsersResponse]] = PaginationPlan(
     items=_items_1,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=HeaderSelector(name='x-next'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_values=('done',), empty_string_ends=True),
-    fingerprint='afe3ebea71e9fa2cf3786359a88b01de0d8f8944c0c10581e9ccd70e7265de34',
+    fingerprint='629d77999fd31569e10acb52a0113530423936b1489a9c76e0f5eb3d0ee7167a',
 )
 
 
@@ -136,7 +136,7 @@ PLAN_2: Final[PaginationPlan[models.User, SearchUsersResponse]] = PaginationPlan
     items=_items_2,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
-    fingerprint='fe9b859af6a669c66eebc8c5040627fbbcf109ce7e35f847ca87a6e32961f493',
+    fingerprint='659f1018a067b04d1a2ea5fb9c7e4f945943593f3c5485079a6d06f925d19da6',
 )
 
 
@@ -147,7 +147,7 @@ PLAN_3: Final[PaginationPlan[models.User, ListLooseResponse]] = PaginationPlan(
     items=_items_3,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='query', name='cursor'), end_null=True),
-    fingerprint='9bc1e1d431e2759d5d1c11759462fbbeb13a151b4238887a8d764ed98caace19',
+    fingerprint='9eb309e2c681cff0fb8600408929502935d81783d485eef1c83a56ebd0a2e8ff',
 )
 
 
@@ -158,7 +158,7 @@ PLAN_4: Final[PaginationPlan[models.User, ListLooseResponse]] = PaginationPlan(
     items=_items_4,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/token'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, empty_string_ends=True),
-    fingerprint='8cf42fb0fdfbbb78bac52aed3cb2b3a7ab6c128982e50ba9c0c52f7626a5553d',
+    fingerprint='021a0baa4e66d924f566b4a1e8ba9a27de668cacdd35cefe2c16aeea2fda24cb',
 )
 
 
@@ -169,7 +169,7 @@ PLAN_5: Final[PaginationPlan[models.User, ListNestedResponse]] = PaginationPlan(
     items=_items_5,
     items_selector=BodySelector(pointer='/result/items'),
     continuation=CursorPlan(read=BodySelector(pointer='/result/next'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, empty_string_ends=True),
-    fingerprint='5a2ee2332ef18f4d61c46fe48e51cc6c04891a3029bab2595577c3e23bd629d7',
+    fingerprint='c3bef59cbab5c6e95149c0f01c31f67687321a3b6c17213e95adc695855181e6',
 )
 
 
@@ -180,7 +180,7 @@ PLAN_6: Final[PaginationPlan[models.Label, ListLabelsResponse]] = PaginationPlan
     items=_items_6,
     items_selector=BodySelector(pointer=''),
     continuation=CursorPlan(read=HeaderSelector(name='X-Next'), write=ParameterTarget(location='query', name='after'), end_missing=True, empty_string_ends=True),
-    fingerprint='beb6712324ce921e1529a88581afaceeefdd07930ad261200fc8c7b2da6f3400',
+    fingerprint='74a8710c9a94484636075396af2e27d314c6b6f47edd5150f98225a9749a88ab',
 )
 
 
@@ -191,7 +191,7 @@ PLAN_7: Final[PaginationPlan[models.Label, ListLabelSetsResponse]] = PaginationP
     items=_items_7,
     items_selector=BodySelector(pointer=''),
     continuation=CursorPlan(read=HeaderSelector(name='X-Next'), write=ParameterTarget(location='query', name='after'), end_missing=True, empty_string_ends=True),
-    fingerprint='81775f33dd31fbc1458031f53d8bdb849615bccaf39d1c3033e6b7d2431028fb',
+    fingerprint='ff4572fac6929475b9e4c76111d76fb0457ea94311fc2203aba716920d21e04d',
 )
 
 
@@ -202,7 +202,7 @@ PLAN_8: Final[PaginationPlan[models.User, ListArchiveResponse]] = PaginationPlan
     items=_items_8,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='path', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
-    fingerprint='08757f453b11cc65ca0a95fbd12e60f18016dfa8d80845cedfa8951dbdf52964',
+    fingerprint='2ae0002eaac009951b6fcee0dee52a1b8dd0c00d31b44b29220a745a8e41355c',
 )
 
 
@@ -213,7 +213,7 @@ PLAN_9: Final[PaginationPlan[models.User, ListStatusesResponse]] = PaginationPla
     items=_items_9,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=StatusSelector(), write=ParameterTarget(location='query', name='code'), end_values=(200,), empty_string_ends=True),
-    fingerprint='1a10dc83fd0fc33232a4e4ff717aaf459fa77dcda6bd1b08f4f6721d361226b6',
+    fingerprint='f5dfc09851945f21b37e9a59514b6aeb91fcdcb1b21a51a1524815a5f0a4ca50',
 )
 
 
@@ -224,5 +224,5 @@ PLAN_10: Final[PaginationPlan[models.User, ListSecureUsersResponse]] = Paginatio
     items=_items_10,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(read=BodySelector(pointer='/next_cursor'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, end_null=True, empty_string_ends=True),
-    fingerprint='4ce92f21977dbb9b55ca16404f934de694c73584d32ed54ebb03d33323b7855e',
+    fingerprint='0e9e84dcc41309b7d0b04700923601599ddd57595503bcd0116ad4d4add2c8cc',
 )

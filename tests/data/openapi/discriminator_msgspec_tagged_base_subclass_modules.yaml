@@ -1,0 +1,63 @@
+openapi: 3.1.0
+info:
+  title: A struct of an earlier module that declares the tag field of a base tagged later
+  version: "1"
+paths: {}
+components:
+  schemas:
+    app.Puppy:
+      allOf:
+        - $ref: "#/components/schemas/zoo.Dog"
+        - type: object
+          properties:
+            kind:
+              const: puppy
+    zoo.Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        barks:
+          type: boolean
+    zoo.Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+    zoo.Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        wings:
+          type: integer
+    zoo.Pets:
+      oneOf:
+        - $ref: "#/components/schemas/zoo.Dog"
+        - $ref: "#/components/schemas/zoo.Cat"
+      discriminator:
+        propertyName: kind
+        mapping:
+          dog: "#/components/schemas/zoo.Dog"
+          cat: "#/components/schemas/zoo.Cat"
+    zoo.Flock:
+      oneOf:
+        - $ref: "#/components/schemas/zoo.Dog"
+        - $ref: "#/components/schemas/zoo.Bird"
+      discriminator:
+        propertyName: kind
+        mapping:
+          dog: "#/components/schemas/zoo.Dog"
+          bird: "#/components/schemas/zoo.Bird"
+    zoo.Yard:
+      oneOf:
+        - $ref: "#/components/schemas/zoo.Cat"
+        - $ref: "#/components/schemas/zoo.Bird"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/zoo.Cat"
+          bird: "#/components/schemas/zoo.Bird"

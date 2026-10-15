@@ -607,7 +607,7 @@ class MarksScopedSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.MarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -626,7 +626,7 @@ class MarksScopedSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.MarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -653,7 +653,7 @@ class MarksNamedSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldNamedMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.NamedMarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -672,7 +672,7 @@ class MarksNamedSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldNamedMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.NamedMarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -699,7 +699,7 @@ class MarksDeepSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldDeepMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.DeepMarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -718,7 +718,7 @@ class MarksDeepSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldDeepMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.DeepMarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -745,7 +745,7 @@ class MarksBoundSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.MarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -764,7 +764,7 @@ class MarksBoundSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.MarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -791,7 +791,7 @@ class MarksDeepboundSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldDeepMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.DeepMarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:
@@ -810,7 +810,7 @@ class MarksDeepboundSse:
         *,
         tag: str | UNSET = UNSET,
         Last_Event_ID: str | UNSET = UNSET,
-        scope: models.FieldDeepMarksGetQueryScopeParameter | UNSET = UNSET,
+        scope: models.DeepMarksGetQueryScopeParameter | UNSET = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
     ) -> EventStream[models.Mark]:

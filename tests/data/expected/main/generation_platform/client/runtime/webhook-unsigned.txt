@@ -13,9 +13,6 @@
   type with a space ! ProtocolDataError: ProtocolDataError(reason='value') [location=BodySelector(pointer='/meta/type')] value
   known type, invalid event ! ProtocolDataError: ProtocolDataError(reason='value') [] value
   not JSON ! ProtocolDataError: ProtocolDataError(reason='malformed') [] malformed
-  body at limit = Message(test=1)
-  body over limit ! ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
   text body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
   bytearray body ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
-  options mapping ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='options') [field_path=('options',)] invalid_value
-  headers argument=TypeError
+  headers argument=TypeError options argument=TypeError

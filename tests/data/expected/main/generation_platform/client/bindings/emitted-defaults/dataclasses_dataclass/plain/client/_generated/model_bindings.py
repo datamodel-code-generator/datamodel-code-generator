@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
@@ -16,8 +16,8 @@ MODELS: Final[dict[type, Model]] = {
     models.Defaults: Model((Field('required', 'required'), Field('missing', 'missing', omit_none=True), Field('explicit_null', 'explicit_null', omit_none=True), Field('literal', 'literal'), Field('items', 'items'), Field('mapping', 'mapping'), Field('factory', 'factory'))),
 }
 
-codec_0: Final[StdlibCodec[models.Defaults]] = StdlibCodec(models.Defaults, MODELS)
+codec_0: Final[DataclassCodec[models.Defaults]] = DataclassCodec(models.Defaults, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Defaults]] = StdlibCodec(models.Defaults, MODELS)
+codec_1: Final[DataclassCodec[models.Defaults]] = DataclassCodec(models.Defaults, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""

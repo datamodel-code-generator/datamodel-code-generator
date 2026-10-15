@@ -23,7 +23,7 @@ from pets.bodies import (
     MultipartData,
     SyncBinaryBody,
 )
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.errors import (
     APIConnectionError,
     APIStatusError,
@@ -41,23 +41,23 @@ from pets.types.pets import (
     decode_list_pets_header,
 )
 from pets_models import (
-    FieldPetsGetHeaderXTraceParameter,
-    FieldPetsPetIdFilesGetPathPetIdParameter,
-    FieldPetsPetIdFilesPostPathPetIdParameter,
-    FieldPetsPetIdGetPathPetIdParameter,
-    FieldPetsPetIdPhotoPutPathPetIdParameter,
-    FieldPetsPostRequest,
+    PetsGetHeaderXTraceParameter,
+    PetsPetIdFilesGetPathPetIdParameter,
+    PetsPetIdFilesPostPathPetIdParameter,
+    PetsPetIdGetPathPetIdParameter,
+    PetsPetIdPhotoPutPathPetIdParameter,
+    PetsPostRequest,
     NewPet,
 )
 
 
 def call(
     client: Client,
-    trace: FieldPetsGetHeaderXTraceParameter,
-    pet: FieldPetsPetIdGetPathPetIdParameter,
+    trace: PetsGetHeaderXTraceParameter,
+    pet: PetsPetIdGetPathPetIdParameter,
     body: NewPet,
-    text: FieldPetsPostRequest,
-    photo: FieldPetsPetIdPhotoPutPathPetIdParameter,
+    text: PetsPostRequest,
+    photo: PetsPetIdPhotoPutPathPetIdParameter,
 ) -> None:
     assert_type(client.pets.list_pets(X_Trace=trace, limit=UNSET), ListPetsResponse)
     response = client.pets.with_response.list_pets(
@@ -81,7 +81,7 @@ def call(
         assert_type(error.body_bytes, bytes)
 
 
-async def call_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter) -> None:
+async def call_async(client: AsyncClient, trace: PetsGetHeaderXTraceParameter) -> None:
     assert_type(await client.pets.list_pets(X_Trace=trace), ListPetsResponse)
     response = await client.pets.with_response.list_pets(X_Trace=trace)
     assert_type(response, Response[ListPetsResponse])
@@ -91,8 +91,8 @@ async def call_async(client: AsyncClient, trace: FieldPetsGetHeaderXTraceParamet
 def raw(
     client: Client,
     sink: BinaryIO,
-    trace: FieldPetsGetHeaderXTraceParameter,
-    pet: FieldPetsPetIdGetPathPetIdParameter,
+    trace: PetsGetHeaderXTraceParameter,
+    pet: PetsPetIdGetPathPetIdParameter,
     body: NewPet,
 ) -> None:
     saved = client.pets.with_raw_response.list_pets(X_Trace=trace)
@@ -115,7 +115,7 @@ def raw(
 
 
 async def raw_async(
-    client: AsyncClient, trace: FieldPetsGetHeaderXTraceParameter, pet: FieldPetsPetIdGetPathPetIdParameter
+    client: AsyncClient, trace: PetsGetHeaderXTraceParameter, pet: PetsPetIdGetPathPetIdParameter
 ) -> None:
     saved = await client.pets.with_raw_response.list_pets(X_Trace=trace)
     assert_type(saved, AsyncRawResponse)
@@ -132,14 +132,14 @@ async def raw_async(
         await download.stream_to("file.bin")
 
 
-def bodies(client: Client, file: BinaryIO, spooled: IO[bytes], photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
+def bodies(client: Client, file: BinaryIO, spooled: IO[bytes], photo: PetsPetIdPhotoPutPathPetIdParameter) -> None:
     inputs: tuple[SyncBinaryBody, ...] = (b"\x00", file, spooled, Path("photo.png"), [b"a", b"b"], iter([b"a"]))
     for body in inputs:
         client.pets.photos.upload(petId=photo, body=body)
     client.request_raw("PUT", "https://example.com/file", body=Path("photo.png"))
 
 
-async def bodies_async(client: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter) -> None:
+async def bodies_async(client: AsyncClient, file: BinaryIO, photo: PetsPetIdPhotoPutPathPetIdParameter) -> None:
     async def chunks() -> AsyncIterator[bytes]:
         yield b"a"
 
@@ -163,8 +163,8 @@ def multipart(client: Client, file: BinaryIO) -> None:
 def file_parts(
     client: Client,
     file: BinaryIO,
-    pet: FieldPetsPetIdFilesPostPathPetIdParameter,
-    read: FieldPetsPetIdFilesGetPathPetIdParameter,
+    pet: PetsPetIdFilesPostPathPetIdParameter,
+    read: PetsPetIdFilesGetPathPetIdParameter,
 ) -> None:
     note = FieldPart("note", "hello")
     labels = FieldPart("labels", ["a", "b"])
@@ -213,7 +213,7 @@ async def atrace(request: httpx2.Request) -> None:
     del request
 
 
-def event_hooks(pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
+def event_hooks(pet: PetsPetIdGetPathPetIdParameter) -> None:
     with httpx2.Client(event_hooks={"request": [trace], "response": [inspect]}) as native:
         try:
             Client(http_client=native).pets.get_pet(petId=pet)
@@ -221,7 +221,7 @@ def event_hooks(pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
             assert_type(error.reason, str | None)
 
 
-async def async_event_hooks(pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
+async def async_event_hooks(pet: PetsPetIdGetPathPetIdParameter) -> None:
     async with httpx2.AsyncClient(event_hooks={"request": [atrace]}) as native:
         await AsyncClient(http_client=native).pets.get_pet(petId=pet)
 

@@ -1,0 +1,2 @@
+--generate-server set the options it needs that you left unset; to set them yourself, run:
+  datamodel-codegen --generate-server fastapi --server-output server --server-package server --server-model-package models --openapi-scopes schemas api --target-python-version 3.11

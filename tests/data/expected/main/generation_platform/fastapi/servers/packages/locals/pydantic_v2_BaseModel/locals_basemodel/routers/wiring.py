@@ -31,6 +31,7 @@ def _add_router(
     router_handler_1 = checked(
         wiring_2.router,
         'The wiring.router method of GET /router',
+        ('principal', 'wiring', 'router_handler', 'router_principal', 'router_authorize', 'api_key', 'parameters'),
     )
 
     router_authorize_1 = wiring_1.authorizer()

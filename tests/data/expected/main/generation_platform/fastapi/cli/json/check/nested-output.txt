@@ -23,5 +23,13 @@
       "message": "MISSING: generated/server/README.md (file does not exist but should be generated)",
       "diff": null
     }
-  ]
+  ],
+  "target": {
+    "package": "server",
+    "dependencies": [
+      "fastapi>=0.141.1",
+      "pydantic>=2.14.0",
+      "typing-extensions>=4.16"
+    ]
+  }
 }

@@ -23,6 +23,7 @@ from datamodel_code_generator.deprecations import deprecation_message
 from datamodel_code_generator.enums import (
     AllExportsScope,
     DataModelType,
+    InputFileType,
     NamingStrategy,
     ReuseScope,
     TargetPydanticVersion,
@@ -354,13 +355,19 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         requires=(
             CLIOptionRelation(
                 option="--output-model-type",
-                value=DataModelType.PydanticV2BaseModel.value,
-                message=("`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`."),
+                message=(
+                    "`--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` "
+                    "or `pydantic_v2.dataclass`."
+                ),
             ),
         ),
     ),
     "--strip-default-none": CLIOptionMeta(name="--strip-default-none", category=OptionCategory.MODEL),
     "--dataclass-arguments": CLIOptionMeta(name="--dataclass-arguments", category=OptionCategory.MODEL),
+    "--use-msgspec-tagged-unions": CLIOptionMeta(name="--use-msgspec-tagged-unions", category=OptionCategory.MODEL),
+    "--use-msgspec-nullable-enum-alias": CLIOptionMeta(
+        name="--use-msgspec-nullable-enum-alias", category=OptionCategory.MODEL
+    ),
     "--use-frozen-field": CLIOptionMeta(
         name="--use-frozen-field",
         category=OptionCategory.MODEL,
@@ -595,6 +602,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     "--use-object-type": CLIOptionMeta(
         name="--use-object-type",
+        category=OptionCategory.TYPING,
+        topic=OptionTopic.TYPING_CUSTOMIZATION,
+        group=OptionGroup.TYPE_MAPPING,
+    ),
+    "--use-typed-nullable-map-values": CLIOptionMeta(
+        name="--use-typed-nullable-map-values",
         category=OptionCategory.TYPING,
         topic=OptionTopic.TYPING_CUSTOMIZATION,
         group=OptionGroup.TYPE_MAPPING,
@@ -984,6 +997,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             CLIOptionRelation(
                 option="--server-model-package", message="`--generate-server` requires `--server-model-package`."
             ),
+            CLIOptionRelation(
+                option="--input-file-type",
+                value=InputFileType.OpenAPI.value,
+                message="`--generate-server` requires `--input-file-type openapi`.",
+            ),
         ),
         conflicts=(
             CLIOptionRelation(
@@ -1126,6 +1144,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             CLIOptionRelation(option="--client-package", message="`--generate-client` requires `--client-package`."),
             CLIOptionRelation(
                 option="--client-model-package", message="`--generate-client` requires `--client-model-package`."
+            ),
+            CLIOptionRelation(
+                option="--input-file-type",
+                value=InputFileType.OpenAPI.value,
+                message="`--generate-client` requires `--input-file-type openapi`.",
             ),
         ),
         conflicts=(

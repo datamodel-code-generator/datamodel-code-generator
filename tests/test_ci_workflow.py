@@ -91,7 +91,7 @@ def test_workflow_matrix_and_coverage_contract() -> None:
 
 
 def test_gate_rejects_every_unsuccessful_group() -> None:
-    """Execute the actual workflow gate for each group's failure, skip and cancellation."""
+    """Execute the actual workflow gate for each group's failure, skip and cancellation, including mid-stack runs."""
     jobs = yaml.load((ROOT / ".github/workflows/test.yaml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)["jobs"]
     gate = jobs["test-gate"]
     success = {name: {"result": "success"} for name in gate["needs"]}
@@ -101,11 +101,20 @@ def test_gate_rejects_every_unsuccessful_group() -> None:
         for name in success
         for state in ("failure", "cancelled", "skipped")
     })
+    skipped = {name: {"result": "skipped"} for name in gate["needs"]}
+    mid_stack_cases = {"mid-stack:skipped": skipped, "mid-stack:empty": {}}
+    mid_stack_cases.update({
+        f"mid-stack:{name}:{state}": {**skipped, name: {"result": state}}
+        for name in skipped
+        for state in ("success", "failure", "cancelled")
+    })
+    full_runs = {**dict.fromkeys(cases, "true"), **dict.fromkeys(mid_stack_cases, "false")}
+    cases.update(mid_stack_cases)
     outputs = {}
     for name, needs in cases.items():
         result = subprocess.run(
             [sys.executable, "-c", gate["steps"][0]["run"]],
-            env={**os.environ, "NEEDS": json.dumps(needs)},
+            env={**os.environ, "NEEDS": json.dumps(needs), "FULL_TEST_RUN": full_runs[name]},
             capture_output=True,
             text=True,
             check=False,

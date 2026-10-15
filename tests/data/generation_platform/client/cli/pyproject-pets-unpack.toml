@@ -12,7 +12,7 @@ client-output = "client"
 client-package = "client"
 client-model-package = "models"
 client-signature-style = "unpack"
-client-resource-names = { photos = "photos" }
+client-resource-names = { pets = "pets" }
 
 [tool.datamodel-codegen.client-operations]
 "/paths/~1pets/get" = { parameter_names = { "query:tags" = "labels" }, runtime = { request_id_header = "X-Request-Id" } }

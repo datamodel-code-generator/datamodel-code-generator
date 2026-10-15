@@ -25,21 +25,21 @@ from pets.responses import (
 )
 from pets.types.pets import decode_list_pets_header
 from pets_models import (
-    FieldPetsGetHeaderXTraceParameter,
-    FieldPetsPetIdFilesGetPathPetIdParameter,
-    FieldPetsPetIdFilesPostPathPetIdParameter,
-    FieldPetsPetIdGetPathPetIdParameter,
-    FieldPetsPetIdPhotoPutPathPetIdParameter,
+    PetsGetHeaderXTraceParameter,
+    PetsPetIdFilesGetPathPetIdParameter,
+    PetsPetIdFilesPostPathPetIdParameter,
+    PetsPetIdGetPathPetIdParameter,
+    PetsPetIdPhotoPutPathPetIdParameter,
     NewPet,
 )
 
 
 def misuse(
     client: Client,
-    trace: FieldPetsGetHeaderXTraceParameter,
-    pet: FieldPetsPetIdGetPathPetIdParameter,
+    trace: PetsGetHeaderXTraceParameter,
+    pet: PetsPetIdGetPathPetIdParameter,
     body: NewPet,
-    photo: FieldPetsPetIdPhotoPutPathPetIdParameter,
+    photo: PetsPetIdPhotoPutPathPetIdParameter,
 ) -> None:
     client.pets.list_pets()  # error
     client.pets.list_pets(X_Trace=trace, limit=None)  # error
@@ -60,7 +60,7 @@ def misuse_transports(client: Client, adapter: object) -> None:
     del adapter
 
 
-def misuse_raw(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
+def misuse_raw(client: Client, pet: PetsPetIdGetPathPetIdParameter) -> None:
     client.pets.with_raw_response.get_pet(petId=pet, response_media_type="image/png")  # error
     streamed: RawResponse = client.pets.with_streaming_response.get_pet(petId=pet)  # error
     del streamed
@@ -68,7 +68,7 @@ def misuse_raw(client: Client, pet: FieldPetsPetIdGetPathPetIdParameter) -> None
     client.with_streaming_response.request_raw("GET")  # error
 
 
-async def misuse_raw_async(client: AsyncClient, pet: FieldPetsPetIdGetPathPetIdParameter) -> None:
+async def misuse_raw_async(client: AsyncClient, pet: PetsPetIdGetPathPetIdParameter) -> None:
     await client.pets.with_streaming_response.get_pet(petId=pet)  # error
     saved = await client.pets.with_raw_response.get_pet(petId=pet)
     chunks: Iterator[bytes] = saved.iter_bytes()  # error
@@ -76,7 +76,7 @@ async def misuse_raw_async(client: AsyncClient, pet: FieldPetsPetIdGetPathPetIdP
 
 
 async def misuse_bodies(
-    client: Client, aclient: AsyncClient, file: BinaryIO, photo: FieldPetsPetIdPhotoPutPathPetIdParameter
+    client: Client, aclient: AsyncClient, file: BinaryIO, photo: PetsPetIdPhotoPutPathPetIdParameter
 ) -> None:
     async def chunks() -> AsyncIterator[bytes]:
         yield b"a"
@@ -90,11 +90,11 @@ def misuse_multipart(
     client: Client,
     file: BinaryIO,
     stream: AsyncIterator[bytes],
-    pet: FieldPetsPetIdFilesPostPathPetIdParameter,
-    files: FieldPetsPetIdFilesGetPathPetIdParameter,
+    pet: PetsPetIdFilesPostPathPetIdParameter,
+    files: PetsPetIdFilesGetPathPetIdParameter,
 ) -> None:
     from pets.bodies import AsyncMultipartBody, FieldPart, FilePart, MultipartBody, MultipartData
-    from pets.model_codecs import JSONValue
+    from pets.types import JSONValue
 
     part = FilePart("f", stream)
     MultipartBody[str]((part,))  # error

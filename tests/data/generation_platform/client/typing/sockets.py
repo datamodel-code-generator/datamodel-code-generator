@@ -18,9 +18,9 @@ from pets.protocols import (
 )
 from pets_models import (
     ClientMessage,
-    FieldRoomsRoomSocketGetPathRoomParameter,
-    FieldRoomsRoomSocketGetQuerySinceParameter,
-    FieldSecureSocketGetHeaderXTraceParameter,
+    RoomsRoomSocketGetPathRoomParameter,
+    RoomsRoomSocketGetQuerySinceParameter,
+    SecureSocketGetHeaderXTraceParameter,
     ServerMessage,
 )
 from typing_extensions import assert_type
@@ -29,9 +29,9 @@ from typing_extensions import assert_type
 def sockets(
     client: Client,
     message: ClientMessage,
-    room: FieldRoomsRoomSocketGetPathRoomParameter,
-    since: FieldRoomsRoomSocketGetQuerySinceParameter,
-    trace: FieldSecureSocketGetHeaderXTraceParameter,
+    room: RoomsRoomSocketGetPathRoomParameter,
+    since: RoomsRoomSocketGetQuerySinceParameter,
+    trace: SecureSocketGetHeaderXTraceParameter,
 ) -> None:
     """Send and receive typed messages, text, and bytes, ping, and close."""
     session = client.protocols.rooms.chat.connect(
@@ -80,7 +80,7 @@ def options() -> Client:
 
 
 async def async_sockets(
-    client: AsyncClient, message: ClientMessage, room: FieldRoomsRoomSocketGetPathRoomParameter
+    client: AsyncClient, message: ClientMessage, room: RoomsRoomSocketGetPathRoomParameter
 ) -> None:
     """Enter a connect's async with block, then await sends, receives, pings, and closes, and iterate asynchronously."""
     connecting = client.protocols.rooms.chat.connect(room=room)

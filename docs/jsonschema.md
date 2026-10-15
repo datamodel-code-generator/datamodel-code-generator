@@ -226,7 +226,10 @@ pydantic-core release, so a model that uses it fails at import. For Pydantic v2 
 OpenAPI, the generator detects this syntax statically and sets `regex_engine="python-re"` on the model that owns
 the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
 the installed pydantic-core or on the Python running the generator, and it is the same for every
-`--target-pydantic-version`.
+`--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
+whatever the target. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
+with `--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
+[Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 
 | Pattern syntax | Example | Generated model |
 |----------------|---------|-----------------|
@@ -254,8 +257,14 @@ so a pattern pydantic-core accepts is never switched. A switched pattern that al
 Python's `re` does not parse keeps the default engine: possessive quantifiers need Python 3.11 and `\z` needs
 Python 3.14. The generator does not compile the pattern with Python's `re`. Lookaround keeps its existing detection
 for every field. The other rules apply only to patterns emitted for string fields, including unions of strings such
-as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted, and Pydantic ignores a
-`pattern` on `bytes`.
+as `type: ["string", "null"]`: a `pattern` on `format: uri` (`AnyUrl`) is not emitted. A `pattern` on `bytes`
+(`format: binary`) is written only with `--field-constraints` or `--use-annotated`. On plain and optional `bytes`
+fields Pydantic 2.0 to 2.10 rejects any such pattern at import, Pydantic 2.11 to 2.13 ignores it, and Pydantic 2.14
+compiles it like a string pattern, so the rules also apply to it with `--target-pydantic-version 2.14`. With an
+unset or older target the model keeps the default engine for its other patterns, and a `bytes` pattern that the Rust
+engine rejects fails at import on Pydantic 2.14. Pydantic 2.12 also compiles the pattern of a `bytes | MISSING`
+field (`--use-missing-sentinel`), so such a pattern fails at import there too. A union that has a string member
+beside `bytes`, such as `str | bytes`, follows the string rules for every target.
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
 example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they

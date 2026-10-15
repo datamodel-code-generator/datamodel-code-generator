@@ -54,8 +54,14 @@ class {{ plan.class_name }}:
 {%- if plan.responses.primary %}
         primary={{ plan.responses.primary }},
 {%- endif %}
+{%- if plan.responses.media %}
+        primary_media={{ plan.responses.media }},
+{%- endif %}
 {%- if plan.responses.head %}
         head=True,
+{%- endif %}
+{%- if not plan.responses.bare %}
+        bare=False,
 {%- endif %}
     )
 {%- endfor %}

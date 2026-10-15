@@ -50,50 +50,50 @@ class Error(BaseModel):
     message: str
 
 
-FieldUsersGetQueryCursorParameter = TypeAliasType("FieldUsersGetQueryCursorParameter", str)
+UsersGetQueryCursorParameter = TypeAliasType("UsersGetQueryCursorParameter", str)
 
 
-FieldUsersGetQueryLimitParameter = TypeAliasType("FieldUsersGetQueryLimitParameter", int)
+UsersGetQueryLimitParameter = TypeAliasType("UsersGetQueryLimitParameter", int)
 
 
-FieldUsersGetHeaderXSnapshotParameter = TypeAliasType("FieldUsersGetHeaderXSnapshotParameter", str)
+UsersGetHeaderXSnapshotParameter = TypeAliasType("UsersGetHeaderXSnapshotParameter", str)
 
 
-class FieldUsersGetResponse200XNextHeader(RootModel[str]):
+class UsersGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-FieldUsersSearchPostQueryCursorParameter = TypeAliasType("FieldUsersSearchPostQueryCursorParameter", str)
+UsersSearchPostQueryCursorParameter = TypeAliasType("UsersSearchPostQueryCursorParameter", str)
 
 
-FieldLooseGetQueryCursorParameter = TypeAliasType("FieldLooseGetQueryCursorParameter", int)
+LooseGetQueryCursorParameter = TypeAliasType("LooseGetQueryCursorParameter", int)
 
 
-FieldNestedGetQueryCursorParameter = TypeAliasType("FieldNestedGetQueryCursorParameter", str)
+NestedGetQueryCursorParameter = TypeAliasType("NestedGetQueryCursorParameter", str)
 
 
-FieldLabelsGetQueryAfterParameter = TypeAliasType("FieldLabelsGetQueryAfterParameter", str)
+LabelsGetQueryAfterParameter = TypeAliasType("LabelsGetQueryAfterParameter", str)
 
 
-class FieldLabelsGetResponse(RootModel[list[Label]]):
+class LabelsGetResponse(RootModel[list[Label]]):
     root: list[Label]
 
 
-class FieldLabelsGetResponse200XNextHeader(RootModel[str]):
+class LabelsGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-FieldLabelSetsGetQueryAfterParameter = TypeAliasType("FieldLabelSetsGetQueryAfterParameter", str)
+LabelSetsGetQueryAfterParameter = TypeAliasType("LabelSetsGetQueryAfterParameter", str)
 
 
-class FieldLabelSetsGetResponse200XNextHeader(RootModel[str]):
+class LabelSetsGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-FieldArchiveCursorGetPathCursorParameter = TypeAliasType("FieldArchiveCursorGetPathCursorParameter", str)
+ArchiveCursorGetPathCursorParameter = TypeAliasType("ArchiveCursorGetPathCursorParameter", str)
 
 
-FieldStatusesGetQueryCodeParameter = TypeAliasType("FieldStatusesGetQueryCodeParameter", int)
+StatusesGetQueryCodeParameter = TypeAliasType("StatusesGetQueryCodeParameter", int)
 
 
-FieldSecureUsersGetQueryCursorParameter = TypeAliasType("FieldSecureUsersGetQueryCursorParameter", str)
+SecureUsersGetQueryCursorParameter = TypeAliasType("SecureUsersGetQueryCursorParameter", str)

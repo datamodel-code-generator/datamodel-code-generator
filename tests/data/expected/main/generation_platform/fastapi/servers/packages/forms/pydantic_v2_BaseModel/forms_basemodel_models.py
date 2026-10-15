@@ -3,24 +3,138 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel
+from typing import Dict, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
 
 
-class FieldFormsPostRequest(BaseModel):
+class Filter(BaseModel):
+    color: str | None = None
+    minAge: conint(ge=0) | None = None
+
+
+class Cat(BaseModel):
+    kind: Literal['cat']
+    meows: int | None = None
+
+
+class Dog(BaseModel):
+    kind: Literal['dog']
+    barks: int | None = None
+
+
+class FormsPostRequest(BaseModel):
     name: str
     count: int | None = 1
     tags: list[str] | None = None
 
 
-class FieldNotesPostRequest(RootModel[dict[str, str]]):
+class NotesPostRequest(RootModel[dict[str, str]]):
     root: dict[str, str]
 
 
-class FieldUploadsPostRequest(BaseModel):
+class UploadsPostRequest(BaseModel):
     file: bytes
     note: str | None = None
 
 
-class FieldBatchesPostRequest(BaseModel):
+class BatchesPostRequest(BaseModel):
     files: list[bytes]
     label: str | None = None
+
+
+class SearchesPostRequest(BaseModel):
+    filter: Filter
+    filters: list[Filter] | None = None
+    tags: list[str] | None = None
+    file: bytes | None = None
+
+
+class Pets(RootModel[Cat | Dog]):
+    root: Cat | Dog = Field(..., discriminator='kind')
+
+
+class PetsPostRequest(BaseModel):
+    pet: Cat | Dog = Field(..., discriminator='kind')
+    pets: list[Pets] | None = None
+
+
+class ExtrasPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    name: str | None = None
+    maxAge: int | None = None
+
+
+class ExtraListsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[Filter]],
+    }
+    name: str | None = None
+
+
+class ExtraScoresPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[int]],
+    }
+    name: str | None = None
+
+
+class ExtraPatternsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    name: str | None = None
+
+
+class ExtraProfilesPostRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, int],
+    }
+    name: str | None = None
+
+
+class ExtraProfilesPostRequest1(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, list[str]],
+    }
+    count: int | None = None
+
+
+class SpreadsPostRequest(BaseModel):
+    filter: Filter
+    ids: list[int] | None = None
+    meta: Filter | None = None
+
+
+class Others(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    base: str | None = None
+
+
+class ExtraBasesPostRequest(Others):
+    name: str | None = None

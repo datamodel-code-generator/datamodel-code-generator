@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Upload",
+  "type": "object",
+  "definitions": {
+    "Short": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "NullableShort": {
+      "type": ["string", "null"],
+      "maxLength": 3
+    },
+    "Mixed": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "string", "maxLength": 3}
+      ]
+    },
+    "Pair": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "integer"},
+        {"type": "array", "items": {"type": "integer"}}
+      ]
+    }
+  },
+  "properties": {
+    "page": {
+      "anyOf": [
+        {"type": "string", "format": "binary"},
+        {"type": "string", "format": "binary", "maxLength": 3}
+      ]
+    },
+    "name": {
+      "anyOf": [
+        {"type": "string"},
+        {"$ref": "#/definitions/Short"}
+      ]
+    },
+    "count": {
+      "anyOf": [
+        {"type": "integer"},
+        {"type": "integer", "maximum": 3}
+      ]
+    },
+    "label": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "string", "minLength": 5},
+        {"type": "null"}
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {"type": "string"},
+          {"type": "string", "maxLength": 3}
+        ]
+      }
+    },
+    "code": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "integer"}
+      ]
+    },
+    "short": {
+      "$ref": "#/definitions/Short"
+    },
+    "nickname": {
+      "anyOf": [
+        {"type": "string"},
+        {"$ref": "#/definitions/NullableShort"}
+      ]
+    },
+    "alias": {
+      "anyOf": [
+        {"type": "string"},
+        {"$ref": "#/definitions/Pair"}
+      ]
+    },
+    "amount": {
+      "anyOf": [
+        {"type": "integer", "maximum": 3},
+        {"type": "number", "minimum": 5}
+      ]
+    },
+    "ratio": {
+      "anyOf": [
+        {"type": "integer", "maximum": 3},
+        {"type": "number"}
+      ]
+    },
+    "level": {
+      "anyOf": [
+        {"type": "integer", "exclusiveMinimum": 1},
+        {"type": "number", "minimum": 1.5, "exclusiveMaximum": 10}
+      ]
+    },
+    "step": {
+      "anyOf": [
+        {"type": "integer", "multipleOf": 2},
+        {"type": "number", "multipleOf": 4}
+      ]
+    },
+    "half": {
+      "anyOf": [
+        {"type": "integer", "multipleOf": 2},
+        {"type": "number", "multipleOf": 0.5}
+      ]
+    },
+    "gap": {
+      "anyOf": [
+        {"type": "integer", "maximum": 3},
+        {"type": "number", "minimum": 5.5, "maximum": 5.9}
+      ]
+    },
+    "floor": {
+      "anyOf": [
+        {"type": "integer", "minimum": 10},
+        {"type": "number"}
+      ]
+    },
+    "initials": {
+      "$ref": "#/definitions/NullableShort"
+    },
+    "pair": {
+      "$ref": "#/definitions/Pair"
+    },
+    "same": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "string", "maxLength": 3}
+      ]
+    },
+    "shared": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3, "minLength": 2},
+        {"type": "string", "maxLength": 3}
+      ]
+    },
+    "apart": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3, "minLength": 2},
+        {"type": "string", "maxLength": 3, "pattern": "^a"}
+      ]
+    },
+    "mixed": {
+      "$ref": "#/definitions/Mixed"
+    }
+  },
+  "required": [
+    "page", "name", "count", "label", "tags", "code", "short",
+    "nickname", "alias", "amount", "ratio", "level", "step", "half", "gap", "floor", "initials", "pair",
+    "same", "shared", "apart", "mixed"
+  ]
+}

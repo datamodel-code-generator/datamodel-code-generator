@@ -22,7 +22,7 @@ class PetsService(Protocol):
         self,
         *,
         page_size: int,
-    ) -> models.FieldPetsGetResponse | HTTPResult[models.FieldPetsGetResponse] | Response:
+    ) -> models.PetsGetResponse | HTTPResult[models.PetsGetResponse] | Response:
         """
         Handle GET /pets.
         """

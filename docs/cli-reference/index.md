@@ -9,9 +9,9 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 34 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 35 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 29 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 44 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 46 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 23 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 21 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 23 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 24 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 7 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -48,7 +48,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--reuse-scope`](model-customization.md#reuse-scope) | Requires | `--reuse-scope` = `tree` | [`--reuse-model`](model-customization.md#reuse-model) enabled | `--reuse-scope=tree` has no effect without `--reuse-model`. |
 | [`--union-mode`](model-customization.md#union-mode) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel` | `--union-mode` is only supported for `--output-model-type pydantic_v2.BaseModel`. |
 | [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Implies | Always | [`--target-pydantic-version`](model-customization.md#target-pydantic-version) = `2.12` | - |
-| [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) = `pydantic_v2.BaseModel` | `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel`. |
+| [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Requires | Always | [`--output-model-type`](model-customization.md#output-model-type) | `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or `pydantic_v2.dataclass`. |
 | [`--custom-file-header`](template-customization.md#custom-file-header) | Conflicts | Always | [`--custom-file-header-path`](template-customization.md#custom-file-header-path) | `--custom-file-header` can not be used with `--custom-file-header-path`. |
 | [`--custom-file-header-path`](template-customization.md#custom-file-header-path) | Conflicts | Always | [`--custom-file-header`](template-customization.md#custom-file-header) | `--custom-file-header-path` can not be used with `--custom-file-header`. |
 | [`--all-exports-collision-strategy`](general-options.md#all-exports-collision-strategy) | Requires | Always | [`--all-exports-scope`](general-options.md#all-exports-scope) = `recursive` | `--all-exports-collision-strategy` can only be used with `--all-exports-scope=recursive`. |
@@ -77,10 +77,12 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-output`](target-generation-options.md#client-output) | `--generate-client` requires `--client-output`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-package`](target-generation-options.md#client-package) | `--generate-client` requires `--client-package`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--client-model-package`](target-generation-options.md#client-model-package) | `--generate-client` requires `--client-model-package`. |
+| [`--generate-client`](target-generation-options.md#generate-client) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-client` requires `--input-file-type openapi`. |
 | [`--generate-client`](target-generation-options.md#generate-client) | Conflicts | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--generate-client` can not be used with `--generate-server`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-output`](target-generation-options.md#server-output) | `--generate-server` requires `--server-output`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-package`](target-generation-options.md#server-package) | `--generate-server` requires `--server-package`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--server-model-package`](target-generation-options.md#server-model-package) | `--generate-server` requires `--server-model-package`. |
+| [`--generate-server`](target-generation-options.md#generate-server) | Requires | Always | [`--input-file-type`](base-options.md#input-file-type) = `openapi` | `--generate-server` requires `--input-file-type openapi`. |
 | [`--generate-server`](target-generation-options.md#generate-server) | Conflicts | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--generate-server` can not be used with `--generate-client`. |
 | [`--server-body-mode`](target-generation-options.md#server-body-mode) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-mode` requires `--generate-server fastapi`. |
 | [`--server-body-modes`](target-generation-options.md#server-body-modes) | Requires | Always | [`--generate-server`](target-generation-options.md#generate-server) | `--server-body-modes` requires `--generate-server fastapi`. |
@@ -349,6 +351,8 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types)
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
 - [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel)
+- [`--use-msgspec-nullable-enum-alias`](model-customization.md#use-msgspec-nullable-enum-alias)
+- [`--use-msgspec-tagged-unions`](model-customization.md#use-msgspec-tagged-unions)
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)
 - [`--use-object-type`](typing-customization.md#use-object-type)
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default)
@@ -372,6 +376,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-type-alias`](typing-customization.md#use-type-alias)
 - [`--use-type-alias-type`](typing-customization.md#use-type-alias-type)
 - [`--use-type-checking-imports`](template-customization.md#use-type-checking-imports)
+- [`--use-typed-nullable-map-values`](typing-customization.md#use-typed-nullable-map-values)
 - [`--use-union-operator`](typing-customization.md#use-union-operator)
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set)
 

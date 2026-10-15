@@ -3,7 +3,7 @@ render pydantic_v2.BaseModel plain
   models.py
   model_bindings.py pydantic_v2_BaseModel/plain
 change pydantic_v2.BaseModel plain scope-noise
-  @@ -18,0 +19,15 @@
+  @@ -17,0 +18,15 @@
   +
   +
   +

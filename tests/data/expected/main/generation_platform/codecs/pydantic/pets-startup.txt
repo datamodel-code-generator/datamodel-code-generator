@@ -3,6 +3,6 @@ plain-validation-alias: native app routes=4 models={'models:Pet': 'AliasPet'}
 aliases-refused: native app routes=4 models={'models:Pet': 'NamePet'}
 bundle-direction: native app routes=4 removed codec-sidecar edits=['bundle'] ValidationError missing@['id'],missing@['name'],missing@['status']
 other-model: native app routes=4 models={'models:Pet': 'Owner'}
-root-model: native app routes=4 models={'models:FieldPetsGetResponse': 'Pet'}
+root-model: native app routes=4 models={'models:PetsGetResponse': 'Pet'}
 opaque-model: native app routes=4 removed codec-sidecar edits=['binding'] ValidationError value_error@['owner', 'e-mail']
 unknown-schema: native app routes=4 removed codec-sidecar edits=['binding'] ValidationError missing@['id'],missing@['name'],missing@['status']

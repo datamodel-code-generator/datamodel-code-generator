@@ -1,16 +1,15 @@
 # retry-security-context
 render pydantic_v2.BaseModel
+  client/README.md
   client/__init__.py
   client/_async_client.py
   client/_client.py
   client/_generated/__init__.py
   client/_generated/model_bindings.py
   client/_generated/security.py
-  client/_generated_docs/README.md
   client/_generated_docs/runtime.md
   client/_operations.py
   client/errors.py
-  client/model_codecs.py
   client/options.py
   client/py.typed
   client/resources/__init__.py

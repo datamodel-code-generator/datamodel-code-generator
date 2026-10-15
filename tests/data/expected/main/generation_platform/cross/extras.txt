@@ -1,0 +1,27 @@
+models shared True
+# extras in-process sync, in-process async
+echo_stats
+  > POST /stats [application/json]
+  echo_stats(body=Stats())
+  < 200 application/json
+  = {'a': 1, 'b': 'x'}
+echo_stats empty
+  > POST /stats [application/json]
+  echo_stats(body=Stats())
+  < 200 application/json
+  = {}
+echo_bag
+  > POST /bags [application/json]
+  echo_bag(body=Bag(stats=Stats(), counts={'x': 2}, named=Named(name='n'), namedCounts=NamedCounts(name='c'), items=[Named(name='i'), Named(name=MISSING)]))
+  < 201 application/json
+  = {'stats': {'a': 1, 'nested': {'b': [1, None]}}, 'counts': {'x': 2}, 'named': {'name': 'n', 'extra': True}, 'namedCounts': {'name': 'c', 'y': 3}, 'items': [{'name': 'i', 'z': 'w'}, {'name': MISSING}]}
+echo_labels
+  > POST /labels [application/x-www-form-urlencoded]
+  echo_labels(body=Labels(name='n'))
+  < 200 application/json
+  = [{'name': 'n', 'color': 'red'}]
+get_tree
+  > GET /trees
+  get_tree()
+  < 200 application/json
+  = {'name': 'root', 'children': [{'name': 'leaf', 'children': MISSING}]}

@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import Any, Final
 
-from .._runtime.model_codecs.stdlib import Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec
 
 
-codec_0: Final[StdlibCodec[Any]] = StdlibCodec(None, MODELS)
+codec_0: Final[DataclassCodec[Any]] = DataclassCodec(None, {})
 """Codec of /paths/~1missing/post request_body (request application/json)."""

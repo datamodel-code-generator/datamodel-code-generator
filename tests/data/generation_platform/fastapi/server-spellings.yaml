@@ -19,7 +19,7 @@ paths:
                     - {$ref: "#/components/schemas/Cat"}
                     - {$ref: "#/components/schemas/Dog"}
                   discriminator:
-                    propertyName: petType
+                    propertyName: pet-type
                     mapping: {cat: "#/components/schemas/Cat", dog: "#/components/schemas/Dog"}
   /counts:
     get:
@@ -88,7 +88,7 @@ paths:
         - {name: code, in: query, schema: {$ref: "#/components/schemas/Code"}}
         - {name: codes, in: query, schema: {type: array, items: {$ref: "#/components/schemas/Code"}}}
         - {name: step, in: query, schema: {type: number, multipleOf: 0.5}}
-        - {name: raw, in: query, schema: {type: string, format: binary, minLength: 0}}
+        - {name: raw, in: query, schema: {type: string, format: byte, minLength: 0}}
         - {name: day, in: query, schema: {type: string, x-python-type: "datetime.date"}}
         - {name: filter, in: query, style: deepObject, explode: true, schema: {$ref: "#/components/schemas/Query"}}
         - {name: pair, in: query, explode: false, schema: {$ref: "#/components/schemas/Pair"}}
@@ -155,19 +155,19 @@ components:
         - {$ref: "#/components/schemas/Cat"}
         - {$ref: "#/components/schemas/Dog"}
       discriminator:
-        propertyName: petType
+        propertyName: pet-type
         mapping: {cat: "#/components/schemas/Cat", dog: "#/components/schemas/Dog"}
     Cat:
       type: object
-      required: [petType, name]
+      required: [pet-type, name]
       properties:
-        petType: {const: cat}
+        pet-type: {const: cat}
         name: {type: string}
     Dog:
       type: object
-      required: [petType, bark]
+      required: [pet-type, bark]
       properties:
-        petType: {const: dog}
+        pet-type: {const: dog}
         bark: {type: boolean}
     Query:
       type: object

@@ -22,8 +22,8 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     string_minimum: str | None = None
     string_length_and_minimum: Annotated[str | None, Field(min_length=2)] = None
     date_maximum: date | None = None
-    date_time_exclusive_minimum: AwareDatetime | None = None
-    time_exclusive_maximum: time | None = None
+    date_time_exclusive_minimum: Annotated[AwareDatetime | None, Field(gt=5)] = None
+    time_exclusive_maximum: Annotated[time | None, Field(lt=10)] = None
     boolean_multiple_of: bool | None = None
     nullable_string_minimum: str | None = None
     array_minimum: list[str] | None = None
@@ -32,4 +32,4 @@ class NumberConstraintsOnNonNumbers(BaseModel):
     number_minimum: Annotated[float | None, Field(ge=5.0)] = None
     integer_maximum: Annotated[int | None, Field(le=10)] = None
     string_or_number_minimum: str | confloat(ge=5.0) | None = None
-    untyped_minimum: Annotated[Any | None, Field(ge=5)] = None
+    untyped_minimum: Any | None = None

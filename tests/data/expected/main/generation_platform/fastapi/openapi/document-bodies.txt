@@ -316,9 +316,9 @@
         }
       }
     },
-    "/form/nested": {
+    "/form/extras": {
       "post": {
-        "operationId": "postNestedForm",
+        "operationId": "postExtrasForm",
         "tags": [
           "form"
         ],
@@ -329,13 +329,8 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "point": {
-                    "type": "object",
-                    "properties": {
-                      "x": {
-                        "type": "number"
-                      }
-                    }
+                  "ratio": {
+                    "type": "number"
                   }
                 },
                 "additionalProperties": {

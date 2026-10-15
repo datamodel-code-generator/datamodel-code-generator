@@ -180,7 +180,7 @@
   async native RuntimeError post_unsafe key=None = 'APIConnectionError attempts=1 reason=None status=None cause=RuntimeError'
   native send invocations=1 required=1
   native task cancellation propagated count=1
-  call after native cancellation = FieldSafeGetResponse(root='ready')
+  call after native cancellation = SafeGetResponse(root='ready')
   borrowed native after repeated root close=False
   real requests including cancelled response=2
   owned sync primary=ValueError notes=1

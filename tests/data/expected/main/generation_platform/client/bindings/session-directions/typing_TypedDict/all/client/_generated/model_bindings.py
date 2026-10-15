@@ -8,25 +8,25 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Items, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Items, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.RecordRequest: Model((Field('secret', 'secret'), Field('name', 'name')), True),
-    models.RecordResponse: Model((Field('id', 'id'), Field('name', 'name')), True),
-    models.Record: Model((Field('id', 'id'), Field('secret', 'secret'), Field('name', 'name')), True),
-    models.Envelope: Model((Field('record', 'record', models.Record), Field('records', 'records', Items(models.Record))), True),
+    models.RecordRequest: Model((Field('secret', 'secret'), Field('name', 'name'))),
+    models.RecordResponse: Model((Field('id', 'id'), Field('name', 'name'))),
+    models.Record: Model((Field('id', 'id'), Field('secret', 'secret'), Field('name', 'name'))),
+    models.Envelope: Model((Field('record', 'record', models.Record), Field('records', 'records', Items(models.Record)))),
 }
 
-codec_0: Final[StdlibCodec[models.RecordRequest]] = StdlibCodec(models.RecordRequest, MODELS)
+codec_0: Final[TypedDictCodec[models.RecordRequest]] = TypedDictCodec(models.RecordRequest, MODELS)
 """Codec of /paths/~1records/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.RecordResponse]] = StdlibCodec(models.RecordResponse, MODELS)
+codec_1: Final[TypedDictCodec[models.RecordResponse]] = TypedDictCodec(models.RecordResponse, MODELS)
 """Codec of /paths/~1records/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.Envelope]] = StdlibCodec(models.Envelope, MODELS)
+codec_2: Final[TypedDictCodec[models.Envelope]] = TypedDictCodec(models.Envelope, MODELS)
 """Codec of /paths/~1envelopes/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Envelope]] = StdlibCodec(models.Envelope, MODELS)
+codec_3: Final[TypedDictCodec[models.Envelope]] = TypedDictCodec(models.Envelope, MODELS)
 """Codec of /paths/~1envelopes/post response_body (response 200 application/json)."""

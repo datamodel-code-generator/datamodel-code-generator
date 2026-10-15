@@ -64,6 +64,7 @@ render typing.TypedDict members
 render typing.TypedDict values
   diagnostic Error: /paths/~1bindings~11/post/requestBody: The discriminator version gives v1 to two union models; /paths/~1bindings~11/post/requestBody: The discriminator version gives v2 to two union models; /paths/~1bindings~11/post/responses/200: The discriminator version gives v1 to two union models; /paths/~1bindings~11/post/responses/200: The discriminator version gives v2 to two union models
 render msgspec.Struct members
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
   models/__init__.py
   models/grandchild.py
   models/holder.py
@@ -74,6 +75,7 @@ render msgspec.Struct members
   models/request_version_enum.py
   model_bindings.py msgspec_Struct/members
 render msgspec.Struct values
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
   models/__init__.py
   models/grandchild.py
   models/holder.py

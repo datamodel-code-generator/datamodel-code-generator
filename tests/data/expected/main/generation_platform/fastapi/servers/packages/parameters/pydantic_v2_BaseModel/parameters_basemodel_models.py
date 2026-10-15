@@ -33,97 +33,123 @@ class Blob(BaseModel):
     a: int | None = None
 
 
-FieldSearchGetCookieSessionParameter = TypeAliasType(
-    "FieldSearchGetCookieSessionParameter", Annotated[str, Field(min_length=2)]
+SearchGetCookieSessionParameter = TypeAliasType(
+    "SearchGetCookieSessionParameter", Annotated[str, Field(min_length=2)]
 )
 
 
-FieldSearchGetQueryCodeParameter = TypeAliasType(
-    "FieldSearchGetQueryCodeParameter", Annotated[str, Field(pattern=r'^[A-Z]+$')]
+SearchGetQueryCodeParameter = TypeAliasType(
+    "SearchGetQueryCodeParameter", Annotated[str, Field(pattern=r'^[A-Z]+$')]
 )
 
 
-FieldSearchGetQueryIdsParameter = TypeAliasType("FieldSearchGetQueryIdsParameter", list[int])
+SearchGetQueryIdsParameter = TypeAliasType("SearchGetQueryIdsParameter", list[int])
 
 
-FieldSearchGetHeaderXIdsParameter = TypeAliasType("FieldSearchGetHeaderXIdsParameter", list[int])
+SearchGetHeaderXIdsParameter = TypeAliasType("SearchGetHeaderXIdsParameter", list[int])
 
 
-FieldRatiosGetQueryRatiosParameter = TypeAliasType("FieldRatiosGetQueryRatiosParameter", list[float])
+RatiosGetQueryRatiosParameter = TypeAliasType("RatiosGetQueryRatiosParameter", list[float])
 
 
-FieldRatiosGetQueryLimitsParameter = TypeAliasType(
-    "FieldRatiosGetQueryLimitsParameter",
+RatiosGetQueryLimitsParameter = TypeAliasType(
+    "RatiosGetQueryLimitsParameter",
     Annotated[
         list[Annotated[int, Field(ge=1)]], Field([1, 2], examples=[[1]], title='Limits')
     ],
 )
 
 
-FieldSizesGetQueryOneParameter = TypeAliasType("FieldSizesGetQueryOneParameter", Literal['x'])
+SizesGetQueryOneParameter = TypeAliasType("SizesGetQueryOneParameter", Literal['x'])
 
 
-FieldSizesGetQueryLeastParameter = TypeAliasType("FieldSizesGetQueryLeastParameter", Size)
+SizesGetQueryCapParameter = TypeAliasType("SizesGetQueryCapParameter", int | None)
 
 
-FieldSizesGetQueryCapParameter = TypeAliasType("FieldSizesGetQueryCapParameter", int | None)
+CodesGetHeaderXCodesParameter = TypeAliasType("CodesGetHeaderXCodesParameter", list[int])
 
 
-FieldCodesGetHeaderXCodesParameter = TypeAliasType("FieldCodesGetHeaderXCodesParameter", list[int])
+RepeatIdAgainIdGetPathIdParameter = TypeAliasType("RepeatIdAgainIdGetPathIdParameter", int)
 
 
-FieldRepeatIdAgainIdGetPathIdParameter = TypeAliasType("FieldRepeatIdAgainIdGetPathIdParameter", int)
+NotesNoteIdGetPathNoteIdParameter = TypeAliasType("NotesNoteIdGetPathNoteIdParameter", int)
 
 
-FieldNotesNoteIdGetPathNoteIdParameter = TypeAliasType("FieldNotesNoteIdGetPathNoteIdParameter", int)
-
-
-FieldFilesFileNameGetPathFileNameParameter = TypeAliasType(
-    "FieldFilesFileNameGetPathFileNameParameter",
+FilesFileNameGetPathFileNameParameter = TypeAliasType(
+    "FilesFileNameGetPathFileNameParameter",
     Annotated[str, Field(pattern=r'^[a-z]+\.txt$')],
 )
 
 
-FieldMenüItemGetPathItemParameter = TypeAliasType(
-    "FieldMenüItemGetPathItemParameter", Annotated[str, Field(pattern=r'^[a-z]+$')]
+PairsPairIdClassPartOfPartGetPathPairIdParameter = TypeAliasType(
+    "PairsPairIdClassPartOfPartGetPathPairIdParameter",
+    Annotated[str, Field(pattern=r'^[a-z]+$')],
 )
 
 
-class FieldItemsLevelGetPathLevelParameter(IntEnum):
+PairsPairIdClassPartOfPartGetPathClassParameter = TypeAliasType(
+    "PairsPairIdClassPartOfPartGetPathClassParameter", Annotated[int, Field(ge=1)]
+)
+
+
+PairsPairIdClassPartOfPartGetPathPartParameter = TypeAliasType(
+    "PairsPairIdClassPartOfPartGetPathPartParameter", Annotated[int, Field(ge=1)]
+)
+
+
+PairsPairIdClassPartOfPartGetHeaderXRankParameter = TypeAliasType(
+    "PairsPairIdClassPartOfPartGetHeaderXRankParameter", Annotated[int, Field(ge=1)]
+)
+
+
+MenüItemGetPathItemParameter = TypeAliasType(
+    "MenüItemGetPathItemParameter", Annotated[str, Field(pattern=r'^[a-z]+$')]
+)
+
+
+class ItemsLevelGetPathLevelParameter(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-class FieldItemsLevelGetQueryModeParameter(IntEnum):
+class ItemsLevelGetQueryModeParameter(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-class FieldItemsLevelGetQueryRatioParameter(Enum):
+class ItemsLevelGetQueryRatioParameter(Enum):
     number_0_5 = 0.5
     number_1_5 = 1.5
     number_2_2 = 2.2
 
 
-FieldItemsLevelGetHeaderXFlagParameter = TypeAliasType("FieldItemsLevelGetHeaderXFlagParameter", Literal[True])
+ItemsLevelGetHeaderXFlagParameter = TypeAliasType("ItemsLevelGetHeaderXFlagParameter", Literal[True])
 
 
-class FieldItemsLevelGetQueryKindParameter(StrEnum):
+class ItemsLevelGetQueryKindParameter(StrEnum):
     a = 'a'
     b = 'b'
 
 
-class FieldItemsLevelGetQueryTierParameter1(IntEnum):
+class ItemsLevelGetQueryTierParameter1(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-FieldItemsLevelGetQueryTierParameter = TypeAliasType("FieldItemsLevelGetQueryTierParameter", FieldItemsLevelGetQueryTierParameter1 | None)
+ItemsLevelGetQueryTierParameter = TypeAliasType("ItemsLevelGetQueryTierParameter", ItemsLevelGetQueryTierParameter1 | None)
 
 
-class FieldItemsLevelGetQueryLevelsParameterEnum(IntEnum):
+class ItemsLevelGetQueryLevelsParameterEnum(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-FieldItemsLevelGetQueryLevelsParameter = TypeAliasType("FieldItemsLevelGetQueryLevelsParameter", list[FieldItemsLevelGetQueryLevelsParameterEnum])
+ItemsLevelGetQueryLevelsParameter = TypeAliasType("ItemsLevelGetQueryLevelsParameter", list[ItemsLevelGetQueryLevelsParameterEnum])
+
+
+FoodsFoodIdServingsServingGetPathFoodIdParameter = TypeAliasType("FoodsFoodIdServingsServingGetPathFoodIdParameter", str)
+
+
+FoodsFoodIdServingsServingGetPathServingParameter = TypeAliasType(
+    "FoodsFoodIdServingsServingGetPathServingParameter", Annotated[int, Field(ge=1)]
+)

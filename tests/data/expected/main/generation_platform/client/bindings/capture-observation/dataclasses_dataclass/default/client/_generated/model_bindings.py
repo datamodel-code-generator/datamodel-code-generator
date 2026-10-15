@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
@@ -19,26 +19,26 @@ MODELS: Final[dict[type, Model]] = {
     models.ItemResponse: Model((Field('id', 'id', omit_none=True), Field('ship-to', 'ship_to'), Field('values', 'values', omit_none=True))),
 }
 
-codec_0: Final[StdlibCodec[models.ItemRequest]] = StdlibCodec(models.ItemRequest, MODELS)
+codec_0: Final[DataclassCodec[models.ItemRequest]] = DataclassCodec(models.ItemRequest, MODELS)
 """Codec of /paths/~1items/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.ItemResponse]] = StdlibCodec(models.ItemResponse, MODELS)
+codec_1: Final[DataclassCodec[models.ItemResponse]] = DataclassCodec(models.ItemResponse, MODELS)
 """Codec of /paths/~1items/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.BaseRequest]] = StdlibCodec(models.BaseRequest, MODELS)
+codec_2: Final[DataclassCodec[models.BaseRequest]] = DataclassCodec(models.BaseRequest, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_3: Final[DataclassCodec[models.Base]] = DataclassCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.ItemRequest]] = StdlibCodec(models.ItemRequest, MODELS)
+codec_4: Final[DataclassCodec[models.ItemRequest]] = DataclassCodec(models.ItemRequest, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.ItemResponse]] = StdlibCodec(models.ItemResponse, MODELS)
+codec_5: Final[DataclassCodec[models.ItemResponse]] = DataclassCodec(models.ItemResponse, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_6: Final[DataclassCodec[str]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[str]] = StdlibCodec(None, MODELS)
+codec_7: Final[DataclassCodec[str]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""

@@ -1,0 +1,37 @@
+--check: services ['__init__.py', 'pets.py']
+--diff-against: services ['__init__.py', 'pets.py']
+generate: services ['__init__.py', 'pets.py', 'store.py']; pets '# edited\n'
+Add the runtime dependencies of server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+Next steps: implement the stubs in services/store.py (your services: services/pets.py), then run the server:
+  uv add uvicorn && uv run uvicorn server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev server/main.py
+See server/README.md.
+{
+  "readme": "server/README.md",
+  "entrypoint": {
+    "app": "server.main:app",
+    "path": "server/main.py"
+  },
+  "implementation": [
+    {
+      "module": "services.pets",
+      "name": "Pets",
+      "path": "services/pets.py",
+      "created": false
+    },
+    {
+      "module": "services.store",
+      "name": "Store",
+      "path": "services/store.py",
+      "created": true
+    }
+  ]
+}
+generate over a pets package: services ['__init__.py', 'pets', 'store.py']
+Add the runtime dependencies of server to your project:
+  uv add "fastapi>=0.141.1" "pydantic>=2.14.0" "typing-extensions>=4.16"
+Next steps: run the server with your services in services/pets/__init__.py, services/store.py:
+  uv add uvicorn && uv run uvicorn server.main:app --reload
+or: uv add "fastapi[standard]" && uv run fastapi dev server/main.py
+See server/README.md.

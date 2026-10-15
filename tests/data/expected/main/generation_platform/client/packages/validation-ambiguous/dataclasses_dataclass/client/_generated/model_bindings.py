@@ -9,7 +9,12 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.stdlib import Choice, Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import (
+    Choice,
+    DataclassCodec,
+    Field,
+    Model,
+)
 
 MODELS: Final[dict[type, Model]] = {
     models.Card: Model((Field('kind', 'kind'), Field('last4', 'last4'))),
@@ -18,14 +23,14 @@ MODELS: Final[dict[type, Model]] = {
     models.Problem: Model((Field('code', 'code'),)),
 }
 
-codec_0: Final[StdlibCodec[models.FieldOrdersOrderIdGetPathOrderIdParameter]] = StdlibCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.OrdersOrderIdGetPathOrderIdParameter]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request path orderId)."""
 
-codec_1: Final[StdlibCodec[models.FieldOrdersOrderIdGetQueryViewParameter]] = StdlibCodec(models.FieldOrdersOrderIdGetQueryViewParameter, MODELS)
+codec_1: Final[DataclassCodec[models.OrdersOrderIdGetQueryViewParameter]] = DataclassCodec(models.OrdersOrderIdGetQueryViewParameter, MODELS)
 """Codec of /paths/~1orders~1{orderId}/get parameter (request query view)."""
 
-codec_2: Final[StdlibCodec[models.Order]] = StdlibCodec(models.Order, MODELS)
+codec_2: Final[DataclassCodec[models.Order]] = DataclassCodec(models.Order, MODELS)
 """Codec of /paths/~1orders~1{orderId}/get response_body (response 200 application/json)."""
 
-codec_3: Final[StdlibCodec[models.Problem]] = StdlibCodec(models.Problem, MODELS)
+codec_3: Final[DataclassCodec[models.Problem]] = DataclassCodec(models.Problem, MODELS)
 """Codec of /paths/~1orders~1{orderId}/get response_body (response default application/json)."""

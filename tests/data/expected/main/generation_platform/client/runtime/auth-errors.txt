@@ -9,10 +9,10 @@
   positional AuthError TypeError notes []
   family ConfigurationError bases=('SDKError',)
   signature ConfigurationError keyword-only=True required=()
-  hints ConfigurationError ('field_path', 'reason', 'source_uri', 'source_pointer', 'helper_id', 'operation_id', 'info', 'cause', 'return')
-  defaults ConfigurationError fields=(('reason', 'invalid_value'), ('field_path', ()), ('source_uri', None), ('source_pointer', None), ('helper_id', None)) common=(None, None, None, 0, 0.0, None)
+  hints ConfigurationError ('field_path', 'reason', 'helper_id', 'operation_id', 'info', 'cause', 'return')
+  defaults ConfigurationError fields=(('reason', 'invalid_value'), ('field_path', ()), ('helper_id', None)) common=(None, None, None, 0, 0.0, None)
   metadata ConfigurationError operation=auth_operation info=True cause=True measurements=(2, 0.25, None)
-  supplied ConfigurationError (('reason', 'invalid_scope'), ('field_path', ('private-secret',)), ('source_uri', 'https://private-secret.example/schema'), ('source_pointer', '/private-secret'), ('helper_id', None))
+  supplied ConfigurationError (('reason', 'invalid_scope'), ('field_path', ('private-secret',)), ('helper_id', None))
   safe ConfigurationError False text="ConfigurationError(operation_id='auth_operation', reason='invalid_scope', field_path='private-secret')"
   positional ConfigurationError TypeError notes []
   missing required AuthError TypeError notes []

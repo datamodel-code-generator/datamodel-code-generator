@@ -24,6 +24,7 @@ def _add_list_notes(
     list_notes_handler = checked(
         service.list_notes,
         'The service.list_notes method of GET /notes',
+        (),
     )
 
     def list_notes() -> object:
@@ -55,6 +56,7 @@ def _add_create_note(
     create_note_handler = checked(
         service.create_note,
         'The service.create_note method of POST /notes',
+        (),
     )
 
     def create_note() -> object:
@@ -85,6 +87,7 @@ def _add_delete_note(
     delete_note_handler = checked(
         service.delete_note,
         'The service.delete_note method of DELETE /notes/{noteId}',
+        ('noteId',),
     )
 
     def delete_note(

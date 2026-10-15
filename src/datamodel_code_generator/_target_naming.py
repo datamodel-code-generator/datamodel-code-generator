@@ -25,7 +25,15 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.reference import FieldNameResolver, ModelResolver
 
-__all__ = ("WINDOWS_DEVICES", "Candidate", "NameScope", "TargetNames", "explicit_name", "operation_basis")
+__all__ = (
+    "WINDOWS_DEVICES",
+    "Candidate",
+    "NameScope",
+    "TargetNames",
+    "explicit_name",
+    "operation_basis",
+    "path_placeholders",
+)
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _WORDS: Final = re.compile(r"[^\W_]+")
@@ -49,6 +57,11 @@ def explicit_name(value: object) -> bool:
         and not value.startswith("__")
         and unicodedata.normalize("NFKC", value) == value
     )
+
+
+def path_placeholders(path: str) -> list[str]:
+    """Return the placeholder names of a path template in order, with repeats."""
+    return _PLACEHOLDER.findall(path)
 
 
 def operation_basis(method: str, path: str, operation_id: str | None) -> str:

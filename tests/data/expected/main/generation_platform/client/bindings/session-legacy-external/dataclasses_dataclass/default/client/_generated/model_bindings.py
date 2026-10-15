@@ -8,16 +8,16 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.FieldExternalPostResponseItem: Model((Field('wire-name', 'wire_name'),)),
+    models.ExternalPostResponseItem: Model((Field('wire-name', 'wire_name'),)),
 }
 
-codec_0: Final[StdlibCodec[models.FieldExternalPostRequestItem]] = StdlibCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.ExternalPostRequestItem]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1external/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.FieldExternalPostResponseItem]] = StdlibCodec(models.FieldExternalPostResponseItem, MODELS)
+codec_1: Final[DataclassCodec[models.ExternalPostResponseItem]] = DataclassCodec(models.ExternalPostResponseItem, MODELS)
 """Codec of /paths/~1external/post response_body (response 200 application/json)."""

@@ -31,7 +31,6 @@
       "length": {"in": "header", "name": "X-Chunk-Length"},
       "checksum": {"target": {"in": "header", "name": "Upload-Checksum"}, "algorithm": "sha1", "algorithm_prefix": true}
     },
-    "max_chunk_bytes": 4,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -64,7 +63,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "forbidden",
     "completion": {
       "kind": "operation",
@@ -104,7 +102,6 @@
       "offset": {"in": "query", "name": "offset"},
       "checksum": {"target": {"in": "query", "name": "checksum"}, "algorithm": "sha256", "encoding": "hex"}
     },
-    "max_chunk_bytes": 4,
     "partial_commit": "forbidden",
     "completion": {"kind": "length"}
   }

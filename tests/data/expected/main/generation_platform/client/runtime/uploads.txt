@@ -429,7 +429,7 @@ refused checkpoints and sources
   resume with a value that is not JSON ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with an unknown member ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with a confirmed offset past the content ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
-  resume with a chunk over the server maximum ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
+  resume with a chunk of no bytes ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with an unknown phase ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with an unknown delivery ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   resume with a complete phase ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
@@ -720,3 +720,24 @@ async file source change remains terminal
   borrowed source left open: True
   later resource sends=0
   stored u1: 0 bytes, original=False
+chunk sizes without client defaults
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+  default chunk=8388608
+  > PATCH https://api.example.com/files/u1
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 10, upload-checksum: sha1 h6zsF82dzSCnFsws9nQXtxyKcBY=, content-type: application/offset+octet-stream, content-length: 10] b'0123456789'
+  advance the whole content = progress 10/10 complete=True
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+  > PATCH https://api.example.com/files/u2
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 xLXIa9V32j2T/qfInLphx4tI5Yk=, content-type: application/offset+octet-stream, content-length: 4] b'0123'
+  advance four bytes = progress 4/10 complete=False
+  > HEAD https://api.example.com/files/u2
+    [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
+  chunk resumed under the default=4
+  > PATCH https://api.example.com/files/u2
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, upload-checksum: sha1 g3h/BgpZSTrv3NSyNpmQ5zA+GG4=, content-type: application/offset+octet-stream, content-length: 4] b'4567'
+  advance the checkpoint's chunk = progress 8/10 complete=False
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+  resume under a smaller client default ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='helper_defaults.files.upload.chunk_bytes') [field_path=('helper_defaults', 'files.upload', 'chunk_bytes')] invalid_value

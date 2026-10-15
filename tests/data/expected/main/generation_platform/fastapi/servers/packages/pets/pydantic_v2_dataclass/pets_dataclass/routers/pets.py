@@ -27,13 +27,14 @@ def _add_list_pets(
     list_pets_handler = checked(
         pets.list_pets,
         'The pets.list_pets method of GET /pets',
+        ('limit', 'tags', 'kind', 'X_Request_Id', 'since', 'session'),
     )
 
     def list_pets(
         *,
         limit: Annotated[int, Field(ge=1, le=100), Query(alias='limit', description='Page size.')] = 20,
         tags: Annotated[list[str] | None, Query(alias='tags')] = None,
-        kind: Annotated[pets_dataclass_models.FieldPetsGetQueryKindParameter | None, Query(alias='kind')] = None,
+        kind: Annotated[pets_dataclass_models.PetsGetQueryKindParameter | None, Query(alias='kind')] = None,
         X_Request_Id: Annotated[UUID | None, Header(alias='X-Request-Id', convert_underscores=False)] = None,
         since: Annotated[AwareDatetime | None, Query(alias='since')] = None,
         session: Annotated[str | None, Cookie(alias='session')] = None,
@@ -55,7 +56,7 @@ def _add_list_pets(
         list_pets,
         methods=['GET'],
         status_code=200,
-        response_model=pets_dataclass_models.FieldPetsGetResponse,
+        response_model=pets_dataclass_models.PetsGetResponse,
         response_model_by_alias=True,
         response_model_exclude_unset=True,
         operation_id='listPets',
@@ -73,6 +74,7 @@ def _add_create_pet(
     create_pet_handler = checked(
         pets.create_pet,
         'The pets.create_pet method of POST /pets',
+        ('body',),
     )
 
     def create_pet(
@@ -109,6 +111,7 @@ def _add_list_my_pets(
     list_my_pets_handler = checked(
         pets.list_my_pets,
         'The pets.list_my_pets method of GET /pets/mine',
+        (),
     )
 
     def list_my_pets() -> object:
@@ -122,7 +125,7 @@ def _add_list_my_pets(
         list_my_pets,
         methods=['GET'],
         status_code=200,
-        response_model=pets_dataclass_models.FieldPetsMineGetResponse,
+        response_model=pets_dataclass_models.PetsMineGetResponse,
         response_model_by_alias=True,
         response_model_exclude_unset=True,
         operation_id='listMyPets',
@@ -140,6 +143,7 @@ def _add_get_pet(
     get_pet_handler = checked(
         pets.get_pet,
         'The pets.get_pet method of GET /pets/{petId}',
+        ('petId',),
     )
 
     def get_pet(
@@ -176,6 +180,7 @@ def _add_delete_pet(
     delete_pet_handler = checked(
         pets.delete_pet,
         'The pets.delete_pet method of DELETE /pets/{petId}',
+        ('petId',),
     )
 
     def delete_pet(

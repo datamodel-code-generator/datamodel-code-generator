@@ -4,18 +4,24 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from enum import StrEnum
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, conint
+from pydantic import ValidationInfo, conint, field_validator
+from root_base import Base
+from root_checks import check_name
+from root_fields import Field
+from root_types import Note
 
 
-class Level(StrEnum):
-    low = 'low'
-    high = 'high'
-
-
-class Sample(BaseModel):
-    display_name: str = Field('guest', alias='userName')
-    level: Level
+class Tier(Base):
+    display_name: str = Field('guest', alias='userName', serialization_alias='root_out')
+    level: Literal['low', 'high']
     count: conint(ge=0) = 7
-    note: str | None = None
+    note: Note | None = None
+
+    @field_validator('userName', mode='before')
+    @classmethod
+    def check_name_validator(cls, v: Any, info: ValidationInfo) -> Any:
+        return check_name(v, info)
+
+# root kwargs

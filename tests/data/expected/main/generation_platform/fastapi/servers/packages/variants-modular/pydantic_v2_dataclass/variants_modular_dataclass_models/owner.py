@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
+from pydantic import MISSING
 from pydantic.dataclasses import dataclass
 
 
 @dataclass
 class Owner:
     name: str
-    email: str | None = None
+    email: str | MISSING = MISSING

@@ -3,21 +3,22 @@
 ## Contents
 
 1. OpenAPI to Pydantic v2
-2. AsyncAPI to Pydantic v2
-3. JSON Schema to Pydantic v2
-4. JSON Schema split across files
-5. Raw JSON sample to models
-6. Raw YAML sample to models
-7. CSV sample to models
-8. GraphQL SDL to models
-9. Apache Avro schema to models
-10. XML Schema to models
-11. Protocol Buffers to models
-12. MCP tool schemas to models
-13. Remote URL input
-14. Existing Python model or dict schema object
-15. Multiple modules for large specs
-16. Output as dataclasses, TypedDict, or msgspec
+2. OpenAPI to a FastAPI server or Python client (experimental)
+3. AsyncAPI to Pydantic v2
+4. JSON Schema to Pydantic v2
+5. JSON Schema split across files
+6. Raw JSON sample to models
+7. Raw YAML sample to models
+8. CSV sample to models
+9. GraphQL SDL to models
+10. Apache Avro schema to models
+11. XML Schema to models
+12. Protocol Buffers to models
+13. MCP tool schemas to models
+14. Remote URL input
+15. Existing Python model or dict schema object
+16. Multiple modules for large specs
+17. Output as dataclasses, TypedDict, or msgspec
 
 ## OpenAPI to Pydantic v2
 
@@ -41,6 +42,37 @@ python -c "import pathlib, importlib.util; p=pathlib.Path('models.py'); s=import
 ```
 
 Expect Pydantic v2 model classes for schema components, and optionally request, response, parameter, or path models when OpenAPI scopes include them.
+
+## OpenAPI to a FastAPI server or Python client (experimental)
+
+Use this when the user wants a FastAPI server or an HTTPX2 client generated from an OpenAPI document, on top of the models.
+
+```bash
+uvx datamodel-codegen \
+  --input openapi.yaml \
+  --input-file-type openapi \
+  --openapi-scopes schemas api \
+  --output-model-type pydantic_v2.BaseModel \
+  --target-python-version 3.12 \
+  --output app/models.py \
+  --generate-server fastapi \
+  --server-output app/server \
+  --server-package app.server \
+  --server-model-package app.models
+```
+
+Generation overwrites the models and the server package on every run: never edit them. Write the implementation of each router group in `app/services/<group>.py`, as class `<Group>` subclassing the `<Group>Service` Protocol of `app.server.services`; with `--server-layout single`, write `app/services/service.py` with class `Operations` subclassing the `Service` Protocol. A secured document adds `app/services/authorize.py` with `authorize`. Generation writes each missing module once with stubs and never overwrites it. Give each server package a parent package of its own. `app/server/main.py` imports them and defines `app`. The run prints the `uv add` command for the runtime dependencies and the next steps; `--output-format json` reports them under `target`.
+
+For a client, use `--generate-client httpx2 --client-output app/client --client-package app.client --client-model-package app.models` instead, and call it as `with Client(base_url=...) as client: client.<group>.<method>(...)`.
+
+Verify with:
+
+```bash
+uv add uvicorn
+uv run uvicorn app.server.main:app
+```
+
+Expect the README of the generated package to list the operations and, under Next steps, the modules to implement.
 
 ## AsyncAPI to Pydantic v2
 

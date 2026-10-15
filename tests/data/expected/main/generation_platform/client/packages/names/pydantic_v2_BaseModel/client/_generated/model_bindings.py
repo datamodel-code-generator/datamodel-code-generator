@@ -9,16 +9,16 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldFilesFileNameExtGetPathFileNameParameter]] = PydanticCodec(models.FieldFilesFileNameExtGetPathFileNameParameter)
+codec_0: Final[PydanticCodec[models.FilesFileNameExtGetPathFileNameParameter]] = PydanticCodec(models.FilesFileNameExtGetPathFileNameParameter)
 """Codec of /paths/~1files~1{fileName}.{ext}/get parameter (request path fileName)."""
 
-codec_1: Final[PydanticCodec[models.FieldFilesFileNameExtGetPathExtParameter]] = PydanticCodec(models.FieldFilesFileNameExtGetPathExtParameter)
+codec_1: Final[PydanticCodec[models.FilesFileNameExtGetPathExtParameter]] = PydanticCodec(models.FilesFileNameExtGetPathExtParameter)
 """Codec of /paths/~1files~1{fileName}.{ext}/get parameter (request path ext)."""
 
-codec_2: Final[PydanticCodec[models.FieldFilesFileNameExtGetQueryClassParameter]] = PydanticCodec(models.FieldFilesFileNameExtGetQueryClassParameter)
+codec_2: Final[PydanticCodec[models.FilesFileNameExtGetQueryClassParameter]] = PydanticCodec(models.FilesFileNameExtGetQueryClassParameter)
 """Codec of /paths/~1files~1{fileName}.{ext}/get parameter (request query class)."""
 
-codec_3: Final[PydanticCodec[models.FieldFilesFileNameExtGetHeaderField2faParameter]] = PydanticCodec(models.FieldFilesFileNameExtGetHeaderField2faParameter)
+codec_3: Final[PydanticCodec[models.FilesFileNameExtGetHeaderField2faParameter]] = PydanticCodec(models.FilesFileNameExtGetHeaderField2faParameter)
 """Codec of /paths/~1files~1{fileName}.{ext}/get parameter (request header 2fa)."""

@@ -23,7 +23,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "length"}
   },
@@ -71,7 +70,6 @@
       ],
       "offset": {"in": "header", "name": "Upload-Offset"}
     },
-    "max_chunk_bytes": 8,
     "partial_commit": "allowed",
     "completion": {"kind": "operation", "operation": "/paths/~1files~1{fileId}~1complete/post"},
     "abort": {"bindings": []}

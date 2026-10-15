@@ -1,7 +1,7 @@
 # results
 serve pydantic_v2.BaseModel
-service UntaggedService: get_blob, get_latin, get_nothing, get_plain, get_result, head_result, post_empty
-service UntaggedService without its methods: TypeError
+service DefaultService: get_blob, get_latin, get_nothing, get_plain, get_result, get_text, head_result, post_empty
+service DefaultService without its methods: TypeError
 > GET /results?case=bare
   get_result(bare)
 < 200 application/json {"id":1}
@@ -32,12 +32,15 @@ service UntaggedService without its methods: TypeError
 > GET /results?case=client-error-number
   get_result(client-error-number)
 < ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /results?case=client-error-bytes
+  get_result(client-error-bytes)
+< 404 text/plain caf�
 > GET /results?case=problem
   get_result(problem)
 < 500 application/problem+json {"title":"Broken"}
 > GET /results?case=missing-body
   get_result(missing-body)
-< 200 - b''
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Thing']
 > GET /results?case=response
   get_result(response)
 < 200 application/json {"id":3}
@@ -70,7 +73,7 @@ service UntaggedService without its methods: TypeError
 < 500 - b''
 > GET /nothing?case=value
   get_nothing(value)
-< raised AttributeError: 'dict' object has no attribute 'encode'
+< 200 application/json {}
 > GET /nothing?case=anything
   get_nothing(anything)
 < 200 application/json {}
@@ -89,3 +92,13 @@ service UntaggedService without its methods: TypeError
 > GET /blob?case=blob
   get_blob(blob)
 < 200 application/octet-stream b'\x00\xff'
+> GET /texts?case=none
+  get_text(none)
+< 200 application/json null
+> GET /texts?case=null
+  get_text(null)
+< 200 application/json null
+< x-rate: 5
+> GET /texts?case=word
+  get_text(word)
+< 200 application/json "abc"

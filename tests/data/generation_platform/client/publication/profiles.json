@@ -222,5 +222,85 @@
   "minimal-msgspec": {
     "input": "publication/minimal.json",
     "backend": "msgspec.Struct"
+  },
+  "all-pydantic-dataclass": {
+    "input": "publication/all.json",
+    "references": [
+      "publication/all-protocols.json"
+    ],
+    "config": {
+      "protocols": "publication/all-protocols.json",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backend": "pydantic_v2.dataclass"
+  },
+  "all-dataclass": {
+    "input": "publication/all.json",
+    "references": [
+      "publication/all-protocols.json"
+    ],
+    "config": {
+      "protocols": "publication/all-protocols.json",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backend": "dataclasses.dataclass"
+  },
+  "all-typeddict": {
+    "input": "publication/all.json",
+    "references": [
+      "publication/all-protocols.json"
+    ],
+    "config": {
+      "protocols": "publication/all-protocols.json",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backend": "typing.TypedDict"
+  },
+  "all-msgspec": {
+    "input": "publication/all.json",
+    "references": [
+      "publication/all-protocols.json"
+    ],
+    "config": {
+      "protocols": "publication/all-protocols.json",
+      "operations": [
+        {
+          "ref": "/paths/~1pets/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backend": "msgspec.Struct"
   }
 }

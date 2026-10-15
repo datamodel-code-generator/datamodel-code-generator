@@ -1,0 +1,5 @@
+dependencies httpx2>=2.13.0 typing-extensions>=4.16 msgspec>=0.21.1
+installed model libraries msgspec
+mypy publication_client and publication_client_models.py: clean
+pyright publication_client and publication_client_models.py: clean
+ty publication_client and publication_client_models.py: clean

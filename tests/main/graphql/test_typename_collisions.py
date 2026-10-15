@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import sys
+import warnings
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Literal, get_args, get_origin, get_type_hints
 
@@ -48,46 +49,48 @@ def test_graphql_typename_collisions(
     payload = json.loads((DATA_PATH / "payloads" / f"typename_collision_{profile}.json").read_text())
     input_path = GRAPHQL_DATA_PATH / settings.pop("schema")
     expected_name = f"typename_{profile}_{output_model_type.value.replace('.', '_')}_{no_typename}"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="graphql",
-            assert_func=assert_file_content,
-            expected_file=f"{expected_name}.py",
-            skip_code_validation=output_model_type.value in payload.get("import_errors", {}),
-            extra_args=[
-                "--output-model-type",
-                output_model_type.value,
-                "--target-python-version",
-                "3.10",
-                *(["--graphql-no-typename"] if no_typename else []),
-                *[
-                    argument
-                    for option, value in settings.items()
-                    for argument in (
-                        [f"--{option.replace('_', '-')}", str(GRAPHQL_DATA_PATH / value)]
-                        if isinstance(value, str)
-                        else [f"--{option.replace('_', '-')}"]
-                    )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="graphql",
+                assert_func=assert_file_content,
+                expected_file=f"{expected_name}.py",
+                skip_code_validation=output_model_type.value in payload.get("import_errors", {}),
+                extra_args=[
+                    "--output-model-type",
+                    output_model_type.value,
+                    "--target-python-version",
+                    "3.10",
+                    *(["--graphql-no-typename"] if no_typename else []),
+                    *[
+                        argument
+                        for option, value in settings.items()
+                        for argument in (
+                            [f"--{option.replace('_', '-')}", str(GRAPHQL_DATA_PATH / value)]
+                            if isinstance(value, str)
+                            else [f"--{option.replace('_', '-')}"]
+                        )
+                    ],
                 ],
-            ],
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.GraphQL,
-            assert_func=assert_file_content,
-            expected_file=f"{expected_name}.py",
-            output_model_type=output_model_type,
-            target_python_version=PythonVersion.PY_310,
-            graphql_no_typename=no_typename,
-            **{
-                option: json.loads((GRAPHQL_DATA_PATH / value).read_text()) if isinstance(value, str) else value
-                for option, value in settings.items()
-            },
-        )
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.GraphQL,
+                assert_func=assert_file_content,
+                expected_file=f"{expected_name}.py",
+                output_model_type=output_model_type,
+                target_python_version=PythonVersion.PY_310,
+                graphql_no_typename=no_typename,
+                **{
+                    option: json.loads((GRAPHQL_DATA_PATH / value).read_text()) if isinstance(value, str) else value
+                    for option, value in settings.items()
+                },
+            )
     schema = build_schema(input_path.read_text())
     result = graphql_sync(schema, payload["query"], root_value=payload["root"], variable_values=payload["variables"])
     actual = {
@@ -96,6 +99,8 @@ def test_graphql_typename_collisions(
         "graphql_data": result.data,
         "models": {},
     }
+    if messages := [*dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)]:
+        actual["warnings"] = messages
     inherited_type_roles = []
     with (
         (

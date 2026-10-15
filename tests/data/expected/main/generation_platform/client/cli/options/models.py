@@ -23,7 +23,7 @@ class Pets(BaseModel):
     next_cursor: str | None = None
 
 
-FieldPetsGetQueryLimitParameter = TypeAliasType("FieldPetsGetQueryLimitParameter", int)
+PetsGetQueryLimitParameter = TypeAliasType("PetsGetQueryLimitParameter", int)
 
 
-FieldPetsGetQueryCursorParameter = TypeAliasType("FieldPetsGetQueryCursorParameter", str)
+PetsGetQueryCursorParameter = TypeAliasType("PetsGetQueryCursorParameter", str)

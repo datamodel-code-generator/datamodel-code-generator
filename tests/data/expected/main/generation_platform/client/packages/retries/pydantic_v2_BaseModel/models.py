@@ -6,57 +6,57 @@ from __future__ import annotations
 from pydantic import RootModel
 
 
-class FieldSafeGetResponse(RootModel[str]):
+class SafeGetResponse(RootModel[str]):
     root: str
 
 
-class FieldUnsafePostRequest(RootModel[bytes]):
+class UnsafePostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldUnsafePostResponse(RootModel[str]):
+class UnsafePostResponse(RootModel[str]):
     root: str
 
 
-class FieldIdempotentPostRequest(RootModel[bytes]):
+class IdempotentPostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldIdempotentPostResponse(RootModel[str]):
+class IdempotentPostResponse(RootModel[str]):
     root: str
 
 
-class FieldKeyedPostRequest(RootModel[bytes]):
+class KeyedPostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldKeyedPostResponse(RootModel[str]):
+class KeyedPostResponse(RootModel[str]):
     root: str
 
 
-class FieldKeyOnlyPostRequest(RootModel[bytes]):
+class KeyOnlyPostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldKeyOnlyPostResponse(RootModel[str]):
+class KeyOnlyPostResponse(RootModel[str]):
     root: str
 
 
-class FieldNeverGetResponse(RootModel[str]):
+class NeverGetResponse(RootModel[str]):
     root: str
 
 
-class FieldNeverPostRequest(RootModel[bytes]):
+class NeverPostRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldNeverPostResponse(RootModel[str]):
+class NeverPostResponse(RootModel[str]):
     root: str
 
 
-class FieldVendorGetResponse(RootModel[str]):
+class VendorGetResponse(RootModel[str]):
     root: str
 
 
-class FieldKeyedSafeGetResponse(RootModel[str]):
+class KeyedSafeGetResponse(RootModel[str]):
     root: str

@@ -8,10 +8,10 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldItemsGetQueryTokenParameter]] = PydanticCodec(models.FieldItemsGetQueryTokenParameter)
+codec_0: Final[PydanticCodec[models.ItemsGetQueryTokenParameter]] = PydanticCodec(models.ItemsGetQueryTokenParameter)
 """Codec of /paths/~1items/get parameter (request query token)."""
 
 codec_1: Final[PydanticCodec[models.Item]] = PydanticCodec(models.Item)

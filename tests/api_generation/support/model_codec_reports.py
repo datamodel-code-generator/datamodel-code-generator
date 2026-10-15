@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import ast
 import json
+import sys
 from collections.abc import Mapping
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -25,8 +27,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import ParameterP
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET
 
 if TYPE_CHECKING:
-    import ast
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
     from pathlib import Path
 
 
@@ -210,17 +211,33 @@ def _imported_name(path: Path, node: ast.ImportFrom, name: str) -> str:
     return module
 
 
+def _imports(path: Path) -> Iterator[tuple[ast.Import | ast.ImportFrom, str]]:
+    """Yield each import statement of a module with every name it imports: lazy and type-checking imports too."""
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                yield node, alias.name
+
+
 def runtime_import_report(root: Path) -> str:
     """List every import of the embeddable runtime, which must never reach the generator package."""
-    import ast
-
     lines = []
     for path in sorted(root.rglob("*.py")):
         imports = sorted({
-            _imported_name(path, node, alias.name) if isinstance(node, ast.ImportFrom) else alias.name
-            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
-            if isinstance(node, (ast.Import, ast.ImportFrom))
-            for alias in node.names
+            _imported_name(path, node, name) if isinstance(node, ast.ImportFrom) else name
+            for node, name in _imports(path)
         })
         lines.append(f"{path.relative_to(root).as_posix()}: {', '.join(imports) or '-'}")
     return "\n".join(lines) + "\n"
+
+
+def third_party_imports(root: Path) -> list[str]:
+    """List the top-level modules the files under a root import from outside its modules and the standard library."""
+    absolute = {
+        ((node.module or "") if isinstance(node, ast.ImportFrom) else name).partition(".")[0]
+        for path in root.rglob("*.py")
+        for node, name in _imports(path)
+        if not (isinstance(node, ast.ImportFrom) and node.level)
+    }
+    written = {path.stem for path in root.iterdir() if path.suffix == ".py" or (path / "__init__.py").is_file()}
+    return sorted(absolute - sys.stdlib_module_names - written)

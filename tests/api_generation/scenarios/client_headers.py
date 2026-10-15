@@ -31,6 +31,19 @@ if TYPE_CHECKING:
 _RAW: Final = "https://raw.example.com/items"
 _BOUNDARY: Final = re.compile(r"\b[0-9a-f]{32}\b")
 _PART: Final = '--b\r\nContent-Disposition: form-data; name="{}"\r\n\r\n{}\r\n'
+_NON_ASCII: Final = {"X-A": "caf\u00e9"}
+_REFUSED_NAMES: Final = (("with a space", "X A"), ("not ASCII", "X-\u00c4"), ("on two lines", "X-A\r\nX-B"), ("int", 1))
+_REFUSED_TEXTS: Final = (
+    ("non-ASCII", "caf\u00e9"),
+    ("DEL", "\x7f"),
+    ("first code point past ASCII", "\x80"),
+    ("no-break space", "\xa0x"),
+    ("lone surrogate", "x\ud800"),
+    ("on two lines", "a\r\nX-Injected: 1"),
+    ("NUL", "a\x00b"),
+    ("ending in a space", "a "),
+    ("starting with HTAB", "\ta"),
+)
 
 
 def _modules(package: ModuleType) -> tuple[ModuleType, ModuleType, ModuleType]:
@@ -52,9 +65,11 @@ def headers(package: ModuleType, lines: list[str]) -> None:
         with package.Client(http_client=http, default_headers={"Content-Type": "application/json"}) as labeled:
             _parts(labeled, api, exchange, lines, options, bodies)
     http.close()
+    _texts(package, lines, options)
+    _hook_bytes(package, lines, options)
     _unsendable(package, lines, options)
     run(lambda: _async_headers(package, lines))
-    lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
+    lines[:] = [_BOUNDARY.sub("<boundary>", line).replace("\t", "<HTAB>") for line in lines]
 
 
 def _layers(api: Any, exchange: Exchange, lines: list[str], options: ModuleType, package: ModuleType) -> None:
@@ -189,14 +204,66 @@ def _parts(
         )
 
 
+def _texts(package: ModuleType, lines: list[str], options: ModuleType) -> None:
+    """Send HTAB, SP, and visible ASCII in a parameter's and a layer's header, and refuse any other text unsent.
+
+    A layer's header also needs a token as its name; None removes a name and the empty string is a value.
+    """
+    exchange = Exchange(lines)
+    pets = json_response(200, [])
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        exchange.respond(pets, pets)
+        record(lines, "parameter text", lambda: api.pets.list_pets(X_Trace="a\tb ~"))
+        sent = options.RequestOptions(extra_headers={"X-A": "a\tb ~", "X-Empty": ""})
+        record(lines, "call header text", lambda: api.pets.list_pets(X_Trace="t", options=sent))
+        for label, value in _REFUSED_TEXTS:
+            record(lines, f"parameter {label}", lambda value=value: api.pets.list_pets(X_Trace=value))
+            record(
+                lines, f"call header {label}", lambda value=value: options.RequestOptions(extra_headers={"X-A": value})
+            )
+        for label, name in _REFUSED_NAMES:
+            record(
+                lines, f"call header name {label}", lambda name=name: options.RequestOptions(extra_headers={name: "a"})
+            )
+        record(lines, "call header value int", lambda: options.RequestOptions(extra_headers={"X-A": 1}))
+        record(lines, "client header non-ASCII", lambda: package.Client(http_client=http, default_headers=_NON_ASCII))
+        record(lines, "view header non-ASCII", lambda: api.with_options(default_headers=_NON_ASCII))
+
+
+def _signed(request: httpx2.Request) -> None:
+    request.headers = httpx2.Headers([*request.headers.raw, (b"X-Sig", "caf\u00e9".encode("latin-1"))])
+
+
+def _hook_bytes(package: ModuleType, lines: list[str], options: ModuleType) -> None:
+    """Send the bytes an event hook adds on each attempt of a retried call, as HTTPX2 holds them."""
+    pet = argument(package, "getPet", "path", "petId", 3)
+    exchange = Exchange(lines)
+    exchange.respond(raw_response(503, b"busy", "text/plain"), json_response(200, {"id": 3, "name": "fox"}))
+    retry = options.RetryOptions(initial_delay=0, max_delay=0, jitter="none")
+    with (
+        exchange.client(event_hooks={"request": [_signed]}) as http,
+        package.Client(http_client=http, retry=retry) as api,
+    ):
+        record(lines, "event hook's Latin-1 bytes on a retried call", lambda: api.pets.get_pet(petId=pet))
+
+
+def _split(request: httpx2.Request) -> None:
+    request.headers["X-A"] = "a\r\nb"
+
+
 def _unsendable(package: ModuleType, lines: list[str], options: ModuleType) -> None:
-    """Fail natively when HTTPX2 cannot send a header value, without waiting to retry the call."""
+    """Fail natively when HTTPX2 cannot send a header value, without waiting to retry the call.
+
+    The client refuses such a value of its own settings, so only the HTTP client's event hook or Auth can add one.
+    """
     pet = argument(package, "getPet", "path", "petId", 3)
     exchange, waits = Exchange(lines), []
-    split = options.RequestOptions(extra_headers={"X-A": "a\r\nb"})
-    with exchange.client() as http, package.Client(http_client=http, clock=options.Clock(sleep=waits.append)) as api:
-        record(lines, "header value on two lines", lambda: api.pets.get_pet(petId=pet, options=split))
-    lines.append(f"  header value on two lines retry waits {waits}")
+    with (
+        exchange.client(event_hooks={"request": [_split]}) as http,
+        package.Client(http_client=http, clock=options.Clock(sleep=waits.append)) as api,
+    ):
+        record(lines, "event hook's header value on two lines", lambda: api.pets.get_pet(petId=pet))
+    lines.append(f"  event hook's header value on two lines retry waits {waits}")
 
 
 async def _async_headers(package: ModuleType, lines: list[str]) -> None:
@@ -242,8 +309,8 @@ def _text_outcome(call: Callable[[], object]) -> str:
 def native_boundaries(package: ModuleType, lines: list[str]) -> None:
     """Decode content headers natively and assemble a nullable model body from its fields."""
     types = importlib.import_module(f"{package.__name__}.types.native_headers")
-    codecs = importlib.import_module(f"{package.__name__}.model_codecs")
-    lines.append(f"  public codec exports {codecs.__all__}")
+    exported = importlib.import_module(f"{package.__name__}.types")
+    lines.append(f"  public type exports {exported.__all__}")
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         for label, header in (

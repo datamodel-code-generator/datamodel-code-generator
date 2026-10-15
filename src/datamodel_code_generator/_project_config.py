@@ -131,12 +131,9 @@ _PYPROJECT_RELATIVE_PATH_FIELDS = frozenset({
     "client_output",
 })
 
-_PYPROJECT_JSON_CONFIG_FIELDS = frozenset({
+_PYPROJECT_MODEL_JSON_CONFIG_FIELDS = frozenset({
     "aliases",
     "base_class_map",
-    "client_operations",
-    "client_protocols",
-    "client_resource_names",
     "custom_formatters_kwargs",
     "default_values",
     "duplicate_name_suffix",
@@ -145,28 +142,43 @@ _PYPROJECT_JSON_CONFIG_FIELDS = frozenset({
     "import_overrides",
     "model_name_map",
     "serialization_aliases",
+    "type_overrides",
+    "validators",
+})
+
+_PYPROJECT_TARGET_JSON_CONFIG_FIELDS = frozenset({
+    "client_operations",
+    "client_protocols",
+    "client_resource_names",
     "server_body_modes",
     "server_handler_modes",
     "server_operation_names",
     "server_parameter_names",
     "server_primary_responses",
     "server_router_names",
-    "type_overrides",
-    "validators",
 })
 
-_PYPROJECT_PATH_FIELDS = _PYPROJECT_RELATIVE_PATH_FIELDS | _PYPROJECT_JSON_CONFIG_FIELDS
+_PYPROJECT_JSON_CONFIG_FIELDS = _PYPROJECT_MODEL_JSON_CONFIG_FIELDS | _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
+
+_PYPROJECT_PATH_FIELDS = _PYPROJECT_RELATIVE_PATH_FIELDS | _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
+
+_PYPROJECT_API_PATH_FIELDS = _PYPROJECT_PATH_FIELDS | _PYPROJECT_MODEL_JSON_CONFIG_FIELDS
 
 
-def _resolve_pyproject_relative_paths(config: dict[str, Any], pyproject_path: Path | None) -> dict[str, Any]:
-    """Resolve only pyproject-relative paths from the pyproject directory."""
+def _resolve_pyproject_relative_paths(
+    config: dict[str, Any], pyproject_path: Path | None, fields: frozenset[str] = _PYPROJECT_PATH_FIELDS
+) -> dict[str, Any]:
+    """Resolve the relative paths of the given fields from the pyproject directory.
+
+    By default, as on the command line, the JSON files of model options stay relative to the working directory.
+    """
     if pyproject_path is None:
         return config
 
     config_directory = pyproject_path.parent
     updates = {
         field_name: config_directory / resolved_path
-        for field_name in _PYPROJECT_PATH_FIELDS
+        for field_name in fields
         if isinstance(path := config.get(field_name), str | Path)
         and not (field_name in _PYPROJECT_JSON_CONFIG_FIELDS and str(path).lstrip().startswith(("{", "[")))
         and not (resolved_path := Path(path).expanduser()).is_absolute()
@@ -237,7 +249,7 @@ def load_pyproject_config(
         _template_data,
     )
 
-    options = _resolve_pyproject_relative_paths(options, pyproject_path)
+    options = _resolve_pyproject_relative_paths(options, pyproject_path, _PYPROJECT_API_PATH_FIELDS)
     config = _get_config_class().model_validate(options)
     if "output_model_type" in explicit:
         from datamodel_code_generator.enums import DataModelType  # noqa: PLC0415
@@ -260,7 +272,7 @@ def load_pyproject_config(
     if bases := {
         field: _document_base(value, cast("Path", pyproject_path).parent)
         for field, value in options.items()
-        if field in _PYPROJECT_JSON_CONFIG_FIELDS and field.startswith(("server_", "client_"))
+        if field in _PYPROJECT_TARGET_JSON_CONFIG_FIELDS
     }:
         loaded._target_document_bases = bases  # noqa: SLF001
     return loaded

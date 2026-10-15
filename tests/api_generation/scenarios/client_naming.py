@@ -41,6 +41,10 @@ def _calls(
             ("create an item from fields", lambda: getattr(api.item_store, create)(name="q", **fields)),
             ("delete an item's tags", lambda: api.item_store_1.delete_items_by_item_id_tags(**{path: 4})),
             ("check the health", api.close_1.get_health),
+            ("call an operation without tags", api.default.x1),
+            ("call an operation tagged default", api.default_1.list_defaults),
+            ("call an operation tagged DEFAULT", api.default_2.list_upper_defaults),
+            ("call an operation tagged untagged", api.untagged.list_untagged),
         ):
             exchange.respond(raw_response(204))
             record(lines, label, call)

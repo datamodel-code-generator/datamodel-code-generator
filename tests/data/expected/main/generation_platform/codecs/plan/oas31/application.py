@@ -18,19 +18,19 @@ from ._runtime.server.security import (
     PrincipalT,
     RequirementSets,
 )
-from .routers import untagged
-from .services import UntaggedService
+from .routers import default
+from .services import DefaultService
 
 ROUTES: Final = (
-    *untagged.LITERAL_ROUTES,
-    *untagged.TEMPLATED_ROUTES,
+    *default.LITERAL_ROUTES,
+    *default.TEMPLATED_ROUTES,
 )
 INFO: Final[dict[str, Any]] = {'title': 'Wire plan', 'version': '1'}
 
 
 def build_router(
     *,
-    untagged: UntaggedService[PrincipalT],
+    default: DefaultService[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     dependencies: Sequence[params.Depends] = (),
     operation_dependencies: OperationDependencies | None = None,
@@ -39,7 +39,7 @@ def build_router(
     """Register every operation on a new router, literal paths first."""
     return build(
         ROUTES,
-        services={'untagged': untagged},
+        services={'default': default},
         authorize=authorize,
         dependencies=dependencies,
         operation_dependencies=operation_dependencies,
@@ -49,7 +49,7 @@ def build_router(
 
 def create_app(
     *,
-    untagged: UntaggedService[PrincipalT],
+    default: DefaultService[PrincipalT],
     authorize: Authorize[PrincipalT] | AsyncAuthorize[PrincipalT],
     operation_dependencies: OperationDependencies | None = None,
     prefix: str = "",
@@ -65,7 +65,7 @@ def create_app(
     app = FastAPI(**{**INFO, **fastapi_kwargs})
     app.include_router(
         build_router(
-            untagged=untagged,
+            default=default,
             authorize=authorize,
             operation_dependencies=operation_dependencies,
             prefix=prefix,

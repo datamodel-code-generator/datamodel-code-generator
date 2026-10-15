@@ -22,6 +22,7 @@ from ..client.native import request_fields, wire_fields
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
 from ..client.retry import http_timestamp
+from ..model_codecs.parameters import header_text
 from .cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
 from .caches import CacheEntry, CacheResult, CacheSource
 from .client import stored_value
@@ -41,7 +42,7 @@ __all__ = ("CachePlan", "afetch", "fetch")
 
 T = TypeVar("T")
 
-_Limits = tuple[int, float, RequestOptions | None]
+_Limits = tuple[float, RequestOptions | None]
 
 _HOP_BY_HOP: Final = frozenset({
     "connection",
@@ -85,7 +86,6 @@ _ITEM: Final = re.compile(
 _DELTA: Final = re.compile(r"[0-9]+")
 _MAX_DELTA: Final = 2**31
 _DELTA_DIGITS: Final = 10
-_MAX_ENTRY_BYTES: Final = 2 * 1024 * 1024
 _MAX_TTL: Final = 300.0
 _NOT_MODIFIED: Final = 304
 
@@ -211,7 +211,6 @@ class _Fetch(Generic[T]):
         "entry",
         "identity",
         "implicit",
-        "max_entry_bytes",
         "max_ttl",
         "options",
         "plan",
@@ -241,7 +240,7 @@ class _Fetch(Generic[T]):
         self.usable: CacheEntry | None = None
         self.identity: CacheIdentity | None = None
         self.base_key = b""
-        self.max_entry_bytes, self.max_ttl, self.options = limits
+        self.max_ttl, self.options = limits
         prepared = self.prepared = core.cache_request(plan.call, arguments, self.options)
         self.settings, self.request = prepared.settings, prepared.request
         self.sending = self.request
@@ -390,11 +389,11 @@ class _Fetch(Generic[T]):
 
         It is refused for a request sent as another identity than the one looked up, such as a rotated credential, a
         renewed token, or a header an Auth's later round or a request hook added, an unlisted status, a redirect, a
-        body over the limit, a Set-Cookie, an unsupported or malformed Cache-Control, no-store, a Vary outside the
-        allowlist and the credential headers the key covers or `*`, a revalidation whose Vary changed, and a response
-        that is neither fresh nor revalidatable. The entry varies on the response's Vary and on the headers its base key
-        names, except the credential headers, and its date and age are those of the response received, so a 304 without
-        Age makes the entry's age 0.
+        Set-Cookie, an unsupported or malformed Cache-Control, no-store, a Vary outside the allowlist and the
+        credential headers the key covers or `*`, a revalidation whose Vary changed, and a response that is neither
+        fresh nor revalidatable. The entry varies on the response's Vary and on the headers its base key names, except
+        the credential headers, and its date and age are those of the response received, so a 304 without Age makes the
+        entry's age 0.
         """
         plan, headers, now = self.plan, received.headers, self.clock.time()
         directives = _directives(headers.get_all("cache-control"))
@@ -436,7 +435,7 @@ class _Fetch(Generic[T]):
         }
 
     def fits(self, received: _Received[T], vary: tuple[str, ...]) -> bool:
-        """Return whether the identity, status, origin, size, cookies, and a revalidation's Vary let it be stored."""
+        """Return whether the identity, status, origin, cookies, and a revalidation's Vary let it be stored."""
         usable, identity = self.usable, self.identity
         return (
             identity is not None
@@ -444,7 +443,6 @@ class _Fetch(Generic[T]):
             and sent.headers == identity.headers
             and received.response.info.status_code in self.plan.statuses
             and not received.redirected
-            and len(received.body) <= self.max_entry_bytes
             and "set-cookie" not in received.headers
             and (received.source == "network" or usable is None or vary == _vary(usable.headers))
         )
@@ -471,9 +469,13 @@ def _validates(stored: HeadersView, update: HeadersView) -> bool:
 
 
 def _validator(plan: CachePlan[T], headers: HeadersView) -> tuple[str, str] | None:
-    """Return the validator header that revalidates a representation as the helper declares, or None."""
+    """Return the validator header that revalidates a representation as the helper declares, or None.
+
+    A validator that is not header text, such as an entity tag beyond ASCII, counts as none: no client can send it
+    back as every server reads it, so its representation is fetched again instead.
+    """
     for (header, stored), kind in zip(_VALIDATORS, ("etag", "last_modified"), strict=True):
-        if plan.validator in {kind, "both"} and (value := headers.get(stored)) is not None:
+        if plan.validator in {kind, "both"} and (value := headers.get(stored)) is not None and header_text(value):
             return header, value
     return None
 
@@ -512,7 +514,7 @@ def _limits(core: ClientCore | AsyncClientCore, plan: CachePlan[T], cache_option
             raise _invalid(plan, (name,))
     layers = (cache_options, core.helper_defaults(plan.helper_id))
     request = options if isinstance(options, RequestOptions) else None
-    return layered(layers, "max_entry_bytes", _MAX_ENTRY_BYTES), layered(layers, "max_ttl", _MAX_TTL), request
+    return layered(layers, "max_ttl", _MAX_TTL), request
 
 
 def _checked(valid: bool) -> None:  # noqa: FBT001

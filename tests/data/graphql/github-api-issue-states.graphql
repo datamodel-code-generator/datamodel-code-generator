@@ -1,0 +1,39 @@
+"""
+An Issue is a place to discuss ideas, enhancements, tasks, and bugs for discussion.
+"""
+type Issue {
+  """
+  Identifies the state of the issue.
+  """
+  state: IssueState!
+}
+
+"""
+Ways in which to filter lists of issues.
+"""
+input IssueFilters {
+  """
+  List issues where the list of label names exist on the issue.
+  """
+  labels: [String!]
+
+  """
+  List issues filtered by the list of states given.
+  """
+  states: [IssueState!]
+}
+
+"""
+The possible states of an issue.
+"""
+enum IssueState {
+  """
+  An issue that has been closed
+  """
+  CLOSED
+
+  """
+  An issue that is still open
+  """
+  OPEN
+}

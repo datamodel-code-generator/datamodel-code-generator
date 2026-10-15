@@ -2,11 +2,17 @@
 serve pydantic_v2.BaseModel
 service CloseService: get_health
 service CloseService without its methods: TypeError
+service Default1Service: list_defaults
+service Default1Service without its methods: TypeError
+service Default2Service: list_upper_defaults
+service Default2Service without its methods: TypeError
+service DefaultService: x1, x_1
+service DefaultService without its methods: TypeError
 service ItemStore1Service: delete_items_by_item_id_tags
 service ItemStore1Service without its methods: TypeError
 service ItemStoreService: get_item, item_store_get_item
 service ItemStoreService without its methods: TypeError
-service UntaggedService: x1, x_1
+service UntaggedService: list_untagged
 service UntaggedService without its methods: TypeError
 > GET /items/1?itemId=2&page[size]=10&2fa=t&class=c&request=r&body=b&self=s&itemId_1=5
   get_item(itemId=1, get_item_itemId=2, get_item_itemId_1=3, X_Request_Id='rid', page_size_=10, field_2fa='t', class_='c', get_item_request='r', get_item_body='b', get_item_self='s', sessionId='sid', itemId_1=5)

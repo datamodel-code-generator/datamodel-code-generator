@@ -28,10 +28,10 @@ class PetsResponseXTotalHeader(RootModel[int]):
     root: int
 
 
-FieldPetsGetQueryPageParameter = TypeAliasType(
-    "FieldPetsGetQueryPageParameter", Annotated[int, Field(ge=1)]
+PetsGetQueryPageParameter = TypeAliasType(
+    "PetsGetQueryPageParameter", Annotated[int, Field(ge=1)]
 )
 
 
-class FieldOwnersGetResponse(RootModel[list[str]]):
+class OwnersGetResponse(RootModel[list[str]]):
     root: list[str]

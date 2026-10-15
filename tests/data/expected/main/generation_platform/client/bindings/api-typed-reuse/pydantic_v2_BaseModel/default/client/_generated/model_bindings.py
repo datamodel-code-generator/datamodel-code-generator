@@ -9,10 +9,10 @@ import models
 from typing import Final
 from uuid import UUID
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldGetResponse]] = PydanticCodec(models.FieldGetResponse)
+codec_0: Final[PydanticCodec[models.RootGetResponse]] = PydanticCodec(models.RootGetResponse)
 """Codec of /paths/~1/get response_body (response 200 application/json)."""
 
 codec_1: Final[PydanticCodec[UUID]] = PydanticCodec(UUID)

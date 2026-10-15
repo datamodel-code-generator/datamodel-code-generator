@@ -8,11 +8,11 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldChosenGetQueryLimitParameter]] = PydanticCodec(models.FieldChosenGetQueryLimitParameter)
+codec_0: Final[PydanticCodec[models.ChosenGetQueryLimitParameter]] = PydanticCodec(models.ChosenGetQueryLimitParameter)
 """Codec of /paths/~1chosen/get parameter (request query limit)."""
 
-codec_1: Final[PydanticCodec[models.FieldChosenGetQueryCommonParameter]] = PydanticCodec(models.FieldChosenGetQueryCommonParameter)
+codec_1: Final[PydanticCodec[models.ChosenGetQueryCommonParameter]] = PydanticCodec(models.ChosenGetQueryCommonParameter)
 """Codec of /paths/~1chosen/get parameter (request query common)."""

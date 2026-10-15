@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
     """Return a service that records its keywords and form bodies and sends no body."""
 
-    class Untagged(server.services.UntaggedService):
+    class Default(server.services.DefaultService):
         def get_values(self, **arguments: object) -> None:
             calls.append(f"get_values({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
@@ -21,4 +21,4 @@ def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[
         def upload(self, *, body: object) -> None:
             calls.append(f"upload({body!r})")
 
-    return {"default": {"untagged": Untagged()}}
+    return {"default": {"default": Default()}}

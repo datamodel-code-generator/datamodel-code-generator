@@ -7,6 +7,7 @@ from pathlib import Path
 
 from datamodel_code_generator import DataModelType, OpenAPIScope, generate
 from datamodel_code_generator.format import Formatter
+from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.strict_typing import checked, marked_lines, negative
 
 SOURCE = Path(__file__).parents[2] / "data" / "generation_platform" / "fastapi"
@@ -21,12 +22,12 @@ def _generate(root: Path, source: Path, package: str, backend: DataModelType, **
         input_file_type="openapi",
         target_python_version="3.11",
         openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-        output_model_type=backend,
         formatters=[Formatter.BUILTIN],
         generate_server="fastapi",
         server_output=root / package,
         server_package=package,
         server_model_package=f"{package}_models",
+        **backend_settings(backend),
         **settings,
     )
 
@@ -40,15 +41,41 @@ def fastapi_typing_report(root: Path, backend: DataModelType) -> str:
         backend,
         server_handler_modes={"/paths/~1maybe/get": "async", "/paths/~1custom/get": "async"},
     )
-    for sample in ("applications", "applications_negative"):
-        shutil.copyfile(SAMPLES / f"{sample}.py", root / f"{sample}.py")
-    marked = marked_lines(root / "applications_negative.py")
+    return _samples_report(root, "secured", "applications")
+
+
+def fastapi_missing_report(root: Path) -> str:
+    """Check a service of Pydantic dataclasses that reads unset request members and leaves response members unset."""
+    _generate(root, SOURCE.parent / "client" / "missing-sentinel.yaml", "pets", DataModelType.PydanticV2Dataclass)
+    return _samples_report(root, "pets", "missing_service")
+
+
+def _samples_report(root: Path, package: str, sample: str) -> str:
+    """Check a package, with its entrypoint and the service stubs generation wrote, and a positive sample.
+
+    Then check the negative sample line by line.
+    """
+    for name in (sample, f"{sample}_negative"):
+        shutil.copyfile(SAMPLES / f"{name}.py", root / f"{name}.py")
+    marked = marked_lines(root / f"{sample}_negative.py")
     lines = [
         f"{len(marked)} marked lines",
-        *checked(root, ["secured", "applications.py"], "secured and applications.py"),
-        *negative(root, "applications_negative.py", marked),
+        *checked(root, [package, "services", f"{sample}.py"], f"{package}, services, and {sample}.py"),
+        *negative(root, f"{sample}_negative.py", marked),
     ]
     return "\n".join(lines) + "\n"
+
+
+def fastapi_bodies_report(root: Path) -> str:
+    """Check the bodies package, whose copied runtime reads requests through adapters, form fields and JSON parts."""
+    _generate(root, SOURCE / "server-bodies.yaml", "bodies", DataModelType.PydanticV2BaseModel)
+    return "\n".join(checked(root, ["bodies"], "bodies")) + "\n"
+
+
+def fastapi_parameters_report(root: Path) -> str:
+    """Check the parameters package, whose routes with renamed path placeholders register `wire_named` route classes."""
+    _generate(root, SOURCE / "server-parameters.yaml", "parameters", DataModelType.PydanticV2BaseModel)
+    return "\n".join(checked(root, ["parameters"], "parameters")) + "\n"
 
 
 def fastapi_update_report(root: Path) -> str:

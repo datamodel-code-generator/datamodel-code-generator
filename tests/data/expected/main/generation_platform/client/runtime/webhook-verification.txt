@@ -80,10 +80,6 @@
   nine malformed signatures = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
   nine keys = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
   nine keys allowed = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0'
-  body limit = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  body over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
-  header limit = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
-  headers over limit = ProtocolDataError: ProtocolDataError(reason='too_large') [] too_large
   one signature allowed = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active'
   text body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value
   bytearray body = ConfigurationError: ConfigurationError(reason='invalid_value', field_path='raw_body') [field_path=('raw_body',)] invalid_value

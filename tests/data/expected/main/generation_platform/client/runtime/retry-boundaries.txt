@@ -3,7 +3,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: manual, content-type: application/octet-stream, content-length: 7] b'payload'
   > POST https://api.example.com/keyed
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, idempotency-key: manual, content-type: application/octet-stream, content-length: 7] b'payload'
-  declared key header becomes the key = FieldKeyedPostResponse(root='accepted')
+  declared key header becomes the key = KeyedPostResponse(root='accepted')
     queued=0
   request hook failure first send = (('APITimeoutError', 'phase_timeout', 1, ()), False, 1)
     events=[] queued=2

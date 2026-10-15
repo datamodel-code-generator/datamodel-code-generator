@@ -539,17 +539,17 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Pet: Model((Field('name', 'name'),), True),
+    models.Pet: Model((Field('name', 'name'),)),
     models.日本: Model((Field('{braces}', 'braces'),)),
 }
 
-codec_0: Final[StdlibCodec[models.Pet]] = StdlibCodec(models.Pet, MODELS)
+codec_0: Final[TypedDictCodec[models.Pet]] = TypedDictCodec(models.Pet, MODELS)
 """Codec of /paths/~1pets/get response_body (response 200 application/json)."""
 
 codec_1: Final[PydanticCodec[models.Error]] = PydanticCodec(models.Error)
@@ -564,7 +564,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
 codec_0: Final[PydanticCodec[models.Pet]] = PydanticCodec(models.Pet)
@@ -606,57 +606,123 @@ from ._runtime.client.operations import OperationPlan, ServerPlan
 === readme.jinja2 / populated
 # client
 
-This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
-its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
-explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+The `client` package is an HTTPX2 client of the API the OpenAPI document describes.
+datamodel-code-generator generated it from the document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+Generation overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+
+HTTPX2 client generation is experimental.
+The [runtime reference](_generated_docs/runtime.md) describes the settings, defaults, ownership, cancellation, replay, redirects, and transport costs of the clients.
+
+## Quick start
 
 ```python
 from client import Client
 
-with Client(max_retries=0) as client:
-    response = client.request_raw("GET", "https://api.example.com/health")
-    status = response.info.status_code
+with Client(base_url="https://api.example.com/v1", bearer="...") as client:
+    result = client.pets.get(petId="...")
 ```
 
-Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
-The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-give it deliberately to the client, a view, or a call. This package does not embed that override.
+`AsyncClient` has the same resources and methods, and each method is a coroutine:
 
-See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+```python
+from client import AsyncClient
 
-## Profile
 
-| Setting | Value |
-| --- | --- |
-| `signature_style` | `explicit` |
-| `body_arguments` | `body` |
-| Model backend | `pydantic_v2.BaseModel` |
-| Models | `models` |
+async def main() -> None:
+    async with AsyncClient(base_url="https://api.example.com/v1", bearer="...") as client:
+        result = await client.pets.get(petId="...")
+```
 
-Each operation method declares its parameters, its body, and its options as keyword arguments.
-A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+Replace each `...` with a value of the type its argument declares; [Operations](#operations) lists the arguments of each method.
+A method returns the decoded body of a success response, of the type its signature declares.
+Leaving the `with` or `async with` block closes the client, as `close()` or `aclose()` does; keep a streaming response only inside its own context.
+Import options, bodies, errors, and response types from the public modules of the package.
+`request_raw(method, url)` of a client sends a request outside the operations to an absolute URL and returns its raw response.
+
+`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: `bearer` (bearer token), `api_key` (API key). The example gives those of the first security alternative of `pets.get`.
+See [Authentication](_generated_docs/runtime.md#authentication) in the runtime reference.
+
+## Base URL and servers
+
+Without `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable: `https://api.example.com/v1` for `pets.get`.
+An operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.
+`server=ServerSelection(index=..., variables={...})`, with `ServerSelection` from `client.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.
+`Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.
+Giving both on one of them raises `ConfigurationError`.
+
+## Errors
+
+```python
+from client import Client
+from client.errors import APIConnectionError, APIStatusError, NotFoundError
+
+with Client(base_url="https://api.example.com/v1", bearer="...") as client:
+    try:
+        result = client.pets.get(petId="...")
+    except NotFoundError as error:
+        print("not found:", error.body)
+    except APIStatusError as error:
+        print(error.status_code, error.body)
+    except APIConnectionError as error:
+        print(error)
+```
+
+A final status the operation does not declare as a success raises `APIStatusError`, or its subclass for the status: `BadRequestError` (400), `AuthenticationError` (401), `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitError` (429), or `InternalServerError` (500 and above).
+Its `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.
+A failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.
+Every exception of `client.errors` derives from `SDKError`; the runtime reference describes the others.
 
 ## Operations
 
-- `get`: `GET /pets/{petId}`, no request body
-- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
-- `update`: `PUT /pets`, body arguments `both`
-  - `application/json`: `body=` or the fields `name` (required), `tag`
-  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+`Client` and `AsyncClient` hold the operations in resource attributes, as `client.<resource>.<method>`; an `AsyncClient` method takes the same arguments.
+Each method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+An optional argument defaults to its schema's default, or to `UNSET`, which leaves it out of the request; `options=RequestOptions(...)` sets the settings of one call.
+The signatures spell types as `resources/<resource>/_sync.py` imports them: from `client.options`, the result types from `client.types.<resource>`, `JSONValue`, the type of any JSON value, from `client.types`, the `models` models, and the other public modules.
+`--client-operations` takes the operation reference of each as its key.
+The `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response.
 
-## Selected operation contracts
+### `client.get`
 
-These declarations come from the finalized operation selection and generation configuration. A key contract does
-not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
-No vendor retry-header name is inferred. Security requirements preserve ordered OR
-alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
-credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
-`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+`GET /pets/{petId}`, operation reference `/paths/~1pets~1{petId}/get`
 
-```json
-{"path": "/pets"}
+```python
+def get(
+    *,
+    petId: str,
+    options: RequestOptions | None = None,
+) -> GetResponse: ...
+```
+
+### `client.create`
+
+`POST /pets`, operation reference `/paths/~1pets/post`, request body as `body=` only (`application/json`, `text/plain`)
+
+```python
+def create(
+    *,
+    body: models.Pet | str,
+    media_type: Literal['application/json', 'text/plain'] | None = None,
+    options: RequestOptions | None = None,
+) -> CreateResponse: ...
+```
+
+`resources/pets/_sync.py` also declares overloads of the method, which narrow its body or its result by the media types a call chooses.
+
+### `client.update`
+
+`PUT /pets`, operation reference `/paths/~1pets/put`, request body arguments `both`:
+
+- `application/json`: `body=` or the fields `name` (required), `tag`
+- `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+```python
+def update(
+    *,
+    body: models.Pet | UNSET = UNSET,
+    name: str | UNSET = UNSET,
+    options: RequestOptions | None = None,
+) -> None: ...
 ```
 
 ## Protocol helpers
@@ -706,9 +772,51 @@ The package needs these distributions at run time:
 - `httpx2>=2,<3`
 - `pydantic>=2`
 
-Each generation reports them; add them to your project, for example with `uv add`.
+Add them to your project with the command each generation prints:
 
-## Capabilities
+```console
+uv add "httpx2>=2,<3" "pydantic>=2"
+```
+
+## Regenerating
+
+Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
+Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.
+Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+run it again when a new version of datamodel-code-generator changes them.
+
+## Generation details
+
+### Retries
+
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
+
+### Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+### Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+### Capabilities
 
 | Capability | Declared |
 | --- | --- |
@@ -723,27 +831,75 @@ The package copies the runtime modules its capabilities and model backend need:
 === readme.jinja2 / minimal
 # client
 
-This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
-its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
-explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+The `client` package is an HTTPX2 client of the API the OpenAPI document describes.
+datamodel-code-generator generated it from the document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+Generation overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).
 
-```python
-from client import Client
+HTTPX2 client generation is experimental.
+The [runtime reference](_generated_docs/runtime.md) describes the settings, defaults, ownership, cancellation, replay, redirects, and transport costs of the clients.
 
-with Client(max_retries=0) as client:
-    response = client.request_raw("GET", "https://api.example.com/health")
-    status = response.info.status_code
+## Quick start
+
+The package has no operations, so `Client` and `AsyncClient` have no resource methods.
+Leaving the `with` or `async with` block closes the client, as `close()` or `aclose()` does; keep a streaming response only inside its own context.
+Import options, bodies, errors, and response types from the public modules of the package.
+`request_raw(method, url)` of a client sends a request outside the operations to an absolute URL and returns its raw response.
+
+## Base URL and servers
+
+Without `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable.
+An operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.
+`server=ServerSelection(index=..., variables={...})`, with `ServerSelection` from `client.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.
+`Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.
+Giving both on one of them raises `ConfigurationError`.
+
+## Errors
+
+A final status the operation does not declare as a success raises `APIStatusError`, or its subclass for the status: `BadRequestError` (400), `AuthenticationError` (401), `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitError` (429), or `InternalServerError` (500 and above).
+Its `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.
+A failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.
+Every exception of `client.errors` derives from `SDKError`; the runtime reference describes the others.
+
+## Operations
+
+`Client` and `AsyncClient` hold the operations in resource attributes, as `client.<resource>.<method>`; an `AsyncClient` method takes the same arguments.
+Each method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+An optional argument defaults to its schema's default, or to `UNSET`, which leaves it out of the request; `options=RequestOptions(...)` sets the settings of one call.
+The signatures spell types as `resources/<resource>/_sync.py` imports them: from `client.options`, the result types from `client.types.<resource>`, `JSONValue`, the type of any JSON value, from `client.types`, the `models` models, and the other public modules.
+`--client-operations` takes the operation reference of each as its key.
+The `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response.
+
+This package has no operations.
+
+## Dependencies
+
+The package needs these distributions at run time:
+
+
+Add them to your project with the command each generation prints:
+
+```console
+uv add
 ```
 
-Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+## Regenerating
+
+Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
+Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.
+Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+run it again when a new version of datamodel-code-generator changes them.
+
+## Generation details
+
+### Retries
+
 The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
 The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
 `retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
 give it deliberately to the client, a view, or a call. This package does not embed that override.
 
-See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
-
-## Profile
+### Profile
 
 | Setting | Value |
 | --- | --- |
@@ -752,14 +908,7 @@ See the [runtime reference](runtime.md) for defaults, ownership, cancellation, r
 | Model backend | `pydantic_v2.BaseModel` |
 | Models | `models` |
 
-Each operation method declares its parameters, its body, and its options as keyword arguments.
-A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
-
-## Operations
-
-This package has no operations.
-
-## Selected operation contracts
+### Selected operation contracts
 
 These declarations come from the finalized operation selection and generation configuration. A key contract does
 not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
@@ -772,14 +921,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 {"path": "/pets"}
 ```
 
-## Dependencies
-
-The package needs these distributions at run time:
-
-
-Each generation reports them; add them to your project, for example with `uv add`.
-
-## Capabilities
+### Capabilities
 
 | Capability | Declared |
 | --- | --- |
@@ -792,59 +934,119 @@ The package copies the runtime modules its capabilities and model backend need:
 === readme.jinja2 / unpack
 # client
 
-This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
-its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
-explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+The `client` package is an HTTPX2 client of the API the OpenAPI document describes.
+datamodel-code-generator generated it from the document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+Generation overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+
+HTTPX2 client generation is experimental.
+The [runtime reference](_generated_docs/runtime.md) describes the settings, defaults, ownership, cancellation, replay, redirects, and transport costs of the clients.
+
+## Quick start
 
 ```python
 from client import Client
 
-with Client(max_retries=0) as client:
-    response = client.request_raw("GET", "https://api.example.com/health")
-    status = response.info.status_code
+with Client(base_url="https://api.example.com/v1") as client:
+    result = client.pets.get(petId=1)
 ```
 
-Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
-The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-give it deliberately to the client, a view, or a call. This package does not embed that override.
+`AsyncClient` has the same resources and methods, and each method is a coroutine:
 
-See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+```python
+from client import AsyncClient
 
-## Profile
 
-| Setting | Value |
-| --- | --- |
-| `signature_style` | `unpack` |
-| `body_arguments` | `both` |
-| Model backend | `pydantic_v2.BaseModel` |
-| Models | `models` |
+async def main() -> None:
+    async with AsyncClient(base_url="https://api.example.com/v1") as client:
+        result = await client.pets.get(petId=1)
+```
 
-Each operation method takes `**kwargs` typed as `Unpack` of a `TypedDict`, which `_generated/client_arguments.py`
-declares, and checks the keywords it receives before sending.
-A request body whose media is JSON or a URL-encoded form of an object model is given as `body=` or as the keyword
-arguments of its fields, unless an operation's `body_arguments` is `body`.
+A method returns the decoded body of a success response, of the type its signature declares.
+Leaving the `with` or `async with` block closes the client, as `close()` or `aclose()` does; keep a streaming response only inside its own context.
+Import options, bodies, errors, and response types from the public modules of the package.
+`request_raw(method, url)` of a client sends a request outside the operations to an absolute URL and returns its raw response.
+
+## Base URL and servers
+
+Without `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable: `https://api.example.com/v1` for `pets.get`.
+An operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.
+`server=ServerSelection(index=..., variables={...})`, with `ServerSelection` from `client.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.
+`Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.
+Giving both on one of them raises `ConfigurationError`.
+
+## Errors
+
+```python
+from client import Client
+from client.errors import APIConnectionError, APIStatusError, NotFoundError
+
+with Client(base_url="https://api.example.com/v1") as client:
+    try:
+        result = client.pets.get(petId=1)
+    except NotFoundError as error:
+        print("not found:", error.body)
+    except APIStatusError as error:
+        print(error.status_code, error.body)
+    except APIConnectionError as error:
+        print(error)
+```
+
+A final status the operation does not declare as a success raises `APIStatusError`, or its subclass for the status: `BadRequestError` (400), `AuthenticationError` (401), `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitError` (429), or `InternalServerError` (500 and above).
+Its `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.
+A failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.
+Every exception of `client.errors` derives from `SDKError`; the runtime reference describes the others.
 
 ## Operations
 
-- `get`: `GET /pets/{petId}`, no request body
-- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
-- `update`: `PUT /pets`, body arguments `both`
-  - `application/json`: `body=` or the fields `name` (required), `tag`
-  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+`Client` and `AsyncClient` hold the operations in resource attributes, as `client.<resource>.<method>`; an `AsyncClient` method takes the same arguments.
+Each method takes `**kwargs` typed as `Unpack` of a `TypedDict`, which `_generated/client_arguments.py` declares, and checks the keywords it receives before sending; the signatures below list those keywords.
+A request body whose media is JSON or a URL-encoded form of an object model is given as `body=` or as the keyword arguments of its fields, unless an operation's `body_arguments` is `body`.
+An optional argument defaults to its schema's default, or to `UNSET`, which leaves it out of the request; `options=RequestOptions(...)` sets the settings of one call.
+The signatures spell types as `resources/<resource>/_sync.py` imports them: from `client.options`, the result types from `client.types.<resource>`, `JSONValue`, the type of any JSON value, from `client.types`, the `models` models, and the other public modules.
+`--client-operations` takes the operation reference of each as its key.
+The `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response.
 
-## Selected operation contracts
+### `client.get`
 
-These declarations come from the finalized operation selection and generation configuration. A key contract does
-not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
-No vendor retry-header name is inferred. Security requirements preserve ordered OR
-alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
-credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
-`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+`GET /pets/{petId}`, operation reference `/paths/~1pets~1{petId}/get`
 
-```json
-{"path": "/pets"}
+```python
+def get(
+    *,
+    petId: str,
+    options: RequestOptions | None = None,
+) -> GetResponse: ...
+```
+
+### `client.create`
+
+`POST /pets`, operation reference `/paths/~1pets/post`, request body as `body=` only (`application/json`, `text/plain`)
+
+```python
+def create(
+    *,
+    body: models.Pet | str,
+    media_type: Literal['application/json', 'text/plain'] | None = None,
+    options: RequestOptions | None = None,
+) -> CreateResponse: ...
+```
+
+`resources/pets/_sync.py` also declares overloads of the method, which narrow its body or its result by the media types a call chooses.
+
+### `client.update`
+
+`PUT /pets`, operation reference `/paths/~1pets/put`, request body arguments `both`:
+
+- `application/json`: `body=` or the fields `name` (required), `tag`
+- `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+```python
+def update(
+    *,
+    body: models.Pet | UNSET = UNSET,
+    name: str | UNSET = UNSET,
+    options: RequestOptions | None = None,
+) -> None: ...
 ```
 
 ## Protocol helpers
@@ -894,9 +1096,51 @@ The package needs these distributions at run time:
 - `httpx2>=2,<3`
 - `pydantic>=2`
 
-Each generation reports them; add them to your project, for example with `uv add`.
+Add them to your project with the command each generation prints:
 
-## Capabilities
+```console
+uv add "httpx2>=2,<3" "pydantic>=2"
+```
+
+## Regenerating
+
+Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
+Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.
+Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+run it again when a new version of datamodel-code-generator changes them.
+
+## Generation details
+
+### Retries
+
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
+
+### Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `unpack` |
+| `body_arguments` | `both` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+### Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+### Capabilities
 
 | Capability | Declared |
 | --- | --- |
@@ -911,57 +1155,125 @@ The package copies the runtime modules its capabilities and model backend need:
 === readme.jinja2 / stream_without_resume
 # client
 
-This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
-its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
-explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+The `client` package is an HTTPX2 client of the API the OpenAPI document describes.
+datamodel-code-generator generated it from the document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+Generation overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+
+HTTPX2 client generation is experimental.
+The [runtime reference](_generated_docs/runtime.md) describes the settings, defaults, ownership, cancellation, replay, redirects, and transport costs of the clients.
+
+## Quick start
 
 ```python
 from client import Client
 
-with Client(max_retries=0) as client:
-    response = client.request_raw("GET", "https://api.example.com/health")
-    status = response.info.status_code
+with Client(base_url="https://api.example.com/v1") as client:
+    with client.protocols.pets.events.open(petId=1) as stream:
+        for event in stream:
+            print(event.data)
 ```
 
-Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
-The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-give it deliberately to the client, a view, or a call. This package does not embed that override.
+`AsyncClient` has the same protocol helpers, used with `async with` and `async for`:
 
-See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+```python
+from client import AsyncClient
 
-## Profile
 
-| Setting | Value |
-| --- | --- |
-| `signature_style` | `explicit` |
-| `body_arguments` | `body` |
-| Model backend | `pydantic_v2.BaseModel` |
-| Models | `models` |
+async def main() -> None:
+    async with AsyncClient(base_url="https://api.example.com/v1") as client:
+        async with await client.protocols.pets.events.open(petId=1) as stream:
+            async for event in stream:
+                print(event.data)
+```
 
-Each operation method declares its parameters, its body, and its options as keyword arguments.
-A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+No operation of the API is a plain request and response, so the example calls `pets.get` through its protocol helper `pets.events`, as [Protocol helpers](#protocol-helpers) describes.
+Leaving the `with` or `async with` block closes the client, as `close()` or `aclose()` does; keep a streaming response only inside its own context.
+Import options, bodies, errors, and response types from the public modules of the package.
+`request_raw(method, url)` of a client sends a request outside the operations to an absolute URL and returns its raw response.
+
+## Base URL and servers
+
+Without `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable: `https://api.example.com/v1` for `pets.get`.
+An operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.
+`server=ServerSelection(index=..., variables={...})`, with `ServerSelection` from `client.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.
+`Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.
+Giving both on one of them raises `ConfigurationError`.
+
+## Errors
+
+```python
+from client import Client
+from client.errors import APIConnectionError, APIStatusError, NotFoundError
+
+with Client(base_url="https://api.example.com/v1") as client:
+    try:
+        with client.protocols.pets.events.open(petId=1) as stream:
+            for event in stream:
+                print(event.data)
+    except NotFoundError as error:
+        print("not found:", error.body)
+    except APIStatusError as error:
+        print(error.status_code, error.body)
+    except APIConnectionError as error:
+        print(error)
+```
+
+A final status the operation does not declare as a success raises `APIStatusError`, or its subclass for the status: `BadRequestError` (400), `AuthenticationError` (401), `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitError` (429), or `InternalServerError` (500 and above).
+Its `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.
+A failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.
+Every exception of `client.errors` derives from `SDKError`; the runtime reference describes the others.
 
 ## Operations
 
-- `get`: `GET /pets/{petId}`, no request body
-- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
-- `update`: `PUT /pets`, body arguments `both`
-  - `application/json`: `body=` or the fields `name` (required), `tag`
-  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+`Client` and `AsyncClient` hold the operations in resource attributes, as `client.<resource>.<method>`; an `AsyncClient` method takes the same arguments.
+Each method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+An optional argument defaults to its schema's default, or to `UNSET`, which leaves it out of the request; `options=RequestOptions(...)` sets the settings of one call.
+The signatures spell types as `resources/<resource>/_sync.py` imports them: from `client.options`, the result types from `client.types.<resource>`, `JSONValue`, the type of any JSON value, from `client.types`, the `models` models, and the other public modules.
+`--client-operations` takes the operation reference of each as its key.
+The `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response.
 
-## Selected operation contracts
+### `client.get`
 
-These declarations come from the finalized operation selection and generation configuration. A key contract does
-not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
-No vendor retry-header name is inferred. Security requirements preserve ordered OR
-alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
-credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
-`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+`GET /pets/{petId}`, operation reference `/paths/~1pets~1{petId}/get`
 
-```json
-{"path": "/pets"}
+```python
+def get(
+    *,
+    petId: str,
+    options: RequestOptions | None = None,
+) -> GetResponse: ...
+```
+
+### `client.create`
+
+`POST /pets`, operation reference `/paths/~1pets/post`, request body as `body=` only (`application/json`, `text/plain`)
+
+```python
+def create(
+    *,
+    body: models.Pet | str,
+    media_type: Literal['application/json', 'text/plain'] | None = None,
+    options: RequestOptions | None = None,
+) -> CreateResponse: ...
+```
+
+`resources/pets/_sync.py` also declares overloads of the method, which narrow its body or its result by the media types a call chooses.
+
+### `client.update`
+
+`PUT /pets`, operation reference `/paths/~1pets/put`, request body arguments `both`:
+
+- `application/json`: `body=` or the fields `name` (required), `tag`
+- `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+```python
+def update(
+    *,
+    body: models.Pet | UNSET = UNSET,
+    name: str | UNSET = UNSET,
+    options: RequestOptions | None = None,
+) -> None: ...
 ```
 
 ## Protocol helpers
@@ -982,9 +1294,51 @@ The package needs these distributions at run time:
 - `httpx2>=2,<3`
 - `pydantic>=2`
 
-Each generation reports them; add them to your project, for example with `uv add`.
+Add them to your project with the command each generation prints:
 
-## Capabilities
+```console
+uv add "httpx2>=2,<3" "pydantic>=2"
+```
+
+## Regenerating
+
+Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
+Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.
+Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+run it again when a new version of datamodel-code-generator changes them.
+
+## Generation details
+
+### Retries
+
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
+
+### Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+### Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+### Capabilities
 
 | Capability | Declared |
 | --- | --- |
@@ -999,57 +1353,122 @@ The package copies the runtime modules its capabilities and model backend need:
 === readme.jinja2 / custom_helper
 # client
 
-This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
-its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
-explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+The `client` package is an HTTPX2 client of the API the OpenAPI document describes.
+datamodel-code-generator generated it from the document, together with the `models` models of the `pydantic_v2.BaseModel` backend.
+Generation overwrites every file of the package, as it does the models: keep your code outside the package and regenerate the package instead of editing it; see [Regenerating](#regenerating).
+
+HTTPX2 client generation is experimental.
+The [runtime reference](_generated_docs/runtime.md) describes the settings, defaults, ownership, cancellation, replay, redirects, and transport costs of the clients.
+
+## Quick start
 
 ```python
 from client import Client
 
-with Client(max_retries=0) as client:
-    response = client.request_raw("GET", "https://api.example.com/health")
-    status = response.info.status_code
+with Client(base_url="https://api.example.com/v1") as client:
+    result = client.pets.get(petId=1)
 ```
 
-Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
-The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
-The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
-`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
-give it deliberately to the client, a view, or a call. This package does not embed that override.
+`AsyncClient` has the same resources and methods, and each method is a coroutine:
 
-See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+```python
+from client import AsyncClient
 
-## Profile
 
-| Setting | Value |
-| --- | --- |
-| `signature_style` | `explicit` |
-| `body_arguments` | `body` |
-| Model backend | `pydantic_v2.BaseModel` |
-| Models | `models` |
+async def main() -> None:
+    async with AsyncClient(base_url="https://api.example.com/v1") as client:
+        result = await client.pets.get(petId=1)
+```
 
-Each operation method declares its parameters, its body, and its options as keyword arguments.
-A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+A method returns the decoded body of a success response, of the type its signature declares.
+Leaving the `with` or `async with` block closes the client, as `close()` or `aclose()` does; keep a streaming response only inside its own context.
+Import options, bodies, errors, and response types from the public modules of the package.
+`request_raw(method, url)` of a client sends a request outside the operations to an absolute URL and returns its raw response.
+
+`Client` and `AsyncClient` take one keyword argument per security scheme an operation requires: `bearer` (bearer token).
+See [Authentication](_generated_docs/runtime.md#authentication) in the runtime reference.
+
+## Base URL and servers
+
+Without `base_url`, a call sends to the first server generation resolved for its operation, with the default of each server variable: `https://api.example.com/v1` for `pets.get`.
+An operation's servers are the OpenAPI `servers` of the operation, its path item, or the document; one without them takes the `--client-default-base-url` of the generation.
+`server=ServerSelection(index=..., variables={...})`, with `ServerSelection` from `client.options`, picks another declared server by position and supplies its variables; `base_url=` replaces the servers with one URL.
+`Client`, `AsyncClient`, `with_options`, and `RequestOptions` take both, and the nearest one given wins: a call's over its view's, and a view's over the client's.
+Giving both on one of them raises `ConfigurationError`.
+
+## Errors
+
+```python
+from client import Client
+from client.errors import APIConnectionError, APIStatusError, NotFoundError
+
+with Client(base_url="https://api.example.com/v1") as client:
+    try:
+        result = client.pets.get(petId=1)
+    except NotFoundError as error:
+        print("not found:", error.body)
+    except APIStatusError as error:
+        print(error.status_code, error.body)
+    except APIConnectionError as error:
+        print(error)
+```
+
+A final status the operation does not declare as a success raises `APIStatusError`, or its subclass for the status: `BadRequestError` (400), `AuthenticationError` (401), `PermissionDeniedError` (403), `NotFoundError` (404), `ConflictError` (409), `UnprocessableEntityError` (422), `RateLimitError` (429), or `InternalServerError` (500 and above).
+Its `body` is the payload decoded with the error schema the operation declares for the status, such as that of a `default` response, or else the bounded raw bytes; `status_code` and `headers` give the rest of the response.
+A failure to reach the server raises `APIConnectionError`, after the retries it allows, and a timeout its subclass `APITimeoutError`.
+Every exception of `client.errors` derives from `SDKError`; the runtime reference describes the others.
 
 ## Operations
 
-- `get`: `GET /pets/{petId}`, no request body
-- `create`: `POST /pets`, `body=` only (`application/json`, `text/plain`)
-- `update`: `PUT /pets`, body arguments `both`
-  - `application/json`: `body=` or the fields `name` (required), `tag`
-  - `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+`Client` and `AsyncClient` hold the operations in resource attributes, as `client.<resource>.<method>`; an `AsyncClient` method takes the same arguments.
+Each method declares its parameters, its body, and its options as keyword arguments.
+A request body is given as `body=`, unless an operation's `body_arguments` is `both`.
+An optional argument defaults to its schema's default, or to `UNSET`, which leaves it out of the request; `options=RequestOptions(...)` sets the settings of one call.
+The signatures spell types as `resources/<resource>/_sync.py` imports them: from `client.options`, the result types from `client.types.<resource>`, `JSONValue`, the type of any JSON value, from `client.types`, the `models` models, and the other public modules.
+`--client-operations` takes the operation reference of each as its key.
+The `with_response`, `with_raw_response`, and `with_streaming_response` attributes of a resource hold the same methods, returning the result with its response metadata, the raw response, or a block that streams the response.
 
-## Selected operation contracts
+### `client.get`
 
-These declarations come from the finalized operation selection and generation configuration. A key contract does
-not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
-No vendor retry-header name is inferred. Security requirements preserve ordered OR
-alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
-credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
-`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+`GET /pets/{petId}`, operation reference `/paths/~1pets~1{petId}/get`
 
-```json
-{"path": "/pets"}
+```python
+def get(
+    *,
+    petId: str,
+    options: RequestOptions | None = None,
+) -> GetResponse: ...
+```
+
+### `client.create`
+
+`POST /pets`, operation reference `/paths/~1pets/post`, request body as `body=` only (`application/json`, `text/plain`)
+
+```python
+def create(
+    *,
+    body: models.Pet | str,
+    media_type: Literal['application/json', 'text/plain'] | None = None,
+    options: RequestOptions | None = None,
+) -> CreateResponse: ...
+```
+
+`resources/pets/_sync.py` also declares overloads of the method, which narrow its body or its result by the media types a call chooses.
+
+### `client.update`
+
+`PUT /pets`, operation reference `/paths/~1pets/put`, request body arguments `both`:
+
+- `application/json`: `body=` or the fields `name` (required), `tag`
+- `application/x-www-form-urlencoded`: `body=` only, since its model has no writable field
+
+```python
+def update(
+    *,
+    body: models.Pet | UNSET = UNSET,
+    name: str | UNSET = UNSET,
+    options: RequestOptions | None = None,
+) -> None: ...
 ```
 
 ## Protocol helpers
@@ -1077,9 +1496,51 @@ The package needs these distributions at run time:
 - `httpx2>=2,<3`
 - `pydantic>=2`
 
-Each generation reports them; add them to your project, for example with `uv add`.
+Add them to your project with the command each generation prints:
 
-## Capabilities
+```console
+uv add "httpx2>=2,<3" "pydantic>=2"
+```
+
+## Regenerating
+
+Run the same generation again whenever the OpenAPI document changes; the `--check` option reports the files it would change without writing them.
+Generation overwrites every generated file, restoring any you edited or deleted, and never deletes one: delete the modules of removed resources yourself, which `--check` lists as extra files and each generation warns about.
+Each generation prints the `uv add` command that adds the runtime dependencies of the package to your project;
+run it again when a new version of datamodel-code-generator changes them.
+
+## Generation details
+
+### Retries
+
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`retry=RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+give it deliberately to the client, a view, or a call. This package does not embed that override.
+
+### Profile
+
+| Setting | Value |
+| --- | --- |
+| `signature_style` | `explicit` |
+| `body_arguments` | `body` |
+| Model backend | `pydantic_v2.BaseModel` |
+| Models | `models` |
+
+### Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. An unsafe method needs a declared header and an active key to be replay-safe.
+No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+{"path": "/pets"}
+```
+
+### Capabilities
 
 | Capability | Declared |
 | --- | --- |
@@ -1294,6 +1755,7 @@ class Pets:
 
 Import `Client` and `AsyncClient` from `pets_日本` and the records below from
 `pets_日本.options`. Async calls require asyncio.
+The [README](../README.md) of the package shows how to call its operations.
 
 ## Layered options and budgets
 
@@ -1307,7 +1769,9 @@ one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client
 The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
 give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
 the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
-names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+names compare case-insensitively and query names exactly. A header's name is an HTTP token and its value HTAB, SP, and
+visible ASCII without whitespace at either end, as an idempotency key is: any other raises `ConfigurationError` where
+the setting is given.
 A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
 multipart one without a boundary keeps the body's.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
@@ -1514,7 +1978,6 @@ stores.
 
 | Limit | Effective default |
 |---|---|
-| stored body per entry | 2 MiB |
 | freshness of any entry | 300 seconds |
 
 `fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
@@ -1531,7 +1994,8 @@ authenticated and an anonymous one a helper declared anonymous; anything else ra
 reason `binding_mismatch`. Credentials a request does not carry, such as a client certificate or an authenticating
 transport, are not in the key: give such a client a store of its own.
 Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry is revalidated with its validator,
-and a 304 without a usable entry raises `ProtocolDataError`. A response is stored only when its status is cacheable, it
+and a 304 without a usable entry raises `ProtocolDataError`. A validator a header cannot carry as ASCII text is never
+sent, and its entry is fetched again without it. A response is stored only when its status is cacheable, it
 came without a redirect, Set-Cookie, `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only
 allowlisted headers; otherwise it removes the entry it supersedes. Store failures raise `SDKError` with the reason
 `store_failed` and never resend a request.
@@ -1551,7 +2015,7 @@ client's `helper_defaults` for the helper, then the default below. The session t
 
 | Limit | Effective default |
 |---|---|
-| chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
+| chunk size (`chunk_bytes`) | 8 MiB |
 | session total timeout (`total_timeout`) | None (no limit) |
 
 A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
@@ -1652,7 +2116,7 @@ raises the operation's `APIStatusError`. Each limit comes from the call's `ws_op
 |---|---|
 | open timeout | 5 seconds, also capped by the native connect, read, write, and pool timeouts and the deadline |
 | idle timeout | the native read timeout; None removes it |
-| message size | 1 MiB |
+| message size (`max_message_bytes`) | HTTPX2's default |
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | session total timeout (`total_timeout`) | None |
 
@@ -1691,6 +2155,7 @@ followed URLs stay uncompressed. Token requests are never compressed.
 
 Import `Client` and `AsyncClient` from `pets` and the records below from
 `pets.options`. Async calls require asyncio.
+The [README](../README.md) of the package shows how to call its operations.
 
 ## Layered options and budgets
 
@@ -1704,7 +2169,9 @@ one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client
 The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
 give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
 the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
-names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+names compare case-insensitively and query names exactly. A header's name is an HTTP token and its value HTAB, SP, and
+visible ASCII without whitespace at either end, as an idempotency key is: any other raises `ConfigurationError` where
+the setting is given.
 A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
 multipart one without a boundary keeps the body's.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
@@ -1760,6 +2227,7 @@ cleanup failures are notes of the primary failure, and native cancellation propa
 
 Import `Client` and `AsyncClient` from `pets` and the records below from
 `pets.options`. Async calls require asyncio.
+The [README](../README.md) of the package shows how to call its operations.
 
 ## Layered options and budgets
 
@@ -1773,7 +2241,9 @@ one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client
 The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
 give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
 the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
-names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+names compare case-insensitively and query names exactly. A header's name is an HTTP token and its value HTAB, SP, and
+visible ASCII without whitespace at either end, as an idempotency key is: any other raises `ConfigurationError` where
+the setting is given.
 A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
 multipart one without a boundary keeps the body's.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
@@ -2158,17 +2628,13 @@ _PLAN: Final[EventPlan[models.Event]] = EventPlan(
 
 def decode_unverified(
     raw_body: bytes,
-    *,
-    options: WebhookOptions | None = None,
 ) -> models.Event:
     """Decode a delivery's event without authenticating it.
 
     Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay,
     and no duplicate information is returned: treat the event as untrusted input.
-    Of options, only max_body_bytes applies.
     """
     return decode_unsigned(
         _PLAN,
         raw_body,
-        options=options,
     )

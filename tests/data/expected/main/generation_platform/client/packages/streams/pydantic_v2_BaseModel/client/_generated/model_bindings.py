@@ -9,15 +9,15 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldEventsGetQueryTopicParameter]] = PydanticCodec(models.FieldEventsGetQueryTopicParameter)
+codec_0: Final[PydanticCodec[models.EventsGetQueryTopicParameter]] = PydanticCodec(models.EventsGetQueryTopicParameter)
 """Codec of /paths/~1events/get parameter (request query topic)."""
 
-codec_1: Final[PydanticCodec[models.FieldEventsGetHeaderLastEventIDParameter]] = PydanticCodec(models.FieldEventsGetHeaderLastEventIDParameter)
+codec_1: Final[PydanticCodec[models.EventsGetHeaderLastEventIDParameter]] = PydanticCodec(models.EventsGetHeaderLastEventIDParameter)
 """Codec of /paths/~1events/get parameter (request header Last-Event-ID)."""
 
-codec_2: Final[PydanticCodec[models.FieldEventsGetResponse]] = PydanticCodec(models.FieldEventsGetResponse)
+codec_2: Final[PydanticCodec[models.EventsGetResponse]] = PydanticCodec(models.EventsGetResponse)
 """Codec of /paths/~1events/get response_body (response 200 text/event-stream)."""
 
 codec_3: Final[PydanticCodec[models.Problem]] = PydanticCodec(models.Problem)
@@ -26,7 +26,7 @@ codec_3: Final[PydanticCodec[models.Problem]] = PydanticCodec(models.Problem)
 codec_4: Final[PydanticCodec[models.FeedQuery]] = PydanticCodec(models.FeedQuery)
 """Codec of /paths/~1feed/post request_body (request application/json)."""
 
-codec_5: Final[PydanticCodec[models.FieldFeedPostResponse]] = PydanticCodec(models.FieldFeedPostResponse)
+codec_5: Final[PydanticCodec[models.FeedPostResponse]] = PydanticCodec(models.FeedPostResponse)
 """Codec of /paths/~1feed/post response_body (response 200 text/event-stream)."""
 
 codec_6: Final[PydanticCodec[models.Message]] = PydanticCodec(models.Message)

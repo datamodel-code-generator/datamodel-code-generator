@@ -1,7 +1,7 @@
 # variants
 serve pydantic_v2.BaseModel
-service UntaggedService: create_pet, get_pet, list_owners
-service UntaggedService without its methods: TypeError
+service DefaultService: create_pet, get_pet, list_owners
+service DefaultService without its methods: TypeError
 > POST /pets
   create_pet(body=Pet{'id': None, 'name': "Name{'root': 'Rex'}", 'secret': 's', 'owner': "Owner{'name': 'Ann', 'email': 'a@example.com'}"})
 < 201 application/json {"id":1,"name":"Rex"}
@@ -19,21 +19,21 @@ service UntaggedService without its methods: TypeError
   list_owners()
 < 200 application/json [{"name":"Ann"}]
 serve pydantic_v2.dataclass
-service UntaggedService: create_pet, get_pet, list_owners
-service UntaggedService without its methods: TypeError
+service DefaultService: create_pet, get_pet, list_owners
+service DefaultService without its methods: TypeError
 > POST /pets
-  create_pet(body=Pet{'name': 'Rex', 'id': None, 'secret': 's', 'owner': "Owner{'name': 'Ann', 'email': 'a@example.com'}"})
-< 201 application/json {"name":"Rex","id":1,"secret":null,"owner":null}
+  create_pet(body=Pet{'name': 'Rex', 'id': 'sentinel{}', 'secret': 's', 'owner': "Owner{'name': 'Ann', 'email': 'a@example.com'}"})
+< 201 application/json {"name":"Rex","id":1}
 > POST /pets
-  create_pet(body=Pet{'name': 'Rex', 'id': 5, 'secret': None, 'owner': None})
-< 201 application/json {"name":"Rex","id":1,"secret":null,"owner":null}
+  create_pet(body=Pet{'name': 'Rex', 'id': 5, 'secret': 'sentinel{}', 'owner': 'sentinel{}'})
+< 201 application/json {"name":"Rex","id":1}
 > POST /pets
 < 422 application/json [{"type": "string_too_short", "loc": ["body", "name"]}]
 > GET /pets/1
   get_pet(id=1)
-< 200 application/json {"name":"Mimi","id":1,"secret":null,"owner":{"name":"Ann","email":null}}
+< 200 application/json {"name":"Mimi","id":1,"owner":{"name":"Ann"}}
 > GET /pets/0
 < 422 application/json [{"type": "greater_than_equal", "loc": ["path", "id"]}]
 > GET /owners
   list_owners()
-< 200 application/json [{"name":"Ann","email":null}]
+< 200 application/json [{"name":"Ann"}]

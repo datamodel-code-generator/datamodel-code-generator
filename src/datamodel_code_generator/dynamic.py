@@ -15,6 +15,8 @@ import sys
 import threading
 import types
 from enum import Enum
+from importlib import import_module
+from importlib.util import find_spec
 from pathlib import PurePath
 from typing import TYPE_CHECKING, Any, cast
 
@@ -60,11 +62,40 @@ def _execute_single_module(
     include_private_models: bool = False,
     module_name: str | None = None,
 ) -> dict[str, type]:
-    """Execute single module code and extract models."""
+    """Execute single module code and extract models.
+
+    A named module is registered while its code runs, unless a module of that name exists, because Pydantic looks
+    up the module that parameterizes a generic model. A module of that name that can be imported is imported first,
+    so that the code imports from it, not from a registered empty module.
+    """
     namespace: dict[str, Any] = {"__builtins__": builtins.__dict__}
-    if module_name is not None:
-        namespace["__name__"] = module_name
-        namespace["__package__"] = module_name.rpartition(".")[0]
+    if module_name is None:
+        return _run_module_code(code, namespace, include_private_models=include_private_models)
+    namespace |= {"__name__": module_name, "__package__": module_name.rpartition(".")[0]}
+    if module_name in sys.modules or _import_module_if_found(module_name):
+        return _run_module_code(code, namespace, include_private_models=include_private_models)
+    module = sys.modules[module_name] = types.ModuleType(module_name)
+    module.__dict__.update(namespace)
+    try:
+        return _run_module_code(code, module.__dict__, include_private_models=include_private_models)
+    finally:
+        sys.modules.pop(module_name, None)
+
+
+def _import_module_if_found(module_name: str) -> bool:
+    """Import a module that is not imported yet, and return whether it could be found."""
+    try:
+        spec = find_spec(module_name)
+    except ModuleNotFoundError:
+        return False
+    if spec is None:
+        return False
+    import_module(module_name)
+    return True
+
+
+def _run_module_code(code: str, namespace: dict[str, Any], *, include_private_models: bool) -> dict[str, type]:
+    """Run module code in ``namespace`` and extract its models."""
     exec(code, namespace)  # noqa: S102
 
     models = _extract_models(namespace, code=code, include_private=include_private_models)

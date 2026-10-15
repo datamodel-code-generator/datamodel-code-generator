@@ -8,25 +8,25 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Imported: Model((Field('fixed', 'fixed'),), True),
-    models.Direct: Model((Field('fixed', 'fixed'),), True),
-    models.Nested: Model((Field('fixed', 'fixed'),), True),
-    models.Recursive: Model((Field('fixed', 'fixed'),), True),
+    models.Imported: Model((Field('fixed', 'fixed'),)),
+    models.Direct: Model((Field('fixed', 'fixed'),)),
+    models.Nested: Model((Field('fixed', 'fixed'),)),
+    models.Recursive: Model((Field('fixed', 'fixed'),)),
 }
 
-codec_0: Final[StdlibCodec[models.Imported]] = StdlibCodec(models.Imported, MODELS)
+codec_0: Final[TypedDictCodec[models.Imported]] = TypedDictCodec(models.Imported, MODELS)
 """Codec of /paths/~1imported/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Direct]] = StdlibCodec(models.Direct, MODELS)
+codec_1: Final[TypedDictCodec[models.Direct]] = TypedDictCodec(models.Direct, MODELS)
 """Codec of /paths/~1direct/post request_body (request application/json)."""
 
-codec_2: Final[StdlibCodec[models.Nested]] = StdlibCodec(models.Nested, MODELS)
+codec_2: Final[TypedDictCodec[models.Nested]] = TypedDictCodec(models.Nested, MODELS)
 """Codec of /paths/~1nested/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Recursive]] = StdlibCodec(models.Recursive, MODELS)
+codec_3: Final[TypedDictCodec[models.Recursive]] = TypedDictCodec(models.Recursive, MODELS)
 """Codec of /paths/~1recursive/post request_body (request application/json)."""

@@ -19,11 +19,6 @@ def unsupported_media() -> HTTPException:
     return HTTPException(status_code=415, detail="Unsupported media type")
 
 
-def malformed_request() -> HTTPException:
-    """Return the error for request data that no declared parameter or media form can represent."""
-    return HTTPException(status_code=400, detail="Invalid request")
-
-
 def missing(location: tuple[str, ...]) -> Record:
     """Return the record of a required value the request omits."""
     return {"type": "missing", "loc": location, "msg": "Field required"}
@@ -40,7 +35,7 @@ def media_invalid(location: tuple[str, ...]) -> Record:
     return {"type": "media_invalid", "loc": location, "msg": "Invalid request body"}
 
 
-def model_records(error: ValidationError, location: tuple[str, ...]) -> list[Record]:
+def model_records(error: ValidationError, location: tuple[str | int, ...]) -> list[Record]:
     """Return the records of a value the model rejects, located as FastAPI locates its own, without the value."""
     return [
         {**item, "loc": (*location, *item["loc"])}

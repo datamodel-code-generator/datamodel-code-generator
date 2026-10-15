@@ -1,6 +1,6 @@
 """Verify the deliveries of generated webhook helpers through application verifiers, then decode their events.
 
-The stages run in a fixed order: local configuration, sizes, the verifier, the contract fence over the facts it
+The stages run in a fixed order: local configuration, the key count, the verifier, the contract fence over the facts it
 returns, the timestamp window, and decoding. The verifier is synchronous in
 both modes, is called once, and its errors propagate as they are. Errors keep no key, signature, header, or body.
 """
@@ -23,7 +23,7 @@ from .webhook_events import (
     local_arguments,
     received,
     reject,
-    sizes,
+    size,
     within,
 )
 from .webhooks import VerifiedSignature
@@ -113,7 +113,7 @@ def _authenticate(  # ruff: ignore[too-many-arguments]
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
     if not callable(verify := getattr(verifier, "verify", None)):
         raise configuration_error(("verifier",), "wrong_capability", helper_id)
-    sizes(limits, raw_body, headers, len(keys.keys), helper_id)
+    size(limits.max_keys, len(keys.keys), helper_id)
     delivery_id, timestamp, matched_key_id = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
     signed = None
     if timestamp is not None:

@@ -1,0 +1,2 @@
+LeftoverFilesWarning: server: These Python files are not generated and are left in place: server/old.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package, in services.
+LeftoverFilesWarning: client: These Python files are not generated and are left in place: client/old.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.

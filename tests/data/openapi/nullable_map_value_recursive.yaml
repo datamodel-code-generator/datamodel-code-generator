@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value recursive
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    Tree:
+      type: [object, "null"]
+      additionalProperties:
+        $ref: "#/components/schemas/Tree"
+    Holder:
+      type: object
+      properties:
+        tree:
+          $ref: "#/components/schemas/Tree"

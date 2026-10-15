@@ -7,7 +7,7 @@ from datetime import date
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import AwareDatetime, ConfigDict, EmailStr, Field, conint, constr
+from pydantic import MISSING, AwareDatetime, ConfigDict, EmailStr, Field, conint, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -43,7 +43,7 @@ class Patterned:
 
 @dataclass
 class Bounded:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 class Color(StrEnum):

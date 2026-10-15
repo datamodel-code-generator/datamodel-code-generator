@@ -71,7 +71,7 @@
         "/paths/~1health/get": "health_check"
       },
       "server_router_names": {
-        "untagged": "misc"
+        "default": "misc"
       },
       "server_parameter_names": {
         "/paths/~1files~1{file.name}~1{dcg_p0}/get": {
@@ -79,6 +79,13 @@
         }
       }
     },
+    "package_snapshots": [],
+    "readme": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "names-default": {
+    "input": "naming-default.yaml",
     "package_snapshots": [],
     "readme": [
       "pydantic_v2.BaseModel"
@@ -122,7 +129,26 @@
     "input": "repeat-32.yaml"
   },
   "media-errors": {
-    "input": "media-errors.yaml"
+    "input": "media-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ]
+  },
+  "media-kept": {
+    "input": "media-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "extra_fields": "allow",
+      "openapi_include_paths": [
+        "/absorbing-kept",
+        "/absorbing-kept-parts",
+        "/absorbing-kept-wrapped"
+      ]
+    }
   },
   "parameter-errors": {
     "input": "parameter-errors.yaml",
@@ -143,6 +169,11 @@
       },
       "server_body_modes": {
         "/paths/~1pets/delete": "request"
+      },
+      "server_router_names": {
+        "tag:pets": "animals",
+        "tag:Pets": "other",
+        "untagged": "misc"
       }
     }
   },
@@ -198,13 +229,47 @@
   "codec-errors": {
     "input": "codec-errors.yaml"
   },
+  "binary-text": {
+    "input": "binary-text.yaml",
+    "config": {
+      "server_body_mode": "request"
+    }
+  },
+  "binary-allowed": {
+    "input": "binary-allowed.yaml",
+    "model": {
+      "type_mappings": [
+        "string+byte=binary"
+      ]
+    },
+    "package_snapshots": []
+  },
+  "binary-mapped": {
+    "input": "binary-mapped.yaml",
+    "model": {
+      "type_mappings": [
+        "password=binary",
+        "string+byte=binary"
+      ]
+    }
+  },
   "cookie-names": {
     "input": "cookie-names.yaml"
+  },
+  "header-names": {
+    "input": "header-names.yaml"
   },
   "native": {
     "input": "native.yaml",
     "backends": [
       "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "package_snapshots": []
+  },
+  "required-alias-order": {
+    "input": "required-alias-order.yaml",
+    "backends": [
       "pydantic_v2.dataclass"
     ],
     "package_snapshots": []
@@ -220,6 +285,7 @@
         ]
       },
       "use_missing_sentinel": true,
+      "target_pydantic_version": "2.14",
       "field_include_all_keys": true
     },
     "package_snapshots": []

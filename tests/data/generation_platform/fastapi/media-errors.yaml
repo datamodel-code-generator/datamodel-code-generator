@@ -13,7 +13,80 @@ paths:
               properties:
                 meta: {type: object, properties: {name: {type: string}}}
             encoding:
-              meta: {contentType: application/json}
+              meta: {contentType: application/xml}
+      responses:
+        "204": {description: Done.}
+  /union-parts:
+    post:
+      operationId: postUnionParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              anyOf:
+                - {type: object, properties: {a: {type: integer}}}
+                - {type: object, properties: {b: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /encoded-types:
+    post:
+      operationId: postEncodedTypes
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                meta: {type: object, properties: {name: {type: string}}}
+            encoding:
+              meta: {contentType: "application/json, application/xml"}
+      responses:
+        "204": {description: Done.}
+  /encoded-quoted:
+    post:
+      operationId: postEncodedQuoted
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                meta: {type: object, properties: {name: {type: string}}}
+            encoding:
+              meta: {contentType: 'application/json; a="x,y"'}
+      responses:
+        "204": {description: Done.}
+  /encoded-file:
+    post:
+      operationId: postEncodedFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+            encoding:
+              file: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /encoded-styled:
+    post:
+      operationId: postEncodedStyled
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: form, contentType: application/json}
       responses:
         "204": {description: Done.}
   /mixed-encoded:
@@ -108,6 +181,188 @@ paths:
               ids: {style: form, explode: false}
       responses:
         "204": {description: Done.}
+  /members:
+    post:
+      operationId: postMembers
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+                location: {type: object, properties: {x: {type: integer}}}
+                stops: {type: array, items: {type: object, properties: {x: {type: integer}}}}
+                level: {type: [integer, boolean]}
+      responses:
+        "204": {description: Done.}
+  /inherited:
+    post:
+      operationId: postInherited
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Base"}
+                - {type: object, properties: {name: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /extras:
+    post:
+      operationId: postExtras
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: object, properties: {x: {type: integer}}}
+      responses:
+        "204": {description: Done.}
+  /extra-lists:
+    post:
+      operationId: postExtraLists
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: array, items: {type: object, properties: {x: {type: integer}}}}
+      responses:
+        "204": {description: Done.}
+  /extra-kinds:
+    post:
+      operationId: postExtraKinds
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: [integer, boolean]}
+      responses:
+        "204": {description: Done.}
+  /extra-bases:
+    post:
+      operationId: postExtraBases
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Others"}
+                - {type: object, properties: {name: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /extra-patterns:
+    post:
+      operationId: postExtraPatterns
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              patternProperties: {"^x-": {type: string}}
+              additionalProperties: {type: object, properties: {x: {type: integer}}}
+      responses:
+        "204": {description: Done.}
+  /form-patterns:
+    post:
+      operationId: postFormPatterns
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              patternProperties: {"^x-": {type: string}}
+      responses:
+        "204": {description: Done.}
+  /form-shapes:
+    post:
+      operationId: postFormShapes
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {type: array, items: {type: string}}
+          application/x-www-form-urlencoded; charset=utf-8:
+            schema: {type: string}
+          application/x-www-form-urlencoded; v=untyped:
+            schema:
+              properties: {a: {type: string}}
+      responses:
+        "204": {description: Done.}
+  /invalid:
+    post:
+      operationId: postInvalid
+      requestBody:
+        content:
+          multipart/form data:
+            schema: {type: object, properties: {a: {type: string}}}
+      responses:
+        "200":
+          description: Done.
+          content:
+            application/json; charset:
+              schema: {type: string}
+  /labelled:
+    post:
+      operationId: postLabelled
+      requestBody:
+        content:
+          "text/plain; label=\"caf\u00e9\"":
+            schema: {type: string}
+      responses:
+        "200":
+          description: Done.
+          content:
+            "application/json; v=\"\u00e9\"":
+              schema: {type: string}
+  /spread:
+    post:
+      operationId: postSpread
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                point: {type: object, properties: {x: {type: integer}}}
+            encoding:
+              point: {style: form, explode: true}
+      responses:
+        "204": {description: Done.}
+  /spread-parts:
+    post:
+      operationId: postSpreadParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                point: {type: object, properties: {x: {type: integer}}}
+            encoding:
+              point: {explode: true}
+      responses:
+        "204": {description: Done.}
   /schemaless:
     post:
       operationId: postSchemaless
@@ -138,3 +393,244 @@ paths:
           content:
             application/x-www-form-urlencoded:
               schema: {type: object}
+  /deep-ids:
+    post:
+      operationId: postDeepIds
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: deepObject}
+      responses:
+        "204": {description: Done.}
+  /xml-member:
+    post:
+      operationId: postXmlMember
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                meta: {type: object, properties: {name: {type: string}}}
+            encoding:
+              meta: {contentType: application/xml}
+      responses:
+        "204": {description: Done.}
+  /latin1-part:
+    post:
+      operationId: postLatin1Part
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                note: {type: string}
+            encoding:
+              note: {contentType: "text/plain; charset=iso-8859-1"}
+      responses:
+        "204": {description: Done.}
+  /styled-file:
+    post:
+      operationId: postStyledFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+            encoding:
+              file: {style: form, explode: false}
+      responses:
+        "204": {description: Done.}
+  /absorbing-form:
+    post:
+      operationId: postAbsorbingForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                page: {type: object, properties: {size: {type: integer}}}
+                filter: {type: object, additionalProperties: {type: string}}
+            encoding:
+              page: {explode: true}
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-parts:
+    post:
+      operationId: postAbsorbingParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+                deep: {type: object, properties: {name: {type: string}}}
+            encoding:
+              labels: {explode: true}
+              deep: {style: deepObject, explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-extras:
+    post:
+      operationId: postAbsorbingExtras
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+              additionalProperties: {type: integer}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-allowed:
+    post:
+      operationId: postAbsorbingAllowed
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+              additionalProperties: true
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-extra-parts:
+    post:
+      operationId: postAbsorbingExtraParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+              additionalProperties: {type: integer}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-kept:
+    post:
+      operationId: postAbsorbingKept
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-kept-parts:
+    post:
+      operationId: postAbsorbingKeptParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-kept-wrapped:
+    post:
+      operationId: postAbsorbingKeptWrapped
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              anyOf:
+                - $ref: '#/components/schemas/KeptFilters'
+                - type: 'null'
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-derived:
+    post:
+      operationId: postAbsorbingDerived
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/ClosedFilters'}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-inherited:
+    post:
+      operationId: postAbsorbingInherited
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/InheritedFilters'}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    KeptFilters:
+      type: object
+      properties:
+        filter: {type: object, additionalProperties: {type: string}}
+    OpenFilters:
+      type: object
+      properties:
+        filter: {type: object, additionalProperties: {type: string}}
+      additionalProperties: true
+    ClosedFilters:
+      allOf:
+        - $ref: '#/components/schemas/OpenFilters'
+      additionalProperties: false
+    InheritedFilters:
+      allOf:
+        - $ref: '#/components/schemas/OpenFilters'
+        - type: object
+          properties:
+            page: {type: integer}
+    Base:
+      type: object
+      properties:
+        loc: {type: object, properties: {x: {type: integer}}}
+    Others:
+      type: object
+      properties:
+        base: {type: string}
+      additionalProperties: {type: object, properties: {x: {type: integer}}}

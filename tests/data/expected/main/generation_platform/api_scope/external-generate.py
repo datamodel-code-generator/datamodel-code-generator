@@ -14,5 +14,5 @@ class ErrorModel(BaseModel):
     message: Optional[str] = None
 
 
-class FieldOneGetResponse(BaseModel):
+class OneGetResponse(BaseModel):
     error: Optional[ErrorModel] = None

@@ -1,0 +1,1 @@
+{"required":[{"x":2,"__typename":"Bar"}],"Bar":{"x":1,"__typename":"Bar"},"nullable":[{"x":3,"__typename":"Bar"},null],"__typename":"Holder"}

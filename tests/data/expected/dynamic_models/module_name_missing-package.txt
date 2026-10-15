@@ -1,0 +1,10 @@
+{
+  "model_module": "runtime_missing_package.models",
+  "bases": [
+    "pydantic.main.BaseModel"
+  ],
+  "validated": {
+    "name": "Alice"
+  },
+  "module_imported": false
+}

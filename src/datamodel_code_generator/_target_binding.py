@@ -19,7 +19,7 @@ from keyword import iskeyword
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
-from urllib.parse import unquote, urljoin
+from urllib.parse import ParseResult, unquote, urljoin
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
@@ -79,11 +79,11 @@ from datamodel_code_generator._target_contract import (
     WireDeclaration,
 )
 from datamodel_code_generator._target_module import TypeComposer
-from datamodel_code_generator._target_naming import TargetNames
+from datamodel_code_generator._target_naming import TargetNames, path_placeholders
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
-from datamodel_code_generator.model.base import UNDEFINED, DataModel, DataModelFieldBase
+from datamodel_code_generator.model.base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum, get_raw_enum_member_value
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
@@ -99,8 +99,8 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
-from datamodel_code_generator.types import DataType
+from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, _source_path
+from datamodel_code_generator.types import DataType, Types
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
 FieldKind: TypeAlias = Literal[
@@ -141,6 +141,8 @@ _NESTED: Final = _ARRAY | _OBJECT
 _IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 _ITEMS: Final[tuple[LeafStep, ...]] = ("items",)
 _FORMS: Final = frozenset({"form", "multipart"})
+_TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
+_RAW_MEDIA: Final = frozenset({"text", "binary"})
 _HEADER_ROLES: Final[frozenset[SchemaRole]] = frozenset({
     "response_header",
     "request_encoding_header",
@@ -230,6 +232,7 @@ _CONTAINERS: Final = {
 }
 _STYLE: Final = ("use_union_operator", "use_standard_collections", "use_generic_container", "python_version")
 _WRAPPED: Final = frozenset({"alias", "root"})
+_UNCHECKED: Final[frozenset[BackendName | None]] = frozenset({"dataclass", "typeddict"})
 _ALONE: Final[dict[str, object]] = {
     **dict.fromkeys(_CONTAINERS.values(), False),
     "is_optional": False,
@@ -253,6 +256,10 @@ class _LiteralCycleError(_UnsupportedError):
         super().__init__()
 
 
+class _UnservedReferenceError(Error):
+    """A reference to a local file that the served source document would publish."""
+
+
 class MetadataCycleError(Exception):
     """A detected cycle in an API metadata fact at its original source location."""
 
@@ -270,10 +277,10 @@ class RecordingGenerationStore(GenerationStore):
         super().__init__()
         self.redirects: list[tuple[Reference, Reference]] = []
 
-    def redirect_reference_users(self, old_reference: Reference, new_reference: Reference) -> None:
-        """Record a global redirect, then redirect every user."""
+    def redirect_reference_users(self, old_reference: Reference, new_reference: Reference) -> list[DataType]:
+        """Record a global redirect, then redirect every user and return the redirected users."""
         self.redirects.append((old_reference, new_reference))
-        super().redirect_reference_users(old_reference, new_reference)
+        return super().redirect_reference_users(old_reference, new_reference)
 
     def redirect_model_reference_users(
         self, model: DataModel, models: list[DataModel], new_reference: Reference
@@ -313,13 +320,6 @@ class _Union:
 _REUSE: Final = "/reuse"
 
 
-def _source_path(path: str) -> str:
-    """Return a reference path without the marker of a read or write variant of its model."""
-    if (variant := path.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
-        return variant[0].rstrip("/")
-    return path
-
-
 @dataclass(slots=True)
 class _WalkedOperation:
     """An operation as the target parser walked it, with the parameters in effect in their order."""
@@ -345,8 +345,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
         *,
         config: OpenAPIParserConfig | None = None,
+        serves_source: bool,
     ) -> None:
         """Start with no acquisitions, walked operations or emitted modules."""
+        self.serves_source = serves_source
         self.attempt = AttemptId(0)
         self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
@@ -366,7 +368,69 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._callback_origin: _Declaration | None = None
         self._walked_schemas: list[tuple[int, _Declaration, YamlValue] | None] = []
         super().__init__(source, config=config)
-        self._reader = _Reader(self._api_documents, self.schema_locations, versions=[])
+        self._reader = _Reader(
+            self._api_documents,
+            self.schema_locations,
+            versions=[],
+            binary=self._binary_formats(encoded=False),
+            encoded=self._binary_formats(encoded=True),
+            anchors=self._anchor_locations,
+        )
+
+    def _binary_formats(self, *, encoded: bool) -> frozenset[str]:
+        """Return the string formats the models type as bytes, as `--type-mappings` leaves or makes them.
+
+        They are the formats of raw bytes, or those of bytes the models write as base64 text.
+        """
+        return frozenset(
+            found
+            for found in ("binary", *(format_ for type_, format_ in self.type_mappings if type_ == "string"))
+            if self._get_type_with_mappings("string", found) == Types.binary
+            and self._is_base64_encoded_binary_mapping("string", found) is encoded
+        )
+
+    def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
+        """Refuse a local file that a served source document would publish, before reading it.
+
+        A document read from a URL references no local file; any other document only files inside the input
+        directory, after resolving `..` and symbolic links.
+        """
+        if self.serves_source and path not in self._local_ref_path_cache and (reason := self._unserved(path)):
+            msg = f"Blocked unsafe local $ref: {ref}\nReason: the generated server serves the source document, {reason}"
+            raise _UnservedReferenceError(msg)
+        return super()._resolve_local_ref_path(path, ref)
+
+    def _unserved(self, path: Path) -> str | None:
+        """Return why the served document cannot hold a local file, or None when it can."""
+        if isinstance(self.source, ParseResult):
+            return "which was read from a URL, so it cannot reference a local file."
+        if (resolved := path.resolve()).is_relative_to(base := self.base_path.resolve()):
+            return None
+        return (
+            "so a referenced file must be inside the input directory.\n"
+            f"Input directory: {base}\nResolved path: {resolved}\n"
+            "Move the referenced schemas under the input directory."
+        )
+
+    def _anchor_locations(self, document: str, ref: str, *, dynamic: bool) -> tuple[str, ...]:
+        """Return where a reference by anchor name leads: the anchor it names, and every `$dynamicAnchor` of the name.
+
+        A `$dynamicRef` binds to an anchor of its dynamic scope, which may be any declaration of the name. Each
+        location names its document as the reference's own document names it.
+        """
+        aliases = self._schema_resource_document_aliases
+        physical = aliases.get(document, document)
+        base = self._schema_resource_root_bases.get(physical, physical)
+        found = [] if (lexical := self._schema_resource_locations.get(urljoin(base, ref))) is None else [lexical]
+        if dynamic:
+            name = ref.partition("#")[2]
+            found.extend(location for anchors in self._dynamic_anchors.values() if (location := anchors.get(name)))
+        documents = {location: alias for alias, location in aliases.items()}
+        return tuple(
+            dict.fromkeys(
+                f"{documents.get(path, path)}#{pointer}" for path, _, pointer in (item.partition("#") for item in found)
+            )
+        )
 
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> Any:
         """Record the declaration a reference object resolves to."""
@@ -634,10 +698,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     def load_document(self, document: str) -> dict[str, YamlValue] | None:
         """Load a document that only links or security schemes reference, as the walk loads every other document.
 
-        None is a document that the loader cannot read, decode or fetch, or a name that no file can have.
+        None is a document that the loader cannot read, decode or fetch, or a name that no file can have; a local file
+        the served document would publish is refused.
         """
         try:
             raw = self._get_ref_body(document)
+        except _UnservedReferenceError:
+            raise
         except (Error, OSError, UnicodeDecodeError):
             return None
         self._api_documents[document] = raw
@@ -654,6 +721,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.copies.clear()
         self.schema_records.clear()
         self.schema_locations.clear()
+        self._reader.binaries.clear()
+        self._reader.encodings.clear()
         self.free_schemas.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
@@ -697,21 +766,37 @@ _Locate: TypeAlias = "Callable[[_Declaration], SourceLocation]"
 
 @dataclass(frozen=True, slots=True)
 class _PartsRecord:
-    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's."""
+    """What a multipart body's schema says of its parts: whether it is an object, each property's, and any other's.
+
+    `binary` is where the first raw binary string sits inside a part that holds no files, which carries it as text.
+    """
 
     object: bool
     members: tuple[tuple[SourceLocation, PartSchema], ...]
     extra: PartSchema | Literal["closed"] | None
+    binary: SourceLocation | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class _SchemaRecord:
-    """What the walk recorded of an acquired schema that its model types do not say."""
+    """What the walk recorded of an acquired schema that its model types do not say.
+
+    `binary` is where the first raw binary string sits that the schema's values carry as text. Of a body's schema,
+    `string` says its whole value may be a string, which its models may type as raw bytes, `spelled` that it is
+    written as one binary string, and `base64` that it reaches bytes the models write as base64 text. `form` is the
+    branch of a form's union with null alone that declares the form's members, which its parts and encoding are read
+    from.
+    """
 
     default: LiteralScalar | None
     keywords: tuple[tuple[str, FrozenLiteral], ...]
     parts: _PartsRecord | None
     encoding: EncodingFacts | None
+    binary: SourceLocation | None = None
+    string: bool = False
+    spelled: bool = False
+    base64: bool = False
+    form: _Declaration | None = None
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -829,6 +914,21 @@ def _json_types(schema: dict[str, YamlValue]) -> frozenset[str]:
         case _:
             pass
     return frozenset()
+
+
+def _valued_types(schema: dict[str, YamlValue]) -> frozenset[str]:
+    """Return the JSON types of a schema's enum members and const value."""
+    values = schema.get("enum")
+    members = [*(values if isinstance(values, list) else ()), *((schema["const"],) if "const" in schema else ())]
+    return frozenset(map(_json_type, members))
+
+
+def _spelled(schema: dict[str, YamlValue], formats: frozenset[str]) -> bool:
+    """Return whether a schema is written as a string of one of the formats, its values telling the type it omits."""
+    format_ = schema.get("format")
+    return (
+        isinstance(format_, str) and format_ in formats and "string" in (_json_types(schema) or _valued_types(schema))
+    )
 
 
 def _json_type(value: object) -> str:
@@ -1133,6 +1233,10 @@ class _Binder:
 
     def root(self, model: DataModel) -> DataType | None:
         """Return the type an alias or root model stands for: its field's, or that of the model its reuse inherits."""
+        return None if (field := self.root_field(model)) is None else field.data_type
+
+    def root_field(self, model: DataModel) -> DataModelFieldBase | None:
+        """Return the field of an alias or root model, or that of the model its reuse inherits."""
         while (
             not model.fields
             and len(model.base_classes) == 1
@@ -1140,7 +1244,16 @@ class _Binder:
             and (final := self.final(base)) is not None
         ):
             model = _source(final)
-        return model.fields[0].data_type if len(model.fields) == 1 else None
+        return model.fields[0] if len(model.fields) == 1 else None
+
+    def constrains(self, model: DataModel) -> bool:
+        """Return whether an alias or root model's field constrains its value, as the models that validate one do."""
+        return (
+            self.policies[id(model)].backend not in _UNCHECKED
+            and (field := self.root_field(model)) is not None
+            and isinstance(constraints := field.constraints, ConstraintsBase)
+            and constraints.has_constraints
+        )
 
     def projector(self, direction: Direction, *, inline: bool = False) -> _Projector:
         if (projector := self.projectors.get((direction, inline))) is None:
@@ -1271,6 +1384,10 @@ class _Hints:
         annotation, static = variants if len(variants) > 1 else (variants[0], None)
         return self.hint(annotation, None if static == annotation else static)
 
+    def optional(self, base: TypeView) -> ModelHint:
+        """Return the hint of a type that also takes None, in the configured type style."""
+        return self.composed(self.hint_type.model_construct(), base=base, is_optional=True)
+
     def leaf(self, data_type: DataType, enum: SymbolId | None = None) -> ModelHint:
         """Render one DataType without its containers and optionality, as the model's own type hint spells it.
 
@@ -1355,7 +1472,8 @@ class _Hints:
 class _Projector:
     """Project final DataTypes of one direction into type views, each spelled as the model spells it.
 
-    An inlining projector reads each alias and root model as the type it stands for, as an argument takes it.
+    An inlining projector reads each alias and root model as the type it stands for, as an argument takes it, and
+    `constrained` says whether one of those models it read since it was last cleared constrains that type in its field.
     """
 
     def __init__(self, binder: _Binder, direction: Direction, *, inline: bool = False) -> None:
@@ -1365,6 +1483,7 @@ class _Projector:
         self.inline = inline
         self.inlined: set[SymbolId] = set()
         self.projected: dict[int, tuple[DataType, TypeView]] = {}
+        self.constrained = False
 
     def project(self, data_type: DataType) -> TypeProjection:
         try:
@@ -1374,9 +1493,21 @@ class _Projector:
         except _NotEmittedError:
             return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
 
-    def declaration(self, reference: Reference) -> TypeProjection:
+    def declaration(self, reference: Reference, *, nullable: bool = False) -> TypeProjection:
+        """Project a schema's own model, which as a nullable value also takes None when an object model stands for it.
+
+        An object model, unlike an alias or a root model, cannot hold the null its schema admits.
+        """
         try:
-            return TypeProjection(self._imports(self._reference_value(reference, serialize_as_any=False)))
+            value = self._reference_value(reference, serialize_as_any=False)
+            if (
+                nullable
+                and isinstance(value, GeneratedSymbolType)
+                and (model := self.binder.models[value.symbol]).nullable
+                and self.binder.policies[id(model)].kind == "model"
+            ):
+                value = UnionType((value, NoneType()), preserve_order=False, hint=self.hints.optional(value))
+            return TypeProjection(self._imports(value))
         except _UnsupportedError:
             return TypeProjection(None, "BND_TYPE_EXPRESSION_UNSUPPORTED")
         except _NotEmittedError:
@@ -1431,6 +1562,7 @@ class _Projector:
             and (root := binder.root(model)) is not None
         ):
             self.inlined.add(symbol)
+            self.constrained = self.constrained or binder.constrains(model)
             try:
                 return self._project(root)
             finally:
@@ -1883,6 +2015,7 @@ def _field_facts(
             context.preexisting_null is True
             or (context.preexisting_null is False and context.explicit_nullable and null_in_annotation)
         ),
+        null_in_annotation,
     )
 
 
@@ -2155,6 +2288,23 @@ class _SchemaLocations:
             return self.property_location(target, name, active)
         return None
 
+    def additional_owner(self, schema: _Declaration, active: set[_Declaration]) -> _Declaration | None:
+        """Find the schema that says what a schema's other properties are, through allOf branches and references.
+
+        A schema that says anything of its other properties itself hides what its branches and references say, and
+        one that its own branches or references lead back to says nothing more.
+        """
+        node = _LEAF if schema in active else self.at(schema)
+        active.add(schema)
+        if node.additional != "absent":
+            return schema
+        for index, branch in reversed(list(enumerate(node.all_of))):
+            if branch != "other" and (found := self.additional_owner(_child(schema, "allOf", str(index)), active)):
+                return found
+        if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
+            return self.additional_owner(target, active)
+        return None
+
     def own_property(self, schema: _Declaration, name: str) -> bool:
         """Return whether a schema declares a property itself or in an inline allOf branch."""
         node = self.at(schema)
@@ -2213,16 +2363,24 @@ class _Reader(_SchemaLocations):
     it visits declares its members; the binder locates members through those records alone.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         documents: dict[str, dict[str, YamlValue]],
         nodes: dict[_Declaration, _SchemaNode],
         *,
         versions: list[str],
+        binary: frozenset[str],
+        encoded: frozenset[str],
+        anchors: Callable[..., tuple[str, ...]],
     ) -> None:
         super().__init__(nodes, documents)
         self.loaded = documents
         self.versions = versions
+        self.formats = binary
+        self.encoded = encoded
+        self.anchors = anchors
+        self.binaries: dict[_Declaration, _Declaration | None] = {}
+        self.encodings: dict[_Declaration, _Declaration | None] = {}
 
     @property
     def legacy(self) -> bool:
@@ -2263,23 +2421,60 @@ class _Reader(_SchemaLocations):
         """Record what an acquired schema says that its model types do not, as the walk acquires it.
 
         A parameter's schema gives its default and keywords; a multipart schema how its members encode parts;
-        and any schema read as parameter or form text how its values are written.
+        and any schema read as parameter or form text how its values are written. A body's schema that is not a
+        multipart one says whether its models may type its whole value as raw bytes, which they decide.
         """
         media = declaration.tokens[-2] if declaration.tokens[-3:-2] == ("content",) else None
         kind = None if media is None else _media_kind(media)
         parameter = role == "parameter"
         text = parameter or role in _HEADER_ROLES
-        whole = self.whole(declaration)[1] if parameter else {}
-        return _SchemaRecord(
-            _default(whole.get("default")),
-            _keywords(whole) if parameter else (),
-            self.parts(declaration, locate)
+        form = self.nullable_branch(declaration) if kind in _FORMS else None
+        declared = form or declaration
+        parts = (
+            self.parts(declared, locate)
             if media is not None and media.strip().lower().startswith("multipart/")
-            else None,
-            self.encoding(declaration, locate, members=kind in _FORMS)
+            else None
+        )
+        item = declaration.tokens[-1] == "itemSchema"
+        body = kind is not None and parts is None and not (text or item)
+        whole = self.whole(declaration)[1] if parameter or body else {}
+        if text or item or kind in _TEXT_MEDIA:
+            binary = None if (found := self.binary(declaration)) is None else locate(found)
+        else:
+            binary = None if parts is None else parts.binary
+        types = _json_types(whole)
+        return _SchemaRecord(
+            _default(whole.get("default")) if parameter else None,
+            _keywords(whole) if parameter else (),
+            parts,
+            self.encoding(declared, locate, members=kind in _FORMS)
             if text or media is None or kind in _FORMS
             else None,
+            binary,
+            body and (not types or "string" in types),
+            body and _spelled(whole, self.formats),
+            body and self.base64(declaration),
+            form,
         )
+
+    def choices(self, declaration: _Declaration) -> list[_Declaration]:
+        """Return the branches beside null of a schema that is a union, by anyOf or oneOf, and none of another schema.
+
+        A schema that declares properties or combines schemas with allOf beside its union is no union of its branches.
+        """
+        location, raw = self.whole(declaration)
+        if "properties" in raw or "allOf" in raw:
+            return []
+        keyword, branches = next(
+            ((key, value) for key in ("anyOf", "oneOf") if isinstance(value := raw.get(key), list)), ("", [])
+        )
+        found = (_child(location, keyword, str(index)) for index in range(len(branches)))
+        return [branch for branch in found if self.kinds(branch) != _NULL]
+
+    def nullable_branch(self, declaration: _Declaration) -> _Declaration | None:
+        """Return the one branch of a union of a schema and null alone that is not null, None for another schema."""
+        found = self.choices(declaration)
+        return found[0] if len(found) == 1 else None
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
         """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
@@ -2308,22 +2503,105 @@ class _Reader(_SchemaLocations):
         """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
         location, raw = self.whole(schema)
         declared = raw.get("additionalProperties", True)
+        additional = _child(location, "additionalProperties")
         extra: PartSchema | Literal["closed"] | None = None
         if declared is False:
             extra = "closed"
         elif isinstance(declared, dict) and declared:
-            extra = self.part(_child(location, "additionalProperties"), locate)
-        return _PartsRecord(
-            _json_types(raw) - _NULL <= _OBJECT,
-            tuple((locate(found), self.part(found, locate)) for found in self.members(schema).values()),
-            extra,
+            extra = self.part(additional, locate)
+        members = tuple((found, self.part(found, locate)) for found in self.members(schema).values())
+        others = ((additional, extra),) if isinstance(extra, PartSchema) else ()
+        binary = next(
+            (hit for found, part in (*members, *others) if not part.file and (hit := self.binary(found)) is not None),
+            None,
         )
+        return _PartsRecord(
+            _json_types(raw) - _NULL <= _OBJECT and not self.choices(schema)[1:],
+            tuple((locate(found), part) for found, part in members),
+            extra,
+            None if binary is None else locate(binary),
+        )
+
+    def binary(self, declaration: _Declaration) -> _Declaration | None:
+        """Return where the first string the models type as raw bytes sits in a schema's values, None without one.
+
+        The walk follows references, combined branches, properties, items and other properties.
+        """
+        return self._reach(declaration, {}, self.formats, self.binaries)[0]
+
+    def base64(self, declaration: _Declaration) -> bool:
+        """Return whether a schema's values hold a string the models type as bytes yet write as base64 text."""
+        return bool(self.encoded) and self._reach(declaration, {}, self.encoded, self.encodings)[0] is not None
+
+    def _reach(
+        self,
+        declaration: _Declaration,
+        walked: dict[_Declaration, int],
+        formats: frozenset[str],
+        known: dict[_Declaration, _Declaration | None],
+    ) -> tuple[_Declaration | None, int]:
+        """Return the first string of the formats a schema reaches, and the earliest walked schema it leads back to.
+
+        `walked` holds the schemas of the walk whose answer is pending, in their walk order. A schema that finds a
+        string, or leads back to none walked before it, settles itself and every pending schema walked after it,
+        since they all reach it; each schema is walked once, and `known` holds the settled answers.
+        """
+        if declaration in known:
+            return known[declaration], len(walked)
+        if (order := walked.get(declaration)) is not None:
+            return None, order
+        order = walked[declaration] = len(walked)
+        low = order
+        raw = _mapping(self.borrow(declaration))
+        found = declaration if self.raw_bytes(raw, formats) else None
+        for child in self._subschemas(declaration, raw):
+            if found is not None:
+                break
+            found, reached = self._reach(child, walked, formats, known)
+            low = min(low, reached)
+        while (found is not None or low == order) and len(walked) > order:
+            known[walked.popitem()[0]] = found
+        return found, low
+
+    @staticmethod
+    def raw_bytes(raw: dict[str, YamlValue], formats: frozenset[str]) -> bool:
+        """Return whether a schema is a string of one of the formats, as those the models type as raw bytes.
+
+        The models type an enum or a const of such strings as text.
+        """
+        return _spelled(raw, formats) and "enum" not in raw and "const" not in raw
+
+    def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
+        """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
+        for keyword in ("$ref", "$dynamicRef"):
+            if isinstance(ref := raw.get(keyword), str):
+                yield from self._referenced(declaration, ref, dynamic=keyword == "$dynamicRef")
+        if self.legacy and "$ref" in raw:
+            return
+        for keyword in ("allOf", "anyOf", "oneOf", "prefixItems", "items"):
+            if isinstance(branches := raw.get(keyword), list):
+                yield from (_child(declaration, keyword, str(index)) for index in range(len(branches)))
+        for keyword in ("properties", "patternProperties"):
+            yield from (_child(declaration, keyword, str(name)) for name in _mapping(raw.get(keyword)))
+        for keyword in ("items", "additionalProperties"):
+            if isinstance(raw.get(keyword), dict):
+                yield _child(declaration, keyword)
+
+    def _referenced(self, declaration: _Declaration, ref: str, *, dynamic: bool) -> Iterator[_Declaration]:
+        """Yield the schema a JSON pointer reference names, or each schema an anchor reference may lead to."""
+        if (target := self.target(declaration, ref)) is not None:
+            yield target
+        else:
+            anchored = self.anchors(declaration.document, ref, dynamic=dynamic)
+            yield from filter(None, (self.target(declaration, location) for location in anchored))
 
     def encoding(self, schema: _Declaration, locate: _Locate, *, members: bool) -> EncodingFacts:
         """Return how a schema's values are written as text: as one value, as form members, and member by member.
 
-        Only a form's members, which its encodings can give a style, are written member by member.
+        Only a form's members, which its encodings can give a style, are written member by member, and only a form
+        has other properties of its own.
         """
+        extras, declared = self.extras(schema, locate) if members else (None, False)
         return EncodingFacts(
             self.kinds(schema),
             self.shape(schema, locate, form=False),
@@ -2331,7 +2609,25 @@ class _Reader(_SchemaLocations):
             tuple((locate(found), self.shape(found, locate, form=False)) for found in self.members(schema).values())
             if members
             else (),
+            extras,
+            declared=declared,
         )
+
+    def extras(self, schema: _Declaration, locate: _Locate) -> tuple[KindSite | None, bool]:
+        """Return where an object schema types the values of its other properties, and whether it allows them itself.
+
+        Both are its allOf branches' or references' when it says nothing of them. `true` allows them and types none,
+        as does a schema of any value.
+        """
+        _, resolved = self.resolved(schema)
+        owner = (
+            self.additional_owner(resolved, set()) if (self.kinds(resolved) or frozenset()) - _NULL == _OBJECT else None
+        )
+        said = "absent" if owner is None else self.at(owner).additional
+        declared = said in {"schema", "other"}
+        if owner is None or said != "schema" or not self.borrow(found := _child(owner, "additionalProperties")):
+            return None, declared
+        return self.field(found, "", locate, (locate(schema), locate(resolved)), form=True).kind, declared
 
     def resolved(self, declaration: _Declaration) -> tuple[dict[str, YamlValue], _Declaration]:
         """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
@@ -2879,13 +3175,20 @@ class _SchemaUses(_Models):
     """Bind the schemas the models were generated from, nested ones included."""
 
     def projection(
-        self, declaration: _Declaration, projection: Projection, direction: Direction, *, inline: bool = False
+        self,
+        declaration: _Declaration,
+        projection: Projection,
+        direction: Direction,
+        *,
+        inline: bool = False,
+        nullable: bool = False,
     ) -> TypeProjection:
         """Bind an acquired declaration: its emitted model wins over a direct reference type.
 
         A declaration the parser emitted nothing for, such as a recursive reference with sibling keywords, binds
         the model-free type of its schema, which is the referenced model. An inlined projection reads each alias and
-        root model as the type it stands for.
+        root model as the type it stands for, and a nullable one, a value an operation sends or receives in a media
+        that can carry null, takes the null its schema admits; a form or multipart body has no null to send.
         """
         binder = self.binder
         parser = self.parser
@@ -2900,10 +3203,27 @@ class _SchemaUses(_Models):
             or binder.final(reference, direction) is not None
             or binder.unwrapped(reference) is not None
         ):
-            return projector.declaration(reference)
+            return projector.declaration(reference, nullable=nullable)
         if data_type is not None:
             return projector.project(data_type)
         return self.lightweight(declaration, direction, inline=inline)
+
+    def held(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> SymbolId | None:
+        """Return the model a type is, or holds through root models, aliases and a union with None alone, or None."""
+        if isinstance(value, UnionType):
+            present = [item for item in value.members if not isinstance(item, NoneType)]
+            value = present[0] if len(present) == 1 else None
+        symbol = value.symbol if isinstance(value, GeneratedSymbolType) and value.symbol not in seen else None
+        members = () if symbol is None else self.members.get(symbol, ())
+        root = next(
+            (
+                facts.type
+                for member in members
+                if member.member_kind == "root_value" and (facts := member.model_facts) is not None
+            ),
+            None,
+        )
+        return symbol if root is None or symbol is None else self.held(root, seen | {symbol})
 
     def members_at(self, symbol: SymbolId, schema: _Declaration, direction: Direction) -> tuple[FieldUseBinding, ...]:
         """Return a model's members anchored at the properties of the schema a use reads."""
@@ -2964,14 +3284,15 @@ class _SchemaUses(_Models):
             status,
             media,
         )
-        projected = self.projection(schema, projection, direction)
+        nullable = role != "schema" and (media is None or _media_kind(media) not in _FORMS)
+        projected = self.projection(schema, projection, direction, nullable=nullable)
         members = (
             self.members_at(projected.value.symbol, schema, direction)
             if isinstance(projected.value, GeneratedSymbolType)
             else ()
         )
         argument = (
-            self.projection(schema, projection, direction, inline=True).value
+            self.projection(schema, projection, direction, inline=True, nullable=nullable).value
             if role == "parameter" and projected.value is not None
             else None
         )
@@ -3052,8 +3373,16 @@ class _SchemaUses(_Models):
         return True
 
     def extras(self) -> None:
-        """Bind each model's typed additional properties that no field holds."""
-        for symbol, location in self.locations.items():
+        """Bind each model's typed additional properties that no field holds.
+
+        A model that reuse made in place of an equal one binds those of the schema the replaced model came from.
+        """
+        for symbol, found in self.locations.items():
+            location = (
+                found
+                if found is not None or (original := self.binder.reused(self.binder.models[symbol])) is None
+                else self.model_location(original)
+            )
             if location is None or self.schemas.at(location).additional != "schema":
                 continue
             declaration = _child(location, "additionalProperties")
@@ -3231,20 +3560,56 @@ class _Contracts(_SchemaUses):
         """Record what the walk recorded of the media's own schema keyword on its uses.
 
         A multipart media's uses get its parts, a parameter's content its default and keywords, and every use the
-        text encoding of its schema.
+        text encoding of its schema. A body's models decide how it travels: a text or binary media carries it as the
+        raw body when they type its whole value as raw binary strings alone, none written as base64, checked by the
+        model when they constrain those strings. A binary media whose schema is written as one binary string they type
+        otherwise carries text read by the model, and any other body whose whole value they type as raw bytes in part
+        carries them as text, which is refused.
         """
         multipart = media.strip().lower().startswith("multipart/")
         record = self.record(schema)
+        kind = _media_kind(media)
         for use in uses:
             binding = self.uses[use]
+            if record.form is not None and (held := self.held(binding.type)) is not None:
+                binding = replace(binding, members=self.members_at(held, record.form, use.direction))
+            raw, constrained = self.raw(schema, use.direction) if record.string and not record.base64 else ((), False)
+            octets = kind in _RAW_MEDIA and bool(raw) and all(raw)
+            partly = not octets and any(raw)
             self.uses[use] = replace(
                 binding,
                 parts=self.parts(schema, binding.members) if multipart else None,
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
+                binary=None if octets else record.binary or (use.schema_site if partly else None),
+                octets=octets,
+                checked=octets and constrained,
+                text=kind == "binary" and record.spelled and not (octets or partly),
             )
         return uses
+
+    @cached_property
+    def binary_type(self) -> TypeView | None:
+        """Return the type the models give a raw binary string."""
+        binary = self.parser.data_type_manager.get_data_type(Types.binary)
+        return self.binder.projector("neutral", inline=True).project(binary).value
+
+    def raw(self, schema: _Declaration, direction: Direction) -> tuple[tuple[bool, ...], bool]:
+        """Return whether each type the models type a schema's whole value as, null aside, is a raw binary string.
+
+        Each alias and root model is read as the type it stands for, as the schema's wrappers leave it, and a string
+        may be constrained; a backend that keeps the constraints of a string in its type holds two such strings where
+        another holds one. Also return whether the models constrain the value, in a type or in a wrapper's field.
+        """
+        projector = self.binder.projector(direction, inline=True)
+        projector.constrained = False
+        value = self.projection(schema, "value", direction, inline=True).value
+        members = [member for member in (() if value is None else _members(value)) if not isinstance(member, NoneType)]
+        return tuple(
+            member.base == _BUILTINS["bytes"] if isinstance(member, ConstructorType) else member == self.binary_type
+            for member in members
+        ), projector.constrained or any(isinstance(member, ConstructorType) for member in members)
 
     def media(  # noqa: PLR0913
         self,
@@ -3348,7 +3713,9 @@ class _Contracts(_SchemaUses):
         name: str | None = None,
         status: str | None = None,
         media: str | None = None,
+        placeholders: Container[str] = (),
     ) -> WireDeclaration:
+        """Bind one parameter or header; a path parameter naming a placeholder is required, as OpenAPI requires."""
         wire_name = name if name is not None else str(value.get("name", ""))
         location = str(value["in"]) if "in" in value else None
         schemas: tuple[TypeUseId, ...] = ()
@@ -3372,6 +3739,7 @@ class _Contracts(_SchemaUses):
                 default=record.default if role == "parameter" else None,
                 keywords=record.keywords,
                 encoding=record.encoding,
+                binary=record.binary,
             )
             schemas = (use,)
         children = self.media(
@@ -3390,7 +3758,11 @@ class _Contracts(_SchemaUses):
             wire_name,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
-            _facts(value, _PARAMETER_FACTS, declared),
+            _facts(
+                {**value, "required": True} if location == "path" and wire_name in placeholders else value,
+                _PARAMETER_FACTS,
+                declared,
+            ),
             schemas,
             children,
         )
@@ -3469,8 +3841,9 @@ class _Contracts(_SchemaUses):
             parent,
             locate(_Declaration(use_site.document, use_site.tokens[:-1]), "use") if parent is not None else None,
         )
+        placeholders = frozenset(path_placeholders(item.use_site.tokens[-1]))
         parameters = tuple(
-            self.parameter(target, value, used, identity, "parameter")
+            self.parameter(target, value, used, identity, "parameter", placeholders=placeholders)
             for used, target, value in walked.parameters
             if target not in self.ignored_declarations
         )
@@ -3635,7 +4008,6 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Iterator, Mapping
-    from urllib.parse import ParseResult
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType

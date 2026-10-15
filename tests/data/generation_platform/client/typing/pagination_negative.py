@@ -8,7 +8,7 @@ from pets import AsyncClient, Client
 from pets.options import RequestOptions
 from pets.protocols import Page, Pager
 from pets.types.users import ListUsersResponse
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets_models import User
 
 

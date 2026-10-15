@@ -2,6 +2,7 @@
 
 Import `Client` and `AsyncClient` from `client` and the records below from
 `client.options`. Async calls require asyncio.
+The [README](../README.md) of the package shows how to call its operations.
 
 ## Layered options and budgets
 
@@ -15,7 +16,9 @@ one; `max_retries` is a setting of its own. Set `total_timeout=60` on the client
 The `default_headers` and `default_query` of the client and its views, and a call's `extra_headers` and `extra_query`,
 give each name they list their value instead of the lower layers' ones, and None removes that name. They apply over
 the generated headers in order: the client's, the views', the call's parameters', then the call's extra ones. Header
-names compare case-insensitively and query names exactly; HTTPX2 refuses a malformed header as it sends the request.
+names compare case-insensitively and query names exactly. A header's name is an HTTP token and its value HTAB, SP, and
+visible ASCII without whitespace at either end, as an idempotency key is: any other raises `ConfigurationError` where
+the setting is given.
 A body's media type ranks above every layer but the call's extra headers, whose Content-Type relabels the body, and a
 multipart one without a boundary keeps the body's.
 Native phase timeouts bound each I/O wait rather than the total duration of a call that keeps making progress.
@@ -102,7 +105,7 @@ raises the operation's `APIStatusError`. Each limit comes from the call's `ws_op
 |---|---|
 | open timeout | 5 seconds, also capped by the native connect, read, write, and pool timeouts and the deadline |
 | idle timeout | the native read timeout; None removes it |
-| message size | 1 MiB |
+| message size (`max_message_bytes`) | HTTPX2's default |
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | session total timeout (`total_timeout`) | None |
 

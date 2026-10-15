@@ -10,10 +10,10 @@ from typing_extensions import assert_type
 
 if TYPE_CHECKING:
     from pets import AsyncClient, Client
-    from pets_models import FieldPetsPetIdPhotoPutPathPetIdParameter
+    from pets_models import PetsPetIdPhotoPutPathPetIdParameter
 
 
-def selected(client: Client, pet: FieldPetsPetIdPhotoPutPathPetIdParameter, media: str) -> None:
+def selected(client: Client, pet: PetsPetIdPhotoPutPathPetIdParameter, media: str) -> None:
     """Check range-only response arguments and results in synchronous views."""
     assert_type(client.pets.photos.upload(petId=pet, response_media_type="image/jpeg"), UploadResponse)
     assert_type(client.pets.photos.upload(petId=pet, response_media_type=media), UploadResponse)
@@ -26,7 +26,7 @@ def selected(client: Client, pet: FieldPetsPetIdPhotoPutPathPetIdParameter, medi
         assert_type(response, RawResponse)
 
 
-async def selected_async(client: AsyncClient, pet: FieldPetsPetIdPhotoPutPathPetIdParameter, media: str) -> None:
+async def selected_async(client: AsyncClient, pet: PetsPetIdPhotoPutPathPetIdParameter, media: str) -> None:
     """Check range-only response arguments and results in asynchronous views."""
     assert_type(await client.pets.photos.upload(petId=pet, response_media_type="image/jpeg"), UploadResponse)
     assert_type(await client.pets.photos.upload(petId=pet, response_media_type=media), UploadResponse)

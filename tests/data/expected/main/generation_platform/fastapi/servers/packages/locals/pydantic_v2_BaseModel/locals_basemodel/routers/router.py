@@ -25,6 +25,7 @@ def _add_wiring(
     wiring_handler_1 = checked_1(
         router_2.wiring,
         'The router.wiring method of GET /wiring',
+        ('router', 'contract', 'dispatch', 'checked', 'wiring_handler'),
     )
 
     def wiring(

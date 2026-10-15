@@ -15,7 +15,7 @@ class Base(BaseModel):
     custom: CustomType | None = None
 
 
-class FieldGetResponse(BaseModel):
+class RootGetResponse(BaseModel):
     id: int | None = None
     native: UUID | None = None
     custom: CustomType | None = None

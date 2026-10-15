@@ -1,34 +1,53 @@
 # naming-snake
 render pydantic_v2.BaseModel
+  client/README.md
   client/__init__.py
   client/_async_client.py
   client/_client.py
   client/_generated/__init__.py
   client/_generated/model_bindings.py
   client/_generated/security.py
-  client/_generated_docs/README.md
   client/_generated_docs/runtime.md
   client/_operations.py
   client/errors.py
-  client/model_codecs.py
   client/options.py
   client/py.typed
   client/resources/__init__.py
   client/resources/close_1/__init__.py
   client/resources/close_1/_async.py
   client/resources/close_1/_sync.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/resources/default_1/__init__.py
+  client/resources/default_1/_async.py
+  client/resources/default_1/_sync.py
+  client/resources/default_2/__init__.py
+  client/resources/default_2/_async.py
+  client/resources/default_2/_sync.py
   client/resources/item_store/__init__.py
   client/resources/item_store/_async.py
   client/resources/item_store/_sync.py
   client/resources/item_store_1/__init__.py
   client/resources/item_store_1/_async.py
   client/resources/item_store_1/_sync.py
+  client/resources/untagged/__init__.py
+  client/resources/untagged/_async.py
+  client/resources/untagged/_sync.py
   client/responses.py
   client/types/__init__.py
   client/types/close_1/__init__.py
   client/types/close_1/_operations.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  client/types/default_1/__init__.py
+  client/types/default_1/_operations.py
+  client/types/default_2/__init__.py
+  client/types/default_2/_operations.py
   client/types/item_store/__init__.py
   client/types/item_store/_operations.py
   client/types/item_store_1/__init__.py
   client/types/item_store_1/_operations.py
+  client/types/untagged/__init__.py
+  client/types/untagged/_operations.py
   models.py

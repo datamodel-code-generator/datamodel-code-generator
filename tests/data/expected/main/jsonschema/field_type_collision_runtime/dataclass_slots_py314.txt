@@ -1,0 +1,29 @@
+{
+  "hints": {
+    "Bar": {
+      "x": [
+        "NoneType",
+        "int"
+      ]
+    },
+    "Leaf": {
+      "Bar": [
+        "Bar",
+        "NoneType"
+      ]
+    },
+    "Values": {
+      "left": [
+        "Leaf",
+        "NoneType"
+      ]
+    },
+    "Payload": {
+      "values": [
+        "NoneType",
+        "Values"
+      ]
+    }
+  },
+  "defaults": "Leaf(Bar=None)"
+}

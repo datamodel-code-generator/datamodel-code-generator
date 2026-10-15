@@ -1,0 +1,25 @@
+Error: app/services: The server packages app.pets of job 'pets' and app.photos of job 'photos' would both import their implementations from the app.services package: put each server package under a parent package of its own
+Error: app/services: The server packages app.pets of job 'pets' and app.photos of job 'photos' would both import their implementations from the app.services package: put each server package under a parent package of its own
+Error: app/services: The server packages app.pets of job 'pets' and app.photos of job 'photos' would both import their implementations from the app.services package: put each server package under a parent package of its own
+Error: app/services: The server packages app.pets of job 'pets' and app.photos of job 'photos' would both import their implementations from the app.services package: put each server package under a parent package of its own
+stdout:
+MISSING: app/models.py (file does not exist but should be generated)
+MISSING: app/pets/__init__.py (should be generated)
+MISSING: app/pets/_generated/__init__.py (should be generated)
+MISSING: app/pets/_generated/contract.py (should be generated)
+MISSING: app/pets/_generated/openapi.py (should be generated)
+MISSING: app/pets/_runtime/__init__.py (should be generated)
+MISSING: app/pets/_runtime/server/__init__.py (should be generated)
+MISSING: app/pets/_runtime/server/application.py (should be generated)
+MISSING: app/pets/_runtime/server/openapi.py (should be generated)
+MISSING: app/pets/_runtime/server/responses.py (should be generated)
+MISSING: app/pets/application.py (should be generated)
+MISSING: app/pets/main.py (should be generated)
+MISSING: app/pets/routers/__init__.py (should be generated)
+MISSING: app/pets/routers/pets.py (should be generated)
+MISSING: app/pets/routers/store.py (should be generated)
+MISSING: app/pets/services.py (should be generated)
+MISSING: app/pets/_generated/openapi.json (file does not exist but should be generated)
+MISSING: app/pets/README.md (file does not exist but should be generated)
+MISSING: app/pets/py.typed (file does not exist but should be generated)
+written: []

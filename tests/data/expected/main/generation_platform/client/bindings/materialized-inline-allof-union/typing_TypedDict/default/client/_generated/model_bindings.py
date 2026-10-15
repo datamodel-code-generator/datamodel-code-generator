@@ -8,25 +8,25 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Base: Model((), True),
-    models.Nested3: Model((Field('label', 'label'),), True),
-    models.Mixed2: Model((Field('code', 'code'),), True),
-    models.Holder: Model((Field('nested', 'nested', models.Nested3), Field('mixed', 'mixed', models.Mixed2)), True),
+    models.Base: Model(()),
+    models.Nested3: Model((Field('label', 'label'),)),
+    models.Mixed2: Model((Field('code', 'code'),)),
+    models.Holder: Model((Field('nested', 'nested', models.Nested3), Field('mixed', 'mixed', models.Mixed2))),
 }
 
-codec_0: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_0: Final[TypedDictCodec[models.Base]] = TypedDictCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_1: Final[TypedDictCodec[models.Base]] = TypedDictCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.Holder]] = StdlibCodec(models.Holder, MODELS)
+codec_2: Final[TypedDictCodec[models.Holder]] = TypedDictCodec(models.Holder, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Holder]] = StdlibCodec(models.Holder, MODELS)
+codec_3: Final[TypedDictCodec[models.Holder]] = TypedDictCodec(models.Holder, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""

@@ -19,7 +19,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     def record(name: str, arguments: dict[str, object]) -> None:
         calls.append(f"{name}({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
-    class Untagged(server.services.UntaggedService):
+    class Default(server.services.DefaultService):
         def search(self, **arguments: object) -> None:
             record("search", arguments)
 
@@ -41,13 +41,19 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def get_file(self, **arguments: object) -> None:
             record("get_file", arguments)
 
+        def get_pair(self, **arguments: object) -> None:
+            record("get_pair", arguments)
+
         def get_menu(self, **arguments: object) -> None:
             record("get_menu", arguments)
 
         def get_item(self, **arguments: object) -> None:
             record("get_item", arguments)
 
-    return {"default": {"untagged": Untagged()}}
+        def get_serving(self, **arguments: object) -> None:
+            record("get_serving", arguments)
+
+    return {"default": {"default": Default()}}
 
 
 def _echo(request: Request) -> JSONResponse:

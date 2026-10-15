@@ -1,0 +1,13 @@
+# first run
+# changed run
+LeftoverFilesWarning: client: These Python files are not generated and are left in place: client/resources/archive/__init__.py, client/resources/archive/_async.py, client/resources/archive/_sync.py, client/types/archive/__init__.py, client/types/archive/_operations.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.
+# json run
+LeftoverFilesWarning: client: These Python files are not generated and are left in place: client/resources/archive/__init__.py, client/resources/archive/_async.py, client/resources/archive/_sync.py, client/types/archive/__init__.py, client/types/archive/_operations.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.
+# check run
+EXTRA: client/resources/archive/__init__.py (no longer generated)
+EXTRA: client/resources/archive/_async.py (no longer generated)
+EXTRA: client/resources/archive/_sync.py (no longer generated)
+EXTRA: client/types/archive/__init__.py (no longer generated)
+EXTRA: client/types/archive/_operations.py (no longer generated)
+# error run
+datamodel_code_generator.LeftoverFilesWarning: client: These Python files are not generated and are left in place: client/resources/archive/__init__.py, client/resources/archive/_async.py, client/resources/archive/_sync.py, client/types/archive/__init__.py, client/types/archive/_operations.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.

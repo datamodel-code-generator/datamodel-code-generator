@@ -505,6 +505,26 @@ def _tracked(resumes: _Resumes, api: Any) -> None:
     resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', harness.interrupted(), headers=_TRACKED)
     resumes.reply(b"event: done\ndata: {}\n\n")
     _drained(lines, "reopen without the token", helper.open(stream_options=resumes.reconnect))
+    _no_content(resumes, helper, state)
+
+
+def _no_content(resumes: _Resumes, helper: Any, state: Any) -> None:
+    """End a stream with no more events once a declared 204 answers its open, reopen, or resume, reading no bindings.
+
+    Another success the operation declares without a body is no stream.
+    """
+    lines = resumes.lines
+    resumes.reply(status=204, media=None)
+    _drained(lines, "open answered no content", helper.open())
+    resumes.reply(status=202, media=None)
+    record(lines, "open answered a declared success without a body", helper.open)
+    resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', resumes.harness.interrupted(), headers=_TRACKED)
+    resumes.reply(status=204, media=None)
+    stream = helper.open(stream_options=resumes.reconnect)
+    _drained(lines, "reopen answered no content", stream)
+    lines.append(f"    progress {dict(stream.progress)}")
+    resumes.reply(status=204, media=None)
+    _drained(lines, "resume answered no content", helper.resume(state))
 
 
 def _rooms(resumes: _Resumes, api: Any) -> None:
@@ -578,6 +598,10 @@ def _unencodable(resumes: _Resumes, api: Any) -> None:
     stream = api.protocols.events.live.open(stream_options=resumes.reconnect)
     _refused(lines, "event ID ending in a space", stream)
     record(lines, "checkpoint", stream.checkpoint)
+    resumes.reply('id: caf\u00e9\ndata: {"text": "a"}\n\n'.encode(), harness.interrupted())
+    stream = api.protocols.events.live.open(stream_options=resumes.reconnect)
+    _refused(lines, "event ID beyond ASCII", stream)
+    record(lines, "checkpoint", stream.checkpoint)
     resumes.reply(b'event: other\ndata: {"id": {"a": 1}}\n\n', harness.interrupted())
     stream = api.protocols.topics.marks.open(stream_options=resumes.reconnect)
     _refused(lines, "object body cursor written to a query parameter", stream)
@@ -642,6 +666,7 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
         ("an extra member", _replaced(state, arguments=[[], [], ["c"]])),
         ("an expiry of another form", _replaced(state, expires_at="soon")),
         ("cursor the reopen cannot encode", _replaced(state, cursor="5 ")),
+        ("cursor beyond ASCII", _replaced(state, cursor="caf\u00e9")),
     ):
         record(lines, f"resume {label}", lambda saved=saved: helper.resume(saved))
     record(
@@ -752,6 +777,11 @@ async def _async_tracked(resumes: _Resumes, tracked: Any) -> None:
     await opened.aclose()
     resumes.reply(b"event: done\ndata: {}\n\n")
     await arecord(lines, "async resume without the token", lambda: tracked.resume(state))
+    resumes.reply(status=204, media=None)
+    await _adrained(lines, "async open answered no content", await tracked.open())
+    resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', cut, headers=_TRACKED)
+    resumes.reply(status=204, media=None)
+    await _adrained(lines, "async reopen answered no content", await tracked.open(stream_options=resumes.reconnect))
 
 
 def _guard_failure(lines: list[str], error: Exception) -> None:

@@ -523,6 +523,23 @@ model_options.add_argument(
     ),
 )
 model_options.add_argument(
+    "--use-msgspec-tagged-unions",
+    help="msgspec.Struct output only: write a discriminated union as msgspec tagged structs as a whole. Every "
+    "variant is tagged with the document's property name and its value, or none is and a warning says why. Without "
+    "it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the "
+    "other discriminators as Literal fields.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
+    "--use-msgspec-nullable-enum-alias",
+    help="msgspec.Struct output only: write an enum that lists null as an Enum without the None member plus an "
+    "Enum | None type alias, so that msgspec can decode it. Without it the 0.83.0 form is kept, an Enum with a None "
+    "member, which msgspec cannot decode.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--reuse-model",
     help="Reuse models on the field when a module has the model with the same content",
     action="store_true",
@@ -551,10 +568,11 @@ model_options.add_argument(
     help="Oldest Pydantic version the generated code must support. "
     "Unset: the newest supported feature forms, with populate_by_name config like '2' "
     "and the experimental MISSING import like '2.12'. "
-    "'2': Pydantic 2.0+ compatible (uses populate_by_name). "
+    "'2': Pydantic 2.0+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
-    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic).",
+    "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine; "
+    "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class).",
     choices=[v.value for v in TargetPydanticVersion],
     default=None,
 )
@@ -810,6 +828,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-typed-nullable-map-values",
+    help="Type the values of nullable maps, schemas whose type array lists object alone or with null, such as "
+    "[object, null] or [object], with additionalProperties, as their schema says, with a model for object values. "
+    "Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-subclass-enum",
     help="Define generic Enum class as subclass with field type when enum has type (int, float, bytes, str)",
     action="store_true",
@@ -1029,7 +1055,9 @@ field_options.add_argument(
 field_options.add_argument(
     "--use-missing-sentinel",
     help="Use pydantic.experimental.missing_sentinel.MISSING for optional fields without defaults (Pydantic v2.12+), "
-    "or pydantic.MISSING with --target-pydantic-version 2.14 or later.",
+    "or pydantic.MISSING with --target-pydantic-version 2.14 or later, which --generate-server and --generate-client "
+    "require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client "
+    "generation requires it.",
     action="store_true",
     default=None,
 )

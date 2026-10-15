@@ -56,7 +56,8 @@ FormData: TypeAlias = tuple[tuple[str, str], ...]
 BodyKind: TypeAlias = Literal["json", "text", "form", "multipart", "binary"]
 ReadKind: TypeAlias = Literal["json", "text", "form"]
 
-BODYLESS_STATUSES: Final = frozenset({204, 205, 304})
+NO_CONTENT: Final = 204
+BODYLESS_STATUSES: Final = frozenset({NO_CONTENT, 205, 304})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 _MIN_ERROR: Final = 400
@@ -227,11 +228,14 @@ class FieldArguments:
 class BodyMedia:
     """One declared request media type and how an argument becomes its bytes.
 
-    A form-data body is written by the package's form encoder, from a call's parts or an object's members.
+    A form-data body is written by the package's form encoder, from a call's parts or an object's members. A binary
+    body has a codec only when its models constrain its bytes. `null` marks the JSON media of an optional body whose
+    schema admits null, which sends None as null.
     """
 
     media_type: str
     kind: BodyKind
+    null: bool = False
     codec: OutboundModelCodec | None = None
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
@@ -241,7 +245,8 @@ class BodyMedia:
     def encode(self, value: object, sent: str) -> object:
         """Encode one body argument for the media type sent, or raise the codec or media failure.
 
-        Text takes the charset the sent media type names; a binary body is sent as it is given.
+        Text takes the charset the sent media type names; a binary body is sent as it is given, its bytes checked by
+        its model first when the models constrain them, while a file, a path or an iterable is sent as it streams.
         """
         match self.kind:
             case "json":
@@ -256,6 +261,8 @@ class BodyMedia:
                 return encode_form(self.dump(value), self.fields, self.additional, styled)
             case "form":
                 return _form_data(value)
+            case "binary" if self.codec is not None and isinstance(value, bytes):
+                self.codec.convert(value)
             case _:
                 pass
         return value
@@ -317,8 +324,11 @@ class RequestBody:
     ) -> EncodedBody | None:
         """Select the media and encode the argument; an omitted optional body sends nothing.
 
-        A media range such as image/* is never named by a call.
+        None for an optional body is left out as UNSET is, unless the media the call names, or the default one, takes
+        null; without either, unless any declared media takes it. A call never names a media range such as image/*.
         """
+        if value is None and not self.required and not self._takes_null(operation_id, media_type):
+            value = UNSET
         if value is UNSET:
             if media_type is not None:
                 raise ConfigurationError(field_path=("media_type",), reason="without_body", operation_id=operation_id)
@@ -338,6 +348,11 @@ class RequestBody:
         except request_errors(selected.codec) as error:
             raise _unencodable(("body",), operation_id, error) from None
         return EncodedBody(media_type=sent, content=content)
+
+    def _takes_null(self, operation_id: str | None, media_type: str | None) -> bool:
+        if media_type is None and self.default is None:
+            return any(media.null for media in self.media)
+        return self.selected(operation_id, media_type)[0].null
 
     def selected(self, operation_id: str | None, media_type: str | None) -> tuple[BodyMedia, str]:
         """Return the declared media a call sends by its media type, and the media type sent.
@@ -507,6 +522,23 @@ class _Model(Generic[T_co]):
         return value, _json(body, info) if self.read is None else None
 
 
+class _Checked:
+    """Return a body as it came once its model codec accepts its bytes."""
+
+    __slots__ = ("codec",)
+
+    def __init__(self, codec: InboundModelCodec[object]) -> None:
+        self.codec = codec
+
+    def __call__(self, body: bytes, _: ResponseInfo) -> bytes:
+        codec = self.codec
+        try:
+            codec.text(body)
+        except codec.errors as error:
+            raise BodyValueError(error) from None
+        return body
+
+
 def _form_object(fields: tuple[FieldPlan, ...], additional: FieldPlan | None, body: bytes, _: ResponseInfo) -> object:
     return _parsed(partial(decode_form, fields=fields, additional=additional), body)
 
@@ -548,9 +580,9 @@ def form_branch(status: str, media_type: str) -> Branch[FormData]:
     return Branch(status, media_type, _pairs)
 
 
-def binary_branch(status: str, media_type: str) -> Branch[bytes]:
-    """Return a branch whose value is the body itself."""
-    return Branch(status, media_type, _bytes)
+def binary_branch(status: str, media_type: str, codec: InboundModelCodec[object] | None = None) -> Branch[bytes]:
+    """Return a branch whose value is the body itself, checked by its model codec when the models constrain it."""
+    return Branch(status, media_type, _bytes if codec is None else _Checked(codec))
 
 
 def empty_branch(status: str) -> Branch[None]:
@@ -657,8 +689,11 @@ class ResponseDecoder(Generic[T_co]):
         return _MIN_SUCCESS <= status <= _MAX_SUCCESS or status in self._successes
 
     def streamed(self, info: ResponseInfo) -> None:
-        """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type."""
-        if self._branch(info, b"").media_type is None:
+        """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type.
+
+        A 204 the operation declares without a body is a stream with no events.
+        """
+        if self._branch(info, b"").media_type is None and info.status_code != NO_CONTENT:
             raise response_failure(info, "unexpected_media_type", media_type=info.content_type)
 
     def decode(

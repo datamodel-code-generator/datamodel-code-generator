@@ -26,12 +26,12 @@ from ..client.client import (
 )
 from ..client.client import AsyncClientCore as NativeAsyncClientCore
 from ..client.client import ClientCore as NativeClientCore
-from ..client.logical import Delivery, LogicalCallContext, run_sync
+from ..client.logical import LogicalCallContext, run_sync
 from ..client.native import native_timeout, request_fields, wire_fields
 from ..client.positions import secret_names
 from ..client.raw import AsyncRawResponse, RawResponse, refuse, released
 from ..client.responses import HeadersView, Response
-from ..client.retry import RetryTiming, retry_delay
+from ..client.retry import Delivery, RetryTiming, retry_delay
 from ..client.timing import ResolvedTimeoutOptions
 from ..client.urls import absolute_target, request_origin, strip_query
 from ..model_codecs.unset import UNSET
@@ -107,6 +107,18 @@ def stored_value(operation: OperationPlan[T], info: ResponseInfo, body: bytes) -
     return decode_response(operation.responses, info, received, operation.operation_id).data
 
 
+def _header_values(request: httpx2.Request) -> dict[str, tuple[str, ...]]:
+    """Return a request's header values by lowercase name in order, each byte read as its Latin-1 character.
+
+    An Auth or an event hook may add any bytes; read this way, values are equal only when their bytes are.
+    """
+    values: dict[str, tuple[str, ...]] = {}
+    for name, value in request.headers.raw:
+        key = name.lower().decode("latin-1")
+        values[key] = (*values.get(key, ()), value.decode("latin-1"))
+    return values
+
+
 @dataclass(frozen=True, slots=True)
 class CacheIdentity:
     """Whom a cache fetch asks as: its URL with any query credentials, and the values of the headers that tell it.
@@ -139,18 +151,21 @@ class CacheRequest:
     def identity(
         self, sent: httpx2.Request, base: httpx2.Request | None = None, *, authorized: bool = False
     ) -> CacheIdentity:
-        """Return the identity of a request as it is sent, against the one it was built from, by default this one."""
-        before, after = base or self.request, sent.headers
-        given = {name.lower() for name, _ in (*request_fields(before), *request_fields(sent))}
+        """Return the identity of a request as it is sent, against the one it was built from, by default this one.
+
+        Header values compare by their bytes, so no two identities share one whose bytes differ.
+        """
+        built = base or self.request
+        before, after = _header_values(built), _header_values(sent)
         names = self.credential_headers.union(
-            name for name in given if before.headers.get_list(name) != after.get_list(name)
+            name for name in before.keys() | after.keys() if before.get(name) != after.get(name)
         )
-        headers = tuple((name, tuple(after.get_list(name))) for name in sorted(names))
+        headers = tuple((name, after.get(name, ())) for name in sorted(names))
         url = absolute_target(str(sent.url)).url
         queries = self.credential_queries
         authenticated = (
             any(values for _, values in headers)
-            or sent.url != before.url
+            or sent.url != built.url
             or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
         )
         return CacheIdentity(url, headers, authenticated, authorized)

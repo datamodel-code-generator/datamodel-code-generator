@@ -142,7 +142,7 @@ malformed states
   cancel values without a remote cancel ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   expiry of another form ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
   expiry without an offset ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value
-  header with a line break, sent on the next poll ! DecodeError: DecodeError(operation_id='getJob', reason='unencodable', location='header.X-Trace') [operation_id='getJob', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, surrounding whitespace, or a list delimiter')] unencodable
+  header with a line break, sent on the next poll ! DecodeError: DecodeError(operation_id='getJob', reason='unencodable', location='header.X-Trace') [operation_id='getJob', location=('header', 'X-Trace'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   fetch of a helper without one ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='state') [field_path=('state',)] invalid_value

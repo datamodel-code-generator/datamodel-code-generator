@@ -40,10 +40,11 @@
     ".coverage.py314-parallel-shard5-ubuntu-24.04",
     ".coverage.pydantic20-ubuntu-24.04",
     ".coverage.pydantic200-ubuntu-24.04",
+    ".coverage.pydantic212-ubuntu-24.04",
     ".coverage.pydantic213-ubuntu-24.04",
     ".coverage.pydantic214-ubuntu-24.04",
     ".coverage.pydantic25-ubuntu-24.04"
   ],
   "stderr": "",
-  "stdout": "Validated 42 coverage artifacts\n"
+  "stdout": "Validated 43 coverage artifacts\n"
 }

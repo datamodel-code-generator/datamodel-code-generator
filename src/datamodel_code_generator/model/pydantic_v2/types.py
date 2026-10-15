@@ -27,6 +27,7 @@ from datamodel_code_generator.imports import (
     IMPORT_ULID,
     IMPORT_UUID,
 )
+from datamodel_code_generator.model.pydantic_v2 import imports as pydantic_imports
 from datamodel_code_generator.model.pydantic_v2._output_context import (
     ANNOTATED_CONSTRAINTS_CONTEXT as _ANNOTATED_CONSTRAINTS_CONTEXT,
 )
@@ -77,6 +78,10 @@ from datamodel_code_generator.python_literal import PythonCode
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
+    LENGTH_KEYWORDS,
+    NUMBER_BOUND_KEYWORDS,
+    NUMBER_KEYWORDS,
+    STRING_KEYWORDS,
     DataType,
     StrictTypes,
     Types,
@@ -86,7 +91,8 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.types import DataTypeManager as _DataTypeManagerBase
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Collection, Iterator, Mapping, Sequence
+    from types import ModuleType
 
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Import
@@ -208,6 +214,11 @@ def _get_regex_literal(pattern: str) -> str:
     return PythonCode(raw_literal, pattern)
 
 
+def _constraint_keywords(keywords: frozenset[str], *imports: Import) -> dict[str, frozenset[str]]:
+    """Map the import paths of Pydantic types to the type-dependent keywords they take."""
+    return {f"{import_.from_}.{import_.import_}": keywords for import_ in imports}
+
+
 class _PydanticDataTypeManager(_DataTypeManagerBase):
     """Base data type manager for Pydantic models with constrained types."""
 
@@ -223,6 +234,35 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         "NonNegativeFloat": ("minimum",),
         "NonPositiveFloat": ("maximum",),
     }
+    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
+        **_DataTypeManagerBase.CONSTRAINT_KEYWORDS,
+        **_constraint_keywords(
+            NUMBER_KEYWORDS,
+            IMPORT_CONINT,
+            IMPORT_CONFLOAT,
+            IMPORT_CONDECIMAL,
+            IMPORT_STRICT_INT,
+            IMPORT_STRICT_FLOAT,
+            IMPORT_POSITIVE_INT,
+            IMPORT_NEGATIVE_INT,
+            IMPORT_NON_NEGATIVE_INT,
+            IMPORT_NON_POSITIVE_INT,
+            IMPORT_POSITIVE_FLOAT,
+            IMPORT_NEGATIVE_FLOAT,
+            IMPORT_NON_NEGATIVE_FLOAT,
+            IMPORT_NON_POSITIVE_FLOAT,
+        ),
+        **_constraint_keywords(
+            NUMBER_BOUND_KEYWORDS,
+            IMPORT_AWARE_DATETIME,
+            IMPORT_NAIVE_DATETIME,
+            IMPORT_PAST_DATETIME,
+            IMPORT_FUTURE_DATETIME,
+        ),
+        **_constraint_keywords(STRING_KEYWORDS, IMPORT_CONSTR, IMPORT_STRICT_STR, IMPORT_STRICT_BYTES),
+        **_constraint_keywords(LENGTH_KEYWORDS, IMPORT_CONBYTES, IMPORT_EMAIL_STR, IMPORT_SECRET_STR),
+    })
+    KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (*_DataTypeManagerBase.KNOWN_TYPE_IMPORTS, pydantic_imports)
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
         (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
         (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -431,14 +471,14 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         base64_encoded = kwargs.pop("base64_encoded", False)
         data_type_kwargs: dict[str, Any] = self.transform_kwargs(kwargs, bytes_kwargs)
         strict = StrictTypes.bytes in self.strict_types
-        if base64_encoded and not data_type_kwargs and not strict:
-            return self.data_type.from_import(IMPORT_BASE64BYTES)
-        if data_type_kwargs and not strict:
+        if data_type_kwargs:
+            if strict:
+                data_type_kwargs["strict"] = True
             return self.data_type.from_import(IMPORT_CONBYTES, kwargs=data_type_kwargs)
-        # conbytes doesn't accept strict argument
-        # https://github.com/samuelcolvin/pydantic/issues/2489
         if strict:
             return self.copy_data_type(self.strict_type_map[StrictTypes.bytes])
+        if base64_encoded:
+            return self.data_type.from_import(IMPORT_BASE64BYTES)
         return self.copy_data_type(self.type_map[types])
 
     def get_data_type(  # noqa: PLR0911

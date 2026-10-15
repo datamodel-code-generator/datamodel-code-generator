@@ -32,8 +32,9 @@ from tests.api_generation.scenarios.client_deadline_streams import deadline_stre
 from tests.api_generation.scenarios.client_fields import fields, optional_models
 from tests.api_generation.scenarios.client_headers import headers, native_boundaries
 from tests.api_generation.scenarios.client_hooks import hooks
+from tests.api_generation.scenarios.client_missing_sentinel import missing_members
 from tests.api_generation.scenarios.client_mock_transport import mock_transport
-from tests.api_generation.scenarios.client_multipart import multipart, split_parts
+from tests.api_generation.scenarios.client_multipart import kinded_parts, multipart, split_parts
 from tests.api_generation.scenarios.client_naming import (
     naming,
     naming_full_path,
@@ -42,13 +43,15 @@ from tests.api_generation.scenarios.client_naming import (
     naming_snake,
 )
 from tests.api_generation.scenarios.client_native import native_codec_backends, native_faults, native_wire
-from tests.api_generation.scenarios.client_nullable_parameters import nullable_parameters
+from tests.api_generation.scenarios.client_nullable_enums import nullable_enums
+from tests.api_generation.scenarios.client_nullable_parameters import nullable_bodies, nullable_parameters
 from tests.api_generation.scenarios.client_oauth_client_credentials import oauth_client_credentials
 from tests.api_generation.scenarios.client_oauth_refresh import oauth_refresh
 from tests.api_generation.scenarios.client_pagination import pagination, pagination_backends, pagination_limits
 from tests.api_generation.scenarios.client_pagination_count_values import (
     pagination_count_defaults,
     pagination_count_values,
+    pagination_exact_totals,
 )
 from tests.api_generation.scenarios.client_pagination_counts import pagination_counts
 from tests.api_generation.scenarios.client_pagination_links import pagination_links
@@ -68,7 +71,12 @@ from tests.api_generation.scenarios.client_protocol_errors import protocol_error
 from tests.api_generation.scenarios.client_query import query
 from tests.api_generation.scenarios.client_raw import raw
 from tests.api_generation.scenarios.client_redirects import head_redirects, redirects
-from tests.api_generation.scenarios.client_regressions import json_decode_errors, no_success
+from tests.api_generation.scenarios.client_regressions import (
+    json_decode_errors,
+    modelless_bodies,
+    no_success,
+    route_text,
+)
 from tests.api_generation.scenarios.client_retry_boundaries import retry_boundaries
 from tests.api_generation.scenarios.client_retry_calls import retry_calls
 from tests.api_generation.scenarios.client_retry_errors import retry_errors
@@ -681,6 +689,7 @@ _PATHS: Final = (
         for first, second in (("", ""), ("a", ""), ("", "."), (".", ""), ("%2e", ""))
     ),
     *(("get_static", {"name": value}) for value in ("a", "..")),
+    ("get_literal", {"name": "a\\b|c^[d]?#%20"}),
 )
 
 
@@ -693,7 +702,8 @@ def paths(package: ModuleType, lines: list[str]) -> None:
     """Keep each call on its operation: a path value making its segment `.` or `..` is refused before sending.
 
     URL normalization would remove such a segment, and `%2E` is the `.` it is equivalent to, so no encoding of these
-    values reaches the operation; every other value, `...` and `.a` among them, is sent as data.
+    values reaches the operation; every other value, `...` and `.a` among them, is sent as data. Literal path text RFC
+    3986 does not allow in a path, a lone `%` among it, is sent percent-encoded, and the document's `%20` as it is.
     """
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
@@ -841,8 +851,10 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "allowreserved-path-32": ("allowreserved-path-32", BACKENDS, reserved_paths),
     "no-success": ("no-success", BACKENDS, no_success),
     "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
+    "modelless-bodies": ("modelless-bodies", BACKENDS, modelless_bodies),
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
     "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
+    "route-text": ("route-text", ("pydantic_v2.BaseModel",), route_text),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "type-checking-imports": ("type-checking-imports", ("msgspec.Struct",), type_checking_pets),
     "type-checking-imports-on": ("type-checking-imports-on", ("pydantic_v2.BaseModel",), pets),
@@ -880,9 +892,13 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
+    "multipart-kinds": ("multipart-kinds", ALL_BUT_MSGSPEC, kinded_parts),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "native-boundaries": ("native-boundaries", BACKENDS, native_boundaries),
+    "missing-sentinel": ("missing-sentinel", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), missing_members),
+    "nullable-enums": ("nullable-enums", ("dataclasses.dataclass", "msgspec.Struct"), nullable_enums),
     "nullable-parameters": ("nullable-parameters", ("pydantic_v2.BaseModel",), nullable_parameters),
+    "nullable-bodies": ("nullable-parameters", BACKENDS, nullable_bodies),
     "parameter-kinds": ("parameter-kinds", BACKENDS, parameter_kinds),
     "parameter-kinds-decimal": ("parameter-kinds-decimal", BACKENDS, parameter_kinds),
     "parameter-kinds-literal": ("parameter-kinds-literal", BACKENDS, parameter_kinds),
@@ -910,6 +926,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
     "pagination-count-values": ("pagination-counts", ALL_BUT_MSGSPEC, pagination_count_values),
     "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
+    "pagination-exact-totals": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_exact_totals),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", BACKENDS, pagination_resume),
@@ -952,6 +969,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-adapter-imports": ("webhooks-unsigned", ("pydantic_v2.BaseModel",), webhook_adapter_imports),
     "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
+    "unions-mapped": ("unions-mapped", BACKENDS, unions),
     "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-split": ("unions-split", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), split_unions),
     "discriminator-copies": (

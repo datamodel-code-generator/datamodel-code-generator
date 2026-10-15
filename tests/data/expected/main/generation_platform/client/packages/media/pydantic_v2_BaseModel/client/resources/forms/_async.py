@@ -15,9 +15,9 @@ from typing_extensions import Never
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody, FormData, MultipartData
-from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
+from ...types import JSONValue
 from ...types.forms import (
     ReadPartsResponse,
     ReadProfileResponse,
@@ -65,7 +65,7 @@ class AsyncFormsResource:
     async def submit_form(
         self,
         *,
-        body: models.FieldFormsPostRequest,
+        body: models.FormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -85,7 +85,7 @@ class AsyncFormsResource:
     async def submit_profile(
         self,
         *,
-        body: models.FieldProfilesPostRequest,
+        body: models.ProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitProfileResponse:
@@ -119,7 +119,7 @@ class AsyncFormsResource:
     async def submit_anything(
         self,
         *,
-        body: models.FieldAnythingPostRequest,
+        body: models.AnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitAnythingResponse:
@@ -172,7 +172,7 @@ class AsyncFormsResource:
         *,
         response_media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
-    ) -> models.FieldAttachmentsGetResponse: ...
+    ) -> models.AttachmentsGetResponse: ...
     async def read_parts(
         self,
         *,
@@ -342,7 +342,7 @@ class AsyncFormsResource:
     async def submit_search(
         self,
         *,
-        body: models.FieldSearchesPostRequest,
+        body: models.SearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitSearchResponse:
@@ -378,7 +378,7 @@ class AsyncFormsResource:
     async def submit_card(
         self,
         *,
-        body: models.FieldCardsPostRequest,
+        body: models.CardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitCardResponse:
@@ -396,7 +396,7 @@ class AsyncFormsResource:
     async def submit_stickers(
         self,
         *,
-        body: models.FieldStickersPostRequest,
+        body: models.StickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> SubmitStickersResponse:
@@ -440,7 +440,7 @@ class AsyncFormsWithResponse:
     async def submit_form(
         self,
         *,
-        body: models.FieldFormsPostRequest,
+        body: models.FormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -460,7 +460,7 @@ class AsyncFormsWithResponse:
     async def submit_profile(
         self,
         *,
-        body: models.FieldProfilesPostRequest,
+        body: models.ProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitProfileResponse]:
@@ -494,7 +494,7 @@ class AsyncFormsWithResponse:
     async def submit_anything(
         self,
         *,
-        body: models.FieldAnythingPostRequest,
+        body: models.AnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitAnythingResponse]:
@@ -547,7 +547,7 @@ class AsyncFormsWithResponse:
         *,
         response_media_type: Literal['multipart/form-data'],
         options: RequestOptions | None = None,
-    ) -> Response[models.FieldAttachmentsGetResponse]: ...
+    ) -> Response[models.AttachmentsGetResponse]: ...
     async def read_parts(
         self,
         *,
@@ -717,7 +717,7 @@ class AsyncFormsWithResponse:
     async def submit_search(
         self,
         *,
-        body: models.FieldSearchesPostRequest,
+        body: models.SearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitSearchResponse]:
@@ -753,7 +753,7 @@ class AsyncFormsWithResponse:
     async def submit_card(
         self,
         *,
-        body: models.FieldCardsPostRequest,
+        body: models.CardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitCardResponse]:
@@ -771,7 +771,7 @@ class AsyncFormsWithResponse:
     async def submit_stickers(
         self,
         *,
-        body: models.FieldStickersPostRequest,
+        body: models.StickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[SubmitStickersResponse]:
@@ -815,7 +815,7 @@ class AsyncFormsWithRawResponse:
     async def submit_form(
         self,
         *,
-        body: models.FieldFormsPostRequest,
+        body: models.FormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -835,7 +835,7 @@ class AsyncFormsWithRawResponse:
     async def submit_profile(
         self,
         *,
-        body: models.FieldProfilesPostRequest,
+        body: models.ProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -869,7 +869,7 @@ class AsyncFormsWithRawResponse:
     async def submit_anything(
         self,
         *,
-        body: models.FieldAnythingPostRequest,
+        body: models.AnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1071,7 +1071,7 @@ class AsyncFormsWithRawResponse:
     async def submit_search(
         self,
         *,
-        body: models.FieldSearchesPostRequest,
+        body: models.SearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1107,7 +1107,7 @@ class AsyncFormsWithRawResponse:
     async def submit_card(
         self,
         *,
-        body: models.FieldCardsPostRequest,
+        body: models.CardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1125,7 +1125,7 @@ class AsyncFormsWithRawResponse:
     async def submit_stickers(
         self,
         *,
-        body: models.FieldStickersPostRequest,
+        body: models.StickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -1169,7 +1169,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_form(
         self,
         *,
-        body: models.FieldFormsPostRequest,
+        body: models.FormsPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         response_media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
@@ -1189,7 +1189,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_profile(
         self,
         *,
-        body: models.FieldProfilesPostRequest,
+        body: models.ProfilesPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1223,7 +1223,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_anything(
         self,
         *,
-        body: models.FieldAnythingPostRequest,
+        body: models.AnythingPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1425,7 +1425,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_search(
         self,
         *,
-        body: models.FieldSearchesPostRequest,
+        body: models.SearchesPostRequest,
         media_type: Literal['application/x-www-form-urlencoded'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1461,7 +1461,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_card(
         self,
         *,
-        body: models.FieldCardsPostRequest,
+        body: models.CardsPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
@@ -1479,7 +1479,7 @@ class AsyncFormsWithStreamingResponse:
     def submit_stickers(
         self,
         *,
-        body: models.FieldStickersPostRequest,
+        body: models.StickersPostRequest,
         media_type: Literal['multipart/form-data'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

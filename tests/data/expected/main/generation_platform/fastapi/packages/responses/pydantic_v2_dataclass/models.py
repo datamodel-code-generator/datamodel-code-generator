@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import MISSING, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -22,7 +22,7 @@ class Problem:
 
 @dataclass
 class Loose:
-    name: str | None = None
+    name: str | MISSING = MISSING
 
 
 @dataclass
@@ -31,24 +31,24 @@ class Secret:
     token: str
 
 
-FieldCreatedPostResponse = TypeAliasType("FieldCreatedPostResponse", str)
+CreatedPostResponse = TypeAliasType("CreatedPostResponse", str)
 
 
-FieldCreatedPostResponse201LocationHeader = TypeAliasType("FieldCreatedPostResponse201LocationHeader", str)
+CreatedPostResponse201LocationHeader = TypeAliasType("CreatedPostResponse201LocationHeader", str)
 
 
-FieldCreatedPostResponse201XRateHeader = TypeAliasType(
-    "FieldCreatedPostResponse201XRateHeader", Annotated[int, Field(ge=0)]
+CreatedPostResponse201XRateHeader = TypeAliasType(
+    "CreatedPostResponse201XRateHeader", Annotated[int, Field(ge=0)]
 )
 
 
-FieldCreatedPostResponse201XNoteHeader = TypeAliasType("FieldCreatedPostResponse201XNoteHeader", str)
+CreatedPostResponse201XNoteHeader = TypeAliasType("CreatedPostResponse201XNoteHeader", str)
 
 
-FieldRangesGetResponse = TypeAliasType("FieldRangesGetResponse", str)
+RangesGetResponse = TypeAliasType("RangesGetResponse", str)
 
 
-FieldDownloadGetResponse = TypeAliasType("FieldDownloadGetResponse", str)
+DownloadGetResponse = TypeAliasType("DownloadGetResponse", str)
 
 
-FieldDownloadGetResponse303LocationHeader = TypeAliasType("FieldDownloadGetResponse303LocationHeader", str)
+DownloadGetResponse303LocationHeader = TypeAliasType("DownloadGetResponse303LocationHeader", str)

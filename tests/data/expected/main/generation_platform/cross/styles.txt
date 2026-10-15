@@ -47,11 +47,42 @@ get_simple slash
   get_simple(name='a/b', names=[1], point=Point(x=1, y=-2))
   < 204 -
   = None
-get_headers non-ASCII
-  > GET /headers
-  get_headers(X_Point=None, X_Corner=None, X_Tags=['café'])
+get_headers non-ASCII array item
+  ! DecodeError: DecodeError(operation_id='getHeaders', reason='unencodable', location='header.X-Tags') [operation_id='getHeaders', location=('header', 'X-Tags'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+get_header_text non-ASCII scalar
+  ! DecodeError: DecodeError(operation_id='getHeaderText', reason='unencodable', location='header.X-Name') [operation_id='getHeaderText', location=('header', 'X-Name'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+get_header_text scalar beyond Latin-1
+  ! DecodeError: DecodeError(operation_id='getHeaderText', reason='unencodable', location='header.X-Name') [operation_id='getHeaderText', location=('header', 'X-Name'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+get_header_text non-ASCII exploded array item
+  ! DecodeError: DecodeError(operation_id='getHeaderText', reason='unencodable', location='header.X-Items') [operation_id='getHeaderText', location=('header', 'X-Items'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+get_header_text non-ASCII object member
+  ! DecodeError: DecodeError(operation_id='getHeaderText', reason='unencodable', location='header.X-Label') [operation_id='getHeaderText', location=('header', 'X-Label'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+get_header_text non-ASCII enum member
+  ! DecodeError: DecodeError(operation_id='getHeaderText', reason='unencodable', location='header.X-Kind') [operation_id='getHeaderText', location=('header', 'X-Kind'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+get_header_text non-ASCII text content
+  ! DecodeError: DecodeError(operation_id='getHeaderText', reason='unencodable', location='header.X-Note') [operation_id='getHeaderText', location=('header', 'X-Note'), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter')] unencodable
+get_header_text JSON content beyond Latin-1
+  > GET /header-text
+  get_header_text(X_Name=None, X_Items=None, X_Label=None, X_Kind=None, X_Note=None, X_Named=Named(name='日本語'))
   < 204 -
   = None
+get_header_text JSON content with DEL
+  > GET /header-text
+  get_header_text(X_Name=None, X_Items=None, X_Label=None, X_Kind=None, X_Note=None, X_Named=Named(name='a\x7fb'))
+  < 204 -
+  = None
+get_header_text ASCII
+  > GET /header-text
+  get_header_text(X_Name='a\tb ~', X_Items=['a b', 'c'], X_Label=Named(name='a b'), X_Kind=HeaderTextGetHeaderXKindParameter.plain, X_Note='a, b', X_Named=Named(name='a b'))
+  < 204 -
+  = None
+get_literal encoded path text
+  > GET /literal/a%20b%C3%A9/x%20y
+  get_literal(id='x y')
+  < 204 -
+  = None
+post_labelled_text non-ASCII media type
+  ! ConfigurationError: ConfigurationError(operation_id='postLabelledText', reason='invalid_value', field_path='headers.Content-Type') [operation_id='postLabelledText', field_path=('headers', 'Content-Type')] invalid_value
 get_query nothing
   > GET /query
   get_query(spaced=None, piped=None, point=None, corner=None, flags=None, reserved=None)

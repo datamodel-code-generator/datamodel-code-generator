@@ -58,7 +58,7 @@ def import_generated_codecs(package: str, root: Path) -> None:
     """Make a generated package's model codec modules importable without running its package module.
 
     The package and its runtime become bare packages over their directories, so `<package>._generated.model_bindings`
-    and `<package>.model_codecs` import against this checkout's model codec runtime.
+    imports against this checkout's model codec runtime.
     """
     _shell(package, root / package)
     _shell(f"{package}._runtime", Path(_runtime.__file__).parent)

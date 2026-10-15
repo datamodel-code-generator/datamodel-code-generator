@@ -5,8 +5,15 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, ConfigDict, RootModel
 from typing_extensions import TypeAliasType
+
+
+class Tally(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    total: int | None = None
 
 
 class Pet(BaseModel):
@@ -18,17 +25,46 @@ class Error(BaseModel):
     message: str
 
 
-class FieldGreetingsGetQueryModeParameter(StrEnum):
+class GreetingsGetQueryModeParameter(StrEnum):
     bare = 'bare'
     result = 'result'
     value = 'value'
 
 
-class FieldGreetingsGetResponse(RootModel[str]):
+class GreetingsGetResponse(RootModel[str]):
     root: str
 
 
-FieldDocumentsIdGetPathIdParameter = TypeAliasType("FieldDocumentsIdGetPathIdParameter", int)
+DocumentsIdGetPathIdParameter = TypeAliasType("DocumentsIdGetPathIdParameter", int)
 
 
-FieldPetsIdGetPathIdParameter = TypeAliasType("FieldPetsIdGetPathIdParameter", int)
+PetsIdGetPathIdParameter = TypeAliasType("PetsIdGetPathIdParameter", int)
+
+
+class TextGetResponse(RootModel[str]):
+    root: str
+
+
+class TextHeadResponse(RootModel[str]):
+    root: str
+
+
+class BytesGetResponse(RootModel[bytes]):
+    root: bytes
+
+
+class ProblemsGetQueryModeParameter(StrEnum):
+    bare = 'bare'
+    result = 'result'
+    invalid = 'invalid'
+
+
+NotesGetQueryEmptyParameter = TypeAliasType("NotesGetQueryEmptyParameter", bool)
+
+
+class NotesGetResponse(RootModel[str | None]):
+    root: str | None
+
+
+class ChosenGetResponse(RootModel[str]):
+    root: str

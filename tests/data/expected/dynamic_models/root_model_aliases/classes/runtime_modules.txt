@@ -35,5 +35,6 @@
   "shared_root_identity_matches": true,
   "shared_root_module_unchanged": true,
   "regular_module_matches": true,
-  "imported_target_error": "Generated dynamic models do not include requested target_model_names: 'ImportedIntegerRoot'. Available models: AText, AliasModels, Color, Items, MaybeNumber, PlainObject, TwinNumber, ZNumber."
+  "imported_target_error": "Generated dynamic models do not include requested target_model_names: 'ImportedIntegerRoot'. Available models: AText, AliasModels, Color, Items, MaybeNumber, PlainObject, TwinNumber, ZNumber.",
+  "registered_module_restored": true
 }

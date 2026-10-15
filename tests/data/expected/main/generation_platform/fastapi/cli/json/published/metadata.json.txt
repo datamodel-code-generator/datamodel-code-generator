@@ -44,8 +44,8 @@
       ]
     },
     {
-      "class_name": "FieldOrdersGetResponse",
-      "name": "FieldOrdersGetResponse",
+      "class_name": "OrdersGetResponse",
+      "name": "OrdersGetResponse",
       "module": "",
       "source_ref": "modular.yaml#/paths/~1orders/get/responses/200/content/application~1json/schema",
       "source_path": [

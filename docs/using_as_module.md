@@ -75,8 +75,14 @@ print(result)
 
 ### Loading Project Configuration
 
-`generate()` uses the options passed to it. To reuse `[tool.datamodel-codegen]`
-from `pyproject.toml`, explicitly load a `GenerateConfig`:
+`generate()` uses the options passed to it. The settings the command line implies
+apply the same way: `msgspec.Struct` output turns on `use_annotated` unless it is
+passed, and `use_annotated` turns on `field_constraints`. Pass
+`use_annotated=False` to keep msgspec models without `Annotated` constraints, as
+`generate()` wrote them before 0.84.0.
+
+To reuse `[tool.datamodel-codegen]` from `pyproject.toml`, explicitly load a
+`GenerateConfig`:
 
 ```python
 from datamodel_code_generator import generate, load_pyproject_config
@@ -110,8 +116,9 @@ The precedence is API defaults, project settings, profile settings, then
 overrides. Only explicitly set fields of a `GenerateConfig` override are merged;
 explicit `False`, `None`, and empty lists also replace project values. Paths
 loaded from TOML are relative to its directory, including JSON configuration
-files such as `aliases`. Override paths remain relative to the caller's working
-directory. The project directory supplies formatter settings unless
+files such as `aliases`, unlike the command line, which reads those JSON files
+from the working directory. Override paths remain relative to the caller's
+working directory. The project directory supplies formatter settings unless
 `settings_path` is explicitly overridden. CLI-only settings such as `input`,
 `check`, and batch jobs are ignored: pass the schema to `generate()` yourself.
 The loader validates the merged settings and preserves the existing rule that
@@ -234,38 +241,55 @@ the `server_*` or `client_*` options configure it. They are the options of `--ge
 and the `--server-*` and `--client-*` flags under their Python names, as for model options: choices are enums such as
 `ServerType` (their string values also work), and the options that take JSON on the command line take mappings.
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
+<!-- fmt: off -->
+
 ```python
 from pathlib import Path
 
-from datamodel_code_generator import InputFileType, OpenAPIScope, ServerHandlerMode, ServerType, generate
+from datamodel_code_generator import (
+    DataModelType,
+    InputFileType,
+    OpenAPIScope,
+    ServerHandlerMode,
+    ServerType,
+    generate,
+)
 
 generate(
     Path("openapi.yaml"),
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-    target_python_version="3.11",
-    output=Path("models.py"),
+    output_model_type=DataModelType.PydanticV2BaseModel,
+    preset="standard-py312-20260909",
+    output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
-    server_output=Path("server"),
-    server_package="server",
-    server_model_package="models",
+    server_output=Path("app/server"),
+    server_package="app.server",
+    server_model_package="app.models",
     server_handler_mode=ServerHandlerMode.Async,
     server_body_modes={"/paths/~1upload/post": "request"},
 )
 ```
 
-With an `output`, `generate()` writes the models and the package together and returns `None`. Without one, it writes
-nothing but the model metadata and a remote lock update, and returns `GeneratedModules` with every model and package
-file, each under the path its import path implies: `server_model_package="models"` gives `("models.py",)`, or
-`("models", "__init__.py")` and the other modules of modular models, and `server_package="server"` gives
-`("server", "application.py")`, `("server", "README.md")`, and so on. These are the files a run with `output` and
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: using-as-module.server -->
+
+With an `output`, `generate()` writes the models and the package together and returns `None`; for a server, it also
+writes each missing module of the `services` package beside the package once, with stubs, as the command line does.
+Without one, it writes nothing but the model metadata and a remote lock update, no stubs among them, and returns
+`GeneratedModules` with every model and package file, each under the path its import path implies: `server_model_package="app.models"` gives `("app", "models.py")`, or
+`("app", "models", "__init__.py")` and the other modules of modular models, and `server_package="app.server"` gives
+`("app", "server", "application.py")`, `("app", "server", "README.md")`, and so on. These are the files a run with `output` and
 `server_output` in the working directory writes; `server_output` is not used. The run renders the files in a private
 directory of the working directory, which it removes afterwards, so the working directory must be writable. `load_pyproject_config()` takes the
 server and client keys of `pyproject.toml` too, so a config it loads with `overrides={"output": None}` returns the
 files of the configured run.
 
 The selector requires `server_package` and `server_model_package` (or the client ones), and `server_output` with an
-`output`. A missing option, an option the target cannot use, and a failure of the package raise
+`output`. A model setting the target needs that neither the arguments nor the preset set, such as `openapi_scopes` or
+`target_python_version`, takes the value the target needs, without printing anything; see
+[Requirements](fastapi-server.md#requirements). A missing option, an option the target cannot use, and a failure of the package raise
 `datamodel_code_generator.Error` with the message the command line prints. The `server_*` and `client_*` options have
 no effect without their selector, as their `pyproject.toml` keys do.
 

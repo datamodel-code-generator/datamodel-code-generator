@@ -98,6 +98,7 @@ When the target is unset:
 | Deprecated fields (2.7+) | `Field(json_schema_extra={'deprecated': True})` | `Field(deprecated=True)` |
 | Models used as dictionary keys (2.8+) | Defined before the models that use them as keys | Schema order |
 | `--alias-generator` field aliases (2.8+) | `alias=` on every `BaseModel` field | `alias=` only where the generated alias differs |
+| Type alias patterns that need Python's regex engine (2.8+) | String pattern; every model that reaches the alias, directly or through other models, sets `regex_engine="python-re"` | Compiled `re.compile(...)` pattern |
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
 | `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
@@ -111,6 +112,68 @@ When the target is unset:
 | `--use-missing-sentinel` import | Unset, `2.12` | `2.14` |
 | --- | --- | --- |
 | `MISSING` (2.14 deprecates the experimental path) | `from pydantic.experimental.missing_sentinel import MISSING` | `from pydantic import MISSING` |
+
+| `bytes` patterns the Rust regex engine rejects | Unset, `2`, `2.11`, `2.12` | `2.14` |
+| --- | --- | --- |
+| Model regex engine (2.14 compiles the patterns of plain and optional `bytes` fields, 2.11 to 2.13 ignore them) | Default engine | `regex_engine="python-re"` |
+
+The `bytes` rule is not applied to an unset target, because `python-re` changes how the other patterns of the model
+match on every Pydantic release. A `bytes` pattern with syntax such as a backreference then fails at import on
+Pydantic 2.14 unless `--target-pydantic-version 2.14` is passed, and on Pydantic 2.12 for a `bytes | MISSING` field
+(`--use-missing-sentinel`), whose pattern 2.12 compiles as well. Pydantic 2.0 to 2.10 rejects any rendered `bytes`
+pattern at import. See [Regular Expression Patterns](jsonschema.md#regular-expression-patterns).
+
+| `pydantic_v2.dataclass` required fields written as `= Field(...)` | Unset, `2`, `2.11`, `2.12` | `2.14` |
+| --- | --- | --- |
+| Position when the schema lists them after a field with a default of the same class (2.13+ rejects that order in `inspect.signature`) | Schema order | Before the fields with defaults |
+
+A required `pydantic_v2.dataclass` field that needs `Field(...)`, for an alias, a description or a constraint, is
+written as an assignment, so it can follow a field with a default:
+
+```python
+@dataclass
+class Pet:
+    plain: str
+    nick: str | None = "x"
+    first_name: str = Field(..., alias="first-name")
+```
+
+With the target unset or older than `2.14`, such a class keeps the order of datamodel-code-generator 0.83.0. It
+validates and constructs on Pydantic 2.4 and later, the first release that accepts the non-identifier alias, but on
+Pydantic 2.13 and later its signature cannot be read: `inspect.signature(Pet)` raises
+`ValueError: non-default argument follows default argument`, which affects tools that read the signature. On Python
+3.10 with Pydantic 2.13 and later, a dataclass that inherits from such a class fails at import with the same error,
+because Python 3.10 reads the signature while it creates the subclass. Pass `--target-pydantic-version 2.14` in either
+case: `first_name` is then written before `nick`. The generator warns about each class that keeps such an order, in its
+own fields or through its bases.
+
+The order is not changed for an unset or older target, because positional arguments follow the field order:
+`Pet("p", "a", "b")` sets `nick="a"` in schema order and `first_name="a"` with `2.14`. Keyword arguments work with both
+orders.
+
+With `--use-annotated` a required field keeps its metadata in `Annotated` and comes before the fields with defaults on
+every target. A non-identifier alias of such a field is written as an assignment with `2` (see the 2.4 row above); the
+field then stays with the required fields, after those without an assignment. A required field that a subclass adds
+after an inherited field with a default is written with `kw_only=True` for every target.
+
+Patterns that need Python's regex engine, such as lookaround assertions (see
+[Regular Expression Patterns](jsonschema.md#regular-expression-patterns)), rely on `regex_engine="python-re"`, which
+Pydantic added in 2.5. With every target, a model that has such a pattern fails at import on Pydantic 2.0 to 2.4. A type
+alias (`--use-type-alias`, and the root schemas of `pydantic_v2.dataclass` output) has no config of its own:
+
+- With `2` its pattern stays a string, and every generated `BaseModel` or `pydantic_v2.dataclass` that reaches the
+  alias, directly or through other models and their base classes, sets `regex_engine="python-re"`, so the generated
+  models validate on Pydantic 2.5 and later. A `RootModel` that reaches the alias is written as `RootModel[Any]` and
+  keeps the alias in its `root` annotation, because Pydantic builds the generic before the config applies.
+- With `2`, nothing selects the engine outside the generated models. A hand-written model that embeds a generated model
+  or alias must set `regex_engine="python-re"` itself, and an alias validated on its own needs
+  `TypeAdapter(Alias, config=ConfigDict(regex_engine="python-re"))`. On Pydantic 2.8 to 2.10 this is a difference from
+  an unset target, because no target lies between `2` and `2.11`.
+- Unset, or with `2.11` and later, the alias carries a compiled `re.compile(...)` pattern, which needs Pydantic 2.8 and
+  validates on its own.
+
+The combined `pattern` constraints of XML Schema input stay compiled for every target, `2` included, and need Pydantic
+2.8; see [XML Schema limitations](xmlschema.md#limitations).
 
 With `2` and `--use-annotated`, a `BaseModel`, `RootModel` or `pydantic_v2.dataclass` field whose type names a model
 defined later in the same module is written as an assignment, as it is without `--use-annotated`. Pydantic before 2.11
@@ -309,6 +372,68 @@ class Pet(Struct):
     name: str
     tag: str | UnsetType = UNSET
 ```
+
+### Discriminated unions
+
+msgspec only decodes a union of structs when every struct is tagged, and a tagged struct cannot also have a field
+named like its `tag_field`. By default the output keeps the 0.83.0 form, in which a variant whose discriminator
+value comes from the discriminator `mapping`, an `enum` or the schema name keeps the discriminator as a field:
+
+```python
+class Cat(Struct):
+    petType: Literal["cat"]
+    meow: str | UnsetType = UNSET
+```
+
+`Cat(petType='cat')`, `cat.petType` and decoding `Cat` on its own work, but decoding the union `Cat | Dog` raises
+msgspec's `TypeError`. That form only tags a variant whose discriminator property is a single literal such as a
+`const`, or one that a second discriminated union uses, and its `tag_field` is the generated field name, which
+differs from the property name when the field is renamed.
+
+[`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions) writes a union as
+tagged structs as a whole instead, with the property name of the document as `tag_field`:
+
+```python
+class Cat(Struct, tag_field="petType", tag="cat"):
+    meow: str | UnsetType = UNSET
+```
+
+The union then decodes, while `petType` is no longer a constructor argument or an attribute, and `Cat` decoded on
+its own accepts a payload without `petType`. When a variant cannot take exactly one tag for the union, or a base
+or derived struct of a variant keeps the property as a field, the union tags none of its variants, the ones with
+a `const` included, and a warning names the reason. A variant that another union tags keeps that tag.
+
+### Enums that list null
+
+msgspec only decodes an `Enum` whose members are all `str` or all `int` values. By default the output keeps the
+0.83.0 form of an enum that lists `null` without `type: string` or `nullable: true`, such as
+`type: [integer, "null"]` with `enum: [1, 2, null]`, which is an Enum with a `None` member:
+
+```python
+class Size(Enum):
+    int_1 = 1
+    int_2 = 2
+    NoneType_None = None
+```
+
+`Size.int_1` works, but decoding a struct with a `Size` field raises msgspec's `TypeError`, and the `IntEnum` that a
+`type: integer` enum is written as fails at import.
+[`--use-msgspec-nullable-enum-alias`](cli-reference/model-customization.md#use-msgspec-nullable-enum-alias) writes
+it as a `type: string` or `nullable` enum is written instead, an Enum without the `None` member and an alias that
+adds `None`:
+
+```python
+class SizeEnum(Enum):
+    int_1 = 1
+    int_2 = 2
+
+
+Size: TypeAlias = SizeEnum | None
+```
+
+msgspec then decodes the members and `null`, while code that used `Size.int_1` or `Size.NoneType_None` uses
+`SizeEnum.int_1` and `None`. The default of a field of such an enum is then its raw value, also with
+`--set-default-enum-member`, and an enum that lists only `null` becomes `None`.
 
 ### When to use
 

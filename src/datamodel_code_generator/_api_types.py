@@ -22,6 +22,8 @@ __all__ = [
     "DocumentationAnnotationWarning",
     "GeneratedArtifact",
     "GeneratedProject",
+    "Implementation",
+    "NextSteps",
     "OperationRef",
     "OperationSelector",
     "SchemaRef",
@@ -31,8 +33,8 @@ __all__ = [
 TargetKind: TypeAlias = Literal["fastapi", "client"]
 DiagnosticSeverity: TypeAlias = Literal["error", "warning", "info"]
 DiagnosticStage: TypeAlias = Literal["config", "input", "model", "binding", "target", "format", "publication"]
-ArtifactKind: TypeAlias = Literal["model", "model_metadata", "remote_lock", "target"]
-ArtifactAction: TypeAlias = Literal["write", "unchanged"]
+ArtifactKind: TypeAlias = Literal["model", "model_metadata", "remote_lock", "target", "implementation"]
+ArtifactAction: TypeAlias = Literal["write", "unchanged", "keep"]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -101,7 +103,13 @@ def _error_message(item: Diagnostic, option_prefix: str | None) -> str:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class GeneratedArtifact:
-    """Carry one generated file: its bytes, and whether writing them changes the file at its path."""
+    """Carry one generated file: its bytes, and whether writing them changes the file at its path.
+
+    An `implementation` is a module of the user's that generation writes with stubs only while it is missing; one that
+    exists is kept, without content, but for the initializer of a `services` package another server package left,
+    whose docstring generation rewrites to name the server package that takes the package over, as the project's
+    `next_steps.taken_over` says.
+    """
 
     path: Path
     kind: ArtifactKind
@@ -110,13 +118,45 @@ class GeneratedArtifact:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class Implementation:
+    """A module of the user's that a generated entrypoint imports, and the class or function it imports from it.
+
+    `created` says whether the generation writes the module with stubs, which it does only while the file is missing.
+    """
+
+    module: str
+    name: str
+    path: Path
+    created: bool = False
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NextSteps:
+    """What to do with a generated package: its README, and a server's entrypoint and implementations or a client's use.
+
+    `app` is the import string of a server's ASGI application, defined in the `entrypoint` module, and `usage` is code
+    that calls a client. `taken_over` names the server package whose `services` package a server takes over: the run
+    rewrites the docstring of the package's initializer, an `implementation` it writes although the file exists.
+    """
+
+    readme: Path
+    app: str | None = None
+    entrypoint: Path | None = None
+    implementations: tuple[Implementation, ...] = ()
+    usage: str | None = None
+    taken_over: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class GeneratedProject:
     """Return every generated file of one target without writing it.
 
-    dependencies are the requirement specifiers the generated package needs at run time.
+    dependencies are the requirement specifiers the generated package needs at run time, and next_steps says what to
+    do with the package.
     """
 
     target: TargetKind
     artifacts: tuple[GeneratedArtifact, ...]
+    next_steps: NextSteps
     dependencies: tuple[str, ...] = ()
     schema_version: Literal[1] = 1

@@ -1,0 +1,71 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Bodies",
+  "version": "1.0"
+ },
+ "paths": {
+  "/json": {
+   "post": {
+    "operationId": "postJson",
+    "tags": [
+     "json"
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Item"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     }
+    }
+   }
+  },
+  "/text": {
+   "post": {
+    "operationId": "postText",
+    "tags": [
+     "raw"
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "text/plain": {
+       "schema": {
+        "type": "string",
+        "maxLength": 10
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Done."
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "Item": {
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "properties": {
+     "name": {
+      "type": "string"
+     }
+    }
+   }
+  }
+ }
+}

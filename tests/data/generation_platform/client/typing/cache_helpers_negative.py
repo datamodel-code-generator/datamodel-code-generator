@@ -6,14 +6,14 @@ from pets import AsyncClient, Client
 from pets.options import RetryOptions
 from pets.protocols import CacheResult
 from pets.types.users import GetUserResponse, ListUsersResponse
-from pets_models import FieldUsersUserIdGetPathUserIdParameter
+from pets_models import UsersUserIdGetPathUserIdParameter
 
 
 async def wrong_fetches(
     client: Client,
     async_client: AsyncClient,
     result: CacheResult[GetUserResponse],
-    user: FieldUsersUserIdGetPathUserIdParameter,
+    user: UsersUserIdGetPathUserIdParameter,
 ) -> None:
     """Reject each misuse of a cache helper or its results."""
     helper = client.protocols.users.profile

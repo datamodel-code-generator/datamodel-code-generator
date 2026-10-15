@@ -1,0 +1,38 @@
+{
+  "Codes": [
+    {
+      "payload": {
+        "k": "abc"
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "k": "badly"
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ],
+  "Holder": [
+    {
+      "payload": {
+        "data": {
+          "k": "abc"
+        }
+      },
+      "errors": []
+    },
+    {
+      "payload": {
+        "data": {
+          "k": "badly"
+        }
+      },
+      "errors": [
+        "string_pattern_mismatch"
+      ]
+    }
+  ]
+}

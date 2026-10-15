@@ -9,7 +9,7 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 codec_0: Final[PydanticCodec[models.Invoice]] = PydanticCodec(models.Invoice)
 """Codec of /webhooks/invoice/post request_body (request application/json)."""

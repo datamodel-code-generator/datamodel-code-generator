@@ -24,112 +24,109 @@ class Point(BaseModel):
     x: int
 
 
-FieldItemsItemIdPartsPartGetPathItemIdParameter = TypeAliasType(
-    "FieldItemsItemIdPartsPartGetPathItemIdParameter",
-    Annotated[int, Field(ge=-10, lt=100)],
+ItemsItemIdPartsPartGetPathItemIdParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetPathItemIdParameter", Annotated[int, Field(ge=-10, lt=100)]
 )
 
 
-FieldItemsItemIdPartsPartGetPathPartParameter = TypeAliasType(
-    "FieldItemsItemIdPartsPartGetPathPartParameter",
+ItemsItemIdPartsPartGetPathPartParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetPathPartParameter",
     Annotated[str, Field(min_length=1, max_length=8)],
 )
 
 
-FieldItemsItemIdPartsPartGetQueryLimitParameter = TypeAliasType(
-    "FieldItemsItemIdPartsPartGetQueryLimitParameter",
+ItemsItemIdPartsPartGetQueryLimitParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryLimitParameter",
     Annotated[int, Field(ge=-3000000000, le=50)],
 )
 
 
-FieldItemsItemIdPartsPartGetQueryRatioParameter = TypeAliasType(
-    "FieldItemsItemIdPartsPartGetQueryRatioParameter",
+ItemsItemIdPartsPartGetQueryRatioParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryRatioParameter",
     Annotated[Annotated[float, Field(multiple_of=0.5)], Field(..., title='Ratio')],
 )
 
 
-FieldItemsItemIdPartsPartGetQueryFlagParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryFlagParameter", bool)
+ItemsItemIdPartsPartGetQueryFlagParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryFlagParameter", bool)
 
 
-FieldItemsItemIdPartsPartGetQueryTagsParameterItem = TypeAliasType(
-    "FieldItemsItemIdPartsPartGetQueryTagsParameterItem",
-    Annotated[str, Field(max_length=4)],
+ItemsItemIdPartsPartGetQueryTagsParameterItem = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryTagsParameterItem", Annotated[str, Field(max_length=4)]
 )
 
 
-FieldItemsItemIdPartsPartGetQueryTagsParameter = TypeAliasType(
-    "FieldItemsItemIdPartsPartGetQueryTagsParameter",
+ItemsItemIdPartsPartGetQueryTagsParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryTagsParameter",
     Annotated[
-        list[FieldItemsItemIdPartsPartGetQueryTagsParameterItem],
-        Field(['a'], min_length=1),
+        list[ItemsItemIdPartsPartGetQueryTagsParameterItem], Field(['a'], min_length=1)
     ],
 )
 
 
-FieldItemsItemIdPartsPartGetQueryDayParameter = TypeAliasType(
-    "FieldItemsItemIdPartsPartGetQueryDayParameter",
+ItemsItemIdPartsPartGetQueryDayParameter = TypeAliasType(
+    "ItemsItemIdPartsPartGetQueryDayParameter",
     Annotated[date, Field(..., examples=['2024-01-01'])],
 )
 
 
-FieldItemsItemIdPartsPartGetQueryRefParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryRefParameter", UUID)
+ItemsItemIdPartsPartGetQueryRefParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryRefParameter", UUID)
 
 
-class FieldItemsItemIdPartsPartGetQueryModeParameter(StrEnum):
+class ItemsItemIdPartsPartGetQueryModeParameter(StrEnum):
     fast = 'fast'
     slow = 'slow'
 
 
-FieldItemsItemIdPartsPartGetQueryLevelParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryLevelParameter", Literal[3])
+ItemsItemIdPartsPartGetQueryLevelParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryLevelParameter", Literal[3])
 
 
-FieldItemsItemIdPartsPartGetHeaderXTraceParameter = TypeAliasType("FieldItemsItemIdPartsPartGetHeaderXTraceParameter", str)
+ItemsItemIdPartsPartGetHeaderXTraceParameter = TypeAliasType("ItemsItemIdPartsPartGetHeaderXTraceParameter", str)
 
 
-FieldItemsItemIdPartsPartGetQueryRequestParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryRequestParameter", str)
+ItemsItemIdPartsPartGetQueryRequestParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryRequestParameter", str)
 
 
-FieldItemsItemIdPartsPartGetQueryPartParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryPartParameter", str)
+ItemsItemIdPartsPartGetQueryPartParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryPartParameter", str)
 
 
-FieldItemsItemIdPartsPartGetQueryField2faParameter = TypeAliasType("FieldItemsItemIdPartsPartGetQueryField2faParameter", str)
+ItemsItemIdPartsPartGetQueryField2faParameter = TypeAliasType("ItemsItemIdPartsPartGetQueryField2faParameter", str)
 
 
-class FieldItemsItemIdPartsPartGetResponse(RootModel[str]):
+class ItemsItemIdPartsPartGetResponse(RootModel[str]):
     root: str
 
 
-FieldAdaptersGetCookieSessionParameter = TypeAliasType("FieldAdaptersGetCookieSessionParameter", str)
+AdaptersGetCookieSessionParameter = TypeAliasType("AdaptersGetCookieSessionParameter", str)
 
 
-FieldAdaptersGetQueryIdsParameter = TypeAliasType("FieldAdaptersGetQueryIdsParameter", list[int])
+AdaptersGetQueryIdsParameter = TypeAliasType("AdaptersGetQueryIdsParameter", list[int])
 
 
-FieldAdaptersGetHeaderXIdsParameter = TypeAliasType("FieldAdaptersGetHeaderXIdsParameter", list[int])
+AdaptersGetHeaderXIdsParameter = TypeAliasType("AdaptersGetHeaderXIdsParameter", list[int])
 
 
-class FieldAdaptersGetQueryBlobParameter(BaseModel):
+class AdaptersGetQueryBlobParameter(BaseModel):
     pass
 
 
-FieldAdaptersGetQueryCodeParameter = TypeAliasType(
-    "FieldAdaptersGetQueryCodeParameter", Annotated[str, Field(pattern=r'^[A-Z]+$')]
+AdaptersGetQueryCodeParameter = TypeAliasType(
+    "AdaptersGetQueryCodeParameter", Annotated[str, Field(pattern=r'^[A-Z]+$')]
 )
 
 
-FieldAdaptersGetQueryMailParameter = TypeAliasType("FieldAdaptersGetQueryMailParameter", EmailStr)
+AdaptersGetQueryMailParameter = TypeAliasType("AdaptersGetQueryMailParameter", EmailStr)
 
 
-FieldAdaptersGetQueryOtherParameter = TypeAliasType("FieldAdaptersGetQueryOtherParameter", str)
+AdaptersGetQueryOtherParameter = TypeAliasType("AdaptersGetQueryOtherParameter", str)
 
 
-FieldAdaptersGetQueryCountParameter = TypeAliasType("FieldAdaptersGetQueryCountParameter", int)
+AdaptersGetQueryCountParameter = TypeAliasType("AdaptersGetQueryCountParameter", int)
 
 
-FieldAdaptersGetQueryStampParameter = TypeAliasType("FieldAdaptersGetQueryStampParameter", AwareDatetime)
+AdaptersGetQueryStampParameter = TypeAliasType("AdaptersGetQueryStampParameter", AwareDatetime)
 
 
-FieldAdaptersGetQueryPageParameter = TypeAliasType("FieldAdaptersGetQueryPageParameter", int)
+AdaptersGetQueryPageParameter = TypeAliasType("AdaptersGetQueryPageParameter", int)
 
 
-FieldRepeatIdAgainIdGetPathIdParameter = TypeAliasType("FieldRepeatIdAgainIdGetPathIdParameter", int)
+RepeatIdAgainIdGetPathIdParameter = TypeAliasType("RepeatIdAgainIdGetPathIdParameter", int)

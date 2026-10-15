@@ -1,0 +1,82 @@
+openapi: 3.1.0
+info:
+  title: Discriminator values msgspec tags cannot represent
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: petType
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Animal:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Bird"
+      discriminator:
+        propertyName: petType
+        mapping:
+          feline: "#/components/schemas/Cat"
+          bird: "#/components/schemas/Bird"
+    Kinded:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+    Owner:
+      type: object
+      properties:
+        shape:
+          oneOf:
+            - $ref: "#/components/schemas/Circle"
+            - $ref: "#/components/schemas/Square"
+          discriminator:
+            propertyName: shapeType
+            mapping:
+              circle: "#/components/schemas/Circle"
+              round: "#/components/schemas/Circle"
+              square: "#/components/schemas/Square"
+    Cat:
+      type: object
+      required: [petType, kind]
+      properties:
+        petType:
+          type: string
+        kind:
+          type: string
+    Dog:
+      type: object
+      required: [petType, kind]
+      properties:
+        petType:
+          type: string
+        kind:
+          type: string
+    Bird:
+      type: object
+      required: [petType]
+      properties:
+        petType:
+          type: string
+    Circle:
+      type: object
+      required: [shapeType, radius]
+      properties:
+        shapeType:
+          type: string
+        radius:
+          type: number
+    Square:
+      type: object
+      required: [shapeType, side]
+      properties:
+        shapeType:
+          type: string
+        side:
+          type: number

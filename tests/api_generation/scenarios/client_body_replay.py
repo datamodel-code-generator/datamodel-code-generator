@@ -105,6 +105,7 @@ class _Replies:
             f"    wire={[(method, path, payload) for method, path, _, payload in self.requests]!r}"
             f" pending={len(self.exchange.responders)}"
         )
+        self.exchange.responders.clear()
 
 
 def body_replay(package: ModuleType, lines: list[str]) -> None:

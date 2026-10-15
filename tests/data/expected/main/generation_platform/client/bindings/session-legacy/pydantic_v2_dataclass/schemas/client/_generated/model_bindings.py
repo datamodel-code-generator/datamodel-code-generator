@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticDataclassCodec
+from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 
 
 codec_0: Final[PydanticDataclassCodec[models.Item]] = PydanticDataclassCodec(models.Item)
@@ -17,8 +17,8 @@ codec_0: Final[PydanticDataclassCodec[models.Item]] = PydanticDataclassCodec(mod
 codec_1: Final[PydanticDataclassCodec[models.Item]] = PydanticDataclassCodec(models.Item)
 """Codec of /paths/~1items/post response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticDataclassCodec[models.FieldInlinePostRequest]] = PydanticDataclassCodec(models.FieldInlinePostRequest)
+codec_2: Final[PydanticDataclassCodec[models.InlinePostRequest]] = PydanticDataclassCodec(models.InlinePostRequest)
 """Codec of /paths/~1inline/post request_body (request application/json)."""
 
-codec_3: Final[PydanticDataclassCodec[models.FieldInlinePostResponse]] = PydanticDataclassCodec(models.FieldInlinePostResponse)
+codec_3: Final[PydanticDataclassCodec[models.InlinePostResponse]] = PydanticDataclassCodec(models.InlinePostResponse)
 """Codec of /paths/~1inline/post response_body (response 200 application/json)."""

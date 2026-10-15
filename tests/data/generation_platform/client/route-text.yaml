@@ -1,0 +1,14 @@
+openapi: 3.1.0
+info: {title: Route text, version: "1.0"}
+servers:
+  - url: https://api.example.com
+paths:
+  '/notes/"""\café':
+    get:
+      operationId: getNote
+      responses:
+        "200":
+          description: The note.
+          content:
+            application/json:
+              schema: {type: string}

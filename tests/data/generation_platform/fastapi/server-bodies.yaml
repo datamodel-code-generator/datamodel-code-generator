@@ -123,6 +123,171 @@ paths:
                 note: {type: string}
       responses:
         "204": {description: Done.}
+  /searches:
+    post:
+      operationId: search
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [filter]
+              properties:
+                filter: {$ref: "#/components/schemas/Filter"}
+                filters: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+                tags: {type: array, items: {type: string}}
+                limit: {type: integer}
+            encoding:
+              tags: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
+  /choices:
+    post:
+      operationId: postChoices
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Choices"}
+      responses:
+        "204": {description: Done.}
+  /choice-files:
+    post:
+      operationId: postChoiceFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Choices"}
+                - {type: object, properties: {file: {type: string, format: binary}}}
+      responses:
+        "204": {description: Done.}
+  /extras:
+    post:
+      operationId: postExtras
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {$ref: "#/components/schemas/Filter"}
+      responses:
+        "204": {description: Done.}
+  /extra-lists:
+    post:
+      operationId: postExtraLists
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+      responses:
+        "204": {description: Done.}
+  /extra-counts:
+    post:
+      operationId: postExtraCounts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: integer, minimum: 0}
+      responses:
+        "204": {description: Done.}
+  /extra-files:
+    post:
+      operationId: postExtraFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: {type: string, format: binary}
+                name: {type: string}
+              additionalProperties: {type: array, items: {$ref: "#/components/schemas/Filter"}}
+      responses:
+        "204": {description: Done.}
+  /extra-scores:
+    post:
+      operationId: postExtraScores
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {type: array, items: {type: integer, minimum: 0}}
+      responses:
+        "204": {description: Done.}
+  /extra-bases:
+    post:
+      operationId: postExtraBases
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Others"}
+                - {type: object, properties: {name: {type: string}}}
+      responses:
+        "204": {description: Done.}
+  /closed-forms:
+    post:
+      operationId: postClosedForm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: false
+      responses:
+        "204": {description: Done.}
+  /nullable-searches:
+    post:
+      operationId: postNullableSearch
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              anyOf: [{$ref: "#/components/schemas/Search"}, {type: "null"}]
+      responses:
+        "204": {description: Done.}
+  /closed-parts:
+    post:
+      operationId: postClosedParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: false
+      responses:
+        "204": {description: Done.}
   /checks:
     post:
       operationId: postCheck
@@ -141,6 +306,16 @@ paths:
             schema: {anyOf: [{$ref: "#/components/schemas/Item"}, {type: "null"}]}
       responses:
         "204": {description: Done.}
+  /labels:
+    post:
+      operationId: postLabel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: [string, "null"], maxLength: 5}
+      responses:
+        "204": {description: Done.}
   /raw:
     post:
       operationId: postRaw
@@ -149,6 +324,71 @@ paths:
         content:
           application/json:
             schema: {type: object}
+      responses:
+        "204": {description: Done.}
+  /anythings:
+    post:
+      operationId: postAnything
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Anythings"}
+      responses:
+        "204": {description: Done.}
+  /anything-extras:
+    post:
+      operationId: postAnythingExtras
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                anything: {}
+              additionalProperties: {$ref: "#/components/schemas/Filter"}
+      responses:
+        "204": {description: Done.}
+  /anything-files:
+    post:
+      operationId: postAnythingFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - {$ref: "#/components/schemas/Anythings"}
+                - {type: object, properties: {file: {type: string, format: binary}}}
+      responses:
+        "204": {description: Done.}
+  /untyped-others:
+    post:
+      operationId: postUntypedOthers
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: {}
+      responses:
+        "204": {description: Done.}
+  /open-others:
+    post:
+      operationId: postOpenOthers
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: {type: string}
+              additionalProperties: true
       responses:
         "204": {description: Done.}
 components:
@@ -171,3 +411,32 @@ components:
       properties:
         code: {type: string, x-python-type: int}
         scores: {type: array, items: {type: integer, minimum: 0}}
+    Filter:
+      type: object
+      additionalProperties: false
+      properties:
+        color: {type: string}
+        minAge: {type: integer, minimum: 0}
+    Search:
+      type: object
+      properties:
+        filter: {$ref: "#/components/schemas/Filter"}
+        limit: {type: integer}
+      additionalProperties: {$ref: "#/components/schemas/Filter"}
+    Others:
+      type: object
+      properties:
+        base: {type: string}
+      additionalProperties: {$ref: "#/components/schemas/Filter"}
+    Choices:
+      type: object
+      properties:
+        either: {anyOf: [{$ref: "#/components/schemas/Filter"}, {type: string}]}
+        level: {enum: [1, a, true]}
+        words: {anyOf: [{type: array, items: {type: string}}, {type: string}]}
+        lists: {anyOf: [{type: array, items: {type: integer}}, {type: array, items: {type: string}}]}
+    Anythings:
+      type: object
+      properties:
+        anything: {}
+        many: {type: array, items: {}}

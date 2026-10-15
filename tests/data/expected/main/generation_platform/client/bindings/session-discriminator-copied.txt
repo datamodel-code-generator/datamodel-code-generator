@@ -36,11 +36,14 @@ render typing.TypedDict alias
   models.py
   model_bindings.py typing_TypedDict/alias
 render msgspec.Struct members
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
   models.py
   model_bindings.py msgspec_Struct/members
 render msgspec.Struct values
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
   models.py
   model_bindings.py msgspec_Struct/members
 render msgspec.Struct alias
+  warning UserWarning: Discriminator 'version' of Request cannot be represented as msgspec tags: a base or derived struct of RequestV1, RequestV2 keeps 'version' as a field; its variants are left untagged.
   models.py
   model_bindings.py msgspec_Struct/members

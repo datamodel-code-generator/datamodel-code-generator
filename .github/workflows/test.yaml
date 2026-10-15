@@ -21,6 +21,11 @@ permissions:
 jobs:
   test-coverage:
     name: ${{ matrix.name }} on Ubuntu
+    # Mid-stack layers are covered by the lowest unmerged and top layers of the same stack.
+    if: &full-test-run >-
+      github.event.pull_request.stack == null
+      || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
+      || github.event.pull_request.stack.position == github.event.pull_request.stack.size
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +45,9 @@ jobs:
           - tox_env: pydantic25
             name: pydantic25
             coverage_name: pydantic25
+          - tox_env: pydantic212
+            name: pydantic212
+            coverage_name: pydantic212
           - tox_env: pydantic213
             name: pydantic213
             coverage_name: pydantic213
@@ -106,6 +114,7 @@ jobs:
 
   test-formatter-coverage:
     name: ${{ matrix.name }} coverage on Ubuntu
+    if: *full-test-run
     strategy:
       fail-fast: false
       matrix:
@@ -221,6 +230,7 @@ jobs:
       ${{ matrix.name }} on
       ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}${{
       matrix.shard && format(' shard {0}/{1}', matrix.shard, matrix.shard_total) || '' }}
+    if: *full-test-run
     strategy:
       fail-fast: false
       matrix:
@@ -338,6 +348,7 @@ jobs:
       ${{ matrix.name }} on
       ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}${{
       matrix.shard && format(' shard {0}/{1}', matrix.shard, matrix.shard_total) || '' }}
+    if: *full-test-run
     strategy:
       fail-fast: false
       matrix:
@@ -384,6 +395,10 @@ jobs:
             name: FastAPI server installation e2e
             os: ubuntu-24.04
             coverage: false
+          - tox_env: client-install-nocov-e2e
+            name: Client installation e2e
+            os: ubuntu-24.04
+            coverage: false
           - tox_env: typing-nocov-e2e
             name: FastAPI server, client, and model codec typing e2e
             os: ubuntu-24.04
@@ -414,6 +429,36 @@ jobs:
             coverage: false
             shard: 5
             shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 1
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 2
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 3
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 4
+            shard_total: 5
+          - tox_env: typing-pydantic214-nocov-e2e
+            name: FastAPI server, client, and model codec typing e2e with Pydantic 2.14
+            os: ubuntu-24.04
+            coverage: false
+            shard: 5
+            shard_total: 5
     runs-on: ${{ matrix.os }}
     env: *test-http-backends-env
     steps: *test-http-backends-steps
@@ -423,6 +468,7 @@ jobs:
       ${{ matrix.name }} on
       ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
       shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: *full-test-run
     strategy:
       fail-fast: false
       matrix:
@@ -743,6 +789,7 @@ jobs:
       ${{ matrix.name }} on
       ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
       shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: *full-test-run
     strategy:
       fail-fast: false
       matrix:
@@ -1050,6 +1097,7 @@ jobs:
 
   test-formatter-subset:
     name: ${{ matrix.name }} subset on Ubuntu
+    if: *full-test-run
     strategy:
       fail-fast: false
       matrix:
@@ -1187,6 +1235,7 @@ jobs:
 
   check:
     name: checks
+    if: *full-test-run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1213,7 +1262,7 @@ jobs:
         run: |
           set -uo pipefail
           failed=0
-          for tox_env in type docs pkg_meta cli-doc-coverage; do
+          for tox_env in type docs pkg_meta cli-doc-coverage base-install; do
             if ! tox r -vv --notest --skip-missing-interpreters false -e "$tox_env"; then
               failed=1
             fi
@@ -1227,7 +1276,7 @@ jobs:
         run: |
           set -uo pipefail
           failed=0
-          for tox_env in type docs pkg_meta cli-doc-coverage; do
+          for tox_env in type docs pkg_meta cli-doc-coverage base-install; do
             if ! tox run --skip-uv-sync --skip-pkg-install -e "$tox_env"; then
               failed=1
             fi
@@ -1256,6 +1305,7 @@ jobs:
 
   e2e:
     name: e2e
+    if: *full-test-run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1486,6 +1536,10 @@ jobs:
       - name: Fail if any test workflow job failed
         env:
           NEEDS: ${{ toJSON(needs) }}
+          FULL_TEST_RUN: >-
+            ${{ github.event.pull_request.stack == null
+            || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
+            || github.event.pull_request.stack.position == github.event.pull_request.stack.size }}
         run: |
           import json
           import os
@@ -1493,5 +1547,6 @@ jobs:
 
           results = {name: job["result"] for name, job in json.loads(os.environ["NEEDS"]).items()}
           print(json.dumps(results, sort_keys=True))
-          sys.exit(not results or any(result != "success" for result in results.values()))
+          expected = "success" if os.environ.get("FULL_TEST_RUN", "true") == "true" else "skipped"
+          sys.exit(not results or any(result != expected for result in results.values()))
         shell: python

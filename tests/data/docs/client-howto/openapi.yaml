@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info:
+  title: Pet shelter
+  version: "1.0"
+servers:
+  - url: https://{region}.shelter.example/v1
+    variables:
+      region: {default: eu, enum: [eu, us]}
+security:
+  - bearer: []
+  - oauth: [pets.read]
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      tags: [pets]
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+        - name: tag
+          in: query
+          schema: {type: string}
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pets"}
+    post:
+      operationId: createPet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/NewPet"}
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200":
+          description: The pet.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+        "404":
+          description: No pet has this ID.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /pets/{petId}/adoption:
+    post:
+      operationId: adoptPet
+      tags: [adoptions]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200":
+          description: Adopted.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Pet"}
+        "409":
+          description: The pet is already adopted.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Error"}
+  /health:
+    get:
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: The service is up.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Health"}
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.shelter.example/token
+          scopes:
+            pets.read: Read pets.
+  schemas:
+    NewPet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        tag: {type: string}
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+        tag: {type: string}
+    Pets:
+      type: array
+      items: {$ref: "#/components/schemas/Pet"}
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: {type: string}
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}

@@ -23,60 +23,60 @@ class Error(BaseModel):
     message: str | None = None
 
 
-FieldPetsGetQueryLimitParameter = TypeAliasType("FieldPetsGetQueryLimitParameter", int)
+PetsGetQueryLimitParameter = TypeAliasType("PetsGetQueryLimitParameter", int)
 
 
-FieldPetsGetQueryTagsParameter = TypeAliasType("FieldPetsGetQueryTagsParameter", list[str])
+PetsGetQueryTagsParameter = TypeAliasType("PetsGetQueryTagsParameter", list[str])
 
 
-FieldPetsGetHeaderXTraceParameter = TypeAliasType("FieldPetsGetHeaderXTraceParameter", str)
+PetsGetHeaderXTraceParameter = TypeAliasType("PetsGetHeaderXTraceParameter", str)
 
 
-FieldPetsGetCookieSessionParameter = TypeAliasType("FieldPetsGetCookieSessionParameter", str)
+PetsGetCookieSessionParameter = TypeAliasType("PetsGetCookieSessionParameter", str)
 
 
-class FieldPetsGetResponse(RootModel[list[Pet]]):
+class PetsGetResponse(RootModel[list[Pet]]):
     root: list[Pet]
 
 
-class FieldPetsGetResponse200XNextHeader(RootModel[str]):
+class PetsGetResponse200XNextHeader(RootModel[str]):
     root: str
 
 
-class FieldPetsGetResponse200XRateHeader(RootModel[int]):
+class PetsGetResponse200XRateHeader(RootModel[int]):
     root: int
 
 
-class FieldPetsPostRequest(RootModel[str]):
+class PetsPostRequest(RootModel[str]):
     root: str
 
 
-FieldPetsPetIdGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdGetPathPetIdParameter", int)
+PetsPetIdGetPathPetIdParameter = TypeAliasType("PetsPetIdGetPathPetIdParameter", int)
 
 
-class FieldPetsPetIdGetResponse(RootModel[str]):
+class PetsPetIdGetResponse(RootModel[str]):
     root: str
 
 
-class FieldPetsPetIdHeadResponse200ETagHeader(RootModel[str]):
+class PetsPetIdHeadResponse200ETagHeader(RootModel[str]):
     root: str
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int)
+PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("PetsPetIdPhotoPutPathPetIdParameter", int)
 
 
-class FieldPetsPetIdPhotoPutRequest(RootModel[bytes]):
+class PetsPetIdPhotoPutRequest(RootModel[bytes]):
     root: bytes
 
 
-class FieldPetsPetIdPhotoPutResponse(RootModel[bytes]):
+class PetsPetIdPhotoPutResponse(RootModel[bytes]):
     root: bytes
 
 
-FieldPetsPetIdFilesPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesPostPathPetIdParameter", int)
+PetsPetIdFilesPostPathPetIdParameter = TypeAliasType("PetsPetIdFilesPostPathPetIdParameter", int)
 
 
-class FieldPetsPetIdFilesPostRequest(BaseModel):
+class PetsPetIdFilesPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -85,10 +85,10 @@ class FieldPetsPetIdFilesPostRequest(BaseModel):
     file: bytes
 
 
-FieldPetsPetIdFilesGetPathPetIdParameter = TypeAliasType("FieldPetsPetIdFilesGetPathPetIdParameter", int)
+PetsPetIdFilesGetPathPetIdParameter = TypeAliasType("PetsPetIdFilesGetPathPetIdParameter", int)
 
 
-class FieldPetsPetIdFilesGetResponse(BaseModel):
+class PetsPetIdFilesGetResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )

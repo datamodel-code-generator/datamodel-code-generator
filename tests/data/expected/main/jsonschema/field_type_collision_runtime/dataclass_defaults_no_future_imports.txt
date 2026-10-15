@@ -1,0 +1,35 @@
+{
+  "hints": {
+    "Bar": {
+      "x": [
+        "NoneType",
+        "int"
+      ]
+    },
+    "Leaf": {
+      "Bar": [
+        "Bar",
+        "NoneType"
+      ],
+      "items": [
+        "Bar",
+        "NoneType",
+        "list"
+      ]
+    },
+    "Values": {
+      "left": [
+        "Leaf",
+        "NoneType"
+      ]
+    },
+    "Payload": {
+      "values": [
+        "NoneType",
+        "Values"
+      ]
+    }
+  },
+  "defaults": "Leaf(Bar=Bar(x=1), items=[{'x': 1}])",
+  "validated": "Payload(values=Values(left=Leaf(Bar=Bar(x=1), items=[{'x': 1}])))"
+}

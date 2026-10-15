@@ -25,10 +25,11 @@ _STYLES: Final = {
     "header": frozenset({"simple"}),
     "cookie": frozenset({"form", "cookie"}),
 }
-_TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+_NOT_HEADER_TEXT: Final = re.compile(r"[^\t\x20-\x7E]")
 _COOKIE_OCTETS: Final = re.compile(r"[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*")
-_HEADER_CONTROL: Final = re.compile(r"[\x00-\x08\x0A-\x1F\x7F\ud800-\udfff]")
 _OWS: Final = " \t"
+_UNENCODABLE: Final = "A parameter value is text that UTF-8 cannot encode, such as a lone surrogate"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -51,16 +52,20 @@ class ParameterPlan:
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form.
 
-        A cookie sent as it is, a single value or one of the cookie style, needs a name that is a token.
+        A header needs a name that is a token, and so does a cookie sent as it is, a single value or one of the cookie
+        style.
         """
         if not _reversible(self):
             content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
             msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {self.shape} values"
             raise ValueError(msg)
+        if self.location == "header" and not TOKEN.fullmatch(self.name):
+            msg = f"header name {self.name!r} is not a token, which every header field name must be"
+            raise ValueError(msg)
         if (
             self.location == "cookie"
             and (self.style == "cookie" or self.shape == "scalar")
-            and not _TOKEN.fullmatch(self.name)
+            and not TOKEN.fullmatch(self.name)
         ):
             msg = f"cookie parameter name {self.name!r} is not a token, which a cookie sent as it is needs"
             raise ValueError(msg)
@@ -106,10 +111,7 @@ def _entries(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
         case "array", tuple() | list():
             return [(None, lexical(item, plan.kind)) for item in value]
         case "object", Mapping():
-            entries: list[_Entry] = []
-            for key, item in value.items():
-                entries.append((key, lexical(item, "string")))
-            return entries
+            return [(key, lexical(item, "string")) for key, item in value.items() if item is not None]
         case _:
             pass
     msg = "The value does not have the parameter's declared shape"
@@ -171,6 +173,10 @@ def _verbatim(text: str) -> str:
 
 
 def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = False) -> list[_Entry]:
+    """Return a query style's pairs, percent-encoded unless `raw` asks for the text form-data parts carry.
+
+    Raw text cannot escape a delimiter, so a value or member name that holds the one its style joins with is refused.
+    """
     encode = _verbatim if raw else _percent(plan, _QUERY_KEPT)
     encoded = entries if raw else _encoded(entries, encode)
     name = encode(plan.name)
@@ -188,13 +194,25 @@ def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = Fal
             return [(name, _joined(encoded, separator=separator, pair=separator))]
         case "deepObject", _, _:
             return [(encode(f"{plan.name}[{key}]"), text) for (key, _), (_, text) in zip(entries, encoded, strict=True)]
+        case _ if raw and any("," in part for entry in entries for part in entry if part is not None):
+            msg = "A comma-delimited form-data value cannot contain a comma"
+            raise ParameterEncodingError(msg)
         case _:
-            return [(name, _joined(encoded))]
+            pass
+    return [(name, _joined(encoded))]
+
+
+def header_text(text: str) -> bool:
+    """Return whether a text is a header value every recipient reads alike, as RFC 9110 writes one.
+
+    It holds HTAB, SP, and visible ASCII only, without whitespace at either end.
+    """
+    return not _NOT_HEADER_TEXT.search(text) and text == text.strip(_OWS)
 
 
 def _header_text(text: str, *, item: bool) -> str:
-    if _HEADER_CONTROL.search(text) or text != text.strip(_OWS) or (item and "," in text):
-        msg = "A header value contains control characters, surrounding whitespace, or a list delimiter"
+    if not header_text(text) or (item and "," in text):
+        msg = "A header value contains control characters, non-ASCII text, surrounding whitespace, or a list delimiter"
         raise ParameterEncodingError(msg)
     return text
 
@@ -215,7 +233,7 @@ def _encode_cookie(plan: ParameterPlan, entries: list[_Entry]) -> list[_Entry]:
     pairs = [(plan.name if key is None else key, text) for key, text in entries]
     if plan.style == "form" and plan.shape != "scalar":
         return [(quote(key, safe=""), quote(text, safe="")) for key, text in pairs]
-    if not all(_TOKEN.fullmatch(key) and _COOKIE_OCTETS.fullmatch(text) for key, text in pairs):
+    if not all(TOKEN.fullmatch(key) and _COOKIE_OCTETS.fullmatch(text) for key, text in pairs):
         msg = "A cookie name must be a token and its value unquoted cookie octets"
         raise ParameterEncodingError(msg)
     return list(pairs)
@@ -226,7 +244,9 @@ def _content(plan: ParameterPlan, value: JSONValue) -> str:
         case "json", _:
             finite(value)
             text = json_bytes(value).decode()
-            return text if plan.location != "header" or text.isascii() else json_bytes(value, ascii_only=True).decode()
+            if plan.location != "header":
+                return text
+            return (text if text.isascii() else json_bytes(value, ascii_only=True).decode()).replace("\x7f", "\\u007f")
         case "text", str():
             return value
         case _:
@@ -246,7 +266,11 @@ def _querystring_text(plan: ParameterPlan, value: JSONValue) -> str:
 
 def querystring(plan: ParameterPlan, value: object) -> str:
     """Return a querystring parameter's whole encoded query, without its leading question mark."""
-    if text := _querystring_text(plan, cast("JSONValue", value)):
+    try:
+        text = _querystring_text(plan, cast("JSONValue", value))
+    except UnicodeEncodeError:
+        raise ParameterEncodingError(_UNENCODABLE) from None
+    if text:
         return text
     msg = "An explicit querystring value cannot encode to an empty query"
     raise ParameterEncodingError(msg)
@@ -255,7 +279,8 @@ def querystring(plan: ParameterPlan, value: object) -> str:
 def _style_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
     """Return a style's pairs of a value; an empty array or object writes none, as an omitted value does.
 
-    A path segment cannot be omitted, so a path parameter refuses an empty array or object.
+    A style cannot write null, so an object member of None is left out as an unset one is. A path segment cannot be
+    omitted, so a path parameter refuses an empty array or object.
     """
     if not (entries := _entries(plan, value)):
         if plan.location == "path":
@@ -287,9 +312,15 @@ def _content_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
 
 
 def pairs(plan: ParameterPlan, value: object) -> list[tuple[str | None, str]]:
-    """Return a parameter's ordered encoded names and texts in its location: the style's pairs, or its content."""
-    value = cast("JSONValue", value)
-    return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, value)
+    """Return a parameter's ordered encoded names and texts in its location: the style's pairs, or its content.
+
+    Text that UTF-8 cannot encode, such as a lone surrogate, raises ParameterEncodingError, as any value its style or
+    content cannot write does.
+    """
+    try:
+        return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, cast("JSONValue", value))
+    except UnicodeEncodeError:
+        raise ParameterEncodingError(_UNENCODABLE) from None
 
 
 def path_text(plan: ParameterPlan, value: object) -> str:

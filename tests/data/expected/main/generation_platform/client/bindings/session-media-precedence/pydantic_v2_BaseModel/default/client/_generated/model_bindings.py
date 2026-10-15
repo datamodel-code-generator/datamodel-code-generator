@@ -8,8 +8,8 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldItemsPostRequest]] = PydanticCodec(models.FieldItemsPostRequest)
+codec_0: Final[PydanticCodec[models.ItemsPostRequest]] = PydanticCodec(models.ItemsPostRequest)
 """Codec of /paths/~1items/post request_body (request application/json)."""

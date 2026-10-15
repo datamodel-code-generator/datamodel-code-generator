@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from typing import Protocol
 
     from ..model_codecs.media import JSONValue, LexicalKind
-    from .multipart import PartKind, PartPlan
     from .operations import InboundModelCodec
+    from .parts import PartKind, PartPlan
     from .responses import ResponseInfo
 
 T = TypeVar("T")

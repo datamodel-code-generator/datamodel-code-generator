@@ -65,6 +65,16 @@ paths:
         - {name: file.name, in: path, required: true, schema: {type: string, pattern: "^[a-z]+\\.txt$"}}
       responses:
         "204": {description: Done.}
+  /pairs/{pair.id}/{class}/{part}/of/{part}:
+    get:
+      operationId: getPair
+      parameters:
+        - {name: pair.id, in: path, required: true, schema: {type: string, pattern: "^[a-z]+$"}}
+        - {name: class, in: path, required: true, schema: {type: integer, minimum: 1}}
+        - {name: part, in: path, required: true, schema: {type: integer, minimum: 1}}
+        - {name: X_Rank, in: header, schema: {type: integer, minimum: 1}}
+      responses:
+        "204": {description: Done.}
   /menü/{item}:
     get:
       operationId: getMenu
@@ -83,6 +93,14 @@ paths:
         - {name: kind, in: query, schema: {type: string, enum: [a, b]}}
         - {name: tier, in: query, schema: {anyOf: [{type: integer, enum: [1, 2]}, {type: "null"}]}}
         - {name: levels, in: query, schema: {type: array, items: {type: integer, enum: [1, 2]}}}
+      responses:
+        "204": {description: Done.}
+  /foods/{food_id}/servings/{serving}:
+    get:
+      operationId: getServing
+      parameters:
+        - {name: food_id, in: path, schema: {type: string}}
+        - {name: serving, in: path, required: false, schema: {type: integer, minimum: 1, default: 1}}
       responses:
         "204": {description: Done.}
 components:

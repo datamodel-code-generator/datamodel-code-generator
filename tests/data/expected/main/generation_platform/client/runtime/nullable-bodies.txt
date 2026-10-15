@@ -1,0 +1,202 @@
+# nullable-parameters pydantic_v2.BaseModel, pydantic_v2.dataclass
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = NotesPostResponse(text='b')
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=1 validation error for nullable[NotesPostResponse]
+text
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null through allOf = None
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object through allOf = ExtendedPostResponse(text='b', tag='t')
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an allOf object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postExtended', reason='invalid_value') [operation_id='postExtended', body_bytes=b'{}', truncated=False, cause=1 validation error for nullable[ExtendedPostResponse]
+text
+  Field required [type=missing, input_value={}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/<version>/v/missing] invalid_value
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body = None
+  refuse a media type beside an omitted null body ! ConfigurationError: ConfigurationError(operation_id='postDraft', reason='without_body', field_path='media_type') [operation_id='postDraft', field_path=('media_type',)] without_body
+  > POST https://api.example.com/versions
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body of several media = None
+  refuse null without the media type of a media that takes it ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='missing', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] missing
+  refuse a named media that rejects null ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='without_body', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] without_body
+  > POST https://api.example.com/variants
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 4] b'null'
+  send null in a named media that takes null = None
+  > POST https://api.example.com/texts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional text body = None
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
+  send null as a body without a schema = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  async omit a null optional body = None
+# nullable-parameters dataclasses.dataclass
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = NotesPostResponse(text='b')
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=TypeError("NotesPostResponse.__init__() missing 1 required positional argument: 'text'")] invalid_value
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null through allOf = None
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object through allOf = ExtendedPostResponse(text='b', tag='t')
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an allOf object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postExtended', reason='invalid_value') [operation_id='postExtended', body_bytes=b'{}', truncated=False, cause=TypeError("ExtendedPostResponse.__init__() missing 1 required positional argument: 'text'")] invalid_value
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body = None
+  refuse a media type beside an omitted null body ! ConfigurationError: ConfigurationError(operation_id='postDraft', reason='without_body', field_path='media_type') [operation_id='postDraft', field_path=('media_type',)] without_body
+  > POST https://api.example.com/versions
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body of several media = None
+  refuse null without the media type of a media that takes it ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='missing', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] missing
+  refuse a named media that rejects null ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='without_body', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] without_body
+  > POST https://api.example.com/variants
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 4] b'null'
+  send null in a named media that takes null = None
+  > POST https://api.example.com/texts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional text body = None
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
+  send null as a body without a schema = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  async omit a null optional body = None
+# nullable-parameters typing.TypedDict
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = {'text': 'b'}
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member = {}
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null through allOf = None
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object through allOf = {'text': 'b', 'tag': 't'}
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an allOf object without its required member = {}
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body = None
+  refuse a media type beside an omitted null body ! ConfigurationError: ConfigurationError(operation_id='postDraft', reason='without_body', field_path='media_type') [operation_id='postDraft', field_path=('media_type',)] without_body
+  > POST https://api.example.com/versions
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body of several media = None
+  refuse null without the media type of a media that takes it ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='missing', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] missing
+  refuse a named media that rejects null ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='without_body', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] without_body
+  > POST https://api.example.com/variants
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 4] b'null'
+  send null in a named media that takes null = None
+  > POST https://api.example.com/texts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional text body = None
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
+  send null as a body without a schema = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  async omit a null optional body = None
+# nullable-parameters msgspec.Struct
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object = NotesPostResponse(text='b')
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postNote', reason='invalid_value') [operation_id='postNote', body_bytes=b'{}', truncated=False, cause=ValidationError('Object missing required field `text`')] invalid_value
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  send and decode null through allOf = None
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"a"}'
+  send and decode an object through allOf = ExtendedPostResponse(text='b', tag='t')
+  > POST https://api.example.com/extended
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  decode an allOf object without its required member ! DecodeError: DecodeError(status_code=200, operation_id='postExtended', reason='invalid_value') [operation_id='postExtended', body_bytes=b'{}', truncated=False, cause=ValidationError('Object missing required field `text`')] invalid_value
+  > POST https://api.example.com/forms
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 28] b'name=n&tags=a&tags=b&count=2'
+  send a form's declared fields = None
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 384] b'--<boundary>\r\nContent-Disposition: form-data; name="file"; filename="a.txt"\r\nContent-Type: text/plain\r\n\r\ndata\r\n--<boundary>\r\nContent-Disposition: form-data; name="note"\r\n\r\nn\r\n--<boundary>\r\nContent-Disposition: form-data; name="meta"\r\nContent-Type: application/json\r\n\r\n{"size":3}\r\n--<boundary>--\r\n'
+  send declared parts = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body = None
+  refuse a media type beside an omitted null body ! ConfigurationError: ConfigurationError(operation_id='postDraft', reason='without_body', field_path='media_type') [operation_id='postDraft', field_path=('media_type',)] without_body
+  > POST https://api.example.com/versions
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional body of several media = None
+  refuse null without the media type of a media that takes it ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='missing', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] missing
+  refuse a named media that rejects null ! ConfigurationError: ConfigurationError(operation_id='postVariant', reason='without_body', field_path='media_type') [operation_id='postVariant', field_path=('media_type',)] without_body
+  > POST https://api.example.com/variants
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/vnd.note+json, content-length: 4] b'null'
+  send null in a named media that takes null = None
+  > POST https://api.example.com/texts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  omit a null optional text body = None
+  > POST https://api.example.com/values
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 4] b'null'
+  send null as a body without a schema = None
+  > POST https://api.example.com/notes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 4] b'null'
+  async send and decode null = None
+  > POST https://api.example.com/drafts
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate] b''
+  async omit a null optional body = None

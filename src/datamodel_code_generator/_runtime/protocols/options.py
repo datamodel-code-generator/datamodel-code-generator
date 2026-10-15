@@ -47,7 +47,7 @@ _WS: Final = (
     ("pong_timeout", True, True, False),
     _SESSION,
 )
-_CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
+_CACHE: Final = (("max_ttl", True, False, False),)
 _CACHE_METHODS: Final = ("get", "set", "delete")
 
 
@@ -135,7 +135,8 @@ class UploadOptions:
 class WSOptions:
     """WebSocket limits; durations are finite positive seconds, None removes a limit where it is allowed.
 
-    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout. `total_timeout`, which
+    `idle_timeout` bounds a receive waiting for a message and inherits the native read timeout. `max_message_bytes` is
+    passed to HTTPX2 as its message size limit, whose own default applies while it is unset. `total_timeout`, which
     also takes 0, bounds the whole session in seconds, counted from its start.
     """
 
@@ -153,9 +154,8 @@ class WSOptions:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class CacheOptions:
-    """Cache limits of one fetch: the largest body it stores and the cap on any entry's freshness."""
+    """Cache limits of one fetch: the cap on any entry's freshness."""
 
-    max_entry_bytes: int | UNSET = UNSET
     max_ttl: float | UNSET = UNSET
 
     def __post_init__(self) -> None:

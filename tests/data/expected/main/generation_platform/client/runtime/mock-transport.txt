@@ -1,6 +1,6 @@
 # pets pydantic_v2.BaseModel
   > GET https://api.example.com/v1/pets
-  json = FieldPetsGetResponse(root=[Pet(id=1, name='dog', tag=None)])
+  json = PetsGetResponse(root=[Pet(id=1, name='dog', tag=None)])
   > GET https://api.example.com/v1/pets
   json error ! NotFoundError: Error code: 404 - {"code":4,"message":"missing"} [operation_id='listPets', status_code=404, body=Error(code=4, message='missing'), body_bytes=b'{"code":4,"message":"missing"}', truncated=False]
   > GET https://api.example.com/v1/pets/3
@@ -18,7 +18,7 @@
   > GET https://api.example.com/v1/pets/3
   raw identity content = [b'{"id":3,"name":"fox"}']
   > GET https://api.example.com/v1/pets
-  async json = FieldPetsGetResponse(root=[Pet(id=1, name='dog', tag=None)])
+  async json = PetsGetResponse(root=[Pet(id=1, name='dog', tag=None)])
   > GET https://api.example.com/v1/pets
   async json error ! NotFoundError: Error code: 404 - {"code":4,"message":"missing"} [operation_id='listPets', status_code=404, body=Error(code=4, message='missing'), body_bytes=b'{"code":4,"message":"missing"}', truncated=False]
   > GET https://api.example.com/v1/pets/3

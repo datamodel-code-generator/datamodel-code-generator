@@ -9,9 +9,9 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.FieldSubscriptionsPostQueryDryRunParameter]] = PydanticCodec(models.FieldSubscriptionsPostQueryDryRunParameter)
+codec_0: Final[PydanticCodec[models.SubscriptionsPostQueryDryRunParameter]] = PydanticCodec(models.SubscriptionsPostQueryDryRunParameter)
 """Codec of /paths/~1subscriptions/post parameter (request query dry_run)."""
 
 codec_1: Final[PydanticCodec[models.Subscription]] = PydanticCodec(models.Subscription)

@@ -11,7 +11,15 @@
         "kind": "check",
         "success": true,
         "content": "",
-        "differences": []
+        "differences": [],
+        "target": {
+          "package": "server",
+          "dependencies": [
+            "fastapi>=0.141.1",
+            "pydantic>=2.14.0",
+            "typing-extensions>=4.16"
+          ]
+        }
       }
     },
     {
@@ -22,7 +30,15 @@
         "kind": "check",
         "success": true,
         "content": "",
-        "differences": []
+        "differences": [],
+        "target": {
+          "package": "server",
+          "dependencies": [
+            "fastapi>=0.141.1",
+            "pydantic>=2.14.0",
+            "typing-extensions>=4.16"
+          ]
+        }
       }
     }
   ]

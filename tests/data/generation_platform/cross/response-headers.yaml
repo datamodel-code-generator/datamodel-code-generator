@@ -1,0 +1,19 @@
+openapi: 3.1.0
+info: {title: Response headers, version: "1.0"}
+servers:
+  - {url: https://headers.example.com}
+paths:
+  /text:
+    get:
+      operationId: getText
+      parameters:
+        - {name: X-Name, in: header, schema: {type: string}}
+        - {name: X-Tags, in: header, schema: {type: array, items: {type: string}}}
+        - {name: session, in: cookie, schema: {type: string}}
+        - {name: ids, in: cookie, schema: {type: array, items: {type: string}}}
+      responses:
+        "204":
+          description: Done.
+          headers:
+            X-Name: {schema: {type: string}}
+            X-Tags: {schema: {type: array, items: {type: string}}}

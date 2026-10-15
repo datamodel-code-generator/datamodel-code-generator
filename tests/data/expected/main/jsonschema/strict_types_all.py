@@ -8,9 +8,9 @@ from pydantic import (
     BaseModel,
     Field,
     StrictBool,
-    StrictBytes,
     StrictInt,
     StrictStr,
+    conbytes,
     confloat,
     conint,
     constr,
@@ -30,4 +30,4 @@ class User(BaseModel):
     weight: confloat(ge=0.0, strict=True) | None = None
     score: confloat(ge=1e-08, strict=True) | None = None
     active: StrictBool | None = None
-    photo: StrictBytes | None = None
+    photo: conbytes(min_length=100, strict=True) | None = None

@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings
-from ._runtime.client.multipart import MultipartForm, PartPlan
+from ._runtime.client.multipart import MultipartForm
 from ._runtime.client.operations import (
     BodyFields,
     BodyMedia,
@@ -21,6 +21,7 @@ from ._runtime.client.operations import (
     empty_branch,
     model_branch,
 )
+from ._runtime.client.parts import PartPlan
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.default import (
@@ -43,7 +44,7 @@ OPERATION_0: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_3),), ()),
     parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='tag', style='form', explode=True), codec=model_bindings.codec_0),),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_1), BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_2, additional=FieldPlan('', 'string'))), required=True),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_1), BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_2, fields=(FieldPlan('name', 'string'), FieldPlan('tag', 'string')), additional=FieldPlan('', 'string'))), required=True),
     fields=FieldArguments(method='create_pet', names=('name', 'kind', 'pet_tag', 'birthDate', 'owner', 'secret'), media=(BodyFields(media_type='application/json', fields=((0, 'name', False), (1, 'kind', False), (2, 'tag', False), (3, 'birthDate', False), (4, 'owner', False), (5, 'secret', False))), BodyFields(media_type='application/x-www-form-urlencoded', fields=((0, 'name', False), (2, 'tag', False))))),
 )
 
@@ -107,7 +108,7 @@ OPERATION_6: Final[OperationPlan[PutPhotoResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='petId', style='simple', required=True, kind='integer'), codec=model_bindings.codec_13),),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('photo'), PartPlan('caption', codec=model_bindings.codec_16)), additional=PartPlan(''))),), default='multipart/form-data', required=True),
+    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('photo'), PartPlan('caption', codec=model_bindings.codec_16)), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
 )
 
 OPERATION_7: Final[OperationPlan[ReplacePetResponse]] = OperationPlan(

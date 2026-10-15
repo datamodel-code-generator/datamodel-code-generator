@@ -8,22 +8,22 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.Envelope: Model((Field('fresh', 'fresh'), Field('existing', 'existing')), True),
+    models.Envelope: Model((Field('fresh', 'fresh'), Field('existing', 'existing'))),
 }
 
-codec_0: Final[StdlibCodec[models.Envelope]] = StdlibCodec(models.Envelope, MODELS)
+codec_0: Final[TypedDictCodec[models.Envelope]] = TypedDictCodec(models.Envelope, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Envelope]] = StdlibCodec(models.Envelope, MODELS)
+codec_1: Final[TypedDictCodec[models.Envelope]] = TypedDictCodec(models.Envelope, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.Scalar]] = StdlibCodec(None, MODELS)
+codec_2: Final[TypedDictCodec[models.Scalar]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Scalar]] = StdlibCodec(None, MODELS)
+codec_3: Final[TypedDictCodec[models.Scalar]] = TypedDictCodec(None, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""

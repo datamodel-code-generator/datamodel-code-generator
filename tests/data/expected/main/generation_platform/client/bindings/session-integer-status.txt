@@ -19,10 +19,10 @@ render dataclasses.dataclass api
   model_bindings.py dataclasses_dataclass/paths
 render typing.TypedDict paths
   models.py
-  model_bindings.py dataclasses_dataclass/paths
+  model_bindings.py typing_TypedDict/paths
 render typing.TypedDict api
   models.py
-  model_bindings.py dataclasses_dataclass/paths
+  model_bindings.py typing_TypedDict/paths
 render msgspec.Struct paths
   models.py
   model_bindings.py msgspec_Struct/paths

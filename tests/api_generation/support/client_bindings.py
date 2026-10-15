@@ -30,7 +30,12 @@ import yaml
 
 import datamodel_code_generator
 from datamodel_code_generator import generate
-from tests.api_generation.support.client_generation import client_cyclic_metadata_report, model_config, render_client
+from tests.api_generation.support.client_generation import (
+    client_cyclic_metadata_report,
+    generator_warnings,
+    model_config,
+    render_client,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -47,7 +52,6 @@ MODEL = {
     "use_standard_collections": False,
     "field_extra_keys": {"default_factory"},
 }
-GENERATOR = Path(datamodel_code_generator.__file__).parent
 PACKAGE = "client"
 BINDINGS = (PACKAGE, "_generated", "model_bindings.py")
 STAGING = ".datamodel-codegen-"
@@ -100,17 +104,6 @@ def binding_model_options(values: dict[str, Any], root: Path) -> dict[str, Any]:
             ),
         }
     return values
-
-
-def _warnings(caught: list[warnings.WarningMessage]) -> list[str]:
-    """Return the generator's own warnings as report lines, and warn again of any other warning."""
-    lines: list[str] = []
-    for item in caught:
-        if item.category.__module__.startswith(GENERATOR.name) or Path(item.filename).is_relative_to(GENERATOR):
-            lines.append(f"warning {item.category.__name__}: {item.message}")
-        else:
-            warnings.warn_explicit(item.message, item.category, item.filename, item.lineno, source=item.source)
-    return lines
 
 
 def _models(modules: Modules) -> Modules:
@@ -187,13 +180,13 @@ def _renders(
                     if not isinstance(error, datamodel_code_generator.Error) and type(error).__name__ != raises:
                         raise
                     diagnostics, modules = [f"{type(error).__name__}: {error}"], {}
-            return [*_warnings(caught), *(f"diagnostic {item}" for item in diagnostics)], modules
+            return [*generator_warnings(caught), *(f"diagnostic {item}" for item in diagnostics)], modules
 
         def ordinary(name: str, *, backend: str = backend, model: dict = model) -> Path:
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
                 generate(source, config=model_config(root / name / models, backend, model))
-            _warnings(caught)
+            generator_warnings(caught)
             return root / name
 
         yield f"{count} {backend} {variant}", render, ordinary
@@ -238,7 +231,7 @@ def client_binding_report(
         for change in changes.pop(label, ()):
             edit = {key: change[key] for key in ("old", "new", "append") if key in change}
             edited = _sources(
-                *render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
+                *render(f"{count}-{change['id']}", {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
             )
             lines.extend((
                 f"change {label} {change['id']}",

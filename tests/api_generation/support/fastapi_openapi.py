@@ -7,6 +7,7 @@ import json
 import typing
 import warnings
 from collections.abc import Callable
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 from fastapi import APIRouter, FastAPI
@@ -16,8 +17,6 @@ from tests.api_generation.support.fastapi_server import _generate, _import
 from tests.api_generation.support.generated_packages import forget_generated
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     import pytest
 
 PACKAGES: Final[dict[str, dict[str, Any]]] = {
@@ -37,6 +36,11 @@ PACKAGES: Final[dict[str, dict[str, Any]]] = {
     "hooks": {"input": "served-hooks.yaml", "files": ["served-event.yaml", "served-library.yaml"]},
     "streams": {"input": "served-items.yaml", "files": ["served-items-library.yaml", "events/stamp.yaml"]},
     "resources": {"input": "served-resources.yaml"},
+    "text": {"input": "served-text.yaml"},
+    "local": {
+        "input": "served-local.yaml",
+        "files": ["served-local/parts/library.yaml", "served-local/shared/pet.yaml"],
+    },
     "detected": {
         "input": "served-hooks.yaml",
         "files": ["served-event.yaml", "served-library.yaml"],
@@ -66,12 +70,12 @@ def _stand_in(protocol: type) -> object:
     def method(name: str) -> Callable[..., object]:
         if inspect.iscoroutinefunction(getattr(protocol, name)):
 
-            async def answer_later(self: object, **_: object) -> None:  # noqa: ARG001, RUF029
+            async def answer_later(self: object, **_: object) -> None:  # ruff: ignore[unused-function-argument, unused-async]
                 return None
 
             return answer_later
 
-        def answer(self: object, **_: object) -> None:  # noqa: ARG001
+        def answer(self: object, **_: object) -> None:  # ruff: ignore[unused-function-argument]
             return None
 
         return answer
@@ -90,7 +94,7 @@ def _connected(builder: Callable[..., Any], **settings: Any) -> Any:
         and name != "authorize"
     }
     if "authorize" in inspect.signature(builder).parameters:
-        settings.setdefault("authorize", lambda requirement_sets, credentials: None)  # noqa: ARG005
+        settings.setdefault("authorize", lambda requirement_sets, credentials: None)  # ruff: ignore[unused-lambda-argument]
     return builder(**services, **settings)
 
 
@@ -207,6 +211,12 @@ def document_legacy(packages: dict[str, Any]) -> list[str]:
     return [json.dumps(_connected(packages["legacy"].create_app).openapi(), indent=2)]
 
 
+@_scenario("local")
+def document_local(packages: dict[str, Any]) -> list[str]:
+    """Bundle what the document references in files inside its directory, through a `..` that stays inside."""
+    return [json.dumps(_connected(packages["local"].create_app).openapi(), indent=2)]
+
+
 @_scenario("resources")
 def document_resources(packages: dict[str, Any]) -> list[str]:
     """Serve schema resources by `$id`, `$anchor`, and `$dynamicAnchor`, and references into paths under a prefix."""
@@ -218,11 +228,10 @@ def document_resources(packages: dict[str, Any]) -> list[str]:
     ]
 
 
-@_scenario("hooks", "detected")
-def detected_input(packages: dict[str, Any]) -> list[str]:
-    """Serve the same document when the input type is detected, references into other documents bundled."""
-    given, detected = (_connected(packages[name].create_app).openapi() for name in ("hooks", "detected"))
-    return [f"same {given == detected}", f"components {sorted(detected['components'])}"]
+@_scenario("text")
+def document_text(packages: dict[str, Any]) -> list[str]:
+    """Serve quotes, backslashes, and non-ASCII characters of the source's text as it declares them."""
+    return [json.dumps(_connected(packages["text"].create_app).openapi(), indent=2, ensure_ascii=False)]
 
 
 @_scenario("bodies")
@@ -233,7 +242,10 @@ def fastapi_document(packages: dict[str, Any]) -> list[str]:
 
 @_scenario("items")
 def own_applications(packages: dict[str, Any]) -> list[str]:
-    """Serve FastAPI's document in an application of your own, then the source document behind a root path."""
+    """Serve FastAPI's document in an application of your own, then the source document behind a root path.
+
+    Applications of one package with different titles each serve a document of their own.
+    """
     items = packages["items"]
     app = FastAPI()
     app.include_router(_connected(items.build_router))
@@ -253,7 +265,22 @@ def own_applications(packages: dict[str, Any]) -> list[str]:
         items.create_app, title="Mine", version="2", servers=[{"url": "https://prod.example.com"}]
     ).openapi()
     lines.append(f"metadata {described['info']} {described['servers']}")
+    titled = [TestClient(_connected(items.create_app, title=title)) for title in ("A", "B")]
+    lines.append(f"titles {[client.get('/openapi.json').json()['info']['title'] for client in (*titled, titled[0])]}")
     return lines
+
+
+@_scenario("pets")
+def missing_document(packages: dict[str, Any]) -> list[str]:
+    """Answer the document's first request with what to do when a build left `openapi.json` out of the package."""
+    pets = packages["pets"]
+    (Path(pets.__file__).parent / "_generated" / "openapi.json").unlink()
+    client = TestClient(_connected(pets.create_app))
+    try:
+        client.get("/openapi.json")
+    except FileNotFoundError as error:
+        return [f"openapi.json {type(error).__name__}: {error}"]
+    return ["openapi.json served"]
 
 
 def fastapi_openapi_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:

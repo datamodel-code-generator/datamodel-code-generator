@@ -57,6 +57,9 @@
   message over the limit ! ProtocolDataError: ProtocolDataError(operation_id='roomSocket', reason='too_large') [operation_id='roomSocket', cause=WebSocketDisconnect] too_large
   message over the limit again ! ConfigurationError: ConfigurationError(operation_id='roomSocket', reason='invalid_state', field_path='receive.failed') [operation_id='roomSocket', field_path=('receive', 'failed')] invalid_state
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1009 'Message too big'
+  message over HTTPX2's default limit ! ProtocolDataError: ProtocolDataError(operation_id='roomSocket', reason='too_large') [operation_id='roomSocket', cause=WebSocketDisconnect] too_large
+  message over HTTPX2's default limit again ! ConfigurationError: ConfigurationError(operation_id='roomSocket', reason='invalid_state', field_path='receive.failed') [operation_id='roomSocket', field_path=('receive', 'failed')] invalid_state
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1009 'Message too big'
   idle ! APITimeoutError: APITimeoutError(operation_id='roomSocket', reason='phase_timeout') [operation_id='roomSocket'] phase_timeout
   idle again ! ConfigurationError: ConfigurationError(operation_id='roomSocket', reason='invalid_state', field_path='receive.failed') [operation_id='roomSocket', field_path=('receive', 'failed')] invalid_state
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
@@ -72,6 +75,8 @@
   server's own message limit ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', code=1009, clean=False) [operation_id='roomSocket'] peer limit
   server's own message limit again ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', code=1009, clean=False) [operation_id='roomSocket'] peer limit
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1009 'peer limit'
+  under a raised limit = ServerMessage of 131100 bytes
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   iterated 1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
   abnormal end of iteration code=4001 reason='kicked' clean=False
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 4001 'kicked'
@@ -193,6 +198,9 @@
   async session deadline connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async session deadline ! APITimeoutError: APITimeoutError(operation_id='roomSocket', reason='deadline_exceeded') [operation_id='roomSocket'] deadline_exceeded
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1011 ''
+  async message over HTTPX2's default limit connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
+  async message over HTTPX2's default limit ! ProtocolDataError: ProtocolDataError(operation_id='roomSocket', reason='too_large') [operation_id='roomSocket', cause=WebSocketDisconnect] too_large
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1009 'Message too big'
   async abnormal closure connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async abnormal closure ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', code=1011, clean=False) [operation_id='roomSocket'] boom
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1011 'boom'

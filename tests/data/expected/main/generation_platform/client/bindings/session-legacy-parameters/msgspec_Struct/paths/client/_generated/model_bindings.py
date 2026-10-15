@@ -8,16 +8,16 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
 
-codec_0: Final[MsgspecCodec[models.FieldXGetQueryQParameter]] = MsgspecCodec(models.FieldXGetQueryQParameter)
+codec_0: Final[MsgspecCodec[models.XGetQueryQParameter]] = MsgspecCodec(models.XGetQueryQParameter)
 """Codec of /paths/~1x/get parameter (request query q)."""
 
-codec_1: Final[MsgspecCodec[models.FieldXGetQueryOptionalParameter]] = MsgspecCodec(models.FieldXGetQueryOptionalParameter)
+codec_1: Final[MsgspecCodec[models.XGetQueryOptionalParameter]] = MsgspecCodec(models.XGetQueryOptionalParameter)
 """Codec of /paths/~1x/get parameter (request query optional)."""
 
-codec_2: Final[MsgspecCodec[models.FieldXGetQueryFilterParameter]] = MsgspecCodec(models.FieldXGetQueryFilterParameter)
+codec_2: Final[MsgspecCodec[models.XGetQueryFilterParameter]] = MsgspecCodec(models.XGetQueryFilterParameter)
 """Codec of /paths/~1x/get parameter (request query filter application/json)."""
 
 codec_3: Final[MsgspecCodec[models.LimitParameter]] = MsgspecCodec(models.LimitParameter)

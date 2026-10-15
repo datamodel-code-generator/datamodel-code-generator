@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Variants whose base struct a union of another module tags
+  version: '1'
+paths: {}
+components:
+  schemas:
+    zoo.Pet:
+      type: object
+      required:
+      - petType
+      properties:
+        petType:
+          type: string
+        id:
+          type: integer
+    zoo.Bird:
+      type: object
+      required:
+      - petType
+      properties:
+        petType:
+          type: string
+    pets.Cat:
+      allOf:
+      - $ref: '#/components/schemas/zoo.Pet'
+      - type: object
+        properties:
+          name:
+            type: string
+    pets.Dog:
+      allOf:
+      - $ref: '#/components/schemas/zoo.Pet'
+      - type: object
+        properties:
+          bark:
+            type: boolean
+    pets.Owner:
+      type: object
+      properties:
+        pet:
+          oneOf:
+          - $ref: '#/components/schemas/pets.Cat'
+          - $ref: '#/components/schemas/pets.Dog'
+          discriminator:
+            propertyName: petType
+            mapping:
+              cat: '#/components/schemas/pets.Cat'
+              dog: '#/components/schemas/pets.Dog'
+    zoo.Shelter:
+      type: object
+      properties:
+        animal:
+          oneOf:
+          - $ref: '#/components/schemas/zoo.Pet'
+          - $ref: '#/components/schemas/zoo.Bird'
+          discriminator:
+            propertyName: petType
+            mapping:
+              pet: '#/components/schemas/zoo.Pet'
+              bird: '#/components/schemas/zoo.Bird'

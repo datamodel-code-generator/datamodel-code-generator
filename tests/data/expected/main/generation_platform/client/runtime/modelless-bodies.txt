@@ -1,0 +1,50 @@
+# modelless-bodies pydantic_v2.BaseModel
+  > POST https://api.example.com/blob
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 6] b'"/wD+"'
+  inline bytes = BlobPostResponse(root=b'\x80\xc3')
+  > POST https://api.example.com/alias
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 10] b'"AGNhZuk="'
+  alias bytes = Blob(root=b'')
+  > POST https://api.example.com/chunks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'["/g==","b2s="]'
+  bytes items = ChunksPostResponse(root=[Blob(root=b'\xc0\xaf'), Blob(root=b'\xff')])
+  > POST https://api.example.com/count
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 1] b'7'
+  integer = CountPostResponse(root='seven')
+  > POST https://api.example.com/blob
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 6] b'"/wD+"'
+  async inline bytes = BlobPostResponse(root=b'\x80\xc3')
+  > POST https://api.example.com/alias
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 10] b'"AGNhZuk="'
+  async alias bytes = Blob(root=b'')
+  > POST https://api.example.com/chunks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'["/g==","b2s="]'
+  async bytes items = ChunksPostResponse(root=[Blob(root=b'\xc0\xaf'), Blob(root=b'\xff')])
+  > POST https://api.example.com/count
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 1] b'7'
+  async integer = CountPostResponse(root='seven')
+# modelless-bodies pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct
+  > POST https://api.example.com/blob
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 6] b'"/wD+"'
+  inline bytes = b'\x80\xc3'
+  > POST https://api.example.com/alias
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 10] b'"AGNhZuk="'
+  alias bytes = b''
+  > POST https://api.example.com/chunks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'["/g==","b2s="]'
+  bytes items = [b'\xc0\xaf', b'\xff']
+  > POST https://api.example.com/count
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 1] b'7'
+  integer = 'seven'
+  > POST https://api.example.com/blob
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 6] b'"/wD+"'
+  async inline bytes = b'\x80\xc3'
+  > POST https://api.example.com/alias
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 10] b'"AGNhZuk="'
+  async alias bytes = b''
+  > POST https://api.example.com/chunks
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 15] b'["/g==","b2s="]'
+  async bytes items = [b'\xc0\xaf', b'\xff']
+  > POST https://api.example.com/count
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 1] b'7'
+  async integer = 'seven'

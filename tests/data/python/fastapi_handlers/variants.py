@@ -22,7 +22,7 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
     """Return a service that records the request models it receives and answers with plain values."""
     del models
 
-    class Untagged(server.services.UntaggedService):
+    class Default(server.services.DefaultService):
         def create_pet(self, *, body: object) -> object:
             calls.append(f"create_pet(body={_plain(body)})")
             return {"id": 1, "name": "Rex"}
@@ -35,4 +35,4 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
             calls.append("list_owners()")
             return [{"name": "Ann"}]
 
-    return {"default": {"untagged": Untagged()}}
+    return {"default": {"default": Default()}}

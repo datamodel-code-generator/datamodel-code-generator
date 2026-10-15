@@ -246,9 +246,11 @@ def generate_payload_runtime(
     return runtime
 
 
-def generate_payload_adapter(case: SchemaCase, generated_model_cache: dict[str, Any]) -> TypeAdapter[Any]:
+def generate_payload_adapter(
+    case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend = PayloadBackend.PYDANTIC_V2
+) -> TypeAdapter[Any]:
     """Generate or load the Pydantic v2 adapter for a payload validation case."""
-    runtime = generate_payload_runtime(case, generated_model_cache, PayloadBackend.PYDANTIC_V2)
+    runtime = generate_payload_runtime(case, generated_model_cache, backend)
     if runtime.adapter is None:  # pragma: no cover
         msg = f"{case.id}: pydantic v2 backend did not create a TypeAdapter"
         raise PayloadAdapterError(msg)
@@ -268,10 +270,12 @@ def load_generated_payload_runtime(
         raise AssertionError from exc
 
 
-def load_generated_payload_adapter(case: SchemaCase, generated_model_cache: dict[str, Any]) -> TypeAdapter[Any]:
+def load_generated_payload_adapter(
+    case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend = PayloadBackend.PYDANTIC_V2
+) -> TypeAdapter[Any]:
     """Generate or load the Pydantic v2 adapter for a payload validation case."""
     try:
-        return generate_payload_adapter(case, generated_model_cache)
+        return generate_payload_adapter(case, generated_model_cache, backend)
     except PayloadAdapterError as exc:  # pragma: no cover
         pytest.fail(f"{case.id}: {exc}")
         raise AssertionError from exc

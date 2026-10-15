@@ -1,6 +1,8 @@
 # all
 backend pydantic_v2.BaseModel
-dependencies httpx2[ws]>=2.13.0 typing-extensions>=4.16 pydantic>=2.13.5 cryptography>=50.0.0
+dependencies httpx2[ws]>=2.13.0 typing-extensions>=4.16 pydantic>=2.14.0 cryptography>=50.0.0
+imports of the dependencies cryptography httpx2 pydantic typing_extensions
+other third-party imports anyio httpcore2 pydantic_core wsproto
 copied runtime
   __init__.py
   client/__init__.py
@@ -18,6 +20,7 @@ copied runtime
   client/native.py
   client/operations.py
   client/options.py
+  client/parts.py
   client/paths.py
   client/positions.py
   client/raw.py
@@ -29,9 +32,10 @@ copied runtime
   model_codecs/__init__.py
   model_codecs/errors.py
   model_codecs/media.py
-  model_codecs/native.py
   model_codecs/parameter_reads.py
   model_codecs/parameters.py
+  model_codecs/pydantic_adapters.py
+  model_codecs/pydantic_models.py
   model_codecs/unset.py
   protocols/__init__.py
   protocols/cache.py
@@ -59,12 +63,11 @@ copied runtime
   protocols/webhooks.py
   protocols/websocket.py
   protocols/writes.py
-total 57 modules
+total 59 modules
 public files
   publication_client/__init__.py
   publication_client/bodies.py
   publication_client/errors.py
-  publication_client/model_codecs.py
   publication_client/options.py
   publication_client/protocols/__init__.py
   publication_client/resources/__init__.py

@@ -21,56 +21,55 @@ class Filter:
 TraceParameter: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryLimitParameter: TypeAlias = int
+ItemsItemIdGetQueryLimitParameter: TypeAlias = int
 
 
-FieldItemsItemIdGetQueryRatioParameter: TypeAlias = float
+ItemsItemIdGetQueryRatioParameter: TypeAlias = float
 
 
-FieldItemsItemIdGetQuerySlugParameter: TypeAlias = str
+ItemsItemIdGetQuerySlugParameter: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryTagsParameterItem: TypeAlias = str
+ItemsItemIdGetQueryTagsParameterItem: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryTagsParameter: TypeAlias = Annotated[
-    list[FieldItemsItemIdGetQueryTagsParameterItem],
-    field(default_factory=lambda: ['new']),
+ItemsItemIdGetQueryTagsParameter: TypeAlias = Annotated[
+    list[ItemsItemIdGetQueryTagsParameterItem], field(default_factory=lambda: ['new'])
 ]
 
 
-FieldItemsItemIdGetQueryLabelsParameterItem: TypeAlias = str
+ItemsItemIdGetQueryLabelsParameterItem: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryLabelsParameter: TypeAlias = list[FieldItemsItemIdGetQueryLabelsParameterItem]
+ItemsItemIdGetQueryLabelsParameter: TypeAlias = list[ItemsItemIdGetQueryLabelsParameterItem]
 
 
-class FieldItemsItemIdGetQueryShadeParameter(Enum):
+class ItemsItemIdGetQueryShadeParameter(Enum):
     light = 'light'
     dark = 'dark'
 
 
-FieldItemsItemIdGetQueryPinnedParameter: TypeAlias = Literal['on']
+ItemsItemIdGetQueryPinnedParameter: TypeAlias = Literal['on']
 
 
-FieldItemsItemIdGetQueryColorsParameter: TypeAlias = list[Color]
+ItemsItemIdGetQueryColorsParameter: TypeAlias = list[Color]
 
 
-FieldItemsItemIdGetQueryCodesParameter: TypeAlias = str | list[str]
+ItemsItemIdGetQueryCodesParameter: TypeAlias = str | list[str]
 
 
-FieldItemsItemIdGetQueryNullableParameter: TypeAlias = int | None
+ItemsItemIdGetQueryNullableParameter: TypeAlias = int | None
 
 
 @dataclass
-class FieldItemsItemIdGetQueryOwnerParameter:
+class ItemsItemIdGetQueryOwnerParameter:
     name: str | None = None
 
 
-FieldItemsItemIdGetQueryExtraParameter: TypeAlias = dict[str, str]
+ItemsItemIdGetQueryExtraParameter: TypeAlias = dict[str, str]
 
 
-FieldItemsItemIdGetPathItemIdParameter: TypeAlias = int
+ItemsItemIdGetPathItemIdParameter: TypeAlias = int
 
 
 @dataclass

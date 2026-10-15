@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
 codec_0: Final[PydanticCodec[Any]] = PydanticCodec(Any)

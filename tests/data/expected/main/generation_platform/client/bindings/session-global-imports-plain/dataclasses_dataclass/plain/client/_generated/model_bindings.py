@@ -8,8 +8,8 @@ from __future__ import annotations
 from typing import Final
 from uuid import UUID
 
-from .._runtime.model_codecs.stdlib import Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec
 
 
-codec_0: Final[StdlibCodec[UUID]] = StdlibCodec(UUID, MODELS)
+codec_0: Final[DataclassCodec[UUID]] = DataclassCodec(UUID, {})
 """Codec of /paths/~1native/post request_body (request application/json)."""

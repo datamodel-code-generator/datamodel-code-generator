@@ -8,8 +8,8 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
-codec_0: Final[PydanticCodec[models.FieldPetsGetResponse]] = PydanticCodec(models.FieldPetsGetResponse)
+codec_0: Final[PydanticCodec[models.PetsGetResponse]] = PydanticCodec(models.PetsGetResponse)
 """Codec of /paths/~1pets/get response_body (response 200 application/json)."""

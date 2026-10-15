@@ -14,9 +14,9 @@ import models
 from ... import _operations
 from ..._runtime.client.client import AsyncClientCore
 from ...bodies import AsyncMultipartBody
-from ...model_codecs import JSONValue
 from ...options import UNSET, RequestOptions
 from ...responses import AsyncRawResponse, Response
+from ...types import JSONValue
 from ...types.default import (
     CreateOwnerResponse,
     CreatePetResponse,
@@ -287,7 +287,7 @@ class AsyncDefaultResource:
     async def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -306,7 +306,7 @@ class AsyncDefaultResource:
     async def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -672,7 +672,7 @@ class AsyncDefaultWithResponse:
     async def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -691,7 +691,7 @@ class AsyncDefaultWithResponse:
     async def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1057,7 +1057,7 @@ class AsyncDefaultWithRawResponse:
     async def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1076,7 +1076,7 @@ class AsyncDefaultWithRawResponse:
     async def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1442,7 +1442,7 @@ class AsyncDefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest,
+        body: models.OwnersPostRequest,
         email: UNSET = UNSET,
         nickName: UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,
@@ -1461,7 +1461,7 @@ class AsyncDefaultWithStreamingResponse:
     def create_owner(
         self,
         *,
-        body: models.FieldOwnersPostRequest | UNSET = UNSET,
+        body: models.OwnersPostRequest | UNSET = UNSET,
         email: str | UNSET = UNSET,
         nickName: str | UNSET = UNSET,
         media_type: Literal['application/json'] | None = None,

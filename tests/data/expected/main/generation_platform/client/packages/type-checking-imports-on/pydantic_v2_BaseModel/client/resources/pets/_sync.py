@@ -91,7 +91,7 @@ class PetsResource:
     def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal["text/plain"],
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,
@@ -99,7 +99,7 @@ class PetsResource:
     def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal["application/json", "text/plain"] | None = None,
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,
@@ -139,7 +139,7 @@ class PetsResource:
         petId: int,
         response_media_type: Literal["text/plain"],
         options: RequestOptions | None = None,
-    ) -> models.FieldPetsPetIdGetResponse: ...
+    ) -> models.PetsPetIdGetResponse: ...
     def get_pet(
         self,
         *,
@@ -264,7 +264,7 @@ class PetsWithResponse:
     def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal["text/plain"],
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,
@@ -272,7 +272,7 @@ class PetsWithResponse:
     def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal["application/json", "text/plain"] | None = None,
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,
@@ -312,7 +312,7 @@ class PetsWithResponse:
         petId: int,
         response_media_type: Literal["text/plain"],
         options: RequestOptions | None = None,
-    ) -> Response[models.FieldPetsPetIdGetResponse]: ...
+    ) -> Response[models.PetsPetIdGetResponse]: ...
     def get_pet(
         self,
         *,
@@ -437,7 +437,7 @@ class PetsWithRawResponse:
     def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal["text/plain"],
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,
@@ -445,7 +445,7 @@ class PetsWithRawResponse:
     def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal["application/json", "text/plain"] | None = None,
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,
@@ -586,7 +586,7 @@ class PetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: models.FieldPetsPostRequest,
+        body: models.PetsPostRequest,
         media_type: Literal["text/plain"],
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,
@@ -594,7 +594,7 @@ class PetsWithStreamingResponse:
     def create_pet(
         self,
         *,
-        body: models.NewPet | models.FieldPetsPostRequest,
+        body: models.NewPet | models.PetsPostRequest,
         media_type: Literal["application/json", "text/plain"] | None = None,
         response_media_type: Literal["application/json"] | None = None,
         options: RequestOptions | None = None,

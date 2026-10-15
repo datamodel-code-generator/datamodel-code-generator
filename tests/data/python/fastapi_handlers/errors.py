@@ -15,14 +15,14 @@ if TYPE_CHECKING:
 def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
     """Return one recording service for each application."""
 
-    class Untagged(server.services.UntaggedService):
+    class Default(server.services.DefaultService):
         def update_account(self, **arguments: object) -> None:
             calls.append(f"update_account({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
         def list_codes(self, **arguments: object) -> None:
             calls.append(f"list_codes({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
-    default = {"untagged": Untagged()}
+    default = {"default": Default()}
     return dict.fromkeys(("default", "override", "router", "router-handler"), default)
 
 

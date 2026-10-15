@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Final
 
 from ._generated import model_bindings, security
-from ._runtime.client.multipart import MultipartForm, PartPlan
+from ._runtime.client.multipart import MultipartForm
 from ._runtime.client.operations import (
     BodyMedia,
     OperationPlan,
@@ -18,6 +18,7 @@ from ._runtime.client.operations import (
     ServerPlan,
     binary_branch,
 )
+from ._runtime.client.parts import PartPlan
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.auth import (

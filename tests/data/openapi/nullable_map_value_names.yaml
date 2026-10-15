@@ -1,0 +1,78 @@
+openapi: 3.1.0
+info:
+  title: Nullable map value names
+  version: "1.0"
+paths: {}
+components:
+  schemas:
+    stats.Item:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          id:
+            type: integer
+    stats.Rank:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          position:
+            type: integer
+    stats.Rank1:
+      type: object
+      properties:
+        label:
+          type: string
+    stats.Teams:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          name:
+            type: string
+    Holder:
+      type: object
+      properties:
+        items:
+          $ref: "#/components/schemas/stats.Item"
+        ranks:
+          $ref: "#/components/schemas/stats.Rank"
+        teams:
+          $ref: "#/components/schemas/stats.Teams"
+        scores:
+          $ref: "#/components/schemas/Scores"
+        tags:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              meta:
+                type: object
+                properties:
+                  source:
+                    type: string
+        label:
+          $ref: "#/components/schemas/Tags"
+    Scores:
+      type: [object, "null"]
+      additionalProperties:
+        type: object
+        properties:
+          value:
+            type: number
+    Scores1:
+      type: object
+      properties:
+        total:
+          type: integer
+    Tags:
+      type: object
+      properties:
+        label:
+          type: string
+    Meta:
+      type: object
+      properties:
+        revision:
+          type: integer

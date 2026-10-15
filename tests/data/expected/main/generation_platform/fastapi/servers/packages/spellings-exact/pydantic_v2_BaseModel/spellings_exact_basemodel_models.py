@@ -9,7 +9,7 @@ from re import compile
 from typing import Annotated, List, Literal, Optional, Union
 
 from annotated_types import MultipleOf
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import Base64Str, BaseModel, ConfigDict, Field, RootModel
 from pydantic.types import conint, constr
 from typing_extensions import TypeAliasType
 
@@ -45,12 +45,12 @@ class Day(RootModel[date]):
 
 
 class Cat(BaseModel):
-    petType: Literal['cat']
+    pet_type: Literal['cat'] = Field(..., alias='pet-type')
     name: str
 
 
 class Dog(BaseModel):
-    petType: Literal['dog']
+    pet_type: Literal['dog'] = Field(..., alias='pet-type')
     bark: bool
 
 
@@ -66,59 +66,57 @@ class Response(BaseModel):
     echo: Optional[str] = None
 
 
-FieldPetsGetQueryInvalidParameter = TypeAliasType("FieldPetsGetQueryInvalidParameter", bool)
+PetsGetQueryInvalidParameter = TypeAliasType("PetsGetQueryInvalidParameter", bool)
 
 
-class FieldPetsGetResponse(
-    RootModel[List[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]]
+class PetsGetResponse(
+    RootModel[List[Annotated[Union[Cat, Dog], Field(discriminator='pet_type')]]]
 ):
-    root: List[Annotated[Union[Cat, Dog], Field(discriminator='petType')]]
+    root: List[Annotated[Union[Cat, Dog], Field(discriminator='pet_type')]]
 
 
-FieldCountsGetQueryInvalidParameter = TypeAliasType("FieldCountsGetQueryInvalidParameter", bool)
+CountsGetQueryInvalidParameter = TypeAliasType("CountsGetQueryInvalidParameter", bool)
 
 
-class FieldCountsGetResponse(RootModel[List[conint(ge=0)]]):
+class CountsGetResponse(RootModel[List[conint(ge=0)]]):
     root: List[conint(ge=0)]
 
 
-FieldCodeGetQueryInvalidParameter = TypeAliasType("FieldCodeGetQueryInvalidParameter", bool)
+CodeGetQueryInvalidParameter = TypeAliasType("CodeGetQueryInvalidParameter", bool)
 
 
-FieldLiteralGetQueryModesParameter = TypeAliasType("FieldLiteralGetQueryModesParameter", List[Literal['a']])
+LiteralGetQueryModesParameter = TypeAliasType("LiteralGetQueryModesParameter", List[Literal['a']])
 
 
-FieldLiteralModelGetQueryModesParameter = TypeAliasType("FieldLiteralModelGetQueryModesParameter", List[Literal['b']])
+LiteralModelGetQueryModesParameter = TypeAliasType("LiteralModelGetQueryModesParameter", List[Literal['b']])
 
 
-FieldPetsPetIdGetQueryLimitParameter = TypeAliasType(
-    "FieldPetsPetIdGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
+PetsPetIdGetQueryLimitParameter = TypeAliasType(
+    "PetsPetIdGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
 )
 
 
-FieldPetsPetIdGetQueryCodesParameter = TypeAliasType(
-    "FieldPetsPetIdGetQueryCodesParameter",
+PetsPetIdGetQueryCodesParameter = TypeAliasType(
+    "PetsPetIdGetQueryCodesParameter",
     List[Annotated[str, Field(min_length=2, max_length=5)]],
 )
 
 
-FieldPetsPetIdGetQueryStepParameter = TypeAliasType(
-    "FieldPetsPetIdGetQueryStepParameter",
-    Annotated[Decimal, MultipleOf(Decimal('0.5'))],
+PetsPetIdGetQueryStepParameter = TypeAliasType(
+    "PetsPetIdGetQueryStepParameter", Annotated[Decimal, MultipleOf(Decimal('0.5'))]
 )
 
 
-FieldPetsPetIdGetQueryRawParameter = TypeAliasType("FieldPetsPetIdGetQueryRawParameter", bytes)
+PetsPetIdGetQueryRawParameter = TypeAliasType("PetsPetIdGetQueryRawParameter", Base64Str)
 
 
-FieldPetsPetIdGetQueryDayParameter = TypeAliasType("FieldPetsPetIdGetQueryDayParameter", date)
+PetsPetIdGetQueryDayParameter = TypeAliasType("PetsPetIdGetQueryDayParameter", date)
 
 
-FieldPetsPetIdGetQueryLabelParameter = TypeAliasType(
-    "FieldPetsPetIdGetQueryLabelParameter",
-    Annotated[str, Field(pattern=compile('^(?!x)'))],
+PetsPetIdGetQueryLabelParameter = TypeAliasType(
+    "PetsPetIdGetQueryLabelParameter", Annotated[str, Field(pattern=compile('^(?!x)'))]
 )
 
 
 class Pet(RootModel[Union[Cat, Dog]]):
-    root: Union[Cat, Dog] = Field(..., discriminator='petType')
+    root: Union[Cat, Dog] = Field(..., discriminator='pet_type')

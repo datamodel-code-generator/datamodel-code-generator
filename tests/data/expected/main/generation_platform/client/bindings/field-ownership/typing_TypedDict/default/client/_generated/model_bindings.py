@@ -8,37 +8,37 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_typeddicts import Field, Model, TypedDictCodec
 
 
 
 MODELS: Final[dict[type, Model]] = {
-    models.A: Model((Field('root', 'root'), Field('shared-key', 'shared-key')), True),
-    models.B: Model((Field('root', 'root'), Field('shared-key', 'shared-key'), Field('left', 'left')), True),
-    models.C: Model((Field('root', 'root'), Field('shared-key', 'shared-key'), Field('right', 'right')), True),
-    models.Leaf: Model((Field('root', 'root'), Field('shared-key', 'shared-key'), Field('left', 'left'), Field('right', 'right'), Field('leaf-key', 'leaf-key')), True),
+    models.A: Model((Field('root', 'root'), Field('shared-key', 'shared-key'))),
+    models.B: Model((Field('root', 'root'), Field('shared-key', 'shared-key'), Field('left', 'left'))),
+    models.C: Model((Field('root', 'root'), Field('shared-key', 'shared-key'), Field('right', 'right'))),
+    models.Leaf: Model((Field('root', 'root'), Field('shared-key', 'shared-key'), Field('left', 'left'), Field('right', 'right'), Field('leaf-key', 'leaf-key'))),
 }
 
-codec_0: Final[StdlibCodec[models.A]] = StdlibCodec(models.A, MODELS)
+codec_0: Final[TypedDictCodec[models.A]] = TypedDictCodec(models.A, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.A]] = StdlibCodec(models.A, MODELS)
+codec_1: Final[TypedDictCodec[models.A]] = TypedDictCodec(models.A, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.B]] = StdlibCodec(models.B, MODELS)
+codec_2: Final[TypedDictCodec[models.B]] = TypedDictCodec(models.B, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.B]] = StdlibCodec(models.B, MODELS)
+codec_3: Final[TypedDictCodec[models.B]] = TypedDictCodec(models.B, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.C]] = StdlibCodec(models.C, MODELS)
+codec_4: Final[TypedDictCodec[models.C]] = TypedDictCodec(models.C, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.C]] = StdlibCodec(models.C, MODELS)
+codec_5: Final[TypedDictCodec[models.C]] = TypedDictCodec(models.C, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""
 
-codec_6: Final[StdlibCodec[models.Leaf]] = StdlibCodec(models.Leaf, MODELS)
+codec_6: Final[TypedDictCodec[models.Leaf]] = TypedDictCodec(models.Leaf, MODELS)
 """Codec of /paths/~1bindings~13/post request_body (request application/json)."""
 
-codec_7: Final[StdlibCodec[models.Leaf]] = StdlibCodec(models.Leaf, MODELS)
+codec_7: Final[TypedDictCodec[models.Leaf]] = TypedDictCodec(models.Leaf, MODELS)
 """Codec of /paths/~1bindings~13/post response_body (response 200 application/json)."""

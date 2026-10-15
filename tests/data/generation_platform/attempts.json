@@ -64,6 +64,12 @@
     "failure": "repair_dispose"
   },
   {
+    "name": "untyped_parse_failed",
+    "input": "../openapi/nullable_map_value_cycle.yaml",
+    "failure": "untyped_parse",
+    "typed_nullable_map_values": "true"
+  },
+  {
     "name": "discard_failed",
     "input": "../openapi/invalid_dotted_conflicting_models.yaml",
     "failure": "discard"

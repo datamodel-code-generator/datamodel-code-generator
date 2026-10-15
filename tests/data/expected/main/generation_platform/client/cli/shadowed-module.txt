@@ -1,5 +1,7 @@
 # first run
+LeftoverFilesWarning: client: These Python files are not generated and are left in place: client/resources/pets/_sync/__init__.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.
 UserWarning: <root>/client/resources/pets/_sync.py: The generated module is shadowed by the existing package directory <root>/client/resources/pets/_sync, which Python imports instead. Remove the stale directory to import the generated module.
 # unchanged run
+LeftoverFilesWarning: client: These Python files are not generated and are left in place: client/resources/pets/_sync/__init__.py. Delete the ones an earlier generation wrote; code of your own belongs outside the generated package.
 UserWarning: <root>/client/resources/pets/_sync.py: The generated module is shadowed by the existing package directory <root>/client/resources/pets/_sync, which Python imports instead. Remove the stale directory to import the generated module.
 # check run

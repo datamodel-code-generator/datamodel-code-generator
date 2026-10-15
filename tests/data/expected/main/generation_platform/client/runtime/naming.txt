@@ -11,3 +11,15 @@
   > GET https://api.example.com/health
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   check the health = None
+  > GET https://api.example.com/x1
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  call an operation without tags = None
+  > GET https://api.example.com/defaults
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  call an operation tagged default = None
+  > GET https://api.example.com/defaults/upper
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  call an operation tagged DEFAULT = None
+  > GET https://api.example.com/untagged
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  call an operation tagged untagged = None

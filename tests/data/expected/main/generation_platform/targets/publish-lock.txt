@@ -1,5 +1,9 @@
 # publish-lock
 generate
+  Next steps: implement the stubs in services/pets.py, services/store.py, services/default.py, then run the server:
+    uv add uvicorn && uv run uvicorn --app-dir .. example.server.main:app --reload
+  or: uv add "fastapi[standard]" && uv run --directory .. fastapi dev --entrypoint example.server.main:app
+  See server/README.md.
 tree
   locks/remote.lock
   models.py
@@ -7,14 +11,20 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.json
   server/_generated/openapi.py
   server/application.py
+  server/main.py
   server/py.typed
   server/routers/__init__.py
+  server/routers/default.py
   server/routers/pets.py
   server/routers/store.py
-  server/routers/untagged.py
   server/services.py
+  services/__init__.py
+  services/default.py
+  services/pets.py
+  services/store.py
   5 runtime modules ['present']
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form
 tree
@@ -24,16 +34,26 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.json
   server/_generated/openapi.py
   server/application.py
+  server/main.py
   server/py.typed
   server/routers/__init__.py
+  server/routers/default.py
   server/routers/pets.py
   server/routers/store.py
-  server/routers/untagged.py
   server/services.py
+  services/__init__.py
+  services/default.py
+  services/pets.py
+  services/store.py
   5 runtime modules ['present']
 generate
+  Next steps: run the server with your services in services/pets.py, services/store.py, services/default.py:
+    uv add uvicorn && uv run uvicorn --app-dir .. example.server.main:app --reload
+  or: uv add "fastapi[standard]" && uv run --directory .. fastapi dev --entrypoint example.server.main:app
+  See server/README.md.
 tree
   locks/remote.lock
   models.py
@@ -41,13 +61,19 @@ tree
   server/__init__.py
   server/_generated/__init__.py
   server/_generated/contract.py
+  server/_generated/openapi.json
   server/_generated/openapi.py
   server/application.py
+  server/main.py
   server/py.typed
   server/routers/__init__.py
+  server/routers/default.py
   server/routers/pets.py
   server/routers/store.py
-  server/routers/untagged.py
   server/services.py
+  services/__init__.py
+  services/default.py
+  services/pets.py
+  services/store.py
   5 runtime modules ['present']
   DocumentationAnnotationWarning: server: /x-limit: The served document leaves out x-limit, which has no JSON form

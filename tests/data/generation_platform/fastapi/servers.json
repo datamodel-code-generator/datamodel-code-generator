@@ -371,6 +371,18 @@
   "parameters": {
     "input": "server-parameters.yaml",
     "services": "parameters",
+    "config": {
+      "server_parameter_names": {
+        "/paths/~1pairs~1{pair.id}~1{class}~1{part}~1of~1{part}/get": {
+          "path:class": "kind"
+        }
+      }
+    },
+    "model": {
+      "aliases": {
+        "pair.id": "pair"
+      }
+    },
     "apps": [
       {
         "set": "default",
@@ -710,6 +722,40 @@
           {
             "method": "GET",
             "url": "/items/1?ratio=1e999"
+          },
+          {
+            "method": "GET",
+            "url": "/pairs/ab/2/3/of/3",
+            "headers": {
+              "X_Rank": "4"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/pairs/AB/x/3/of/3",
+            "headers": {
+              "X_Rank": "y"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/pairs/AB/x/y/of/y"
+          },
+          {
+            "method": "GET",
+            "url": "/pairs/ab/2/1/of/2"
+          },
+          {
+            "method": "GET",
+            "url": "/foods/apple/servings/2"
+          },
+          {
+            "method": "GET",
+            "url": "/foods/apple/servings/0"
+          },
+          {
+            "method": "GET",
+            "url": "/foods/apple/servings/"
           }
         ]
       },
@@ -727,6 +773,10 @@
           {
             "method": "GET",
             "url": "/a/b/men%C3%BC/tea"
+          },
+          {
+            "method": "GET",
+            "url": "/a/b/pairs/AB/0/3/of/3"
           }
         ]
       },
@@ -756,11 +806,17 @@
           {
             "method": "GET",
             "url": "/nowhere/a%2Fb"
+          },
+          {
+            "method": "GET",
+            "url": "/pairs/AB/0/3/of/3"
           }
         ]
       }
     ],
-    "package_snapshots": []
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
   },
   "kinds": {
     "input": "server-kinds.yaml",
@@ -1311,6 +1367,36 @@
       },
       {
         "method": "POST",
+        "url": "/labels",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/labels",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/labels"
+      },
+      {
+        "method": "POST",
+        "url": "/labels",
+        "content": "",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/labels",
+        "json": "too long"
+      },
+      {
+        "method": "POST",
         "url": "/raw",
         "json": {
           "any": "thing"
@@ -1370,6 +1456,10 @@
       {
         "method": "GET",
         "url": "/results?case=client-error-number"
+      },
+      {
+        "method": "GET",
+        "url": "/results?case=client-error-bytes"
       },
       {
         "method": "GET",
@@ -1446,6 +1536,637 @@
       {
         "method": "GET",
         "url": "/blob?case=blob"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null",
+        "show_headers": [
+          "x-rate"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=word"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "nullable-results": {
+    "input": "server-nullable-results.yaml",
+    "services": "results",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/get": "async"
+      },
+      "server_primary_responses": {
+        "/paths/~1accepted/get": {
+          "status_code": 202
+        }
+      }
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/texts?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null",
+        "show_headers": [
+          "x-rate"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=long-word"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-201"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=created",
+        "show_headers": [
+          "location"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-202"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-203"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-206"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=no-content"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-404"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-500"
+      },
+      {
+        "method": "HEAD",
+        "url": "/texts?case=head-none"
+      },
+      {
+        "method": "HEAD",
+        "url": "/texts?case=head-empty"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=word"
+      },
+      {
+        "method": "POST",
+        "url": "/memos?case=none",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/memos?case=null",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/memos?case=none",
+        "json": {}
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=client-error"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=undeclared"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=numbers"
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "nullable-results-3-0": {
+    "input": "server-nullable-results-3-0.yaml",
+    "services": "results",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/get": "async"
+      }
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/texts?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null",
+        "show_headers": [
+          "x-rate"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=long-word"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-201"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=created",
+        "show_headers": [
+          "location"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-202"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-203"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-206"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=no-content"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-404"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-500"
+      },
+      {
+        "method": "HEAD",
+        "url": "/texts?case=head-none"
+      },
+      {
+        "method": "HEAD",
+        "url": "/texts?case=head-empty"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=word"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "nullable-results-alias": {
+    "input": "server-nullable-results.yaml",
+    "services": "results",
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/get": "async"
+      }
+    },
+    "model": {
+      "use_type_alias": true
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/texts?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null",
+        "show_headers": [
+          "x-rate"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=long-word"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-201"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=created",
+        "show_headers": [
+          "location"
+        ]
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-202"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-203"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-206"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=no-content"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-404"
+      },
+      {
+        "method": "GET",
+        "url": "/texts?case=null-500"
+      },
+      {
+        "method": "HEAD",
+        "url": "/texts?case=head-none"
+      },
+      {
+        "method": "HEAD",
+        "url": "/texts?case=head-empty"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/lists?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/names?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/values?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/anything?case=numbers"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/pets?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/things?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=missing-body"
+      },
+      {
+        "method": "GET",
+        "url": "/notes?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=client-error"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/oks?case=undeclared"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/any-aliases?case=numbers"
       }
     ],
     "package_snapshots": []
@@ -1663,6 +2384,41 @@
           },
           {
             "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic !!!",
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic dXNlcg=="
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic w7w6cMOkc3N3b3Jk"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic /zpw"
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
             "url": "/custom",
             "headers": {
               "Authorization": "Digest d1"
@@ -1822,6 +2578,38 @@
             }
           }
         ]
+      }
+    ],
+    "package_snapshots": []
+  },
+  "unaccepted": {
+    "input": "server-parameters.yaml",
+    "services": "parameters",
+    "config": {
+      "server_parameter_names": {
+        "/paths/~1pairs~1{pair.id}~1{class}~1{part}~1of~1{part}/get": {
+          "path:class": "kind"
+        }
+      }
+    },
+    "model": {
+      "aliases": {
+        "pair.id": "pair"
+      },
+      "custom_template_dir": "templates/unaccepted"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/pairs/ab/2/3/of/3"
+      },
+      {
+        "method": "GET",
+        "url": "/pairs/AB/x/y/of/y"
+      },
+      {
+        "method": "GET",
+        "url": "/pairs/ab/2/y/of/y"
       }
     ],
     "package_snapshots": []
@@ -2335,8 +3123,605 @@
             "text/plain"
           ]
         ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "filter",
+            null,
+            "{\"color\": \"blue\", \"minAge\": 3}",
+            "application/json"
+          ],
+          [
+            "filters",
+            null,
+            "{\"color\": \"a\"}",
+            "application/json"
+          ],
+          [
+            "filters",
+            null,
+            "{\"minAge\": 2}",
+            "application/json"
+          ],
+          [
+            "tags",
+            null,
+            "\"a\"",
+            "application/json"
+          ],
+          [
+            "tags",
+            null,
+            "\"b c\"",
+            "application/json"
+          ],
+          [
+            "file",
+            "a.bin",
+            "data",
+            "application/octet-stream"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "filter",
+            null,
+            "{\"color\": \"plain\"}",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "filter",
+            "blob",
+            "{\"color\": \"file\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "filter",
+            null,
+            "{",
+            "application/json"
+          ],
+          [
+            "filter",
+            null,
+            "{\"color\": \"last\", \"color\": \"kept\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "filter",
+            null,
+            "{",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "filter",
+            null,
+            "{\"minAge\": -1}",
+            "application/json"
+          ],
+          [
+            "filters",
+            null,
+            "{}",
+            "application/json"
+          ],
+          [
+            "filters",
+            null,
+            "{\"color\": 1}",
+            "application/json"
+          ],
+          [
+            "filters",
+            null,
+            "nope",
+            "application/json"
+          ],
+          [
+            "tags",
+            null,
+            "a",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "filter",
+            null,
+            "null",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/searches",
+        "files": [
+          [
+            "tags",
+            null,
+            "\"a\"",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "files": [
+          [
+            "pet",
+            null,
+            "{\"kind\": \"cat\", \"meows\": 2}",
+            "application/json"
+          ],
+          [
+            "pets",
+            null,
+            "{\"kind\": \"dog\"}",
+            "application/json"
+          ],
+          [
+            "pets",
+            null,
+            "{\"kind\": \"cat\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "files": [
+          [
+            "pet",
+            null,
+            "{\"kind\": \"cow\"}",
+            "application/json"
+          ],
+          [
+            "pets",
+            null,
+            "{\"kind\": \"cow\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "files": [
+          [
+            "pet",
+            null,
+            "{\"kind\": \"dog\", \"barks\": \"many\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "name",
+            null,
+            "n",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\", \"minAge\": 3}",
+            "application/json"
+          ],
+          [
+            "second",
+            null,
+            "{\"color\": \"plain\"}",
+            null
+          ],
+          [
+            "third",
+            "blob",
+            "{\"color\": \"file\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "first",
+            null,
+            "{",
+            "application/json"
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"last\"}",
+            "application/json"
+          ],
+          [
+            "name",
+            null,
+            "{",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "first",
+            null,
+            "{",
+            "application/json"
+          ],
+          [
+            "second",
+            null,
+            "{\"minAge\": -1}",
+            "application/json"
+          ],
+          [
+            "third",
+            null,
+            "text",
+            null
+          ],
+          [
+            "fourth",
+            null,
+            "null",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "name",
+            null,
+            "n",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-lists",
+        "files": [
+          [
+            "name",
+            null,
+            "n",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"a\"}",
+            "application/json"
+          ],
+          [
+            "first",
+            null,
+            "{\"minAge\": 2}",
+            null
+          ],
+          [
+            "second",
+            "blob",
+            "{}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-lists",
+        "files": [
+          [
+            "first",
+            null,
+            "{}",
+            "application/json"
+          ],
+          [
+            "first",
+            null,
+            "{\"minAge\": -1}",
+            "application/json"
+          ],
+          [
+            "first",
+            null,
+            "nope",
+            "application/json"
+          ],
+          [
+            "second",
+            null,
+            "[]",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-scores",
+        "content": "name=n&first=1&first=2&second=3",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extra-scores",
+        "content": "first=1&first=two&second=3.5&name=4",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extra-bases",
+        "files": [
+          [
+            "base",
+            null,
+            "b",
+            null
+          ],
+          [
+            "name",
+            null,
+            "n",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-bases",
+        "files": [
+          [
+            "first",
+            null,
+            "{\"minAge\": -1}",
+            "application/json"
+          ],
+          [
+            "second",
+            null,
+            "text",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-patterns",
+        "files": [
+          [
+            "name",
+            null,
+            "n",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-patterns",
+        "files": [
+          [
+            "first",
+            null,
+            "{\"minAge\": -1}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-profiles",
+        "content": "name=n&first=01&first=2",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extra-profiles",
+        "content": "count=3&first=01&first=2",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded; profile=words"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extra-profiles",
+        "content": "name=n&first=one",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "color=blue&minAge=3&ids=1%7C2&meta=%7B%22color%22%3A%22c%22%7D&name=x",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "color=a+b",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "minAge=-1&ids=1%7Ctwo",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "ids=1&meta=null",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "ids=1&meta=%7B%22minAge%22%3A-2%7D",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "ids=1",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
       }
     ],
+    "package_snapshots": []
+  },
+  "forms-by-name": {
+    "input": "server-forms.yaml",
+    "services": "forms",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "maxAge",
+            null,
+            "3",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "max_age",
+            null,
+            "3",
+            null
+          ],
+          [
+            "first",
+            null,
+            "{\"color\": \"blue\"}",
+            "application/json"
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extras",
+        "files": [
+          [
+            "max_age",
+            null,
+            "two",
+            null
+          ]
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/extra-scores",
+        "content": "maxAge=1&max_age=2",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      }
+    ],
+    "model": {
+      "snake_case_field": true,
+      "allow_population_by_field_name": true
+    },
     "package_snapshots": []
   },
   "responses": {
@@ -2346,6 +3731,45 @@
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
     ],
+    "config": {
+      "server_primary_responses": {
+        "/paths/~1things/post": {
+          "status_code": 201
+        },
+        "/paths/~1text/get": {
+          "status_code": 200,
+          "media_type": "text/plain"
+        },
+        "/paths/~1text/head": {
+          "status_code": 200,
+          "media_type": "text/plain"
+        },
+        "/paths/~1latin/get": {
+          "status_code": 200,
+          "media_type": "text/plain; charset=iso-8859-1"
+        },
+        "/paths/~1bytes/get": {
+          "status_code": 200,
+          "media_type": "application/octet-stream"
+        },
+        "/paths/~1problems/get": {
+          "status_code": 200,
+          "media_type": "application/problem+json"
+        },
+        "/paths/~1notes/get": {
+          "status_code": 200,
+          "media_type": "application/vnd.note+json"
+        },
+        "/paths/~1chosen/get": {
+          "status_code": 200,
+          "media_type": "application/json"
+        },
+        "/paths/~1tallies/get": {
+          "status_code": 200,
+          "media_type": "application/vnd.tally+json"
+        }
+      }
+    },
     "apps": [
       {
         "set": "standard",
@@ -2383,6 +3807,58 @@
             "url": "/documents/2"
           },
           {
+            "method": "POST",
+            "url": "/things",
+            "json": {
+              "id": 1,
+              "name": "Mimi"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/text"
+          },
+          {
+            "method": "HEAD",
+            "url": "/text"
+          },
+          {
+            "method": "GET",
+            "url": "/latin"
+          },
+          {
+            "method": "GET",
+            "url": "/bytes"
+          },
+          {
+            "method": "GET",
+            "url": "/problems"
+          },
+          {
+            "method": "GET",
+            "url": "/problems?mode=result"
+          },
+          {
+            "method": "GET",
+            "url": "/problems?mode=invalid"
+          },
+          {
+            "method": "GET",
+            "url": "/notes"
+          },
+          {
+            "method": "GET",
+            "url": "/notes?empty=true"
+          },
+          {
+            "method": "GET",
+            "url": "/chosen"
+          },
+          {
+            "method": "GET",
+            "url": "/tallies"
+          },
+          {
             "openapi": [
               "/greetings",
               "get",
@@ -2394,6 +3870,20 @@
               "/pets/{id}",
               "get",
               "404"
+            ]
+          },
+          {
+            "openapi": [
+              "/text",
+              "get",
+              "200"
+            ]
+          },
+          {
+            "openapi": [
+              "/problems",
+              "get",
+              "200"
             ]
           }
         ]
@@ -2595,7 +4085,7 @@
       },
       {
         "method": "GET",
-        "url": "/values/5?blob=abc&size=3"
+        "url": "/values/5?blob=YWJj&size=3"
       },
       {
         "method": "GET",
@@ -2801,7 +4291,7 @@
       },
       {
         "method": "GET",
-        "url": "/values/5?blob=abc&size=3"
+        "url": "/values/5?blob=YWJj&size=3"
       },
       {
         "method": "GET",
@@ -3005,7 +4495,7 @@
       },
       {
         "method": "GET",
-        "url": "/values/5?blob=abc&size=3"
+        "url": "/values/5?blob=YWJj&size=3"
       },
       {
         "method": "GET",
@@ -3301,6 +4791,25 @@
       {
         "method": "GET",
         "url": "/health"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults/upper"
+      },
+      {
+        "method": "GET",
+        "url": "/untagged"
+      },
+      {
+        "method": "GET",
+        "url": "/items/x?itemId=y&page[size]=z&itemId_1=w",
+        "headers": {
+          "itemId": "v"
+        }
       }
     ],
     "package_snapshots": []
@@ -3344,6 +4853,13 @@
       {
         "method": "GET",
         "url": "/health"
+      },
+      {
+        "method": "GET",
+        "url": "/items/x?itemId=y&page[size]=z&itemId_1=w",
+        "headers": {
+          "itemId": "v"
+        }
       }
     ],
     "package_snapshots": []
@@ -3701,7 +5217,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=eA==&day=2024-01-02&filter[term]=a"
       },
       {
         "method": "GET",
@@ -3750,7 +5266,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22petType%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
+        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22pet-type%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
       },
       {
         "method": "GET",
@@ -3762,7 +5278,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+        "url": "/pets/1?pet=%7B%22pet-type%22%3A%22dog%22%7D"
       },
       {
         "method": "GET",
@@ -3852,7 +5368,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=x&day=2024-01-02&filter[term]=a"
+        "url": "/pets/1?limit=5&code=ab&codes=ab&codes=cde&step=1.5&raw=eA==&day=2024-01-02&filter[term]=a"
       },
       {
         "method": "GET",
@@ -3901,7 +5417,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22petType%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
+        "url": "/pets/1?pair=a,1&label=ab&pet=%7B%22pet-type%22%3A%22dog%22%2C%22bark%22%3Afalse%7D"
       },
       {
         "method": "GET",
@@ -3913,7 +5429,7 @@
       },
       {
         "method": "GET",
-        "url": "/pets/1?pet=%7B%22petType%22%3A%22dog%22%7D"
+        "url": "/pets/1?pet=%7B%22pet-type%22%3A%22dog%22%7D"
       },
       {
         "method": "GET",
@@ -3961,5 +5477,1436 @@
     "package_snapshots": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "nullable": {
+    "input": "server-nullable.yaml",
+    "services": "bodies",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/post": "async"
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/texts"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "too long"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": 1
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "{",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/vnd.text+json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "\ufeffnull",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null"
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "json": [
+          1,
+          2
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/lists"
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": 3
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": "x"
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "json": "red"
+      },
+      {
+        "method": "POST",
+        "url": "/colors"
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/names"
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/pets",
+        "json": {}
+      },
+      {
+        "method": "POST",
+        "url": "/pets"
+      },
+      {
+        "method": "POST",
+        "url": "/codes",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/codes",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/codes"
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "json": {
+          "any": [
+            1,
+            null
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values"
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "json": [
+          1,
+          "a"
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/anything"
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items"
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "json": "00000000-0000-0000-0000-000000000001"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {}
+      },
+      {
+        "method": "POST",
+        "url": "/notes"
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "name": "n",
+          "tags": [
+            "a",
+            "b"
+          ],
+          "count": "2"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/forms",
+        "data": {
+          "count": "2"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": {
+          "file": [
+            "a.txt",
+            "file body",
+            "text/plain"
+          ]
+        },
+        "data": {
+          "note": "n",
+          "meta": "{\"size\": 3}"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/uploads",
+        "files": {
+          "other": [
+            "x.txt",
+            "x",
+            "text/plain"
+          ]
+        },
+        "data": {
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "name": "a",
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "content": " null\n",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "content": " null\n",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/multi-optional",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/oks",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/oks",
+        "json": "ok"
+      },
+      {
+        "method": "POST",
+        "url": "/any-aliases",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/any-aliases",
+        "json": 1
+      }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "nullable-3-0": {
+    "input": "server-nullable-3-0.yaml",
+    "services": "bodies",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/post": "async"
+      }
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/texts"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "too long"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": 1
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "{",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/vnd.text+json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "\ufeffnull",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null"
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "json": [
+          1,
+          2
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/lists"
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": 3
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": "x"
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "json": "red"
+      },
+      {
+        "method": "POST",
+        "url": "/colors"
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/names"
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "json": {
+          "any": [
+            1,
+            null
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values"
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "json": [
+          1,
+          "a"
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/anything"
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items"
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "json": "00000000-0000-0000-0000-000000000001"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {}
+      },
+      {
+        "method": "POST",
+        "url": "/notes"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a",
+          "replies": [
+            null,
+            {
+              "text": "b"
+            }
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "name": "a",
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "note": "n"
+        }
+      }
+    ],
+    "package_snapshots": []
+  },
+  "nullable-3-0-strict": {
+    "input": "server-nullable-3-0.yaml",
+    "services": "bodies",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/post": "async"
+      }
+    },
+    "package_snapshots": [],
+    "model": {
+      "strict_nullable": true
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/notes",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {}
+      },
+      {
+        "method": "POST",
+        "url": "/notes"
+      },
+      {
+        "method": "POST",
+        "url": "/notes",
+        "json": {
+          "text": "a",
+          "replies": [
+            null,
+            {
+              "text": "b"
+            }
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "name": "a",
+          "note": "n"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/extended",
+        "json": {
+          "note": "n"
+        }
+      }
+    ]
+  },
+  "nullable-alias": {
+    "input": "server-nullable-3-0.yaml",
+    "services": "bodies",
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/post": "async"
+      }
+    },
+    "model": {
+      "use_type_alias": true
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/texts"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "too long"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": 1
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "{",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/vnd.text+json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "\ufeffnull",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null"
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "json": [
+          1,
+          2
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/lists"
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": 3
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": "x"
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "json": "red"
+      },
+      {
+        "method": "POST",
+        "url": "/colors"
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/names"
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "json": {
+          "any": [
+            1,
+            null
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values"
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "json": [
+          1,
+          "a"
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/anything"
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items"
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "json": "00000000-0000-0000-0000-000000000001"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts"
+      }
+    ],
+    "package_snapshots": []
+  },
+  "nullable-force-optional": {
+    "input": "server-nullable-3-0.yaml",
+    "services": "bodies",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "config": {
+      "server_handler_modes": {
+        "/paths/~1lists/post": "async"
+      }
+    },
+    "model": {
+      "force_optional_for_required_fields": true
+    },
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/texts"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": "too long"
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "json": 1
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "{",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/vnd.text+json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "\ufeffnull",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/texts",
+        "content": "null"
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/lists",
+        "json": [
+          1,
+          2
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/lists"
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": 3
+      },
+      {
+        "method": "POST",
+        "url": "/choices",
+        "json": "x"
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/colors",
+        "json": "red"
+      },
+      {
+        "method": "POST",
+        "url": "/colors"
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/names",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/names"
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values",
+        "json": {
+          "any": [
+            1,
+            null
+          ]
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/values"
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/anything",
+        "json": [
+          1,
+          "a"
+        ]
+      },
+      {
+        "method": "POST",
+        "url": "/anything"
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items",
+        "json": {
+          "name": "a"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/items"
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/ids",
+        "json": "00000000-0000-0000-0000-000000000001"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "content": "null",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/drafts",
+        "json": "a"
+      },
+      {
+        "method": "POST",
+        "url": "/drafts"
+      }
+    ],
+    "package_snapshots": []
   }
 }

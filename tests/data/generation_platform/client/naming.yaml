@@ -49,6 +49,29 @@ paths:
       tags: [close]
       responses:
         "204": {description: Done.}
+  /x1:
+    get:
+      operationId: x1
+      responses:
+        "204": {description: Done.}
+  /defaults:
+    get:
+      operationId: listDefaults
+      tags: [default]
+      responses:
+        "204": {description: Done.}
+  /defaults/upper:
+    get:
+      operationId: listUpperDefaults
+      tags: [DEFAULT]
+      responses:
+        "204": {description: Done.}
+  /untagged:
+    get:
+      operationId: listUntagged
+      tags: [untagged]
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     NewItem:

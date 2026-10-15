@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from fastapi.testclient import TestClient
 
-from tests.api_generation.support.fastapi_server import _generate
+from tests.api_generation.support.fastapi_server import _generate, home
 from tests.api_generation.support.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -21,10 +21,10 @@ def text_charsets(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
     """Report handler values, actual headers, and raw bytes independently of the generated client."""
     cases = json.loads((SOURCE / "http-boundaries.json").read_text(encoding="utf-8"))
     lines: list[str] = []
-    monkeypatch.syspath_prepend(str(root))
     for backend in ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"):
         package = f"charsets_{backend.rpartition('.')[2].lower()}"
-        _generate({"input": "http-charsets.json", "config": {"server_layout": "single"}}, backend, root, package)
+        monkeypatch.syspath_prepend(str(directory := home(root, package)))
+        _generate({"input": "http-charsets.json", "config": {"server_layout": "single"}}, backend, directory, package)
         try:
             server = import_generated(package)
 

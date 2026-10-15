@@ -15,7 +15,7 @@ class Base(Struct):
     custom: CustomType | UnsetType = UNSET
 
 
-class FieldGetResponse(Struct):
+class RootGetResponse(Struct):
     id: int | UnsetType = UNSET
     native: UUID | UnsetType = UNSET
     custom: CustomType | UnsetType = UNSET

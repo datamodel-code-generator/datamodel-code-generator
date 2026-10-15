@@ -1,0 +1,28 @@
+# binary-allowed
+render pydantic_v2.BaseModel
+  models.py
+  server/__init__.py
+  server/application.py
+  server/routers/__init__.py
+  server/routers/default.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/openapi.py
+  server/_generated/openapi.json
+  server/services.py
+  server/main.py
+  server/README.md
+  server/_runtime/__init__.py (copied runtime)
+  server/_runtime/model_codecs/__init__.py (copied runtime)
+  server/_runtime/model_codecs/errors.py (copied runtime)
+  server/_runtime/model_codecs/media.py (copied runtime)
+  server/_runtime/model_codecs/parameter_reads.py (copied runtime)
+  server/_runtime/model_codecs/parameters.py (copied runtime)
+  server/_runtime/model_codecs/unset.py (copied runtime)
+  server/_runtime/server/__init__.py (copied runtime)
+  server/_runtime/server/application.py (copied runtime)
+  server/_runtime/server/errors.py (copied runtime)
+  server/_runtime/server/openapi.py (copied runtime)
+  server/_runtime/server/requests.py (copied runtime)
+  server/_runtime/server/responses.py (copied runtime)
+  server/py.typed

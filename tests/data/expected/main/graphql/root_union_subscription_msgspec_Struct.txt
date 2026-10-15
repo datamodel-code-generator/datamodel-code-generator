@@ -38,6 +38,9 @@
       "nested_value": null
     }
   ],
+  "warnings": [
+    "msgspec cannot decode the union Choice: its Struct types Other, Subscription are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
+  ],
   "emitted_roots": [
     "Subscription"
   ]

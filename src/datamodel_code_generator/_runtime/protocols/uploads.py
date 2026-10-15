@@ -26,9 +26,9 @@ from ..client.errors import (
     add_secondary,
     is_transport,
 )
-from ..client.logical import Delivery
 from ..client.operations import request_errors
 from ..client.options import RequestOptions
+from ..client.retry import Delivery
 from ..client.timing import SYSTEM_CLOCK, Clock
 from ..model_codecs.unset import UNSET
 from .errors import ProtocolDataError
@@ -115,9 +115,9 @@ class UploadPlan(Generic[T, C]):
     `initial` values of every binding and the server's expiry at `expires_at`. `probe` reads the server's offset at
     `remote_offset`; `append` sends one chunk as its binary body, writing its offset into `offset`, its length into
     `length`, and into `checksum` the `checksum_algorithm` digest of the bytes it sends, in `checksum_encoding` and
-    after the algorithm's name and a space with `checksum_prefix`. Chunks are at most `max_chunk_bytes`;
-    `partial_commit` allows a server to keep part of one. A helper without `completion` completes when the server holds
-    every byte; one with it sends that operation once.
+    after the algorithm's name and a space with `checksum_prefix`. `partial_commit` allows a server to keep part of a
+    chunk. A helper without `completion` completes when the server holds every byte; one with it sends that operation
+    once.
     """
 
     helper_id: str
@@ -129,7 +129,6 @@ class UploadPlan(Generic[T, C]):
     append_operation: OperationRef
     append: OperationPlan[object]
     offset: ParameterTarget
-    max_chunk_bytes: int
     partial_commit: bool
     size: ParameterTarget | None = None
     expires_at: Selector | None = None
@@ -183,9 +182,14 @@ class UploadPlan(Generic[T, C]):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _Limits:
-    """The effective limits of one helper call, each from the first layer that sets it; None removes a limit."""
+    """The effective limits of one helper call, each from the first layer that sets it; None removes a limit.
+
+    `chunk_path` names where the chunk size comes from: the client's helper default when it sets the size and the
+    call's `upload_options` does not, else the call's option, which also raises the kind's default.
+    """
 
     chunk_bytes: int = 8 * 1024 * 1024
+    chunk_path: tuple[str, ...] = ("upload_options", "chunk_bytes")
     total_timeout: float | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
@@ -230,9 +234,16 @@ def _limits(
         for name in request.extra_query or ():
             if name in plan.queries:
                 raise _invalid(plan, ("options", "extra_query", name))
-    kinds = (upload_options, core.helper_defaults(plan.helper_id))
+    kinds = (upload_options, defaults := core.helper_defaults(plan.helper_id))
+    chunk_path = _DEFAULTS.chunk_path
+    if (
+        layered((upload_options,), "chunk_bytes", None) is None
+        and layered((defaults,), "chunk_bytes", None) is not None
+    ):
+        chunk_path = ("helper_defaults", plan.helper_id, "chunk_bytes")
     return _Limits(
         chunk_bytes=layered(kinds, "chunk_bytes", _DEFAULTS.chunk_bytes),
+        chunk_path=chunk_path,
         total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
@@ -1045,8 +1056,7 @@ def start_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload in a session of its own, and return the handle appending to it."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
-    handle = UploadHandle(core, plan, limits, _session(limits), content, chunk)
+    handle = UploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
     handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1065,8 +1075,7 @@ async def astart_upload(  # noqa: PLR0913
     """Measure the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options)
     content = _content(plan, source)
-    chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
-    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, chunk)
+    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, limits.chunk_bytes)
     await handle._create(_sized(plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1109,7 +1118,7 @@ def _decoded(plan: UploadPlan[Any, Any], state: JSONValue) -> _Saved:
     fields = cast("Mapping[str, JSONValue]", state)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
     phase = state_text(fields["phase"])
-    require_state(0 < chunk <= plan.max_chunk_bytes and confirmed <= size and phase in _PHASES)
+    require_state(chunk > 0 and confirmed <= size and phase in _PHASES)
     resolved = _PHASES[cast("str", phase)]
     require_state(
         resolved is not _Phase.COMPLETE
@@ -1137,8 +1146,8 @@ def _resume_start(
     """Check the checkpoint's form, expiry, chunk size, and dot segments, then the source's size, before any send.
 
     A checkpoint that is not JSON or does not fit the helper raises ConfigurationError. Its chunk size must not
-    exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory. Saved values are encoded as
-    the server's are when each request is built.
+    exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory; the refusal names the option
+    that set the call's size. Saved values are encoded as the server's are when each request is built.
     """
     try:
         saved = _decoded(plan, plain_copy(state))
@@ -1147,7 +1156,7 @@ def _resume_start(
     if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
         raise _invalid(plan, ("state",), "expired")
     if saved.chunk > limits.chunk_bytes:
-        raise _invalid(plan, ("upload_options", "chunk_bytes"))
+        raise _invalid(plan, limits.chunk_path)
     probe, append, completion = saved.bound
     _dotted(plan, plan.probed, probe, None)
     _dotted(plan, plan.appended, (*append, *_written(plan, 0, b"")), None)

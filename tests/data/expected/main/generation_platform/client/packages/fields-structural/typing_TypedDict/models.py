@@ -51,33 +51,33 @@ class Pet(TypedDict):
     tag: NotRequired[str | None]
 
 
-FieldPetsPostQueryTagParameter: TypeAlias = str
+PetsPostQueryTagParameter: TypeAlias = str
 
 
-FieldPetsPetIdPatchPathPetIdParameter: TypeAlias = int
+PetsPetIdPatchPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdVisitsPostPathPetIdParameter: TypeAlias = int
+PetsPetIdVisitsPostPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdOwnerPutPathPetIdParameter: TypeAlias = int
+PetsPetIdOwnerPutPathPetIdParameter: TypeAlias = int
 
 
-FieldOwnersPostRequest: TypeAlias = Owner | None
+OwnersPostRequest: TypeAlias = Owner | None
 
 
-FieldPetsPetIdLabelsPutPathPetIdParameter: TypeAlias = int
+PetsPetIdLabelsPutPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
+PetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
 
 
-class FieldPetsPetIdPhotoPutRequest(TypedDict):
+class PetsPetIdPhotoPutRequest(TypedDict):
     photo: bytes
     caption: NotRequired[str]
 
 
-FieldPetsPetIdRecordsPutPathPetIdParameter: TypeAlias = int
+PetsPetIdRecordsPutPathPetIdParameter: TypeAlias = int
 
 
 class NewPet(TypedDict):

@@ -10,5 +10,6 @@ render dataclasses.dataclass default
 render typing.TypedDict default
   diagnostic Error: /paths/~1bindings~10/post/requestBody: The union of Value and Value1 needs a declared discriminator for the typing.TypedDict converter
 render msgspec.Struct default
+  warning UserWarning: msgspec cannot decode the union Payload1.value: its Struct types Value, Value1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
   models.py
   model_bindings.py msgspec_Struct/default

@@ -31,7 +31,7 @@ from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
     encoding_media,
 )
-from datamodel_code_generator.reference import ModelResolver
+from datamodel_code_generator.reference import _NON_IDENTIFIER_PATTERN, ModelResolver
 from datamodel_code_generator.types import DataType  # noqa: TC001 - Public annotations support get_type_hints().
 
 if TYPE_CHECKING:
@@ -184,6 +184,12 @@ class ApiOpenAPIParser(OpenAPIParser):
         )
         self._parameter_root_models: set[DataModel] = set()
         self._claimed_models = 0
+
+    @classmethod
+    def _get_model_name(cls, path_name: str, method: str, suffix: str) -> str:
+        """Drop leading separators of a name part instead of prefixing ``Field``; ``/`` alone becomes ``Root``."""
+        stripped = _NON_IDENTIFIER_PATTERN.sub("_", path_name).lstrip("_") or "root"
+        return super()._get_model_name(stripped, method, suffix)
 
     def _declaration_id(self, path: Sequence[str]) -> ApiDeclarationId:
         ref = self.model_resolver.join_path(tuple(path))
@@ -480,14 +486,25 @@ class ApiOpenAPIParser(OpenAPIParser):
                     self._discriminator_subtypes[resolved].append(self.model_resolver.resolve_ref(child))
 
     def _acquire_schema(self, name: str, raw: YamlValue, path: list[str], *, role: SchemaRole) -> None:
-        """Generate one declaration, retaining actual direct-reference use types."""
+        """Generate one declaration, retaining actual direct-reference use types.
+
+        A reference whose siblings are only annotations or extensions is used as the model it names, as a property is,
+        except that a reference beside only ``nullable: true`` keeps its derived model here instead of becoming
+        ``Optional``.
+        """
         declaration = self._declaration_id(path)
         if declaration in self._processed_declarations:
             return
         with self._schema_frame(name, path, self.raw_obj, raw_schema=raw, role=role):
-            if isinstance(raw, dict) and len(raw) == 1 and isinstance(raw.get("$ref"), str):
+            ref = raw.get("$ref") if isinstance(raw, dict) else None
+            validated = (
+                self._validate_schema_object(raw, path)
+                if isinstance(ref, str) and isinstance(raw, dict) and len(raw) > 1
+                else None
+            )
+            if isinstance(ref, str) and not (validated and validated.has_ref_with_schema_keywords):
                 self._declaration_types[declaration] = self._parse_schema_or_ref(
-                    name, ReferenceObject.model_validate(raw), path
+                    name, ReferenceObject.model_validate({"$ref": ref}), path
                 )
             elif declaration.document not in self._api_roots:
                 self._parse_file(
@@ -498,7 +515,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     ref=self.model_resolver.join_path(tuple(path)),
                 )
             else:
-                self.parse_raw_obj(name, raw, path)
+                self._parse_raw_or_validated_obj(name, raw, path, validated)
             self._processed_declarations.add(declaration)
 
     def _acquire_item_schema(

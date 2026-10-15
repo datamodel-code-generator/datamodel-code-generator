@@ -1,15 +1,14 @@
 # discriminator-variants
 render typing.TypedDict
+  client/README.md
   client/__init__.py
   client/_async_client.py
   client/_client.py
   client/_generated/__init__.py
   client/_generated/model_bindings.py
-  client/_generated_docs/README.md
   client/_generated_docs/runtime.md
   client/_operations.py
   client/errors.py
-  client/model_codecs.py
   client/options.py
   client/py.typed
   client/resources/__init__.py
@@ -22,16 +21,18 @@ render typing.TypedDict
   client/types/default/_operations.py
   models.py
 render dataclasses.dataclass
+  warning UserWarning: CatRequest is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from PetsListGetResponse1Request, so these unions cannot decode it: PetRequest ('kitty').
+  warning UserWarning: Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from PetsListGetResponse1Request, so these unions cannot decode it: PetRequest ('doggo'), PetResponse ('doggo').
+  warning UserWarning: CatResponse is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from PetsListGetResponse1Response, so these unions cannot decode it: PetResponse ('kitty').
+  client/README.md
   client/__init__.py
   client/_async_client.py
   client/_client.py
   client/_generated/__init__.py
   client/_generated/model_bindings.py
-  client/_generated_docs/README.md
   client/_generated_docs/runtime.md
   client/_operations.py
   client/errors.py
-  client/model_codecs.py
   client/options.py
   client/py.typed
   client/resources/__init__.py

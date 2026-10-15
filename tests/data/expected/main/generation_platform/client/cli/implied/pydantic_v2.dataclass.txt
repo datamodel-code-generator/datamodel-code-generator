@@ -1,0 +1,11 @@
+--generate-client set the options it needs that you left unset; to set them yourself, run:
+  datamodel-codegen --input options.yaml --input-file-type openapi --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --output-model-type pydantic_v2.dataclass --output models.py --generate-client httpx2 --client-output client --client-package client --client-model-package models --use-missing-sentinel --target-pydantic-version 2.14
+Add the runtime dependencies of client to your project:
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "pydantic>=2.14.0"
+Next steps: call the API with the client:
+  from client import Client
+
+  with Client(base_url=...) as client:
+      client.pets.list_pets(...)
+See client/README.md.
+models equal those of a model-only run given --use-missing-sentinel --target-pydantic-version 2.14: True

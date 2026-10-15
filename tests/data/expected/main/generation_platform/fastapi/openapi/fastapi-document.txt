@@ -88,29 +88,9 @@
         ],
         "summary": "Post Nullable",
         "operationId": "postNullable",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/FieldJsonNullablePostRequest"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "204": {
             "description": "Done."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
@@ -216,7 +196,7 @@
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormPostRequest"
+                "$ref": "#/components/schemas/FormPostRequest"
               }
             }
           },
@@ -264,7 +244,7 @@
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormEitherPostRequest"
+                "$ref": "#/components/schemas/FormEitherPostRequest"
               }
             }
           },
@@ -287,13 +267,13 @@
         }
       }
     },
-    "/form/nested": {
+    "/form/extras": {
       "post": {
         "tags": [
           "form"
         ],
-        "summary": "Post Nested Form",
-        "operationId": "postNestedForm",
+        "summary": "Post Extras Form",
+        "operationId": "postExtrasForm",
         "responses": {
           "204": {
             "description": "Done."
@@ -312,7 +292,7 @@
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormClosedPostRequest"
+                "$ref": "#/components/schemas/FormClosedPostRequest"
               }
             }
           },
@@ -346,7 +326,7 @@
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/FieldFormChoicePostRequest"
+                "$ref": "#/components/schemas/FormChoicePostRequest"
               }
             }
           },
@@ -404,7 +384,7 @@
         ],
         "title": "Account"
       },
-      "FieldFormChoicePostRequest": {
+      "FormChoicePostRequest": {
         "properties": {
           "name": {
             "anyOf": [
@@ -419,9 +399,9 @@
           }
         },
         "type": "object",
-        "title": "FieldFormChoicePostRequest"
+        "title": "FormChoicePostRequest"
       },
-      "FieldFormClosedPostRequest": {
+      "FormClosedPostRequest": {
         "properties": {
           "name": {
             "anyOf": [
@@ -437,9 +417,9 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "FieldFormClosedPostRequest"
+        "title": "FormClosedPostRequest"
       },
-      "FieldFormEitherPostRequest": {
+      "FormEitherPostRequest": {
         "properties": {
           "either": {
             "anyOf": [
@@ -471,9 +451,9 @@
           }
         },
         "type": "object",
-        "title": "FieldFormEitherPostRequest"
+        "title": "FormEitherPostRequest"
       },
-      "FieldFormPostRequest": {
+      "FormPostRequest": {
         "properties": {
           "name": {
             "type": "string",
@@ -511,20 +491,7 @@
         "required": [
           "name"
         ],
-        "title": "FieldFormPostRequest"
-      },
-      "FieldJsonNullablePostRequest": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "FieldJsonNullablePostRequest"
+        "title": "FormPostRequest"
       },
       "HTTPValidationError": {
         "properties": {

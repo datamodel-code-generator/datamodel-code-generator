@@ -1,0 +1,33 @@
+# document-text
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Text",
+    "version": "1.0",
+    "description": "The café's \"plat du jour\" (€), with menus under C:\\menus\\today as written in \"C:\\\\menus\"."
+  },
+  "paths": {
+    "/dishes/{code}": {
+      "get": {
+        "operationId": "getDish",
+        "summary": "Read a dish such as \"Gericht für heute\"",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}\\d{3}(\\.\\d+)?\\\\?$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The dish exists — «oui»."
+          }
+        }
+      }
+    }
+  }
+}

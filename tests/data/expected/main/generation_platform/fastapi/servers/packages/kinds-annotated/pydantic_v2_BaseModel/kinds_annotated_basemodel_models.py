@@ -19,55 +19,55 @@ class Filter(BaseModel):
     count: int | None = None
 
 
-FieldValuesGetQueryAmountParameter = TypeAliasType("FieldValuesGetQueryAmountParameter", Decimal)
+ValuesGetQueryAmountParameter = TypeAliasType("ValuesGetQueryAmountParameter", Decimal)
 
 
-FieldValuesGetQueryAmountsParameter = TypeAliasType("FieldValuesGetQueryAmountsParameter", list[Decimal])
+ValuesGetQueryAmountsParameter = TypeAliasType("ValuesGetQueryAmountsParameter", list[Decimal])
 
 
-FieldValuesGetHeaderXAmountsParameter = TypeAliasType("FieldValuesGetHeaderXAmountsParameter", list[Decimal])
+ValuesGetHeaderXAmountsParameter = TypeAliasType("ValuesGetHeaderXAmountsParameter", list[Decimal])
 
 
-FieldValuesGetQueryStepParameter = TypeAliasType(
-    "FieldValuesGetQueryStepParameter", Annotated[float, Field(multiple_of=0.01)]
+ValuesGetQueryStepParameter = TypeAliasType(
+    "ValuesGetQueryStepParameter", Annotated[float, Field(multiple_of=0.01)]
 )
 
 
-FieldValuesGetQueryStepsParameterItem = TypeAliasType(
-    "FieldValuesGetQueryStepsParameterItem", Annotated[float, Field(multiple_of=0.01)]
+ValuesGetQueryStepsParameterItem = TypeAliasType(
+    "ValuesGetQueryStepsParameterItem", Annotated[float, Field(multiple_of=0.01)]
 )
 
 
-FieldValuesGetQueryStepsParameter = TypeAliasType("FieldValuesGetQueryStepsParameter", list[FieldValuesGetQueryStepsParameterItem])
+ValuesGetQueryStepsParameter = TypeAliasType("ValuesGetQueryStepsParameter", list[ValuesGetQueryStepsParameterItem])
 
 
-class FieldValuesGetQueryRatioParameter(Enum):
+class ValuesGetQueryRatioParameter(Enum):
     number_2_2 = 2.2
     number_0_5 = 0.5
 
 
-class FieldValuesGetQueryLevelParameter(IntEnum):
+class ValuesGetQueryLevelParameter(IntEnum):
     integer_1 = 1
     integer_2 = 2
 
 
-FieldValuesGetQueryMixedParameter = TypeAliasType("FieldValuesGetQueryMixedParameter", int | str)
+ValuesGetQueryMixedParameter = TypeAliasType("ValuesGetQueryMixedParameter", int | str)
 
 
-FieldValuesGetQueryMixedsParameter = TypeAliasType("FieldValuesGetQueryMixedsParameter", list[int | str])
+ValuesGetQueryMixedsParameter = TypeAliasType("ValuesGetQueryMixedsParameter", list[int | str])
 
 
-FieldValuesGetQueryCodesParameterItem = TypeAliasType(
-    "FieldValuesGetQueryCodesParameterItem", Annotated[str, Field(pattern='^[A-Z]+$')]
+ValuesGetQueryCodesParameterItem = TypeAliasType(
+    "ValuesGetQueryCodesParameterItem", Annotated[str, Field(pattern='^[A-Z]+$')]
 )
 
 
-FieldValuesGetQueryCodesParameter = TypeAliasType("FieldValuesGetQueryCodesParameter", list[FieldValuesGetQueryCodesParameterItem])
+ValuesGetQueryCodesParameter = TypeAliasType("ValuesGetQueryCodesParameter", list[ValuesGetQueryCodesParameterItem])
 
 
-FieldValuesGetQueryCountsParameterItem = TypeAliasType(
-    "FieldValuesGetQueryCountsParameterItem", Annotated[int, Field(ge=0)]
+ValuesGetQueryCountsParameterItem = TypeAliasType(
+    "ValuesGetQueryCountsParameterItem", Annotated[int, Field(ge=0)]
 )
 
 
-FieldValuesGetQueryCountsParameter = TypeAliasType("FieldValuesGetQueryCountsParameter", list[FieldValuesGetQueryCountsParameterItem])
+ValuesGetQueryCountsParameter = TypeAliasType("ValuesGetQueryCountsParameter", list[ValuesGetQueryCountsParameterItem])

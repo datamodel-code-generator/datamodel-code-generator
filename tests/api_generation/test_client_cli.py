@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from datamodel_code_generator import generate, load_pyproject_config
+from datamodel_code_generator import LeftoverFilesWarning, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
 from tests.api_generation.support.client_generation import (
     client_cli_arguments,
@@ -33,6 +33,11 @@ OPTIONS = [
 ]
 PACKAGES = ["--client-package", "client", "--client-model-package", "models"]
 CLIENT = ["--generate-client", "httpx2", "--client-output", "client", *PACKAGES]
+MISSING = ["--use-missing-sentinel", "--target-pydantic-version", "2.14"]
+SENTINEL_TARGET = (
+    "Error: The client target needs --target-pydantic-version 2.14 for --use-missing-sentinel, so that the models "
+    "import MISSING from pydantic\n"
+)
 DOC_OPTIONS = ["--input-file-type", "openapi", "--output", "models.py", *OPTIONS, *CLIENT]
 DOC_INPUT = "generation_platform/client/cli/options.yaml"
 DOC_OUTPUT = "main/generation_platform/client/cli/options"
@@ -194,10 +199,11 @@ def test_client_cli_precedence(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-precedence.toml")
-    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES)
+    run_main_with_args(arguments)
+    notice = capsys.readouterr().err
     report = "".join(_methods(path, tmp_path) for path in sorted(tmp_path.glob("*/resources/pets/_sync.py")))
     assert_output(
-        f"$ datamodel-codegen {' '.join(arguments)}\n{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
+        f"$ datamodel-codegen {' '.join(arguments)}\n{notice}{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
     )
 
 
@@ -212,7 +218,8 @@ def test_client_cli_pyproject_paths(
     work.mkdir(parents=True)
     _copy(project, "pyproject-paths.toml")
     monkeypatch.chdir(work)
-    run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES)
+    run_main_with_args([])
+    notices = capsys.readouterr().err
     helpers = (
         (CLI / "protocols.json")
         .read_text(encoding="utf-8")
@@ -226,12 +233,12 @@ def test_client_cli_pyproject_paths(
             *("--client-output", "service", "--client-protocols", helpers),
             *("--client-operations", '{"../options.yaml#/paths/~1pets/get": {"name": "find_pets"}}'),
         ],
-        capsys=capsys,
-        expected_stderr=DEPENDENCIES,
     )
+    notices += capsys.readouterr().err
     packages = sorted(path.parents[1] for path in tmp_path.rglob("protocols/_helpers.py"))
     assert_output(
-        "".join(_methods(path / "resources" / "pets" / "_sync.py", tmp_path) for path in packages),
+        notices.replace(project.as_posix(), "<project>")
+        + "".join(_methods(path / "resources" / "pets" / "_sync.py", tmp_path) for path in packages),
         EXPECTED / "cli" / "pyproject-paths.txt",
     )
 
@@ -244,7 +251,11 @@ def test_client_cli_pyproject_protocols_file(
     work.mkdir(parents=True)
     _copy(project, "pyproject-protocols.toml")
     monkeypatch.chdir(work)
-    run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES)
+    run_main_with_args([])
+    assert_output(
+        capsys.readouterr().err.replace(project.as_posix(), "<project>"),
+        EXPECTED / "cli" / "project-notice.txt",
+    )
     assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/options/protocols/_helpers.py")
 
 
@@ -303,8 +314,10 @@ def test_client_cli_json_file_documents(
     work.mkdir(parents=True)
     _json_files(project, *pyproject)
     monkeypatch.chdir(work)
-    run_main_with_args(
-        [argument.format(project=project) for argument in arguments], capsys=capsys, expected_stderr=DEPENDENCIES
+    run_main_with_args([argument.format(project=project) for argument in arguments])
+    assert_output(
+        capsys.readouterr().err.replace(project.as_posix(), "<project>"),
+        EXPECTED / "cli" / "json-files" / "notice.txt",
     )
     assert_file_content(project / "client" / "protocols" / "_helpers.py", "cli/json-files/_helpers.py")
     assert_output(_methods(project / SYNC, tmp_path), EXPECTED / "cli" / "json-files" / "documents.txt")
@@ -458,6 +471,10 @@ def test_client_cli_selector_replaces_pyproject(
             [*OPTIONS, *CLIENT, "--server-layout", "single"],
             "--server-layout requires --generate-server",
         ),
+        (
+            [*OPTIONS, *CLIENT, "--input-file-type", "jsonschema"],
+            "--generate-client requires --input-file-type openapi, not jsonschema",
+        ),
     ],
     ids=[
         "client-option",
@@ -466,6 +483,7 @@ def test_client_cli_selector_replaces_pyproject(
         "no-client-settings",
         "missing-settings",
         "server-option",
+        "input-file-type",
     ],
 )
 def test_client_cli_usage(
@@ -525,7 +543,7 @@ def test_client_cli_invalid_pyproject(
 
 
 def _payload(result: dict[str, Any], root: Path) -> list[str]:
-    """Describe a generation payload and whether each file it reports matches the published file.
+    """Describe a generation payload, its target, and whether each file it reports matches the published file.
 
     The copied runtime modules are reported together.
     """
@@ -533,6 +551,7 @@ def _payload(result: dict[str, Any], root: Path) -> list[str]:
     runtime = [matched for path, matched in matches.items() if "_runtime" in Path(path).parts]
     return [
         f"kind {result['kind']}; output {result['output']}",
+        f"target {json.dumps(result['target'])}",
         *(
             f"file {path}; matches published {matched}"
             for path, matched in matches.items()
@@ -574,7 +593,16 @@ def test_client_cli_generation_json(
     [
         ("target-2.14-missing", ["--target-pydantic-version", "2.14", "--use-missing-sentinel"]),
         ("target-2.14", ["--target-pydantic-version", "2.14"]),
-        ("unset-target-missing", ["--use-missing-sentinel"]),
+        ("dataclass-missing", ["--output-model-type", "pydantic_v2.dataclass", *MISSING]),
+        (
+            "target-2-msgspec",
+            [
+                *("--target-pydantic-version", "2", "--output-model-type", "msgspec.Struct"),
+                *("--use-msgspec-tagged-unions", "--use-msgspec-nullable-enum-alias"),
+            ],
+        ),
+        ("target-2-dataclass", ["--target-pydantic-version", "2", "--output-model-type", "dataclasses.dataclass"]),
+        ("target-2-typed-dict", ["--target-pydantic-version", "2", "--output-model-type", "typing.TypedDict"]),
     ],
 )
 def test_client_cli_pydantic_dependency(
@@ -584,7 +612,10 @@ def test_client_cli_pydantic_dependency(
     capsys: pytest.CaptureFixture[str],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Print and document the pydantic requirement that the pydantic imports of the models need."""
+    """Print and document the pydantic requirement that the pydantic imports of the models need.
+
+    A backend without pydantic prints no pydantic requirement, so it accepts any target pydantic version.
+    """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("options.yaml"),
@@ -595,7 +626,7 @@ def test_client_cli_pydantic_dependency(
         skip_code_validation=True,
     )
     models = Path("models.py").read_text(encoding="utf-8").splitlines(keepends=True)
-    readme = Path("client", "_generated_docs", "README.md").read_text(encoding="utf-8").splitlines(keepends=True)
+    readme = Path("client", "README.md").read_text(encoding="utf-8").splitlines(keepends=True)
     assert_output(
         "".join((
             capsys.readouterr().err,
@@ -603,6 +634,227 @@ def test_client_cli_pydantic_dependency(
             *(line for line in readme if "pydantic>=" in line),
         )),
         EXPECTED / "cli" / "pydantic-dependency" / f"{name}.txt",
+    )
+
+
+@pytest.mark.parametrize("client", [[], CLIENT], ids=["models", "client"])
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [
+        ([], "cli/missing-sentinel-models.py"),
+        (["--output-model-type", "pydantic_v2.dataclass"], "cli/dataclass-missing-sentinel-models.py"),
+    ],
+    ids=["missing-sentinel", "dataclass-missing-sentinel"],
+)
+def test_client_cli_missing_sentinel_models_as_given(
+    client: list[str], options: list[str], expected: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Write the models a model-only run writes when they use MISSING, which a client needs a 2.14 target for."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *MISSING, *options, *client],
+        copy_files=_inputs(tmp_path),
+        assert_func=assert_file_content,
+        expected_file=expected,
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--target-pydantic-version", "2"],
+        ["--target-pydantic-version", "2.11", "--check"],
+        ["--target-pydantic-version", "2.12", "--output-format", "json"],
+    ],
+    ids=["2", "2.11-check", "2.12-json"],
+)
+def test_client_cli_target_pydantic(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client generation whose explicit target pydantic version is older than the pydantic it requires."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, *arguments],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: --target-pydantic-version: The client target needs a target pydantic version of 2.14 or later; "
+            "leave it unset or use '2.14'\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--target-pydantic-version", "2"],
+        ["--target-pydantic-version", "2.11"],
+        ["--target-pydantic-version", "2.12"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--target-pydantic-version", "2.11"],
+        ["--output-model-type", "pydantic_v2.dataclass", "--target-pydantic-version", "2.11", "--check"],
+    ],
+    ids=["2", "2.11", "2.12", "dataclass-2.11", "dataclass-2.11-check"],
+)
+def test_client_cli_missing_sentinel_target(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client whose models use MISSING with a given target pydantic version that cannot import it.
+
+    The models stay those of a model-only run, which imports MISSING from pydantic for that target only. A target
+    older than the sentinel's own minimum gets the same message, so that one change fixes the run.
+    """
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, "--use-missing-sentinel", *arguments],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=SENTINEL_TARGET,
+        output_should_not_exist=True,
+    )
+
+
+def test_client_cli_missing_sentinel_target_pyproject(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse the sentinel and a target pydantic version from pyproject.toml as from the command line."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.datamodel-codegen]\nuse-missing-sentinel = true\ntarget-pydantic-version = "2.11"\n', encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=SENTINEL_TARGET,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        ["msgspec.Struct", "--use-msgspec-tagged-unions", "--use-msgspec-nullable-enum-alias"],
+        ["dataclasses.dataclass"],
+        ["typing.TypedDict"],
+    ],
+    ids=["msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"],
+)
+def test_client_cli_missing_sentinel_backend(
+    backend: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse the sentinel for a backend without pydantic as a model-only run does, whatever the target says."""
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, "--output-model-type", *backend, "--use-missing-sentinel"],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: `--use-missing-sentinel` is only supported for `--output-model-type pydantic_v2.BaseModel` or "
+            "`pydantic_v2.dataclass`\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [[], ["--target-pydantic-version", "2.14"], ["--target-pydantic-version", "2"]],
+    ids=["unset", "2.14", "2"],
+)
+def test_client_cli_dataclass_missing_sentinel(
+    arguments: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a client of Pydantic dataclasses whose pyproject.toml turns --use-missing-sentinel off.
+
+    The sentinel tells unset members from None; the message names the target pydantic version it needs as well.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\nuse-missing-sentinel = false\n", encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, "--output-model-type", "pydantic_v2.dataclass", *arguments],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=(
+            "Error: The client target needs --use-missing-sentinel with --target-pydantic-version 2.14 for "
+            "'pydantic_v2.dataclass' models, whose fields cannot tell an unset member from None\n"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+_MSGSPEC_TAGGED_UNIONS = (
+    "The client target needs --use-msgspec-tagged-unions for 'msgspec.Struct' models, so that their discriminated "
+    "unions can be decoded"
+)
+_MSGSPEC_NULLABLE_ENUM_ALIAS = (
+    "The client target needs --use-msgspec-nullable-enum-alias for 'msgspec.Struct' models, so that their enums that "
+    "list null can be decoded"
+)
+
+
+@pytest.mark.parametrize(
+    ("keys", "missing"),
+    [
+        (
+            ["use-msgspec-tagged-unions", "use-msgspec-nullable-enum-alias"],
+            f"{_MSGSPEC_TAGGED_UNIONS}; {_MSGSPEC_NULLABLE_ENUM_ALIAS}",
+        ),
+        (["use-msgspec-tagged-unions"], _MSGSPEC_TAGGED_UNIONS),
+        (["use-msgspec-nullable-enum-alias"], _MSGSPEC_NULLABLE_ENUM_ALIAS),
+    ],
+    ids=["both", "tagged-unions", "nullable-enum-alias"],
+)
+def test_client_cli_msgspec_options(
+    keys: list[str],
+    missing: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Refuse a client of msgspec structs whose pyproject.toml turns off the options that let msgspec decode them.
+
+    The message names every one turned off; the target sets one left unset.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\n" + "".join(f"{key} = false\n" for key in keys), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=Path("options.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, "--output-model-type", "msgspec.Struct"],
+        copy_files=_inputs(tmp_path),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"Error: {missing}\n",
+        output_should_not_exist=True,
     )
 
 
@@ -681,6 +933,60 @@ def test_client_cli_shadowed_module(tmp_path: Path, monkeypatch: pytest.MonkeyPa
             f"{item.category.__name__}: {str(item.message).replace(tmp_path.as_posix(), '<root>')}" for item in recorded
         )
     assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-module.txt")
+
+
+def test_client_cli_leftover_files(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Warn on each run that leaves the modules of a removed resource in place, which a check lists as extra.
+
+    A first run and a check warn about nothing. As an error, the warning stops the run, like any Python warning.
+    """
+    monkeypatch.chdir(tmp_path)
+    for name in ("v1.yaml", "v2.yaml"):
+        shutil.copy2(SOURCE / "regeneration" / name, name)
+    lines = []
+    for run, document, options, action, expected_exit in (
+        ("first", "v1.yaml", [], "always", Exit.OK),
+        ("changed", "v2.yaml", [], "always", Exit.OK),
+        ("json", "v2.yaml", ["--output-format", "json"], "always", Exit.OK),
+        ("check", "v2.yaml", ["--check"], "always", Exit.DIFF),
+        ("error", "v2.yaml", [], "error", Exit.ERROR),
+    ):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter(action, LeftoverFilesWarning)
+            run_main_with_args(["--input", document, *DOC_OPTIONS, *options], expected_exit=expected_exit)
+        captured = capsys.readouterr()
+        lines.append(f"# {run} run")
+        lines.extend(f"{item.category.__name__}: {item.message}" for item in recorded)
+        lines.extend(
+            line
+            for line in (captured.out + captured.err).splitlines()
+            if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
+        )
+    assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
+
+
+def test_client_cli_leftover_files_jobs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Warn once for each job of a batch about the files its own package holds, not those beside or inside another.
+
+    Files that are not Python modules, and those of a `__pycache__` directory, are not reported, as in a check: the
+    README that earlier development builds wrote into `_generated_docs/` stays unreported.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path, "pyproject-shared-models-jobs.toml")
+    run_main_with_args(["--all-jobs"])
+    names = ("old.py", "server/old.py", "server/notes.md", "client/old.py", "client/__pycache__/old.py")
+    for name in (*names, "client/_generated_docs/README.md"):
+        (path := tmp_path / name).parent.mkdir(exist_ok=True)
+        path.touch()
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_with_args(["--all-jobs"])
+    assert_output(
+        "".join(f"{item.category.__name__}: {item.message}\n" for item in recorded),
+        EXPECTED / "cli" / "leftover-files-jobs.txt",
+    )
 
 
 def test_client_cli_shared_models_jobs(
@@ -1027,8 +1333,8 @@ generates.""",
                 options=["--client-signature-style"],
                 option_description="""Declare the arguments of the operation methods (experimental).
 
-`explicit` (the default) declares each argument as a keyword parameter; `unpack` declares one
-`**kwargs: Unpack[TypedDict]` per operation, whose keys are the same arguments.""",
+`explicit` (the default) declares each argument as a keyword parameter; `unpack` declares
+`**kwargs: Unpack[TypedDict]` with one TypedDict per overload of each operation, whose keys are the same arguments.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-signature-style", "unpack"],
                 golden_output=f"{DOC_OUTPUT}/signature-style/_sync.py",
@@ -1063,7 +1369,8 @@ overrides it for that operation.""",
                 option_description="""Name the resources of tags (experimental).
 
 The JSON object, inline or in a file, maps a tag to the dotted namespace of the resource its operations join, such
-as `{"pets": "store.pets"}` for `client.store.pets`. Other operations join the resource of their first tag. In
+as `{"pets": "store.pets"}` for `client.store.pets`. Other operations join the resource of their first tag, and
+operations without a tag join the resource `default`. In
 pyproject.toml, `client-resource-names` is a table, and a command-line value replaces the whole table.""",
                 input_schema=DOC_INPUT,
                 cli_args=[*DOC_OPTIONS, "--client-resource-names", '{"pets": "animals"}'],
@@ -1172,3 +1479,30 @@ def test_client_cli_options(
         copy_files=[(CLI / source, tmp_path / source), (CLI / "protocols.json", tmp_path / "protocols.json")],
     )
     assert_file_content(tmp_path / generated, f"cli/options/{expected}")
+
+
+@pytest.mark.parametrize(
+    ("backend", "given"),
+    [
+        ("msgspec.Struct", ["--use-msgspec-tagged-unions", "--use-msgspec-nullable-enum-alias"]),
+        ("pydantic_v2.dataclass", ["--use-missing-sentinel", "--target-pydantic-version", "2.14"]),
+    ],
+)
+def test_client_cli_implied_settings(
+    backend: str, given: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Set the backend settings the client needs and the run left unset, and say how to set them, after the run.
+
+    The models are those of a model-only run given the same settings.
+    """
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    source = ["--input", "options.yaml", "--input-file-type", "openapi", *OPTIONS, "--output-model-type", backend]
+    run_main_with_args([*source, "--output", "models.py", *CLIENT])
+    notice = capsys.readouterr().err
+    run_main_with_args([*source, "--output", "given.py", *given])
+    same = (tmp_path / "given.py").read_text(encoding="utf-8") == (tmp_path / "models.py").read_text(encoding="utf-8")
+    assert_output(
+        f"{notice}models equal those of a model-only run given {' '.join(given)}: {same}\n",
+        EXPECTED / "cli" / "implied" / f"{backend}.txt",
+    )

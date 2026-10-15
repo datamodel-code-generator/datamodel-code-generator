@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class Kind(StrEnum):
@@ -55,37 +55,37 @@ class Pet(Struct):
     tag: str | None | UnsetType = UNSET
 
 
-FieldPetsPostQueryTagParameter: TypeAlias = str
+PetsPostQueryTagParameter: TypeAlias = str
 
 
-FieldPetsPetIdPatchPathPetIdParameter: TypeAlias = int
+PetsPetIdPatchPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdVisitsPostPathPetIdParameter: TypeAlias = int
+PetsPetIdVisitsPostPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdOwnerPutPathPetIdParameter: TypeAlias = int
+PetsPetIdOwnerPutPathPetIdParameter: TypeAlias = int
 
 
-FieldOwnersPostRequest: TypeAlias = Owner | None
+OwnersPostRequest: TypeAlias = Owner | None
 
 
-FieldPetsPetIdLabelsPutPathPetIdParameter: TypeAlias = int
+PetsPetIdLabelsPutPathPetIdParameter: TypeAlias = int
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
+PetsPetIdPhotoPutPathPetIdParameter: TypeAlias = int
 
 
-class FieldPetsPetIdPhotoPutRequest(Struct):
+class PetsPetIdPhotoPutRequest(Struct):
     photo: bytes
     caption: str | UnsetType = UNSET
 
 
-FieldPetsPetIdRecordsPutPathPetIdParameter: TypeAlias = int
+PetsPetIdRecordsPutPathPetIdParameter: TypeAlias = int
 
 
 class NewPet(Struct):
-    name: str
+    name: Annotated[str, Meta(max_length=8)]
     kind: Kind
     tag: str | None | UnsetType = UNSET
     birthDate: str | UnsetType = UNSET

@@ -13,8 +13,8 @@ from typing_extensions import NotRequired, TypedDict
 
 from .._runtime.client.arguments import Keywords
 from ..bodies import AsyncMultipartBody, MultipartBody
-from ..model_codecs import JSONValue
 from ..options import UNSET, RequestOptions
+from ..types import JSONValue
 
 
 class Operation0Arguments(TypedDict):
@@ -208,7 +208,7 @@ class Operation3Arguments(TypedDict):
 class Operation4Arguments(TypedDict):
     """The keyword arguments of one signature of create_owner."""
 
-    body: models.FieldOwnersPostRequest
+    body: models.OwnersPostRequest
     email: NotRequired[UNSET]
     nickName: NotRequired[UNSET]
     media_type: NotRequired[Literal['application/json'] | None]
@@ -228,7 +228,7 @@ class Operation4Arguments1(TypedDict):
 class Operation4Arguments2(TypedDict):
     """The keyword arguments of one signature of create_owner."""
 
-    body: NotRequired[models.FieldOwnersPostRequest | UNSET]
+    body: NotRequired[models.OwnersPostRequest | UNSET]
     email: NotRequired[str | UNSET]
     nickName: NotRequired[str | UNSET]
     media_type: NotRequired[Literal['application/json'] | None]

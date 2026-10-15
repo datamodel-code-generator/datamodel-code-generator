@@ -90,9 +90,7 @@ Term = TypeAliasType("Term", Union[str, "list[Factor]", list[Expr]])
 Factor = TypeAliasType("Factor", Union[bool, list[Term], "Chain"])
 
 
-Pair1 = TypeAliasType(
-    "Pair1", Annotated[tuple[str, "Pair"], Meta(max_length=2, min_length=2)]
-)
+Pair1 = TypeAliasType("Pair1", tuple[str, "Pair"])
 
 
 Pair = TypeAliasType("Pair", str | Pair1)

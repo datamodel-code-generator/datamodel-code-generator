@@ -26,7 +26,7 @@
           }
         }
       },
-      "FieldGetResponse": {
+      "RootGetResponse": {
         "$ref": "#/components/schemas/Base",
         "type": "object",
         "properties": {

@@ -22,7 +22,7 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
     _target_key,
     credential_place,
 )
-from datamodel_code_generator._client.plan import schema_use, schema_uses
+from datamodel_code_generator._client.plan import schema_use, schema_uses, success_media
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._target_contract import DeclarationId, SourceLocation, TypeUseBinding, TypeUseId
 
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
 
-__all__ = ("StreamSpec", "plan_streams", "stream_uses")
+__all__ = ("StreamSpec", "plan_streams", "stream_only", "stream_uses")
 
 _MEDIA: Final = {
     "sse": ("text/event-stream",),
@@ -49,6 +49,7 @@ _MEDIA: Final = {
         "application/x-ndjson",
     ),
 }
+_STREAMED: Final = frozenset(media for kinds in _MEDIA.values() for media in kinds)
 _LABELS: Final = {"sse": "SSE", "ndjson": "NDJSON"}
 _TARGETS: Final = {"body": "the request body", "querystring": "a querystring"}
 
@@ -110,6 +111,11 @@ def _references(helper: Helper) -> Iterator[tuple[str, SchemaRef]]:
 def _essence(media: str) -> str:
     """Return a media type's type and subtype in lowercase, without its parameters."""
     return media.partition(";")[0].strip().lower()
+
+
+def stream_only(spec: OperationSpec) -> bool:
+    """Return whether every success body of an operation is an event stream or NDJSON, which a stream helper reads."""
+    return bool(media := success_media(spec.responses)) and all(_essence(item) in _STREAMED for item in media)
 
 
 def _stream_response(spec: OperationSpec, essence: str) -> ResponseSpec | None:

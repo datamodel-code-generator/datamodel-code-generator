@@ -9,7 +9,7 @@ from models import base, base_request, item_request, item_response
 from pydantic import constr
 from typing import Final
 
-from .._runtime.model_codecs.native import PydanticCodec
+from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
 
 codec_0: Final[PydanticCodec[item_request.ItemRequest]] = PydanticCodec(item_request.ItemRequest)

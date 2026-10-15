@@ -17,50 +17,50 @@ class Filter(TypedDict):
 TraceParameter: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryLimitParameter: TypeAlias = int
+ItemsItemIdGetQueryLimitParameter: TypeAlias = int
 
 
-FieldItemsItemIdGetQueryRatioParameter: TypeAlias = float
+ItemsItemIdGetQueryRatioParameter: TypeAlias = float
 
 
-FieldItemsItemIdGetQuerySlugParameter: TypeAlias = str
+ItemsItemIdGetQuerySlugParameter: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryTagsParameterItem: TypeAlias = str
+ItemsItemIdGetQueryTagsParameterItem: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryTagsParameter: TypeAlias = list[FieldItemsItemIdGetQueryTagsParameterItem]
+ItemsItemIdGetQueryTagsParameter: TypeAlias = list[ItemsItemIdGetQueryTagsParameterItem]
 
 
-FieldItemsItemIdGetQueryLabelsParameterItem: TypeAlias = str
+ItemsItemIdGetQueryLabelsParameterItem: TypeAlias = str
 
 
-FieldItemsItemIdGetQueryLabelsParameter: TypeAlias = list[FieldItemsItemIdGetQueryLabelsParameterItem]
+ItemsItemIdGetQueryLabelsParameter: TypeAlias = list[ItemsItemIdGetQueryLabelsParameterItem]
 
 
-FieldItemsItemIdGetQueryShadeParameter: TypeAlias = Literal['light', 'dark']
+ItemsItemIdGetQueryShadeParameter: TypeAlias = Literal['light', 'dark']
 
 
-FieldItemsItemIdGetQueryPinnedParameter: TypeAlias = Literal['on']
+ItemsItemIdGetQueryPinnedParameter: TypeAlias = Literal['on']
 
 
-FieldItemsItemIdGetQueryColorsParameter: TypeAlias = list[Color]
+ItemsItemIdGetQueryColorsParameter: TypeAlias = list[Color]
 
 
-FieldItemsItemIdGetQueryCodesParameter: TypeAlias = str | list[str]
+ItemsItemIdGetQueryCodesParameter: TypeAlias = str | list[str]
 
 
-FieldItemsItemIdGetQueryNullableParameter: TypeAlias = int | None
+ItemsItemIdGetQueryNullableParameter: TypeAlias = int | None
 
 
-class FieldItemsItemIdGetQueryOwnerParameter(TypedDict):
+class ItemsItemIdGetQueryOwnerParameter(TypedDict):
     name: NotRequired[str]
 
 
-FieldItemsItemIdGetQueryExtraParameter: TypeAlias = dict[str, str]
+ItemsItemIdGetQueryExtraParameter: TypeAlias = dict[str, str]
 
 
-FieldItemsItemIdGetPathItemIdParameter: TypeAlias = int
+ItemsItemIdGetPathItemIdParameter: TypeAlias = int
 
 
 class Item(TypedDict):

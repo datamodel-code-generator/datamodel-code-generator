@@ -256,8 +256,9 @@ class _Pages:
                 ItemStep(
                     kind,
                     field.name,
-                    none=facts.nullable(field.type) or (not field.required and not struct),
+                    none=facts.nullable(field.type) or (not field.required and not struct and not field.missing),
                     unset=struct and not field.required,
+                    missing=field.missing,
                 )
             )
             member, value = field.member, field.type

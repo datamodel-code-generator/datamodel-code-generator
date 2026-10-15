@@ -23,9 +23,9 @@
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
   event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -40,12 +40,12 @@
   VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
   VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
@@ -53,18 +53,6 @@
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
   unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_basemodel.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
   options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
@@ -93,8 +81,8 @@
   options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
 # pets-protocols pydantic_v2.dataclass
   optional imports=[]
@@ -121,9 +109,9 @@
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
   event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -138,12 +126,12 @@
   VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
   VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
@@ -151,18 +139,6 @@
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
   unknown protocol attribute ! AttributeError: module 'pets_protocols_pydantic_v2_dataclass.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
   options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
@@ -191,8 +167,8 @@
   options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
 # pets-protocols dataclasses.dataclass
   optional imports=[]
@@ -219,9 +195,9 @@
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
   event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -236,12 +212,12 @@
   VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
   VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
@@ -249,18 +225,6 @@
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
   unknown protocol attribute ! AttributeError: module 'pets_protocols_dataclasses_dataclass.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
   options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
@@ -289,8 +253,8 @@
   options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
 # pets-protocols typing.TypedDict
   optional imports=[]
@@ -317,9 +281,9 @@
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
   event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -334,12 +298,12 @@
   VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
   VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
@@ -347,18 +311,6 @@
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
   unknown protocol attribute ! AttributeError: module 'pets_protocols_typing_typeddict.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
   options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
@@ -387,8 +339,8 @@
   options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []
 # pets-protocols msgspec.Struct
   optional imports=[]
@@ -415,9 +367,9 @@
   verified event representation = VerifiedWebhook(delivery_id='delivery', timestamp=datetime.datetime(2026, 9, 28, 0, 0, tzinfo=datetime.timezone.utc), matched_key_id='active')
   event data identity=True
   event frozen ! FrozenInstanceError: cannot assign to field 'matched_key_id' []
-  omitted options = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
+  omitted options = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=UNSET, future_tolerance=UNSET)
   options share UNSET=True
-  resolved options = ResolvedWebhookOptions(max_body_bytes=8388608, max_header_bytes=16384, max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
+  resolved options = ResolvedWebhookOptions(max_keys=8, max_signatures=8, past_tolerance=300.0, future_tolerance=30.0)
   resolved options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   options frozen ! FrozenInstanceError: cannot assign to field 'max_keys' []
   OperationRef fields=('pointer', 'document')
@@ -432,12 +384,12 @@
   VerifiedWebhook fields=('data', 'delivery_id', 'timestamp', 'matched_key_id')
   VerifiedWebhook keyword-only=True
   VerifiedWebhook hints=('data', 'delivery_id', 'timestamp', 'matched_key_id')
-  WebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   WebhookOptions keyword-only=True
-  WebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
-  ResolvedWebhookOptions fields=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  WebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions fields=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   ResolvedWebhookOptions keyword-only=True
-  ResolvedWebhookOptions hints=('max_body_bytes', 'max_header_bytes', 'max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
+  ResolvedWebhookOptions hints=('max_keys', 'max_signatures', 'past_tolerance', 'future_tolerance')
   key variance=False/False
   event covariance=True
   key tuple hint=True/True
@@ -445,18 +397,6 @@
   verifier hints=('raw_body', 'ordered_headers', 'keys', 'now', 'limits', 'return') result=True
   verifier synchronous=True
   unknown protocol attribute ! AttributeError: module 'pets_protocols_msgspec_struct.protocols' has no attribute 'MissingWebhookType' []
-  options max_body_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_body_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_body_bytes') [field_path=('max_body_bytes',)] invalid_value
-  options max_header_bytes bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes float ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
-  options max_header_bytes string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_header_bytes') [field_path=('max_header_bytes',)] invalid_value
   options max_keys bool ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys zero ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
   options max_keys negative ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='max_keys') [field_path=('max_keys',)] invalid_value
@@ -485,6 +425,6 @@
   options future_tolerance None ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance string ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
   options future_tolerance unrepresentable ! ConfigurationError: ConfigurationError(reason='invalid_value', field_path='future_tolerance') [field_path=('future_tolerance',)] invalid_value
-  minimum limits = WebhookOptions(max_body_bytes=1, max_header_bytes=1, max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
-  integer duration = WebhookOptions(max_body_bytes=UNSET, max_header_bytes=UNSET, max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
+  minimum limits = WebhookOptions(max_keys=1, max_signatures=1, past_tolerance=0, future_tolerance=0.0)
+  integer duration = WebhookOptions(max_keys=UNSET, max_signatures=UNSET, past_tolerance=5, future_tolerance=7)
   unknown option ! TypeError: WebhookOptions.__init__() got an unexpected keyword argument 'namespace' []

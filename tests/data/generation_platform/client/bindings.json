@@ -117,7 +117,8 @@
     ],
     "backend_model": {
       "pydantic_v2.BaseModel": {
-        "use_missing_sentinel": true
+        "use_missing_sentinel": true,
+        "target_pydantic_version": "2.14"
       }
     },
     "variants": {
@@ -558,8 +559,8 @@
       {
         "render": "msgspec.Struct default",
         "id": "nested-optional-member",
-        "old": "position: Union[List[Union[str, int]], UnsetType]",
-        "new": "position: Union[List[Optional[str]], UnsetType]"
+        "old": "position: Union[Annotated[List[Union[str, int]], Meta(max_length=2)], UnsetType]",
+        "new": "position: Union[Annotated[List[Optional[str]], Meta(max_length=2)], UnsetType]"
       }
     ]
   },
@@ -2479,7 +2480,7 @@
     "models": "models"
   },
   "session-builtin-alias": {
-    "source": "openapi/builtin_type_field_names.yaml",
+    "source": "generation_platform/binding/builtin-type-field-names.yaml",
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass",
@@ -2490,6 +2491,9 @@
     "model": {
       "openapi_scopes": [
         "api"
+      ],
+      "type_mappings": [
+        "string+byte=binary"
       ]
     }
   },

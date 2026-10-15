@@ -56,7 +56,10 @@ nav = [
     ]},
     { "Generation Targets" = [
       { "FastAPI Server (Experimental)" = "fastapi-server.md" },
-      { "Python Client (Experimental)" = "python-client.md" }
+      { "Python Client (Experimental)" = "python-client.md" },
+      { "Python Client Protocol Helpers" = "python-client-helpers.md" },
+      { "Python Client Reference" = "python-client-reference.md" },
+      { "Migrating from fastapi-code-generator" = "fastapi-code-generator-migration.md" }
     ]}
   ]},
   { "CLI Reference" = [

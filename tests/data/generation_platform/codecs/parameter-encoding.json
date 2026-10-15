@@ -1125,6 +1125,35 @@
     {
       "plan": {
         "location": "query",
+        "name": "c",
+        "shape": "scalar",
+        "content_media_type": "text/plain"
+      },
+      "value": "x\ud800"
+    },
+    {
+      "plan": {
+        "location": "querystring",
+        "name": "qs",
+        "shape": "scalar",
+        "content_media_type": "application/json"
+      },
+      "value": {
+        "a": "\ud800"
+      }
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple",
+        "shape": "scalar"
+      },
+      "value": "x\ud800"
+    },
+    {
+      "plan": {
+        "location": "query",
         "name": "q",
         "style": "form",
         "explode": true,

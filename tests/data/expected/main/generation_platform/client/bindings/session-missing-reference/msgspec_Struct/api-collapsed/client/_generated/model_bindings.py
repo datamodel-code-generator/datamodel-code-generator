@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, Final
 
-from .._runtime.model_codecs.native import MsgspecCodec
+from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
 
 codec_0: Final[MsgspecCodec[Any]] = MsgspecCodec(Any)

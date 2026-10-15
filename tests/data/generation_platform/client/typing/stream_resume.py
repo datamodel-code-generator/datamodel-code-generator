@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from pets.errors import SessionLimitError, StreamInterruptedError
 from pets.options import RequestOptions
-from pets.model_codecs import JSONValue
+from pets.types import JSONValue
 from pets.protocols import AsyncEventStream, EventStream, StreamOptions, UnknownEvent
 from pets_models import Created, Mark, Message, Record
 from typing_extensions import assert_type

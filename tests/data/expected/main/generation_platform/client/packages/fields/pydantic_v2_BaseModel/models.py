@@ -63,34 +63,34 @@ class Pet(BaseModel):
     tag: str | None = None
 
 
-FieldPetsPostQueryTagParameter = TypeAliasType("FieldPetsPostQueryTagParameter", str)
+PetsPostQueryTagParameter = TypeAliasType("PetsPostQueryTagParameter", str)
 
 
-FieldPetsPetIdPatchPathPetIdParameter = TypeAliasType("FieldPetsPetIdPatchPathPetIdParameter", int)
+PetsPetIdPatchPathPetIdParameter = TypeAliasType("PetsPetIdPatchPathPetIdParameter", int)
 
 
-FieldPetsPetIdVisitsPostPathPetIdParameter = TypeAliasType("FieldPetsPetIdVisitsPostPathPetIdParameter", int)
+PetsPetIdVisitsPostPathPetIdParameter = TypeAliasType("PetsPetIdVisitsPostPathPetIdParameter", int)
 
 
-FieldPetsPetIdOwnerPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdOwnerPutPathPetIdParameter", int)
+PetsPetIdOwnerPutPathPetIdParameter = TypeAliasType("PetsPetIdOwnerPutPathPetIdParameter", int)
 
 
-class FieldOwnersPostRequest(RootModel[Owner | None]):
+class OwnersPostRequest(RootModel[Owner | None]):
     root: Owner | None
 
 
-FieldPetsPetIdLabelsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdLabelsPutPathPetIdParameter", int)
+PetsPetIdLabelsPutPathPetIdParameter = TypeAliasType("PetsPetIdLabelsPutPathPetIdParameter", int)
 
 
-FieldPetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdPhotoPutPathPetIdParameter", int)
+PetsPetIdPhotoPutPathPetIdParameter = TypeAliasType("PetsPetIdPhotoPutPathPetIdParameter", int)
 
 
-class FieldPetsPetIdPhotoPutRequest(BaseModel):
+class PetsPetIdPhotoPutRequest(BaseModel):
     photo: bytes
     caption: str | None = None
 
 
-FieldPetsPetIdRecordsPutPathPetIdParameter = TypeAliasType("FieldPetsPetIdRecordsPutPathPetIdParameter", int)
+PetsPetIdRecordsPutPathPetIdParameter = TypeAliasType("PetsPetIdRecordsPutPathPetIdParameter", int)
 
 
 class NewPet(BaseModel):

@@ -60,7 +60,10 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
 
 
 def calls(kit: Kit) -> Calls:
-    """Return a stream of each helper, the plain operations, and topics without events or without a topic."""
+    """Return a stream of each helper, the plain operations, and topics without events or without a topic.
+
+    A topic without events is answered with the declared 204, which ends a helper's stream whatever its completion.
+    """
     helpers, models = kit.api.protocols, kit.models
     return [
         ("events.messages", lambda: helpers.events.messages.open(topic="messages", Last_Event_ID="1")),
@@ -69,6 +72,7 @@ def calls(kit: Kit) -> Calls:
         ("events.tagged error event", lambda: helpers.events.tagged.open(topic="tagged")),
         ("events.messages missing topic", lambda: helpers.events.messages.open(topic="missing")),
         ("events.messages no events", lambda: helpers.events.messages.open(topic="none")),
+        ("events.tagged no events", lambda: helpers.events.tagged.open(topic="none")),
         ("feed.all", lambda: helpers.feed.all.open(body=models.FeedQuery(topic="news"))),
         ("stream_events", lambda: kit.api.events.stream_events(topic="messages")),
         ("get_status", kit.api.status.get_status),

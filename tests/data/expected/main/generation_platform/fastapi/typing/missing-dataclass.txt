@@ -1,0 +1,13 @@
+2 marked lines
+mypy pets, services, and missing_service.py: clean
+pyright pets, services, and missing_service.py: clean
+ty pets, services, and missing_service.py: clean
+mypy missing_service_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  9 assignment
+  10 arg-type
+pyright missing_service_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  9 reportAssignmentType
+  10 reportArgumentType
+ty missing_service_negative.py: 2/2 marked lines with one error, 0 elsewhere, 0 in other files
+  9 invalid-assignment
+  10 invalid-argument-type

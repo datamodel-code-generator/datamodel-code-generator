@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import GenerateConfig, generate
+from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.client_bindings import (
     CASES,
     CLIENT,
@@ -70,7 +71,7 @@ def test_capture_preserves_ordinary_model_bytes(
             "input_file_type": "openapi",
             "target_python_version": "3.11",
             "openapi_scopes": ["schemas", "api"],
-            "output_model_type": backend,
+            **backend_settings(backend),
             "disable_timestamp": True,
             **MODEL,
             **settings.get("model", {}),

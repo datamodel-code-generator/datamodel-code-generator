@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pet",
+  "type": "object",
+  "required": ["plain", "first-name", "count"],
+  "properties": {
+    "plain": {"type": "string"},
+    "nick": {"type": "string", "default": "x"},
+    "first-name": {"type": "string"},
+    "opt-alias": {"type": "string"},
+    "count": {"type": "integer", "minimum": 1}
+  }
+}

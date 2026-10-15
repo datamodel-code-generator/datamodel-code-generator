@@ -54,15 +54,15 @@ query color form* scalar/string {"query":"%zz=1"}: MalformedError A percent sign
 header X-Rate simple scalar/integer {"headers":[["X-Rate"," 5 "]]}: 5
 header X-Rate simple scalar/integer {"headers":[["x-rate","5"],["X-RATE","6"]]}: 5
 header X-Rate simple scalar/integer {"headers":[["Other","5"]]}: UNSET
-header X-Rate simple scalar/string {"headers":[["X-Rate",{"hex":"ff"}]]}: MalformedError A header value must be UTF-8
-header X-Rate simple scalar/string {"headers":[["X-Rate","5"],["X-Rate",{"hex":"ff"}]]}: "5"
+header X-Rate simple scalar/string {"headers":[["X-Rate",{"hex":"ff"}]]}: MalformedError A header value must be ASCII
+header X-Rate simple scalar/string {"headers":[["X-Rate","5"],["X-Rate",{"hex":"ff"}]]}: MalformedError A header value must be ASCII
 header X-Rate simple array/string {"headers":[["X-Rate","a, b"],["X-Rate","c"]]}: ["a","b","c"]
 header X-Rate simple array/string {"headers":[["X-Rate",""]]}: MalformedError An empty header value cannot represent a container
 header X-Rate simple* object/string {"headers":[["X-Rate","R=1, G=2"]]}: {"R":1,"G":2}
 header X-Rate application/json scalar/string {"headers":[["X-Rate"," {\"a\":1} "]]}: "{\"a\":1}"
 header X-Rate application/json scalar/string {"headers":[["X-Rate","1"],["X-Rate","2"]]}: "1"
 header X-Rate application/json scalar/string {}: UNSET
-header X-Rate application/json scalar/string {"headers":[["X-Rate",{"hex":"ff"}]]}: MalformedError A parameter value must be UTF-8
+header X-Rate application/json scalar/string {"headers":[["X-Rate",{"hex":"ff"}]]}: MalformedError A header value must be ASCII
 cookie color form* scalar/string {"headers":[["Cookie","other=x; color=blue"]]}: "blue"
 cookie color form* scalar/string {"headers":[["Cookie","color=a; color=b"]]}: "b"
 cookie color form* scalar/string {"headers":[["Cookie","other=x"]]}: UNSET
@@ -77,7 +77,7 @@ cookie color form* array/string {"headers":[["Cookie","other=a"]]}: UNSET
 cookie color cookie* object/string {"headers":[["Cookie","R=1; G=2; X=3"]]}: {"R":1,"G":2}
 cookie color cookie* object/string {"headers":[["Cookie","X=3"]]}: UNSET
 cookie color cookie* scalar/string {"headers":[["Cookie","color=a%2Cb"]]}: "a%2Cb"
-cookie color cookie* scalar/string {"headers":[["Cookie",{"hex":"636f6c6f723dff"}]]}: MalformedError A parameter value must be UTF-8
+cookie color cookie* scalar/string {"headers":[["Cookie",{"hex":"636f6c6f723dff"}]]}: MalformedError A cookie must be ASCII
 querystring qs application/x-www-form-urlencoded scalar/string {"query":"q=a+b%2Bc&tags=x&tags=y&n=3"}: {"q":"a b+c","tags":["x","y"],"n":3}
 querystring qs application/x-www-form-urlencoded scalar/string {"query":""}: UNSET
 querystring qs application/x-www-form-urlencoded scalar/string {}: UNSET

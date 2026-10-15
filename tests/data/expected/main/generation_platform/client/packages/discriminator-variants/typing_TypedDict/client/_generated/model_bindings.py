@@ -9,42 +9,42 @@ from typing import Final
 
 import models
 
-from .._runtime.model_codecs.stdlib import (
+from .._runtime.model_codecs.stdlib_typeddicts import (
     Choice,
     Field,
     Items,
     Model,
-    StdlibCodec,
+    TypedDictCodec,
     Values,
 )
 
 MODELS: Final[dict[type, Model]] = {
-    models.CatRequest: Model((Field('kind', 'kind'),), True),
-    models.CatResponse: Model((Field('kind', 'kind'), Field('lives', 'lives')), True),
-    models.Dog: Model((Field('kind', 'kind'), Field('bark', 'bark')), True),
-    models.LionResponse: Model((Field('kind', 'kind'), Field('mane', 'mane')), True),
-    models.Wolf: Model((Field('kind', 'kind'),), True),
-    models.Fish: Model((Field('kind', 'kind'), Field('fins', 'fins')), True),
-    models.Bird: Model((Field('kind', 'kind'),), True),
-    models.Item: Model((Field('name', 'name'), Field('count', 'count')), True),
-    models.ChildResponse: Model((Field('pet', 'pet', Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf)))), Field('pets_by_name', 'pets_by_name', Values(Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf))))), Field('note', 'note')), True),
-    models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird)))),), True),
+    models.CatRequest: Model((Field('kind', 'kind'),)),
+    models.CatResponse: Model((Field('kind', 'kind'), Field('lives', 'lives'))),
+    models.Dog: Model((Field('kind', 'kind'), Field('bark', 'bark'))),
+    models.LionResponse: Model((Field('kind', 'kind'), Field('mane', 'mane'))),
+    models.Wolf: Model((Field('kind', 'kind'),)),
+    models.Fish: Model((Field('kind', 'kind'), Field('fins', 'fins'))),
+    models.Bird: Model((Field('kind', 'kind'),)),
+    models.Item: Model((Field('name', 'name'), Field('count', 'count'))),
+    models.ChildResponse: Model((Field('pet', 'pet', Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf)))), Field('pets_by_name', 'pets_by_name', Values(Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf))))), Field('note', 'note'))),
+    models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird)))),)),
 }
 
-codec_0: Final[StdlibCodec[models.PetRequest]] = StdlibCodec(Choice((), 'kind', (('kitty', models.CatRequest), ('doggo', models.Dog))), MODELS)
+codec_0: Final[TypedDictCodec[models.PetRequest]] = TypedDictCodec(Choice((), 'kind', (('kitty', models.CatRequest), ('doggo', models.Dog))), MODELS)
 """Codec of /paths/~1pets/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.PetResponse]] = StdlibCodec(Choice((), 'kind', (('kitty', models.CatResponse), ('doggo', models.Dog))), MODELS)
+codec_1: Final[TypedDictCodec[models.PetResponse]] = TypedDictCodec(Choice((), 'kind', (('kitty', models.CatResponse), ('doggo', models.Dog))), MODELS)
 """Codec of /paths/~1pets/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.FieldPetsListGetResponseResponse]] = StdlibCodec(Items(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog)))), MODELS)
+codec_2: Final[TypedDictCodec[models.PetsListGetResponseResponse]] = TypedDictCodec(Items(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog)))), MODELS)
 """Codec of /paths/~1pets~1list/get response_body (response 200 application/json)."""
 
-codec_3: Final[StdlibCodec[models.ChildResponse]] = StdlibCodec(models.ChildResponse, MODELS)
+codec_3: Final[TypedDictCodec[models.ChildResponse]] = TypedDictCodec(models.ChildResponse, MODELS)
 """Codec of /paths/~1child/get response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.Holder]] = StdlibCodec(models.Holder, MODELS)
+codec_4: Final[TypedDictCodec[models.Holder]] = TypedDictCodec(models.Holder, MODELS)
 """Codec of /paths/~1holder/get response_body (response 200 application/json)."""
 
-codec_5: Final[StdlibCodec[models.Item]] = StdlibCodec(models.Item, MODELS)
+codec_5: Final[TypedDictCodec[models.Item]] = TypedDictCodec(models.Item, MODELS)
 """Codec of /paths/~1items/post request_body (request application/json)."""

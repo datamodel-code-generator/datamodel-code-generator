@@ -21,10 +21,10 @@ from ...bodies import MultipartData
 from ...options import UNSET
 from ...responses import ResponseInfo
 
-ListPetsResponse: TypeAlias = models.FieldPetsGetResponse | models.Error
+ListPetsResponse: TypeAlias = models.PetsGetResponse | models.Error
 
 
-_LIST_PETS_HEADERS: Final[ResponseHeaders[models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader, UNSET]] = ResponseHeaders(
+_LIST_PETS_HEADERS: Final[ResponseHeaders[models.PetsGetResponse200XNextHeader | models.PetsGetResponse200XRateHeader, UNSET]] = ResponseHeaders(
     'listPets',
     frozenset({'200', 'default'}),
     (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_5, missing=optional_header)),)), ('X-Rate', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Rate', style='simple', required=True, kind='integer'), codec=model_bindings.codec_6, missing=required_header)),))),
@@ -36,20 +36,20 @@ def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next'],
-) -> models.FieldPetsGetResponse200XNextHeader | UNSET: ...
+) -> models.PetsGetResponse200XNextHeader | UNSET: ...
 @overload
 def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Rate'],
-) -> models.FieldPetsGetResponse200XRateHeader: ...
+) -> models.PetsGetResponse200XRateHeader: ...
 
 
 def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next', 'X-Rate'],
-) -> models.FieldPetsGetResponse200XNextHeader | models.FieldPetsGetResponse200XRateHeader | UNSET:
+) -> models.PetsGetResponse200XNextHeader | models.PetsGetResponse200XRateHeader | UNSET:
     """Decode one declared response header of list_pets from a response's metadata."""
     return _LIST_PETS_HEADERS.decode(info, name)
 
@@ -57,7 +57,7 @@ def decode_list_pets_header(
 CreatePetResponse: TypeAlias = models.Pet
 
 
-GetPetResponse: TypeAlias = models.Pet | models.FieldPetsPetIdGetResponse
+GetPetResponse: TypeAlias = models.Pet | models.PetsPetIdGetResponse
 
 
 DeletePetsByPetIdResponse: TypeAlias = None
@@ -66,7 +66,7 @@ DeletePetsByPetIdResponse: TypeAlias = None
 HeadPetResponse: TypeAlias = None
 
 
-_HEAD_PET_HEADERS: Final[ResponseHeaders[models.FieldPetsPetIdHeadResponse200ETagHeader, UNSET]] = ResponseHeaders(
+_HEAD_PET_HEADERS: Final[ResponseHeaders[models.PetsPetIdHeadResponse200ETagHeader, UNSET]] = ResponseHeaders(
     'headPet',
     frozenset({'200'}),
     (('ETag', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='ETag', style='simple'), codec=model_bindings.codec_17, missing=optional_header)),)),),
@@ -77,7 +77,7 @@ def decode_head_pet_header(
     info: ResponseInfo,
     *,
     name: Literal['ETag'],
-) -> models.FieldPetsPetIdHeadResponse200ETagHeader | UNSET:
+) -> models.PetsPetIdHeadResponse200ETagHeader | UNSET:
     """Decode one declared response header of head_pet from a response's metadata."""
     return _HEAD_PET_HEADERS.decode(info, name)
 

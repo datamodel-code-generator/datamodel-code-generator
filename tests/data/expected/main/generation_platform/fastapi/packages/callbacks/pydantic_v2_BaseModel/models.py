@@ -46,25 +46,25 @@ class Näme(RootModel[str]):
     root: str
 
 
-class FieldSubscriptionsPostOnEventCallback1PostRequest(BaseModel):
+class SubscriptionsPostOnEventCallback1PostRequest(BaseModel):
     file: bytes | None = None
 
 
-FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter = TypeAliasType("FieldSubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter", str)
+SubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter = TypeAliasType("SubscriptionsPostOnStatusCallback1PutHeaderXTraceParameter", str)
 
 
-class FieldEventsGetResponse(RootModel[list[Event]]):
+class EventsGetResponse(RootModel[list[Event]]):
     root: list[Event]
 
 
-class FieldEventsGetResponse200XMapHeader(BaseModel):
+class EventsGetResponse200XMapHeader(BaseModel):
     pass
 
 
-FieldSecureGetCookieTokenParameter = TypeAliasType("FieldSecureGetCookieTokenParameter", str)
+SecureGetCookieTokenParameter = TypeAliasType("SecureGetCookieTokenParameter", str)
 
 
-class FieldSecureGetResponse401wwwAuthenticateHeader(RootModel[str]):
+class SecureGetResponse401wwwAuthenticateHeader(RootModel[str]):
     root: str
 
 
@@ -77,7 +77,7 @@ class Status(BaseModel):
     state: State
 
 
-class FieldSecureGetResponse(RootModel[Event | Status]):
+class SecureGetResponse(RootModel[Event | Status]):
     root: Event | Status
 
 

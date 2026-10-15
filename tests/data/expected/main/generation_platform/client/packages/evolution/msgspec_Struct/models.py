@@ -44,9 +44,9 @@ class Problem(Struct):
     code: int
 
 
-FieldOrdersOrderIdGetPathOrderIdParameter: TypeAlias = int
+OrdersOrderIdGetPathOrderIdParameter: TypeAlias = int
 
 
-class FieldOrdersOrderIdGetQueryViewParameter(StrEnum):
+class OrdersOrderIdGetQueryViewParameter(StrEnum):
     full = 'full'
     brief = 'brief'

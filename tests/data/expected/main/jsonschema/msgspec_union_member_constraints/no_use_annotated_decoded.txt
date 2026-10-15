@@ -1,0 +1,10 @@
+Upload(page=b'page xx', name='Pagination', count=10, label='chapter', tags=['ab', 'longer'], code=404, short='abc', nickname='Pagination', alias='Pagination', amount=6, ratio=6, level=2, step=6, half=3, gap=2, floor=3, initials='abc', pair='abc', same='abc', shared='a', apart='abc', mixed='Pagination')
+rejected:
+page
+name
+count
+tags
+nickname
+alias
+ratio
+mixed

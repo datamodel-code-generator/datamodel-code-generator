@@ -17,61 +17,57 @@ class Account(BaseModel):
     name: str
 
 
-class FieldJsonNullablePostRequest(BaseModel):
+class JsonNullablePostRequest(BaseModel):
     name: str
 
 
-class FieldTextPostRequest(RootModel[constr(max_length=10)]):
+class TextPostRequest(RootModel[constr(max_length=10)]):
     root: constr(max_length=10)
 
 
-class FieldRawPostRequest(BaseModel):
+class RawPostRequest(BaseModel):
     pass
 
 
-class FieldFormPostRequest(BaseModel):
+class FormPostRequest(BaseModel):
     name: constr(max_length=20)
     count: int | None = 1
     tags: list[str] | None = None
 
 
-class FieldFormOptionalPostRequest(BaseModel):
+class FormOptionalPostRequest(BaseModel):
     name: str | None = None
     flags: list[bool] | None = None
     ratio: float | None = None
 
 
-class FieldFormEitherPostRequest(BaseModel):
+class FormEitherPostRequest(BaseModel):
     either: str | int | None = None
     items: list[int] | None = None
 
 
-class Point(BaseModel):
-    x: float | None = None
-
-
-class FieldFormNestedPostRequest(BaseModel):
+class FormExtrasPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
     __annotations__ = {
         '__pydantic_extra__': Dict[str, int],
     }
-    point: Point | None = None
+    ratio: float | None = None
 
 
-class FieldFormClosedPostRequest(BaseModel):
+class FormClosedPostRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     name: str | None = None
 
 
-class FieldFormChoicePostRequest(BaseModel):
+class FormChoicePostRequest(BaseModel):
     name: str | None = None
 
 
-class FieldUploadPostRequest(BaseModel):
+class UploadPostRequest(BaseModel):
     file: bytes
     extra: list[bytes] | None = None
     note: str | None = None

@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Tags
+  version: "1.0"
+paths:
+  /holders:
+    get:
+      operationId: getHolder
+      responses:
+        "200":
+          description: The holder.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Holder"
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        tags:
+          type: [object, "null"]
+          additionalProperties:
+            type: object
+            properties:
+              label:
+                type: string
+    Tags:
+      type: object
+      properties:
+        label:
+          type: string

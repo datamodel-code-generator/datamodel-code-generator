@@ -107,10 +107,10 @@ render dataclasses.dataclass standard-collapsed
   model_bindings.py dataclasses_dataclass/typing
 render typing.TypedDict typing
   models.py
-  model_bindings.py dataclasses_dataclass/typing
+  model_bindings.py typing_TypedDict/typing
 render typing.TypedDict standard
   models.py
-  model_bindings.py dataclasses_dataclass/typing
+  model_bindings.py typing_TypedDict/typing
 change typing.TypedDict standard list(object)
   @@ -10 +10 @@
   -Model: TypeAlias = list
@@ -133,10 +133,10 @@ change typing.TypedDict standard dict
   +Model: TypeAlias = dict
 render typing.TypedDict generic
   models.py
-  model_bindings.py dataclasses_dataclass/typing
+  model_bindings.py typing_TypedDict/typing
 render typing.TypedDict standard-collapsed
   models.py
-  model_bindings.py dataclasses_dataclass/typing
+  model_bindings.py typing_TypedDict/typing
 render msgspec.Struct typing
   models.py
   model_bindings.py msgspec_Struct/typing

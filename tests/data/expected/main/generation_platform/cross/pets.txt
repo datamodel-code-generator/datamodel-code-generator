@@ -2,14 +2,14 @@ models shared True
 # pets in-process sync, in-process async, socket sync, socket async
 list_pets every parameter
   > GET /pets?limit=5&tags=a%20b&tags=c%2Cd&kind=cat&since=2026-10-01T12%3A30%3A00Z
-  list_pets(limit=5, tags=['a b', 'c,d'], kind=FieldPetsGetQueryKindParameter.cat, X_Request_Id=UUID('12345678-1234-5678-1234-567812345678'), since=datetime(2026-10-01T12:30:00+00:00), session='s1')
+  list_pets(limit=5, tags=['a b', 'c,d'], kind=PetsGetQueryKindParameter.cat, X_Request_Id=UUID('12345678-1234-5678-1234-567812345678'), since=datetime(2026-10-01T12:30:00+00:00), session='s1')
   < 200 application/json
-  = FieldPetsGetResponse(root=[Pet(id=1, name='Mimi', tag=None), Pet(id=2, name='Rex', tag='dog')])
+  = PetsGetResponse(root=[Pet(id=1, name='Mimi', tag=None), Pet(id=2, name='Rex', tag='dog')])
 list_pets defaults
   > GET /pets?limit=20
   list_pets(limit=20, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
   < 200 application/json
-  = FieldPetsGetResponse(root=[Pet(id=1, name='Mimi', tag=None), Pet(id=2, name='Rex', tag='dog')])
+  = PetsGetResponse(root=[Pet(id=1, name='Mimi', tag=None), Pet(id=2, name='Rex', tag='dog')])
 list_pets default response
   > GET /pets?limit=99
   list_pets(limit=99, tags=None, kind=None, X_Request_Id=None, since=None, session=None)
@@ -28,7 +28,7 @@ list_my_pets
   > GET /pets/mine
   list_my_pets()
   < 200 application/json
-  = FieldPetsMineGetResponse(root=[])
+  = PetsMineGetResponse(root=[])
 get_pet
   > GET /pets/7
   get_pet(petId=7)
@@ -48,4 +48,4 @@ get_inventory
   > GET /store/inventory
   get_inventory()
   < 200 application/json
-  = FieldStoreInventoryGetResponse(root={'available': 2, 'sold': 0})
+  = StoreInventoryGetResponse(root={'available': 2, 'sold': 0})

@@ -8,7 +8,7 @@ from __future__ import annotations
 import models
 from typing import Final
 
-from .._runtime.model_codecs.stdlib import Field, Model, StdlibCodec
+from .._runtime.model_codecs.stdlib_dataclasses import DataclassCodec, Field, Model
 
 
 
@@ -17,20 +17,20 @@ MODELS: Final[dict[type, Model]] = {
     models.Edges: Model((Field('optional', 'optional', omit_none=True), Field('needed', 'needed'), Field('strict', 'strict', omit_none=True), Field('wire-name', 'wire_name'), Field('alias_ref', 'alias_ref', omit_none=True))),
 }
 
-codec_0: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_0: Final[DataclassCodec[models.Base]] = DataclassCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~10/post request_body (request application/json)."""
 
-codec_1: Final[StdlibCodec[models.Base]] = StdlibCodec(models.Base, MODELS)
+codec_1: Final[DataclassCodec[models.Base]] = DataclassCodec(models.Base, MODELS)
 """Codec of /paths/~1bindings~10/post response_body (response 200 application/json)."""
 
-codec_2: Final[StdlibCodec[models.Edges]] = StdlibCodec(models.Edges, MODELS)
+codec_2: Final[DataclassCodec[models.Edges]] = DataclassCodec(models.Edges, MODELS)
 """Codec of /paths/~1bindings~11/post request_body (request application/json)."""
 
-codec_3: Final[StdlibCodec[models.Edges]] = StdlibCodec(models.Edges, MODELS)
+codec_3: Final[DataclassCodec[models.Edges]] = DataclassCodec(models.Edges, MODELS)
 """Codec of /paths/~1bindings~11/post response_body (response 200 application/json)."""
 
-codec_4: Final[StdlibCodec[models.NullableName]] = StdlibCodec(None, MODELS)
+codec_4: Final[DataclassCodec[models.NullableName]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post request_body (request application/json)."""
 
-codec_5: Final[StdlibCodec[models.NullableName]] = StdlibCodec(None, MODELS)
+codec_5: Final[DataclassCodec[models.NullableName]] = DataclassCodec(None, MODELS)
 """Codec of /paths/~1bindings~12/post response_body (response 200 application/json)."""

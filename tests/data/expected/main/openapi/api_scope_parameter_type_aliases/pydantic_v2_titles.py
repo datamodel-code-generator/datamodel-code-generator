@@ -25,55 +25,51 @@ TraceParameter = TypeAliasType(
 )
 
 
-FieldItemsItemIdGetQueryLimitParameter = TypeAliasType(
-    "FieldItemsItemIdGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
+ItemsItemIdGetQueryLimitParameter = TypeAliasType(
+    "ItemsItemIdGetQueryLimitParameter", Annotated[int, Field(ge=1, le=100)]
 )
 
 
-FieldItemsItemIdGetQueryRatioParameter = TypeAliasType(
-    "FieldItemsItemIdGetQueryRatioParameter",
+ItemsItemIdGetQueryRatioParameter = TypeAliasType(
+    "ItemsItemIdGetQueryRatioParameter",
     Annotated[float, Field(multiple_of=0.5, gt=0.0)],
 )
 
 
-FieldItemsItemIdGetQuerySlugParameter = TypeAliasType(
-    "FieldItemsItemIdGetQuerySlugParameter",
+ItemsItemIdGetQuerySlugParameter = TypeAliasType(
+    "ItemsItemIdGetQuerySlugParameter",
     Annotated[str, Field(pattern=compile('^(?!admin)[a-z]+$'), min_length=2)],
 )
 
 
-FieldItemsItemIdGetQueryTagsParameterItem = TypeAliasType(
-    "FieldItemsItemIdGetQueryTagsParameterItem", Annotated[str, Field(max_length=8)]
+ItemsItemIdGetQueryTagsParameterItem = TypeAliasType(
+    "ItemsItemIdGetQueryTagsParameterItem", Annotated[str, Field(max_length=8)]
 )
 
 
-FieldItemsItemIdGetQueryTagsParameter = TypeAliasType(
-    "FieldItemsItemIdGetQueryTagsParameter",
-    Annotated[
-        list[FieldItemsItemIdGetQueryTagsParameterItem], Field(['new'], max_length=5)
-    ],
+ItemsItemIdGetQueryTagsParameter = TypeAliasType(
+    "ItemsItemIdGetQueryTagsParameter",
+    Annotated[list[ItemsItemIdGetQueryTagsParameterItem], Field(['new'], max_length=5)],
 )
 
 
-FieldItemsItemIdGetQueryLabelsParameterItem = TypeAliasType(
-    "FieldItemsItemIdGetQueryLabelsParameterItem", Annotated[str, Field(max_length=8)]
+ItemsItemIdGetQueryLabelsParameterItem = TypeAliasType(
+    "ItemsItemIdGetQueryLabelsParameterItem", Annotated[str, Field(max_length=8)]
 )
 
 
-FieldItemsItemIdGetQueryLabelsParameter = TypeAliasType(
-    "FieldItemsItemIdGetQueryLabelsParameter",
-    Annotated[
-        list[FieldItemsItemIdGetQueryLabelsParameterItem], Field(..., max_length=5)
-    ],
+ItemsItemIdGetQueryLabelsParameter = TypeAliasType(
+    "ItemsItemIdGetQueryLabelsParameter",
+    Annotated[list[ItemsItemIdGetQueryLabelsParameterItem], Field(..., max_length=5)],
 )
 
 
-class FieldItemsItemIdGetQueryShadeParameter(Enum):
+class ItemsItemIdGetQueryShadeParameter(Enum):
     light = 'light'
     dark = 'dark'
 
 
-FieldItemsItemIdGetQueryPinnedParameter = TypeAliasType("FieldItemsItemIdGetQueryPinnedParameter", Literal['on'])
+ItemsItemIdGetQueryPinnedParameter = TypeAliasType("ItemsItemIdGetQueryPinnedParameter", Literal['on'])
 
 
 ColorList = TypeAliasType(
@@ -86,26 +82,26 @@ Code = TypeAliasType(
 )
 
 
-FieldItemsItemIdGetQueryCodesParameter = TypeAliasType(
-    "FieldItemsItemIdGetQueryCodesParameter",
+ItemsItemIdGetQueryCodesParameter = TypeAliasType(
+    "ItemsItemIdGetQueryCodesParameter",
     Code | list[Annotated[str, Field(max_length=4)]],
 )
 
 
-FieldItemsItemIdGetQueryNullableParameter = TypeAliasType(
-    "FieldItemsItemIdGetQueryNullableParameter", Annotated[int, Field(ge=0)] | None
+ItemsItemIdGetQueryNullableParameter = TypeAliasType(
+    "ItemsItemIdGetQueryNullableParameter", Annotated[int, Field(ge=0)] | None
 )
 
 
-class FieldItemsItemIdGetQueryOwnerParameter(BaseModel):
+class ItemsItemIdGetQueryOwnerParameter(BaseModel):
     name: constr(max_length=3) | None = None
 
 
-FieldItemsItemIdGetQueryExtraParameter = TypeAliasType("FieldItemsItemIdGetQueryExtraParameter", dict[str, str])
+ItemsItemIdGetQueryExtraParameter = TypeAliasType("ItemsItemIdGetQueryExtraParameter", dict[str, str])
 
 
-FieldItemsItemIdGetPathItemIdParameter = TypeAliasType(
-    "FieldItemsItemIdGetPathItemIdParameter", Annotated[int, Field(ge=1)]
+ItemsItemIdGetPathItemIdParameter = TypeAliasType(
+    "ItemsItemIdGetPathItemIdParameter", Annotated[int, Field(ge=1)]
 )
 
 

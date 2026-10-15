@@ -24,6 +24,7 @@ def _add_get_inventory(
     get_inventory_handler = checked(
         store.get_inventory,
         'The store.get_inventory method of GET /store/inventory',
+        (),
     )
 
     def get_inventory() -> object:
@@ -37,7 +38,7 @@ def _add_get_inventory(
         get_inventory,
         methods=['GET'],
         status_code=200,
-        response_model=pets_basemodel_models.FieldStoreInventoryGetResponse,
+        response_model=pets_basemodel_models.StoreInventoryGetResponse,
         response_model_by_alias=True,
         response_model_exclude_unset=True,
         operation_id='getInventory',

@@ -1,8 +1,9 @@
-"""The source OpenAPI document of the selected operations, which the application serves; regenerate it."""
+"""Serve the source OpenAPI document of the selected operations, which `openapi.json` beside this module holds."""
 
 from __future__ import annotations
 
 import json
+from importlib.resources import files
 from typing import TYPE_CHECKING, Any
 
 from .._runtime.server.openapi import serve_openapi
@@ -12,16 +13,23 @@ if TYPE_CHECKING:
 
     from fastapi import FastAPI
 
-_TEXT = (
-{%- for line in lines %}
-    {{ line }}
-{%- endfor %}
-)
-
 
 def document() -> dict[str, Any]:
-    """Return a new copy of the source document."""
-    loaded: dict[str, Any] = json.loads(_TEXT)
+    """Return a new copy of the source document, read from `openapi.json` beside this module.
+
+    A build that left the file out of the package fails here, on the document's first request.
+    """
+    package = __name__.rpartition(".")[0]
+    try:
+        text = (files(package) / "openapi.json").read_text(encoding="utf-8")
+    except FileNotFoundError as error:
+        msg = (
+            f"openapi.json of {package} is missing: include _generated/openapi.json"
+            " as package data when building the package, such as with setuptools"
+            " package-data or MANIFEST.in"
+        )
+        raise FileNotFoundError(msg) from error
+    loaded: dict[str, Any] = json.loads(text)
     return loaded
 
 

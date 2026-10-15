@@ -4,11 +4,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class Model(BaseModel):
-    model_config = ConfigDict(
-        regex_engine="python-re",
-    )
     blob: bytes | None = Field(None, pattern='^(a)\\1$')
+    code: str | None = Field(None, pattern='^abc$')

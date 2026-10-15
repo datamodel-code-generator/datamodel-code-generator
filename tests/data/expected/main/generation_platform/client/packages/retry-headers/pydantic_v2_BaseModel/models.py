@@ -6,87 +6,87 @@ from __future__ import annotations
 from pydantic import RootModel
 from typing_extensions import TypeAliasType
 
-FieldParameterPostHeaderXRequestKeyParameter = TypeAliasType("FieldParameterPostHeaderXRequestKeyParameter", str)
+ParameterPostHeaderXRequestKeyParameter = TypeAliasType("ParameterPostHeaderXRequestKeyParameter", str)
 
 
-class FieldParameterPostResponse(RootModel[str]):
+class ParameterPostResponse(RootModel[str]):
     root: str
 
 
-class FieldParameterPostResponse200XIdempotencyHeader(RootModel[str]):
+class ParameterPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldApiKeyPostResponse(RootModel[str]):
+class ApiKeyPostResponse(RootModel[str]):
     root: str
 
 
-class FieldApiKeyPostResponse200XIdempotencyHeader(RootModel[str]):
+class ApiKeyPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldBearerPostResponse(RootModel[str]):
+class BearerPostResponse(RootModel[str]):
     root: str
 
 
-class FieldBearerPostResponse200XIdempotencyHeader(RootModel[str]):
+class BearerPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldOauthPostResponse(RootModel[str]):
+class OauthPostResponse(RootModel[str]):
     root: str
 
 
-class FieldOauthPostResponse200XIdempotencyHeader(RootModel[str]):
+class OauthPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldOpenidPostResponse(RootModel[str]):
+class OpenidPostResponse(RootModel[str]):
     root: str
 
 
-class FieldOpenidPostResponse200XIdempotencyHeader(RootModel[str]):
+class OpenidPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldCookiePostResponse(RootModel[str]):
+class CookiePostResponse(RootModel[str]):
     root: str
 
 
-class FieldCookiePostResponse200XIdempotencyHeader(RootModel[str]):
+class CookiePostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldQueryPostResponse(RootModel[str]):
+class QueryPostResponse(RootModel[str]):
     root: str
 
 
-class FieldQueryPostResponse200XIdempotencyHeader(RootModel[str]):
+class QueryPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldIgnoredPostResponse(RootModel[str]):
+class IgnoredPostResponse(RootModel[str]):
     root: str
 
 
-class FieldIgnoredPostResponse200XIdempotencyHeader(RootModel[str]):
+class IgnoredPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-FieldDirectionPostHeaderXRetryControlParameter = TypeAliasType("FieldDirectionPostHeaderXRetryControlParameter", str)
+DirectionPostHeaderXRetryControlParameter = TypeAliasType("DirectionPostHeaderXRetryControlParameter", str)
 
 
-class FieldDirectionPostResponse(RootModel[str]):
+class DirectionPostResponse(RootModel[str]):
     root: str
 
 
-class FieldDirectionPostResponse200XIdempotencyHeader(RootModel[str]):
+class DirectionPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
 
 
-class FieldUnusedPostResponse(RootModel[str]):
+class UnusedPostResponse(RootModel[str]):
     root: str
 
 
-class FieldUnusedPostResponse200XIdempotencyHeader(RootModel[str]):
+class UnusedPostResponse200XIdempotencyHeader(RootModel[str]):
     root: str
