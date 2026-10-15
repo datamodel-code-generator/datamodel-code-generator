@@ -25,7 +25,11 @@
     "future": {
       "type": "string",
       "x-python-type": "tuple[override, NoDefault, TypeForm[str]]"
+    },
+    "future_315": {
+      "type": "string",
+      "x-python-type": "tuple[NoExtraItems, disjoint_base, typing.NoExtraItems]"
     }
   },
-  "required": ["buffer", "qualifiers_a", "qualifiers_b", "aliases", "qualified_type_is", "future"]
+  "required": ["buffer", "qualifiers_a", "qualifiers_b", "aliases", "qualified_type_is", "future", "future_315"]
 }

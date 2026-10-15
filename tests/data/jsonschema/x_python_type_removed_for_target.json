@@ -1,0 +1,11 @@
+{
+  "title": "RemovedForTarget",
+  "type": "object",
+  "properties": {
+    "entry": {
+      "type": "string",
+      "x-python-type": "pathlib.DirEntryInfo"
+    }
+  },
+  "required": ["entry"]
+}

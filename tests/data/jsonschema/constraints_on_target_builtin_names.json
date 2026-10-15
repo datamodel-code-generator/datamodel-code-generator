@@ -1,0 +1,53 @@
+{
+  "title": "ConstraintsOnTargetBuiltinNames",
+  "type": "object",
+  "properties": {
+    "sentinel_length": {
+      "type": "string",
+      "x-python-type": "sentinel",
+      "minLength": 2
+    },
+    "sentinel_minimum": {
+      "type": "string",
+      "x-python-type": "sentinel",
+      "minimum": 1
+    },
+    "frozendict_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "x-python-type": "frozendict",
+      "maxItems": 3
+    },
+    "import_cycle_minimum": {
+      "type": "integer",
+      "x-python-type": "ImportCycleError",
+      "minimum": 1
+    },
+    "finalization_length": {
+      "type": "string",
+      "x-python-type": "PythonFinalizationError",
+      "minLength": 2
+    },
+    "finalization_minimum": {
+      "type": "string",
+      "x-python-type": "PythonFinalizationError",
+      "minimum": 1
+    },
+    "exception_group_minimum": {
+      "type": "string",
+      "x-python-type": "ExceptionGroup",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "sentinel_length",
+    "sentinel_minimum",
+    "frozendict_items",
+    "import_cycle_minimum",
+    "finalization_length",
+    "finalization_minimum",
+    "exception_group_minimum"
+  ]
+}

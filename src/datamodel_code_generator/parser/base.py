@@ -302,6 +302,7 @@ _BUILTIN_NAMES: frozenset[str] = frozenset(name for name in builtins.__dict__ if
 _BUILTIN_NAMES_INTRODUCED_IN: dict[PythonVersion, frozenset[str]] = {
     PythonVersion.PY_311: frozenset({"BaseExceptionGroup", "ExceptionGroup"}),
     PythonVersion.PY_313: frozenset({"PythonFinalizationError"}),
+    PythonVersion.PY_315: frozenset({"ImportCycleError", "frozendict", "sentinel"}),
 }
 _BUILTIN_CONTAINER_COLLISION_FLAGS: dict[str, str] = {
     "list": "is_list",
@@ -6092,7 +6093,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if value is not None and key not in type_dependent_constraints
             }
             keywords = self.data_type_manager.type_constraint_keywords(
-                f"{override_import.from_}.{override_import.import_}"
+                f"{override_import.from_}.{override_import.import_}", self.target_python_version.version_key
             )
             values.update({key: value for key, value in type_dependent_constraints.items() if key in keywords})
             field.constraints = type(constraints).model_validate(values) if is_model else values

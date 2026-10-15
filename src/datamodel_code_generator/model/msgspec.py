@@ -934,7 +934,7 @@ class DataModelField(DataModelFieldBase):
             data_type.type or data_type.reference or data_type.python_type or self._data_type_has_container(data_type)
         ):
             return self._meta_keywords(data_type.data_types[0])
-        keywords = DataTypeManager.constraint_keywords(data_type)
+        keywords = DataTypeManager.constraint_keywords(data_type, data_type.python_version.version_key)
         return frozenset(meta for meta, schema in _META_SCHEMA_KEYWORDS.items() if schema in keywords)
 
     def _get_meta_data(self) -> tuple[dict[str, Any], frozenset[str]]:

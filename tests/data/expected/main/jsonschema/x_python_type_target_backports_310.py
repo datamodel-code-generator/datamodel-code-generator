@@ -10,6 +10,7 @@ from typing_extensions import (
     LiteralString,
     Never,
     NoDefault,
+    NoExtraItems,
     NotRequired,
     ReadOnly,
     Required,
@@ -19,6 +20,7 @@ from typing_extensions import (
     TypeIs,
     TypeVarTuple,
     Unpack,
+    disjoint_base,
     override,
 )
 
@@ -30,3 +32,4 @@ class TargetBackportModel(TypedDict):
     aliases: tuple[TypeAliasType, TypeIs[str], TypeVarTuple, Unpack[tuple[str]]]
     qualified_type_is: TypeIs[str]
     future: tuple[override, NoDefault, TypeForm[str]]
+    future_315: tuple[NoExtraItems, disjoint_base, NoExtraItems]

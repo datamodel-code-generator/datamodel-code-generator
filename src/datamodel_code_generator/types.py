@@ -1348,7 +1348,7 @@ _STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
 })
 
 
-def _standard_type_path(path: str) -> str:
+def _standard_type_path(path: str, target_version: tuple[int, int]) -> str:
     """Return the path that classifies a type: unprefixed builtins, typing_extensions as typing, resolved aliases."""
     path = path.removeprefix("builtins.")
     if path.startswith("typing_extensions."):
@@ -1356,7 +1356,9 @@ def _standard_type_path(path: str) -> str:
             is_known_python_type_path,
         )
 
-        if is_known_python_type_path(typing_path := f"typing.{path.removeprefix('typing_extensions.')}"):
+        if is_known_python_type_path(
+            typing_path := f"typing.{path.removeprefix('typing_extensions.')}", target_version
+        ):
             path = typing_path
     return _STANDARD_CLASS_PATHS.get(path, path)
 
@@ -1508,21 +1510,26 @@ class DataTypeManager(ABC):
         return TYPE_DEPENDENT_KEYWORDS if data_type.reference else None
 
     @classmethod
-    def constraint_keywords(cls, data_type: DataType) -> frozenset[str]:
+    def constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int]) -> frozenset[str]:
         """Return the type-dependent keywords that every member of an emitted type takes in this output model."""
         if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
             return keywords
         if data_type.data_types:
-            return frozenset.intersection(*map(cls.constraint_keywords, data_type.data_types))
+            return frozenset.intersection(
+                *(cls.constraint_keywords(member, target_version) for member in data_type.data_types)
+            )
         if data_type.python_type is None:
             import_ = data_type.import_
             return cls.type_constraint_keywords(
-                f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or ""
+                f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or "",
+                target_version,
             )
-        return cls._annotation_constraint_keywords(data_type.python_type.expression)
+        return cls._annotation_constraint_keywords(data_type.python_type.expression, target_version)
 
     @classmethod
-    def _annotation_constraint_keywords(cls, expression: PythonTypeExpr) -> frozenset[str]:
+    def _annotation_constraint_keywords(
+        cls, expression: PythonTypeExpr, target_version: tuple[int, int]
+    ) -> frozenset[str]:
         """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies.
 
         A ``Literal`` takes the keywords every value other than ``None`` takes as an instance of its type, where a
@@ -1542,7 +1549,8 @@ class DataTypeManager(ABC):
         path = _standard_type_path(
             f"{base.import_from}.{base.import_name}"
             if isinstance(base, PythonTypeBoundName) and base.import_from
-            else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base)
+            else next(iter_python_type_expr_qualified_names(base), "") or python_type_expr_base_name(base),
+            target_version,
         )
         members = None
         if isinstance(expression, PythonTypeUnion) or (base is not expression and path in _UNION_PATHS):
@@ -1557,14 +1565,20 @@ class DataTypeManager(ABC):
             members = python_type_expr_arguments(expression)[:1]
         if members is not None:
             return (
-                frozenset.intersection(*map(cls._annotation_constraint_keywords, members)) if members else _NO_KEYWORDS
+                frozenset.intersection(
+                    *(cls._annotation_constraint_keywords(member, target_version) for member in members)
+                )
+                if members
+                else _NO_KEYWORDS
             )
         if path == "typing.Literal" and base is not expression:
             if not cls.LITERALS_TAKE_CONSTRAINTS:
                 return _NO_KEYWORDS
             value_paths = set(cls._literal_value_paths(expression))
             return (
-                frozenset.intersection(*map(cls.type_constraint_keywords, value_paths)) if value_paths else _NO_KEYWORDS
+                frozenset.intersection(*(cls.type_constraint_keywords(value, target_version) for value in value_paths))
+                if value_paths
+                else _NO_KEYWORDS
             )
         if (
             path == "tuple"
@@ -1573,7 +1587,7 @@ class DataTypeManager(ABC):
             and not any(isinstance(argument, PythonTypeEllipsis) for argument in python_type_expr_arguments(expression))
         ):
             return _NO_KEYWORDS
-        return cls.type_constraint_keywords(path)
+        return cls.type_constraint_keywords(path, target_version)
 
     @staticmethod
     def _literal_value_paths(expression: PythonTypeExpr) -> Iterator[str]:
@@ -1596,15 +1610,16 @@ class DataTypeManager(ABC):
                 )
 
     @classmethod
-    def type_constraint_keywords(cls, path: str) -> frozenset[str]:
+    def type_constraint_keywords(cls, path: str, target_version: tuple[int, int]) -> frozenset[str]:
         """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
 
         The table lists the keywords that the output model enforces on a type across its supported versions.
         A typing alias or an abstract collection takes what the builtin or standard-library class it stands for takes.
-        A known type is a Python builtin, a standard-library type of the import registry or a type that the
-        generator itself imports; a type the generator cannot classify keeps the keywords the schema declares.
+        A known type is a Python builtin or a standard-library type of the import registry that the target has, or a
+        type that the generator itself imports; a type the generator cannot classify keeps the keywords the schema
+        declares.
         """
-        path = _standard_type_path(path)
+        path = _standard_type_path(path, target_version)
         if (keywords := cls.CONSTRAINT_KEYWORDS.get(path)) is not None:
             return keywords
         if not path or any(path in _import_paths(module) for module in cls.KNOWN_TYPE_IMPORTS):
@@ -1613,7 +1628,7 @@ class DataTypeManager(ABC):
             is_known_python_type_path,
         )
 
-        return _NO_KEYWORDS if is_known_python_type_path(path) else TYPE_DEPENDENT_KEYWORDS
+        return _NO_KEYWORDS if is_known_python_type_path(path, target_version) else TYPE_DEPENDENT_KEYWORDS
 
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType:  # noqa: FBT001
         """Create a DataType from a fully qualified Python path."""

@@ -2030,7 +2030,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         }
         if not values or values.keys() <= (declared := self._declared_constraint_keywords(obj)):
             return values
-        keywords = declared | self.data_type_manager.constraint_keywords(data_type) if data_type else declared
+        keywords = (
+            declared | self.data_type_manager.constraint_keywords(data_type, self.target_python_version.version_key)
+            if data_type
+            else declared
+        )
         return {key: value for key, value in values.items() if key in keywords}
 
     def _mark_type_dependent_constraints(self, model_field: DataModelFieldBase, obj: JsonSchemaObject) -> None:

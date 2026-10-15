@@ -11657,6 +11657,34 @@ def test_main_typed_dict_extra_items_imports(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("input_name", "expected_file"),
+    [
+        pytest.param("typed_dict_closed.json", "typed_dict_closed_py315.py", id="closed"),
+        pytest.param("typed_dict_extra_items.json", "typed_dict_extra_items_py315.py", id="extra-items"),
+    ],
+)
+def test_main_typed_dict_closed_native_for_target_315(output_file: Path, input_name: str, expected_file: str) -> None:
+    """Import TypedDict from typing for PEP 728 closed and extra_items on Python 3.15 targets."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type=None,
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.TypingTypedDict.value,
+            "--target-python-version",
+            "3.15",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=sys.version_info[:2] >= (3, 15),
+    )
+
+
 @pytest.mark.parametrize(("output_model_type", "expected_name"), BACKEND_GOLDEN_CASES)
 def test_main_additional_properties_output_context(
     output_file: Path,
@@ -18344,6 +18372,36 @@ def test_main_builtin_field_names_target_python_version(
     )
 
 
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.14", "builtin_field_names_python_315_builtins_314.py", id="python-3.14"),
+        pytest.param("3.15", "builtin_field_names_python_315_builtins_315.py", id="python-3.15"),
+    ],
+)
+def test_main_builtin_field_names_python_315_builtins(
+    output_file: Path, target_python_version: str, expected_file: str
+) -> None:
+    """Rename fields named like Python 3.15 builtins only for targets that have them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_field_names_python_315_builtins.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        skip_code_validation=True,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
 @pytest.mark.benchmark
 def test_main_root_model_config_populate_by_name(output_file: Path) -> None:
     """Test that RootModel subclasses don't get populate_by_name config (issue #2483).
@@ -19532,19 +19590,37 @@ def test_x_python_type_target_newer_symbols(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("fixture_name", "expected_error"),
+    ("fixture_name", "target_python_version", "expected_error"),
     [
         (
             "x_python_type_target_unavailable.json",
+            "3.10",
             "enum.StrEnum is unavailable for target Python 3.10",
         ),
         (
             "x_python_type_enum_helper_unavailable.json",
+            "3.10",
             "enum.property is unavailable for target Python 3.10",
         ),
         (
             "x_python_type_builtin_unavailable.json",
+            "3.10",
             "builtins.ExceptionGroup is unavailable for target Python 3.10",
+        ),
+        (
+            "x_python_type_builtin_target_315.json",
+            "3.14",
+            "builtins.frozendict is unavailable for target Python 3.14",
+        ),
+        (
+            "x_python_type_removed_for_target.json",
+            "3.15",
+            "pathlib.DirEntryInfo is unavailable for target Python 3.15",
+        ),
+        (
+            "x_python_type_removed_bare_for_target.json",
+            "3.15",
+            "DirEntryInfo is unavailable for target Python 3.15",
         ),
     ],
 )
@@ -19552,9 +19628,10 @@ def test_x_python_type_rejects_symbol_unavailable_for_target(
     output_file: Path,
     capsys: pytest.CaptureFixture[str],
     fixture_name: str,
+    target_python_version: str,
     expected_error: str,
 ) -> None:
-    """Reject a known stdlib type introduced after the configured target."""
+    """Reject a known stdlib type introduced after or removed by the configured target."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / fixture_name,
         output_path=output_file,
@@ -19563,7 +19640,7 @@ def test_x_python_type_rejects_symbol_unavailable_for_target(
         output_should_not_exist=True,
         capsys=capsys,
         expected_stderr_contains=expected_error,
-        extra_args=["--target-python-version", "3.10"],
+        extra_args=["--target-python-version", target_python_version, "--formatters", "builtin"],
     )
 
 
@@ -19585,6 +19662,66 @@ def test_x_python_type_builtin_and_enum_helpers_for_target_311(output_file: Path
             "--disable-timestamp",
         ],
         force_exec_validation=sys.version_info[:2] >= (3, 11),
+    )
+
+
+def test_x_python_type_builtins_for_target_315(output_file: Path) -> None:
+    """Resolve Python 3.15 builtins from the target instead of the host."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_builtin_target_315.json",
+        output_path=output_file,
+        input_file_type=None,
+        assert_func=assert_file_content,
+        expected_file="x_python_type_builtin_target_315.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.TypingTypedDict.value,
+            "--target-python-version",
+            "3.15",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=sys.version_info[:2] >= (3, 15),
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "target_python_version", "expected_name"),
+    [
+        pytest.param(["--output-model-type", "msgspec.Struct"], "3.12", "msgspec_312", id="msgspec-3.12"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], "3.14", "msgspec_314", id="msgspec-3.14"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], "3.15", "msgspec_315", id="msgspec-3.15"),
+        pytest.param(["--field-constraints"], "3.12", "field_constraints_312", id="field-constraints-3.12"),
+        pytest.param(["--field-constraints"], "3.15", "field_constraints_315", id="field-constraints-3.15"),
+    ],
+)
+def test_main_constraints_on_target_builtin_names(
+    output_file: Path, extra_args: list[str], target_python_version: str, expected_name: str
+) -> None:
+    """Keep the constraints of a bare name the target has no builtin for, as of any user-defined type."""
+    name = "constraints_on_target_builtin_names"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_name}.py",
+            extra_args=[
+                *extra_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--target-python-version",
+                target_python_version,
+            ],
+            skip_code_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "msgspec.Meta" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_name}_warnings.txt",
     )
 
 
@@ -19612,6 +19749,7 @@ def test_x_python_type_explicit_defs_override_target_unavailable_symbol(output_f
         pytest.param("3.10", "x_python_type_target_backports_310.py", id="python-3.10"),
         pytest.param("3.12", "x_python_type_target_backports_312.py", id="python-3.12"),
         pytest.param("3.14", "x_python_type_target_backports_314.py", id="python-3.14"),
+        pytest.param("3.15", "x_python_type_target_backports_315.py", id="python-3.15"),
     ],
 )
 def test_x_python_type_target_backports(

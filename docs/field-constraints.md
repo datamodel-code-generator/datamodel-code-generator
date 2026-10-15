@@ -146,8 +146,9 @@ version. `msgspec` accepts number constraints on `int` and `float` only, so a ty
 be one of them at runtime, for example a `NewType` of `int`.
 Pydantic 2.11 cannot build a `time` field that has a number bound; use Pydantic 2.12 or later for such schemas.
 
-A known type is a Python builtin, a standard-library type, or a type the generator itself imports; its row above
-decides. A `typing` alias or an abstract collection is read as the class it stands for (`typing.List`,
+A known type is a Python builtin or a standard-library type that the `--target-python-version` has, or a type the
+generator itself imports; its row above decides. A name the target does not have yet, such as `frozendict` for a
+target below 3.15, is read as a type the generator does not know. A `typing` alias or an abstract collection is read as the class it stands for (`typing.List`,
 `collections.abc.Sequence` and `collections.abc.Collection` as `list`), and `Annotated[T, ...]` or `Final[T]` as `T`;
 a `typing_extensions` name that `typing` also exports is read as the `typing` name. Any other `typing` or
 `collections.abc` name, such as `typing.SupportsInt` or `collections.abc.Callable`, is a known type that takes no

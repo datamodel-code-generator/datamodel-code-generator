@@ -1,0 +1,1 @@
+msgspec.Meta does not take min_length on PythonFinalizationError; ConstraintsOnTargetBuiltinNames.finalization_length is generated without this constraint.
