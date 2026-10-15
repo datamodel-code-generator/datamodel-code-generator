@@ -189,6 +189,11 @@ message
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   set-cookie next = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/12
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users/13
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: a=1] b''
+  jar cookie on a redirect hop = network 13:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/10
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   extension after stale = network 10:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('etag', '"s"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
@@ -289,12 +294,12 @@ name
   > GET https://api.example.com/users/12
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users/13
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: a=1] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   redirected = network 13:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/12
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users/13
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: a=1] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   redirected again = network 13:cat status=200 network=200 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
   > GET https://api.example.com/users/14
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
@@ -302,7 +307,7 @@ name
   > GET https://api.example.com/users/14
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "r"] b''
   > GET https://api.example.com/users/15
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "r", cookie: a=1] b''
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "r"] b''
   304 after a redirect ! ProtocolDataError: ProtocolDataError(operation_id='getUser', reason='inconsistent') [operation_id='getUser'] inconsistent
   > GET https://api.example.com/users/16
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
