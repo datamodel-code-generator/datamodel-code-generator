@@ -443,7 +443,8 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   types, which check what those types declare and coerce as the backend does; a value the type refuses raises
   `DecodeError` with the reason `invalid_value`. Read-only and write-only behavior follows the generated model options.
 - **Binding.** A missing required argument, an unknown keyword, or a media type the operation does not declare fails
-  before anything is sent.
+  before anything is sent. A parameter value with text that UTF-8 cannot encode, such as a lone surrogate, fails with
+  a request `DecodeError` of the reason `unencodable`, with a `ParameterEncodingError` cause, before anything is sent.
 - **Path segments.** Path arguments that make their segment `.` or `..` once encoded in their parameters' styles and
   put into the path template, `%2E` in either case counting as `.`, such as `..` in the simple style, the empty string
   in the label style, or `%2e` with `allowReserved`, fail with a request `DecodeError` at the segment's first parameter

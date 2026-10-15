@@ -29,6 +29,7 @@ TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _NOT_HEADER_TEXT: Final = re.compile(r"[^\t\x20-\x7E]")
 _COOKIE_OCTETS: Final = re.compile(r"[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*")
 _OWS: Final = " \t"
+_UNENCODABLE: Final = "A parameter value is text that UTF-8 cannot encode, such as a lone surrogate"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -257,7 +258,11 @@ def _querystring_text(plan: ParameterPlan, value: JSONValue) -> str:
 
 def querystring(plan: ParameterPlan, value: object) -> str:
     """Return a querystring parameter's whole encoded query, without its leading question mark."""
-    if text := _querystring_text(plan, cast("JSONValue", value)):
+    try:
+        text = _querystring_text(plan, cast("JSONValue", value))
+    except UnicodeEncodeError:
+        raise ParameterEncodingError(_UNENCODABLE) from None
+    if text:
         return text
     msg = "An explicit querystring value cannot encode to an empty query"
     raise ParameterEncodingError(msg)
@@ -299,9 +304,15 @@ def _content_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
 
 
 def pairs(plan: ParameterPlan, value: object) -> list[tuple[str | None, str]]:
-    """Return a parameter's ordered encoded names and texts in its location: the style's pairs, or its content."""
-    value = cast("JSONValue", value)
-    return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, value)
+    """Return a parameter's ordered encoded names and texts in its location: the style's pairs, or its content.
+
+    Text that UTF-8 cannot encode, such as a lone surrogate, raises ParameterEncodingError, as any value its style or
+    content cannot write does.
+    """
+    try:
+        return (_style_pairs if plan.content_media_type is None else _content_pairs)(plan, cast("JSONValue", value))
+    except UnicodeEncodeError:
+        raise ParameterEncodingError(_UNENCODABLE) from None
 
 
 def path_text(plan: ParameterPlan, value: object) -> str:
