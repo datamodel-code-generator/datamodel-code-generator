@@ -18504,6 +18504,41 @@ def test_main_type_alias_named_with_letters_beyond_ascii(output_file: Path) -> N
     )
 
 
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.10", "builtin_formatter_stdlib_imports_310.py", id="python-3.10"),
+        pytest.param("3.14", "builtin_formatter_stdlib_imports_314.py", id="python-3.14"),
+        pytest.param("3.15", "builtin_formatter_stdlib_imports_315.py", id="python-3.15"),
+    ],
+)
+def test_main_builtin_formatter_groups_target_stdlib(
+    output_file: Path, target_python_version: str, expected_file: str
+) -> None:
+    """Group imports with the standard library of the target Python, whatever Python formats them.
+
+    tomllib joins the standard library in 3.11, distutils leaves it in 3.12, sre_parse in 3.15, and profiling joins
+    it in 3.15.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        skip_code_validation=True,
+        extra_args=[
+            "--additional-imports",
+            "tomllib.loads,profiling.sampling,sre_parse.Pattern,distutils.version.LooseVersion",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
 def test_main_module_named_by_newer_target() -> None:
     """Name and format a module with a character only the target knows, on any Python.
 
