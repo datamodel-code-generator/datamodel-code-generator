@@ -3403,37 +3403,86 @@ def test_main_jsonschema_field_type_collision_cross_module(
 
 
 @pytest.mark.parametrize(
-    ("input_name", "backend", "expected_name", "child_module"),
+    ("input_name", "backend", "options", "expected_name", "child_module", "field_name"),
     [
         pytest.param(
             "field_type_collision_inherited_modules",
             DataModelType.PydanticV2Dataclass,
+            [],
             "field_type_collision_inherited_modules",
             "b",
+            "Bar_1",
             id="base-module-first",
         ),
         pytest.param(
             "field_type_collision_inherited_modules_child_first",
             DataModelType.PydanticV2Dataclass,
+            [],
             "field_type_collision_inherited_modules_child_first/dataclass",
             "a",
+            "Bar_1",
             id="child-module-first",
         ),
         pytest.param(
             "field_type_collision_inherited_modules_child_first",
             DataModelType.PydanticV2BaseModel,
+            [],
             "field_type_collision_inherited_modules_child_first/base_model",
             "a",
+            "Bar_1",
             id="child-module-first-base-model",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules",
+            DataModelType.PydanticV2Dataclass,
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_inherited_modules_rename_type/dataclass",
+            "b",
+            "Bar",
+            id="base-module-first-rename-type",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_inherited_modules_rename_type/base_model",
+            "b",
+            "Bar",
+            id="base-module-first-rename-type-base-model",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "field_type_collision_inherited_modules_rename_type/base_model_exact",
+            "b",
+            "Bar",
+            id="base-module-first-rename-type-base-model-exact-import",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules_child_first",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "field_type_collision_inherited_modules_child_first/base_model_rename_type_exact",
+            "a",
+            "Bar",
+            id="child-module-first-rename-type-base-model-exact-import",
         ),
     ],
 )
 def test_main_jsonschema_field_type_collision_inherited_modules(
-    output_dir: Path, input_name: str, backend: DataModelType, expected_name: str, child_module: str
+    output_dir: Path,
+    input_name: str,
+    backend: DataModelType,
+    options: list[str],
+    expected_name: str,
+    child_module: str,
+    field_name: str,
 ) -> None:
-    """Rename an inherited field named like its type under one name and alias in every module of its family.
+    """Rename an inherited field named like its type, or the type, under one name in every module of its family.
 
-    The child keeps the alias whichever of the modules comes first.
+    The child keeps the alias of a renamed field, and imports a renamed type by its new name, whichever of the
+    modules comes first.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -3448,6 +3497,7 @@ def test_main_jsonschema_field_type_collision_inherited_modules(
             "--disable-timestamp",
             "--formatters",
             "builtin",
+            *options,
         ],
     )
     payload_path = DATA_PATH / "payloads" / "field_type_collision_cross_module"
@@ -3456,7 +3506,7 @@ def test_main_jsonschema_field_type_collision_inherited_modules(
         parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
         with pytest.raises(ValidationError):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
-        assert_output(f"{parsed.Bar_1.x}\n", payload_path / "runtime.txt")
+        assert_output(f"{getattr(parsed, field_name).x}\n", payload_path / "runtime.txt")
 
 
 def test_main_reuse_model_discriminator_literal(output_file: Path) -> None:
