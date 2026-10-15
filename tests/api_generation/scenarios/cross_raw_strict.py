@@ -1,8 +1,8 @@
 """Send and receive whole text bodies of binary strings as raw bytes when the models hold them as strict bytes.
 
 `--strict-types bytes` types a binary string `StrictBytes` in Pydantic models, which a wrapped body's schema stands
-for as it does for `bytes`. Those models keep no length limit of a binary string, so neither the server nor a client
-checks the length of a stamp's bytes.
+for as it does for `bytes`. Those models keep the length limit of a binary string beside the strict type, so the
+server and the clients whose models keep it check the length of a stamp's bytes as they do without strict types.
 """
 
 from __future__ import annotations
