@@ -89,6 +89,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "binary-allowed",
         "binary-mapped",
         "cookie-names",
+        "header-names",
         "reference-errors",
         "setting-errors",
         "empty",

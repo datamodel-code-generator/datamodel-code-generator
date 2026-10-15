@@ -76,8 +76,8 @@ get_header_text ASCII
   get_header_text(X_Name='a\tb ~', X_Items=['a b', 'c'], X_Label=Named(name='a b'), X_Kind=HeaderTextGetHeaderXKindParameter.plain, X_Note='a, b', X_Named=Named(name='a b'))
   < 204 -
   = None
-get_header_names non-ASCII name
-  ! ConfigurationError: ConfigurationError(operation_id='getHeaderNames', reason='invalid_value', field_path='headers.X-Näme') [operation_id='getHeaderNames', field_path=('headers', 'X-Näme')] invalid_value
+post_labelled_text non-ASCII media type
+  ! ConfigurationError: ConfigurationError(operation_id='postLabelledText', reason='invalid_value', field_path='headers.Content-Type') [operation_id='postLabelledText', field_path=('headers', 'Content-Type')] invalid_value
 get_query nothing
   > GET /query
   get_query(spaced=None, piped=None, point=None, corner=None, flags=None, reserved=None)

@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info: {title: Header names, version: "1.0"}
+paths:
+  /values:
+    get:
+      operationId: getValues
+      parameters:
+        - {name: "X-Token_1~", in: header, schema: {type: string}}
+        - {name: "X Sp", in: header, schema: {type: string}}
+        - {name: "X-Näme", in: header, content: {application/json: {schema: {type: object}}}}
+      responses:
+        "200":
+          description: Done.
+          headers:
+            "X Out": {schema: {type: string}}
+          content:
+            application/json: {schema: {type: string}}

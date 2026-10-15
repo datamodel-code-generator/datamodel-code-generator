@@ -670,9 +670,17 @@ def _content_parameter(
         raise _PlanError(
             code="MC_PARAMETER_ENCODING", source=source, message="Text parameter content requires a string schema"
         )
-    return ParameterPlan(
-        location=location, name=name, required=required, content_media_type=media, fields=fields, additional=additional
-    )
+    try:
+        return ParameterPlan(
+            location=location,
+            name=name,
+            required=required,
+            content_media_type=media,
+            fields=fields,
+            additional=additional,
+        )
+    except ValueError as error:
+        raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=str(error)) from None
 
 
 def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:

@@ -51,11 +51,15 @@ class ParameterPlan:
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form.
 
-        A cookie sent as it is, a single value or one of the cookie style, needs a name that is a token.
+        A header needs a name that is a token, and so does a cookie sent as it is, a single value or one of the cookie
+        style.
         """
         if not _reversible(self):
             content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
             msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {self.shape} values"
+            raise ValueError(msg)
+        if self.location == "header" and not TOKEN.fullmatch(self.name):
+            msg = f"header name {self.name!r} is not a token, which every header field name must be"
             raise ValueError(msg)
         if (
             self.location == "cookie"
