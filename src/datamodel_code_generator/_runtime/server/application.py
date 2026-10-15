@@ -82,6 +82,13 @@ class ParameterReader:
     __slots__ = ()
 
 
+class _RejectedReadError(RequestValidationError, AttributeError):
+    """The records of a Rejected value raised by reading a parameter value from it, which FastAPI answers with 422.
+
+    It is an AttributeError too, as reading an attribute raises it.
+    """
+
+
 @dataclass(frozen=True, slots=True)
 class Rejected:
     """The records of the parameters a request carries in forms their declarations reject, left by a ParameterReader.
@@ -103,7 +110,7 @@ class Rejected:
         """Raise the records for a parameter value read from the record; a special name is missing, as elsewhere."""
         if name.startswith("__"):
             raise AttributeError(name)
-        raise RequestValidationError(self.take())
+        raise _RejectedReadError(self.take())
 
 
 def reject(scope: MutableMapping[str, Any], records: list[dict[str, object]]) -> Rejected:
