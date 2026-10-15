@@ -1,0 +1,13 @@
+{
+  "Plain": {
+    "base_class_kwargs": {
+      "tag": false
+    }
+  },
+  "Coded": {
+    "base_class_kwargs": {
+      "tag_field": "shape",
+      "tag": 1
+    }
+  }
+}

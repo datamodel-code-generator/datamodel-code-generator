@@ -110,6 +110,23 @@ class NullableNumbers(RootModel[NullableNumbersEnum | None]):
     root: NullableNumbersEnum | None = None
 
 
+class UndescribedBesideNullEnum(Enum):
+    x = 'x'
+
+
+class UndescribedBesideNull(RootModel[UndescribedBesideNullEnum | None]):
+    root: UndescribedBesideNullEnum | None = None
+
+
+class RepeatedNamesBesideNullEnum(Enum):
+    A = 'x'
+    A_1 = 'y'
+
+
+class RepeatedNamesBesideNull(RootModel[RepeatedNamesBesideNullEnum | None]):
+    root: RepeatedNamesBesideNullEnum | None = None
+
+
 class EnumNamesBesideNull(BaseModel):
     member_names: MemberNames | None = None
     item_names: ItemNames | None = None
@@ -121,3 +138,5 @@ class EnumNamesBesideNull(BaseModel):
     null_last: NullLast | None = None
     described_beside_null: DescribedBesideNull | None = None
     nullable_numbers: NullableNumbers | None = None
+    undescribed_beside_null: UndescribedBesideNull | None = None
+    repeated_names_beside_null: RepeatedNamesBesideNull | None = None

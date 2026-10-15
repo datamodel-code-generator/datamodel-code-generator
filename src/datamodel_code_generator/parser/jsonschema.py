@@ -621,7 +621,7 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
     """Describe the 0.83.0 shift of enum names or descriptions that give null an entry beside the named values.
 
     The entries are matched to the values without null, so a list with one entry per enum value, null included,
-    gives each value after null the entry of the value before it.
+    gives each value after null the entry of the value before it; an entry equal to the value's own is no shift.
     """
     if len(named_values) == len(obj.enum):
         return None
@@ -635,7 +635,7 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
         )
         if len(entries) == len(obj.enum)
         for index, (position, value) in enumerate(zip(positions, named_values, strict=True))
-        if index != position
+        if index != position and entries[index] != entries[position]
     ]
     if not shifts:
         return None
