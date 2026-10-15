@@ -150,6 +150,15 @@ class ExtraProfilesPostRequest1(BaseModel):
     count: int | None = None
 
 
+class SpreadsPostRequest(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    filter: Filter
+    ids: list[int] | None = None
+    meta: Filter | None = None
+
+
 class Others(BaseModel):
     model_config = ConfigDict(
         extra='allow',

@@ -67,6 +67,9 @@ class _Uploads:
     def post_extra_profiles(self, **_: object) -> None:
         return None
 
+    def post_spreads(self, **_: object) -> None:
+        return None
+
 
 def _scope(length: int) -> dict[str, Any]:
     return {

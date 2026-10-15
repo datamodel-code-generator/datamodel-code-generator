@@ -34,6 +34,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     form_extras,
     form_members,
     parameter_plans,
+    plan_wire,
 )
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._target_contract import (
@@ -214,11 +215,12 @@ class MediaSpec:
     """One declared media type of a body or response, with its type use when the content has a schema.
 
     A form an adapter reads comes with the plans of its members: a member is read as text in its field's kind, or,
-    as a multipart member without one, as JSON. `additional` reads the properties the form's schema types without
-    declaring them, when that is not as the text they come as, which any other member is, and `checked` is their
-    type when they are text that the model keeps without one, as a dataclass does. `extras` says JSON whose type
-    reaches a Pydantic dataclass that allows extra members, which a response writes through the runtime's serializer,
-    as Pydantic's own writes none.
+    as a multipart member without one, as JSON. A URL-encoded member whose encoding gives it a style or content is
+    read by its query parameter plan in `encoded`, and its JSON content then as a JSON part. `additional` reads the
+    properties the form's schema types without declaring them, when that is not as the text they come as, which any
+    other member is, and `checked` is their type when they are text that the model keeps without one, as a dataclass
+    does. `extras` says JSON whose type reaches a Pydantic dataclass that allows extra members, which a response writes
+    through the runtime's serializer, as Pydantic's own writes none.
     """
 
     media_type: str
@@ -229,6 +231,7 @@ class MediaSpec:
     json_parts: tuple[JsonPartSpec, ...] = ()
     additional: FieldPlan | JsonPartSpec | None = None
     checked: TypeView | None = None
+    encoded: tuple[ParameterPlan, ...] = ()
     extras: bool = False
 
 
@@ -485,6 +488,10 @@ def _json_type(encoding: WireDeclaration) -> bool:
     return "*" not in found[0].partition(";")[0] and media_kind(found[0]) == "json"
 
 
+def _unstyled(encoding: WireDeclaration) -> bool:
+    return all(fact(encoding, key) is None for key in STYLED)
+
+
 def _json_members(media: MediaSpec) -> frozenset[str | None]:
     """Return the multipart members whose encodings send them as JSON: one JSON media type and no style.
 
@@ -497,15 +504,15 @@ def _json_members(media: MediaSpec) -> frozenset[str | None]:
     return frozenset(
         child.name
         for child in media.declaration.children
-        if child.kind == "encoding"
-        and child.name in texts
-        and _json_type(child)
-        and all(fact(child, key) is None for key in STYLED)
+        if child.kind == "encoding" and child.name in texts and _json_type(child) and _unstyled(child)
     )
 
 
 def _encoded(media: MediaSpec) -> WireDeclaration | None:
-    """Return the first form encoding that neither FastAPI's Form nor the form adapter reads."""
+    """Return the first multipart encoding that the form adapter does not read.
+
+    A URL-encoded member's encoding, which carries no headers, is read by its query parameter plan instead.
+    """
     json_members = _json_members(media)
     return next(
         (
@@ -522,6 +529,13 @@ def _encoded(media: MediaSpec) -> WireDeclaration | None:
         ),
         None,
     )
+
+
+def _content_part(member: FormMember, plan: ParameterPlan | None) -> JsonPartSpec | None:
+    """Return the JSON part that parses a URL-encoded member's JSON content, as its whole value."""
+    if plan is None or media_kind(plan.content_media_type or "") != "json":
+        return None
+    return JsonPartSpec(member.name, member.type)
 
 
 class Planner:  # noqa: PLR0904
@@ -1127,9 +1141,6 @@ class Planner:  # noqa: PLR0904
             return replace(spec, decision=Decision(transport="raw_request"))
         if len(media) != 1:
             self.unsupported(operation, (item for item in media if item.kind == "multipart"))
-            for item in media:
-                if item.kind == "form" and (encoded := _encoded(item)) is not None:
-                    self.unsupported(operation, (item,), f"the {encoded.name} encoding of ")
             planned = tuple(
                 self.form_read(operation, item) if item.kind == "form" and item.use is not None else item
                 for item in media
@@ -1196,11 +1207,11 @@ class Planner:  # noqa: PLR0904
         ):
             self.unsupported(operation, (media,))
             return spec
-        if (encoded := _encoded(media)) is not None:
+        if media.kind == "multipart" and (encoded := _encoded(media)) is not None:
             self.unsupported(operation, (media,), f"the {encoded.name} encoding of ")
             return spec
         read = self.form_read(operation, media)
-        if media.kind == "form" and spec.required and self.form_model(use.type):
+        if media.kind == "form" and spec.required and not read.encoded and self.form_model(use.type):
             return replace(spec, decision=Decision(transport="fastapi_native"))
         return replace(spec, media=(read,))
 
@@ -1210,15 +1221,19 @@ class Planner:  # noqa: PLR0904
         A member whose type, or whose items' type, has a lexical kind is text of that kind. Any other, such as an
         object, is JSON in a multipart body, as is a member whose encoding names JSON and one that takes any value,
         which keeps a part that is not JSON as it comes since it takes that too; a URL-encoded body carries
-        text alone, so generation stops for such a member, as it does for a parameter and for the client. An
-        encoding's style spreads such a member over parts or pairs that only the request body mode reads. The other
-        properties a schema types are read by the same rule, under whatever names they come, and need no plan when
-        that reads them as the text they come as; their type checks such text when the model keeps them without it.
-        Those a multipart body allows without a type are JSON as well. A model that validates its fields by name reads
-        a property under its field's name too, unless that is the name of another property. A URL-encoded body whose
-        schema no builtin encoding writes, such as one that is no object, is refused as the client refuses to send it.
+        text alone, so generation stops for such a member, as it does for a parameter and for the client, unless its
+        encoding gives it a style or content, which its query parameter plan reads. An encoding's style spreads a
+        multipart member without one kind over parts that only the request body mode reads. The other properties a
+        schema types are read by the same rule, under whatever names they come, and need no plan when that reads them
+        as the text they come as; their type checks such text when the model keeps them without it. Those a multipart
+        body allows without a type are JSON as well. A model that validates its fields by name reads a property that
+        its encoding does not style under its field's name too, unless that is the name of another property. A
+        URL-encoded body whose schema no builtin encoding writes, such as one that is no object, is refused as the
+        client refuses to send it.
         """
         assert media.use is not None
+        members = tuple(form_members(self.wire.kinds, media.use))
+        encoded = self.encoded(media, members) if media.kind == "form" else {}
         json_members = _json_members(media)
         styled = {
             child.name
@@ -1229,7 +1244,9 @@ class Planner:  # noqa: PLR0904
         read = [
             (
                 member,
-                self.form_plan(
+                _content_part(member, encoded[member.name])
+                if member.name in encoded
+                else self.form_plan(
                     operation,
                     media,
                     member,
@@ -1238,7 +1255,7 @@ class Planner:  # noqa: PLR0904
                     untyped=multipart and member.name not in styled and self.wire.kinds.untyped(member.leaf),
                 ),
             )
-            for member in form_members(self.wire.kinds, media.use)
+            for member in members
         ]
         names = {member.name for member, _ in read}
         plans = [plan for _, plan in read]
@@ -1248,6 +1265,7 @@ class Planner:  # noqa: PLR0904
             if plan is not None
             and (field := member.field) is not None
             and field.slot is not None
+            and member.name not in encoded
             and (name := field.slot.name) not in names
             and self.by_name(field.consumer)
         )
@@ -1268,6 +1286,7 @@ class Planner:  # noqa: PLR0904
             checked=extras.type
             if extras is not None and isinstance(additional, FieldPlan) and self.wire.kinds.kept(media.use) is None
             else None,
+            encoded=tuple(plan for plan in encoded.values() if plan is not None),
         )
 
     def by_name(self, symbol: SymbolId) -> bool:
@@ -1277,6 +1296,35 @@ class Planner:  # noqa: PLR0904
         return any(setting.name in _BY_NAME and setting.value == _TRUE for setting in settings) or any(
             self.by_name(base) for base in declared.bases
         )
+
+    def encoded(self, media: MediaSpec, members: tuple[FormMember, ...]) -> dict[str, ParameterPlan | None]:
+        """Return the query parameter plans of the URL-encoded members that a form's own text does not read.
+
+        Such a member's encoding names content, allowReserved, a style other than `form` with explode, or any style
+        for a member without one scalar kind; it is read as the client writes it, by the plan the client's form takes
+        from the encoding. An encoding without a plan stops generation as it does for the client, and its member then
+        maps to None.
+        """
+        assert media.use is not None
+        kinds = {member.name: member.kind for member in members}
+        encodings = tuple(
+            child
+            for child in media.declaration.children
+            if child.kind == "encoding"
+            and (
+                fact(child, "contentType") is not None
+                or fact(child, "style") not in {None, "form"}
+                or fact(child, "explode") is False
+                or fact(child, "allowReserved") is True
+                or (not _unstyled(child) and child.name in kinds and kinds[child.name] is None)
+            )
+        )
+        if not encodings:
+            return {}
+        wire = plan_wire(self.request.batch, (), operations=frozenset(), styles={media.use.id: encodings})
+        self.problems.extend(_problem(item.code, item.message, item.source) for item in wire.diagnostics)
+        plans = {plan.name: plan for _, planned in wire.styles for plan in planned}
+        return {child.name or "": plans.get(child.name or "") for child in encodings}
 
     def form_plan(  # noqa: PLR0913
         self,

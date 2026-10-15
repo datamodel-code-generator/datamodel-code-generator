@@ -1,6 +1,6 @@
 # forms
 serve pydantic_v2.BaseModel
-service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, search, upload, upload_many
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, post_spreads, search, upload, upload_many
 service DefaultService without its methods: TypeError
 > POST /forms
   post_form(FormsPostRequest(name='a', count=1, tags=None))
@@ -125,8 +125,22 @@ service DefaultService without its methods: TypeError
 < 204 - b''
 > POST /extra-profiles
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "first"]}]
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'blue', 'minAge': 3}, ids=[1, 2], meta={'color': 'c', 'minAge': None}))
+< 204 - b''
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'a b', 'minAge': None}, ids=None, meta=None))
+< 204 - b''
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "filter", "minAge"]}, {"type": "int_parsing", "loc": ["body", "ids", 1]}]
+> POST /spreads
+< 422 application/json [{"type": "model_type", "loc": ["body", "meta"]}]
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "meta", "minAge"]}]
+> POST /spreads
+< 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]
 serve pydantic_v2.dataclass
-service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, search, upload, upload_many
+service DefaultService: post_extra_bases, post_extra_lists, post_extra_patterns, post_extra_profiles, post_extra_scores, post_extras, post_form, post_notes, post_pets, post_spreads, search, upload, upload_many
 service DefaultService without its methods: TypeError
 > POST /forms
   post_form(FormsPostRequest(name='a', count=1, tags=MISSING))
@@ -250,3 +264,17 @@ service DefaultService without its methods: TypeError
 < 204 - b''
 > POST /extra-profiles
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "first"]}]
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'blue', 'minAge': 3}, ids=[1, 2], meta={'color': 'c', 'minAge': MISSING}))
+< 204 - b''
+> POST /spreads
+  post_spreads(SpreadsPostRequest(filter={'color': 'a b', 'minAge': MISSING}, ids=MISSING, meta=MISSING))
+< 204 - b''
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "filter", "minAge"]}, {"type": "int_parsing", "loc": ["body", "ids", 1]}]
+> POST /spreads
+< 422 application/json [{"type": "dataclass_type", "loc": ["body", "meta"]}]
+> POST /spreads
+< 422 application/json [{"type": "greater_than_equal", "loc": ["body", "meta", "minAge"]}]
+> POST /spreads
+< 422 application/json [{"type": "missing", "loc": ["body", "filter"]}]

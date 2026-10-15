@@ -393,6 +393,36 @@ paths:
           content:
             application/x-www-form-urlencoded:
               schema: {type: object}
+  /deep-ids:
+    post:
+      operationId: postDeepIds
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                ids: {type: array, items: {type: integer}}
+            encoding:
+              ids: {style: deepObject}
+      responses:
+        "204": {description: Done.}
+  /xml-member:
+    post:
+      operationId: postXmlMember
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                meta: {type: object, properties: {name: {type: string}}}
+            encoding:
+              meta: {contentType: application/xml}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Base:

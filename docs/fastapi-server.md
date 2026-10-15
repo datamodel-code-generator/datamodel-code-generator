@@ -1405,9 +1405,9 @@ and the model keeps each value as the type returns it, as an attribute beside it
 A URL-encoded form carries text alone. For a member without one scalar kind, such as an object, an array of objects,
 or `type: [integer, boolean]`, declared by the schema or by a schema it combines with `allOf`, generation stops with
 `A parameter value needs one unambiguous scalar kind`, as it does for the generated client and for a parameter,
-unless an `encoding` gives the member a style. It stops the same way, at the `additionalProperties` that types them,
-for other properties of such a type, with either backend. The generated client stops for these members and other
-properties with the same message at the same place. Both also refuse a URL-encoded body whose schema has
+unless an `encoding` gives the member a style or content. It stops the same way, at the `additionalProperties` that
+types them, for other properties of such a type, with either backend. The generated client stops for these members
+and other properties with the same message at the same place. Both also refuse a URL-encoded body whose schema has
 `patternProperties` (`Pattern properties have no builtin parameter encoding`) or is not an object, such as an array,
 a string, or `properties` without `type: object` (`A URL-encoded value must be an object`), unless the request body
 mode reads it.
@@ -1418,9 +1418,20 @@ other properties by the rules above, and the model that holds it receives the ob
 is a union of several schemas declares no members its parts could be read by: generation stops with
 `needs body_mode='request'`, as the generated client stops with `needs an object schema to be sent as parts`.
 
-The adapters read no `encoding` that names another media type, part headers, `allowReserved`, or a style other than
-the default `form` with `explode: true`, and none that gives any style to a member without one scalar kind, which
-the client spreads over several pairs or parts: generation stops with an error that names the encoding.
+An adapter reads a URL-encoded member whose `encoding` names a `style`, `explode`, `allowReserved`, or `contentType` as
+the generated client writes it: as the query parameter that encoding describes, the way a query reads one. An object
+with `style: form` and `explode: true`, the default of an encoding that names only `explode`, comes as the pairs of its
+own members, which it takes back: the names its schema declares and, when it allows other properties, any name that
+no other member of the form has. A `deepObject` comes as `name[key]` pairs, and `form` without explode,
+`spaceDelimited`, and `pipeDelimited` as one delimited pair. A `contentType` without a style sends the member as one
+pair of text, or of JSON that is parsed as a JSON part is, with records at `["body", name]`. The other pairs are read
+as in a form without such members, and the model validates the result; an operation with such a member is an
+adapter's, not FastAPI's form model. An encoding that the client has no form for, such as `deepObject` for an array or
+`contentType: application/xml`, stops generation with the message the client stops with.
+
+The adapters read no part headers, no multipart `encoding` that names another media type, and no multipart style
+other than the default `form` with `explode: true`, nor any style for a multipart member without one scalar kind,
+which the client spreads over several parts: generation stops with an error that names the encoding.
 `--server-body-mode request` passes any such body to the method unread.
 
 The router splits a request path at the slashes the request sends, so a percent-encoded slash (`%2F`) stays inside

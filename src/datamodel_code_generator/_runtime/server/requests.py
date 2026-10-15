@@ -26,7 +26,7 @@ from ..model_codecs.media import (
     plain,
     typed,
 )
-from ..model_codecs.parameter_reads import RawParameters, decode_parameter, raw_parameter
+from ..model_codecs.parameter_reads import RawParameter, RawParameters, decode_parameter, raw_parameter, split_query
 from ..model_codecs.unset import UNSET
 from .application import ParameterReader, Rejected, malformed_request, reject
 from .errors import invalid, media_invalid, missing, model_records, unsupported_media
@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from ..model_codecs.media import JSONValue
-    from ..model_codecs.parameter_reads import RawParameter
     from ..model_codecs.parameters import ParameterPlan
     from .errors import Record
 
@@ -224,10 +223,12 @@ class BodyMedia:
     """One declared request media type, how the adapter reads it, and the model's adapter.
 
     A form's members are read as text in the kinds of `fields`, and those of a multipart form in `json_parts` as JSON.
-    `additional` reads every member neither names: as text as it comes unless the form's schema types its other
-    properties, and never as JSON in a URL-encoded form, whose other members `other` reads. `checked` validates such
-    text, as a mapping of their type, when the model keeps them without one. A binary body has a model's adapter only
-    when its models constrain its bytes.
+    A URL-encoded member whose encoding gives it a style or content is read by its query parameter plan in `encoded`
+    from the pairs its style names, and JSON content then by its JSON part. `additional` reads every member neither
+    names: as text as it comes unless the form's schema types its other properties, and never as JSON in a
+    URL-encoded form, whose other members `other` reads. `checked` validates such text, as a mapping of their type,
+    when the model keeps them without one. A binary body has a model's adapter only when its models constrain its
+    bytes.
     """
 
     media_type: str
@@ -237,6 +238,7 @@ class BodyMedia:
     json_parts: tuple[JsonPart, ...] = ()
     additional: FieldPlan | JsonPart = _TEXT
     checked: TypeAdapter[object] | None = None
+    encoded: tuple[ParameterPlan, ...] = ()
     members: Mapping[str, FieldPlan | JsonPart] = field(init=False, repr=False, compare=False)
     other: FieldPlan = field(init=False, repr=False, compare=False)
 
@@ -324,6 +326,8 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
             except MalformedError as error:
                 raise RequestValidationError([media_invalid(("body",))]) from error
             return _validated(adapter, text)
+        case "form" if media.encoded:
+            return _validated(adapter, _checked(media, plain(_styled_form(media, body))))
         case "form":
             return _validated(adapter, _checked(media, plain(decode_form(body, media.fields, media.other))))
         case "multipart":
@@ -340,9 +344,50 @@ def _checked(media: BodyMedia, values: JSONValue) -> JSONValue:
     if (checked := media.checked) is None:
         return values
     members = cast("dict[str, object]", values)
-    others = {name: value for name, value in members.items() if name not in media.members}
+    encoded = {plan.name for plan in media.encoded}
+    others = {name: value for name, value in members.items() if name not in media.members and name not in encoded}
     members.update(cast("dict[str, object]", checked.validate_python(others)))
     return values
+
+
+def _styled_form(media: BodyMedia, body: bytes) -> dict[str, object]:
+    """Return a URL-encoded form whose encoded members are read as a query reads parameters of their plans.
+
+    Such a member takes the pairs its style names, as the client writes them, and its JSON content is parsed by its
+    member's adapter; the other pairs are read as a form without such members is. The request is refused with the
+    records of every JSON content the adapter rejects.
+    """
+    form = cast("dict[str, object]", decode_form(body, media.fields, media.other))
+    for name in [name for name in form if any(_claims(plan, name) for plan in media.encoded)]:
+        del form[name]
+    view = RawParameter(location="query", fragments=split_query(body))
+    records: list[Record] = []
+    for plan in media.encoded:
+        if (value := decode_parameter(plan, view)) is UNSET:
+            continue
+        form[plan.name] = value
+        if isinstance(member := media.members.get(plan.name), JsonPart):
+            try:
+                form[plan.name] = member.adapter.validate_json(cast("str", value))
+            except ValidationError as error:
+                records.extend(model_records(error, ("body", plan.name)))
+    if records:
+        raise RequestValidationError(records)
+    return form
+
+
+def _claims(plan: ParameterPlan, name: str) -> bool:
+    """Return whether a pair of this name belongs to an encoded member, as a query reads the member's style."""
+    match plan.style, plan.shape, plan.explode:
+        case "form", "object", True:
+            return any(item.name == name for item in plan.fields) or (
+                plan.additional is not None and name not in plan.reserved_names
+            )
+        case "deepObject", _, _:
+            return name.startswith(f"{plan.name}[") and name.endswith("]")
+        case _:
+            pass
+    return name == plan.name
 
 
 async def _parts(

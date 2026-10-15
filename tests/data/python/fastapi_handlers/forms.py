@@ -64,4 +64,7 @@ def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[
         def post_extra_profiles(self, *, body: object, media_type: str) -> None:
             calls.append(f"post_extra_profiles({_describe(body)}, {media_type!r})")
 
+        def post_spreads(self, *, body: object) -> None:
+            calls.append(f"post_spreads({_describe(body)})")
+
     return {"default": {"default": Default()}}
