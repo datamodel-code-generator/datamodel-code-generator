@@ -44,6 +44,15 @@ upload_mark refused
   > POST /marks [application/octet-stream]
   < 422 application/json
   = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = Tag.final
+upload_tag refused
+  > POST /tags [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
 upload_stamp
   > POST /stamps [application/octet-stream]
   upload_stamp(body=b'\xff\x00ok')
@@ -118,6 +127,15 @@ upload_mark
   = Mark.final
 upload_mark refused
   > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = Tag.final
+upload_tag refused
+  > POST /tags [application/octet-stream]
   < 422 application/json
   = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
 upload_stamp
@@ -196,6 +214,15 @@ upload_mark refused
   > POST /marks [application/octet-stream]
   < 422 application/json
   = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = Tag.final
+upload_tag refused
+  > POST /tags [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
 upload_stamp
   > POST /stamps [application/octet-stream]
   upload_stamp(body=b'\xff\x00ok')
@@ -268,6 +295,15 @@ upload_mark
   = 'final'
 upload_mark refused
   > POST /marks [application/octet-stream]
+  < 422 application/json
+  = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_tag
+  > POST /tags [application/octet-stream]
+  upload_tag(body=Tag.final)
+  < 200 application/octet-stream
+  = 'final'
+upload_tag refused
+  > POST /tags [application/octet-stream]
   < 422 application/json
   = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
 upload_stamp

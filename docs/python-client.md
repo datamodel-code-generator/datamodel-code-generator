@@ -687,15 +687,15 @@ constrain those bytes, such as `maxLength: 16` as Pydantic's `conbytes(max_lengt
 model: a `bytes` body the model refuses raises a `DecodeError` with the reason `unencodable` before anything is sent,
 and a response body it refuses one with the reason `invalid_value`; a file, a path or an iterable is sent as it streams,
 for the server to check. Models that keep no such constraint, such as dataclasses and TypedDicts, check nothing, and
-unconstrained bytes pass without a model call. An `enum` or a `const` of binary strings is text in the models, so the
-method takes a body of one, also an
-`application/octet-stream` one, as its model, such as an `Enum`, and sends its text. Generation stops with an error when
+unconstrained bytes pass without a model call. An `enum` or a `const` of binary strings, also one that leaves out
+`type: string`, is text in the models, so the method takes a body of one, also an `application/octet-stream` one, as
+its model, such as an `Enum`, and sends its text. Generation stops with an error when
 a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
 inside a JSON or URL-encoded body or response, also one whose model types its whole value as bytes, a `text/*` body
 whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary string, a binary body,
-such as `application/octet-stream`, whose schema is a binary string that its model types as bytes only in part, such as
-`type: [string, integer]` (`bytes | int`), a multipart part that is not a file, an item of a streamed response, or a
-parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
+such as `application/octet-stream`, whose model types its whole value as bytes only in part, such as
+`type: [string, integer]` or an `anyOf` of a binary string and an integer (`bytes | int`), a multipart part that is
+not a file, an item of a streamed response, or a parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
 others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names the
 operation, the media or parameter, and where the schema declares the string:
 
