@@ -21,6 +21,8 @@ render typing.TypedDict
   client/types/default/_operations.py
   models.py
 render dataclasses.dataclass
+  warning UserWarning: Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from PetsListGetResponse1, so these unions cannot decode it: Pet ('kitty').
+  warning UserWarning: Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from PetsListGetResponse1, so these unions cannot decode it: Pet ('doggo').
   client/README.md
   client/__init__.py
   client/_async_client.py

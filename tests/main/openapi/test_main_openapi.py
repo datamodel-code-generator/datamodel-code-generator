@@ -828,29 +828,44 @@ def test_main_openapi_discriminator_variant_tag_warnings(
 
 
 @pytest.mark.parametrize(
-    ("expected_name", "extra_args"),
+    ("name", "expected_name", "extra_args"),
     [
-        ("pydantic_v2.BaseModel", []),
-        ("dataclasses.dataclass", ["--output-model-type", "dataclasses.dataclass"]),
-        ("msgspec.Struct", ["--output-model-type", "msgspec.Struct"]),
-        ("msgspec_tagged_unions", ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"]),
-        ("collapse_pydantic_v2.BaseModel", ["--collapse-reuse-models"]),
+        ("discriminator_reuse_variant_mapping", "pydantic_v2.BaseModel", []),
         (
+            "discriminator_reuse_variant_mapping",
+            "dataclasses.dataclass",
+            ["--output-model-type", "dataclasses.dataclass"],
+        ),
+        ("discriminator_reuse_variant_mapping", "msgspec.Struct", ["--output-model-type", "msgspec.Struct"]),
+        (
+            "discriminator_reuse_variant_mapping",
+            "msgspec_tagged_unions",
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"],
+        ),
+        ("discriminator_reuse_variant_mapping", "collapse_pydantic_v2.BaseModel", ["--collapse-reuse-models"]),
+        (
+            "discriminator_reuse_variant_mapping",
             "collapse_msgspec_tagged_unions",
             ["--collapse-reuse-models", "--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"],
+        ),
+        ("discriminator_shared_variant_tags", "reuse_pydantic_v2.BaseModel", []),
+        (
+            "discriminator_shared_variant_tags",
+            "reuse_pydantic_v2.dataclass",
+            ["--output-model-type", "pydantic_v2.dataclass"],
         ),
     ],
 )
 def test_main_openapi_discriminator_reuse_variant_mapping(
-    output_file: Path, expected_name: str, extra_args: list[str]
+    output_file: Path, name: str, expected_name: str, extra_args: list[str]
 ) -> None:
     """Give a variant that reuse replaced the tag that a discriminator mapping gives its schema, at runtime too.
 
-    Collapsed reuse keeps the released output, which cannot decode such tags, and warns about each union.
+    Reuse keeps apart discriminated unions whose discriminators name another property or map other tags, so each
+    keeps its own discriminator; a variant they map to different tags keeps one union's tags, with a warning.
     """
     import msgspec
 
-    name = "discriminator_reuse_variant_mapping"
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
         run_main_and_assert(

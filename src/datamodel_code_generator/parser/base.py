@@ -2202,6 +2202,32 @@ def _get_mapping_discriminator_values(
     return discriminator_values
 
 
+def _reuse_key(model: DataModel) -> tuple[HashableComparable, ...]:
+    """Return the key reuse compares models by: the rendered model and the discriminators of its unions.
+
+    Unions that render alike decode other tags when their discriminators name another property or map their
+    variants to other tags, so reuse keeps them apart.
+    """
+    key = model.get_dedup_key()
+    if not (
+        discriminators := [
+            (index, discriminator)
+            for index, field in enumerate(model.fields)
+            if isinstance(discriminator := field.extras.get("discriminator"), dict)
+        ]
+    ):
+        return key
+    from datamodel_code_generator._internal_utils import to_hashable  # noqa: PLC0415
+
+    return (
+        *key,
+        *(
+            (index, str(discriminator.get("propertyName")), to_hashable(discriminator.get("mapping") or {}))
+            for index, discriminator in discriminators
+        ),
+    )
+
+
 _DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]
 _DiscriminatorUnion: TypeAlias = tuple[DataModel, list[_DiscriminatorTag], str, dict[str, str]]
 
@@ -3715,7 +3741,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if model in models_to_remove or self._is_root_model(model):
                         continue
                     model._dedup_key_cache.clear()  # noqa: SLF001
-                    content_key_to_models[model.get_dedup_key(None, use_default=True)].append(model)
+                    content_key_to_models[_reuse_key(model)].append(model)
 
                 if not (
                     duplicates := [
@@ -4501,9 +4527,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         typed_map_values = self._typed_map_value_reference_ids
         canonical_models: dict[int, DataModel] = {}
-        for first_model, duplicate_model in _iter_matching_duplicates(
-            reuse_candidates, {}, lambda item: item.get_dedup_key()
-        ):
+        for first_model, duplicate_model in _iter_matching_duplicates(reuse_candidates, {}, _reuse_key):
             cached_model = canonical_models.get(id(first_model), first_model)
             model = duplicate_model
             if id(cached_model.reference) in typed_map_values and id(model.reference) not in typed_map_values:
@@ -4571,7 +4595,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return [
             (model_modules[model], model, model_modules[canonical], canonical)
             for canonical, model in _iter_matching_duplicates(
-                self._typed_map_values_last(list(model_modules)), {}, lambda model: model.get_dedup_key()
+                self._typed_map_values_last(list(model_modules)), {}, _reuse_key
             )
         ]
 
