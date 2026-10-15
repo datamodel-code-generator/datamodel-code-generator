@@ -427,12 +427,33 @@ def _miss(exchange: Exchange, call: Callable[[], Any]) -> Any:
 def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Return responses that must not be stored, removing the entries they supersede, and keep entries on errors.
 
-    A private response naming fields is stored, and is fetched last so that it answers no other case.
+    A private response naming fields is stored, and is fetched last so that it answers no other case. The response
+    setting a cookie comes through a client of its own, so the cookie its native jar keeps reaches no other case; a
+    redirect through that client shows HTTPX2 sending the jar's cookie to the hop.
     """
     helper = api.protocols.users.profile
+    follow = cache.options.RequestOptions(follow_redirects=True)
+
+    def unstored(helper: Any, label: str, response: Callable[[httpx2.Request], httpx2.Response]) -> None:
+        argument = cache.user_id(10)
+        exchange.respond(user(10, etag='"s"', **{"cache-control": "max-age=0"}), response)
+        fetched(lines, f"{label} after stale", partial(helper.fetch, userId=argument))
+        fetched(lines, label, partial(helper.fetch, userId=argument))
+        exchange.respond(user(10))
+        fetched(lines, f"{label} next", partial(helper.fetch, userId=argument))
+
+    unstored(helper, "no-store", user(1, **{"cache-control": "no-store, max-age=60"}))
+    with (
+        exchange.client() as native,
+        cache.package.Client(
+            http_client=native, **cache.stores(users__profile=cache.protocols.MemoryCacheStore())
+        ) as jarred,
+    ):
+        cookies = jarred.protocols.users.profile
+        unstored(cookies, "set-cookie", user(1, **{"cache-control": "max-age=60", "set-cookie": "a=1"}))
+        exchange.respond(raw_response(302, location="https://api.example.com/users/13"), user(13))
+        fetched(lines, "jar cookie on a redirect hop", lambda: cookies.fetch(userId=cache.user_id(12), options=follow))
     for label, response in (
-        ("no-store", user(1, **{"cache-control": "no-store, max-age=60"})),
-        ("set-cookie", user(1, **{"cache-control": "max-age=60", "set-cookie": "a=1"})),
         ("extension", user(1, **{"cache-control": "max-age=60, stale-while-revalidate=5"})),
         ("malformed", user(1, **{"cache-control": "max-age=soon"})),
         ("repeated", user(1, **{"cache-control": "max-age=1, max-age=2"})),
@@ -442,12 +463,7 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         ("unlisted status", user(1, status=203, **{"cache-control": "max-age=60"})),
         ("no freshness or validator", user(1)),
     ):
-        argument = cache.user_id(10)
-        exchange.respond(user(10, etag='"s"', **{"cache-control": "max-age=0"}), response)
-        fetched(lines, f"{label} after stale", partial(helper.fetch, userId=argument))
-        fetched(lines, label, partial(helper.fetch, userId=argument))
-        exchange.respond(user(10))
-        fetched(lines, f"{label} next", partial(helper.fetch, userId=argument))
+        unstored(helper, label, response)
     exchange.respond(
         user(10, etag='"s"', **{"cache-control": "max-age=0"}),
         user(1, **{"cache-control": 'private="a, b", max-age=60'}),
@@ -472,7 +488,6 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         raw_response(302, location="https://api.example.com/users/13"),
         user(13, **{"cache-control": "max-age=60"}),
     )
-    follow = cache.options.RequestOptions(follow_redirects=True)
     fetched(lines, "redirected", lambda: helper.fetch(userId=twelve, options=follow))
     fetched(lines, "redirected again", lambda: helper.fetch(userId=twelve, options=follow))
     fourteen = cache.user_id(14)
