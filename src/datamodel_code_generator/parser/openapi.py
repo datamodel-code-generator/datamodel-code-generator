@@ -857,7 +857,7 @@ class OpenAPIParser(JsonSchemaParser):
                 param_schema = parameter.schema_
                 if param_schema.has_ref_with_schema_keywords and not param_schema.is_ref_with_nullable_only:
                     param_schema = self._merge_ref_with_schema(param_schema)
-                elif merged_schema := self._merge_all_of_reference_constraints(param_schema):
+                elif merged_schema := self._merge_all_of_reference_constraints(param_schema, nested=False):
                     param_schema = merged_schema
                 field_schemas.append((param_schema, [*path, name, parameter_name]))
                 effective_required = parameter.required

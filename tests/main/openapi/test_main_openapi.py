@@ -137,14 +137,61 @@ def test_main_openapi_array_type_union_constraints(output_file: Path) -> None:
         )
 
 
-def test_main_openapi_allof_reference_sibling_constraints(output_file: Path) -> None:
-    """Keep constraints beside an allOf of one $ref on component properties and parameters, at runtime too."""
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args", "order", "query"),
+    [
+        pytest.param(
+            "allof_reference_sibling_constraints.py",
+            [],
+            {
+                "valid_json": '{"quantity": 101, "sku": "ABCDEFGHI", "note": "free"}',
+                "expected_attribute_path": ("quantity", "root"),
+                "expected_attribute_value": 101,
+                "invalid_json": '{"quantity": -1}',
+                "expected_error_type": "greater_than_equal",
+            },
+            {
+                "valid_json": '{"limit": 101}',
+                "invalid_json": '{"limit": -1}',
+                "expected_error_type": "greater_than_equal",
+            },
+            id="root-model-references",
+        ),
+        pytest.param(
+            "allof_reference_sibling_constraints_collapse_root_models.py",
+            ["--collapse-root-models"],
+            {
+                "valid_json": '{"quantity": 100, "sku": "ABCDEFGH", "note": "free"}',
+                "invalid_json": '{"quantity": 101}',
+                "expected_error_type": "less_than_equal",
+                "invalid_keyword_arguments": [
+                    ({"quantity": -1}, "greater_than_equal"),
+                    ({"quantity": 1, "sku": "ABCDEFGHI"}, "string_too_long"),
+                ],
+            },
+            {
+                "valid_json": '{"limit": 100}',
+                "invalid_json": '{"limit": 101}',
+                "expected_error_type": "less_than_equal",
+            },
+            id="collapse-root-models",
+        ),
+    ],
+)
+def test_main_openapi_allof_reference_sibling_constraints(
+    output_file: Path, expected_file: str, extra_args: list[str], order: dict[str, Any], query: dict[str, Any]
+) -> None:
+    """Keep constraints beside an allOf of one $ref on component properties and parameters, at runtime too.
+
+    A property or parameter referencing a root model class keeps the class as its type, so it accepts what only the
+    siblings reject. Collapsing root models writes the value with the siblings and removes the classes it inlined.
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_reference_sibling_constraints.yaml",
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
-        expected_file="allof_reference_sibling_constraints.py",
+        expected_file=expected_file,
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
@@ -157,28 +204,18 @@ def test_main_openapi_allof_reference_sibling_constraints(output_file: Path) -> 
             "--disable-timestamp",
             "--target-python-version",
             "3.10",
+            *extra_args,
         ],
         force_exec_validation=True,
     )
     assert_generated_model_json_validation(
-        output_file,
-        module_name="openapi_allof_reference_sibling_constraints",
-        model_name="Order",
-        valid_json='{"quantity": 100, "sku": "ABCDEFGH", "note": "free"}',
-        invalid_json='{"quantity": 101}',
-        expected_error_type="less_than_equal",
-        invalid_keyword_arguments=[
-            ({"quantity": -1}, "greater_than_equal"),
-            ({"quantity": 1, "sku": "ABCDEFGHI"}, "string_too_long"),
-        ],
+        output_file, module_name="openapi_allof_reference_sibling_constraints", model_name="Order", **order
     )
     assert_generated_model_json_validation(
         output_file,
         module_name="openapi_allof_reference_sibling_constraints",
         model_name="OrdersGetParametersQuery",
-        valid_json='{"limit": 100}',
-        invalid_json='{"limit": 101}',
-        expected_error_type="less_than_equal",
+        **query,
     )
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, Field, RootModel, constr
 
 
 class Count(RootModel[int]):
@@ -24,8 +24,8 @@ class Point(BaseModel):
     x: int | None = None
 
 
-class Score(RootModel[conint(le=100)]):
-    root: conint(le=100)
+class Score(RootModel[Count]):
+    root: Count
 
 
 class Status(Enum):
@@ -38,15 +38,15 @@ class Pair(RootModel[list[str]]):
 
 
 class Measurement(BaseModel):
-    count: conint(ge=5) | None = None
-    code: constr(pattern=r'^[A-Z]', max_length=3) | None = None
-    tags: list[str] | None = Field(None, max_length=3, min_length=1)
+    count: Count | None = None
+    code: Code | None = None
+    tags: Tags | None = None
     score: Score | None = None
-    counts: list[conint(ge=5)] | None = None
-    limits: dict[str, conint(le=10)] | None = None
+    counts: list[Count] | None = None
+    limits: dict[str, Count] | None = None
     point: Point | None = None
     label: Count | None = None
     status: Status | None = None
-    pair: list[str] | None = Field(None, max_length=2, min_length=1)
-    single: list[str] | None = Field(None, max_length=1, min_length=1)
+    pair: Pair | None = None
+    single: Pair | None = None
     ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)

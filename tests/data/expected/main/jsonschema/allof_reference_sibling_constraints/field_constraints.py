@@ -46,15 +46,15 @@ class Pair(RootModel[list[str]]):
 
 
 class Measurement(BaseModel):
-    count: int | None = Field(None, ge=5)
-    code: str | None = Field(None, max_length=3, pattern='^[A-Z]')
-    tags: list[str] | None = Field(None, max_length=3, min_length=1)
+    count: Count | None = None
+    code: Code | None = None
+    tags: Tags | None = None
     score: Score | None = None
     counts: list[Count1] | None = None
     limits: dict[str, Limits] | None = None
     point: Point | None = None
     label: Count | None = None
     status: Status | None = None
-    pair: list[str] | None = Field(None, max_length=2, min_length=1)
-    single: list[str] | None = Field(None, max_length=1, min_length=1)
+    pair: Pair | None = None
+    single: Pair | None = None
     ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)

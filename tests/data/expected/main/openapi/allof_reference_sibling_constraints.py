@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, Field, RootModel, conint
 
 
 class Quantity(RootModel[conint(ge=0)]):
@@ -15,13 +15,13 @@ class Sku(RootModel[str]):
 
 
 class Order(BaseModel):
-    quantity: conint(ge=0, le=100)
-    sku: constr(max_length=8) | None = None
+    quantity: Quantity
+    sku: Sku | None = None
     note: Sku | None = Field(None, description='Free text')
 
 
 class OrdersGetParametersQuery(BaseModel):
-    limit: conint(ge=0, le=100) | None = None
+    limit: Quantity | None = None
 
 
 class OrdersGetResponse(RootModel[list[Order]]):

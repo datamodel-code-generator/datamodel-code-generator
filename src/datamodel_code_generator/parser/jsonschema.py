@@ -7629,22 +7629,38 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether a constrained alias of a referenced type writes the constraints on the reference."""
         return self.field_constraints and self.data_model_root_type.IS_ALIAS
 
-    def _merge_all_of_reference_constraints(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+    def _writes_all_of_reference_as_value(self, *, nested: bool) -> bool:
+        """Return whether an allOf of one $ref with sibling constraints is written as the constrained value.
+
+        Outputs that never enforce constraints keep the reference. A root model class is referenced by name unless
+        the output writes value schemas as aliases or collapses root models, and a field keeps that reference with the
+        siblings unenforced, as it always has. A nested value or a definition keeps it too, unless field constraints
+        would be written beside the reference, which a root model class rejects at validation. A constrained alias of
+        a referenced type with field constraints writes them on the reference instead.
+        """
+        return self._output_model_context.supports_internal_annotated_constraints and (
+            not (nested and self._keeps_reference_constraints_on_alias)
+            if self.data_model_root_type.IS_ALIAS or self.collapse_root_models
+            else nested and self.field_constraints
+        )
+
+    def _merge_all_of_reference_constraints(self, obj: JsonSchemaObject, *, nested: bool) -> JsonSchemaObject | None:
         """Merge an allOf of one $ref to a value schema with the sibling constraints its type holds.
 
         The siblings constrain the referenced value like siblings of a $ref, so the value is written like a $ref with
         sibling keywords, which keeps the constraints where the referenced type cannot hold them. Both constrain the
         value, so their bounds intersect under every allOf merge mode. The reference is still registered, so model
-        names stay as they were. Outputs that never enforce constraints keep the reference. The contains keywords of
-        the referenced value become the item bounds they imply, as they do on the referenced type, so they intersect
-        with the siblings, also with contains keywords among them.
+        names stay as they were, and collapsing root models removes the referenced root model once nothing else
+        references it. ``_writes_all_of_reference_as_value`` decides whether a field or a ``nested`` value is written
+        so. The contains keywords of the referenced value become the item bounds they imply, as they do on the
+        referenced type, so they intersect with the siblings, also with contains keywords among them.
         """
         if (
             len(obj.allOf) != 1
             or not obj.has_constraint
             or obj.model_fields_set & _ALL_OF_REFERENCE_VALUE_EXCLUDED_FIELDS
             or "const" in obj.extras
-            or not self._output_model_context.supports_internal_annotated_constraints
+            or not self._writes_all_of_reference_as_value(nested=nested)
         ):
             return None
         item = obj.allOf[0]
@@ -7665,7 +7681,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or not obj.model_fields_set & self._declared_constraint_keywords(target)
         ):
             return None
-        self.model_resolver.add_ref(self._normalize_external_ref(item.ref))
+        reference = self.model_resolver.add_ref(self._normalize_external_ref(item.ref))
+        if self.collapse_root_models:
+            self._inlined_root_reference_paths.add(reference.path)
         merged = target.model_dump(exclude=_ALL_OF_REFERENCE_DESCRIPTIVE_FIELDS, exclude_unset=True, by_alias=True)
         merged.update(
             obj.model_dump(
@@ -10056,7 +10074,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
             if field.has_ref_with_schema_keywords and not field.is_ref_with_nullable_only:
                 field = self._merge_ref_with_schema(field)  # noqa: PLW2901
-            elif merged_field := self._merge_all_of_reference_constraints(field):
+            elif merged_field := self._merge_all_of_reference_constraints(field, nested=False):
                 field = merged_field  # noqa: PLW2901
 
             field_type = self.parse_item(modular_name, field, [*path, field_name])
@@ -10910,9 +10928,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         name, merged_item, path, singular_name=singular_name, parent=parent
                     )
             item = merged_item
-        elif (parent is None or not self._keeps_reference_constraints_on_alias) and (
-            merged_item := self._merge_all_of_reference_constraints(item)
-        ):
+        elif merged_item := self._merge_all_of_reference_constraints(item, nested=parent is not None):
             item = merged_item
         return self._parse_schema_item_shape(name, item, path, singular_name=singular_name, parent=parent)
 
@@ -12915,9 +12931,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.parse_root_type(name, obj, path)
                 self.parse_ref(obj, path)
                 return
-        elif not self._keeps_reference_constraints_on_alias and (
-            merged := self._merge_all_of_reference_constraints(obj)
-        ):
+        elif merged := self._merge_all_of_reference_constraints(obj, nested=True):
             obj = merged
 
         if obj.is_array:

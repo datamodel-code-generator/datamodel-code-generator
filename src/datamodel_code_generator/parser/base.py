@@ -3287,6 +3287,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.allow_responses_without_content = config.allow_responses_without_content
         self.collapse_root_models = config.collapse_root_models
         self.collapse_root_models_name_strategy = config.collapse_root_models_name_strategy
+        self._inlined_root_reference_paths: set[str] = set()
         self.collapse_reuse_models = config.collapse_reuse_models
         self.skip_root_model = config.skip_root_model
         self.use_root_model_sequence_interface = config.use_root_model_sequence_interface
@@ -4764,6 +4765,47 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 model_path_to_module_name,
             )
 
+    def _keeps_root_model_named(self, model: DataModel, circular_root_model_paths: Collection[str]) -> bool:
+        """Return whether collapsing keeps a root model named wherever it is referenced.
+
+        A circular root model cannot be fully inlined, runtime rules the model owns would be lost with it, and
+        flattening it would discard constraints that live on a nested array or union alias, or on a mapping.
+        """
+        if not model.fields or model.path in circular_root_model_paths or model.has_runtime_object_validation:
+            return True
+        if not self.field_constraints and _has_preservable_root_constraints(model):
+            return True
+        root_type_field = model.fields[0]
+        return (
+            isinstance(constraints := root_type_field.constraints, ConstraintsBase)
+            and constraints.has_constraints
+            and (root_type_field.data_type.is_dict or root_type_field.data_type.is_mapping)
+        )
+
+    def __remove_inlined_root_models(
+        self,
+        unused_models: list[DataModel],
+        model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
+    ) -> None:
+        """Remove the root models whose references fields inlined, where collapsing would have removed them.
+
+        Such a field writes the referenced value with constraints of its own, so collapsing finds no reference to the
+        model, which is removed once nothing else references it, as collapsing the reference would have removed it.
+        """
+        index = self.generation_store.index
+        circular_root_model_paths = getattr(self, "_circular_root_model_paths", ())
+        unused_model_ids = {id(model) for model in unused_models}
+        references = [self.model_resolver.references[path] for path in sorted(self._inlined_root_reference_paths)]
+        unused_models.extend(
+            model
+            for reference in references
+            if (model := cast("DataModel", reference.source)) in model_to_module_models
+            and id(model) not in unused_model_ids
+            and self._is_root_model(model)
+            and not self._keeps_root_model_named(model, circular_root_model_paths)
+            and not index.has_data_type_references(reference)
+        )
+
     def __collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
         self,
         models: list[DataModel],
@@ -4782,38 +4824,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for model_field in model.fields:
                 for data_type in model_field.data_type.all_data_types:
                     reference = data_type.reference
-                    if not reference or not is_root_model(root_type_model := cast("DataModel", reference.source)):
-                        # If the data type is not a reference, we can't collapse it.
-                        # If it's a reference to a root model type, we don't do anything.
-                        continue
-
-                    # Use root-type as model_field type
-                    if not root_type_model.fields:
+                    if (
+                        not reference
+                        or not is_root_model(root_type_model := cast("DataModel", reference.source))
+                        or self._keeps_root_model_named(root_type_model, circular_root_model_paths)
+                    ):
                         continue
                     root_type_field = root_type_model.fields[0]
-
-                    if root_type_model.path in circular_root_model_paths:
-                        # A circular root model cannot be fully inlined; keep it named.
-                        continue
-
-                    # These runtime rules are owned by the referenced root model;
-                    # replacing it with the raw type would discard its validator.
-                    if root_type_model.has_runtime_object_validation:
-                        continue
-
-                    root_constraints = root_type_field.constraints
-                    if not self.field_constraints and _has_preservable_root_constraints(root_type_model):
-                        # Constraints can live on a nested array/union type alias.
-                        # Flattening this wrapper would silently discard them.
-                        continue
-                    if isinstance(root_constraints, ConstraintsBase) and root_constraints.has_constraints:
-                        if root_type_field.data_type.is_dict or root_type_field.data_type.is_mapping:
-                            continue
-                        if self.field_constraints and any(
+                    if (
+                        self.field_constraints
+                        and isinstance(root_constraints := root_type_field.constraints, ConstraintsBase)
+                        and root_constraints.has_constraints
+                        and any(
                             data_type.is_dict or data_type.is_union or data_type.is_list
                             for data_type in model_field.data_type.all_data_types
-                        ):
-                            continue
+                        )
+                    ):
+                        continue
 
                     if root_type_field.data_type.reference:
                         if self.collapse_root_models_name_strategy is None:
@@ -8532,6 +8559,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             module_to_import[module_] = ctx.imports
             contexts.append(ctx)
+        if self._inlined_root_reference_paths:
+            self.__remove_inlined_root_models(unused_models, model_to_module_models)
 
         if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
             all_models = [model for ctx in contexts for model in ctx.models]
