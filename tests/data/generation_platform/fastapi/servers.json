@@ -1565,6 +1565,11 @@
     "config": {
       "server_handler_modes": {
         "/paths/~1lists/get": "async"
+      },
+      "server_primary_responses": {
+        "/paths/~1accepted/get": {
+          "status_code": 202
+        }
       }
     },
     "requests": [
@@ -1733,6 +1738,42 @@
         "method": "POST",
         "url": "/memos?case=none",
         "json": {}
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=client-error"
       }
     ],
     "package_snapshots": [
@@ -2058,6 +2099,42 @@
       {
         "method": "GET",
         "url": "/notes?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/ranges?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/accepted?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/defaults?case=bare"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=word"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=none"
+      },
+      {
+        "method": "GET",
+        "url": "/errors?case=client-error"
       }
     ],
     "package_snapshots": []

@@ -60,5 +60,8 @@ class {{ plan.class_name }}:
 {%- if plan.responses.head %}
         head=True,
 {%- endif %}
+{%- if not plan.responses.bare %}
+        bare=False,
+{%- endif %}
     )
 {%- endfor %}

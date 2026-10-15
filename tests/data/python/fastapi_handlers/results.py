@@ -15,7 +15,8 @@ if TYPE_CHECKING:
 def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[str, dict[str, object]]:
     """Return a service whose results cover bare values, HTTP results, and Responses under each declared response.
 
-    It holds the methods of the results document and of the nullable results documents, one of those asynchronous.
+    It holds the methods of the results document and of the nullable results documents, one of those asynchronous;
+    those include operations that declare only a `2XX`, a `default`, or a `4XX` response.
     """
     result = server.HTTPResult
     thing = models.Thing(id=1)
@@ -111,5 +112,17 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_memo(self, *, case: str, body: object) -> object:
             del body
             return respond("post_memo", case)
+
+        def get_range(self, *, case: str) -> object:
+            return respond("get_range", case)
+
+        def get_accepted(self, *, case: str) -> object:
+            return respond("get_accepted", case)
+
+        def get_default(self, *, case: str) -> object:
+            return respond("get_default", case)
+
+        def get_error(self, *, case: str) -> object:
+            return respond("get_error", case)
 
     return {"default": {"default": Default()}}

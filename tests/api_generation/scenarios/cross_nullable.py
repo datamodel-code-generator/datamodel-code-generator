@@ -2,7 +2,9 @@
 
 The server answers each call's `case` with a bare `None`, an `HTTPResult` without a body, or a value; the client
 reports the `None` or value it decoded, or the error it raised. An inline object schema that admits null takes
-`None` as its body and its result, and still refuses an object its schema does not.
+`None` as its body and its result, and still refuses an object its schema does not. An operation that declares only
+a `2XX` or a `default` response sends a bare value as that response, and one that declares only a `4XX` response
+refuses a bare value.
 """
 
 from __future__ import annotations
@@ -19,7 +21,20 @@ if TYPE_CHECKING:
 DOCUMENT = "fastapi/server-nullable-results.yaml"
 MODEL = {"use_type_alias": True}
 CLIENT = {"default_base_url": "https://nullable.example.com"}
-OPERATIONS = ("get_text", "get_list", "get_name", "get_value", "get_anything", "get_pet", "get_thing", "post_memo")
+OPERATIONS = (
+    "get_text",
+    "get_list",
+    "get_name",
+    "get_value",
+    "get_anything",
+    "get_pet",
+    "get_thing",
+    "post_memo",
+    "get_range",
+    "get_accepted",
+    "get_default",
+    "get_error",
+)
 
 
 def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[str, object]:
@@ -75,4 +90,11 @@ def calls(kit: Kit) -> Calls:
         ("post_memo None", lambda: api.post_memo(case="none", body=None)),
         ("post_memo value", lambda: api.post_memo(case="memo", body=models.MemosPostRequest(text="a"))),
         ("post_memo refused", lambda: api.post_memo(case="none", body=models.MemosPostRequest.model_construct())),
+        ("get_range None", lambda: view.get_range(case="none")),
+        ("get_range value", lambda: api.get_range(case="word")),
+        ("get_accepted", lambda: view.get_accepted(case="thing")),
+        ("get_default None", lambda: once.get_default(case="none")),
+        ("get_default value", lambda: view.get_default(case="thing")),
+        ("get_error bare", lambda: once.get_error(case="word")),
+        ("get_error 4XX", lambda: api.get_error(case="missing")),
     ]

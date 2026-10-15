@@ -73,7 +73,7 @@ service DefaultService without its methods: TypeError
 < 500 - b''
 > GET /nothing?case=value
   get_nothing(value)
-< raised AttributeError: 'dict' object has no attribute 'encode'
+< 200 application/json {}
 > GET /nothing?case=anything
   get_nothing(anything)
 < 200 application/json {}

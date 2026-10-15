@@ -75,13 +75,15 @@ class OperationResponses:
     """An operation's declared responses by status key, and the status of a bare value the route sends itself.
 
     FastAPI's response_model sends the bare value of an operation without that status. `primary_media` is the media
-    a bare value takes when it is chosen over the default media of the response that declares that status.
+    a bare value takes when it is chosen over the default media of the response that declares that status. `bare` is
+    False for an operation without a primary response, which refuses a bare value.
     """
 
     responses: Mapping[str, Declared]
     primary: int | None = None
     primary_media: Declared | None = None
     head: bool = False
+    bare: bool = True
 
     def find(self, status: int) -> Declared | None:
         """Return the response that declares a status: exact, then the same status class, then default."""
@@ -92,13 +94,19 @@ class OperationResponses:
 def dispatch(value: object, plan: OperationResponses) -> object:
     """Pass a Response through, send an HTTPResult as its declared response, and leave a bare value to FastAPI.
 
-    An operation whose primary response FastAPI does not send sends a bare value as that response.
+    An operation whose primary response FastAPI does not send sends a bare value as that response, and an operation
+    without a primary response refuses one.
     """
     if isinstance(value, Response):
         return value
     if _is_result(value):
         return _respond(value.status_code, value.body, value.headers, plan)
-    return value if plan.primary is None else _respond(plan.primary, value, None, plan, plan.primary_media)
+    if plan.primary is not None:
+        return _respond(plan.primary, value, None, plan, plan.primary_media)
+    if plan.bare:
+        return value
+    msg = "The method returned a value for an operation without a primary response; return an HTTPResult"
+    raise _failure(msg)
 
 
 def _is_result(value: object) -> TypeIs[HTTPResult[object]]:
