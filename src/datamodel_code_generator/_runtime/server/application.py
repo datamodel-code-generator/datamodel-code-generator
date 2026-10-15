@@ -7,7 +7,7 @@ import sys
 from collections.abc import Awaitable, Callable, Coroutine, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeGuard, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, NoReturn, TypeAlias, TypeGuard, TypeVar, cast
 from urllib.parse import unquote_to_bytes
 
 from fastapi import APIRouter
@@ -87,7 +87,8 @@ class Rejected:
     """The records of the parameters a request carries in forms their declarations reject, left by a ParameterReader.
 
     Whichever raises them first takes them: the route with FastAPI's own records, or the endpoint when FastAPI found
-    none.
+    none, through `accepted` or by reading a value of the record it stands for, as a route of a custom template that
+    leaves `accepted` out does before it calls the method.
     """
 
     records: list[dict[str, object]]
@@ -97,6 +98,12 @@ class Rejected:
         records = self.records.copy()
         self.records.clear()
         return records
+
+    def __getattr__(self, name: str) -> NoReturn:
+        """Raise the records for a parameter value read from the record; a special name is missing, as elsewhere."""
+        if name.startswith("__"):
+            raise AttributeError(name)
+        raise RequestValidationError(self.take())
 
 
 def reject(scope: MutableMapping[str, Any], records: list[dict[str, object]]) -> Rejected:

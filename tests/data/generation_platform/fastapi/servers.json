@@ -2582,6 +2582,38 @@
     ],
     "package_snapshots": []
   },
+  "unaccepted": {
+    "input": "server-parameters.yaml",
+    "services": "parameters",
+    "config": {
+      "server_parameter_names": {
+        "/paths/~1pairs~1{pair.id}~1{class}~1{part}~1of~1{part}/get": {
+          "path:class": "kind"
+        }
+      }
+    },
+    "model": {
+      "aliases": {
+        "pair.id": "pair"
+      },
+      "custom_template_dir": "templates/unaccepted"
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/pairs/ab/2/3/of/3"
+      },
+      {
+        "method": "GET",
+        "url": "/pairs/AB/x/y/of/y"
+      },
+      {
+        "method": "GET",
+        "url": "/pairs/ab/2/y/of/y"
+      }
+    ],
+    "package_snapshots": []
+  },
   "customized": {
     "input": "services.yaml",
     "services": "customized",
