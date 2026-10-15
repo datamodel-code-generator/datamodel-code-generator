@@ -5668,6 +5668,45 @@ def test_main_strict_types_with_constraints(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("type_alias.py", ["--use-type-alias"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass"]),
+    ],
+)
+def test_main_strict_types_keep_constraints(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test strict types keep every constraint in the style of the active options, at runtime too."""
+    name = "strict_types_constraints"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}/{expected_file}",
+        extra_args=[
+            *extra_args,
+            *("--strict-types", "str", "bytes", "int", "float", "bool"),
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "Record") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
+
+
 @LEGACY_BLACK_SKIP
 def test_main_strict_types_time(output_file: Path) -> None:
     """Test strict float keeps string time formats as time while numbers stay strict."""

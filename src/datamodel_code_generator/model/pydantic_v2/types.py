@@ -471,14 +471,14 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         base64_encoded = kwargs.pop("base64_encoded", False)
         data_type_kwargs: dict[str, Any] = self.transform_kwargs(kwargs, bytes_kwargs)
         strict = StrictTypes.bytes in self.strict_types
-        if base64_encoded and not data_type_kwargs and not strict:
-            return self.data_type.from_import(IMPORT_BASE64BYTES)
-        if data_type_kwargs and not strict:
+        if data_type_kwargs:
+            if strict:
+                data_type_kwargs["strict"] = True
             return self.data_type.from_import(IMPORT_CONBYTES, kwargs=data_type_kwargs)
-        # conbytes doesn't accept strict argument
-        # https://github.com/samuelcolvin/pydantic/issues/2489
         if strict:
             return self.copy_data_type(self.strict_type_map[StrictTypes.bytes])
+        if base64_encoded:
+            return self.data_type.from_import(IMPORT_BASE64BYTES)
         return self.copy_data_type(self.type_map[types])
 
     def get_data_type(  # noqa: PLR0911
