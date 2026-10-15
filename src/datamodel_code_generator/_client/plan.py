@@ -549,15 +549,13 @@ class Planner:
     def tag_namespaces(self) -> dict[str | None, str]:
         """Name the resource of each first tag that no setting names, apart from the clients' members and each other.
 
-        The operations without a tag that no setting names form one more resource, under the key None, whose name
-        derives from `default` among the tags' names in declaration order. A Windows device name needs an explicit
-        one.
+        The operations without a tag form one more resource, under the key None, whose name derives from `default`
+        among the tags' names. A resource's place is its first operation, whether or not the operation's own
+        setting moves it to another resource, as the server orders its groups. A Windows device name needs an
+        explicit one.
         """
         first: dict[str | None, OperationContract] = {}
         for operation in self.request.operations:
-            setting = self.settings.get(operation.id.use_site.pointer)
-            if setting is not None and setting.resource is not None:
-                continue
             if (tag := tags[0] if (tags := _tags(operation)) else None) not in self.resource_names:
                 first.setdefault(tag, operation)
         bases = [self.names.function("default" if tag is None else tag) for tag in first]
