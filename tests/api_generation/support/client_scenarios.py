@@ -688,6 +688,7 @@ _PATHS: Final = (
         for first, second in (("", ""), ("a", ""), ("", "."), (".", ""), ("%2e", ""))
     ),
     *(("get_static", {"name": value}) for value in ("a", "..")),
+    ("get_literal", {"name": "a\\b|c^[d]?#%20"}),
 )
 
 
@@ -700,7 +701,8 @@ def paths(package: ModuleType, lines: list[str]) -> None:
     """Keep each call on its operation: a path value making its segment `.` or `..` is refused before sending.
 
     URL normalization would remove such a segment, and `%2E` is the `.` it is equivalent to, so no encoding of these
-    values reaches the operation; every other value, `...` and `.a` among them, is sent as data.
+    values reaches the operation; every other value, `...` and `.a` among them, is sent as data. Literal path text RFC
+    3986 does not allow in a path, a lone `%` among it, is sent percent-encoded, and the document's `%20` as it is.
     """
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:

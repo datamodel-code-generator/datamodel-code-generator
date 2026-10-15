@@ -17904,6 +17904,11 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
   clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
   does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
+- **Path text.** The literal text of a path template is sent as RFC 3986 allows it in a path, as path arguments are:
+  any other character, such as `\`, `|`, `^`, `[`, `]`, `?`, `#`, a space, or non-ASCII text, is percent-encoded as
+  UTF-8, `\` as `%5C`, so no client, proxy, or server reads `\` as `/` or ends the path early. A `%` and two hex
+  digits is an octet the document already encodes and is sent as it is, so `/files/a%20b` sends `a%20b`; any other
+  `%` is sent as `%25`. The client holds the encoded path from generation, so calls pay nothing for it.
 - **Header values.** A header carries header text only: HTAB, SP, and visible ASCII, without whitespace at either
   end, the text every HTTP client and server reads alike. RFC 9110 leaves any other byte opaque, and servers read it
   as Latin-1 or as UTF-8. A header parameter of any style, or of text content, whose value, array item, or object

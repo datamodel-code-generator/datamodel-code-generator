@@ -146,6 +146,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_static {'name': 'a'} = None
   get_static {'name': '..'} ! DecodeError: DecodeError(operation_id='getStatic', reason='unencodable', location='path.name') [operation_id='getStatic', location=('path', 'name'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  > GET https://api.example.com/v1/literal/a%5Cb%7Cc%5E%5Bd%5D%3F%23%25zz%20%20%C3%A9/a%5Cb%7Cc%5E%5Bd%5D%3F%23%2520
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  get_literal {'name': 'a\\b|c^[d]?#%20'} = None
   async get_archive {'name': '.'} ! DecodeError: DecodeError(operation_id='getArchive', reason='unencodable', location='path.name') [operation_id='getArchive', location=('path', 'name'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   async get_archive {'name': '..'} ! DecodeError: DecodeError(operation_id='getArchive', reason='unencodable', location='path.name') [operation_id='getArchive', location=('path', 'name'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
   > GET https://api.example.com/v1/archive/...
@@ -293,3 +296,6 @@
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_static {'name': 'a'} = None
   async get_static {'name': '..'} ! DecodeError: DecodeError(operation_id='getStatic', reason='unencodable', location='path.name') [operation_id='getStatic', location=('path', 'name'), body_bytes=b'', truncated=False, cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] unencodable
+  > GET https://api.example.com/v1/literal/a%5Cb%7Cc%5E%5Bd%5D%3F%23%25zz%20%20%C3%A9/a%5Cb%7Cc%5E%5Bd%5D%3F%23%2520
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async get_literal {'name': 'a\\b|c^[d]?#%20'} = None

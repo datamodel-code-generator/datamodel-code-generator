@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, replace
 from functools import cached_property
 from itertools import starmap
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from urllib.parse import quote
 
 from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import arguments as arguments_template
@@ -89,6 +91,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
 _RUNTIME: Final = "_runtime.client.operations"
+_PATH_KEPT: Final = re.compile(r"(\{[^{}]*\}|%[0-9A-Fa-f]{2})")
+_PATH_SAFE: Final = "/:@!$&'()*+,;="
 _CODECS: Final = "_runtime.client.codecs"
 _OPTION_NAMES: Final = ("Clock", "RequestOptions", "RetryOptions", "ServerSelection")
 _CLIENTS: Final = (("._async_client", ("AsyncClient", "AsyncClientView")), ("._client", ("Client", "ClientView")))
@@ -812,6 +816,17 @@ def _docstring(spec: OperationSpec, *, schema: bool) -> str:
         if text := "\n\n".join(filter(None, texts)):
             return text
     return f"Call {spec.contract.method.upper()} {spec.contract.path}."
+
+
+def _sent_path(path: str) -> str:
+    """Return a path template as calls send it: literal text RFC 3986 does not allow in a path percent-encoded.
+
+    Placeholders and the percent-encoded octets the document writes stay as they are, and a `%` that starts none is
+    encoded, so the literal text reaches the server as path arguments do.
+    """
+    return "".join(
+        piece if index % 2 else quote(piece, safe=_PATH_SAFE) for index, piece in enumerate(_PATH_KEPT.split(path))
+    )
 
 
 def _operation_summary(spec: OperationSpec) -> dict[str, object]:
@@ -1935,7 +1950,7 @@ class _Registry(_Typing):
         entries: list[tuple[str, str]] = [
             ("operation_id=", repr(spec.operation_id)),
             ("method=", repr(spec.contract.method.upper())),
-            ("path=", repr(spec.contract.path)),
+            ("path=", repr(_sent_path(spec.contract.path))),
             ("servers=", servers),
             ("responses=", self.decoder(module, spec)),
         ]
