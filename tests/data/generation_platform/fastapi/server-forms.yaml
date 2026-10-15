@@ -190,6 +190,26 @@ paths:
               additionalProperties: {type: array, items: {type: string}}
       responses:
         "204": {description: Done.}
+  /spreads:
+    post:
+      operationId: postSpreads
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [filter]
+              properties:
+                filter: {$ref: "#/components/schemas/Filter"}
+                ids: {type: array, items: {type: integer}}
+                meta: {$ref: "#/components/schemas/Filter"}
+            encoding:
+              filter: {explode: true}
+              ids: {style: pipeDelimited}
+              meta: {contentType: application/json}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Others:

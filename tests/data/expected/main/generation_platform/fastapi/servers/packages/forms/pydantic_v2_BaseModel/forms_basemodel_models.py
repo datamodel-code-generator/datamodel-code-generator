@@ -120,6 +120,12 @@ class ExtraProfilesPostRequest1(BaseModel):
     count: int | None = None
 
 
+class SpreadsPostRequest(BaseModel):
+    filter: Filter
+    ids: list[int] | None = None
+    meta: Filter | None = None
+
+
 class Others(BaseModel):
     model_config = ConfigDict(
         extra='allow',

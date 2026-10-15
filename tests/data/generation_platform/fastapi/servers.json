@@ -3601,6 +3601,54 @@
         "headers": {
           "Content-Type": "application/x-www-form-urlencoded"
         }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "color=blue&minAge=3&ids=1%7C2&meta=%7B%22color%22%3A%22c%22%7D&name=x",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "color=a+b",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "minAge=-1&ids=1%7Ctwo",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "ids=1&meta=null",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "ids=1&meta=%7B%22minAge%22%3A-2%7D",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      {
+        "method": "POST",
+        "url": "/spreads",
+        "content": "ids=1",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
       }
     ],
     "package_snapshots": []

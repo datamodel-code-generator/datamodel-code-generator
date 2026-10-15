@@ -106,3 +106,10 @@ class ExtraProfilesPostRequest:
 @dataclass(config=ConfigDict(extra='allow'))
 class ExtraProfilesPostRequest1:
     count: int | MISSING = MISSING
+
+
+@dataclass
+class SpreadsPostRequest:
+    filter: Filter
+    ids: list[int] | MISSING = MISSING
+    meta: Filter | MISSING = MISSING

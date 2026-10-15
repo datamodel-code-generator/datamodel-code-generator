@@ -1,0 +1,70 @@
+models shared True
+# forms in-process sync, in-process async
+post_styles
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='a b', point=Point(x=1, y=-2), corner=Point(x=3, y=4), deep=Named(name='d&e=f'), spaced=['a', 'b+c'], piped=[1, 2], listed=[3, 4], path='a/b?c&d=e#f', meta=Named(name='café & co'), note='x & y+z'))
+  < 204 -
+  = None
+post_styles name only
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=None, corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = None
+post_styles empty arrays
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=None, corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = None
+post_styles delimiter in a value
+  ! DecodeError: DecodeError(operation_id='postStyles', reason='unencodable', location='body') [operation_id='postStyles', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A delimited query value cannot contain its own delimiter')] unencodable
+post_labels
+  > POST /labels [application/x-www-form-urlencoded]
+  post_labels(body=LabelsPostRequest(id=1, labels={'a': 'x', 'b c': 'ä'}))
+  < 204 -
+  = None
+post_labels labels only
+  > POST /labels [application/x-www-form-urlencoded]
+  post_labels(body=LabelsPostRequest(id=None, labels={'id2': 'y'}))
+  < 204 -
+  = None
+post_choices form
+  > POST /choices [application/x-www-form-urlencoded]
+  post_choices(body=Choice(ids=['a', 'b']), media_type='application/x-www-form-urlencoded')
+  < 204 -
+  = None
+post_choices JSON
+  > POST /choices [application/json]
+  post_choices(body=Choice(ids=['a b']), media_type='application/json')
+  < 204 -
+  = None
+/styles unknown member of an exploded object
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=Point(x=1, y=None), corner=None, deep=None, spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = (204, None)
+/styles exploded member of another kind
+  > POST /styles [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'point', 'x'])])
+/styles JSON content that is not JSON
+  > POST /styles [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('json_invalid', ['body', 'meta'])])
+/styles unpaired object member
+  > POST /styles [application/x-www-form-urlencoded]
+  < 400 application/json
+  = (400, None)
+/styles percent-encoded deepObject member
+  > POST /styles [application/x-www-form-urlencoded]
+  post_styles(body=StylesPostRequest(name='n', point=Point(x=None, y=None), corner=None, deep=Named(name='a'), spaced=None, piped=None, listed=None, path=None, meta=None, note=None))
+  < 204 -
+  = (204, None)
+/styles piped item of another kind
+  > POST /styles [application/x-www-form-urlencoded]
+  < 422 application/json
+  = (422, [('int_parsing', ['body', 'piped', 1])])
+/labels other member
+  > POST /labels [application/x-www-form-urlencoded]
+  post_labels(body=LabelsPostRequest(id=2, labels={'z': 'w'}))
+  < 204 -
+  = (204, None)
