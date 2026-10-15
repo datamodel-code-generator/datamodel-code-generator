@@ -2905,6 +2905,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._constrained_decimal_alias_model_ids: set[int] = set()
         self._hidden_named_types: dict[tuple[str, str | None], bool] = {}
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
+        self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
 
         self.keyword_only = config.keyword_only
         self.target_pydantic_version = config.target_pydantic_version
@@ -3794,6 +3795,51 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         return expression
 
+    def __import_removed_reuse_canonicals(
+        self,
+        contexts: list[ModuleContext],
+        *,
+        internal_modules: set[ModulePath],
+        model_path_to_module_name: dict[str, str],
+    ) -> None:
+        """Import the kept model where a module processed earlier imported a duplicate that reuse removed."""
+        if not (users := self._removed_reuse_users):
+            return
+        for ctx in contexts:
+            if not (
+                stale_imports := {
+                    path: import_
+                    for _, paths in users.values()
+                    for path in paths
+                    if (import_ := ctx.imports.reference_paths.get(path))
+                }
+            ):
+                continue
+            model_paths = {model.path for model in ctx.models}
+            for model in ctx.models:
+                for data_type in model.all_data_types:
+                    user, paths = users.get(id(data_type), (None, ()))
+                    if user is not data_type or not (
+                        stale_import := next(filter(None, map(stale_imports.get, paths)), None)
+                    ):
+                        continue
+                    ctx.imports.remove(stale_import)
+                    reference = cast("Reference", data_type.reference)
+                    data_type.alias = (
+                        None
+                        if reference.path in model_paths
+                        else self.__register_reference_import(
+                            reference,
+                            _get_model_module_name(model, model_path_to_module_name),
+                            _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+                            ctx.imports,
+                            ctx.scoped_model_resolver,
+                            init=ctx.is_init,
+                            internal_modules=internal_modules,
+                            base_class=isinstance(data_type, BaseClassDataType),
+                        )
+                    )
+
     def __import_enum_member_literal_classes(
         self,
         contexts: list[ModuleContext],
@@ -4278,7 +4324,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ):
                 # A module written earlier names the value, as a field of a collapsed root model does, so it stays.
                 continue
-            if isinstance(model, Enum) or self.collapse_reuse_models or id(model.reference) in typed_map_values:
+            if isinstance(model, Enum) or self.collapse_reuse_models:
+                self.__redirect_removed_reuse_users(model.reference, cached_model_reference)
+                duplicates.append(model)
+            elif id(model.reference) in typed_map_values:
                 self.generation_store.redirect_model_reference_users(model, models, cached_model_reference)
                 duplicates.append(model)
             else:
@@ -4290,6 +4339,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         for duplicate in duplicates:
             models.remove(duplicate)
+
+    def __redirect_removed_reuse_users(self, old_reference: Reference, new_reference: Reference) -> None:
+        """Redirect every user of a duplicate that reuse removes, remembering what each user referred to.
+
+        Modules processed earlier already imported the duplicate, so their imports are corrected after processing.
+        """
+        users = self._removed_reuse_users
+        for user in self.generation_store.redirect_reference_users(old_reference, new_reference):
+            users.setdefault(id(user), (user, []))[1].append(old_reference.path)
 
     def __find_duplicate_models_across_modules(
         self,
@@ -8027,6 +8085,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         contexts: list[ModuleContext] = []
         self._hidden_named_types.clear()
         self._variant_discriminator_tags.clear()
+        self._removed_reuse_users.clear()
 
         if self.collapse_root_models:
             self.__set_circular_root_model_paths(
@@ -8048,6 +8107,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_to_import[module_] = ctx.imports
             contexts.append(ctx)
 
+        self.__import_removed_reuse_canonicals(
+            contexts,
+            internal_modules=internal_modules,
+            model_path_to_module_name=model_path_to_module_name,
+        )
         self.__import_enum_member_literal_classes(
             contexts,
             internal_modules=internal_modules,

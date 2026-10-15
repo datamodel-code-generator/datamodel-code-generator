@@ -10659,6 +10659,54 @@ def test_main_openapi_dot_notation_collapse_reuse_models(
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        pytest.param(DataModelType.PydanticV2BaseModel.value, id="pydantic_v2"),
+        pytest.param(DataModelType.DataclassesDataclass.value, id="dataclasses"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("input_file", "reuse_args", "expected_name"),
+    [
+        pytest.param(
+            "nullable_map_value_layout.yaml", ["--collapse-reuse-models"], "layout_collapse", id="layout-collapse"
+        ),
+        pytest.param(
+            "reuse_model_cross_module_users.yaml",
+            ["--collapse-reuse-models"],
+            "modules_collapse",
+            id="modules-collapse",
+        ),
+        pytest.param("reuse_model_cross_module_users.yaml", [], "modules", id="modules"),
+    ],
+)
+def test_main_openapi_reuse_model_cross_module_users(
+    input_file: str, reuse_args: list[str], expected_name: str, output_model_type: str, output_dir: Path
+) -> None:
+    """Point users in other modules, written before or after, at the kept model when reuse removes a duplicate."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=EXPECTED_OPENAPI_PATH
+        / "reuse_model_cross_module_users"
+        / f"{expected_name}_{output_model_type.partition('.')[0]}",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--reuse-model",
+            *reuse_args,
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_dot_notation_deep_inheritance(output_dir: Path) -> None:
     """Test dot notation with deep inheritance from ancestor packages (issue #2039)."""
     run_main_and_assert(
