@@ -13264,6 +13264,10 @@ status. A bare value is sent with the `media_type` its entry names, such as `tex
 declares JSON, and validated and serialized with that media type's model; without a `media_type`, it takes the
 response's default media type.
 
+A `text/*` response labels text it encodes with the charset it encodes it in: the one its media type declares, or
+else `utf-8`. Bytes a method returns for a `text/*` response are sent as they are, with the media type the document
+declares, so they carry a charset only when the document declares one.
+
 An `HTTPResult(status_code, body, headers)` sends another status or extra headers. The package validates and
 serializes its body with the model and default media type of the response that declares the status: exactly, by its
 range such as `2XX`, or as `default`. A status that no response declares is sent unchecked, its body encoded as JSON

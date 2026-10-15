@@ -103,13 +103,23 @@ def _respond(
     plan: OperationResponses,
     chosen: Declared | None = None,
 ) -> Response:
+    """Send a body as its declared response, raw bytes of a `text/*` one under its media type without a charset added.
+
+    Starlette labels every `text/*` body without a charset UTF-8, which only text the response encodes itself is.
+    """
     declared = chosen or plan.find(status) or _UNDECLARED
     if (body is None and not declared.null) or plan.head or status < _MIN_CONTENT_STATUS or status in _EMPTY_STATUSES:
         if inspect.isawaitable(body):
             raise _unawaited(body)
         return Response(status_code=status, headers=headers)
     media_type = declared.media_type
-    return Response(_content(declared, body), status_code=status, media_type=media_type, headers=headers)
+    if isinstance(content := _content(declared, body), str):
+        return Response(_encoded(declared, content), status_code=status, media_type=media_type, headers=headers)
+    if declared.kind == "json" or not media_type.startswith("text/"):
+        return Response(content, status_code=status, media_type=media_type, headers=headers)
+    response = Response(content, status_code=status, headers=headers)
+    response.headers.setdefault("content-type", media_type)
+    return response
 
 
 def _unawaited(body: object) -> TypeError:
@@ -119,7 +129,8 @@ def _unawaited(body: object) -> TypeError:
     return TypeError("The method returned an awaitable for a response without a body; nothing awaited it")
 
 
-def _content(declared: Declared, body: object) -> bytes:
+def _content(declared: Declared, body: object) -> str | bytes:
+    """Return the text of a body to encode in the declared charset, or the bytes to send as they are."""
     json_media = declared.kind == "json"
     if (adapter := declared.adapter()) is None:
         payload = _json(jsonable_encoder(body, by_alias=True, exclude_unset=True)) if json_media else body
@@ -133,13 +144,15 @@ def _content(declared: Declared, body: object) -> bytes:
                 return adapter.dump_json(value, by_alias=True, exclude_unset=True)
             return dump(adapter, value)
         payload = adapter.dump_python(value, by_alias=True)
-    if isinstance(payload, bytes):
+    if isinstance(payload, (str, bytes)):
         return payload
-    if not isinstance(payload, str):
-        msg = f"A {declared.media_type} body must be a string or bytes"
-        raise _failure(msg)
+    msg = f"A {declared.media_type} body must be a string or bytes"
+    raise _failure(msg)
+
+
+def _encoded(declared: Declared, text: str) -> bytes:
     try:
-        return payload.encode(declared.charset)
+        return text.encode(declared.charset)
     except (LookupError, UnicodeError) as error:
         msg = f"The text body cannot be encoded as {declared.media_type}"
         raise _failure(msg) from error

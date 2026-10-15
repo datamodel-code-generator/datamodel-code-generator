@@ -32,6 +32,9 @@ service DefaultService without its methods: TypeError
 > GET /results?case=client-error-number
   get_result(client-error-number)
 < ResponseValidationError: ['A text/plain body must be a string or bytes']
+> GET /results?case=client-error-bytes
+  get_result(client-error-bytes)
+< 404 text/plain caf�
 > GET /results?case=problem
   get_result(problem)
 < 500 application/problem+json {"title":"Broken"}

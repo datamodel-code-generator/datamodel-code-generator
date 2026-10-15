@@ -1459,6 +1459,10 @@
       },
       {
         "method": "GET",
+        "url": "/results?case=client-error-bytes"
+      },
+      {
+        "method": "GET",
         "url": "/results?case=problem"
       },
       {
