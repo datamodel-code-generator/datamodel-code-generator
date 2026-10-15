@@ -5577,12 +5577,13 @@ def test_main_allof_reference_sibling_constraints(output_file: Path, expected_fi
             validate = _model_json_validator(model)
             error_type = ValidationError
         validate(json.dumps(payloads["valid"]))
-        rejected = []
-        for field_name, value in payloads["invalid"].items():
+
+        def accepts(field_name: str, value: object) -> bool:
             with suppress(error_type):
-                validate(json.dumps(payloads["valid"] | {field_name: value}))
-                continue
-            rejected.append(field_name)
+                return validate(json.dumps(payloads["valid"] | {field_name: value})) is not None
+            return False
+
+        rejected = [field_name for field_name, value in payloads["invalid"].items() if not accepts(field_name, value)]
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
 
 
