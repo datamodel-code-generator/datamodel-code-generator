@@ -123,7 +123,7 @@ def test_formatter_extras_preserve_required_ranges_and_markers() -> None:
     project = _load_pyproject()["project"]
     assert_output(
         "\n".join(
-            f"{name}: required={next(item for item in project['dependencies'] if item.startswith(name + '>='))}; "
+            f"{name}: required={','.join(item for item in project['dependencies'] if item.startswith(name + '>='))}; "
             f"extra={','.join(project['optional-dependencies'][name])}; "
             f"all={f'datamodel-code-generator[{name}]' in project['optional-dependencies']['all']}"
             for name in ("black", "isort")

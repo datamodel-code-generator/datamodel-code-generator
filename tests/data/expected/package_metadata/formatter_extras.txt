@@ -1,2 +1,2 @@
-black: required=black>=19.10b0; sys_platform!='emscripten'; extra=black>=19.10b0; sys_platform!='emscripten'; all=True
+black: required=black>=19.10b0; python_version<'3.15' and sys_platform!='emscripten',black>=26.5; python_version>='3.15' and sys_platform!='emscripten'; extra=black>=19.10b0; python_version<'3.15' and sys_platform!='emscripten',black>=26.5; python_version>='3.15' and sys_platform!='emscripten'; all=True
 isort: required=isort>=4.3.21,<9; sys_platform!='emscripten'; extra=isort>=4.3.21,<9; sys_platform!='emscripten'; all=True

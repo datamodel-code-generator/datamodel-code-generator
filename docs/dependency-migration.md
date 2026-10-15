@@ -80,9 +80,11 @@ These are follow-up targets, not changes to this release's requirements:
 | Dependency | Current requirement | Proposed later requirement |
 | --- | --- | --- |
 | isort | `>=4.3.21,<9` | `>=6,<9` (keep 6, 7 and 8) |
-| Black | `>=19.10b0` | `>=24.3.0` |
+| Black, Python <3.15 | `>=19.10b0` | `>=24.3.0` |
+| Black, Python >=3.15 | `>=26.5` | Unchanged |
 | Runtime Pydantic, Python <3.14 | `>=2,<3` | `>=2.8.2,<3` |
-| Runtime Pydantic, Python >=3.14 | `>=2.12,<3` | Unchanged |
+| Runtime Pydantic, Python >=3.14,<3.15 | `>=2.12,<3` | Unchanged |
+| Runtime Pydantic, Python >=3.15 | `>=2.14,<3` | Unchanged |
 
 No other dependency floor changes are proposed here. The generator continues using its existing numeric runtime
 compatibility boundaries; no version selection is inferred from string ordering. The notice comparisons use
