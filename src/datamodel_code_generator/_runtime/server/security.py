@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from typing import TypeAlias
 
 from fastapi import HTTPException, Request
-from fastapi.security import OAuth2, OpenIdConnect
+from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2, OpenIdConnect
 from fastapi.security.utils import get_authorization_scheme_param
 from typing_extensions import TypeVar
 
@@ -22,6 +22,17 @@ def bearer_token(authorization: str | None) -> str | None:
     """Return the token of a `Bearer` `Authorization` header, matching the scheme case-insensitively, or None."""
     scheme, token = get_authorization_scheme_param(authorization)
     return token if scheme.lower() == "bearer" and token else None
+
+
+class OptionalHTTPBasic(HTTPBasic):
+    """FastAPI's `HTTPBasic`, reading a malformed Basic credential as none, as it reads a missing one."""
+
+    async def __call__(self, request: Request) -> HTTPBasicCredentials | None:  # type: ignore[override]
+        """Return the credentials of a `Basic` `Authorization` header, or None without a well-formed one."""
+        try:
+            return await super().__call__(request)
+        except HTTPException:
+            return None
 
 
 class OAuth2Bearer(OAuth2):

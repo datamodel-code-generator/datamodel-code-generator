@@ -1460,14 +1460,15 @@ connect an `authorize` callback and your own `FastAPI` application.
 ### Security
 
 `security.py` declares one FastAPI dependency for each security scheme the selected operations use: `APIKeyHeader`,
-`APIKeyQuery`, or `APIKeyCookie` for an API key, `HTTPBasic`, `HTTPBearer`, or `HTTPDigest` for an HTTP scheme,
-and, for OAuth2 with the declared flows and for OpenID Connect, the runtime's subclasses of FastAPI's `OAuth2` and
+`APIKeyQuery`, or `APIKeyCookie` for an API key, `HTTPBearer` or `HTTPDigest` for an HTTP scheme, and, for HTTP Basic,
+OAuth2 with the declared flows, and OpenID Connect, the runtime's subclasses of FastAPI's `HTTPBasic`, `OAuth2`, and
 `OpenIdConnect`, each with `auto_error=False`. A scheme no FastAPI class reads, such as `mutualTLS`, is a function
 that returns `None`; replace it, or any other scheme, with `app.dependency_overrides[security.<scheme>]`. The
 credentials are what the dependencies return: a string for an API key, the token of an `Authorization: Bearer`
 header for OAuth2 and OpenID Connect, as `OAuth2PasswordBearer` reads it, `HTTPBasicCredentials`, or
 `HTTPAuthorizationCredentials`. Each HTTP, OAuth2, and OpenID Connect dependency presents no credential for an
-`Authorization` header of another scheme, so a Basic header satisfies no OAuth2 requirement.
+`Authorization` header of another scheme, so a Basic header satisfies no OAuth2 requirement, and the HTTP Basic one
+presents none for a malformed Basic header either, so another requirement set can still admit the request.
 
 `create_app` and `build_router` of a package with secured operations take an
 `authorize(requirement_sets, credentials)` callback, which may be a coroutine function. Each secured operation calls

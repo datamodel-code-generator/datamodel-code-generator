@@ -143,6 +143,9 @@
      },
      {
       "api_key": []
+     },
+     {
+      "basic": []
      }
     ],
     "responses": {

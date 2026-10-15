@@ -2275,6 +2275,24 @@
           },
           {
             "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic !!!",
+              "X-API-Key": "abc"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic dXNlcg=="
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
             "url": "/custom",
             "headers": {
               "Authorization": "Digest d1"
