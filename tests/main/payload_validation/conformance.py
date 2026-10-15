@@ -204,6 +204,9 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/type_union_constraints/enum_field.json": (
         "msgspec conversion only supports Enum classes with homogeneous str or int values"
     ),
+    "jsonschema/enum_names_beside_null.json": (
+        "msgspec conversion only supports Enum classes with homogeneous str or int values"
+    ),
     **dict.fromkeys(
         (
             "jsonschema/msgspec_enum_diagnostics/boolean.json",
