@@ -5,14 +5,15 @@ from __future__ import annotations
 import json
 import re
 import sys
-import unicodedata
 from copy import deepcopy
 from fractions import Fraction
+from functools import cache, partial
 from typing import TYPE_CHECKING, Any
 
 from hypothesis import strategies as st
 from hypothesis_jsonschema import from_schema
 from jsonschema import validators
+from pydantic_core import SchemaValidator, core_schema
 
 from .conformance import _iter_schema_nodes, _schema_types
 from .native_numeric import NATIVE_FLOAT_CONTRACT
@@ -24,10 +25,9 @@ if TYPE_CHECKING:
     from .models import SchemaCase
 
 
-_UNICODE_BEYOND_SHARED_REGEX_TABLES = tuple(map(int, unicodedata.unidata_version.split("."))) > (16, 0, 0)
-"""Whether Python's re uses Unicode tables newer than 16.0, the newest that pydantic-core's regex shares with it."""
-_NON_ASCII_WORD_CHARACTER = re.compile(r"(?=[^\x00-\x7f])\w")
-_UNICODE_CLASS_ESCAPE = re.compile(r"\\[dDwWbB]")
+_REGEX_CLASS_ESCAPE = re.compile(r"(?<!\\)(?:\\\\)*\\([dDsSwWbB])")
+_REGEX_CLASS_BY_ESCAPE = dict.fromkeys("dD", r"\d") | dict.fromkeys("sS", r"\s") | dict.fromkeys("wWbB", r"\w")
+"""The character class each escape depends on; word boundaries depend on word characters."""
 
 _SourceSchemaCacheKey = tuple[str, str, str]
 _source_schema_validator_cache: dict[_SourceSchemaCacheKey, SourceSchemaValidator] = {}
@@ -129,18 +129,49 @@ def _bound_float_multiples(schema: dict[str, Any]) -> None:
         node["maximum"] = min(maximum, limit)
 
 
-def _within_shared_regex_tables(value: Any) -> bool:  # pragma: >=3.15 cover
-    """Keep word characters ASCII, where Python's re and pydantic-core's regex classify them alike."""
+@cache
+def _rust_regex_class(regex_class: str) -> SchemaValidator:
+    """Match one character of a class with pydantic-core's default Rust regex engine."""
+    return SchemaValidator(core_schema.str_schema(pattern=f"^{regex_class}$"))
+
+
+@cache
+def _regex_engines_agree(regex_class: str, character: str) -> bool:
+    """Return whether Python's re and pydantic-core's Rust regex agree on a character's class membership."""
+    python_member = re.fullmatch(regex_class, character) is not None
+    return python_member is _rust_regex_class(regex_class).isinstance_python(character)
+
+
+def _classified_alike(value: Any, regex_classes: frozenset[str]) -> bool:
+    """Keep payloads whose characters both regex engines place alike in the schema's pattern classes."""
     match value:
         case str():
-            return _NON_ASCII_WORD_CHARACTER.search(value) is None
+            return all(
+                _regex_engines_agree(regex_class, character) for character in value for regex_class in regex_classes
+            )
         case dict():
             return all(
-                _within_shared_regex_tables(key) and _within_shared_regex_tables(item) for key, item in value.items()
+                _classified_alike(key, regex_classes) and _classified_alike(item, regex_classes)
+                for key, item in value.items()
             )
         case list():
-            return all(map(_within_shared_regex_tables, value))
+            return all(_classified_alike(item, regex_classes) for item in value)
     return True
+
+
+def _pattern_regex_classes(schema: dict[str, Any]) -> frozenset[str]:
+    """Return the classes escaped in patterns and pattern property names, including OpenAPI components."""
+    roots = [schema]
+    match schema:
+        case {"components": {"schemas": dict()}}:
+            roots.extend(schema["components"]["schemas"].values())
+    return frozenset(
+        _REGEX_CLASS_BY_ESCAPE[escape[1]]
+        for node in _iter_schema_nodes(roots)
+        for regex in (node.get("pattern"), *node.get("patternProperties", {}))
+        if isinstance(regex, str)
+        for escape in _REGEX_CLASS_ESCAPE.finditer(regex)
+    )
 
 
 def payload_strategy(case: SchemaCase) -> st.SearchStrategy[Any]:
@@ -165,14 +196,17 @@ def payload_strategy(case: SchemaCase) -> st.SearchStrategy[Any]:
     # Literal regex fragments provide constructive witnesses for intersections whose
     # Unicode alphabet is prohibitively unlikely under rejection sampling. Each
     # candidate is proved against the unchanged source, including refs and bounds.
-    patterns = [pattern for node in _iter_schema_nodes(schema) if isinstance(pattern := node.get("pattern"), str)]
-    literals = [pattern for pattern in patterns if not re.search(r"[.\\^$*+?{}\[\]|()]", pattern)]
+    literals = [
+        pattern
+        for node in _iter_schema_nodes(schema)
+        if isinstance(pattern := node.get("pattern"), str) and not re.search(r"[.\\^$*+?{}\[\]|()]", pattern)
+    ]
     if literals:
         candidates = dict.fromkeys([*literals, "".join(literals), "".join(reversed(literals))])
         if witnesses := [candidate for candidate in candidates if validator.is_valid(candidate)]:
             strategy = st.one_of(st.sampled_from(witnesses), strategy)
     strategy = strategy.filter(validator.is_valid)
-    if _UNICODE_BEYOND_SHARED_REGEX_TABLES and any(map(_UNICODE_CLASS_ESCAPE.search, patterns)):  # pragma: >=3.15 cover
-        strategy = strategy.filter(_within_shared_regex_tables)
+    if regex_classes := _pattern_regex_classes(schema):
+        strategy = strategy.filter(partial(_classified_alike, regex_classes=regex_classes))
     _payload_strategy_cache[cache_key] = strategy
     return strategy
