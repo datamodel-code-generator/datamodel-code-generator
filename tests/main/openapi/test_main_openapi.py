@@ -834,12 +834,20 @@ def test_main_openapi_discriminator_variant_tag_warnings(
         ("dataclasses.dataclass", ["--output-model-type", "dataclasses.dataclass"]),
         ("msgspec.Struct", ["--output-model-type", "msgspec.Struct"]),
         ("msgspec_tagged_unions", ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"]),
+        ("collapse_pydantic_v2.BaseModel", ["--collapse-reuse-models"]),
+        (
+            "collapse_msgspec_tagged_unions",
+            ["--collapse-reuse-models", "--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"],
+        ),
     ],
 )
 def test_main_openapi_discriminator_reuse_variant_mapping(
     output_file: Path, expected_name: str, extra_args: list[str]
 ) -> None:
-    """Give a variant that reuse replaced the tag that a discriminator mapping gives its schema, at runtime too."""
+    """Give a variant that reuse replaced the tag that a discriminator mapping gives its schema, at runtime too.
+
+    Collapsed reuse keeps the released output, which cannot decode such tags, and warns about each union.
+    """
     import msgspec
 
     name = "discriminator_reuse_variant_mapping"
@@ -867,8 +875,12 @@ def test_main_openapi_discriminator_reuse_variant_mapping(
         EXPECTED_OPENAPI_PATH / name / f"{expected_name}_warnings.txt",
     )
     decoded = []
-    for union, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
-        with _generated_model(output_file, name, union) as model:
+    with _generated_model(output_file, name, "Dog") as dog:
+        namespace = vars(sys.modules[dog.__module__])
+        for union, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+            if (model := namespace.get(union)) is None:
+                decoded.append(f"{union}: not generated\n")
+                continue
             for payload in payloads:
                 try:
                     if "msgspec.Struct" in extra_args:

@@ -2941,6 +2941,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
         self._renamed_types: dict[str, str] = {}
+        self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
+        self._collapsed_reuse_users: dict[int, tuple[DataType, Reference]] = {}
         self._quotes_hidden_types = False
 
         self.keyword_only = config.keyword_only
@@ -3639,7 +3641,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     break
 
                 for canonical, duplicate in duplicates:
-                    self.generation_store.redirect_reference_users(duplicate.reference, canonical.reference)
+                    self.__redirect_collapsed_reuse_users(duplicate, canonical)
                     for child in duplicate.reference.iter_data_model_children():
                         self.generation_store.set_base_classes(
                             child,
@@ -4111,10 +4113,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                 tags: list[_DiscriminatorTag] = []
                 union_name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
+                collapsed_unions = self.__get_collapsed_unions(model, field)
                 field_name_mode: Literal["resolved", "either"] = (
                     "resolved" if field.SUPPORTS_DISCRIMINATOR else "either"
                 )
-                for data_type in field.data_type.data_types:
+                for index, data_type in enumerate(field.data_type.data_types):
                     if not data_type.reference:  # pragma: no cover
                         continue
                     discriminator_model = data_type.reference.source
@@ -4141,6 +4144,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         values=discriminator_values,
                         field_name_mode=field_name_mode,
                     )
+                    for collapsed_name, collapsed_types, collapsed_mapping in (
+                        (union_name, field.data_type.data_types, mapping),
+                        *collapsed_unions,
+                    ):
+                        self.__record_collapsed_variant_tags(
+                            discriminator_model,
+                            collapsed_name,
+                            collapsed_types[index],
+                            property_name=property_name,
+                            field_name=field_name,
+                            mapping=collapsed_mapping,
+                            values=discriminator_values,
+                            field_name_mode=field_name_mode,
+                        )
                     has_one_literal = False
                     for discriminator_field in discriminator_model.fields:
                         if discriminator_field.name != field_name and (
@@ -4402,7 +4419,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 # A module written earlier names the value, as a field of a collapsed root model does, so it stays.
                 continue
             if isinstance(model, Enum) or self.collapse_reuse_models:
-                self.__redirect_removed_reuse_users(model.reference, cached_model_reference)
+                self.__redirect_removed_reuse_users(model, cached_model)
                 duplicates.append(model)
             elif id(model.reference) in typed_map_values:
                 self.generation_store.redirect_model_reference_users(model, models, cached_model_reference)
@@ -4417,14 +4434,26 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for duplicate in duplicates:
             models.remove(duplicate)
 
-    def __redirect_removed_reuse_users(self, old_reference: Reference, new_reference: Reference) -> None:
+    def __redirect_removed_reuse_users(self, duplicate: DataModel, canonical: DataModel) -> None:
         """Redirect every user of a duplicate that reuse removes, remembering what each user referred to.
 
         Modules processed earlier already imported the duplicate, so their imports are corrected after processing.
         """
         users = self._removed_reuse_users
-        for user in self.generation_store.redirect_reference_users(old_reference, new_reference):
-            users.setdefault(id(user), (user, []))[1].append(old_reference.path)
+        for user in self.__redirect_collapsed_reuse_users(duplicate, canonical):
+            users.setdefault(id(user), (user, []))[1].append(duplicate.reference.path)
+
+    def __redirect_collapsed_reuse_users(self, duplicate: DataModel, canonical: DataModel) -> list[DataType]:
+        """Redirect every user of a duplicate that collapsed reuse removes to the kept model, remembering the duplicate.
+
+        A discriminated union keeps mapping the duplicate to the tags of its own schema, so they are compared with
+        the tags of the kept model.
+        """
+        users = self.generation_store.redirect_reference_users(duplicate.reference, canonical.reference)
+        for user in users:
+            self._collapsed_reuse_users.setdefault(id(user), (user, duplicate.reference))
+        self._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)
+        return users
 
     def __find_duplicate_models_across_modules(
         self,
@@ -4527,7 +4556,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if module != duplicate_module:
                     continue
                 if isinstance(duplicate_model, Enum) or not supports_inheritance or self.collapse_reuse_models:
-                    self.generation_store.redirect_reference_users(duplicate_model.reference, shared_ref)
+                    self.__redirect_collapsed_reuse_users(duplicate_model, canonical_model)
                     models_to_remove[module].add(duplicate_model)
                 else:
                     inherited_model = duplicate_model.create_reuse_model(shared_ref)
@@ -5159,6 +5188,63 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._variant_discriminator_tags[key] = _VariantDiscriminatorTags(
                 variant, property_name, values, union_name, {}
             )
+
+    def __get_collapsed_unions(
+        self, model: DataModel, field: DataModelFieldBase
+    ) -> list[tuple[str, list[DataType], dict[str, str]]]:
+        """Return the discriminated unions that collapsed reuse removed as duplicates of a union field of a model.
+
+        Users of a removed duplicate use the kept model, so their union decodes only the tags the kept one gives.
+        """
+        unions: list[tuple[str, list[DataType], dict[str, str]]] = []
+        if not (duplicates := self._collapsed_reuse_models.get(id(model))):
+            return unions
+        index = model.fields.index(field)
+        for duplicate in duplicates:
+            if len(duplicate.fields) != len(model.fields):  # pragma: no cover
+                continue
+            duplicate_field = duplicate.fields[index]
+            if not isinstance(discriminator := duplicate_field.extras.get("discriminator"), dict) or len(
+                data_types := duplicate_field.data_type.data_types
+            ) != len(field.data_type.data_types):  # pragma: no cover
+                continue
+            name = (
+                duplicate.class_name
+                if self._is_root_model(duplicate)
+                else f"{duplicate.class_name}.{duplicate_field.name}"
+            )
+            unions.append((name, data_types, discriminator.get("mapping", {})))
+        return unions
+
+    def __record_collapsed_variant_tags(  # noqa: PLR0913
+        self,
+        variant: DataModel,
+        union_name: str,
+        data_type: DataType,
+        *,
+        property_name: str,
+        field_name: str,
+        mapping: dict[str, str],
+        values: list[DiscriminatorValue],
+        field_name_mode: Literal["original", "resolved", "either"],
+    ) -> None:
+        """Remember the tags a union maps a variant to when collapsed reuse replaced the model the union names.
+
+        The union maps the removed duplicate to the tags its own schema, the mapping or its name give, which the kept
+        model need not carry. They replace the tags derived from the kept model for that union.
+        """
+        user, reference = self._collapsed_reuse_users.get(id(data_type), (None, None))
+        if user is not data_type or reference is None or not isinstance(removed := reference.source, DataModel):
+            return
+        key = (id(variant), property_name)
+        if set(tags := _get_discriminator_values(removed, field_name, mapping, field_name_mode=field_name_mode)) != set(
+            values
+        ):
+            self._variant_discriminator_tags.setdefault(
+                key, _VariantDiscriminatorTags(variant, property_name, values, union_name, {})
+            ).others[union_name] = tags
+        elif (recorded := self._variant_discriminator_tags.get(key)) is not None:
+            recorded.others.pop(union_name, None)
 
     def __warn_about_dropped_constraints(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR6301
         """Warn once per field whose constraints the output model leaves out on its type."""
@@ -7219,6 +7305,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Build module structure from sorted models."""
         module_models = _group_models_by_module(sorted_data_models.values(), module_split_mode)
         model_to_module_models, model_path_to_module_name = _index_module_models(module_models, module_split_mode)
+        self._collapsed_reuse_models.clear()
+        self._collapsed_reuse_users.clear()
         for _, models in module_models:
             self.__delete_duplicate_models(models)
             self.__replace_duplicate_name_in_module(models)

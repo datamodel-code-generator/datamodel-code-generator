@@ -72,3 +72,60 @@ components:
         mapping:
           goldie: "#/components/schemas/Goldfish"
           dog: "#/components/schemas/Dog"
+    Cage:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+            - $ref: "#/components/schemas/Hound"
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: "#/components/schemas/Cat"
+              dog: "#/components/schemas/Hound"
+    Hound:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        barks:
+          type: boolean
+    Basket:
+      type: object
+      properties:
+        pet:
+          oneOf:
+            - $ref: "#/components/schemas/Kitten"
+            - $ref: "#/components/schemas/Hound"
+          discriminator:
+            propertyName: kind
+            mapping:
+              kitty: "#/components/schemas/Kitten"
+              dog: "#/components/schemas/Hound"
+    Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: bird
+        wings:
+          type: integer
+    Parrot:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: bird
+        wings:
+          type: integer
+    Aviary:
+      oneOf:
+        - $ref: "#/components/schemas/Parrot"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          bird: "#/components/schemas/Parrot"
+          dog: "#/components/schemas/Dog"
