@@ -12505,7 +12505,8 @@ another status or extra headers. For a status the operation declares, exactly, b
 `get_pet` in the [quick start](#4-implement-the-operations) does.
 
 A status the operation does not declare is sent unchecked: the body is encoded as JSON without validation, and
-`HTTPResult(404)` without a body sends an empty `404`.
+`HTTPResult(404)` without a body sends an empty `404`. A success status that declares content always sends content, so
+`HTTPResult(200)` without a body sends `None` through that response's model; see [Responses](#responses).
 
 A Starlette `Response` is sent as it is, for anything else, such as another media type or repeated headers. See
 [Responses](#responses) for `null` bodies and empty responses.
@@ -13286,11 +13287,15 @@ without validation, and without a body as an empty response. A Starlette `Respon
 else, such as another media type or repeated headers. A response leaves out the fields its model leaves unset, so a
 `pydantic_v2.dataclass` sends `null` only for a field set to `None`, and a field holding `MISSING` not at all.
 
-A declared response whose default media type is JSON and whose model type accepts `null`, as for the request bodies
-above, sends `None` as the JSON body `null` with that media type: a bare `None` for the primary response, and an
-`HTTPResult` without a body or with `None` for an exact status, a range such as `2XX`, or `default`. Under any other
-response an `HTTPResult` without a body is an empty response without a `Content-Type`, as it always is for a HEAD
-operation and for the statuses `1XX`, `204`, `205`, and `304`.
+A success (`2XX`) response that declares content always sends content. `None`, as a bare value or as an `HTTPResult`
+without a body, goes through the response's model like any other value, as FastAPI's `response_model` takes it: a
+response whose default media type is JSON and whose model type accepts `null`, as for the request bodies above, sends
+the JSON body `null`, and any other one answers `500` with a `ResponseValidationError`. This holds for a status the
+response declares exactly, by a range such as `2XX`, or as `default`. Any other status sends `None` as `null` under a
+JSON response whose model accepts `null`, and otherwise as an empty response without a `Content-Type`, such as
+`HTTPResult(404)` for a declared `404`, so the client raises the status error with an empty body. A status that no
+response declares, or whose response declares no content, sends `None` as an empty response too, as a HEAD operation
+and the statuses `1XX`, `204`, `205`, and `304` always do.
 
 ### Registration
 

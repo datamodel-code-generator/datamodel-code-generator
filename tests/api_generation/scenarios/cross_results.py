@@ -2,7 +2,9 @@
 
 The server answers each call's `case` with its primary value, an `HTTPResult` of another status, or a Starlette
 response of another media type; the client reports the value and status it decoded, or the error it raised. A text
-that may be null is answered as a result without a body, as a bare `None`, and as a value.
+that may be null is answered as a result without a body, as a bare `None`, and as a value. A success result without
+a body goes through its response's model, `null` where it accepts null and a 500 where it does not, and an error
+result without a body is an empty response.
 """
 
 from __future__ import annotations
@@ -31,6 +33,9 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
         "created": lambda: result(201, models.Thing(id=3), headers={"Location": "/results/3"}),
         "nothing": lambda: result(204, None),
         "accepted": lambda: result(202, {"queued": True}),
+        "missing-body": lambda: result(200),
+        "accepted-none": lambda: result(202),
+        "not-found": lambda: result(404),
         "csv": lambda: Response("a,b\n1,2\n", media_type="text/csv"),
         "octets": lambda: Response(b"\x00\x01", media_type="application/octet-stream"),
         "png": lambda: Response(b"\x89PNG", media_type="image/png"),
@@ -78,6 +83,9 @@ def calls(kit: Kit) -> Calls:
         ),
         ("get_result nothing", lambda: view.get_result(case="nothing")),
         ("get_result accepted", lambda: view.get_result(case="accepted")),
+        ("get_result 200 without a body", lambda: once.get_result(case="missing-body")),
+        ("get_result 2XX without a body", lambda: view.get_result(case="accepted-none")),
+        ("get_result 4XX without a body", lambda: api.get_result(case="not-found")),
         ("get_result csv", lambda: view.get_result(case="csv", response_media_type="text/csv")),
         (
             "get_result octets",

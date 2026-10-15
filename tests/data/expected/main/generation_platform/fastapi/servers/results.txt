@@ -40,7 +40,7 @@ service DefaultService without its methods: TypeError
 < 500 application/problem+json {"title":"Broken"}
 > GET /results?case=missing-body
   get_result(missing-body)
-< 200 - b''
+< ResponseValidationError: ['Input should be a valid dictionary or instance of Thing']
 > GET /results?case=response
   get_result(response)
 < 200 application/json {"id":3}
