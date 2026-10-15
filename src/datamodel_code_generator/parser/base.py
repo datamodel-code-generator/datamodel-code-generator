@@ -1838,6 +1838,30 @@ def _same_named_reference(model: DataModel, name: str | None, *, skips_aliases: 
     )
 
 
+def _model_family(model: DataModel, derived_models: Mapping[str, list[DataModel]]) -> dict[str, DataModel]:
+    """Return the models that the model inherits from or passes its fields on to, transitively, by path."""
+    family = {model.path: model}
+    pending = [model]
+    while pending:
+        current = pending.pop()
+        for relative in chain(_find_base_classes(current), derived_models.get(current.path, ())):
+            if relative.path not in family:
+                family[relative.path] = relative
+                pending.append(relative)
+    return family
+
+
+def _family_field_names(family: Mapping[str, DataModel]) -> set[str]:
+    """Return the Python names and aliases of the fields of the family's models."""
+    return {
+        name
+        for member in family.values()
+        for field in member.fields
+        for name in (field.name, field.alias, *(field.validation_aliases or ()))
+        if name is not None
+    }
+
+
 def _hidden_type_names(model: DataModel) -> Collection[str | None]:
     """Return the names of the model's fields that hide a type named by an annotation of the model.
 
@@ -2994,6 +3018,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._has_runtime_expressions = False
         self._constrained_decimal_alias_model_ids: set[int] = set()
         self._hidden_named_types: dict[tuple[str, str | None], bool] = {}
+        self._hiding_field_names: dict[tuple[str, str | None], str] = {}
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
         self._renamed_types: dict[str, str] = {}
@@ -5632,12 +5657,28 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 return True
         return False
 
-    def __rename_named_type(self, field: DataModelFieldBase, reference: Reference, class_names: set[str]) -> None:
-        """Rename the type that the field hides."""
+    def __rename_named_type(
+        self,
+        field: DataModelFieldBase,
+        reference: Reference,
+        class_names: set[str],
+        all_models: Collection[DataModel],
+        derived_models: Mapping[str, list[DataModel]],
+    ) -> None:
+        """Rename the type that the field hides to a name that no field of a family using the type has."""
         source = cast("DataModel", reference.source)
         resolver = ModelResolver(snake_case_field=self.snake_case_field, remove_suffix_number=True)
         resolver._reset_for_reuse(class_names.copy())  # noqa: SLF001
         resolver.exclude_names.add(cast("str", field.name))
+        resolver.exclude_names.update(
+            name
+            for user in all_models
+            if any(
+                (user_reference := data_type.reference) is not None and user_reference.path == reference.path
+                for data_type in user.all_data_types
+            )
+            for name in _family_field_names(_model_family(user, derived_models))
+        )
         self._renamed_types.setdefault(reference.path, source.class_name)
         source.class_name = resolver.add(["type"], source.class_name).name
         class_names.add(source.class_name)
@@ -5657,14 +5698,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         if (hidden := self._hidden_named_types.get((model.path, field_name))) is not None:
             return hidden
-        family = {model.path: model}
-        pending = [model]
-        while pending:
-            current = pending.pop()
-            for relative in chain(_find_base_classes(current), derived_models.get(current.path, ())):
-                if relative.path not in family:
-                    family[relative.path] = relative
-                    pending.append(relative)
+        family = _model_family(model, derived_models)
         hidden = any(
             field.name == field_name
             and self.__hides_named_type(member, field, positions, use_deferred_annotations=use_deferred_annotations)
@@ -5679,7 +5713,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> None:
         """Rename a field named like a type of its class's annotations where the finished class hides that type.
 
-        A model that normalizes field names has renamed every field named like its own type already.
+        A model that normalizes field names has renamed every field named like its own type already. The classes of
+        one family write the field under one new name, which no field of the family has as its name or alias.
         """
         model_type = self.data_model_type
         if not model_type.SUPPORTS_FIELD_RENAMING:
@@ -5689,7 +5724,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
         positions = {model.path: index for index, model in enumerate(models)}
         derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
-        for derived_model in {id(model): model for model in chain(self.results, models)}.values():
+        all_models = {id(model): model for model in chain(self.results, models)}.values()
+        for derived_model in all_models:
             for base_class in _find_base_classes(derived_model):
                 derived_models[base_class.path].append(derived_model)
         rename_type = (
@@ -5708,14 +5744,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 ):
                     continue
                 if rename_type:
-                    self.__rename_named_type(field, reference, class_names)
+                    self.__rename_named_type(field, reference, class_names, all_models, derived_models)
                     continue
-                resolver = ModelResolver(
-                    exclude_names={cast("str", field_name)},
-                    snake_case_field=self.snake_case_field,
-                    remove_suffix_number=True,
-                )
-                _rename_field_preserving_alias(field, resolver._get_unique_field_name(cast("str", field_name)))  # noqa: SLF001
+                if (new_name := self._hiding_field_names.get((model.path, field_name))) is None:
+                    family = _model_family(model, derived_models)
+                    resolver = ModelResolver(
+                        exclude_names=_family_field_names(family),
+                        snake_case_field=self.snake_case_field,
+                        remove_suffix_number=True,
+                    )
+                    new_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
+                    self._hiding_field_names.update(dict.fromkeys(((path, field_name) for path in family), new_name))
+                _rename_field_preserving_alias(field, new_name)
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __set_one_literal_on_default(self, models: list[DataModel], *, can_retain_cache: bool) -> None:
@@ -8372,6 +8412,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module_to_import: dict[ModulePath, Imports] = {}
         contexts: list[ModuleContext] = []
         self._hidden_named_types.clear()
+        self._hiding_field_names.clear()
         self._variant_discriminator_tags.clear()
         self._removed_reuse_users.clear()
         self._renamed_types.clear()
