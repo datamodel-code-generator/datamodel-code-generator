@@ -198,3 +198,23 @@ class DefaultService(Protocol):
         """
         Handle POST /multi-optional.
         """
+
+    @abstractmethod
+    def post_ok(
+        self,
+        *,
+        body: nullable_basemodel_models.Ok,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /oks.
+        """
+
+    @abstractmethod
+    def post_any_alias(
+        self,
+        *,
+        body: nullable_basemodel_models.AnyAlias,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle POST /any-aliases.
+        """

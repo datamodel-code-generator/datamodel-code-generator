@@ -4,7 +4,7 @@ The server answers each call's `case` with a bare `None`, an `HTTPResult` withou
 reports the `None` or value it decoded, or the error it raised. An inline object schema that admits null takes
 `None` as its body and its result, and still refuses an object its schema does not. An operation that declares only
 a `2XX` or a `default` response sends a bare value as that response, and one that declares only a `4XX` response
-refuses a bare value.
+refuses a bare value. An `x-python-type` of `Literal` with None or of `Any` under an alias takes `None` too.
 """
 
 from __future__ import annotations
@@ -34,6 +34,8 @@ OPERATIONS = (
     "get_accepted",
     "get_default",
     "get_error",
+    "get_ok",
+    "get_any_alias",
 )
 
 
@@ -97,4 +99,7 @@ def calls(kit: Kit) -> Calls:
         ("get_default value", lambda: view.get_default(case="thing")),
         ("get_error bare", lambda: once.get_error(case="word")),
         ("get_error 4XX", lambda: api.get_error(case="missing")),
+        ("get_ok None", lambda: api.get_ok(case="none")),
+        ("get_ok 4XX", lambda: api.get_ok(case="missing")),
+        ("get_any_alias None", lambda: api.get_any_alias(case="none")),
     ]

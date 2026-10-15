@@ -37,6 +37,8 @@ OperationDependencies = TypedDict(
         'post_extended': Sequence[params.Depends],
         'post_multi': Sequence[params.Depends],
         'post_multi_optional': Sequence[params.Depends],
+        'post_ok': Sequence[params.Depends],
+        'post_any_alias': Sequence[params.Depends],
     },
     total=False,
 )
@@ -240,6 +242,30 @@ class PostMultiOptional:
     BODY: Final = BodyAdapter(
         media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_basemodel_models.Item)), BodyMedia(media_type='text/plain', kind='text', adapter=TypeAdapter(nullable_basemodel_models.MultiOptionalPostRequest))),
         required=False,
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class PostOk:
+    """Plans of the post_ok operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_basemodel_models.Ok)),),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class PostAnyAlias:
+    """Plans of the post_any_alias operation."""
+
+    BODY: Final = BodyAdapter(
+        media=(BodyMedia(media_type='application/json', kind='json', adapter=TypeAdapter(nullable_basemodel_models.AnyAlias)),),
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},

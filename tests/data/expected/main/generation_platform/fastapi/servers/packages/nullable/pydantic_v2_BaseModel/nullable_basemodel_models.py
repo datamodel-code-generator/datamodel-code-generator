@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, RootModel, constr
+from typing_extensions import Any as Any_1
 
 
 class Item(BaseModel):
@@ -26,6 +27,14 @@ class Color(Enum):
     red = 'red'
     blue = 'blue'
     NoneType_None = None
+
+
+class Ok(RootModel[Literal['ok', None]]):
+    root: Literal['ok', None]
+
+
+class AnyAlias(RootModel[Any_1]):
+    root: Any_1
 
 
 class TextsPostRequest(RootModel[constr(max_length=5) | None]):

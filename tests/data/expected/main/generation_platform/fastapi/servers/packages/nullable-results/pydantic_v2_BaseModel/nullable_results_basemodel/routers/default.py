@@ -519,6 +519,78 @@ def _add_get_error(
     )
 
 
+def _add_get_ok(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    get_ok_handler = checked(
+        default.get_ok,
+        'The default.get_ok method of GET /oks',
+        ('case',),
+    )
+
+    def get_ok(
+        *,
+        case: Annotated[str, Query(alias='case')],
+    ) -> object:
+        return dispatch(
+            get_ok_handler(
+                case=case,
+            ),
+            contract.GetOk.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/oks',
+        get_ok,
+        methods=['GET'],
+        status_code=200,
+        response_model=nullable_results_basemodel_models.Ok,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='getOk',
+        response_description='ok or null.',
+        dependencies=wiring.dependencies.get('get_ok'),
+    )
+
+
+def _add_get_any_alias(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    get_any_alias_handler = checked(
+        default.get_any_alias,
+        'The default.get_any_alias method of GET /any-aliases',
+        ('case',),
+    )
+
+    def get_any_alias(
+        *,
+        case: Annotated[str, Query(alias='case')],
+    ) -> object:
+        return dispatch(
+            get_any_alias_handler(
+                case=case,
+            ),
+            contract.GetAnyAlias.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/any-aliases',
+        get_any_alias,
+        methods=['GET'],
+        status_code=200,
+        response_model=nullable_results_basemodel_models.AnyAlias,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='getAnyAlias',
+        response_description='Any value.',
+        dependencies=wiring.dependencies.get('get_any_alias'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('get_text', _add_get_text),
     ('head_text', _add_head_text),
@@ -534,6 +606,8 @@ LITERAL_ROUTES: Final = (
     ('get_accepted', _add_get_accepted),
     ('get_default', _add_get_default),
     ('get_error', _add_get_error),
+    ('get_ok', _add_get_ok),
+    ('get_any_alias', _add_get_any_alias),
 )
 TEMPLATED_ROUTES: Final = ()
 
