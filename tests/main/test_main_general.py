@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
 import inspect
 import json
 import platform
@@ -16,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 from pathlib import Path
 from threading import Event
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
 
 import black
 import pytest
@@ -175,6 +176,32 @@ def test_failed_untyped_nullable_map_parse_disposes_the_typed_parser(mocker: Moc
         )
 
     assert dispose.call_count == 1
+
+
+class _InterpreterVersion(NamedTuple):
+    major: int
+    minor: int
+    micro: int
+    releaselevel: str
+    serial: int
+
+
+@pytest.mark.abnormal_path("no interpreter newer than every supported target exists to import the package on")
+def test_default_target_python_version_follows_the_interpreter(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Default to the interpreter's version, or to the newest target on an interpreter newer than every target."""
+    model_path = Path(datamodel_code_generator.__file__).parent / "model" / "__init__.py"
+    defaults = []
+    for interpreter in (_InterpreterVersion(3, 12, 0, "final", 0), _InterpreterVersion(3, 99, 0, "final", 0)):
+        spec = importlib.util.spec_from_file_location(
+            "datamodel_code_generator.model", model_path, submodule_search_locations=[str(model_path.parent)]
+        )
+        module = importlib.util.module_from_spec(spec)
+        monkeypatch.setattr(sys, "version_info", interpreter)
+        spec.loader.exec_module(module)
+        defaults.append(f"{interpreter.major}.{interpreter.minor} -> {module.DEFAULT_TARGET_PYTHON_VERSION.value}")
+    monkeypatch.undo()
+
+    assert_output("\n".join(defaults) + "\n", EXPECTED_MAIN_PATH / "default_target_python_version.txt")
 
 
 @freeze_time("2019-07-26")

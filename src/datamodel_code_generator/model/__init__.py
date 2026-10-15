@@ -20,7 +20,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.types import DataTypeManager as DataTypeManagerABC
 
-DEFAULT_TARGET_PYTHON_VERSION = PythonVersion(f"{sys.version_info.major}.{sys.version_info.minor}")
+try:
+    DEFAULT_TARGET_PYTHON_VERSION = PythonVersion(f"{sys.version_info.major}.{sys.version_info.minor}")
+except ValueError:
+    DEFAULT_TARGET_PYTHON_VERSION = max(PythonVersion, key=lambda version: version.version_key)
 
 
 class DataModelSet(NamedTuple):
