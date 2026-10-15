@@ -16,6 +16,19 @@ paths:
               meta: {contentType: application/xml}
       responses:
         "204": {description: Done.}
+  /union-parts:
+    post:
+      operationId: postUnionParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              anyOf:
+                - {type: object, properties: {a: {type: integer}}}
+                - {type: object, properties: {b: {type: string}}}
+      responses:
+        "204": {description: Done.}
   /encoded-types:
     post:
       operationId: postEncodedTypes

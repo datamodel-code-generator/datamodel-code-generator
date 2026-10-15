@@ -1,6 +1,6 @@
 # bodies
 serve pydantic_v2.BaseModel
-service DefaultService: post_account, post_check, post_choice_files, post_choices, post_closed_form, post_closed_parts, post_extra_bases, post_extra_counts, post_extra_files, post_extra_lists, post_extra_scores, post_extras, post_form, post_item, post_label, post_native_form, post_note, post_profile, post_raw, post_variant, put_archive, put_blob, put_document, search, upload
+service DefaultService: post_account, post_check, post_choice_files, post_choices, post_closed_form, post_closed_parts, post_extra_bases, post_extra_counts, post_extra_files, post_extra_lists, post_extra_scores, post_extras, post_form, post_item, post_label, post_native_form, post_note, post_nullable_search, post_profile, post_raw, post_variant, put_archive, put_blob, put_document, search, upload
 service DefaultService without its methods: TypeError
 > POST /items
   post_item(body=None)

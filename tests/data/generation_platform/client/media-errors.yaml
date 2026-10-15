@@ -56,6 +56,19 @@ paths:
       responses:
         '204':
           description: A form-data body that is no object.
+  /union-parts:
+    post:
+      operationId: postUnionParts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              anyOf:
+                - {type: object, properties: {a: {type: integer}}}
+                - {type: object, properties: {b: {type: string}}}
+      responses:
+        '204':
+          description: A form-data body that is one of several objects.
   /form-data-encodings:
     post:
       operationId: postFormDataEncodings

@@ -1199,8 +1199,15 @@ class Planner:  # noqa: PLR0904
         )
 
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:
-        """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model."""
-        if (use := media.use) is None or (media.kind == "multipart" and use.type is None):
+        """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model.
+
+        A multipart body of a union of several schemas declares no members its parts could be read by.
+        """
+        if (
+            (use := media.use) is None
+            or (media.kind == "multipart" and use.type is None)
+            or (use.parts is not None and not use.parts.object)
+        ):
             self.unsupported(operation, (media,))
             return spec
         if (encoded := _encoded(media)) is not None:
