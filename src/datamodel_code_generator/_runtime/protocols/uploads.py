@@ -182,9 +182,14 @@ class UploadPlan(Generic[T, C]):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _Limits:
-    """The effective limits of one helper call, each from the first layer that sets it; None removes a limit."""
+    """The effective limits of one helper call, each from the first layer that sets it; None removes a limit.
+
+    `chunk_path` names where the chunk size comes from: the client's helper default when it sets the size and the
+    call's `upload_options` does not, else the call's option, which also raises the kind's default.
+    """
 
     chunk_bytes: int = 8 * 1024 * 1024
+    chunk_path: tuple[str, ...] = ("upload_options", "chunk_bytes")
     total_timeout: float | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
@@ -229,9 +234,16 @@ def _limits(
         for name in request.extra_query or ():
             if name in plan.queries:
                 raise _invalid(plan, ("options", "extra_query", name))
-    kinds = (upload_options, core.helper_defaults(plan.helper_id))
+    kinds = (upload_options, defaults := core.helper_defaults(plan.helper_id))
+    chunk_path = _DEFAULTS.chunk_path
+    if (
+        layered((upload_options,), "chunk_bytes", None) is None
+        and layered((defaults,), "chunk_bytes", None) is not None
+    ):
+        chunk_path = ("helper_defaults", plan.helper_id, "chunk_bytes")
     return _Limits(
         chunk_bytes=layered(kinds, "chunk_bytes", _DEFAULTS.chunk_bytes),
+        chunk_path=chunk_path,
         total_timeout=layered(kinds, "total_timeout", _DEFAULTS.total_timeout),
         options=request,
         clock=core.clock,
@@ -1134,8 +1146,8 @@ def _resume_start(
     """Check the checkpoint's form, expiry, chunk size, and dot segments, then the source's size, before any send.
 
     A checkpoint that is not JSON or does not fit the helper raises ConfigurationError. Its chunk size must not
-    exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory. Saved values are encoded as
-    the server's are when each request is built.
+    exceed the call's `chunk_bytes`, since one chunk is what an append holds in memory; the refusal names the option
+    that set the call's size. Saved values are encoded as the server's are when each request is built.
     """
     try:
         saved = _decoded(plan, plain_copy(state))
@@ -1144,7 +1156,7 @@ def _resume_start(
     if (expires_at := saved.expires_at) is not None and expires_at.timestamp() <= limits.clock.time():
         raise _invalid(plan, ("state",), "expired")
     if saved.chunk > limits.chunk_bytes:
-        raise _invalid(plan, ("upload_options", "chunk_bytes"))
+        raise _invalid(plan, limits.chunk_path)
     probe, append, completion = saved.bound
     _dotted(plan, plan.probed, probe, None)
     _dotted(plan, plan.appended, (*append, *_written(plan, 0, b"")), None)
