@@ -4029,7 +4029,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Import a type by its new name where a module processed before the type's module imported the old one.
 
         A field of the type's module can hide the type, which then gets a new name after modules that come first
-        built their imports of it. The stale import releases its name for the new one.
+        built their imports of it. The stale import releases the name it binds for the new one, found by name, as
+        neither the import of a package ``__init__`` nor a ``from .`` path leads back to the path it was added under.
         """
         if not (renamed := self._renamed_types):
             return
@@ -4045,9 +4046,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 and (import_ := ctx.imports.reference_paths.get(reference.path)) is not None
                 and (import_.import_ == old_name or (data_type.alias or "").endswith(f".{old_name}"))
             ]
+            if not stale_users:
+                continue
             for *_, import_ in stale_users:
                 ctx.imports.remove(import_)
-                ctx.scoped_model_resolver.delete((cast("str", import_.from_), import_.import_))
+            ctx.scoped_model_resolver.delete_names({import_.binding_name for *_, import_ in stale_users})
             for data_type, reference, model, _ in stale_users:
                 data_type.alias = self.__register_reference_import(
                     reference,
