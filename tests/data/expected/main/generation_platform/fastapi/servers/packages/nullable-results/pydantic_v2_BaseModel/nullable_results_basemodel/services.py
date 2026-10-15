@@ -22,7 +22,7 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.TextsGetResponse | HTTPResult[nullable_results_basemodel_models.TextsGetResponse | nullable_results_basemodel_models.TextsGetResponse1 | nullable_results_basemodel_models.Thing | nullable_results_basemodel_models.TextsGetResponse2 | Any | nullable_results_basemodel_models.Color | nullable_results_basemodel_models.Pet | None] | Response:
+    ) -> nullable_results_basemodel_models.TextsGetResponse | None | HTTPResult[nullable_results_basemodel_models.TextsGetResponse | nullable_results_basemodel_models.TextsGetResponse1 | nullable_results_basemodel_models.Thing | nullable_results_basemodel_models.TextsGetResponse2 | Any | nullable_results_basemodel_models.Color | nullable_results_basemodel_models.Pet | None] | Response:
         """
         Handle GET /texts.
         """
@@ -42,7 +42,7 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.ListsGetResponse | HTTPResult[nullable_results_basemodel_models.ListsGetResponse] | Response:
+    ) -> nullable_results_basemodel_models.ListsGetResponse | None | HTTPResult[nullable_results_basemodel_models.ListsGetResponse] | Response:
         """
         Handle GET /lists.
         """
@@ -62,7 +62,7 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.ValuesGetResponse | HTTPResult[nullable_results_basemodel_models.ValuesGetResponse] | Response:
+    ) -> nullable_results_basemodel_models.ValuesGetResponse | None | HTTPResult[nullable_results_basemodel_models.ValuesGetResponse] | Response:
         """
         Handle GET /values.
         """
@@ -123,7 +123,7 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.RangesGetResponse | HTTPResult[nullable_results_basemodel_models.RangesGetResponse] | Response:
+    ) -> nullable_results_basemodel_models.RangesGetResponse | None | HTTPResult[nullable_results_basemodel_models.RangesGetResponse] | Response:
         """
         Handle GET /ranges.
         """
