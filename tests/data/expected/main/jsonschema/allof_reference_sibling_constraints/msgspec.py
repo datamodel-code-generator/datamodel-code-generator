@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
@@ -27,9 +27,12 @@ class Point(Struct):
 Score: TypeAlias = Annotated[Count, Meta(le=100)]
 
 
-class Status(StrEnum):
+class Status(Enum):
     open = 'open'
     closed = 'closed'
+
+
+Pair: TypeAlias = Annotated[list[str], Meta(min_length=1)]
 
 
 Count1: TypeAlias = Annotated[Count, Meta(ge=5)]
@@ -45,3 +48,4 @@ class Measurement(Struct):
     point: Point | UnsetType = UNSET
     label: Count | UnsetType = UNSET
     status: Status | UnsetType = UNSET
+    pair: Pair | UnsetType = UNSET

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 from typing import Annotated
 
 from pydantic import Field, conint, constr
@@ -27,9 +27,12 @@ class Point:
 Score = TypeAliasType("Score", Annotated[int, Field(le=100)])
 
 
-class Status(StrEnum):
+class Status(Enum):
     open = 'open'
     closed = 'closed'
+
+
+Pair = TypeAliasType("Pair", Annotated[list[str], Field(..., min_length=1)])
 
 
 @dataclass
@@ -43,3 +46,4 @@ class Measurement:
     point: Point | None = None
     label: Count | None = None
     status: Status | None = None
+    pair: Pair | None = None

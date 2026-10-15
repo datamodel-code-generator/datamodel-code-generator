@@ -15,7 +15,10 @@
     "point": {
       "x": 1
     },
-    "label": 123
+    "label": 123,
+    "pair": [
+      "a"
+    ]
   },
   "invalid": {
     "count": 4,
@@ -27,6 +30,7 @@
     ],
     "limits": {
       "a": 11
-    }
+    },
+    "pair": []
   }
 }

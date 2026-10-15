@@ -198,7 +198,6 @@ _NO_CONSTRAINT_KEYWORDS: frozenset[str] = frozenset()
 _DECLARED_STRING_CONSTRAINT_KEYWORDS: frozenset[str] = STRING_KEYWORDS | {"minItems", "maxItems"}
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 _ALL_OF_REFERENCE_TARGET_EXCLUDED_FIELDS = frozenset({"ref", "enum", "allOf", "anyOf", "oneOf", "custom_type_path"})
-_ALL_OF_REFERENCE_TARGET_EXCLUDED_EXTRAS = frozenset({"const", "x-python-import", "x-python-type"})
 _ALL_OF_REFERENCE_VALUE_EXCLUDED_FIELDS = frozenset({
     "ref",
     "enum",
@@ -252,6 +251,12 @@ _ALLOF_BOUND_CONSTRAINT_FIELDS = frozenset({
     *_INHERITED_PROPERTY_COUNT_CONSTRAINT_FIELDS,
 })
 _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS = frozenset({"contains", "maxContains", "minContains"})
+_ALL_OF_REFERENCE_TARGET_EXCLUDED_EXTRAS = frozenset({
+    "const",
+    "x-python-import",
+    "x-python-type",
+    *_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
+})
 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY = "_raw_schema_explicit_field_extras"
 _INHERITED_TYPE_SHAPE_FIELDS = frozenset({
     "$dynamicRef",
@@ -621,7 +626,7 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
     """Describe the 0.83.0 shift of enum names or descriptions that give null an entry beside the named values.
 
     The entries are matched to the values without null, so a list with one entry per enum value, null included,
-    gives each value after null the entry of the value before it.
+    gives each value after null the entry of the value before it; an entry equal to the value's own is no shift.
     """
     if len(named_values) == len(obj.enum):
         return None
@@ -635,7 +640,7 @@ def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_
         )
         if len(entries) == len(obj.enum)
         for index, (position, value) in enumerate(zip(positions, named_values, strict=True))
-        if index != position
+        if index != position and entries[index] != entries[position]
     ]
     if not shifts:
         return None

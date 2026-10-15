@@ -51,6 +51,16 @@
       "nullable": true,
       "enum": [null, 1, 2],
       "x-enumNames": ["NIL", "ONE", "TWO"]
+    },
+    "undescribed_beside_null": {
+      "type": "string",
+      "enum": [null, "x"],
+      "x-enum-descriptions": [null, null]
+    },
+    "repeated_names_beside_null": {
+      "type": "string",
+      "enum": [null, "x", "y"],
+      "x-enum-varnames": ["A", "A", "B"]
     }
   }
 }
