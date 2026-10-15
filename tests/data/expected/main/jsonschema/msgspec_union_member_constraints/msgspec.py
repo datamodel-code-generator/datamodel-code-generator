@@ -25,7 +25,49 @@ Tags: TypeAlias = Annotated[str, Meta(max_length=3)]
 Code: TypeAlias = Annotated[str, Meta(max_length=3)]
 
 
+Amount: TypeAlias = Annotated[int, Meta(le=3)]
+
+
+Amount1: TypeAlias = Annotated[float, Meta(ge=5.0)]
+
+
+Ratio: TypeAlias = Annotated[int, Meta(le=3)]
+
+
+Level: TypeAlias = Annotated[int, Meta(gt=1)]
+
+
+Level1: TypeAlias = Annotated[float, Meta(ge=1.5, lt=10.0)]
+
+
+Step: TypeAlias = Annotated[int, Meta(multiple_of=2)]
+
+
+Step1: TypeAlias = Annotated[float, Meta(multiple_of=4.0)]
+
+
+Half: TypeAlias = Annotated[int, Meta(multiple_of=2)]
+
+
+Half1: TypeAlias = Annotated[float, Meta(multiple_of=0.5)]
+
+
+Gap: TypeAlias = Annotated[int, Meta(le=3)]
+
+
+Gap1: TypeAlias = Annotated[float, Meta(ge=5.5, le=5.9)]
+
+
 Short: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None
+
+
+Pair1: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+Pair: TypeAlias = Pair1 | int | list[int]
 
 
 class Upload(Struct):
@@ -36,3 +78,13 @@ class Upload(Struct):
     tags: list[str]
     code: Code | int
     short: Short
+    nickname: str | None
+    alias: str | int | list[int]
+    amount: int | Amount1
+    ratio: int | float
+    level: Level | Level1
+    step: Step | Step1
+    half: int | Half1
+    gap: Gap | Gap1
+    initials: NullableShort
+    pair: Pair
