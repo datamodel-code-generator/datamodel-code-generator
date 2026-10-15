@@ -837,8 +837,9 @@ and `allowReserved` apply in OpenAPI 3.1 and 3.2 documents, whose parts carry th
 so a delimited value that holds its style's delimiter (`,`, a space, or `|`) raises a request `DecodeError` with the
 reason `unencodable` before sending; OpenAPI 3.0 ignores them for `multipart/form-data`, and the member is written as
 one without them, in its `contentType`. Generation stops for a form whose exploded object that allows other properties
-shares the form with another such member or a `deepObject` member, which would write the same names, as it does for
-query parameters. The SDK does not check parts against the schema. A part header HTTPX2 refuses, and a part that is not
+shares the form with another such member, a `deepObject` member, or other properties the form's schema allows itself
+with `additionalProperties` as `true` or a schema, which would write the same names, as it does for query parameters.
+The SDK does not check parts against the schema. A part header HTTPX2 refuses, and a part that is not
 a `FieldPart` or a `FilePart` with a string name, raises a request `DecodeError` with the reason `unencodable` before
 sending. A body whose parts are all bytes is encoded once, with `Content-Length`; a body without parts, which HTTPX2
 would not send, is written by the SDK as its closing boundary alone, with the `multipart/form-data` Content-Type that
@@ -907,8 +908,10 @@ A `contentType` alone writes the member as one pair of that text, or of JSON for
 type, such as `application/xml`, stops generation with `The member content has no builtin encoding`. A style the
 member's type has no form for, such as `deepObject` for an array, stops generation too, as it does for a query
 parameter. Generation also stops for a form whose exploded object that allows other properties shares the form with
-another such member or a `deepObject` member, which would write the same names. The other members are written as in a
-form without such members. The generated FastAPI server reads these members as the client writes them.
+another such member, a `deepObject` member, or other properties the form's schema allows itself with
+`additionalProperties` as `true` or a schema, which would write the same names. A form that leaves its other
+properties unsaid is written, and its exploded object takes the names no other member writes. The other members are
+written as in a form without such members. The generated FastAPI server reads these members as the client writes them.
 
 ## Redirects and transport construction
 

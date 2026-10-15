@@ -2288,8 +2288,8 @@ class _SchemaLocations:
             return self.property_location(target, name, active)
         return None
 
-    def additional_location(self, schema: _Declaration, active: set[_Declaration]) -> _Declaration | None:
-        """Find the schema that types a schema's other properties, through allOf branches and references.
+    def additional_owner(self, schema: _Declaration, active: set[_Declaration]) -> _Declaration | None:
+        """Find the schema that says what a schema's other properties are, through allOf branches and references.
 
         A schema that says anything of its other properties itself hides what its branches and references say, and
         one that its own branches or references lead back to says nothing more.
@@ -2297,12 +2297,12 @@ class _SchemaLocations:
         node = _LEAF if schema in active else self.at(schema)
         active.add(schema)
         if node.additional != "absent":
-            return _child(schema, "additionalProperties") if node.additional == "schema" else None
+            return schema
         for index, branch in reversed(list(enumerate(node.all_of))):
-            if branch != "other" and (found := self.additional_location(_child(schema, "allOf", str(index)), active)):
+            if branch != "other" and (found := self.additional_owner(_child(schema, "allOf", str(index)), active)):
                 return found
         if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
-            return self.additional_location(target, active)
+            return self.additional_owner(target, active)
         return None
 
     def own_property(self, schema: _Declaration, name: str) -> bool:
@@ -2601,6 +2601,7 @@ class _Reader(_SchemaLocations):
         Only a form's members, which its encodings can give a style, are written member by member, and only a form
         has other properties of its own.
         """
+        extras, declared = self.extras(schema, locate) if members else (None, False)
         return EncodingFacts(
             self.kinds(schema),
             self.shape(schema, locate, form=False),
@@ -2608,23 +2609,25 @@ class _Reader(_SchemaLocations):
             tuple((locate(found), self.shape(found, locate, form=False)) for found in self.members(schema).values())
             if members
             else (),
-            self.extras(schema, locate) if members else None,
+            extras,
+            declared=declared,
         )
 
-    def extras(self, schema: _Declaration, locate: _Locate) -> KindSite | None:
-        """Return where an object schema types the values of its other properties, its allOf branches' included.
+    def extras(self, schema: _Declaration, locate: _Locate) -> tuple[KindSite | None, bool]:
+        """Return where an object schema types the values of its other properties, and whether it allows them itself.
 
-        A schema of any value types none.
+        Both are its allOf branches' or references' when it says nothing of them. `true` allows them and types none,
+        as does a schema of any value.
         """
         _, resolved = self.resolved(schema)
-        found = (
-            self.additional_location(resolved, set())
-            if (self.kinds(resolved) or frozenset()) - _NULL == _OBJECT
-            else None
+        owner = (
+            self.additional_owner(resolved, set()) if (self.kinds(resolved) or frozenset()) - _NULL == _OBJECT else None
         )
-        if found is None or not self.borrow(found):
-            return None
-        return self.field(found, "", locate, (locate(schema), locate(resolved)), form=True).kind
+        said = "absent" if owner is None else self.at(owner).additional
+        declared = said in {"schema", "other"}
+        if owner is None or said != "schema" or not self.borrow(found := _child(owner, "additionalProperties")):
+            return None, declared
+        return self.field(found, "", locate, (locate(schema), locate(resolved)), form=True).kind, declared
 
     def resolved(self, declaration: _Declaration) -> tuple[dict[str, YamlValue], _Declaration]:
         """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
