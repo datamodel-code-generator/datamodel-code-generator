@@ -6733,10 +6733,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return False
 
     def _requires_explicit_deferred_annotations(self, models: list[DataModel], config: ParseConfig) -> bool:
-        """Return whether a module needs the future annotations import."""
+        """Return whether a module needs the future annotations import on a target with native deferred annotations.
+
+        A type hidden by a field of its class needs it too: ``dataclasses`` evaluates a native annotation while the
+        class still binds the field's name, and ``typing`` resolves a string from the module first.
+        """
         if not (config.with_import and config.use_deferred_annotations):
             return False
-        return self._has_forward_references(models)
+        if self.data_model_type.REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS:
+            return self._has_forward_references(models)
+        return not self._quotes_hidden_types and any(
+            model.resolves_hidden_types_from_strings() and _hidden_type_names(model) for model in models
+        )
 
     def _get_module_future_imports(
         self,
@@ -6746,11 +6754,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> str:
         """Return future imports required by a single generated module."""
         if not (
-            self.data_model_type.REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS
-            and self.target_python_version.has_native_deferred_annotations
+            self.target_python_version.has_native_deferred_annotations
+            and self._requires_explicit_deferred_annotations(ctx.models, config)
         ):
-            return future_imports_str
-        if not self._requires_explicit_deferred_annotations(ctx.models, config):
             return future_imports_str
         ctx.imports.append(IMPORT_ANNOTATIONS)
         return "\n".join(import_ for import_ in (future_imports_str, str(ctx.imports.extract_future())) if import_)
@@ -7323,9 +7329,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> None:
         """Apply final type metadata and invalidate imports only when required.
 
-        Without future imports, a type hidden by a field of its class is written as a string.
+        A field that hides a type of its class's annotations is left unbound where the model can, and without
+        future imports the type is written as a string.
         """
         self.__apply_type_overrides(models)
+        for model in models:
+            if (names := _hidden_type_names(model)) and model.unbind_fields(names):
+                _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
         self.__update_type_aliases(
             models,
             self.pydantic_v2_root_model_type,

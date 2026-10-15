@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -13,7 +13,7 @@ class Bar:
 
 @dataclass
 class Leaf:
-    Bar: Bar | None = None
+    Bar: Bar | None = field(default_factory=lambda: None)
 
 
 @dataclass
