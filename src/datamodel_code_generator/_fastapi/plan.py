@@ -1237,7 +1237,8 @@ class Planner:  # noqa: PLR0904
         properties a schema types are read by the same rule, under whatever names they come, and need no plan when
         that reads them as the text they come as; their type checks such text when the model keeps them without it.
         Those a multipart body allows without a type are JSON as well. A model that validates its fields by name reads
-        a property under its field's name too, unless that is the name of another property.
+        a property under its field's name too, unless that is the name of another property. A URL-encoded body whose
+        schema no builtin encoding writes, such as one that is no object, is refused as the client refuses to send it.
         """
         assert media.use is not None
         json_members = _json_members(media)
@@ -1278,6 +1279,9 @@ class Planner:  # noqa: PLR0904
             additional = self.form_plan(operation, media, extras, untyped=untyped)
         elif multipart and (media.use.parts is None or media.use.parts.extra is None):
             additional = JsonPartSpec("", BuiltinType("object"), untyped=True)
+        if media.kind == "form" and (encoding := media.use.encoding) is not None and encoding.form.problem is not None:
+            source, message = encoding.form.problem
+            self.problems.append(_problem("MC_PARAMETER_ENCODING", message, source))
         return replace(
             media,
             fields=tuple(plan for plan in plans if isinstance(plan, FieldPlan)),
