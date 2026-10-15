@@ -2098,16 +2098,30 @@ def _get_discriminator_values(
     if require_literal:
         return []
 
-    return _get_union_discriminator_values(discriminator_model, mapping)
+    return _get_union_discriminator_values(discriminator_model, field_name, mapping, field_name_mode=field_name_mode)
 
 
 def _get_union_discriminator_values(
-    discriminator_model: DataModel, mapping: dict[str, str]
+    discriminator_model: DataModel,
+    field_name: str,
+    mapping: dict[str, str],
+    *,
+    field_name_mode: Literal["original", "resolved", "either"],
 ) -> list[DiscriminatorValue]:
-    """Return the tags a union selects a variant by: its mapping values, else the schema name."""
-    return _get_mapping_discriminator_values(discriminator_model, mapping) or [
-        _source_path(discriminator_model.path).split("/")[-1]
-    ]
+    """Return the tags a union selects a variant by: mapping values, a reuse model's inherited tag, else its name."""
+    if mapped := _get_mapping_discriminator_values(discriminator_model, mapping):
+        return mapped
+    if (
+        discriminator_model.path.endswith("/reuse")
+        and (
+            value := _find_discriminator_value(
+                discriminator_model.iter_all_fields(), field_name, field_name_mode=field_name_mode
+            )
+        )
+        is not None
+    ):
+        return [value]
+    return [_source_path(discriminator_model.path).split("/")[-1]]
 
 
 def _get_mapping_discriminator_values(
@@ -4896,7 +4910,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 recorded.others.setdefault(recorded.owner, recorded.kept)
                 recorded.kept, recorded.owner = values, union_name
                 recorded.others = {union: tags for union, tags in recorded.others.items() if set(tags) != kept}
-            elif set(tags := _get_union_discriminator_values(variant, mapping)) != kept:
+            elif (
+                set(
+                    tags := _get_union_discriminator_values(
+                        variant, field_name, mapping, field_name_mode=field_name_mode
+                    )
+                )
+                != kept
+            ):
                 recorded.others.setdefault(union_name, tags)
             return
         if _find_discriminator_value(variant.fields, field_name, field_name_mode=field_name_mode) is None:
