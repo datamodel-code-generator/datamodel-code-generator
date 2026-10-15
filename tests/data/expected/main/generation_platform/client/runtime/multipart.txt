@@ -9,7 +9,7 @@
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 125] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nBo\r\n--<boundary>--\r\n'
   profile with no tags = None
   > POST https://media.example.com/api/anything
-    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="k"\r\n\r\n1\r\n--<boundary>--\r\n'
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 155] b'--<boundary>\r\nContent-Disposition: form-data; name="k"\r\nContent-Type: application/json\r\n\r\n[1]\r\n--<boundary>--\r\n'
   free-form object = None
   free-form value that is no object ! DecodeError: DecodeError(operation_id='submitAnything', reason='unencodable', location='body') [operation_id='submitAnything', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A multipart form value must be an object')] unencodable
   > POST https://media.example.com/api/attachments
@@ -345,7 +345,7 @@ codes.0
     [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 125] b'--<boundary>\r\nContent-Disposition: form-data; name="name"\r\n\r\nBo\r\n--<boundary>--\r\n'
   profile with no tags = None
   > POST https://media.example.com/api/anything
-    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 121] b'--<boundary>\r\nContent-Disposition: form-data; name="k"\r\n\r\n1\r\n--<boundary>--\r\n'
+    [host: media.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 155] b'--<boundary>\r\nContent-Disposition: form-data; name="k"\r\nContent-Type: application/json\r\n\r\n[1]\r\n--<boundary>--\r\n'
   free-form object = None
   free-form value that is no object ! DecodeError: DecodeError(operation_id='submitAnything', reason='unencodable', location='body') [operation_id='submitAnything', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError('A multipart form value must be an object')] unencodable
   > POST https://media.example.com/api/attachments

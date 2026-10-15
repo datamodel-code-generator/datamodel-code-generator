@@ -1230,8 +1230,8 @@ class Planner:  # noqa: PLR0904
         encoding's style spreads such a member over parts or pairs that only the request body mode reads. The other
         properties a schema types are read by the same rule, under whatever names they come, and need no plan when
         that reads them as the text they come as; their type checks such text when the model keeps them without it.
-        A model that validates its fields by name reads a property under its field's name too, unless that is the name
-        of another property.
+        Those a multipart body allows without a type are JSON as well. A model that validates its fields by name reads
+        a property under its field's name too, unless that is the name of another property.
         """
         assert media.use is not None
         json_members = _json_members(media)
@@ -1266,8 +1266,12 @@ class Planner:  # noqa: PLR0904
             and (name := field.slot.name) not in names
             and self.by_name(field.consumer)
         )
-        extras = form_extras(self.wire.kinds, media.use)
-        additional = None if extras is None else self.form_plan(operation, media, extras)
+        additional: FieldPlan | JsonPartSpec | None = None
+        if (extras := form_extras(self.wire.kinds, media.use)) is not None:
+            untyped = multipart and self.wire.kinds.untyped(extras.leaf)
+            additional = self.form_plan(operation, media, extras, untyped=untyped)
+        elif multipart and (media.use.parts is None or media.use.parts.extra is None):
+            additional = JsonPartSpec("", BuiltinType("object"), untyped=True)
         return replace(
             media,
             fields=tuple(plan for plan in plans if isinstance(plan, FieldPlan)),
