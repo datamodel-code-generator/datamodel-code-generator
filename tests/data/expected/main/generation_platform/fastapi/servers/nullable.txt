@@ -1,6 +1,6 @@
 # nullable
 serve pydantic_v2.BaseModel
-service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_name, post_note, post_pet, post_text, post_value, upload
+service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_pet, post_text, post_value, upload
 service DefaultService without its methods: TypeError
 > POST /texts
   post_text(body=TextsPostRequest(root=None))
@@ -146,8 +146,30 @@ service DefaultService without its methods: TypeError
 < 204 - b''
 > POST /extended
 < 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+  post_multi(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi
+  post_multi(body=MultiPostRequest(root='null'), media_type='text/plain')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=MultiOptionalPostRequest(root='null'), media_type='text/plain')
+< 204 - b''
 serve pydantic_v2.dataclass
-service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_name, post_note, post_pet, post_text, post_value, upload
+service DefaultService: post_anything, post_choice, post_code, post_color, post_draft, post_extended, post_form, post_id, post_item, post_list, post_multi, post_multi_optional, post_name, post_note, post_pet, post_text, post_value, upload
 service DefaultService without its methods: TypeError
 > POST /texts
   post_text(body=None)
@@ -293,3 +315,25 @@ service DefaultService without its methods: TypeError
 < 204 - b''
 > POST /extended
 < 422 application/json [{"type": "missing", "loc": ["body", "name"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+< 422 application/json [{"type": "missing", "loc": ["body"]}]
+> POST /multi
+  post_multi(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi
+  post_multi(body='null', media_type='text/plain')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=None, media_type=None)
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body=Item(name='a'), media_type='application/json')
+< 204 - b''
+> POST /multi-optional
+  post_multi_optional(body='null', media_type='text/plain')
+< 204 - b''

@@ -42,6 +42,7 @@ _HEX: Final = {digit: f"[{digit}{digit.lower()}]" for digit in "ABCDEF"}
 _PATH_SAFE: Final = "/:@!$&'()*+,;="
 _TEXT: Final = FieldPlan("")
 _ANY: Final[TypeAdapter[object]] = TypeAdapter(object)
+_JSON_WHITESPACE: Final = b" \t\r\n"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -232,7 +233,8 @@ class BodyAdapter:
     async def receive(self, request: Request) -> tuple[str | None, object]:
         """Return the received media type with the validated body, or None for both of an omitted optional body.
 
-        An empty body is omitted when it names no media type or names JSON, which is never empty.
+        An empty body is omitted when it names no media type or names JSON, which is never empty. A JSON `null` that
+        the model refuses is read as FastAPI reads it natively: a missing required body, or an omitted optional one.
         """
         header = request.headers.get("content-type")
         body = await request.body()
@@ -250,7 +252,11 @@ class BodyAdapter:
         except MalformedError as error:
             raise malformed_request() from error
         except ValidationError as error:
-            raise RequestValidationError(model_records(error, ("body",))) from error
+            if media.kind != "json" or body.strip(_JSON_WHITESPACE) != b"null":
+                raise RequestValidationError(model_records(error, ("body",))) from error
+            if self.required:
+                raise RequestValidationError([missing(("body",))]) from error
+            return None, None
 
     def _select(self, header: str | None) -> tuple[BodyMedia, str, str] | None:
         try:

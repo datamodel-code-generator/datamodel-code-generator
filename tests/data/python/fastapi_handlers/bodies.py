@@ -78,6 +78,12 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_value(self, **arguments: object) -> None:
             record("post_value", arguments)
 
+        def post_multi(self, **arguments: object) -> None:
+            record("post_multi", arguments)
+
+        def post_multi_optional(self, **arguments: object) -> None:
+            record("post_multi_optional", arguments)
+
         def post_anything(self, **arguments: object) -> None:
             record("post_anything", arguments)
 

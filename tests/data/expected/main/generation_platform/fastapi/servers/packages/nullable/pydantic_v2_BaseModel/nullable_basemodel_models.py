@@ -78,3 +78,11 @@ class UploadsPostRequest(BaseModel):
 
 class ExtendedPostRequest(Item):
     note: str | None = None
+
+
+class MultiPostRequest(RootModel[str]):
+    root: str
+
+
+class MultiOptionalPostRequest(RootModel[str]):
+    root: str
