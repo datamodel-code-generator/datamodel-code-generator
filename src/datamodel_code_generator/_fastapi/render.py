@@ -124,7 +124,7 @@ _RUNTIME_CLASSES: Final[dict[SchemeKind, str]] = {
 _API_KEY_CLASSES: Final = {"header": "APIKeyHeader", "query": "APIKeyQuery", "cookie": "APIKeyCookie"}
 _CHALLENGES: Final[dict[SchemeKind, str]] = {
     "api_key": "APIKey",
-    "basic": "Basic",
+    "basic": 'Basic charset="UTF-8"',
     "bearer": "Bearer",
     "digest": "Digest",
     "oauth2": "Bearer",

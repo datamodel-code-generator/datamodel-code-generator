@@ -1502,7 +1502,9 @@ it once with its security requirement sets whose every scheme presented a creden
 credentials by scheme name; the handler receives the principal it returns as the keyword argument
 `principal: PrincipalT_contra`, and it rejects a request by raising `HTTPException`. A request that presents no
 complete requirement set answers `401`, unless the operation also accepts no credentials, in which case the handler
-receives `None`, typed `PrincipalT_contra | None`.
+receives `None`, typed `PrincipalT_contra | None`. The `401` carries a `WWW-Authenticate` challenge for each kind of
+scheme the operation accepts, such as `APIKey, Bearer, Basic charset="UTF-8"`: the Basic challenge names UTF-8, the
+charset RFC 7617 lets a server ask for, in which the server reads Basic credentials.
 
 A service Protocol with secured operations is generic, `PetsService(Protocol[PrincipalT_contra])`, so
 `create_app(pets=..., authorize=...)` ties the principal type of the services to the return type of `authorize`. The

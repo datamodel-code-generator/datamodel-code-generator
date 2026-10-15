@@ -90,11 +90,11 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > PUT /pets/1
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Bearer, APIKey, Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Bearer, APIKey, Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1?key=k
   global /pets/1
   authorize [(('query_key', ()), ('basic', ()))]
@@ -104,11 +104,11 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > PUT /pets/1?key=k
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Bearer, APIKey, Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1
   global /pets/1
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: Bearer, APIKey, Basic
+< www-authenticate: Bearer, APIKey, Basic charset="UTF-8"
 > PUT /pets/1
   global /pets/1
   authorize [(('oauth', ('write:pets', 'read:pets')),)]
@@ -148,7 +148,7 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > GET /session
   global /session
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: APIKey, Bearer, Basic
+< www-authenticate: APIKey, Bearer, Basic charset="UTF-8"
 > GET /session
   global /session
   authorize [(('basic', ()),)]
@@ -158,7 +158,7 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
 > GET /session
   global /session
 < 401 application/json {"detail":"Not authenticated"}
-< www-authenticate: APIKey, Bearer, Basic
+< www-authenticate: APIKey, Bearer, Basic charset="UTF-8"
 > GET /custom
   global /custom
   authorize [(('digest', ()),)]
