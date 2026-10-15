@@ -2312,32 +2312,44 @@ def _has_cyclic_ancestry(model: DataModel) -> bool:
     return False
 
 
-def _tag_fields_of_tagged_bases(models: Iterable[DataModel]) -> None:
+def _tag_fields_of_tagged_bases(models: Iterable[DataModel]) -> list[DataModel]:
     """Tag the structs that declare the tag field of a tagged base as a field, which msgspec rejects.
 
-    A struct inherits the tag of its base, so its single literal becomes its own tag, as for a tagged variant. Bases
-    of other modules are tagged by then, as every module is processed first. Inheritance cycles are reported later.
+    A struct inherits the tag of its base, so its single literal becomes its own tag, as for a tagged variant, and a
+    struct with any other such field opts out of the tag to keep the field. Bases of other modules are tagged by then,
+    as every module is processed first, and a base is handled before the structs inheriting from it, as its own tag
+    decides theirs. Inheritance cycles are reported later. Return the structs that opted out.
     """
-    for model in models:
-        if (
-            not model.base_classes
-            or _has_cyclic_ancestry(model)
-            or not (
-                tag_fields := {
-                    tag[0] for base in _find_base_classes(model) if (tag := base.discriminator_tag) is not None
-                }
-            )
-        ):
-            continue
-        for field in model.fields:
-            if (
-                not field.extras.get("is_classvar")
-                and (tag_field := next(iter({field.name, _get_source_field_name(field)} & tag_fields), None))
-                is not None
-                and len(literals := field.data_type.literals) == 1
-            ):
-                model.apply_discriminator_tag(field, tag_field, literals[0])
-                _clear_model_imports_cache_if_retained(model, can_retain_cache=True)
+    pending = {id(model): model for model in models}
+    opted_out: list[DataModel] = []
+
+    def tag_fields_of(model: DataModel) -> None:
+        if pending.pop(id(model), None) is None:
+            return
+        if not model.base_classes or _has_cyclic_ancestry(model):
+            return
+        bases = _find_base_classes(model)
+        for base in bases:
+            tag_fields_of(base)
+        if not (tag_fields := {tag[0] for base in bases if (tag := base.discriminator_tag) is not None}):
+            return
+        tagged_fields = [
+            (field, tag_field)
+            for field in model.fields
+            if not field.extras.get("is_classvar")
+            and (tag_field := next(iter({field.name, _get_source_field_name(field)} & tag_fields), None)) is not None
+        ]
+        if any(len(field.data_type.literals) != 1 for field, _ in tagged_fields):
+            model.opt_out_of_inherited_tag()
+            opted_out.append(model)
+            return
+        for field, tag_field in tagged_fields:
+            model.apply_discriminator_tag(field, tag_field, field.data_type.literals[0])
+            _clear_model_imports_cache_if_retained(model, can_retain_cache=True)
+
+    while pending:
+        tag_fields_of(next(iter(pending.values())))
+    return opted_out
 
 
 def _get_mapped_discriminator_tag(
@@ -5727,6 +5739,37 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ):
                 model.clear_imports_cache()
 
+    @classmethod
+    def __fix_tag_opt_out_field_ordering(cls, opted_out: list[DataModel], models: list[DataModel]) -> None:
+        """Make keyword-only the structs that opted out of a tag, and those inheriting from them, when they need it.
+
+        A field named like the inherited tag field is then a field of its own after the inherited ones, as the base
+        declares the tag field as a class variable instead, so a required one can follow a default. Bases are fixed
+        before the structs inheriting from them, as their keyword-only fields are not positional there.
+        """
+        if not opted_out:
+            return
+        opted_out_ids = {id(model) for model in opted_out}
+        for model, ancestors in sorted(
+            (
+                (model, ancestors)
+                for model in models
+                if (ancestors := linearize_data_models(_find_base_classes(model)))
+                and not opted_out_ids.isdisjoint(map(id, (model, *ancestors)))
+            ),
+            key=lambda item: len(item[1]),
+        ):
+            effective_fields: dict[str, tuple[DataModelFieldBase, DataModel, bool | None]] = {
+                field.name: (field, declaring_model, None)
+                for declaring_model in (*reversed(ancestors), model)
+                for field in declaring_model.fields
+                if field.name and not field.is_class_var
+            }
+            if cls.__get_constructor_ordering_conflicts(
+                model, effective_fields, cls._get_constructor_field_policy(model), set()
+            ):
+                model.enable_model_keyword_only()
+
     def __fix_constructor_field_ordering(self, models: list[DataModel]) -> None:
         """Fix constructor field ordering after inherited defaults are resolved."""
         for model in models:
@@ -8353,7 +8396,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             contexts.append(ctx)
 
         if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
-            _tag_fields_of_tagged_bases(model for ctx in contexts for model in ctx.models)
+            all_models = [model for ctx in contexts for model in ctx.models]
+            self.__fix_tag_opt_out_field_ordering(_tag_fields_of_tagged_bases(all_models), all_models)
         self.__import_removed_reuse_canonicals(
             contexts,
             internal_modules=internal_modules,

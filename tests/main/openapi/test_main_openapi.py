@@ -1115,6 +1115,53 @@ def test_main_openapi_msgspec_tagged_base_subclass_modules(output_dir: Path) -> 
     )
 
 
+def test_main_openapi_msgspec_tagged_base_redefined_field(output_dir: Path) -> None:
+    """Let a struct that redefines the tag field of a tagged base, in its module or another, opt out of the tag.
+
+    The struct keeps the field and decodes it, and a union of it with its base is still reported as undecodable.
+    """
+    import msgspec
+
+    name = "discriminator_msgspec_tagged_base_redefined_field"
+    expected = EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_base_redefined_field"
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+            output_path=output_dir,
+            input_file_type="openapi",
+            expected_directory=expected,
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        expected.with_name(f"{expected.name}_warnings.txt"),
+    )
+    decoded = []
+    for path, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+        module_path, _, model_name = path.rpartition(".")
+        with _generated_package_module(output_dir, module_path) as module:
+            for payload in payloads:
+                try:
+                    result = repr(msgspec.json.decode(json.dumps(payload), type=getattr(module, model_name)))
+                except msgspec.ValidationError:
+                    result = "rejected"
+                except TypeError:
+                    result = "TypeError"
+                decoded.append(f"{path} {json.dumps(payload)}: {result}\n")
+    assert_output("".join(decoded), expected.with_name(f"{expected.name}_decoded.txt"))
+
+
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_main_openapi_msgspec_tagged_unions_inherited(output_file: Path, entrypoint: str) -> None:
     """Leave a union untagged when a base or derived struct, however distant or renamed, keeps its property."""
