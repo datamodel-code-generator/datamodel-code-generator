@@ -2115,12 +2115,24 @@ def test_main_usable_discriminator_invalid_dotted_models_stdout(capsys: pytest.C
             marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the discriminated union PetOwner.pet"),
         ),
         ("reuse_scope_tree", ["--reuse-scope", "tree"]),
+        (
+            "additional_imports",
+            [
+                "--additional-imports",
+                "tests.data.python.x_python_type_symbols.Literal_aliased",
+                "--class-decorators",
+                "Literal_aliased",
+            ],
+        ),
     ],
 )
 def test_main_usable_discriminator_invalid_dotted_models_reuse(
     output_dir: Path, expected_name: str, extra_args: list[str]
 ) -> None:
-    """Keep a model named Literal when the tags that reused variants get import typing.Literal, under an alias."""
+    """Keep a model named Literal when the tags that reused variants get import typing.Literal, under an alias.
+
+    The alias takes no name that an additional import binds or a class decorator names.
+    """
     expected = EXPECTED_OPENAPI_PATH / "usable_discriminator_invalid_dotted_models_reuse"
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "usable_discriminator_invalid_dotted_models.yaml",

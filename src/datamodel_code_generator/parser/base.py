@@ -6495,6 +6495,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Import ``typing.Literal`` under an alias when only the tags of unions with reused variants need it.
 
         Such unions were left untagged before, so a model named ``Literal`` kept its name, which importers rely on.
+        The alias takes no name that the module binds or its class decorators name, additional imports included.
         """
         tag_fields = self._reused_variant_tag_fields
         fields = [field for model in models for field in model.fields]
@@ -6513,6 +6514,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             *(model.class_name for model in models),
             *(field.name for field in fields if field.name is not None),
             *bindings.values(),
+            *(self.imports.get_effective_name(from_, name) for from_, names in self.imports.items() for name in names),
+            *(
+                name
+                for model in models
+                for decorator in model.decorators
+                for name in _STRING_OR_IDENTIFIER_PATTERN.findall(decorator)
+                if name
+            ),
         }
         aliased_import = Import(
             from_=IMPORT_LITERAL.from_,
