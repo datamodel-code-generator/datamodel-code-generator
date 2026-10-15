@@ -115,13 +115,14 @@ _CREDENTIALS: Final[dict[SchemeKind, str]] = {
     "openid": "the bearer token of the `Authorization` header, as a string",
     "custom": "no FastAPI class reads it: override its dependency to return the credential",
 }
-_SCHEME_CLASSES: Final[dict[SchemeKind, str]] = {"bearer": "HTTPBearer", "digest": "HTTPDigest"}
 _RUNTIME_CLASSES: Final[dict[SchemeKind, str]] = {
     "basic": "OptionalHTTPBasic",
+    "bearer": "ASCIIHTTPBearer",
+    "digest": "ASCIIHTTPDigest",
     "oauth2": "OAuth2Bearer",
     "openid": "OpenIdConnectBearer",
 }
-_API_KEY_CLASSES: Final = {"header": "APIKeyHeader", "query": "APIKeyQuery", "cookie": "APIKeyCookie"}
+_API_KEY_CLASSES: Final = {"header": "ASCIIAPIKeyHeader", "cookie": "ASCIIAPIKeyCookie"}
 _CHALLENGES: Final[dict[SchemeKind, str]] = {
     "api_key": "APIKey",
     "basic": 'Basic charset="UTF-8"',
@@ -1552,13 +1553,13 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
         return Scheme(name, escape_docstring(scheme.name) or "", "", ())
     facts = dict(scheme.declaration.facts)
     keywords: list[Keyword] = []
+    runtime = _API_KEY_CLASSES.get(str(scheme.location)) if scheme.kind == "api_key" else _RUNTIME_CLASSES[scheme.kind]
     if scheme.kind == "api_key":
         keywords.append(Keyword("name", repr(scheme.parameter)))
-        cls = module.name("fastapi.security", _API_KEY_CLASSES[str(scheme.location)])
-    elif (runtime := _RUNTIME_CLASSES.get(scheme.kind)) is not None:
-        cls = module.local("_runtime.server.security", runtime)
+    if runtime is None:
+        cls = module.name("fastapi.security", "APIKeyQuery")
     else:
-        cls = module.name("fastapi.security", _SCHEME_CLASSES[scheme.kind])
+        cls = module.local("_runtime.server.security", runtime)
     keywords.extend(
         Keyword(keyword, repr(value))
         for keyword in _SCHEME_FACTS.get(scheme.kind, ("description",))

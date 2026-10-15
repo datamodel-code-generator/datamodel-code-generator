@@ -1411,7 +1411,8 @@ Header values are ASCII, as RFC 9110 writes header text and as the generated cli
 header parameter of the operation with a byte outside ASCII, in any of its occurrences, answers `400 {"detail":
 "Invalid request"}`, whether FastAPI or an adapter reads it: FastAPI alone would read it as Latin-1. A header with JSON
 `content` is ASCII JSON text too, whose escapes such as `\u00e9` stand for other characters. The check covers the
-operation's header parameters, not the headers of its security schemes or of your own dependencies.
+operation's header parameters, not the headers of your own dependencies; a security scheme's credential that is not
+ASCII presents no credential instead, as [Security](#security) describes.
 
 Cookie values are ASCII too, the cookie octets of RFC 6265, which is how the generated client sends them. A request
 that sends a cookie the operation reads with a byte outside ASCII in its name or value answers the same `400`, whether
@@ -1487,10 +1488,10 @@ connect an `authorize` callback and your own `FastAPI` application.
 
 ### Security
 
-`security.py` declares one FastAPI dependency for each security scheme the selected operations use: `APIKeyHeader`,
-`APIKeyQuery`, or `APIKeyCookie` for an API key, `HTTPBearer` or `HTTPDigest` for an HTTP scheme, and, for HTTP Basic,
-OAuth2 with the declared flows, and OpenID Connect, the runtime's subclasses of FastAPI's `HTTPBasic`, `OAuth2`, and
-`OpenIdConnect`, each with `auto_error=False`. A scheme no FastAPI class reads, such as `mutualTLS`, is a function
+`security.py` declares one FastAPI dependency for each security scheme the selected operations use: FastAPI's
+`APIKeyQuery` for an API key in the query, and the runtime's subclasses of FastAPI's `APIKeyHeader`, `APIKeyCookie`,
+`HTTPBearer`, `HTTPDigest`, `HTTPBasic`, `OAuth2` with the declared flows, and `OpenIdConnect` for the other schemes,
+each with `auto_error=False`. A scheme no FastAPI class reads, such as `mutualTLS`, is a function
 that returns `None`; replace it, or any other scheme, with `app.dependency_overrides[security.<scheme>]`. The
 credentials are what the dependencies return: a string for an API key, the token of an `Authorization: Bearer`
 header for OAuth2 and OpenID Connect, as `OAuth2PasswordBearer` reads it, `HTTPBasicCredentials`, or
@@ -1499,7 +1500,9 @@ header for OAuth2 and OpenID Connect, as `OAuth2PasswordBearer` reads it, `HTTPB
 presents none for a malformed Basic header either, so another requirement set can still admit the request. The HTTP
 Basic one reads the user name and password as UTF-8, the charset of RFC 7617 that the generated client encodes them
 in, where FastAPI's `HTTPBasic` reads ASCII only; Base64 that is not valid, or that does not decode to UTF-8 text with
-a `:`, is a malformed Basic header.
+a `:`, is a malformed Basic header. A credential in a header or a cookie is ASCII, as header text and cookie octets
+are: an API key, a bearer token, or Digest credentials with a byte outside ASCII present no credential either, so the
+request answers `401` unless another requirement set admits it.
 
 `create_app` and `build_router` of a package with secured operations take an
 `authorize(requirement_sets, credentials)` callback, which may be a coroutine function. Each secured operation calls
