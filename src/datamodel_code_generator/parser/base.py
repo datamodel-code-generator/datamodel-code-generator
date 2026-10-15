@@ -120,6 +120,7 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
+    SPECIAL_PATH_MARKER,
     ModelResolver,
     ModelType,
     Reference,
@@ -2117,6 +2118,38 @@ _DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, Discriminato
 _DiscriminatorUnion: TypeAlias = tuple[DataModel, list[_DiscriminatorTag], str, dict[str, str]]
 
 
+@dataclass(slots=True)
+class _VariantDiscriminatorTags:
+    """The tags a variant keeps from the first union that tagged it, and the other tags unions map it to."""
+
+    variant: DataModel
+    property_name: str
+    kept: list[DiscriminatorValue]
+    owner: str
+    others: dict[str, list[DiscriminatorValue]]
+
+    def warning_messages(self) -> Iterator[str]:
+        """Describe the tags that the generated variant cannot carry."""
+        name = self.variant.class_name
+        if marked := next((tag for tag in self.kept if isinstance(tag, str) and SPECIAL_PATH_MARKER in tag), None):
+            yield (
+                f"{name} takes the internal path {marked!r} as its {self.property_name!r} discriminator tag; "
+                f"it should take the tag of the unsplit model "
+                f"{self.variant.path.partition(SPECIAL_PATH_MARKER)[0].rstrip('/').rsplit('/', 1)[-1]}."
+            )
+        if self.others:
+            unions = ", ".join(f"{union} ({_format_tags(tags)})" for union, tags in self.others.items())
+            yield (
+                f"{name} is a variant of discriminated unions that map {self.property_name!r} to different tags: "
+                f"it keeps {_format_tags(self.kept)} from {self.owner}, so these unions cannot decode it: {unions}."
+            )
+
+
+def _format_tags(tags: list[DiscriminatorValue]) -> str:
+    """Spell discriminator tags as the document writes them."""
+    return ", ".join(map(repr, tags))
+
+
 def _iter_derived_fields(
     model: DataModel, derived_models: dict[str, list[DataModel]], visited: set[str]
 ) -> Iterator[DataModelFieldBase]:
@@ -2753,6 +2786,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._has_runtime_expressions = False
         self._constrained_decimal_alias_model_ids: set[int] = set()
         self._hidden_named_types: dict[tuple[str, str | None], bool] = {}
+        self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
 
         self.keyword_only = config.keyword_only
         self.target_pydantic_version = config.target_pydantic_version
@@ -3835,6 +3869,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         alias = property_name
 
                 tags: list[_DiscriminatorTag] = []
+                union_name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
+                field_name_mode: Literal["resolved", "either"] = (
+                    "resolved" if field.SUPPORTS_DISCRIMINATOR else "either"
+                )
                 for data_type in field.data_type.data_types:
                     if not data_type.reference:  # pragma: no cover
                         continue
@@ -3851,7 +3889,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         discriminator_model,
                         field_name,
                         mapping,
-                        field_name_mode="resolved" if field.SUPPORTS_DISCRIMINATOR else "either",
+                        field_name_mode=field_name_mode,
+                    )
+                    self.__record_variant_discriminator_tags(
+                        discriminator_model,
+                        union_name,
+                        property_name=property_name,
+                        field_name=field_name,
+                        mapping=mapping,
+                        values=discriminator_values,
+                        field_name_mode=field_name_mode,
                     )
                     has_one_literal = False
                     for discriminator_field in discriminator_model.fields:
@@ -4823,6 +4870,37 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._decimal_default_warning_count = 0
         self._decimal_default_warning_examples = None
         warn(message, DefaultValueTypeWarning, stacklevel=2)
+
+    def __record_variant_discriminator_tags(  # noqa: PLR0913
+        self,
+        variant: DataModel,
+        union_name: str,
+        *,
+        property_name: str,
+        field_name: str,
+        mapping: dict[str, str],
+        values: list[DiscriminatorValue],
+        field_name_mode: Literal["original", "resolved", "either"],
+    ) -> None:
+        """Remember the tags unions map a variant to, unless the variant declares its own tag."""
+        if (recorded := self._variant_discriminator_tags.get(key := (id(variant), property_name))) is not None:
+            if set(values) != set(recorded.kept):
+                recorded.others.setdefault(recorded.owner, recorded.kept)
+                recorded.kept, recorded.owner = values, union_name
+            elif (mapped := _get_mapping_discriminator_values(variant, mapping)) and set(mapped) != set(values):
+                recorded.others.setdefault(union_name, mapped)
+            return
+        if _find_discriminator_value(variant.fields, field_name, field_name_mode=field_name_mode) is None:
+            self._variant_discriminator_tags[key] = _VariantDiscriminatorTags(
+                variant, property_name, values, union_name, {}
+            )
+
+    def __warn_about_variant_discriminator_tags(self) -> None:
+        """Warn once per variant whose generated tag differs from a tag a union maps it to."""
+        for recorded in self._variant_discriminator_tags.values():
+            for message in recorded.warning_messages():
+                warn(message, stacklevel=2)
+        self._variant_discriminator_tags.clear()
 
     def _apply_inherited_field_default(
         self,
@@ -7778,6 +7856,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module_to_import: dict[ModulePath, Imports] = {}
         contexts: list[ModuleContext] = []
         self._hidden_named_types.clear()
+        self._variant_discriminator_tags.clear()
 
         if self.collapse_root_models:
             self.__set_circular_root_model_paths(
@@ -7809,6 +7888,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.__record_model_placement(contexts, bool(internal_modules))
         self._check_model_inheritance(contexts)
         self.__warn_about_decimal_defaults()
+        self.__warn_about_variant_discriminator_tags()
         if self.use_default_factory_for_optional_nested_models:
             self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
 

@@ -15,6 +15,7 @@ from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias
 
+import datamodel_code_generator
 from datamodel_code_generator import DataModelType, Error, GenerateConfig, InvalidFileFormatError, chdir, generate
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
@@ -32,6 +33,18 @@ Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
 FORMATTER_FAILURE = "Ruff command failed"
+GENERATOR = Path(datamodel_code_generator.__file__).parent
+
+
+def generator_warnings(caught: list[warnings.WarningMessage]) -> list[str]:
+    """Return the generator's own warnings as report lines, and warn again of any other warning."""
+    lines: list[str] = []
+    for item in caught:
+        if item.category.__module__.startswith(GENERATOR.name) or Path(item.filename).is_relative_to(GENERATOR):
+            lines.append(f"warning {item.category.__name__}: {item.message}")
+        else:
+            warnings.warn_explicit(item.message, item.category, item.filename, item.lineno, source=item.source)
+    return lines
 
 
 def formatter_refusal(error: RuntimeError) -> str:
@@ -237,14 +250,19 @@ def _render(
         shutil.copytree(TEMPLATES, root / "builtin-sources" / "client")
         model = {**model, "custom_template_dir": root / "builtin-sources"}
     before = _files(root)
-    try:
-        _run(case, backend, root, model)
-    except Error as error:
-        written = sorted(path.as_posix() for path in _files(root) - before)
-        return [f"  Error: {error}", *([f"  files {written}"] if case.get("publish") else [])]
-    except RuntimeError as error:
-        return [f"  {formatter_refusal(error)}"]
-    lines: list[str] = []
+    refusal: list[str] | None = None
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        try:
+            _run(case, backend, root, model)
+        except Error as error:
+            written = sorted(path.as_posix() for path in _files(root) - before)
+            refusal = [f"  Error: {error}", *([f"  files {written}"] if case.get("publish") else [])]
+        except RuntimeError as error:
+            refusal = [f"  {formatter_refusal(error)}"]
+    lines = [f"  {line}" for line in generator_warnings(caught)]
+    if refusal is not None:
+        return [*lines, *refusal]
     for path in sorted(_outputs(root, before), key=Path.as_posix):
         if "_runtime" in path.parts:
             continue

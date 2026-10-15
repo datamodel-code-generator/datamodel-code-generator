@@ -21,6 +21,11 @@ render typing.TypedDict
   client/types/default/_operations.py
   models.py
 render dataclasses.dataclass
+  warning UserWarning: CatRequest takes the internal path '#-datamodel-code-generator-#-read-write-request-#-special-#' as its 'kind' discriminator tag; it should take the tag of the unsplit model Cat.
+  warning UserWarning: Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from PetsListGetResponse1Request, so these unions cannot decode it: PetRequest ('doggo'), PetResponse ('doggo').
+  warning UserWarning: CatResponse takes the internal path '#-datamodel-code-generator-#-read-write-response-#-special-#' as its 'kind' discriminator tag; it should take the tag of the unsplit model Cat.
+  warning UserWarning: LionRequest takes the internal path '#-datamodel-code-generator-#-read-write-request-#-special-#' as its 'kind' discriminator tag; it should take the tag of the unsplit model Lion.
+  warning UserWarning: LionResponse takes the internal path '#-datamodel-code-generator-#-read-write-response-#-special-#' as its 'kind' discriminator tag; it should take the tag of the unsplit model Lion.
   client/README.md
   client/__init__.py
   client/_async_client.py

@@ -1,0 +1,1 @@
+Cat is a variant of discriminated unions that map 'petType' to different tags: it keeps 'cat' from Pet, so these unions cannot decode it: Animal ('feline').

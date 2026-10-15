@@ -708,14 +708,66 @@ def test_main_openapi_use_msgspec_tagged_unions(output_file: Path) -> None:
 )
 def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_file: str, output_file: Path) -> None:
     """Keep the released msgspec discriminator output without --use-msgspec-tagged-unions."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / input_file,
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / expected_file,
-        extra_args=["--output-model-type", "msgspec.Struct", "--target-python-version", "3.10", "--disable-timestamp"],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / input_file,
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / expected_file,
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_OPENAPI_PATH / "discriminator" / f"{expected_file.removesuffix('.py')}_warnings.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "extra_args"),
+    [
+        ("discriminator_shared_variant_tags", "pydantic_v2.BaseModel", []),
+        ("discriminator_shared_variant_tags", "msgspec.Struct", []),
+        (
+            "discriminator_read_write_variant_tags",
+            "pydantic_v2.BaseModel",
+            ["--read-only-write-only-model-type", "request-response"],
+        ),
+    ],
+)
+def test_main_openapi_discriminator_variant_tag_warnings(
+    input_name: str, output_model_type: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Warn about variants whose generated tag differs from a tag that a discriminated union maps them to."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / input_name / f"{output_model_type}.py",
+            extra_args=[
+                *extra_args,
+                "--output-model-type",
+                output_model_type,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_OPENAPI_PATH / input_name / f"{output_model_type}_warnings.txt",
     )
 
 

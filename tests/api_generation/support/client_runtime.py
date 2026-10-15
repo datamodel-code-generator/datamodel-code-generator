@@ -10,11 +10,12 @@ import os
 import re
 import shutil
 import sys
+import warnings
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.api_generation.support.client_generation import SOURCE, copy_references, generate_client
+from tests.api_generation.support.client_generation import SOURCE, copy_references, generate_client, generator_warnings
 from tests.api_generation.support.fixture_server import (
     AsyncLocalTransport,
     FixtureServer,
@@ -353,9 +354,11 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
     package = f"{case_name.replace('-', '_')}_{backend.replace('.', '_').lower()}"
     root.mkdir(parents=True, exist_ok=True)
-    _generate(case, backend, root, package)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", UserWarning)
+        _generate(case, backend, root, package)
     sys.path.insert(0, str(root))
-    lines = [f"# {case.get('expected', case_name)} {backend}"]
+    lines = [f"# {case.get('expected', case_name)} {backend}", *(f"  {line}" for line in generator_warnings(caught))]
     try:
         scenario(import_generated_client(package), lines)
     finally:

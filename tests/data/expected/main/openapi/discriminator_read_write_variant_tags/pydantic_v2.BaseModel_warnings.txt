@@ -1,0 +1,2 @@
+CatRequest takes the internal path 'Cat#-datamodel-code-generator-#-read-write-request-#-special-#' as its 'petType' discriminator tag; it should take the tag of the unsplit model Cat.
+CatResponse takes the internal path 'Cat#-datamodel-code-generator-#-read-write-response-#-special-#' as its 'petType' discriminator tag; it should take the tag of the unsplit model Cat.
