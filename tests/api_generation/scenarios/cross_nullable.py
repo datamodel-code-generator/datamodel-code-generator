@@ -4,7 +4,8 @@ The server answers each call's `case` with a bare `None`, an `HTTPResult` withou
 reports the `None` or value it decoded, or the error it raised. An inline object schema that admits null takes
 `None` as its body and its result, and still refuses an object its schema does not. An operation that declares only
 a `2XX` or a `default` response sends a bare value as that response, and one that declares only a `4XX` response
-refuses a bare value. An `x-python-type` of `Literal` with None or of `Any` under an alias takes `None` too.
+refuses a bare value. An `x-python-type` of `Literal` with None or of `Any` under an alias takes `None` too, so an
+optional body of such a type sends `None` as `null`, while one of a written type that rejects null leaves it out.
 """
 
 from __future__ import annotations
@@ -36,6 +37,9 @@ OPERATIONS = (
     "get_error",
     "get_ok",
     "get_any_alias",
+    "post_ok",
+    "post_any_alias",
+    "post_count",
 )
 
 
@@ -102,4 +106,8 @@ def calls(kit: Kit) -> Calls:
         ("get_ok None", lambda: api.get_ok(case="none")),
         ("get_ok 4XX", lambda: api.get_ok(case="missing")),
         ("get_any_alias None", lambda: api.get_any_alias(case="none")),
+        ("post_ok None", lambda: api.post_ok(case="none", body=None)),
+        ("post_any_alias None", lambda: api.post_any_alias(case="none", body=None)),
+        ("post_count None", lambda: api.post_count(case="none", body=None)),
+        ("post_count value", lambda: api.post_count(case="none", body=3)),
     ]

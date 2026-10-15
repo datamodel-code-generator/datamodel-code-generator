@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import Annotated, Final
 
 import nullable_results_basemodel_models
-from fastapi import APIRouter, Depends, Query, params
+from fastapi import APIRouter, Body, Depends, Query, params
 from fastapi.responses import Response
 
 from .._generated import contract
@@ -555,6 +555,44 @@ def _add_get_ok(
     )
 
 
+def _add_post_ok(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_ok_handler = checked(
+        default.post_ok,
+        'The default.post_ok method of POST /oks',
+        ('case', 'body'),
+    )
+
+    def post_ok(
+        *,
+        case: Annotated[str, Query(alias='case')],
+        body: Annotated[nullable_results_basemodel_models.Ok | None, Body(media_type='application/json')] = None,
+    ) -> object:
+        return dispatch(
+            post_ok_handler(
+                case=case,
+                body=body,
+            ),
+            contract.PostOk.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/oks',
+        post_ok,
+        methods=['POST'],
+        status_code=200,
+        response_model=nullable_results_basemodel_models.Ok,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='postOk',
+        response_description='ok or null.',
+        dependencies=wiring.dependencies.get('post_ok'),
+    )
+
+
 def _add_get_any_alias(
     router: APIRouter,
     wiring: Wiring,
@@ -591,6 +629,81 @@ def _add_get_any_alias(
     )
 
 
+def _add_post_any_alias(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_any_alias_handler = checked(
+        default.post_any_alias,
+        'The default.post_any_alias method of POST /any-aliases',
+        ('case', 'body'),
+    )
+
+    def post_any_alias(
+        *,
+        case: Annotated[str, Query(alias='case')],
+        body: Annotated[nullable_results_basemodel_models.AnyAlias | None, Body(media_type='application/json')] = None,
+    ) -> object:
+        return dispatch(
+            post_any_alias_handler(
+                case=case,
+                body=body,
+            ),
+            contract.PostAnyAlias.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/any-aliases',
+        post_any_alias,
+        methods=['POST'],
+        status_code=200,
+        response_model=nullable_results_basemodel_models.AnyAlias,
+        response_model_by_alias=True,
+        response_model_exclude_unset=True,
+        operation_id='postAnyAlias',
+        response_description='Any value.',
+        dependencies=wiring.dependencies.get('post_any_alias'),
+    )
+
+
+def _add_post_count(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    post_count_handler = checked(
+        default.post_count,
+        'The default.post_count method of POST /counts',
+        ('case', 'body'),
+    )
+
+    def post_count(
+        *,
+        case: Annotated[str, Query(alias='case')],
+        body: Annotated[nullable_results_basemodel_models.Count | None, Body(media_type='application/json')] = None,
+    ) -> object:
+        return dispatch(
+            post_count_handler(
+                case=case,
+                body=body,
+            ),
+            contract.PostCount.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/counts',
+        post_count,
+        methods=['POST'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='postCount',
+        response_description='Counted.',
+        dependencies=wiring.dependencies.get('post_count'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('get_text', _add_get_text),
     ('head_text', _add_head_text),
@@ -607,7 +720,10 @@ LITERAL_ROUTES: Final = (
     ('get_default', _add_get_default),
     ('get_error', _add_get_error),
     ('get_ok', _add_get_ok),
+    ('post_ok', _add_post_ok),
     ('get_any_alias', _add_get_any_alias),
+    ('post_any_alias', _add_post_any_alias),
+    ('post_count', _add_post_count),
 )
 TEMPLATED_ROUTES: Final = ()
 

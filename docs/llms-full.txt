@@ -14349,10 +14349,12 @@ conversion rules.
 `None` for an optional request body whose schema rejects JSON `null` is sent as `UNSET` is: the request has no body
 and no `Content-Type`, which a server reads as an absent body, and a `media_type` beside it is refused with a
 `ConfigurationError` whose reason is `without_body`. A JSON body whose type admits `null`, such as a nullable schema,
-one without a schema, or `Any`, sends `null`. Generation decides this from the type the models give the body, so every
-model backend sends the same request. The media a call names decides, or the default media without one; an operation
-with several media and no default leaves `None` out when none of them takes `null`, and otherwise needs `media_type`.
-A text, form, or binary body has no `null`, so its `None` is left out.
+one without a schema, or `Any`, sends `null`. Generation decides this from the type the models give the body, by the
+same rule the generated FastAPI server reads a body and sends a response by, so every model backend sends the same
+request: an `x-python-type` annotation admits `null` when it writes `None`, `object`, `Any` under any alias, or a
+`Literal` with `None`. The media a call names decides, or the default media without one; an operation with several
+media and no default leaves `None` out when none of them takes `null`, and otherwise needs `media_type`. A text, form,
+or binary body has no `null`, so its `None` is left out.
 
 ### Responses
 

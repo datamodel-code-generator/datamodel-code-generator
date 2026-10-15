@@ -203,6 +203,18 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Ok"}
+    post:
+      operationId: postOk
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Ok"}
+      responses:
+        "200":
+          description: ok or null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Ok"}
   /any-aliases:
     parameters:
       - {name: case, in: query, required: true, schema: {type: string}}
@@ -214,6 +226,29 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/AnyAlias"}
+    post:
+      operationId: postAnyAlias
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AnyAlias"}
+      responses:
+        "200":
+          description: Any value.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AnyAlias"}
+  /counts:
+    parameters:
+      - {name: case, in: query, required: true, schema: {type: string}}
+    post:
+      operationId: postCount
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Count"}
+      responses:
+        "204": {description: Counted.}
 components:
   schemas:
     Thing: {type: object, required: [id], properties: {id: {type: integer}}}
@@ -222,3 +257,4 @@ components:
     Color: {enum: [red, blue, null]}
     Ok: {type: string, x-python-type: "typing.Literal['ok', None]"}
     AnyAlias: {type: string, x-python-type: "typing_extensions.Any"}
+    Count: {type: integer, x-python-type: "typing.Literal[1, 3]"}

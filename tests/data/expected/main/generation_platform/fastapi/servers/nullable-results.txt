@@ -1,6 +1,6 @@
 # nullable-results
 serve pydantic_v2.BaseModel
-service DefaultService: get_accepted, get_any_alias, get_anything, get_default, get_error, get_list, get_name, get_note, get_ok, get_pet, get_range, get_text, get_thing, get_value, head_text, post_memo
+service DefaultService: get_accepted, get_any_alias, get_anything, get_default, get_error, get_list, get_name, get_note, get_ok, get_pet, get_range, get_text, get_thing, get_value, head_text, post_any_alias, post_count, post_memo, post_ok
 service DefaultService without its methods: TypeError
 > GET /texts?case=none
   get_text(none)
@@ -157,7 +157,7 @@ service DefaultService without its methods: TypeError
   get_any_alias(numbers)
 < 200 application/json [1,2]
 serve pydantic_v2.dataclass
-service DefaultService: get_accepted, get_any_alias, get_anything, get_default, get_error, get_list, get_name, get_note, get_ok, get_pet, get_range, get_text, get_thing, get_value, head_text, post_memo
+service DefaultService: get_accepted, get_any_alias, get_anything, get_default, get_error, get_list, get_name, get_note, get_ok, get_pet, get_range, get_text, get_thing, get_value, head_text, post_any_alias, post_count, post_memo, post_ok
 service DefaultService without its methods: TypeError
 > GET /texts?case=none
   get_text(none)

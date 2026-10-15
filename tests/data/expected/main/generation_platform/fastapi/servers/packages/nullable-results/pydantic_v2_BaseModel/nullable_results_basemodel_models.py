@@ -37,6 +37,10 @@ class AnyAlias(RootModel[Any_1]):
     root: Any_1
 
 
+class Count(RootModel[Literal[1, 3]]):
+    root: Literal[1, 3]
+
+
 TextsGetQueryCaseParameter = TypeAliasType("TextsGetQueryCaseParameter", str)
 
 
@@ -128,3 +132,6 @@ OksGetQueryCaseParameter = TypeAliasType("OksGetQueryCaseParameter", str)
 
 
 AnyAliasesGetQueryCaseParameter = TypeAliasType("AnyAliasesGetQueryCaseParameter", str)
+
+
+CountsPostQueryCaseParameter = TypeAliasType("CountsPostQueryCaseParameter", str)
