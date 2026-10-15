@@ -9,8 +9,6 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING, Final, Generic, TypeVar
 
-import anyio
-
 from .errors import APITimeoutError, SDKError, add_secondary, kept_primary
 from .retry import Delivery
 from .timing import Budget, ResolvedTimeoutOptions
@@ -81,6 +79,8 @@ async def in_thread(function: Callable[..., T], *arguments: object) -> T:
             if cancelled is None:
                 await asyncio.wait((work,))
             else:
+                import anyio  # noqa: PLC0415 - Only a cancelled wait for a file call shields itself.
+
                 with anyio.CancelScope(shield=True):
                     await asyncio.wait((work,))
         except asyncio.CancelledError as error:  # noqa: PERF203 - Every cancellation waits for the same call.
