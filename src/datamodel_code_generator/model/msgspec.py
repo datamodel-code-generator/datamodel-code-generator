@@ -9,7 +9,7 @@ import keyword
 from ast import literal_eval
 from fractions import Fraction
 from functools import wraps
-from math import isfinite
+from math import ceil, floor, isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
@@ -79,6 +79,43 @@ _LENGTH_META_KEYWORDS: frozenset[str] = frozenset({"min_length", "max_length"})
 _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
 
 
+def _integer_bounds(constraints: tuple[tuple[str, Any], ...]) -> tuple[int | None, int | None]:
+    """Return the least and the greatest integer that numeric constraints admit, None where they set no bound."""
+    lowers: list[int] = []
+    uppers: list[int] = []
+    for name, value in constraints:
+        match name:
+            case "ge":
+                lowers.append(ceil(value))
+            case "gt":
+                lowers.append(floor(value) + 1)
+            case "le":
+                uppers.append(floor(value))
+            case "lt":
+                uppers.append(ceil(value) - 1)
+    return max(lowers, default=None), min(uppers, default=None)
+
+
+def _admits_integers_of(constraints: tuple[tuple[str, Any], ...], other: tuple[tuple[str, Any], ...]) -> bool:
+    """Return whether numeric constraints admit every integer that the other numeric constraints admit.
+
+    The integer multiples of a divisor p/q in lowest terms are the multiples of p.
+    """
+    lower, upper = _integer_bounds(constraints)
+    other_lower, other_upper = _integer_bounds(other)
+    if other_lower is not None and other_upper is not None and other_lower > other_upper:
+        return True
+    if lower is not None and (other_lower is None or other_lower < lower):
+        return False
+    if upper is not None and (other_upper is None or other_upper > upper):
+        return False
+    other_steps = [Fraction(str(value)).numerator for name, value in other if name == "multiple_of"]
+    return all(
+        step == 1 or any(not other_step % step for other_step in other_steps)
+        for step in (Fraction(str(value)).numerator for name, value in constraints if name == "multiple_of")
+    )
+
+
 def _is_exact_float_divisor(value: Any) -> bool:
     """Return whether a float represents a divisor exactly as a dyadic rational, so msgspec checks multiples exactly.
 
@@ -96,6 +133,21 @@ class _MsgspecFieldRenderPlan(NamedTuple):
     needs_field_import: bool
     needs_convert_import: bool
     needs_unset_import: bool
+
+
+class _UnionLeaf(NamedTuple):
+    """A union member msgspec decodes as one type: the alias members spread to reach it, its type and constraints."""
+
+    spread: tuple[tuple[DataType, DataModelField], ...]
+    member: DataType
+    kind: str
+    base: DataType
+    constraints: tuple[tuple[str, Any], ...]
+
+    @property
+    def keywords(self) -> frozenset[str]:
+        """Return the Meta keywords of the member."""
+        return frozenset(name for name, _ in self.constraints)
 
 
 if TYPE_CHECKING:
@@ -909,14 +961,20 @@ class DataModelField(DataModelFieldBase):
         )
         return untaken, inexact
 
-    @staticmethod
-    def _union_member_kind(data_type: DataType) -> tuple[str, DataType, frozenset[str]] | None:
-        """Return the type msgspec decodes a union member as, its type without aliases, and its Meta constraints.
+    def _union_leaves(
+        self,
+        member: DataType,
+        spread: tuple[tuple[DataType, DataModelField], ...] = (),
+        constraints: tuple[tuple[str, Any], ...] = (),
+        seen: frozenset[int] = frozenset(),
+    ) -> Iterator[_UnionLeaf]:
+        """Yield the types msgspec decodes a union member as, with their types without aliases and Meta constraints.
 
-        A member is an alias chain ending in a scalar or a Literal of one type; other members return None.
+        A member is an alias chain ending in a scalar or a Literal of one type; msgspec spreads an alias of a union,
+        or of a type and None, into the union that names it, so the members of such an alias count as its own.
+        Other members yield nothing.
         """
-        keywords: set[str] = set()
-        seen: set[int] = set()
+        data_type = member
         while (reference := data_type.reference) is not None:
             source = reference.source
             if (
@@ -924,27 +982,47 @@ class DataModelField(DataModelFieldBase):
                 or not isinstance(source, TypeAliasBase)
                 or len(source.fields) != 1
                 or id(source) in seen
+                or not isinstance(alias_field := source.fields[0], DataModelField)
             ):
-                return None
-            alias_field = source.fields[0]
-            if not isinstance(alias_field, DataModelField) or alias_field._field_has_top_level_none():  # noqa: SLF001
-                return None
-            seen.add(id(source))
+                return
+            seen |= {id(source)}
             if alias_field.use_annotated:
                 meta = alias_field._get_meta_data()[0]  # noqa: SLF001
-                keywords.update(k for k, v in meta.items() if v is not None and k in _META_SCHEMA_KEYWORDS)
+                constraints += tuple((k, v) for k, v in meta.items() if v is not None and k in _META_SCHEMA_KEYWORDS)
+            if alias_field._field_has_top_level_none() or self._data_type_is_plain_union(alias_field.data_type):  # noqa: SLF001
+                members = self._non_none_members(alias_field.data_type)
+                for inner in members:
+                    yield from self._union_leaves(
+                        inner,
+                        (*spread, (member, alias_field)),
+                        constraints if len(members) == 1 else (),
+                        seen,
+                    )
+                return
             data_type = alias_field.data_type
         if (
             data_type.data_types
             or data_type.is_optional
             or data_type.enum_member_literals
-            or DataModelField._data_type_has_container(data_type)
+            or self._data_type_has_container(data_type)
         ):
-            return None
-        if data_type.literals:
-            kinds = {type(literal).__name__ for literal in data_type.literals}
-            return (kinds.pop(), data_type, frozenset(keywords)) if len(kinds) == 1 else None
-        return (data_type.type, data_type, frozenset(keywords)) if data_type.type else None
+            return
+        kinds = {type(literal).__name__ for literal in data_type.literals} or {data_type.type}
+        yield from (
+            _UnionLeaf(spread, member, kind, data_type, constraints) for kind in kinds if kind and len(kinds) == 1
+        )
+
+    def _non_none_members(self, data_type: DataType) -> list[DataType]:
+        """Return the members of a type other than None, spreading the unions and wrappers that render as them."""
+        if (
+            data_type.type is None
+            and data_type.reference is None
+            and data_type.alias is None
+            and data_type.data_types
+            and not self._data_type_has_container(data_type)
+        ):
+            return [member for child in data_type.data_types for member in self._non_none_members(child)]
+        return [] if self._data_type_renders_none(data_type) else [data_type]
 
     def _union_members(self, data_type: DataType) -> Iterator[tuple[DataType, int, DataType]]:
         """Yield each member of a union with its owner and index, spreading member unions that render as one."""
@@ -954,34 +1032,101 @@ class DataModelField(DataModelFieldBase):
             else:
                 yield data_type, index, member
 
+    def _unconstrained_members(
+        self,
+        member: DataType,
+        dropped: Mapping[int, _UnionLeaf],
+        spread: Mapping[int, DataModelField],
+    ) -> list[DataType]:
+        """Return a union member written with the dropped members as their types without Meta.
+
+        An alias spread to reach a dropped member is written as its members, so the alias itself keeps its Meta.
+        """
+        if (leaf := dropped.get(id(member))) is not None:
+            return [self._copy_data_type(leaf.base)]
+        if (alias_field := spread.get(id(member))) is None:
+            copied = self._copy_data_type(member)
+            for nested in copied.all_data_types:
+                nested.register_reference()
+                for child in nested.data_types:
+                    child.parent = nested
+            return [copied]
+        members = [
+            unconstrained
+            for inner in self._non_none_members(alias_field.data_type)
+            for unconstrained in self._unconstrained_members(inner, dropped, spread)
+        ]
+        if alias_field._field_has_top_level_none():  # noqa: SLF001
+            members.append(self.data_type.__class__(type=NONE))
+        return members
+
+    @staticmethod
+    def _conflicting_leaves(leaves: Mapping[str, list[_UnionLeaf]]) -> tuple[dict[int, _UnionLeaf], set[int]]:
+        """Return the constrained members of a union that would reject values another member accepts, by identity.
+
+        Also return the int members among them that would reject an integer a float member accepts, since msgspec
+        decodes every integer as the int member; constraints that admit every such integer stay.
+        """
+        dropped = {
+            id(leaf.member): leaf
+            for same_kind in leaves.values()
+            if len(same_kind) > 1
+            for leaf in same_kind
+            if leaf.constraints
+        }
+        floats = [
+            () if id(leaf.member) in dropped else leaf.constraints
+            for leaf in leaves.get("float", ())
+            if not leaf.base.literals
+        ]
+        integers = [
+            leaf
+            for leaf in leaves.get("int", ())
+            if leaf.constraints
+            and id(leaf.member) not in dropped
+            and not all(_admits_integers_of(leaf.constraints, other) for other in floats)
+        ]
+        dropped.update((id(leaf.member), leaf) for leaf in integers)
+        return dropped, {id(leaf.member) for leaf in integers}
+
     def unconstrain_union_members(self) -> None:
         """Write the members of a union that msgspec decodes as one type without their Meta constraints.
 
-        msgspec checks every member of a type in a union against the constraints of all of them, so a constraint
-        of one member would reject values another member accepts; the union accepts the values of every member.
+        msgspec checks every member of a type in a union against the constraints of all of them, and decodes every
+        integer as the int member when the union has a float member too, so a constraint of such a member would reject
+        values another member accepts; the union accepts the values of every member.
         """
         kinds: set[str] = set()
         keywords: set[str] = set()
+        integer_keywords: set[str] = set()
         for data_type in tuple(self.data_type.all_data_types):
             if data_type.is_tuple or len(data_type.data_types) < 2:  # noqa: PLR2004
                 continue
-            members: dict[str, list[tuple[DataType, int, DataType, frozenset[str]]]] = {}
-            for owner, index, member in self._union_members(data_type):
-                if (kind := self._union_member_kind(member)) is not None:
-                    members.setdefault(kind[0], []).append((owner, index, kind[1], kind[2]))
-            for kind, same_kind in members.items():
-                if len(same_kind) < 2:  # noqa: PLR2004
-                    continue
-                for owner, index, base, constraints in same_kind:
-                    if not constraints:
-                        continue
-                    kinds.add(kind)
-                    keywords.update(constraints)
-                    owner.data_types[index].unregister_reference()
-                    owner.data_types[index] = self._copy_data_type(base)
-                    owner.data_types[index].parent = owner
-        if kinds:
-            self.__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY] = (frozenset(kinds), frozenset(keywords))
+            slots = list(self._union_members(data_type))
+            leaves: dict[str, list[_UnionLeaf]] = {}
+            for _, _, member in slots:
+                for leaf in self._union_leaves(member):
+                    leaves.setdefault(leaf.kind, []).append(leaf)
+            dropped, integers = self._conflicting_leaves(leaves)
+            for member_id, leaf in dropped.items():
+                if member_id in integers:
+                    integer_keywords.update(leaf.keywords)
+                else:
+                    kinds.add(leaf.kind)
+                    keywords.update(leaf.keywords)
+            spread = {id(member): alias_field for leaf in dropped.values() for member, alias_field in leaf.spread}
+            for owner, index, member in reversed(slots):
+                if id(member) in dropped or id(member) in spread:
+                    member.unregister_reference()
+                    owner.data_types[index : index + 1] = members = self._unconstrained_members(member, dropped, spread)
+                    for unconstrained in members:
+                        unconstrained.parent = owner
+        if kinds or integer_keywords:
+            self.__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY] = (
+                frozenset(kinds),
+                frozenset(keywords),
+                frozenset(integer_keywords),
+            )
             self.invalidate_semantic_caches()
 
     @property
@@ -1003,21 +1148,29 @@ class DataModelField(DataModelFieldBase):
                     "msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of "
                     f"{represent_python_value(declared['multiple_of'])} that floats only approximate"
                 )
-        union_keywords: frozenset[str] = frozenset()
-        if (unconstrained := self.__dict__.get(_UNCONSTRAINED_UNION_MEMBERS_KEY)) is not None:
-            kinds, union_keywords = unconstrained
+        kinds, union_keywords, integer_keywords = self.__dict__.get(
+            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset())
+        )
+        if kinds:
             reasons.append(
                 f"msgspec checks all {', '.join(sorted(kinds))} members of a union against the constraints of each "
                 f"of them, so {', '.join(sorted(union_keywords))} of one member would reject values another "
                 "member accepts"
             )
+        if integer_keywords:
+            reasons.append(
+                "msgspec decodes every integer as the int member of a union that has a float member too, so "
+                f"{', '.join(sorted(integer_keywords))} of the int member would reject integers the float member "
+                "accepts"
+            )
         if not reasons:
             return None
         owner = getattr(self.parent, "class_name", "")
         owner = f"{owner}.{self.name}" if self.name else owner
+        dropped = untaken | union_keywords | integer_keywords
         return (
             f"{'; '.join(reasons)}; {owner} is generated without "
-            f"{'this constraint' if len(untaken | union_keywords) + inexact == 1 else 'these constraints'}."
+            f"{'this constraint' if len(dropped) + inexact == 1 else 'these constraints'}."
         )
 
     def _get_meta_string(self) -> str | None:
