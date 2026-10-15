@@ -1191,7 +1191,8 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         if len(f"{indent}) = {value}") > line_length:
             return f"{target_prefix}{formatted_annotation} = (\n{indent}    {value}\n{indent})"
         return f"{target_prefix}{formatted_annotation} = {value}"
-    if _is_union(statement.annotation) and statement.value is not None and len(annotation_prefix) > line_length:
+    value_opening_fits = len(f"{value_prefix}(") <= line_length
+    if _is_union(statement.annotation) and statement.value is not None and not value_opening_fits:
         value = _source_segment(source, statement.value)
         return (
             f"{target_prefix}"
@@ -1258,11 +1259,7 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         )
         return f"{value_prefix}{formatted_value}"
     if _is_annotated(statement.annotation):
-        if (
-            statement.value is not None
-            and len(annotation_prefix) <= line_length
-            and len(line) <= line_length + MAX_SHORT_DEFAULT_OVERFLOW
-        ):
+        if statement.value is not None and value_opening_fits and len(line) <= line_length + MAX_SHORT_DEFAULT_OVERFLOW:
             value = _source_segment(source, statement.value)
             return f"{value_prefix}(\n{indent}    {value}\n{indent})"
         closing_suffix = "" if statement.value is None else f" = {_source_segment(source, statement.value)}"

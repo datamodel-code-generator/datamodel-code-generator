@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UnionSubscriptAssignmentAtLineLength",
+  "type": "object",
+  "required": [
+    "at_line_length",
+    "one_beyond_line",
+    "four_beyond_limits"
+  ],
+  "properties": {
+    "at_line_length": {
+      "anyOf": [
+        {"$ref": "#/definitions/FirstUnionMemberWithLongName"},
+        {"$ref": "#/definitions/NextUnionMemberWithLongName"}
+      ],
+      "title": "Head"
+    },
+    "one_beyond_line": {
+      "anyOf": [
+        {"$ref": "#/definitions/FirstUnionMemberWithLongName"},
+        {"$ref": "#/definitions/NextUnionMemberWithLongName"}
+      ],
+      "title": "Head"
+    },
+    "four_beyond_limits": {
+      "anyOf": [
+        {"$ref": "#/definitions/FirstUnionMemberWithLongName"},
+        {"$ref": "#/definitions/NextUnionMemberWithLongName"}
+      ],
+      "title": "Head"
+    }
+  },
+  "definitions": {
+    "FirstUnionMemberWithLongName": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "string"}
+      }
+    },
+    "NextUnionMemberWithLongName": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "integer"}
+      }
+    }
+  }
+}

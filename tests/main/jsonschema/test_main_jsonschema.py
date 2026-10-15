@@ -8376,6 +8376,38 @@ def test_main_union_annotation_at_line_length(output_file: Path, formatters: lis
     )
 
 
+@pytest.mark.parametrize("formatters", [["builtin"], ["black", "isort"]])
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        ("annotated_assignment_at_line_length", ["--use-annotated"]),
+        ("union_subscript_assignment_at_line_length", ["--no-use-union-operator"]),
+    ],
+)
+def test_main_subscript_annotation_at_line_length(
+    output_file: Path, name: str, extra_args: list[str], formatters: list[str]
+) -> None:
+    """Test the built-in formatter splits an `Annotated[...]` or `Union[...]` annotation like black.
+
+    Black splits the annotation once `<annotation> = (` exceeds the line, even when the annotation alone fits.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}.py",
+        extra_args=[
+            *extra_args,
+            "--target-python-version",
+            "3.11",
+            "--disable-timestamp",
+            "--formatters",
+            *formatters,
+        ],
+    )
+
+
 @BLACK_PY313_SKIP
 def test_jsonschema_use_title_as_name_nested_titles_pydantic(output_file: Path) -> None:
     """Test use-title-as-name with Pydantic v2 creates named types for nested elements."""

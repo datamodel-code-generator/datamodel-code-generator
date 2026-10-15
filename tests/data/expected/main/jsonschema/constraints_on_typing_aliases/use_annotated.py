@@ -40,9 +40,9 @@ class ConstraintsOnTypingAliases(BaseModel):
     set_field: Annotated[Set_1[int] | None, Field(min_length=2)] = None
     mutable_set: Annotated[MutableSet[int] | None, Field(max_length=2)] = None
     optional_list: Annotated[Optional[List[int]] | None, Field(min_length=2)] = None
-    nested_union: Annotated[Optional[Union[List[int], str]] | None, Field(min_length=2)] = (
-        None
-    )
+    nested_union: Annotated[
+        Optional[Union[List[int], str]] | None, Field(min_length=2)
+    ] = None
     none_union: Optional[None] | None = None
     text: Annotated[Text | None, Field(min_length=2, pattern='^a')] = None
     annotated_text: Annotated[
