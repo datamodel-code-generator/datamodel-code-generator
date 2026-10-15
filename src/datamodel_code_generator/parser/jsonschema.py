@@ -4028,6 +4028,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             PythonTypeName,
             PythonTypeQualifiedName,
             PythonTypeRuntimeSymbol,
+            read_literal_enum_members,
             rewrite_python_type_expr,
         )
         from datamodel_code_generator._python_type_binding import (  # noqa: PLC0415
@@ -4081,7 +4082,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             raise Error(msg)
                         resolving_names.add(name)
                         try:
-                            return rewrite_python_type_expr(resolved, bind_leaf)
+                            return rewrite_python_type_expr(read_literal_enum_members(resolved), bind_leaf)
                         finally:
                             resolving_names.remove(name)
                     if resolved:
@@ -4089,7 +4090,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         return PythonTypeBoundName(bound_name, import_.from_, import_.import_)
             return item
 
-        return BoundPythonType(rewrite_python_type_expr(expression, bind_leaf), tuple(imports))
+        return BoundPythonType(
+            rewrite_python_type_expr(read_literal_enum_members(expression), bind_leaf), tuple(imports)
+        )
 
     def _get_python_type_override(self, obj: JsonSchemaObject) -> DataType | None:
         """Get DataType from x-python-type if it's incompatible with schema type."""

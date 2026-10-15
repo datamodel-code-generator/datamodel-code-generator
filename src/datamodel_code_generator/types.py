@@ -1607,7 +1607,8 @@ class DataTypeManager(ABC):
 
         A ``Literal`` takes the keywords every value other than ``None`` takes as an instance of its type, where a
         ``bool`` takes none and a nested ``Literal`` contributes its values. With ``number_values`` a union and a
-        ``Literal`` take what one member or value takes, as for ``constraint_keywords``.
+        ``Literal`` take what one member or value takes, as for ``constraint_keywords``, where a value of a type the
+        generator cannot classify, such as an enum member, takes them all.
         """
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeBoundName,
@@ -1662,6 +1663,8 @@ class DataTypeManager(ABC):
                 combine(
                     *(
                         cls.type_constraint_keywords(value, target_version, number_values=number_values)
+                        if value or not number_values
+                        else TYPE_DEPENDENT_KEYWORDS
                         for value in value_paths
                     )
                 )

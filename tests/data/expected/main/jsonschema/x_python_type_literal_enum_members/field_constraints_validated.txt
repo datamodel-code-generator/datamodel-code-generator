@@ -1,0 +1,14 @@
+ok: HTTPStatus.OK
+success: HTTPStatus.CREATED
+maybe: HTTPStatus.NO_CONTENT
+client: HTTPStatus.OK
+bounded: HTTPStatus.CREATED
+port: int.80
+accepted: HTTPStatus.ACCEPTED
+rejected: ok
+rejected: success
+rejected: maybe
+rejected: client
+rejected: bounded
+rejected: port
+rejected: accepted

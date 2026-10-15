@@ -5957,6 +5957,69 @@ def test_main_constraints_on_typing_protocols(output_file: Path) -> None:
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / f"{name}_rejected.txt")
 
 
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("pydantic_v2.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_x_python_type_literal_enum_members(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test a dotted member of a Literal imports what holds it, a class or a submodule, and validates as that member.
+
+    The member may be an enum member or a module constant; number bounds stay on enum members of a number schema.
+    msgspec takes no enum member in a Literal, so it warns, conditionally where the member may be a constant and not
+    for an enum member that ``x-python-import`` symbols name, and the runtime check is left to the other outputs.
+    """
+    name = "x_python_type_literal_enum_members"
+    stem = expected_file.removesuffix(".py")
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--target-python-version",
+                "3.11",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "Literal" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    if "msgspec.Struct" in extra_args:
+        return
+    valid = {"ok": 200, "success": 201, "maybe": 204, "client": 200, "bounded": 201, "port": 80, "accepted": 202}
+    with _generated_model(output_file, name, "XPythonTypeLiteralEnumMembers") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        values = {field: getattr(instance, field) for field in valid}
+        accepted = "".join(
+            f"{field}: {type(value).__name__}.{getattr(value, 'name', value)}\n" for field, value in values.items()
+        )
+        rejected = []
+        invalid = {"ok": 201, "success": 204, "maybe": 200, "client": 201, "bounded": 200, "port": 81, "accepted": 200}
+        for field_name, value in invalid.items():
+            with suppress(ValidationError):
+                validate(json.dumps(valid | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        accepted + "".join(f"rejected: {field_name}\n" for field_name in rejected),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_validated.txt",
+    )
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(
