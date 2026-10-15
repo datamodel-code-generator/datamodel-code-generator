@@ -1967,13 +1967,35 @@ def _model_references(model: DataModel) -> list[Reference]:
     return [reference for data_type in model.all_data_types if (reference := data_type.reference)]
 
 
+def _discriminator_signature(model: DataModel) -> tuple[HashableComparable, ...]:
+    """Return the field index, property and mapping of each discriminated union of a model.
+
+    Unions that render alike decode other tags when their discriminators name another property or map their
+    variants to other tags.
+    """
+    if not (
+        discriminators := [
+            (index, discriminator)
+            for index, field in enumerate(model.fields)
+            if isinstance(discriminator := field.extras.get("discriminator"), dict)
+        ]
+    ):
+        return ()
+    from datamodel_code_generator._internal_utils import to_hashable  # noqa: PLC0415
+
+    return tuple(
+        (index, str(discriminator.get("propertyName")), to_hashable(discriminator.get("mapping") or {}))
+        for index, discriminator in discriminators
+    )
+
+
 def _model_shape(model: DataModel, shapes: dict[DataModel, _ModelShape]) -> _ModelShape:
     """Return a model's dedup key with referenced model names masked, and its references in order.
 
     The key is rendered afresh, since cached keys keep the names that references had when they were
     cached, and memoized in shapes for one comparison pass. Names are masked outside string literals and
     field declarations only, so defaults, descriptions and field names that spell a referenced model name
-    still tell models apart.
+    still tell models apart. The discriminators of its unions belong to the key, as they do to the reuse key.
     """
     if (shape := shapes.get(model)) is not None:
         return shape
@@ -1985,7 +2007,10 @@ def _model_shape(model: DataModel, shapes: dict[DataModel, _ModelShape]) -> _Mod
     masked = _STRING_OR_IDENTIFIER_PATTERN.sub(
         lambda match: masks.get(name, name) if (name := match[1]) else match[0], rendered
     )
-    shapes[model] = shape = (type(model), masked, imports, len(references)), references
+    shapes[model] = shape = (
+        (type(model), masked, imports, len(references), *_discriminator_signature(model)),
+        references,
+    )
     return shape
 
 
@@ -2209,23 +2234,7 @@ def _reuse_key(model: DataModel) -> tuple[HashableComparable, ...]:
     variants to other tags, so reuse keeps them apart.
     """
     key = model.get_dedup_key()
-    if not (
-        discriminators := [
-            (index, discriminator)
-            for index, field in enumerate(model.fields)
-            if isinstance(discriminator := field.extras.get("discriminator"), dict)
-        ]
-    ):
-        return key
-    from datamodel_code_generator._internal_utils import to_hashable  # noqa: PLC0415
-
-    return (
-        *key,
-        *(
-            (index, str(discriminator.get("propertyName")), to_hashable(discriminator.get("mapping") or {}))
-            for index, discriminator in discriminators
-        ),
-    )
+    return (*key, *signature) if (signature := _discriminator_signature(model)) else key
 
 
 _DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]

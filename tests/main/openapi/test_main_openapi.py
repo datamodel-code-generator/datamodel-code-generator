@@ -952,6 +952,45 @@ def test_main_openapi_discriminator_reuse_variant_mapping(
     assert_output("".join(decoded), EXPECTED_OPENAPI_PATH / name / f"{expected_name}_decoded.txt")
 
 
+def test_main_openapi_discriminator_reuse_tree_mappings(output_dir: Path) -> None:
+    """Keep apart wrappers in other modules whose unions map their variants to other tags, at runtime too.
+
+    The wrappers render alike and reference unions that render alike, so tree-scope reuse compares the
+    discriminators of the unions they reference as well.
+    """
+    name = "discriminator_reuse_tree_mappings"
+    expected = EXPECTED_OPENAPI_PATH / name
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=expected,
+        extra_args=[
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--target-python-version",
+            "3.10",
+        ],
+        force_exec_validation=True,
+    )
+    decoded = []
+    for path, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+        module_path, _, model_name = path.rpartition(".")
+        with _generated_package_module(output_dir, module_path) as module:
+            validate = _model_json_validator(getattr(module, model_name))
+            for payload in payloads:
+                try:
+                    result = repr(validate(json.dumps(payload)))
+                except pydantic.ValidationError:
+                    result = "rejected"
+                decoded.append(f"{path} {json.dumps(payload)}: {result}\n")
+    assert_output("".join(decoded), expected.with_name(f"{name}_decoded.txt"))
+
+
 def test_main_openapi_msgspec_union_tag_clashes(output_file: Path) -> None:
     """Report tagged msgspec Struct unions that msgspec refuses: other tag fields, shared or mixed tags, tag False."""
     with warnings.catch_warnings(record=True) as recorded:
