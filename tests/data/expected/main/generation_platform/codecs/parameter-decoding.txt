@@ -77,7 +77,7 @@ cookie color form* array/string {"headers":[["Cookie","other=a"]]}: UNSET
 cookie color cookie* object/string {"headers":[["Cookie","R=1; G=2; X=3"]]}: {"R":1,"G":2}
 cookie color cookie* object/string {"headers":[["Cookie","X=3"]]}: UNSET
 cookie color cookie* scalar/string {"headers":[["Cookie","color=a%2Cb"]]}: "a%2Cb"
-cookie color cookie* scalar/string {"headers":[["Cookie",{"hex":"636f6c6f723dff"}]]}: MalformedError A parameter value must be UTF-8
+cookie color cookie* scalar/string {"headers":[["Cookie",{"hex":"636f6c6f723dff"}]]}: MalformedError A cookie must be ASCII
 querystring qs application/x-www-form-urlencoded scalar/string {"query":"q=a+b%2Bc&tags=x&tags=y&n=3"}: {"q":"a b+c","tags":["x","y"],"n":3}
 querystring qs application/x-www-form-urlencoded scalar/string {"query":""}: UNSET
 querystring qs application/x-www-form-urlencoded scalar/string {}: UNSET

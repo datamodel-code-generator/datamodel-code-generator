@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import inspect
 import sys
-from collections.abc import Awaitable, Callable, Coroutine, Mapping, MutableMapping, Sequence
+from collections.abc import Awaitable, Callable, Coroutine, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, TypeGuard, TypeVar, cast
@@ -112,21 +112,22 @@ class RawPathRoute(APIRoute):
     """An APIRoute of a RawPathRouter: it puts the slashes back in the path and its values before the endpoint runs.
 
     A route with a ParameterReader dependency reports the records the reader leaves with FastAPI's own, and one with
-    header parameters that FastAPI reads answers 400 for a request whose value of one of them is not ASCII, as a
-    reader answers for the headers it reads.
+    header or cookie parameters that FastAPI reads answers 400 for a request whose value of one of them is not ASCII,
+    as a reader answers for the headers and cookies it reads.
     """
 
     def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
         """Return FastAPI's handler, which checks the text of its headers and raises a reader's records with its own."""
         handler = super().get_route_handler()
         endpoint = self.dependant  # codespell:ignore dependant
-        headers = frozenset(field.alias.lower().encode("latin-1", "replace") for field in endpoint.header_params)
+        headers = _names(endpoint.header_params, lower=True)
+        cookies = _names(endpoint.cookie_params, lower=False)
         readers = any(isinstance(dependency.call, ParameterReader) for dependency in endpoint.dependencies)
-        if not headers and not readers:
+        if not (headers or cookies or readers):
             return handler
 
         async def reported(request: Request) -> Response:
-            if headers and not all(value.isascii() for name, value in request.scope["headers"] if name in headers):
+            if (headers or cookies) and not _ascii(request.scope["headers"], headers, cookies):
                 raise malformed_request()
             try:
                 return await handler(request)
@@ -176,6 +177,30 @@ def wire_named(names: Mapping[str, str]) -> type[RawPathRoute]:
             return named
 
     return WireNamedRoute
+
+
+def _names(fields: Iterable[Any], *, lower: bool) -> frozenset[bytes]:
+    """Return the names FastAPI reads parameters by, as raw header bytes: header names compare case-insensitively."""
+    return frozenset((field.alias.lower() if lower else field.alias).encode("latin-1", "replace") for field in fields)
+
+
+def _ascii(lines: Iterable[tuple[bytes, bytes]], headers: frozenset[bytes], cookies: frozenset[bytes]) -> bool:
+    """Return whether the request's values of the named headers and cookies are ASCII, as RFC 9110 and 6265 write them.
+
+    A cookie is found as Starlette finds it: a `;`-separated pair of a `Cookie` header, its name stripped.
+    """
+    for name, value in lines:
+        if value.isascii():
+            continue
+        if name in headers or (
+            name == b"cookie"
+            and any(
+                separator and key.strip() in cookies and not text.isascii()
+                for key, separator, text in (pair.partition(b"=") for pair in value.split(b";"))
+            )
+        ):
+            return False
+    return True
 
 
 def _location(record: Mapping[str, Any]) -> int:

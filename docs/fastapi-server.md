@@ -1413,6 +1413,11 @@ header parameter of the operation with a byte outside ASCII, in any of its occur
 `content` is ASCII JSON text too, whose escapes such as `\u00e9` stand for other characters. The check covers the
 operation's header parameters, not the headers of its security schemes or of your own dependencies.
 
+Cookie values are ASCII too, the cookie octets of RFC 6265, which is how the generated client sends them. A request
+that sends a cookie the operation reads with a byte outside ASCII in its name or value answers the same `400`, whether
+FastAPI or an adapter reads it; other cookies of the request are not read, so they may hold anything. An array or
+object cookie keeps the `form` style's percent-encoding of UTF-8 text.
+
 A parameter with JSON `content`, like a JSON part of a multipart form, is parsed by its model's
 `TypeAdapter.validate_json`, as a JSON body is, so pydantic's JSON rules apply: a number is read as a float first, so
 a `Decimal` field gets the float's value (`0.1000000000000000000000000001` becomes `Decimal("0.1")`) and `NaN` and
