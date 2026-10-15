@@ -171,9 +171,17 @@ class _WirePlanner:
 
 
 def body_kind(media_type: str, use: TypeUseBinding | None) -> MediaKind:
-    """Return how a body of a normalized media type is carried: a text body of one raw binary string as raw bytes."""
+    """Return how a body of a normalized media type is carried, as its models decide.
+
+    A text body the models type as raw bytes is carried as the raw body, and a binary body written as a binary string
+    they type as text, such as an enum of strings, as text.
+    """
     kind = media_kind(media_type)
-    return "binary" if kind == "text" and use is not None and use.octets else kind
+    if use is None:
+        return kind
+    if kind == "text" and use.octets:
+        return "binary"
+    return "text" if use.text else kind
 
 
 def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:

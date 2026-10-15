@@ -3,14 +3,15 @@
 
 from __future__ import annotations
 
+from enum import Enum
+
 from pydantic import Base64Bytes, BaseModel, Field, RootModel, SecretStr
 from typing_extensions import TypeAliasType
 
 
-class Record(BaseModel):
-    checksum: Base64Bytes
-    image: str | None = Field(None, json_schema_extra={'contentMediaType': 'image/png'})
-    secret: SecretStr | None = None
+class Mark(Enum):
+    draft = 'draft'
+    final = 'final'
 
 
 FilesPostQueryDigestParameter = TypeAliasType("FilesPostQueryDigestParameter", Base64Bytes)
@@ -22,6 +23,13 @@ class FilesPostRequest(RootModel[bytes]):
 
 class FilesPostResponse(RootModel[bytes]):
     root: bytes
+
+
+class Record(BaseModel):
+    checksum: Base64Bytes
+    image: str | None = Field(None, json_schema_extra={'contentMediaType': 'image/png'})
+    secret: SecretStr | None = None
+    stage: Mark | None = None
 
 
 class UploadsPostRequest(BaseModel):

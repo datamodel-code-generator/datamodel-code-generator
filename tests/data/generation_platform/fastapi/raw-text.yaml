@@ -104,8 +104,43 @@ paths:
                   - allOf:
                       - {type: string, format: binary}
                       - {maxLength: 3}
+  /sketches:
+    post:
+      operationId: uploadSketch
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              allOf:
+                - {type: string}
+                - {format: binary}
+      responses:
+        '200':
+          description: The stored sketch.
+          content:
+            text/plain:
+              schema:
+                allOf:
+                  - {type: string}
+                  - {format: binary}
+  /marks:
+    post:
+      operationId: uploadMark
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {$ref: '#/components/schemas/Mark'}
+      responses:
+        '200':
+          description: The stored mark.
+          content:
+            application/octet-stream:
+              schema: {$ref: '#/components/schemas/Mark'}
 components:
   schemas:
+    Mark: {type: string, format: binary, enum: [draft, final]}
     Note: {type: string, format: binary}
     Letter:
       description: A note behind a wrapper.

@@ -172,7 +172,10 @@ def _unawaited(body: object) -> TypeError:
 
 
 def _content(declared: Declared, body: object) -> str | bytes:
-    """Return the text of a body to encode in the declared charset, or the bytes to send as they are."""
+    """Return the text of a body to encode in the declared charset, or the bytes to send as they are.
+
+    A text body's model writes its value as its JSON text, an enum member as its value.
+    """
     json_media = declared.kind == "json"
     if (adapter := declared.adapter()) is None:
         payload = _json(jsonable_encoder(body, by_alias=True, exclude_unset=True)) if json_media else body
@@ -185,7 +188,7 @@ def _content(declared: Declared, body: object) -> str | bytes:
             if (dump := declared.dump) is None:
                 return adapter.dump_json(value, by_alias=True, exclude_unset=True)
             return dump(adapter, value)
-        payload = adapter.dump_python(value, by_alias=True)
+        payload = adapter.dump_python(value, mode="json" if declared.kind == "text" else "python", by_alias=True)
     if isinstance(payload, (str, bytes)):
         return payload
     msg = f"A {declared.media_type} body must be a string or bytes"

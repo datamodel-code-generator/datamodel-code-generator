@@ -14,11 +14,17 @@ from .._runtime.model_codecs.pydantic_dataclasses import PydanticDataclassCodec
 codec_0: Final[PydanticDataclassCodec[models.FilesPostQueryDigestParameter]] = PydanticDataclassCodec(models.FilesPostQueryDigestParameter)
 """Codec of /paths/~1files/post parameter (request query digest)."""
 
-codec_1: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
-"""Codec of /paths/~1records/post request_body (request application/json)."""
+codec_1: Final[PydanticDataclassCodec[models.Mark]] = PydanticDataclassCodec(models.Mark)
+"""Codec of /paths/~1marks/post request_body (request application/octet-stream)."""
 
-codec_2: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
-"""Codec of /paths/~1records/post response_body (response 200 application/json)."""
+codec_2: Final[PydanticDataclassCodec[models.Mark]] = PydanticDataclassCodec(models.Mark)
+"""Codec of /paths/~1marks/post response_body (response 200 application/octet-stream)."""
 
 codec_3: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
+"""Codec of /paths/~1records/post request_body (request application/json)."""
+
+codec_4: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
+"""Codec of /paths/~1records/post response_body (response 200 application/json)."""
+
+codec_5: Final[PydanticDataclassCodec[models.Record]] = PydanticDataclassCodec(models.Record)
 """Codec of /paths/~1uploads/post request_body (request record multipart/form-data)."""

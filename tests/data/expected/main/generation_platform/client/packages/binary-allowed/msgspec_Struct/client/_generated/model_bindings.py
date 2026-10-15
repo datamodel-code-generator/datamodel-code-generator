@@ -14,11 +14,17 @@ from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 codec_0: Final[MsgspecCodec[models.FilesPostQueryDigestParameter]] = MsgspecCodec(models.FilesPostQueryDigestParameter)
 """Codec of /paths/~1files/post parameter (request query digest)."""
 
-codec_1: Final[MsgspecCodec[models.Record]] = MsgspecCodec(models.Record)
-"""Codec of /paths/~1records/post request_body (request application/json)."""
+codec_1: Final[MsgspecCodec[models.Mark]] = MsgspecCodec(models.Mark)
+"""Codec of /paths/~1marks/post request_body (request application/octet-stream)."""
 
-codec_2: Final[MsgspecCodec[models.Record]] = MsgspecCodec(models.Record)
-"""Codec of /paths/~1records/post response_body (response 200 application/json)."""
+codec_2: Final[MsgspecCodec[models.Mark]] = MsgspecCodec(models.Mark)
+"""Codec of /paths/~1marks/post response_body (response 200 application/octet-stream)."""
 
 codec_3: Final[MsgspecCodec[models.Record]] = MsgspecCodec(models.Record)
+"""Codec of /paths/~1records/post request_body (request application/json)."""
+
+codec_4: Final[MsgspecCodec[models.Record]] = MsgspecCodec(models.Record)
+"""Codec of /paths/~1records/post response_body (response 200 application/json)."""
+
+codec_5: Final[MsgspecCodec[models.Record]] = MsgspecCodec(models.Record)
 """Codec of /paths/~1uploads/post request_body (request record multipart/form-data)."""

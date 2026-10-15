@@ -4,7 +4,10 @@ A `text/*` body whose schema is a binary string travels as the raw body, like `a
 writes and reads its bytes as they are, bytes that are not UTF-8 included, and every client returns and sends them
 the same way. So does a body whose schema reaches the string through wrappers the models type as the string itself: a
 reference, one `allOf`, `anyOf` or `oneOf` branch, a constraint, or a null beside it; and one of several such strings,
-which the backends that keep a constraint in the type hold as a union and the others as one `bytes`.
+which the backends that keep a constraint in the type hold as a union and the others as one `bytes`, or a schema
+whose branches merge into one, which the models type as `bytes` as well. An `application/octet-stream` body written as
+an enum of binary strings, which the models type as an enum, travels as the enum's text instead, which the server reads
+by the model and refuses when it names no member.
 """
 
 from __future__ import annotations
@@ -43,12 +46,20 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
             upload_letter=lambda body: body,
             upload_memo=lambda body: body,
             upload_page=lambda body: body,
+            upload_sketch=lambda body: body,
+            upload_mark=lambda body: body,
         )
     }
 
 
+def _final(models: ModuleType) -> object:
+    """Return the final mark as the models type it: an enum member, or its text in TypedDict models' literal."""
+    mark = models.Mark
+    return mark("final") if isinstance(mark, type) else "final"
+
+
 def calls(kit: Kit) -> Calls:
-    """Download the report, then upload a note and each wrapped body that are not UTF-8."""
+    """Download the report, upload a note and each wrapped body that are not UTF-8, then a mark as its text."""
     api = kit.api.default
     return [
         ("download_report", api.download_report),
@@ -57,4 +68,17 @@ def calls(kit: Kit) -> Calls:
         ("upload_letter", lambda: api.upload_letter(body=b"letter \xff\x00 caf\xc3\xa9")),
         ("upload_memo", lambda: api.upload_memo(body=b"memo \xff\x00")),
         ("upload_page", lambda: api.upload_page(body=b"page \xff\x00")),
+        ("upload_sketch", lambda: api.upload_sketch(body=b"sketch \xff\x00")),
+        ("upload_mark", lambda: api.upload_mark(body=_final(kit.models))),
+        (
+            "upload_mark refused",
+            lambda: kit.then(
+                kit.http.post(
+                    "https://raw.example.com/marks",
+                    content=b"other",
+                    headers={"content-type": "application/octet-stream"},
+                ),
+                lambda response: (response.status_code, response.json()),
+            ),
+        ),
     ]
