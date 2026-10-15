@@ -1,0 +1,18 @@
+openapi: 3.0.0
+info:
+  title: modular unencodable last module
+  version: '1'
+paths: {}
+components:
+  schemas:
+    a.Foo:
+      type: object
+      properties:
+        x:
+          type: string
+    b.Bar:
+      type: object
+      properties:
+        y:
+          type: string
+          default: "\u6f22"

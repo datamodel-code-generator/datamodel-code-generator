@@ -1580,7 +1580,7 @@ def _ensure_output_text_encodable(text: str, encoding: str) -> None:
     try:
         text.encode(encoding)
     except (UnicodeEncodeError, LookupError) as exc:
-        msg = f"Error: Unable to encode output using encoding {encoding!r}: {exc}"
+        msg = f"Unable to encode output using encoding {encoding!r}: {exc}"
         raise Error(msg) from exc
 
 
@@ -1589,7 +1589,7 @@ def _reject_unknown_output_encoding(encoding: str) -> None:
     try:
         codecs.lookup(encoding)
     except LookupError as exc:
-        msg = f"Error: Unable to encode output using encoding {encoding!r}: {exc}"
+        msg = f"Unable to encode output using encoding {encoding!r}: {exc}"
         raise Error(msg) from exc
 
 
@@ -1623,15 +1623,18 @@ def _write_results_to_output(  # noqa: PLR0913
 
         warn_shadowed_modules(modules)
 
-    for path, (body, future_imports, filename) in modules.items():
-        effective_header = _format_file_header(header_prefix, header_suffix, filename)
-        module_text = _output_module_text(
+    module_texts = {
+        path: _output_module_text(
             body,
-            effective_header,
+            _format_file_header(header_prefix, header_suffix, filename),
             future_imports,
             has_custom_file_header=has_custom_file_header,
         )
+        for path, (body, future_imports, filename) in modules.items()
+    }
+    for module_text in module_texts.values():
         _ensure_output_text_encodable(module_text, config.encoding)
+    for path, module_text in module_texts.items():
         if not path.parent.exists():
             path.parent.mkdir(parents=True)
         with path.open("wt", encoding=config.encoding) as file:

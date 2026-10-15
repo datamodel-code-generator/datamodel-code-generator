@@ -53,7 +53,7 @@ assert_file_content = create_assert_file_content(EXPECTED_MALFORMED_PATH)
 TRACEBACK_HEADER = "Traceback (most recent call last)"
 ISSUE_SCHEMA = '{"type": "object", "title": "Pet", "properties": {"name": {"type": "string"}}}\n'
 UNENCODABLE_HEADER = "# Café 漢"
-UNKNOWN_ENCODING_ERROR = "Error: Unable to encode output using encoding 'nosuch': unknown encoding: nosuch"
+UNKNOWN_ENCODING_ERROR = "Unable to encode output using encoding 'nosuch': unknown encoding: nosuch"
 
 ERROR_CASES: tuple[tuple[str, InputFileTypeLiteral, str], ...] = (
     (
@@ -1870,13 +1870,13 @@ def test_cli_unencodable_custom_header_is_one_error_line(
     schema.write_text(ISSUE_SCHEMA, encoding="utf-8")
     with pytest.raises(UnicodeEncodeError) as encode_failure:
         UNENCODABLE_HEADER.encode("latin-1")
-    expected_stderr = f"Error: Unable to encode output using encoding 'latin-1': {encode_failure.value}\n"
+    expected_stderr = f"Unable to encode output using encoding 'latin-1': {encode_failure.value}\n"
     missing = tmp_path / "missing" / "out.py"
     run_main_and_assert(
         input_path=schema,
         output_path=missing,
         input_file_type="jsonschema",
-        extra_args=["--encoding", "latin-1", "--custom-file-header", UNENCODABLE_HEADER],
+        extra_args=["--encoding", "latin-1", "--custom-file-header", UNENCODABLE_HEADER, "--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=expected_stderr,
@@ -1898,6 +1898,32 @@ def test_cli_unencodable_custom_header_is_one_error_line(
     assert existing.read_bytes() == original
 
 
+@pytest.mark.allow_direct_assert("compares module bytes an encode failure in a later module must leave unchanged")
+def test_cli_unencodable_later_module_leaves_every_module(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An encode failure in one module of modular output writes none of the modules."""
+    output = tmp_path / "model"
+    output.mkdir()
+    original = b"# precious\n"
+    modules = [output / "__init__.py", output / "a.py", output / "b.py"]
+    for module in modules:
+        module.write_bytes(original)
+    run_main_and_assert(
+        input_path=DATA_PATH / "openapi" / "modular_unencodable_last_module.yaml",
+        output_path=output,
+        input_file_type="openapi",
+        extra_args=["--encoding", "latin-1"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "Unable to encode output using encoding 'latin-1': 'latin-1' codec can't encode character '\\u6f22'"
+        ),
+    )
+    assert [module.read_bytes() for module in modules] == [original] * len(modules)
+
+
 @pytest.mark.allow_direct_assert("compares output bytes an unknown encoding must leave unchanged")
 def test_cli_unknown_encoding_is_one_error_line(
     tmp_path: Path,
@@ -1912,7 +1938,7 @@ def test_cli_unknown_encoding_is_one_error_line(
         input_path=schema,
         output_path=missing,
         input_file_type="jsonschema",
-        extra_args=["--encoding", "nosuch"],
+        extra_args=["--encoding", "nosuch", "--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=expected_stderr,
@@ -1944,7 +1970,7 @@ def test_generate_unencodable_custom_header_leaves_existing_output(tmp_path: Pat
     output.write_bytes(original)
     with pytest.raises(UnicodeEncodeError) as encode_failure:
         UNENCODABLE_HEADER.encode("latin-1")
-    message = f"Error: Unable to encode output using encoding 'latin-1': {encode_failure.value}"
+    message = f"Unable to encode output using encoding 'latin-1': {encode_failure.value}"
 
     with pytest.raises(Error, match=rf"^{re.escape(message)}$"):
         generate(
