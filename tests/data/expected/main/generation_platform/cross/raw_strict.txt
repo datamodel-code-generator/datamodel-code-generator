@@ -44,6 +44,31 @@ upload_mark refused
   > POST /marks [application/octet-stream]
   < 422 application/json
   = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_stamp
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'\xff\x00ok')
+  < 200 application/octet-stream
+  = b'\xff\x00ok'
+upload_stamp too long
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'far too long')
+  < 200 application/octet-stream
+  = b'far too long'
+upload_stamp too long past the client
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'far too long')
+  < 200 application/octet-stream
+  = (200, b'far too long')
+download_stamp too long
+  > GET /stamps
+  download_stamp()
+  < 200 application/octet-stream
+  = b'far too long'
+download_raw_stamp too long
+  > GET /stamps/raw
+  download_raw_stamp()
+  < 200 application/octet-stream
+  = b'far too long'
 # raw_strict in-process typing_TypedDict sync, in-process typing_TypedDict async
 download_report
   > GET /reports
@@ -89,3 +114,28 @@ upload_mark refused
   > POST /marks [application/octet-stream]
   < 422 application/json
   = (422, {'detail': [{'type': 'enum', 'loc': ['body'], 'msg': "Input should be 'draft' or 'final'"}]})
+upload_stamp
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'\xff\x00ok')
+  < 200 application/octet-stream
+  = b'\xff\x00ok'
+upload_stamp too long
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'far too long')
+  < 200 application/octet-stream
+  = b'far too long'
+upload_stamp too long past the client
+  > POST /stamps [application/octet-stream]
+  upload_stamp(body=b'far too long')
+  < 200 application/octet-stream
+  = (200, b'far too long')
+download_stamp too long
+  > GET /stamps
+  download_stamp()
+  < 200 application/octet-stream
+  = b'far too long'
+download_raw_stamp too long
+  > GET /stamps/raw
+  download_raw_stamp()
+  < 200 application/octet-stream
+  = b'far too long'

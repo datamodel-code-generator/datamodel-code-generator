@@ -494,9 +494,9 @@ class TypeUseBinding:
     stands for. `binary` is where the first string the models type as raw bytes sits that the use carries as text:
     in a JSON, text or URL-encoded media, an item schema, a parameter or header, or a multipart part that holds no
     files. `octets` says the models type the whole value of a text or binary media as such strings alone, none
-    written as base64, which the media carries as the raw body. `text` says a binary media's schema is written as
-    one binary string that its models type as text, such as an enum of strings, which the media carries as text read
-    by the model.
+    written as base64, which the media carries as the raw body, and `checked` that the models constrain those bytes,
+    which the targets then validate by the model. `text` says a binary media's schema is written as one binary string
+    that its models type as text, such as an enum of strings, which the media carries as text read by the model.
     """
 
     id: TypeUseId
@@ -512,6 +512,7 @@ class TypeUseBinding:
     argument: ModelHint | None = None
     binary: SourceLocation | None = None
     octets: bool = False
+    checked: bool = False
     text: bool = False
 
 

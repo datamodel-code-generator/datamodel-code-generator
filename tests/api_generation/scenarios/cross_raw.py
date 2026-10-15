@@ -7,12 +7,17 @@ reference, one `allOf`, `anyOf` or `oneOf` branch, a constraint, or a null besid
 which the backends that keep a constraint in the type hold as a union and the others as one `bytes`, or a schema
 whose branches merge into one, which the models type as `bytes` as well. An `application/octet-stream` body written as
 an enum of binary strings, which the models type as an enum, travels as the enum's text instead, which the server reads
-by the model and refuses when it names no member.
+by the model and refuses when it names no member. Bytes the models constrain, such as to four bytes, are checked by the
+model wherever they travel: the server refuses a longer request and will not send a longer response, and a client
+whose models keep the constraint, the Pydantic ones here, refuses to send or to return longer bytes; the others send
+them for the server to refuse and return them.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
+from starlette.responses import Response
 
 from datamodel_code_generator import DataModelType
 from tests.api_generation.support.cross_targets import service
@@ -31,10 +36,14 @@ BACKENDS = (
     DataModelType.MsgspecStruct,
 )
 REPORT = b"id,name\n1,caf\xc3\xa9\n2,\xff\x00\n"
+LONG = b"far too long"
 
 
 def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[str, object]:
-    """Return a service that answers the report's bytes and echoes the bytes of every other body."""
+    """Return a service that answers the report's bytes, a stamp longer than its model allows, and echoes each body.
+
+    The raw stamp is sent as a Starlette response, which the server passes on unchecked.
+    """
     del models
     return {
         "default": service(
@@ -48,6 +57,9 @@ def services(server: ModuleType, models: ModuleType, record: Recorder) -> dict[s
             upload_page=lambda body: body,
             upload_sketch=lambda body: body,
             upload_mark=lambda body: body,
+            upload_stamp=lambda body: body,
+            download_stamp=lambda: LONG,
+            download_raw_stamp=lambda: Response(LONG, media_type="application/octet-stream"),
         )
     }
 
@@ -58,8 +70,21 @@ def _final(models: ModuleType) -> object:
     return mark("final") if isinstance(mark, type) else "final"
 
 
+def _sent(kit: Kit, path: str, content: bytes) -> object:
+    """Send bytes as an application/octet-stream body past the client, and return the status and body answered."""
+    return kit.then(
+        kit.http.post(
+            f"https://raw.example.com{path}", content=content, headers={"content-type": "application/octet-stream"}
+        ),
+        lambda response: (
+            response.status_code,
+            response.json() if response.headers["content-type"] == "application/json" else response.content,
+        ),
+    )
+
+
 def calls(kit: Kit) -> Calls:
-    """Download the report, upload a note and each wrapped body that are not UTF-8, then a mark as its text."""
+    """Download the report, upload a note and each wrapped body that are not UTF-8, a mark as its text, and stamps."""
     api = kit.api.default
     return [
         ("download_report", api.download_report),
@@ -70,15 +95,10 @@ def calls(kit: Kit) -> Calls:
         ("upload_page", lambda: api.upload_page(body=b"page \xff\x00")),
         ("upload_sketch", lambda: api.upload_sketch(body=b"sketch \xff\x00")),
         ("upload_mark", lambda: api.upload_mark(body=_final(kit.models))),
-        (
-            "upload_mark refused",
-            lambda: kit.then(
-                kit.http.post(
-                    "https://raw.example.com/marks",
-                    content=b"other",
-                    headers={"content-type": "application/octet-stream"},
-                ),
-                lambda response: (response.status_code, response.json()),
-            ),
-        ),
+        ("upload_mark refused", lambda: _sent(kit, "/marks", b"other")),
+        ("upload_stamp", lambda: api.upload_stamp(body=b"\xff\x00ok")),
+        ("upload_stamp too long", lambda: api.upload_stamp(body=LONG)),
+        ("upload_stamp too long past the client", lambda: _sent(kit, "/stamps", LONG)),
+        ("download_stamp too long", api.download_stamp),
+        ("download_raw_stamp too long", api.download_raw_stamp),
     ]

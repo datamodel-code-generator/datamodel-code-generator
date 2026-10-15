@@ -227,7 +227,8 @@ class BodyMedia:
     A form's members are read as text in the kinds of `fields`, and those of a multipart form in `json_parts` as JSON.
     `additional` reads every member neither names: as text as it comes unless the form's schema types its other
     properties, and never as JSON in a URL-encoded form, whose other members `other` reads. `checked` validates such
-    text, as a mapping of their type, when the model keeps them without one.
+    text, as a mapping of their type, when the model keeps them without one. A binary body has a model's adapter only
+    when its models constrain its bytes.
     """
 
     media_type: str
@@ -313,6 +314,7 @@ class BodyAdapter:
 
 
 async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request) -> object:
+    """Return a body read as its media's kind says and validated by its model; raw bytes stay as they came."""
     adapter = media.adapter
     match media.kind:
         case "json":
@@ -327,6 +329,8 @@ async def _read(media: BodyMedia, media_type: str, body: bytes, request: Request
             return _validated(adapter, _checked(media, plain(decode_form(body, media.fields, media.other))))
         case "multipart":
             return _validated(adapter, _checked(media, plain(await _parts(request, media.members, media.additional))))
+        case "binary" if adapter is not None:
+            adapter.validate_python(body)
         case _:
             pass
     return body

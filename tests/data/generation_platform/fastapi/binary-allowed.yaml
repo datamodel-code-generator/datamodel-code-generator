@@ -55,6 +55,20 @@ paths:
           content:
             application/octet-stream:
               schema: {$ref: '#/components/schemas/Mark'}
+  /stamps:
+    post:
+      operationId: storeStamp
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary, maxLength: 4}
+      responses:
+        '200':
+          description: The stored stamp.
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary, maxLength: 4}
   /records:
     post:
       operationId: storeRecord

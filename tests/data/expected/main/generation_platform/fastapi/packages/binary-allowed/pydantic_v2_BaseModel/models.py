@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import Base64Bytes, BaseModel, Field, RootModel, SecretStr
+from pydantic import Base64Bytes, BaseModel, Field, RootModel, SecretStr, conbytes
 from typing_extensions import TypeAliasType
 
 
@@ -23,6 +23,14 @@ class FilesPostRequest(RootModel[bytes]):
 
 class FilesPostResponse(RootModel[bytes]):
     root: bytes
+
+
+class StampsPostRequest(RootModel[conbytes(max_length=4)]):
+    root: conbytes(max_length=4)
+
+
+class StampsPostResponse(RootModel[conbytes(max_length=4)]):
+    root: conbytes(max_length=4)
 
 
 class Record(BaseModel):
