@@ -44,7 +44,6 @@ class Measurement(BaseModel):
     score: Score | None = None
     counts: list[Count] | None = None
     limits: dict[str, Count] | None = None
-    patterned: dict[constr(pattern=r'^[a-z]+$'), Count] | None = None
     point: Point | None = None
     label: Count | None = None
     status: Status | None = None

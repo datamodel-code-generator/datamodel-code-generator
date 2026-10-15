@@ -5,7 +5,11 @@
   },
   {
     "native": false,
-    "error": "ValidationError"
+    "dump": [
+      {
+        "x": "a"
+      }
+    ]
   },
   {
     "native": true,
@@ -17,6 +21,10 @@
   },
   {
     "native": false,
-    "error": "ValidationError"
+    "dump": [
+      {
+        "x": "cccc"
+      }
+    ]
   }
 ]

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, RootModel, constr
+from pydantic import BaseModel, Field, RootModel
 
 
 class Count1(RootModel[int]):
@@ -13,10 +13,6 @@ class Count1(RootModel[int]):
 
 
 class Limits(RootModel[int]):
-    root: int = Field(..., le=10)
-
-
-class Patterned(RootModel[int]):
     root: int = Field(..., le=10)
 
 
@@ -56,7 +52,6 @@ class Measurement(BaseModel):
     score: Score | None = None
     counts: list[Count1] | None = None
     limits: dict[str, Limits] | None = None
-    patterned: dict[constr(pattern=r'^[a-z]+$'), Patterned] | None = None
     point: Point | None = None
     label: Count | None = None
     status: Status | None = None

@@ -32,7 +32,6 @@ class Measurement(BaseModel):
     score: conint(le=100) | None = None
     counts: list[conint(ge=5)] | None = None
     limits: dict[str, conint(le=10)] | None = None
-    patterned: dict[constr(pattern=r'^[a-z]+$'), conint(le=10)] | None = None
     point: Point | None = None
     label: int | None = None
     status: Status | None = None

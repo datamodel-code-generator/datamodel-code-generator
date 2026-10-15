@@ -6,9 +6,5 @@ from __future__ import annotations
 from pydantic import Field, RootModel, constr
 
 
-class Root1(RootModel[str]):
-    root: str = Field(..., max_length=3, min_length=2)
-
-
-class Root(RootModel[list[dict[constr(pattern=r'^x'), Root1]]]):
-    root: list[dict[constr(pattern=r'^x'), Root1]] = Field(..., title='Root')
+class Root(RootModel[list[dict[constr(pattern=r'^x'), str]]]):
+    root: list[dict[constr(pattern=r'^x'), str]] = Field(..., title='Root')
