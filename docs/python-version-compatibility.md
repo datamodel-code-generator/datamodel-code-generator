@@ -27,7 +27,7 @@ Sets the minimum Python version for the generated code. This automatically adjus
 | 3.11 | `X \| Y` | `list[T]`, `dict[K, V]` | `Self` type available |
 | 3.12 | `X \| Y` | `list[T]`, `dict[K, V]` | `type` statement available |
 | 3.13 | `X \| Y` | `list[T]`, `dict[K, V]` | `ReadOnly` TypedDict keys imported from `typing` |
-| 3.14 | `X \| Y` | `list[T]`, `dict[K, V]` | Native deferred annotations: no `from __future__ import annotations` |
+| 3.14 | `X \| Y` | `list[T]`, `dict[K, V]` | Native deferred annotations: `from __future__ import annotations` only where the output model needs it for forward references |
 | 3.15 | `X \| Y` | `list[T]`, `dict[K, V]` | `TypedDict` with `closed`/`extra_items` (PEP 728) imported from `typing`; `frozendict` builtin |
 
 ### Example: Python 3.10+
@@ -307,7 +307,7 @@ use-annotated = true
 | TypedDict `NotRequired` | `typing_extensions` | native | native | native | native | native |
 | TypedDict `ReadOnly` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native | native | native |
 | TypedDict `closed`/`extra_items` (PEP 728) | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native |
-| Deferred annotations | `__future__` import | `__future__` import | `__future__` import | `__future__` import | native | native |
+| Deferred annotations | `__future__` import | `__future__` import | `__future__` import | `__future__` import | native (`__future__` import where needed) | native (`__future__` import where needed) |
 | `frozendict` in `x-python-type` | N/A | N/A | N/A | N/A | N/A | native |
 | `TypeForm`, `NoExtraItems`, `disjoint_base` in `x-python-type` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native |
 
@@ -358,8 +358,9 @@ This occurs because Python 3.13 deprecated calling `typing._eval_type()` without
    ```
 
 !!! note
-    Targets of Python 3.14 or later use native deferred annotations (PEP 649), so the generator
-    does not add `from __future__ import annotations` for them.
+    Targets of Python 3.14 or later use native deferred annotations (PEP 649). The generator still
+    adds `from __future__ import annotations` when the output model needs explicit deferred
+    annotations for forward references or types hidden by same-named fields.
 
 ### IDE shows type errors
 
