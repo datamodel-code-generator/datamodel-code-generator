@@ -241,6 +241,9 @@
   "cookie-names": {
     "input": "cookie-names.yaml"
   },
+  "header-names": {
+    "input": "header-names.yaml"
+  },
   "native": {
     "input": "native.yaml",
     "backends": [

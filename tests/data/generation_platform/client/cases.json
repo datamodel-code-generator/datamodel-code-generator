@@ -845,6 +845,9 @@
   "cookie-names": {
     "input": "cookie-names.yaml"
   },
+  "header-names": {
+    "input": "header-names.yaml"
+  },
   "setting-errors": {
     "input": "pets.yaml",
     "config": {

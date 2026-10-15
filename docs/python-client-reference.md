@@ -455,6 +455,9 @@ unknown keys and leaves out absent ones; a dataclass drops unknown keys and leav
   UTF-8, `\` as `%5C`, so no client, proxy, or server reads `\` as `/` or ends the path early. A `%` and two hex
   digits is an octet the document already encodes and is sent as it is, so `/files/a%20b` sends `a%20b`; any other
   `%` is sent as `%25`. The client holds the encoded path from generation, so calls pay nothing for it.
+- **Header names.** A header parameter, response header, or part header whose name is not an RFC 9110 token, such as
+  `X Sp` or `X-Näme`, stops generation with an error, as it stops the generated server's, since no HTTP client or
+  server can send it.
 - **Header values.** A header carries header text only: HTAB, SP, and visible ASCII, without whitespace at either
   end, the text every HTTP client and server reads alike. RFC 9110 leaves any other byte opaque, and servers read it
   as Latin-1 or as UTF-8. A header parameter of any style, or of text content, whose value, array item, or object

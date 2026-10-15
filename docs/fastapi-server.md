@@ -1458,6 +1458,9 @@ string, such as `int | str` for `type: [integer, string]`. Without a string memb
 and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops with
 `A parameter value needs one unambiguous scalar kind`.
 
+A header parameter, response header, or part header whose name is not an RFC 9110 token, such as `X Sp` or `X-Näme`,
+stops generation with an error, on the server and the client alike, since no HTTP client or server can send it.
+
 ### Responses
 
 A service method returns the value of its primary response, which FastAPI validates and serializes with the route's
