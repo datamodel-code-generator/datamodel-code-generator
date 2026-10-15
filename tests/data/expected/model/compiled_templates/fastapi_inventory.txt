@@ -11,7 +11,7 @@ router.jinja2
 security.jinja2
 services.jinja2
 
-nodes: Call, Compare, For, Getattr, If, Macro, Name, Operand, Output, Template, TemplateData
+nodes: Call, Compare, For, Getattr, If, Macro, Name, Not, Operand, Output, Template, TemplateData
 filters:
 tests:
 globals:

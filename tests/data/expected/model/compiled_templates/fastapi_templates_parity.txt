@@ -156,6 +156,7 @@ class GetPet:
         responses={'200': Declared(media_type='application/json', model=models.Pet)},
         primary=200,
         head=True,
+        bare=False,
     )
 
 
@@ -167,6 +168,7 @@ class ListPets:
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},
+        bare=False,
     )
 
 
@@ -185,6 +187,7 @@ class DeletePet:
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},
+        bare=False,
     )
 
 === contract.jinja2 / empty
