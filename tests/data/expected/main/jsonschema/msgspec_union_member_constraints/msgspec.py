@@ -58,10 +58,31 @@ Gap: TypeAlias = Annotated[int, Meta(le=3)]
 Gap1: TypeAlias = Annotated[float, Meta(ge=5.5, le=5.9)]
 
 
+Same: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+Shared: TypeAlias = Annotated[str, Meta(max_length=3, min_length=2)]
+
+
+Shared1: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+Apart: TypeAlias = Annotated[str, Meta(max_length=3, min_length=2)]
+
+
+Apart1: TypeAlias = Annotated[str, Meta(max_length=3, pattern='^a')]
+
+
 Short: TypeAlias = Annotated[str, Meta(max_length=3)]
 
 
 NullableShort: TypeAlias = Annotated[str, Meta(max_length=3)] | None
+
+
+Mixed1: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+Mixed: TypeAlias = str
 
 
 Pair1: TypeAlias = Annotated[str, Meta(max_length=3)]
@@ -88,3 +109,7 @@ class Upload(Struct):
     gap: Gap | Gap1
     initials: NullableShort
     pair: Pair
+    same: Same
+    shared: str | Shared1
+    apart: str
+    mixed: Mixed

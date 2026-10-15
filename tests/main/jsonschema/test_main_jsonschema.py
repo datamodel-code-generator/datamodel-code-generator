@@ -23502,13 +23502,14 @@ def test_main_msgspec_float_multiple_of(output_file: Path, entrypoint: str) -> N
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / "rejected.txt")
 
 
-@pytest.mark.parametrize("stem", ["msgspec", "no_use_annotated"])
+@pytest.mark.parametrize("stem", ["msgspec", "no_use_annotated", "collapse_root_models"])
 def test_main_msgspec_union_member_constraints(output_file: Path, stem: str) -> None:
     """Test msgspec writes union members of one type without Meta, warns per field, and decodes every member's values.
 
     msgspec checks all members of a type in a union against the constraints of each of them, so a constrained
     member of `bytes | Annotated[bytes, Meta(max_length=3)]` would reject the long bytes the other member accepts.
-    Without `Annotated`, no member has Meta, so the union keeps its members.
+    A member whose constraints every member of its type shares keeps them. Without `Annotated`, no member has Meta,
+    so the union keeps its members. Collapsing a root model moves its warning to the field that inlines it.
     """
     name = "msgspec_union_member_constraints"
     with warnings.catch_warnings(record=True) as recorded_warnings:
@@ -23523,6 +23524,7 @@ def test_main_msgspec_union_member_constraints(output_file: Path, stem: str) -> 
                 *("--output-model-type", "msgspec.Struct", "--formatters", "builtin"),
                 *("--disable-timestamp", "--target-python-version", "3.11"),
                 *(["--no-use-annotated"] if stem == "no_use_annotated" else []),
+                *(["--collapse-root-models"] if stem == "collapse_root_models" else []),
             ],
             force_exec_validation=True,
         )

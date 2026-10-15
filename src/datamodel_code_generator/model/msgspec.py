@@ -152,7 +152,7 @@ class _UnionLeaf(NamedTuple):
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Iterator, Mapping
+    from collections.abc import Callable, Collection, Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator.reference import Reference
@@ -173,7 +173,7 @@ DataModelFieldBaseT = TypeVar("DataModelFieldBaseT", bound=DataModelFieldBase)
 
 def import_extender(cls: type[DataModelFieldBaseT]) -> type[DataModelFieldBaseT]:
     """Extend imports property with msgspec-specific imports."""
-    original_getter = cast("Callable[[DataModelFieldBaseT], tuple[Import, ...]]", cls.imports.fget)
+    original_getter: Callable[[DataModelFieldBaseT], tuple[Import, ...]] = cast("Any", cls.imports.fget)
 
     @wraps(original_getter)
     def new_imports(self: DataModelFieldBaseT) -> tuple[Import, ...]:
@@ -1064,16 +1064,23 @@ class DataModelField(DataModelFieldBase):
     def _conflicting_leaves(leaves: Mapping[str, list[_UnionLeaf]]) -> tuple[dict[int, _UnionLeaf], set[int]]:
         """Return the constrained members of a union that would reject values another member accepts, by identity.
 
-        Also return the int members among them that would reject an integer a float member accepts, since msgspec
-        decodes every integer as the int member; constraints that admit every such integer stay.
+        Each such member comes with the constraints it loses. A member of one type whose constraints are the ones
+        every member of that type shares keeps them, since msgspec checks them on every member; the other members
+        lose all of theirs. Also return the int members that would reject an integer a float member accepts, since
+        msgspec decodes every integer as the int member; constraints that admit every such integer stay.
         """
-        dropped = {
-            id(leaf.member): leaf
-            for same_kind in leaves.values()
-            if len(same_kind) > 1
-            for leaf in same_kind
-            if leaf.constraints
-        }
+        dropped: dict[int, _UnionLeaf] = {}
+        for same_kind in leaves.values():
+            if len(same_kind) < 2:  # noqa: PLR2004
+                continue
+            constraint_sets = [frozenset(leaf.constraints) for leaf in same_kind]
+            shared = frozenset.intersection(*constraint_sets)
+            kept = shared if shared in constraint_sets else frozenset()
+            dropped.update(
+                (id(leaf.member), leaf._replace(constraints=tuple(c for c in leaf.constraints if c not in kept)))
+                for leaf, constraints in zip(same_kind, constraint_sets, strict=True)
+                if constraints != kept
+            )
         floats = [
             () if id(leaf.member) in dropped else leaf.constraints
             for leaf in leaves.get("float", ())
@@ -1121,13 +1128,31 @@ class DataModelField(DataModelFieldBase):
                     owner.data_types[index : index + 1] = members = self._unconstrained_members(member, dropped, spread)
                     for unconstrained in members:
                         unconstrained.parent = owner
-        if kinds or integer_keywords:
-            self.__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY] = (
-                frozenset(kinds),
-                frozenset(keywords),
-                frozenset(integer_keywords),
-            )
-            self.invalidate_semantic_caches()
+        self._record_unconstrained_union_members(kinds, keywords, integer_keywords)
+
+    def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:
+        """Take over the union members written without constraints from a field whose type this field inlines.
+
+        Collapsing a root model copies its field's type into this field, so this field warns about its members.
+        """
+        if (recorded := source.__dict__.get(_UNCONSTRAINED_UNION_MEMBERS_KEY)) is not None:
+            self._record_unconstrained_union_members(*recorded)
+
+    def _record_unconstrained_union_members(
+        self, kinds: Collection[str], keywords: Collection[str], integer_keywords: Collection[str]
+    ) -> None:
+        """Record the kinds and the Meta keywords of the union members this field is written without."""
+        if not kinds and not integer_keywords:
+            return
+        recorded_kinds, recorded_keywords, recorded_integer_keywords = self.__dict__.get(
+            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset())
+        )
+        self.__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY] = (
+            recorded_kinds | frozenset(kinds),
+            recorded_keywords | frozenset(keywords),
+            recorded_integer_keywords | frozenset(integer_keywords),
+        )
+        self.invalidate_semantic_caches()
 
     @property
     def dropped_constraints_warning(self) -> str | None:

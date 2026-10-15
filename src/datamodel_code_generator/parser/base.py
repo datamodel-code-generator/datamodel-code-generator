@@ -4909,6 +4909,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                     if replacement_context is None:  # pragma: no cover
                         continue
+                    model_field.inherit_unconstrained_union_members(root_type_field)
                     with replacement_context:
                         for d in copied_data_type.all_data_types:
                             _register_data_type_import(

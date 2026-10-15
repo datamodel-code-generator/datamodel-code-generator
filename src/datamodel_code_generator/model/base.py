@@ -620,6 +620,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def unconstrain_union_members(self) -> None:
         """Write union members without the constraints the output model cannot check on one member alone."""
 
+    def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:
+        """Take over the union members written without constraints from a field whose type this field inlines."""
+
     @property
     def requires_immediate_forward_reference_resolution(self) -> bool:
         """Return whether this field's annotation is evaluated in the class body."""

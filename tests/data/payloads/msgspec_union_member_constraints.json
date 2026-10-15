@@ -16,7 +16,11 @@
     "half": 3,
     "gap": 2,
     "initials": "abc",
-    "pair": "abc"
+    "pair": "abc",
+    "same": "abc",
+    "shared": "a",
+    "apart": "abc",
+    "mixed": "Pagination"
   },
   "invalid": {
     "page": 3,
@@ -35,6 +39,10 @@
     "half": 0.25,
     "gap": 4,
     "initials": "abcd",
-    "pair": "abcd"
+    "pair": "abcd",
+    "same": "abcd",
+    "shared": "abcd",
+    "apart": "abcd",
+    "mixed": 3
   }
 }

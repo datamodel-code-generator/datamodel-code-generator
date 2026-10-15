@@ -11,6 +11,12 @@
       "type": ["string", "null"],
       "maxLength": 3
     },
+    "Mixed": {
+      "anyOf": [
+        {"type": "string"},
+        {"type": "string", "maxLength": 3}
+      ]
+    },
     "Pair": {
       "anyOf": [
         {"type": "string", "maxLength": 3},
@@ -116,10 +122,32 @@
     },
     "pair": {
       "$ref": "#/definitions/Pair"
+    },
+    "same": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3},
+        {"type": "string", "maxLength": 3}
+      ]
+    },
+    "shared": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3, "minLength": 2},
+        {"type": "string", "maxLength": 3}
+      ]
+    },
+    "apart": {
+      "anyOf": [
+        {"type": "string", "maxLength": 3, "minLength": 2},
+        {"type": "string", "maxLength": 3, "pattern": "^a"}
+      ]
+    },
+    "mixed": {
+      "$ref": "#/definitions/Mixed"
     }
   },
   "required": [
     "page", "name", "count", "label", "tags", "code", "short",
-    "nickname", "alias", "amount", "ratio", "level", "step", "half", "gap", "initials", "pair"
+    "nickname", "alias", "amount", "ratio", "level", "step", "half", "gap", "initials", "pair",
+    "same", "shared", "apart", "mixed"
   ]
 }
