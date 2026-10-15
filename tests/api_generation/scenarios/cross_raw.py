@@ -9,8 +9,8 @@ whose branches merge into one, which the models type as `bytes` as well. An `app
 an enum of binary strings, with or without its string type, which the models type as an enum, travels as the enum's
 text instead, which the server reads by the model and refuses when it names no member. Bytes the models constrain,
 such as to four bytes, are checked by the model wherever they travel: the server refuses a longer request and will
-not send a longer response, and a client whose models keep the constraint, the Pydantic ones here, refuses to send or
-to return longer bytes; the others send them for the server to refuse and return them.
+not send a longer response, and a client whose models keep the constraint, the Pydantic and msgspec ones here, refuses
+to send or to return longer bytes; the others send them for the server to refuse and return them.
 """
 
 from __future__ import annotations
