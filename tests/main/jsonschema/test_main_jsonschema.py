@@ -6391,6 +6391,34 @@ def test_main_jsonschema_combine_one_of_object(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("keyword", ["one_of", "any_of"])
+def test_main_jsonschema_combined_branch_enum_intersection(output_file: Path, keyword: str) -> None:
+    """Intersect the parent enum with each oneOf/anyOf branch enum, as allOf does."""
+    input_path = JSON_SCHEMA_DATA_PATH / "combined_branch_enum_intersection" / f"{keyword}.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"combined_branch_enum_intersection/{keyword}.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    valid = {"command": "restart", "previousTaskId": "x"}
+    invalid = {"command": "restart"}
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"combined_branch_enum_intersection_{keyword}",
+        model_name="Task",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="enum",
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",

@@ -7220,6 +7220,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         child: dict[str, Any],
         *,
         schema_map: bool = False,
+        intersect_bounds: bool = True,
     ) -> dict[str, Any]:
         """Intersect allOf bounds and enums only in positive schema positions."""
         result = parent.copy()
@@ -7234,11 +7235,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         previous,
                         value,
                         schema_map=not schema_map and key in _INHERITED_SCHEMA_MAP_FIELDS,
+                        intersect_bounds=intersect_bounds,
                     )
                 else:
                     result[key] = self._deep_merge(previous, value)
             elif (
-                not schema_map and key in _ALLOF_BOUND_CONSTRAINT_FIELDS and previous is not None and value is not None
+                intersect_bounds
+                and not schema_map
+                and key in _ALLOF_BOUND_CONSTRAINT_FIELDS
+                and previous is not None
+                and value is not None
             ):
                 # Preserve the legacy child representation when two bounds are equal.
                 result[key] = JsonSchemaParser._intersect_constraint(key, value, previous)
@@ -7628,8 +7634,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             self._preserve_inherited_materialized_type_shape(
                                 target_attribute,
                                 self.SCHEMA_OBJECT_TYPE.model_validate(
-                                    self._deep_merge(
-                                        base_object, merged_attr.model_dump(exclude_unset=True, by_alias=True)
+                                    self._merge_all_of_schema(
+                                        base_object,
+                                        merged_attr.model_dump(exclude_unset=True, by_alias=True),
+                                        intersect_bounds=False,
                                     ),
                                 ),
                             )
@@ -7642,9 +7650,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._preserve_inherited_materialized_type_shape(
                         target_attribute,
                         self.SCHEMA_OBJECT_TYPE.model_validate(
-                            self._deep_merge(
+                            self._merge_all_of_schema(
                                 base_object,
                                 target_attribute.model_dump(exclude_unset=True, by_alias=True),
+                                intersect_bounds=False,
                             ),
                         ),
                     )
