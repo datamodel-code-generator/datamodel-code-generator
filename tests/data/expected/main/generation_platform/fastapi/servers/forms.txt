@@ -231,8 +231,7 @@ service DefaultService without its methods: TypeError
   post_extra_scores(ExtraScoresPostRequest(name='n', first=[1, 2], second=[3]))
 < 204 - b''
 > POST /extra-scores
-  post_extra_scores(ExtraScoresPostRequest(name='4', first=[1, 'two'], second=['3.5']))
-< 204 - b''
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "first", 1]}, {"type": "int_parsing", "loc": ["body", "second", 0]}]
 > POST /extra-bases
   post_extra_bases(ExtraBasesPostRequest(base='b', name='n', first=Filter(color='blue', minAge=MISSING)))
 < 204 - b''
@@ -250,5 +249,4 @@ service DefaultService without its methods: TypeError
   post_extra_profiles(ExtraProfilesPostRequest1(count=3, first=['01', '2']), 'application/x-www-form-urlencoded; profile=words')
 < 204 - b''
 > POST /extra-profiles
-  post_extra_profiles(ExtraProfilesPostRequest(name='n', first='one'), 'application/x-www-form-urlencoded')
-< 204 - b''
+< 422 application/json [{"type": "int_parsing", "loc": ["body", "first"]}]

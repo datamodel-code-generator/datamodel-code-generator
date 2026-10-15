@@ -3291,8 +3291,16 @@ class _SchemaUses(_Models):
         return True
 
     def extras(self) -> None:
-        """Bind each model's typed additional properties that no field holds."""
-        for symbol, location in self.locations.items():
+        """Bind each model's typed additional properties that no field holds.
+
+        A model that reuse made in place of an equal one binds those of the schema the replaced model came from.
+        """
+        for symbol, found in self.locations.items():
+            location = (
+                found
+                if found is not None or (original := self.binder.reused(self.binder.models[symbol])) is None
+                else self.model_location(original)
+            )
             if location is None or self.schemas.at(location).additional != "schema":
                 continue
             declaration = _child(location, "additionalProperties")

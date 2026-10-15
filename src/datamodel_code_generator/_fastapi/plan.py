@@ -224,9 +224,10 @@ class MediaSpec:
 
     A form an adapter reads comes with the plans of its members: a member is read as text in its field's kind, or,
     as a multipart member without one, as JSON. `additional` reads the properties the form's schema types without
-    declaring them, when that is not as the text they come as, which any other member is. `extras` says JSON whose
-    type reaches a Pydantic dataclass that allows extra members, which a response writes through the runtime's
-    serializer, as Pydantic's own writes none.
+    declaring them, when that is not as the text they come as, which any other member is, and `checked` is their
+    type when they are text that the model keeps without one, as a dataclass does. `extras` says JSON whose type
+    reaches a Pydantic dataclass that allows extra members, which a response writes through the runtime's serializer,
+    as Pydantic's own writes none.
     """
 
     media_type: str
@@ -236,6 +237,7 @@ class MediaSpec:
     fields: tuple[FieldPlan, ...] = ()
     json_parts: tuple[JsonPartSpec, ...] = ()
     additional: FieldPlan | JsonPartSpec | None = None
+    checked: TypeView | None = None
     extras: bool = False
 
 
@@ -1214,7 +1216,7 @@ class Planner:  # noqa: PLR0904
         text alone, so generation stops for such a member, as it does for a parameter and for the client. An
         encoding's style spreads such a member over parts or pairs that only the request body mode reads. The other
         properties a schema types are read by the same rule, under whatever names they come, and need no plan when
-        that reads them as the text they come as.
+        that reads them as the text they come as; their type checks such text when the model keeps them without it.
         """
         assert media.use is not None
         json_members = _json_members(media)
@@ -1234,6 +1236,9 @@ class Planner:  # noqa: PLR0904
             fields=tuple(plan for plan in plans if isinstance(plan, FieldPlan)),
             json_parts=tuple(plan for plan in plans if isinstance(plan, JsonPartSpec)),
             additional=None if additional == _TEXT else additional,
+            checked=extras.type
+            if extras is not None and isinstance(additional, FieldPlan) and self.wire.kinds.kept(media.use) is None
+            else None,
         )
 
     def form_plan(

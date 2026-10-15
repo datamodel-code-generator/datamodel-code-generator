@@ -13222,8 +13222,9 @@ URL-encoded form, which an adapter then reads. Without such a schema, a part the
 the last of its name, and the model keeps it, ignores it, or refuses it, as its options and
 `additionalProperties: false` say. The `pydantic_v2.dataclass` models have no field for other properties, so the
 server reads typed ones by the type their schema gives them, the form's own or that of a schema it combines with
-`allOf`: a JSON part is checked by that type, text is passed on as it is read, and the model keeps each value as an
-attribute beside its fields, which its `repr` leaves out.
+`allOf`, also when `--reuse-model` makes the form's model inherit an equal one whose schema types them otherwise. That
+type checks JSON parts and text alike, answering `422` with the records of every value it rejects at `["body", name]`,
+and the model keeps each value as the type returns it, as an attribute beside its fields, which its `repr` leaves out.
 
 A URL-encoded form carries text alone. For a member without one scalar kind, such as an object, an array of objects,
 or `type: [integer, boolean]`, declared by the schema or by a schema it combines with `allOf`, generation stops with
@@ -18359,7 +18360,8 @@ The properties a schema types without declaring them, with `additionalProperties
 whatever names a body gives them, by the type of their values: an object is one `application/json` part, an array of
 objects one for each item, and a union of an array and another type one part. The type is the one the model keeps
 them as, in a field of its own or one it inherits from a schema combined with `allOf`, and for a model without such a
-field, the type of their schema, the form's own or that of a schema it combines with `allOf`. A multipart response
+field, the type of their schema, the form's own or that of a schema it combines with `allOf`, also when
+`--reuse-model` makes the form's model inherit an equal one whose schema types them otherwise. A multipart response
 reads them by that type too. A URL-encoded form writes them as text of that type's kind, one pair for each item of an
 array, and generation stops with `A parameter value needs one unambiguous scalar kind` at the `additionalProperties`
 that types them when the type has none. The generated FastAPI server reads the members of form bodies, these other

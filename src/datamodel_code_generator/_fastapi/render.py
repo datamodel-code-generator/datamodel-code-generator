@@ -1414,6 +1414,8 @@ def _body_media(module: Module, body: BodySpec) -> str:
                 else field_plan(module.local, additional)
             )
             entries.append(f"additional={plan}")
+        if (checked := item.checked) is not None:
+            entries.append(f"checked={module.name('pydantic', 'TypeAdapter')}(dict[str, {module.annotation(checked)}])")
         media.append(f"{module.local('_runtime.server.requests', 'BodyMedia')}({', '.join(entries)})")
     return _tuple(media)
 
