@@ -198,7 +198,6 @@ _NO_CONSTRAINT_KEYWORDS: frozenset[str] = frozenset()
 _DECLARED_STRING_CONSTRAINT_KEYWORDS: frozenset[str] = STRING_KEYWORDS | {"minItems", "maxItems"}
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 _ALL_OF_REFERENCE_TARGET_EXCLUDED_FIELDS = frozenset({"ref", "enum", "allOf", "anyOf", "oneOf", "custom_type_path"})
-_ALL_OF_REFERENCE_TARGET_EXCLUDED_EXTRAS = frozenset({"const", "x-python-import", "x-python-type"})
 _ALL_OF_REFERENCE_VALUE_EXCLUDED_FIELDS = frozenset({
     "ref",
     "enum",
@@ -252,6 +251,12 @@ _ALLOF_BOUND_CONSTRAINT_FIELDS = frozenset({
     *_INHERITED_PROPERTY_COUNT_CONSTRAINT_FIELDS,
 })
 _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS = frozenset({"contains", "maxContains", "minContains"})
+_ALL_OF_REFERENCE_TARGET_EXCLUDED_EXTRAS = frozenset({
+    "const",
+    "x-python-import",
+    "x-python-type",
+    *_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
+})
 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY = "_raw_schema_explicit_field_extras"
 _INHERITED_TYPE_SHAPE_FIELDS = frozenset({
     "$dynamicRef",
