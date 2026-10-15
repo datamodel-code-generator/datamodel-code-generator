@@ -417,6 +417,17 @@ def _normalize_result_module_path(module: ModulePath, *, treat_dot_as_module: bo
     return tuple(part[: part.rfind(".")].replace(".", "_") + part[part.rfind(".") :] for part in normalized)
 
 
+def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
+    """Reserve and return the first ``<name>_aliased`` name, with a suffix when taken."""
+    alias = f"{name}_aliased"
+    suffix = 1
+    while alias in reserved_names:
+        alias = f"{name}_aliased_{suffix}"
+        suffix += 1
+    reserved_names.add(alias)
+    return alias
+
+
 def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
     """Allocate aliases only where a property hides an emitted expression name.
 
@@ -450,12 +461,7 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
     for name, (from_, imported_name) in shadowable_imports.items():
         if name not in collisions:
             continue
-        alias = f"{name}_aliased"
-        suffix = 1
-        while alias in reserved_names:
-            alias = f"{name}_aliased_{suffix}"
-            suffix += 1
-        reserved_names.add(alias)
+        alias = _reserve_import_alias(name, reserved_names)
         keep_unaliased = (from_, imported_name) in type_alias_imports
         aliased_import = Import(from_=from_, import_=imported_name, alias=alias, keep_unaliased=keep_unaliased)
         bindings[name] = alias
@@ -3024,6 +3030,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._renamed_types: dict[str, str] = {}
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
         self._collapsed_reuse_users: dict[int, tuple[DataType, Reference]] = {}
+        self._reused_variant_tag_fields: dict[int, DataModelFieldBase] = {}
         self._quotes_hidden_types = False
 
         self.keyword_only = config.keyword_only
@@ -4198,6 +4205,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 field_name_mode: Literal["resolved", "either"] = (
                     "resolved" if field.SUPPORTS_DISCRIMINATOR else "either"
                 )
+                has_reused_variant = any(
+                    isinstance(source := data_type.reference.source, DataModel) and source.reused_reference is not None
+                    for data_type in field.data_type.data_types
+                    if data_type.reference
+                )
                 for index, data_type in enumerate(field.data_type.data_types):
                     if not data_type.reference:  # pragma: no cover
                         continue
@@ -4209,6 +4221,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     ):  # pragma: no cover
                         continue
 
+                    annotates_new_tag = has_reused_variant and not (
+                        tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+                    )
                     # A resolved Python name can equal a different field's wire name.
                     discriminator_values = _get_discriminator_values(
                         discriminator_model,
@@ -4251,6 +4266,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             and (literal := literals[0]) == expected_value
                         ):
                             has_one_literal = True
+                            if not has_reused_variant:
+                                self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=False)
                             match discriminator_model:
                                 case _ if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                                     tags.append((discriminator_model, discriminator_field, literal))
@@ -4293,6 +4310,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
+                        self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
                         if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
                                 discriminator_model,
@@ -4351,6 +4369,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             self.model_resolver.prepare_explicit_field_aliases(
                                 [discriminator_field], discriminator_model.reference, self.field_name_model_type
                             )
+                        self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
                         if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
                                 discriminator_model,
@@ -5296,6 +5315,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             unions.append((name, data_types, discriminator.get("mapping", {})))
         return unions
+
+    def __record_reused_variant_tag_field(self, field: DataModelFieldBase, *, annotates_tag: bool) -> None:
+        """Remember a field that a union with a reused variant annotates with a new tag, else forget it.
+
+        Such unions were left untagged before, so the ``Literal`` that only their tags import must not rename a model.
+        """
+        if annotates_tag:
+            self._reused_variant_tag_fields[id(field)] = field
+        else:
+            self._reused_variant_tag_fields.pop(id(field), None)
 
     def __record_collapsed_variant_tags(  # noqa: PLR0913
         self,
@@ -6387,6 +6416,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for model in models:
             if model.class_name not in imported_names:  # pragma: no cover
                 continue
+            if model.class_name == IMPORT_LITERAL.import_ and self.__alias_reused_variant_literal(models, imports):
+                continue
 
             self.generation_store.update_model_reference(  # pragma: no cover
                 model,
@@ -6399,6 +6430,41 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             renamed = True
         return renamed
+
+    def __alias_reused_variant_literal(self, models: list[DataModel], imports: Imports) -> bool:
+        """Import ``typing.Literal`` under an alias when only the tags of unions with reused variants need it.
+
+        Such unions were left untagged before, so a model named ``Literal`` kept its name, which importers rely on.
+        """
+        tag_fields = self._reused_variant_tag_fields
+        fields = [field for model in models for field in model.fields]
+        annotated = [field for field in fields if tag_fields.get(id(field)) is field]
+        bindings = {
+            (from_, name): imports.get_effective_name(from_, name) for from_, names in imports.items() for name in names
+        }
+        if (
+            not annotated
+            or [key for key, binding in bindings.items() if binding == IMPORT_LITERAL.import_]
+            != [(IMPORT_LITERAL.from_, IMPORT_LITERAL.import_)]
+            or any(IMPORT_LITERAL in field.imports for field in fields if tag_fields.get(id(field)) is not field)
+        ):
+            return False
+        reserved_names = {
+            *(model.class_name for model in models),
+            *(field.name for field in fields if field.name is not None),
+            *bindings.values(),
+        }
+        aliased_import = Import(
+            from_=IMPORT_LITERAL.from_,
+            import_=IMPORT_LITERAL.import_,
+            alias=_reserve_import_alias(IMPORT_LITERAL.import_, reserved_names),
+        )
+        imports.apply_alias(aliased_import)
+        for field in annotated:
+            for data_type in field.data_type.all_data_types:
+                data_type._set_literal_import(aliased_import)  # noqa: SLF001
+            field.invalidate_semantic_caches()
+        return True
 
     def __alias_shadowed_imports(
         self,

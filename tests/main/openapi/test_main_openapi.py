@@ -2009,6 +2009,46 @@ def test_main_usable_discriminator_invalid_dotted_models_stdout(capsys: pytest.C
 
 
 @pytest.mark.isolate_builtin_formatter_config
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("pydantic_v2.dataclass", ["--output-model-type", "pydantic_v2.dataclass"]),
+        ("dataclasses.dataclass", ["--output-model-type", "dataclasses.dataclass"]),
+        pytest.param(
+            "msgspec.Struct",
+            ["--output-model-type", "msgspec.Struct"],
+            marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the discriminated union PetOwner.pet"),
+        ),
+        ("reuse_scope_tree", ["--reuse-scope", "tree"]),
+    ],
+)
+def test_main_usable_discriminator_invalid_dotted_models_reuse(
+    output_dir: Path, expected_name: str, extra_args: list[str]
+) -> None:
+    """Keep a model named Literal when the tags that reused variants get import typing.Literal, under an alias."""
+    expected = EXPECTED_OPENAPI_PATH / "usable_discriminator_invalid_dotted_models_reuse"
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "usable_discriminator_invalid_dotted_models.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=expected / expected_name,
+        extra_args=[
+            "--reuse-model",
+            *extra_args,
+            "--target-python-version",
+            "3.14",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "Bar.field_1") as module:
+        assert_output(f"{module.Literal(bar='bar')!r}\n", expected / "literal.txt")
+
+
+@pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_identical_invalid_dotted_models_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve identical redefinitions when concatenated text remains usable."""
     expected_path = EXPECTED_OPENAPI_PATH / "usable_identical_invalid_dotted_models_stdout.py"
