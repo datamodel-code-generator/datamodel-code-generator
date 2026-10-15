@@ -138,6 +138,14 @@
         }
       ],
       "maxItems": 1
+    },
+    "ref_pair": {
+      "$ref": "#/definitions/Pair",
+      "contains": {
+        "const": "a"
+      },
+      "minContains": 0,
+      "maxItems": 2
     }
   }
 }

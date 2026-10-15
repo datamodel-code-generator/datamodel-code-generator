@@ -21,6 +21,9 @@
     ],
     "single": [
       "a"
+    ],
+    "ref_pair": [
+      "b"
     ]
   },
   "invalid": {
@@ -38,6 +41,7 @@
     "single": [
       "a",
       "b"
-    ]
+    ],
+    "ref_pair": []
   }
 }
