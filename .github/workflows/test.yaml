@@ -387,6 +387,10 @@ jobs:
             name: FastAPI server installation e2e
             os: ubuntu-24.04
             coverage: false
+          - tox_env: client-install-nocov-e2e
+            name: Client installation e2e
+            os: ubuntu-24.04
+            coverage: false
           - tox_env: typing-nocov-e2e
             name: FastAPI server, client, and model codec typing e2e
             os: ubuntu-24.04
