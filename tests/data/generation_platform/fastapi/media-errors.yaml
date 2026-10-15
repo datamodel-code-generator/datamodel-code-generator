@@ -307,6 +307,19 @@ paths:
               properties: {a: {type: string}}
       responses:
         "204": {description: Done.}
+  /invalid:
+    post:
+      operationId: postInvalid
+      requestBody:
+        content:
+          multipart/form data:
+            schema: {type: object, properties: {a: {type: string}}}
+      responses:
+        "200":
+          description: Done.
+          content:
+            application/json; charset:
+              schema: {type: string}
   /spread:
     post:
       operationId: postSpread

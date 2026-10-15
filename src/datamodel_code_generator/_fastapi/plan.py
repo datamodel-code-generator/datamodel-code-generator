@@ -1121,7 +1121,7 @@ class Planner:  # noqa: PLR0904
         FastAPI takes the JSON null of a required body for an omitted one, so an adapter reads a required JSON body
         whose type accepts null.
         """
-        media = tuple(self.media(child) for child in declaration.children if child.kind == "media")
+        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
         for item in media:
             self.bound(item.use)
         spec = BodySpec(
@@ -1190,9 +1190,17 @@ class Planner:  # noqa: PLR0904
             for item in media
         )
 
-    def media(self, declaration: WireDeclaration) -> MediaSpec:
-        """Return one media declaration with its normalized type, kind, type use, and whether it keeps extras."""
-        media_type = normalize_media_type(declaration.name or "")
+    def media(self, operation: OperationContract, declaration: WireDeclaration) -> MediaSpec:
+        """Return one media declaration with its normalized type, kind, type use, and whether it keeps extras.
+
+        A key that is no media type is reported, as the client reports it.
+        """
+        try:
+            media_type = normalize_media_type(declaration.name or "")
+        except ValueError:
+            message = f"The media type {declaration.name!r} of {_label(operation)} is not a media type"
+            self.problems.append(_problem("F_MEDIA_UNSUPPORTED", message, declaration.use_site))
+            media_type = declaration.name or ""
         use = self.use(declaration.schemas)
         kind = body_kind(media_type, use)
         return MediaSpec(
@@ -1350,7 +1358,7 @@ class Planner:  # noqa: PLR0904
 
         A response whose default media is JSON of a type that accepts null sends None as null, as the models decide.
         """
-        media = tuple(self.media(child) for child in declaration.children if child.kind == "media")
+        media = tuple(self.media(operation, child) for child in declaration.children if child.kind == "media")
         self.problems.extend(
             _problem(
                 "F_MEDIA_UNSUPPORTED",
