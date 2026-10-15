@@ -2296,6 +2296,50 @@ def _apply_discriminator_tags(tags: list[_DiscriminatorTag], tag_field: str, *, 
         _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
 
+def _has_cyclic_ancestry(model: DataModel) -> bool:
+    """Return whether the base classes of a model, however distant, inherit from one another in a cycle."""
+    visiting: dict[int, bool] = {id(model): True}
+    stack = [(id(model), iter(_find_base_classes(model)))]
+    while stack:
+        if (base := next(stack[-1][1], None)) is None:
+            visiting[stack.pop()[0]] = False
+            continue
+        if visiting.get(id(base)):
+            return True
+        if id(base) not in visiting:
+            visiting[id(base)] = True
+            stack.append((id(base), iter(_find_base_classes(base))))
+    return False
+
+
+def _tag_fields_of_tagged_bases(models: Iterable[DataModel]) -> None:
+    """Tag the structs that declare the tag field of a tagged base as a field, which msgspec rejects.
+
+    A struct inherits the tag of its base, so its single literal becomes its own tag, as for a tagged variant. Bases
+    of other modules are tagged by then, as every module is processed first. Inheritance cycles are reported later.
+    """
+    for model in models:
+        if (
+            not model.base_classes
+            or _has_cyclic_ancestry(model)
+            or not (
+                tag_fields := {
+                    tag[0] for base in _find_base_classes(model) if (tag := base.discriminator_tag) is not None
+                }
+            )
+        ):
+            continue
+        for field in model.fields:
+            if (
+                not field.extras.get("is_classvar")
+                and (tag_field := next(iter({field.name, _get_source_field_name(field)} & tag_fields), None))
+                is not None
+                and len(literals := field.data_type.literals) == 1
+            ):
+                model.apply_discriminator_tag(field, tag_field, literals[0])
+                _clear_model_imports_cache_if_retained(model, can_retain_cache=True)
+
+
 def _get_mapped_discriminator_tag(
     values: list[DiscriminatorValue], enum_source: Enum | None
 ) -> DiscriminatorValue | None:
@@ -4285,13 +4329,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             has_imported_literal = any(import_ == IMPORT_LITERAL for import_ in imports)
             if has_imported_literal:  # pragma: no cover
                 imports.append(IMPORT_LITERAL)
-        if not unions:
-            return
-        derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
-        for derived_model in {id(model): model for model in chain(self.results, models)}.values():
-            for base_model in _find_base_classes(derived_model):
-                derived_models[base_model.path].append(derived_model)
-        _tag_discriminator_unions(unions, derived_models, can_retain_cache=can_retain_cache)
+        if unions:
+            derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
+            for derived_model in {id(model): model for model in chain(self.results, models)}.values():
+                for base_model in _find_base_classes(derived_model):
+                    derived_models[base_model.path].append(derived_model)
+            _tag_discriminator_unions(unions, derived_models, can_retain_cache=can_retain_cache)
 
     @classmethod
     def _create_set_from_list(cls, data_type: DataType) -> DataType | None:
@@ -8309,6 +8352,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_to_import[module_] = ctx.imports
             contexts.append(ctx)
 
+        if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+            _tag_fields_of_tagged_bases(model for ctx in contexts for model in ctx.models)
         self.__import_removed_reuse_canonicals(
             contexts,
             internal_modules=internal_modules,

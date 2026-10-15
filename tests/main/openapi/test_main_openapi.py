@@ -1097,6 +1097,24 @@ def test_main_openapi_msgspec_tagged_unions_modules(output_dir: Path) -> None:
     )
 
 
+def test_main_openapi_msgspec_tagged_base_subclass_modules(output_dir: Path) -> None:
+    """Tag a struct that declares the tag field of a base that a later module tags, so that it imports."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_msgspec_tagged_base_subclass_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        expected_directory=EXPECTED_OPENAPI_PATH / "discriminator" / "msgspec_tagged_base_subclass_modules",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--target-python-version",
+            "3.10",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_main_openapi_msgspec_tagged_unions_inherited(output_file: Path, entrypoint: str) -> None:
     """Leave a union untagged when a base or derived struct, however distant or renamed, keeps its property."""

@@ -38,6 +38,10 @@ Pet: TypeAlias = Kitten | Dog
 Aquarium: TypeAlias = Goldfish | Dog
 
 
+class Cage(Struct):
+    pet: Cat | Dog | UnsetType = UNSET
+
+
 class Hound(Dog, tag_field='kind', tag='dog'):
     pass
 
@@ -56,7 +60,3 @@ class Parrot(Bird):
 
 
 Aviary: TypeAlias = Parrot | Dog
-
-
-class Cage(Struct):
-    pet: Cat | Hound | UnsetType = UNSET

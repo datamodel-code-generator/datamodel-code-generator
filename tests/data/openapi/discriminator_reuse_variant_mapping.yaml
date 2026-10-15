@@ -78,12 +78,12 @@ components:
         pet:
           oneOf:
             - $ref: "#/components/schemas/Cat"
-            - $ref: "#/components/schemas/Hound"
+            - $ref: "#/components/schemas/Dog"
           discriminator:
             propertyName: kind
             mapping:
               cat: "#/components/schemas/Cat"
-              dog: "#/components/schemas/Hound"
+              dog: "#/components/schemas/Dog"
     Hound:
       type: object
       required: [kind]

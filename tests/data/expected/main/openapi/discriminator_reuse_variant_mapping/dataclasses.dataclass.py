@@ -45,6 +45,11 @@ Aquarium: TypeAlias = Goldfish | Dog
 
 
 @dataclass
+class Cage:
+    pet: Cat | Dog | None = None
+
+
+@dataclass
 class Hound(Dog):
     kind: Literal['dog']
 
@@ -66,8 +71,3 @@ class Parrot(Bird):
 
 
 Aviary: TypeAlias = Parrot | Dog
-
-
-@dataclass
-class Cage:
-    pet: Cat | Hound | None = None
