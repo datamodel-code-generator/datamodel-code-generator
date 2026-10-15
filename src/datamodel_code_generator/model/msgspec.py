@@ -16,7 +16,12 @@ from datamodel_code_generator import Error
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
-from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType, _nested_model_default_factory
+from datamodel_code_generator.model.base import (
+    UNDEFINED,
+    BaseClassDataType,
+    _default_factory_type_name,
+    _nested_model_default_factory,
+)
 from datamodel_code_generator.model.field_name import MsgspecFieldNameResolver
 from datamodel_code_generator.model.imports import (
     IMPORT_MSGSPEC_CONVERT,
@@ -89,16 +94,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import Reference
 
 
-def _default_factory_type_name(data_type: DataType) -> str:
-    """Return the name a default factory uses for the referenced type.
-
-    The factory runs once the module defines the type, so a quoted forward reference is named directly.
-    """
-    if (alias := data_type.alias) and not data_type._is_quoted_reference:  # noqa: SLF001
-        return alias
-    return cast("DataModel", cast("Reference", data_type.reference).source).class_name
-
-
 def has_field_assignment(field: DataModelFieldBase) -> bool:
     """Return whether a msgspec field renders with a default assignment."""
     return field.use_default_with_required or not (field.required or field.should_strip_default_none())
@@ -143,6 +138,7 @@ class Struct(DataModel):
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "msgspec.jinja2"
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
+    WRITES_QUOTED_NAMES_IN_TYPING_GENERICS: ClassVar[bool] = True
     BASE_CLASS: ClassVar[str] = "msgspec.Struct"
     BASE_CLASS_NAME: ClassVar[str] = "Struct"
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"

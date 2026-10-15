@@ -17,7 +17,7 @@ from functools import cached_property, lru_cache
 from itertools import accumulate, takewhile
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, cast
 from warnings import warn
 
 from pydantic import ConfigDict, Field
@@ -1359,6 +1359,16 @@ def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:
     )
 
 
+def _default_factory_type_name(data_type: DataType) -> str:
+    """Return the name a default factory uses for the referenced type.
+
+    The factory runs once the module defines the type, so a quoted forward reference is named directly.
+    """
+    if (alias := data_type.alias) and not data_type._is_quoted_reference:  # noqa: SLF001
+        return alias
+    return cast("DataModel", cast("Reference", data_type.reference).source).class_name
+
+
 def _is_hidden_by_earlier_field(field: DataModelFieldBase, name: str) -> bool:
     """Return whether an earlier field of the class has bound ``name`` when the field's value is evaluated.
 
@@ -1392,7 +1402,7 @@ def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[Dat
                 return None
             if _is_hidden_by_earlier_field(field, source.class_name):
                 return f"lambda: {source.class_name}()"
-            factory_name = source.class_name if data_type._is_quoted_reference else data_type.alias or source.class_name  # noqa: SLF001
+            factory_name = _default_factory_type_name(data_type)
             parent_order = (
                 field.parent.__dict__.get(_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY) if field.parent is not None else None
             )
@@ -1924,6 +1934,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_FIELD_TYPE_RENAMING: ClassVar[bool] = False
     NORMALIZES_FIELD_NAMES: ClassVar[bool] = False
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = False
+    WRITES_QUOTED_NAMES_IN_TYPING_GENERICS: ClassVar[bool] = False
     SUPPORTS_KW_ONLY: ClassVar[bool] = False
     REQUIRES_MODEL_LEVEL_KW_ONLY: ClassVar[bool] = False
     SUPPORTS_BOOLEAN_LITERAL: ClassVar[bool] = True
@@ -2495,6 +2506,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:
         """Return whether the class body assigns a field call or a default to the field's name."""
         return bool(field.field) or type(self).FIELD_ASSIGNMENT_CHECKER(field)
+
+    def field_name_hides_types(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301, ARG002
+        """Return whether the field's name hides a type of that name from annotations that are not strings."""
+        return True
 
     def class_attribute_hides_named_type(  # noqa: PLR6301
         self,

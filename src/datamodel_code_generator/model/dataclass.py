@@ -17,6 +17,7 @@ from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebui
 from datamodel_code_generator.model._constraints import Constraints  # noqa: TC001 # needed for pydantic
 from datamodel_code_generator.model.base import (
     UNDEFINED,
+    _default_factory_type_name,
     _has_field_assignment,
     _nested_model_default_factory,
     get_effective_fields,
@@ -140,7 +141,7 @@ def _build_nested_dataclass_default_factory(data_type: DataType, default: dict[A
         return None
     if has_nested_mapping_default and _has_recursive_nested_mapping_default(source):
         return None
-    return f"lambda: {data_type.alias or source.class_name}({', '.join(arguments)})"
+    return f"lambda: {_default_factory_type_name(data_type)}({', '.join(arguments)})"
 
 
 _REQUIRED_INHERITED_INIT_KEY = "_required_inherited_init"
@@ -181,6 +182,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "dataclass.jinja2"
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_DATACLASS,)
+    RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
     FIELD_DEFAULT_CLASSIFIER = staticmethod(get_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(field_participates_in_constructor)
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
@@ -189,6 +191,10 @@ class DataClass(_DataclassReuseMixin, DataModel):
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     SUPPORTS_INHERITED_DISCRIMINATOR_ENUM: ClassVar[bool] = True
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
+
+    def field_name_hides_types(self, field: DataModelFieldBase) -> bool:
+        """Return whether the class body binds the field's name, which its annotation is evaluated after."""
+        return self.field_binds_class_attribute(field)
 
     @classmethod
     def prepare_required_inherited_field(

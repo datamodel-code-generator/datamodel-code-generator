@@ -1835,7 +1835,12 @@ def _hidden_type_names(model: DataModel) -> Collection[str | None]:
         for field in model.fields
         for data_type in field.data_type.all_data_types
         if (reference := data_type.reference) is not None and not data_type.alias
-    } & {field.name for field in model.fields}
+    } & {field.name for field in model.fields if model.field_name_hides_types(field)}
+
+
+def _no_hidden_type_names(model: DataModel) -> Collection[str | None]:  # noqa: ARG001
+    """Report no hidden types, for annotations that a future import defers."""
+    return ()
 
 
 def _rename_field_preserving_alias(field: DataModelFieldBase, new_name: str) -> None:
@@ -2906,6 +2911,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._hidden_named_types: dict[tuple[str, str | None], bool] = {}
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
+        self._quotes_hidden_types = False
 
         self.keyword_only = config.keyword_only
         self.target_pydantic_version = config.target_pydantic_version
@@ -5984,11 +5990,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         native PEP 649 deferred annotations), self-referencing fields in regular DataModel
         classes also need their type aliased to a quoted string so that static analysers
         (e.g. Ruff F821) and older runtimes do not trip over the forward reference. The same
-        holds for the types that ``hidden_type_names`` reports as hidden by a field of the model.
-        ``use_typing_generics`` writes ``List["Name"]`` for a library that cannot resolve ``list["Name"]``.
+        holds, even for native deferred annotations, for the types that ``hidden_type_names`` reports as hidden
+        by a field of the model.
+        ``use_typing_generics`` tells that ``typing`` cannot resolve ``list["Name"]``, so a hidden type, and any
+        quoted name of a model that asks for it, is written as ``List["Name"]``.
         """
         model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
         alias_cycles: Mapping[int, int] | None = None
+        quotes_in_typing_generics = use_typing_generics and not use_deferred_annotations
 
         for i, model in enumerate(models):
             is_type_alias_or_root = isinstance(model, TypeAliasBase) or _is_pydantic_v2_root_model(
@@ -6001,24 +6010,33 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             # are evaluated immediately, and Pydantic can force native deferred annotations
             # while constructing the class, so their forward references must stay quoted.
             process_all_fields = is_type_alias_or_root or not use_deferred_annotations
-            if not process_all_fields and not any(
-                field.requires_immediate_forward_reference_resolution for field in model.fields
+            hidden_names = hidden_type_names(model)
+            if (
+                not process_all_fields
+                and not hidden_names
+                and not any(field.requires_immediate_forward_reference_resolution for field in model.fields)
             ):
                 continue
             if isinstance(model, TypeStatement):
                 continue
 
             has_aliased_forward_ref = False
-            hidden_names = () if use_deferred_annotations else hidden_type_names(model)
             for field in model.fields:
-                if not process_all_fields and not field.requires_immediate_forward_reference_resolution:
+                if (
+                    hidden_only := not process_all_fields and not field.requires_immediate_forward_reference_resolution
+                ) and not hidden_names:
                     continue
-                if not (forward_references := cls.__forward_references(field, model, model_index, i, hidden_names)):
+                forward_references = cls.__forward_references(field, model, model_index, i, hidden_names)
+                if hidden_only:
+                    forward_references = [reference for reference in forward_references if reference[1] in hidden_names]
+                if not forward_references:
                     continue
                 for data_type, name in forward_references:
                     data_type.alias = f'"{name}"'
                     cls.__disable_union_operator_for_forward_ref(
-                        data_type, use_typing_generics=use_typing_generics and not use_deferred_annotations
+                        data_type,
+                        use_typing_generics=quotes_in_typing_generics
+                        and (model.WRITES_QUOTED_NAMES_IN_TYPING_GENERICS or name in hidden_names),
                     )
                 if defers_recursive_containers and model.DEFERS_RECURSIVE_TYPE_HINT:
                     if alias_cycles is None:
@@ -6755,6 +6773,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> ParseConfig:
         """Prepare configuration for the parse operation."""
         use_deferred_annotations = self._uses_deferred_annotations(with_import, disable_future_imports)
+        self._quotes_hidden_types = disable_future_imports or not with_import
 
         if (
             with_import
@@ -7302,7 +7321,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         use_deferred_annotations: bool,
         can_retain_cache: bool,
     ) -> None:
-        """Apply final type metadata and invalidate imports only when required."""
+        """Apply final type metadata and invalidate imports only when required.
+
+        Without future imports, a type hidden by a field of its class is written as a string.
+        """
         self.__apply_type_overrides(models)
         self.__update_type_aliases(
             models,
@@ -7312,9 +7334,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             or _is_pydantic_version_at_least(target, _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM),
             generation_store=self.generation_store,
             can_retain_cache=can_retain_cache,
-            hidden_type_names=_hidden_type_names,
-            use_typing_generics=self.data_model_type.RESOLVES_STRING_ANNOTATIONS_FROM_MODULE
-            and not self.target_python_version.has_string_arguments_in_builtin_generics,
+            hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
+            use_typing_generics=not self.target_python_version.has_string_arguments_in_builtin_generics,
         )
         if not unused_models:
             live_models = models
