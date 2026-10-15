@@ -781,6 +781,36 @@ def test_main_openapi_discriminator_variant_tag_warnings(
     )
 
 
+def test_main_openapi_msgspec_union_tag_clashes(output_file: Path) -> None:
+    """Report tagged msgspec Struct unions that msgspec refuses: other tag fields, shared or mixed tags, tag False."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "msgspec_union_tag_clashes.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file="msgspec_union_tag_clashes.py",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-msgspec-tagged-unions",
+                "--extra-template-data",
+                str(OPEN_API_DATA_PATH / "msgspec_union_tag_clashes_extra_data.json"),
+                "--target-python-version",
+                "3.10",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_OPENAPI_PATH / "msgspec_union_tag_clashes_warnings.txt",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--use-msgspec-nullable-enum-alias"],
     option_description="""Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
