@@ -100,7 +100,14 @@ class RoutePath:
         return bool(self.placeholders)
 
     def shape(self) -> str:
-        """Return the path with every placeholder erased, which identifies routes FastAPI cannot tell apart."""
+        """Return the routed path with every placeholder erased, which identifies routes FastAPI cannot tell apart.
+
+        Its literal text is decoded, as the route matches it, so `/a b` and `/a%20b` have one shape.
+        """
+        return _PLACEHOLDER.sub("{}", self.route_path)
+
+    def written(self) -> str:
+        """Return the path as the document writes it, with every placeholder erased."""
         return _PLACEHOLDER.sub("{}", self.path)
 
 

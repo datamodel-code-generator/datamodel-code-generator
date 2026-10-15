@@ -59,3 +59,13 @@ paths:
         - {name: r, in: path, required: true, schema: {type: string}}
       responses:
         "204": {description: Done.}
+  /s t:
+    get:
+      operationId: spacedText
+      responses:
+        "204": {description: Done.}
+  /s%20t:
+    get:
+      operationId: encodedText
+      responses:
+        "204": {description: Done.}
