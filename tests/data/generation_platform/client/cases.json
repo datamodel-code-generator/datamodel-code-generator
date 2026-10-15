@@ -787,6 +787,20 @@
   "form-name-errors": {
     "input": "form-name-errors.yaml"
   },
+  "form-name-kept": {
+    "input": "form-name-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "extra_fields": "allow",
+      "openapi_include_paths": [
+        "/absorbing-kept",
+        "/absorbing-kept-parts"
+      ]
+    }
+  },
   "server-errors": {
     "input": "server-errors.yaml"
   },

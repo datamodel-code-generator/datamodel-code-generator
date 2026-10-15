@@ -7,6 +7,7 @@ from functools import cached_property
 from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
+from datamodel_code_generator._openapi_codec_plan import keeps_extras
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     LexicalKind,
@@ -300,7 +301,7 @@ def _form(
         additional = _additional(planner, bound)
         members = {name: schema for name, schema, _ in property_members(use)}
         encoded = tuple(_encoding(planner, bound, members, declaration) for declaration in styled.values())
-        encoded = _distinct(bound, [field.name for field in fields], encoded)
+        encoded = _distinct(planner, bound, [field.name for field in fields], encoded)
     except _PlanError as error:
         _refused(planner, use, error)
         return None
@@ -316,7 +317,7 @@ def _styles(
         members = {name: schema for name, schema, _ in property_members(use)}
         encoded = tuple(_encoding(planner, bound, members, declaration) for declaration in encodings)
         styled = {plan.name for plan in encoded}
-        encoded = _distinct(bound, [name for name in members if name not in styled], encoded)
+        encoded = _distinct(planner, bound, [name for name in members if name not in styled], encoded)
     except _PlanError as error:
         _refused(planner, use, error)
         return None
@@ -413,13 +414,16 @@ def _refused(planner: _WirePlanner, use: TypeUseBinding, error: _PlanError) -> N
     )
 
 
-def _distinct(form: TypeUseBinding, names: list[str], encoded: tuple[ParameterPlan, ...]) -> tuple[ParameterPlan, ...]:
+def _distinct(
+    planner: _WirePlanner, form: TypeUseBinding, names: list[str], encoded: tuple[ParameterPlan, ...]
+) -> tuple[ParameterPlan, ...]:
     """Refuse a form whose members write a name twice, or whose other names more than one member would take back.
 
     An exploded member's own names count, and an exploded object that allows other properties takes every name no
     other member writes, so the form may have one such member and no deepObject member then, as an operation's query
-    parameters may, nor other properties its schema allows as `true` or a schema. Return the plans with the other
-    exploded members' names reserved from the one that takes the rest.
+    parameters may, nor other properties of its own that its schema allows as `true` or a schema or its model keeps by
+    its configuration. Return the plans with the other exploded members' names reserved from the one that takes the
+    rest.
     """
     location = _located(form)
     claimed = [
@@ -431,7 +435,10 @@ def _distinct(form: TypeUseBinding, names: list[str], encoded: tuple[ParameterPl
         raise _PlanError(code="MC_PARAMETER_ENCODING", source=location, message="Expanded form member names collide")
     absorbing = [plan.name for plan in encoded if plan.additional is not None and _spread(plan)]
     if absorbing and (
-        len(absorbing) > 1 or _encoded(form).declared or any(plan.style == "deepObject" for plan in encoded)
+        len(absorbing) > 1
+        or any(plan.style == "deepObject" for plan in encoded)
+        or _encoded(form).declared
+        or planner.kinds.configured(form)
     ):
         message = (
             f"The exploded form member {absorbing[0]!r} allows other properties and takes every name no other member "
@@ -869,6 +876,15 @@ class LexicalKinds:
             ),
             None,
         )
+
+    def configured(self, use: TypeUseBinding) -> bool:
+        """Return whether a use's model keeps its other properties by its configuration or by a base's it inherits."""
+        pending = [value.symbol] if isinstance(value := use.type, GeneratedSymbolType) else []
+        while pending:
+            if keeps_extras(declared := self._symbols[pending.pop()]):
+                return True
+            pending.extend(declared.bases)
+        return False
 
     def bound(self, direction: Direction, *places: tuple[SourceLocation, tuple[LeafStep, ...]]) -> TypeView | None:
         """Return the type bound for a value at the first of its places that binds one.

@@ -535,6 +535,36 @@ paths:
               labels: {explode: true}
       responses:
         "204": {description: Done.}
+  /absorbing-kept:
+    post:
+      operationId: postAbsorbingKept
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                filter: {type: object, additionalProperties: {type: string}}
+            encoding:
+              filter: {explode: true}
+      responses:
+        "204": {description: Done.}
+  /absorbing-kept-parts:
+    post:
+      operationId: postAbsorbingKeptParts
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                labels: {type: object, additionalProperties: {type: string}}
+            encoding:
+              labels: {explode: true}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Base:

@@ -135,6 +135,20 @@
       "pydantic_v2.dataclass"
     ]
   },
+  "media-kept": {
+    "input": "media-errors.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "model": {
+      "extra_fields": "allow",
+      "openapi_include_paths": [
+        "/absorbing-kept",
+        "/absorbing-kept-parts"
+      ]
+    }
+  },
   "parameter-errors": {
     "input": "parameter-errors.yaml",
     "model": {
