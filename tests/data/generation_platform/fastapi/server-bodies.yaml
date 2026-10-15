@@ -263,6 +263,17 @@ paths:
               additionalProperties: false
       responses:
         "204": {description: Done.}
+  /nullable-searches:
+    post:
+      operationId: postNullableSearch
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              anyOf: [{$ref: "#/components/schemas/Search"}, {type: "null"}]
+      responses:
+        "204": {description: Done.}
   /closed-parts:
     post:
       operationId: postClosedParts
@@ -341,6 +352,12 @@ components:
       properties:
         color: {type: string}
         minAge: {type: integer, minimum: 0}
+    Search:
+      type: object
+      properties:
+        filter: {$ref: "#/components/schemas/Filter"}
+        limit: {type: integer}
+      additionalProperties: {$ref: "#/components/schemas/Filter"}
     Others:
       type: object
       properties:

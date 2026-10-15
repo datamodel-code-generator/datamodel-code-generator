@@ -169,6 +169,15 @@ post_extra_bases
   post_extra_bases(body=ExtraBasesPostRequest(base='b', name='n', first=Filter(color='blue', minAge=None), second=Filter(color=None, minAge=3)))
   < 204 -
   = None
+post_nullable_search
+  > POST /nullable-searches [multipart/form-data; boundary=<boundary>]
+  post_nullable_search(body=NullableSearchesPostRequest(root=Search(filter=Filter(color='blue', minAge=None), limit=5, first=Filter(color=None, minAge=3))))
+  < 204 -
+  = None
+post_nullable_search refused
+  > POST /nullable-searches [multipart/form-data; boundary=<boundary>]
+  < 422 application/json
+  ! UnprocessableEntityError: Error code: 422 - {"detail":[{"type":"greater_than_equal","loc":["body","filter","minAge"],"msg":"<msg>"},{"type":"greater_than_equal","loc":["body","first","minAge"],"msg":"<msg>"}]} [operation_id='postNullableSearch', status_code=422, body=b'{"detail":[{"type":"greater_than_equal","loc":["body","filter","minAge"],"msg":"<msg>"},{"type":"greater_than_equal","loc":["body","first","minAge"],"msg":"<msg>"}]}', body_bytes=b'{"detail":[{"type":"greater_than_equal","loc":["body","filter","minAge"],"msg":"<msg>"},{"type":"greater_than_equal","loc":["body","first","minAge"],"msg":"<msg>"}]}', truncated=False]
 post_closed_form
   > POST /closed-forms [application/x-www-form-urlencoded]
   post_closed_form(body=ClosedFormsPostRequest(name='n'))

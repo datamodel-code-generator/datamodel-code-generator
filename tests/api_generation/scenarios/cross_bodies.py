@@ -167,6 +167,18 @@ def calls(kit: Kit) -> Calls:
             "post_extra_bases",
             lambda: api.post_extra_bases(body=models.ExtraBasesPostRequest(base="b", name="n", first=blue, second=old)),
         ),
+        (
+            "post_nullable_search",
+            lambda: api.post_nullable_search(
+                body=models.NullableSearchesPostRequest(models.Search(filter=blue, limit=5, first=old))
+            ),
+        ),
+        (
+            "post_nullable_search refused",
+            lambda: api.post_nullable_search(
+                body=models.NullableSearchesPostRequest(models.Search.model_construct(filter=negative, first=negative))
+            ),
+        ),
         ("post_closed_form", lambda: api.post_closed_form(body=models.ClosedFormsPostRequest(name="n"))),
         ("post_closed_parts", lambda: api.post_closed_parts(body=models.ClosedPartsPostRequest(name="n"))),
         ("post_closed_parts without members", lambda: api.post_closed_parts(body=models.ClosedPartsPostRequest())),

@@ -1384,6 +1384,12 @@ for other properties of such a type, with either backend. The generated client s
 properties with the same message at the same place. It also refuses a URL-encoded body whose schema has
 `patternProperties` or is not an object, which the server reads.
 
+A form body whose schema is a union of one schema and `null` alone, such as
+`anyOf: [{$ref: "#/components/schemas/Search"}, {type: "null"}]`, is read as the form of that schema, its members and
+other properties by the rules above, and the model that holds it receives the object. A multipart body whose schema
+is a union of several schemas declares no members its parts could be read by: generation stops with
+`needs body_mode='request'`, as the generated client stops with `needs an object schema to be sent as parts`.
+
 The adapters read no `encoding` that names another media type, part headers, `allowReserved`, or a style other than
 the default `form` with `explode: true`, and none that gives any style to a member without one scalar kind, which
 the client spreads over several pairs or parts: generation stops with an error that names the encoding.

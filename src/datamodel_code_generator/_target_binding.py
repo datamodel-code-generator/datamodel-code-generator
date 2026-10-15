@@ -782,7 +782,8 @@ class _SchemaRecord:
     `binary` is where the first raw binary string sits that the schema's values carry as text, and `octets` says the
     schema of a text media is one raw binary string, which the media carries as the raw body. `wrapped` says a text
     media's schema is not such a string but reaches one, and no bytes the models write as base64 text, which is the
-    raw body when the models type the whole schema as such strings alone.
+    raw body when the models type the whole schema as such strings alone. `form` is the branch of a form's union
+    with null alone that declares the form's members, which its parts and encoding are read from.
     """
 
     default: LiteralScalar | None
@@ -792,6 +793,7 @@ class _SchemaRecord:
     binary: SourceLocation | None = None
     octets: bool = False
     wrapped: bool = False
+    form: _Declaration | None = None
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -2392,8 +2394,10 @@ class _Reader(_SchemaLocations):
         parameter = role == "parameter"
         text = parameter or role in _HEADER_ROLES
         whole = self.whole(declaration)[1] if parameter else {}
+        form = self.nullable_branch(declaration) if kind in _FORMS else None
+        declared = form or declaration
         parts = (
-            self.parts(declaration, locate)
+            self.parts(declared, locate)
             if media is not None and media.strip().lower().startswith("multipart/")
             else None
         )
@@ -2408,13 +2412,33 @@ class _Reader(_SchemaLocations):
             _default(whole.get("default")),
             _keywords(whole) if parameter else (),
             parts,
-            self.encoding(declaration, locate, members=kind in _FORMS)
+            self.encoding(declared, locate, members=kind in _FORMS)
             if text or media is None or kind in _FORMS
             else None,
             binary,
             octets,
             body and binary is not None and not self.base64(declaration),
+            form,
         )
+
+    def choices(self, declaration: _Declaration) -> list[_Declaration]:
+        """Return the branches beside null of a schema that is a union, by anyOf or oneOf, and none of another schema.
+
+        A schema that declares properties or combines schemas with allOf beside its union is no union of its branches.
+        """
+        location, raw = self.whole(declaration)
+        if "properties" in raw or "allOf" in raw:
+            return []
+        keyword, branches = next(
+            ((key, value) for key in ("anyOf", "oneOf") if isinstance(value := raw.get(key), list)), ("", [])
+        )
+        found = (_child(location, keyword, str(index)) for index in range(len(branches)))
+        return [branch for branch in found if self.kinds(branch) != _NULL]
+
+    def nullable_branch(self, declaration: _Declaration) -> _Declaration | None:
+        """Return the one branch of a union of a schema and null alone that is not null, None for another schema."""
+        found = self.choices(declaration)
+        return found[0] if len(found) == 1 else None
 
     def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
         """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
@@ -2456,7 +2480,7 @@ class _Reader(_SchemaLocations):
             None,
         )
         return _PartsRecord(
-            _json_types(raw) - _NULL <= _OBJECT,
+            _json_types(raw) - _NULL <= _OBJECT and not self.choices(schema)[1:],
             tuple((locate(found), part) for found, part in members),
             extra,
             None if binary is None else locate(binary),
@@ -3143,6 +3167,23 @@ class _SchemaUses(_Models):
             return projector.project(data_type)
         return self.lightweight(declaration, direction, inline=inline)
 
+    def held(self, value: TypeView | None, seen: frozenset[SymbolId] = frozenset()) -> SymbolId | None:
+        """Return the model a type is, or holds through root models, aliases and a union with None alone, or None."""
+        if isinstance(value, UnionType):
+            present = [item for item in value.members if not isinstance(item, NoneType)]
+            value = present[0] if len(present) == 1 else None
+        symbol = value.symbol if isinstance(value, GeneratedSymbolType) and value.symbol not in seen else None
+        members = () if symbol is None else self.members.get(symbol, ())
+        root = next(
+            (
+                facts.type
+                for member in members
+                if member.member_kind == "root_value" and (facts := member.model_facts) is not None
+            ),
+            None,
+        )
+        return symbol if root is None or symbol is None else self.held(root, seen | {symbol})
+
     def members_at(self, symbol: SymbolId, schema: _Declaration, direction: Direction) -> tuple[FieldUseBinding, ...]:
         """Return a model's members anchored at the properties of the schema a use reads."""
         members: list[FieldUseBinding] = []
@@ -3485,6 +3526,8 @@ class _Contracts(_SchemaUses):
         record = self.record(schema)
         for use in uses:
             binding = self.uses[use]
+            if record.form is not None and (held := self.held(binding.type)) is not None:
+                binding = replace(binding, members=self.members_at(held, record.form, use.direction))
             octets = record.octets or (record.wrapped and self.octets(schema, use.direction))
             self.uses[use] = replace(
                 binding,

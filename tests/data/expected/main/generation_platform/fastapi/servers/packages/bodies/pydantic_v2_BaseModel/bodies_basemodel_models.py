@@ -37,6 +37,17 @@ class Filter(BaseModel):
     minAge: conint(ge=0) | None = None
 
 
+class Search(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    __annotations__ = {
+        '__pydantic_extra__': Dict[str, Filter],
+    }
+    filter: Filter | None = None
+    limit: int | None = None
+
+
 class Others(BaseModel):
     model_config = ConfigDict(
         extra='allow',
@@ -193,6 +204,10 @@ class ClosedFormsPostRequest(BaseModel):
         extra='forbid',
     )
     name: str | None = None
+
+
+class NullableSearchesPostRequest(RootModel[Search | None]):
+    root: Search | None
 
 
 class ClosedPartsPostRequest(BaseModel):

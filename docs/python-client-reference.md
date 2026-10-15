@@ -854,7 +854,10 @@ that types them when the type has none. The generated FastAPI server reads the m
 properties included, by this rule too, and stops for a member or other properties without one scalar kind with the
 same message at the same place. The client also refuses a URL-encoded body whose schema has `patternProperties`
 (`Pattern properties have no builtin parameter encoding`) or is not an object
-(`A URL-encoded value must be an object`), which the server reads.
+(`A URL-encoded value must be an object`), which the server reads. A form body whose schema is a union of one schema
+and `null` alone is written as the form of that schema, by its members and other properties; a multipart body whose
+schema is a union of several schemas has no members to write parts by, and generation stops with
+`needs an object schema to be sent as parts`, as the server's generation stops for it.
 
 A multipart response is read only when the operation declares one, with the standard library's MIME parser: a part's
 bytes are kept as they arrived unless it names a transfer encoding, and a broken body, or a part that is itself a

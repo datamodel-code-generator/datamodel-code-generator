@@ -135,6 +135,9 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         def post_closed_form(self, **arguments: object) -> None:
             record("post_closed_form", arguments)
 
+        def post_nullable_search(self, **arguments: object) -> None:
+            record("post_nullable_search", arguments)
+
         def post_closed_parts(self, **arguments: object) -> None:
             record("post_closed_parts", arguments)
 
