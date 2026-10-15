@@ -26,7 +26,7 @@ Feline: TypeAlias = Cat | Dog
 Aquarium: TypeAlias = Fish | Dog
 
 
-class Basket(Struct):
+class Cage(Struct):
     pet: Cat | Dog | UnsetType = UNSET
 
 

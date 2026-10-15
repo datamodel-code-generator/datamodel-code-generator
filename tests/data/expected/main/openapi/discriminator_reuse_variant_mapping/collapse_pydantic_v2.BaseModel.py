@@ -31,7 +31,7 @@ class Aquarium(RootModel[Fish | Dog]):
     root: Fish | Dog = Field(..., discriminator='kind')
 
 
-class Basket(BaseModel):
+class Cage(BaseModel):
     pet: Cat | Dog | None = Field(None, discriminator='kind')
 
 
