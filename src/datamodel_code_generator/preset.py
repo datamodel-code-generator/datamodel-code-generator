@@ -135,6 +135,19 @@ class PresetName(str, Enum):
     PracticalPy31320260909 = "practical-py313-20260909"
     PracticalPy31420260909 = "practical-py314-20260909"
 
+    StandardPy31020261015 = "standard-py310-20261015"
+    StandardPy31120261015 = "standard-py311-20261015"
+    StandardPy31220261015 = "standard-py312-20261015"
+    StandardPy31320261015 = "standard-py313-20261015"
+    StandardPy31420261015 = "standard-py314-20261015"
+    StandardPy31520261015 = "standard-py315-20261015"
+    PracticalPy31020261015 = "practical-py310-20261015"
+    PracticalPy31120261015 = "practical-py311-20261015"
+    PracticalPy31220261015 = "practical-py312-20261015"
+    PracticalPy31320261015 = "practical-py313-20261015"
+    PracticalPy31420261015 = "practical-py314-20261015"
+    PracticalPy31520261015 = "practical-py315-20261015"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -531,8 +544,25 @@ _PRACTICAL_20260909_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
     PythonVersion.PY_314: PresetName.PracticalPy31420260909,
 }
 
-_STANDARD_PRESET_NAMES_BY_TARGET = _STANDARD_20260909_PRESET_NAMES_BY_TARGET
-_PRACTICAL_PRESET_NAMES_BY_TARGET = _PRACTICAL_20260909_PRESET_NAMES_BY_TARGET
+_STANDARD_20261015_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
+    PythonVersion.PY_310: PresetName.StandardPy31020261015,
+    PythonVersion.PY_311: PresetName.StandardPy31120261015,
+    PythonVersion.PY_312: PresetName.StandardPy31220261015,
+    PythonVersion.PY_313: PresetName.StandardPy31320261015,
+    PythonVersion.PY_314: PresetName.StandardPy31420261015,
+    PythonVersion.PY_315: PresetName.StandardPy31520261015,
+}
+_PRACTICAL_20261015_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
+    PythonVersion.PY_310: PresetName.PracticalPy31020261015,
+    PythonVersion.PY_311: PresetName.PracticalPy31120261015,
+    PythonVersion.PY_312: PresetName.PracticalPy31220261015,
+    PythonVersion.PY_313: PresetName.PracticalPy31320261015,
+    PythonVersion.PY_314: PresetName.PracticalPy31420261015,
+    PythonVersion.PY_315: PresetName.PracticalPy31520261015,
+}
+
+_STANDARD_PRESET_NAMES_BY_TARGET = _STANDARD_20261015_PRESET_NAMES_BY_TARGET
+_PRACTICAL_PRESET_NAMES_BY_TARGET = _PRACTICAL_20261015_PRESET_NAMES_BY_TARGET
 
 
 def _standard_option_groups_for_target(
@@ -635,6 +665,12 @@ _PRESET_INFOS: tuple[PresetInfo, ...] = (
     *_build_preset_family_infos(
         standard_names_by_target=_STANDARD_20260909_PRESET_NAMES_BY_TARGET,
         practical_names_by_target=_PRACTICAL_20260909_PRESET_NAMES_BY_TARGET,
+        standard_option_groups=_STANDARD_20260909_OPTION_GROUPS,
+        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
+    ),
+    *_build_preset_family_infos(
+        standard_names_by_target=_STANDARD_20261015_PRESET_NAMES_BY_TARGET,
+        practical_names_by_target=_PRACTICAL_20261015_PRESET_NAMES_BY_TARGET,
         standard_option_groups=_STANDARD_20260909_OPTION_GROUPS,
         practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
     ),
@@ -763,22 +799,24 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --input-file-type jsonschema \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset standard-py312-20260909 \\",
+        "  --preset standard-py312-20261015 \\",
         "  --output model.py",
         "```",
         "",
         (
-            "Use `standard-py312-20260909` for the project-recommended modern Python 3.12 baseline. "
-            "Use `practical-py312-20260909` when you also want schema-authored names, model reuse, and schema "
+            "Use `standard-py312-20261015` for the project-recommended modern Python 3.12 baseline. "
+            "Use `practical-py312-20261015` when you also want schema-authored names, model reuse, and schema "
             "descriptions embedded in the generated code."
         ),
         "",
         (
-            "The 20260909 presets select builtin to avoid running external formatters. "
+            "Presets dated 20260909 or later select builtin to avoid running external formatters. "
             "For project-wide Ruff consistency, use the preset with `--formatters ruff-check ruff-format`. "
             "Keep `--formatters black isort` to preserve existing Black/isort output. "
             "Earlier dated presets are unchanged. Black and isort remain required installation dependencies."
         ),
+        "",
+        "The 20261015 presets keep the 20260909 options and add Python 3.15 targets.",
         "",
         "## Override Preset Options",
         "",
@@ -787,7 +825,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20260909 \\",
+        "  --preset standard-py312-20261015 \\",
         "  --no-snake-case-field \\",
         "  --no-use-annotated \\",
         "  --enum-field-as-literal none",
@@ -808,7 +846,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20260909 \\",
+        "  --preset standard-py312-20261015 \\",
         "  --extra-fields forbid \\",
         "  --use-title-as-name \\",
         "  --output model.py",
@@ -824,12 +862,12 @@ def render_presets_markdown() -> str:
         '```toml title="pyproject.toml"',
         "[tool.datamodel-codegen]",
         'output-model-type = "pydantic_v2.BaseModel"',
-        'preset = "standard-py312-20260909"',
+        'preset = "standard-py312-20261015"',
         "",
         "[tool.datamodel-codegen.profiles.api]",
         'input = "schemas/api.json"',
         'output = "src/models/api.py"',
-        'preset = "practical-py312-20260909"',
+        'preset = "practical-py312-20261015"',
         'extra-fields = "forbid"',
         "",
         "[tool.datamodel-codegen.profiles.events]",
@@ -858,7 +896,7 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --output model.py \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset practical-py312-20260909 \\",
+        "  --preset practical-py312-20261015 \\",
         "  --extra-fields forbid \\",
         "  --generate-pyproject-config",
         "```",

@@ -6251,9 +6251,10 @@ def test_all_exports_includes_generate_config() -> None:
 
 
 @pytest.mark.parametrize(
-    ("family", "target", "formatters"),
+    ("date", "family", "target", "formatters"),
     [
         pytest.param(
+            date,
             family,
             target,
             formatters,
@@ -6263,12 +6264,17 @@ def test_all_exports_includes_generate_config() -> None:
                 reason="Installed Black does not support this target",
             ),
         )
+        for date, targets in (
+            ("20260909", ("310", "311", "312", "313", "314")),
+            ("20261015", ("310", "311", "312", "313", "314", "315")),
+        )
         for family in ("standard", "practical")
-        for target in ("310", "311", "312", "313", "314")
+        for target in targets
         for formatters in ([], ["black", "isort"], ["ruff-check", "ruff-format"])
     ],
 )
 def test_builtin_preset_formatter_selection(
+    date: str,
     family: str,
     target: str,
     formatters: list[str],
@@ -6286,7 +6292,7 @@ def test_builtin_preset_formatter_selection(
                 "--output",
                 str(output_file),
                 "--preset",
-                f"{family}-py{target}-20260909",
+                f"{family}-py{target}-{date}",
                 *(["--formatters", *formatters] if formatters else []),
             ],
             use_builtin_default_formatter=False,

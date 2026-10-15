@@ -1291,7 +1291,7 @@ base_options.add_argument(
     "(install with pip install 'datamodel-code-generator[ruff]'). "
     "Use --formatters builtin when no external formatter is used or generation speed takes priority. "
     "Keep --formatters black isort to preserve existing formatting. "
-    "New 20260909 presets include builtin; explicit formatters override presets. "
+    "Presets dated 20260909 or later include builtin; explicit formatters override presets. "
     "The future builtin default reduces installation dependencies and version constraints. "
     "Black/isort remain required today; declare [black,isort] extras for their later optional installation. "
     "Review custom-template output with builtin. "

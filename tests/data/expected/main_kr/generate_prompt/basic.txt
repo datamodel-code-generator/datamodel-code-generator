@@ -300,12 +300,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         'datamodel-code-generator[ruff]'). Use --formatters
                         builtin when no external formatter is used or
                         generation speed takes priority. Keep --formatters
-                        black isort to preserve existing formatting. New
-                        20260909 presets include builtin; explicit formatters
-                        override presets. The future builtin default reduces
-                        installation dependencies and version constraints.
-                        Black/isort remain required today; declare
-                        [black,isort] extras for their later optional
+                        black isort to preserve existing formatting. Presets
+                        dated 20260909 or later include builtin; explicit
+                        formatters override presets. The future builtin
+                        default reduces installation dependencies and version
+                        constraints. Black/isort remain required today;
+                        declare [black,isort] extras for their later optional
                         installation. Review custom-template output with
                         builtin. Details: https://datamodel-code-
                         generator.koxudaxi.dev/formatter-behavior/
@@ -367,7 +367,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
-  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909}
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015}
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
