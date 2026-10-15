@@ -20,6 +20,9 @@ from .native_numeric import NATIVE_FLOAT_CONTRACT
 from .schema import _schema_for_payload_generation
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from jsonschema.exceptions import ValidationError
     from jsonschema.protocols import Validator
 
     from .models import SchemaCase
@@ -142,36 +145,56 @@ def _regex_engines_agree(regex_class: str, character: str) -> bool:
     return python_member is _rust_regex_class(regex_class).isinstance_python(character)
 
 
-def _classified_alike(value: Any, regex_classes: frozenset[str]) -> bool:
-    """Keep payloads whose characters both regex engines place alike in the schema's pattern classes."""
-    match value:
-        case str():
-            return all(
-                _regex_engines_agree(regex_class, character) for character in value for regex_class in regex_classes
-            )
-        case dict():
-            return all(
-                _classified_alike(key, regex_classes) and _classified_alike(item, regex_classes)
-                for key, item in value.items()
-            )
-        case list():
-            return all(_classified_alike(item, regex_classes) for item in value)
-    return True
+@cache
+def _regex_classes(regex: str) -> frozenset[str]:
+    """Return the character classes that a regex's escapes depend on."""
+    return frozenset(_REGEX_CLASS_BY_ESCAPE[escape[1]] for escape in _REGEX_CLASS_ESCAPE.finditer(regex))
 
 
-def _pattern_regex_classes(schema: dict[str, Any]) -> frozenset[str]:
-    """Return the classes escaped in patterns and pattern property names, including OpenAPI components."""
-    roots = [schema]
-    match schema:
-        case {"components": {"schemas": dict()}}:
-            roots.extend(schema["components"]["schemas"].values())
-    return frozenset(
-        _REGEX_CLASS_BY_ESCAPE[escape[1]]
-        for node in _iter_schema_nodes(roots)
-        for regex in (node.get("pattern"), *node.get("patternProperties", {}))
-        if isinstance(regex, str)
-        for escape in _REGEX_CLASS_ESCAPE.finditer(regex)
+class _RegexEnginesDisagreeError(Exception):
+    """Abort source validation instead of reporting an error that not, if or oneOf would invert."""
+
+
+def _agreed_pattern(
+    pattern: Callable[[Validator, str, Any, dict[str, Any]], Iterator[ValidationError]],
+    validator: Validator,
+    regex: str,
+    instance: Any,
+    schema: dict[str, Any],
+) -> Iterator[ValidationError]:
+    """Apply the pattern keyword unless the regex engines classify a character of the string differently."""
+    if validator.is_type(instance, "string") and not all(
+        _regex_engines_agree(regex_class, character) for regex_class in _regex_classes(regex) for character in instance
+    ):
+        raise _RegexEnginesDisagreeError
+    yield from pattern(validator, regex, instance, schema)
+
+
+@cache
+def _regex_agreement_class(validator_class: type[Validator]) -> type[Validator]:
+    """Extend a dialect's validator class with the regex agreement check on its pattern keyword."""
+    return validators.extend(
+        validator_class, {"pattern": partial(_agreed_pattern, validator_class.VALIDATORS["pattern"])}
     )
+
+
+def _regex_agreement_validator(case: SchemaCase) -> SourceSchemaValidator:
+    """Build the source validator whose pattern keyword checks exactly the strings it is applied to.
+
+    The root drops ``$schema`` so references back into it keep the extended validator class.
+    """
+    agreement_class = _regex_agreement_class(validators.validator_for(case.source_schema))
+    schema = _canonical_json_numbers(case.source_schema)
+    schema.pop("$schema", None)
+    return SourceSchemaValidator(agreement_class(schema))
+
+
+def _valid_where_regex_engines_agree(validator: SourceSchemaValidator, payload: Any) -> bool:
+    """Keep source-valid payloads whose applied patterns both regex engines decide alike."""
+    try:
+        return validator.is_valid(payload)
+    except _RegexEnginesDisagreeError:
+        return False
 
 
 def payload_strategy(case: SchemaCase) -> st.SearchStrategy[Any]:
@@ -205,8 +228,6 @@ def payload_strategy(case: SchemaCase) -> st.SearchStrategy[Any]:
         candidates = dict.fromkeys([*literals, "".join(literals), "".join(reversed(literals))])
         if witnesses := [candidate for candidate in candidates if validator.is_valid(candidate)]:
             strategy = st.one_of(st.sampled_from(witnesses), strategy)
-    strategy = strategy.filter(validator.is_valid)
-    if regex_classes := _pattern_regex_classes(schema):
-        strategy = strategy.filter(partial(_classified_alike, regex_classes=regex_classes))
+    strategy = strategy.filter(partial(_valid_where_regex_engines_agree, _regex_agreement_validator(case)))
     _payload_strategy_cache[cache_key] = strategy
     return strategy

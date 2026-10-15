@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UnicodeArea",
+  "type": "object",
+  "properties": {
+    "area_m²": {
+      "type": "integer"
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^\\w+$"
+    }
+  },
+  "required": [
+    "area_m²",
+    "code"
+  ]
+}
