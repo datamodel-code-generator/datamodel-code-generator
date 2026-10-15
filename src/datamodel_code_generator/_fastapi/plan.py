@@ -48,6 +48,7 @@ from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
     ImportedType,
+    KnownBackendValue,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
@@ -128,6 +129,8 @@ _NULL_NAMES: Final = frozenset({_NONE, PythonTypeName("object")})
 _STRICT_KEYWORD: Final = ("strict", LiteralScalar(kind="bool", value=True))
 _DOCUMENTATION: Final = frozenset({"title", "description", "examples", "deprecated"})
 _NULL: Final = LiteralScalar("none", None)
+_TRUE: Final = KnownBackendValue(LiteralScalar(kind="bool", value=True))
+_BY_NAME: Final = frozenset({"populate_by_name", "validate_by_name"})
 _LITERAL_KINDS: Final = frozenset({"bool", "int", "float", "str"})
 _CONSTRAINTS: Final = frozenset({
     "allow_inf_nan",
@@ -1217,6 +1220,8 @@ class Planner:  # noqa: PLR0904
         encoding's style spreads such a member over parts or pairs that only the request body mode reads. The other
         properties a schema types are read by the same rule, under whatever names they come, and need no plan when
         that reads them as the text they come as; their type checks such text when the model keeps them without it.
+        A model that validates its fields by name reads a property under its field's name too, unless that is the name
+        of another property.
         """
         assert media.use is not None
         json_members = _json_members(media)
@@ -1225,10 +1230,26 @@ class Planner:  # noqa: PLR0904
             for child in media.declaration.children
             if child.kind == "encoding" and any(fact(child, key) is not None for key in STYLED)
         }
-        plans = [
-            self.form_plan(operation, media, member, json=member.name in json_members, styled=member.name in styled)
+        read = [
+            (
+                member,
+                self.form_plan(
+                    operation, media, member, json=member.name in json_members, styled=member.name in styled
+                ),
+            )
             for member in form_members(self.wire.kinds, media.use)
         ]
+        names = {member.name for member, _ in read}
+        plans = [plan for _, plan in read]
+        plans.extend(
+            replace(plan, name=name)
+            for member, plan in read
+            if plan is not None
+            and (field := member.field) is not None
+            and field.slot is not None
+            and (name := field.slot.name) not in names
+            and self.by_name(field.consumer)
+        )
         extras = form_extras(self.wire.kinds, media.use)
         additional = None if extras is None else self.form_plan(operation, media, extras)
         return replace(
@@ -1239,6 +1260,14 @@ class Planner:  # noqa: PLR0904
             checked=extras.type
             if extras is not None and isinstance(additional, FieldPlan) and self.wire.kinds.kept(media.use) is None
             else None,
+        )
+
+    def by_name(self, symbol: SymbolId) -> bool:
+        """Return whether a model, by its own configuration or one it inherits, validates its fields by name too."""
+        declared = self.symbols[symbol]
+        settings = () if declared.facts is None else declared.facts.configuration
+        return any(setting.name in _BY_NAME and setting.value == _TRUE for setting in settings) or any(
+            self.by_name(base) for base in declared.bases
         )
 
     def form_plan(

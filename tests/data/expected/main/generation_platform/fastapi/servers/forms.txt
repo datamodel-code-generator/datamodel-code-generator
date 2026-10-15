@@ -87,15 +87,15 @@ service DefaultService without its methods: TypeError
 > POST /pets
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "pet", "dog", "barks"]}]
 > POST /extras
-  post_extras(ExtrasPostRequest(name='n', first={'color': 'blue', 'minAge': 3}, second={'color': 'plain', 'minAge': None}, third={'color': 'file', 'minAge': None}))
+  post_extras(ExtrasPostRequest(name='n', maxAge=None, first={'color': 'blue', 'minAge': 3}, second={'color': 'plain', 'minAge': None}, third={'color': 'file', 'minAge': None}))
 < 204 - b''
 > POST /extras
-  post_extras(ExtrasPostRequest(name='{', first={'color': 'last', 'minAge': None}))
+  post_extras(ExtrasPostRequest(name='{', maxAge=None, first={'color': 'last', 'minAge': None}))
 < 204 - b''
 > POST /extras
 < 422 application/json [{"type": "json_invalid", "loc": ["body", "first"]}, {"type": "greater_than_equal", "loc": ["body", "second", "minAge"]}, {"type": "json_invalid", "loc": ["body", "third"]}, {"type": "model_type", "loc": ["body", "fourth"]}]
 > POST /extras
-  post_extras(ExtrasPostRequest(name='n'))
+  post_extras(ExtrasPostRequest(name='n', maxAge=None))
 < 204 - b''
 > POST /extra-lists
   post_extra_lists(ExtraListsPostRequest(name='n', first=[{'color': 'a', 'minAge': None}, {'color': None, 'minAge': 2}], second=[{'color': None, 'minAge': None}]))
@@ -212,15 +212,15 @@ service DefaultService without its methods: TypeError
 > POST /pets
 < 422 application/json [{"type": "int_parsing", "loc": ["body", "pet", "dog", "barks"]}]
 > POST /extras
-  post_extras(ExtrasPostRequest(name='n', first=Filter(color='blue', minAge=3), second=Filter(color='plain', minAge=MISSING), third=Filter(color='file', minAge=MISSING)))
+  post_extras(ExtrasPostRequest(name='n', maxAge=MISSING, first=Filter(color='blue', minAge=3), second=Filter(color='plain', minAge=MISSING), third=Filter(color='file', minAge=MISSING)))
 < 204 - b''
 > POST /extras
-  post_extras(ExtrasPostRequest(name='{', first=Filter(color='last', minAge=MISSING)))
+  post_extras(ExtrasPostRequest(name='{', maxAge=MISSING, first=Filter(color='last', minAge=MISSING)))
 < 204 - b''
 > POST /extras
 < 422 application/json [{"type": "json_invalid", "loc": ["body", "first"]}, {"type": "greater_than_equal", "loc": ["body", "second", "minAge"]}, {"type": "json_invalid", "loc": ["body", "third"]}, {"type": "dataclass_type", "loc": ["body", "fourth"]}]
 > POST /extras
-  post_extras(ExtrasPostRequest(name='n'))
+  post_extras(ExtrasPostRequest(name='n', maxAge=MISSING))
 < 204 - b''
 > POST /extra-lists
   post_extra_lists(ExtraListsPostRequest(name='n', first=[Filter(color='a', minAge=MISSING), Filter(color=MISSING, minAge=2)], second=[Filter(color=MISSING, minAge=MISSING)]))
