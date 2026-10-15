@@ -45,7 +45,7 @@
   held Fish = Holder(pet=Fish(kind='Fish', fins=2))
   > GET https://api.example.com/holder
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  held Bird ! DecodeError: DecodeError(status_code=200, operation_id='getHolder', reason='invalid_value') [operation_id='getHolder', body_bytes=b'{"pet":{"kind":"Bird"}}', truncated=False, cause=KeyError('Bird')] invalid_value
+  held Bird = Holder(pet=Bird(kind='Bird'))
   > GET https://api.example.com/holder
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   held null = Holder(pet=None)

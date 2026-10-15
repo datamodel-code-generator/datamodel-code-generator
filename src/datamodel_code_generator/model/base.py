@@ -1904,6 +1904,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """
 
     _field_name_bindings: Mapping[str, str] | None = None
+    reused_reference: Reference | None = None
+    """The reference of the model that reuse replaced with this empty subclass of an equal model."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = ""
     BASE_CLASS: ClassVar[str] = ""
@@ -2351,7 +2353,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def create_reuse_model(self, base_ref: Reference) -> Self:
         """Create inherited model with empty fields pointing to base reference."""
-        return self.__class__(
+        reuse_model = self.__class__(
             fields=[],
             base_classes=[base_ref],
             description=self.description,
@@ -2364,6 +2366,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             keyword_only=self.keyword_only,
             treat_dot_as_module=self._treat_dot_as_module,
         )
+        reuse_model.reused_reference = self.reference
+        return reuse_model
 
     def _set_deprecated_decorator(self) -> None:
         """Add a class-level deprecated decorator when schema metadata requires it."""

@@ -27,7 +27,7 @@ MODELS: Final[dict[type, Model]] = {
     models.Bird: Model((Field('kind', 'kind'),)),
     models.Item: Model((Field('name', 'name'), Field('count', 'count'))),
     models.Child: Model((Field('pet', 'pet', Choice((), 'kind', (('c', models.Lion), ('d', models.Wolf)))), Field('pets_by_name', 'pets_by_name', Values(Choice((), 'kind', (('c', models.Lion), ('d', models.Wolf))))), Field('note', 'note', omit_none=True))),
-    models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('d', models.Bird))), omit_none=True),)),
+    models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird))), omit_none=True),)),
 }
 
 codec_0: Final[DataclassCodec[models.Pet]] = DataclassCodec(Choice((), 'kind', (('Cat', models.Cat), ('Dog', models.Dog))), MODELS)

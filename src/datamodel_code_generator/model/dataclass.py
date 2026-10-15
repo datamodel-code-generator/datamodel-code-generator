@@ -158,8 +158,8 @@ class _DataclassReuseMixin:
         model = cast("DataModel", self)
         model_cls = cast("Any", self.__class__)
         model_attrs = vars(model)
-        return cast(
-            "Self",
+        reuse_model = cast(
+            "DataModel",
             model_cls(
                 fields=[],
                 base_classes=[base_ref],
@@ -176,6 +176,8 @@ class _DataclassReuseMixin:
                 dataclass_arguments=model.dataclass_arguments,
             ),
         )
+        reuse_model.reused_reference = model.reference
+        return cast("Self", reuse_model)
 
 
 class DataClass(_DataclassReuseMixin, DataModel):
