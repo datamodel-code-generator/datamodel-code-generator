@@ -20,14 +20,15 @@ from collections.abc import Callable as ABCCallable
 from collections.abc import Iterator, Sequence
 from contextlib import ExitStack, nullcontext, suppress
 from dataclasses import Field as DataclassField
+from dataclasses import is_dataclass
 from decimal import Decimal
 from functools import partial
 from http.server import ThreadingHTTPServer
 from operator import itemgetter
 from pathlib import Path, PurePath
 from threading import Thread
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, get_args, get_type_hints
+from types import MappingProxyType, UnionType
+from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
 from urllib.parse import urlparse
 
 import black
@@ -3140,6 +3141,83 @@ def test_main_jsonschema_field_type_collision_runtime(
         with pytest.raises(error_type):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
         assert_output(f"{getattr(parsed.values.left, field_name).x}\n", payload_path / "runtime.txt")
+
+
+def _annotation_type_names(annotation: Any) -> set[str]:
+    """Return the names of the classes and containers that a resolved annotation names, ignoring unions."""
+    if isinstance(annotation, type) and not get_args(annotation):
+        return {annotation.__name__}
+    origin = get_origin(annotation)
+    names = {origin.__name__} if isinstance(origin, type) and origin is not UnionType else set()
+    return names.union(*map(_annotation_type_names, get_args(annotation)))
+
+
+@pytest.mark.parametrize(
+    ("schema", "target_python_version", "options", "expected_name"),
+    [
+        pytest.param("speed.json", "3.10", [], "dataclass", id="future-imports"),
+        pytest.param("speed.json", "3.10", ["--disable-future-imports"], "dataclass_no_future_imports", id="speed"),
+        pytest.param(
+            "later.json", "3.10", ["--disable-future-imports"], "dataclass_later_no_future_imports", id="later"
+        ),
+        pytest.param(
+            "defaults.json", "3.10", ["--disable-future-imports"], "dataclass_defaults_no_future_imports", id="defaults"
+        ),
+        pytest.param(
+            "defaults.json",
+            "3.14",
+            ["--disable-future-imports"],
+            "dataclass_defaults_py314_no_future_imports",
+            id="defaults-py314",
+        ),
+        pytest.param(
+            "later.json",
+            "3.10",
+            ["--use-default-factory-for-optional-nested-models"],
+            "dataclass_later_default_factory",
+            id="later-default-factory",
+        ),
+    ],
+)
+def test_main_jsonschema_field_type_collision_dataclass(
+    output_file: Path, schema: str, target_python_version: str, options: list[str], expected_name: str
+) -> None:
+    """Keep a dataclass field named like its type, which has no alias, and resolve the type from the module.
+
+    Without future imports the type is written as a string, which ``typing`` resolves from the module first.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "same_name_reference_fields" / schema,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"field_type_collision_runtime/{expected_name}.py",
+        skip_code_validation=True,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.DataclassesDataclass.value,
+            "--target-python-version",
+            target_python_version,
+            "--class-name",
+            "Payload",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *options,
+        ],
+    )
+    if sys.version_info[:2] < tuple(map(int, target_python_version.split("."))):
+        pytest.skip(f"the output targets Python {target_python_version} or later")
+    with _generated_model(output_file, "field_type_collision_dataclass", "Leaf") as leaf:
+        classes = {name: value for name, value in vars(sys.modules[leaf.__module__]).items() if is_dataclass(value)}
+        hints = {
+            name: {field: sorted(_annotation_type_names(hint)) for field, hint in get_type_hints(cls).items()}
+            for name, cls in classes.items()
+        }
+        assert_output(
+            f"{json.dumps({'hints': hints, 'defaults': repr(leaf())}, indent=2)}\n",
+            EXPECTED_JSON_SCHEMA_PATH / "field_type_collision_runtime" / f"{expected_name}.txt",
+        )
 
 
 @pytest.mark.parametrize(
