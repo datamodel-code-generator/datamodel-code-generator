@@ -193,7 +193,9 @@ def _body(size: int = 3 * _CHUNK) -> Callable[[httpx2.Request], httpx2.Response]
 
 
 def _gzipped() -> Callable[[httpx2.Request], httpx2.Response]:
-    return raw_response(200, gzip.compress(_DATA, mtime=0), "application/octet-stream", **{"content-encoding": "gzip"})
+    return raw_response(
+        200, gzip.compress(_DATA, compresslevel=9, mtime=0), "application/octet-stream", **{"content-encoding": "gzip"}
+    )
 
 
 def _stalled(gate: threading.Event) -> Callable[[httpx2.Request], httpx2.Response]:

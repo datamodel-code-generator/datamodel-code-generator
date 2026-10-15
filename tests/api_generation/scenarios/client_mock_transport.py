@@ -63,7 +63,7 @@ def _bodies(*, asynchronous: bool) -> tuple[tuple[str, Callable[[], Any]], ...]:
     """Return the responses a pet is decoded from: read on creation, streamed, and consumed without being read."""
     return (
         ("content", lambda: httpx2.Response(200, headers=_JSON, content=_PET)),
-        ("gzip content", lambda: httpx2.Response(200, headers=_GZIP, content=gzip.compress(_PET))),
+        ("gzip content", lambda: httpx2.Response(200, headers=_GZIP, content=gzip.compress(_PET, compresslevel=9))),
         (
             "streamed",
             (lambda: httpx2.Response(200, headers=_JSON, content=_chunks()))
@@ -78,7 +78,7 @@ def _raw_bodies() -> tuple[tuple[str, Callable[[], httpx2.Response]], ...]:
     """Return read responses whose raw bytes are their content, coded only as identity, or are gone with a coding."""
     return (
         ("raw content", lambda: httpx2.Response(200, headers=_JSON, content=_PET)),
-        ("raw gzip content", lambda: httpx2.Response(200, headers=_GZIP, content=gzip.compress(_PET))),
+        ("raw gzip content", lambda: httpx2.Response(200, headers=_GZIP, content=gzip.compress(_PET, compresslevel=9))),
         ("raw identity content", lambda: httpx2.Response(200, headers=_IDENTITY, content=_PET)),
     )
 

@@ -45,8 +45,15 @@ _SKIP_BLACK = pytest.mark.skipif(
 )
 
 
+_EXPECTED_VERSION_DIR = (
+    "py314"
+    if _CURRENT_PYTHON_VERSION.has_native_deferred_annotations
+    else f"py{CURRENT_PYTHON_VERSION.replace('.', '')}"
+)
+
+
 def _expected_file(expected_file: str) -> str:
-    return f"py{CURRENT_PYTHON_VERSION.replace('.', '')}/{expected_file}"
+    return f"{_EXPECTED_VERSION_DIR}/{expected_file}"
 
 
 def _append_mutation_marker(value: object) -> None:

@@ -22,10 +22,10 @@ serve pydantic_v2.dataclass
 service DefaultService: create_pet, get_pet, list_owners
 service DefaultService without its methods: TypeError
 > POST /pets
-  create_pet(body=Pet{'name': 'Rex', 'id': 'sentinel{}', 'secret': 's', 'owner': "Owner{'name': 'Ann', 'email': 'a@example.com'}"})
+  create_pet(body=Pet{'name': 'Rex', 'id': MISSING, 'secret': 's', 'owner': "Owner{'name': 'Ann', 'email': 'a@example.com'}"})
 < 201 application/json {"name":"Rex","id":1}
 > POST /pets
-  create_pet(body=Pet{'name': 'Rex', 'id': 5, 'secret': 'sentinel{}', 'owner': 'sentinel{}'})
+  create_pet(body=Pet{'name': 'Rex', 'id': 5, 'secret': MISSING, 'owner': MISSING})
 < 201 application/json {"name":"Rex","id":1}
 > POST /pets
 < 422 application/json [{"type": "string_too_short", "loc": ["body", "name"]}]

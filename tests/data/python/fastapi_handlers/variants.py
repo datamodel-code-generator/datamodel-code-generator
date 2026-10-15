@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from typing_extensions import Sentinel
+
 if TYPE_CHECKING:
     from types import ModuleType
 
@@ -12,6 +14,8 @@ def _plain(value: object) -> object:
     match value:
         case list():
             return [_plain(item) for item in value]
+        case Sentinel():
+            return value
         case _ if hasattr(value, "__dict__") and not isinstance(value, type):
             fields = {key: _plain(item) for key, item in vars(value).items() if not key.startswith("_")}
             return f"{type(value).__name__}{fields}"

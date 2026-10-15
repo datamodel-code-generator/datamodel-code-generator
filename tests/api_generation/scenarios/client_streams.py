@@ -541,7 +541,9 @@ def stream_lifetimes(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(
                 raw_response(200, message * 2, _STREAM),
                 raw_response(200, message, _STREAM),
-                raw_response(200, gzip.compress(message, mtime=0), _STREAM, **{"content-encoding": "gzip"}),
+                raw_response(
+                    200, gzip.compress(message, compresslevel=9, mtime=0), _STREAM, **{"content-encoding": "gzip"}
+                ),
             )
             first = helper.open()
             lines.append(f"  pooled first {_event(next(first))}")

@@ -72,6 +72,19 @@ class _CustomSequence(list[Any]):  # noqa: FURB189
     """Make custom sequence construction observable in parity coverage."""
 
 
+def _without_snippet(mark: yaml.Mark | None) -> yaml.Mark | None:
+    return mark and yaml.Mark(mark.name, mark.index, mark.line, mark.column, None, None)
+
+
+def _error_message(exc: Exception) -> str:
+    """Render an error without the source snippet that only the pure-Python reader attaches to marks."""
+    if isinstance(exc, yaml.MarkedYAMLError):
+        exc = type(exc)(
+            exc.context, _without_snippet(exc.context_mark), exc.problem, _without_snippet(exc.problem_mark), exc.note
+        )
+    return f"{type(exc).__name__}: {exc}"
+
+
 def _construct(text: str, loader_class: type, *, standard: bool) -> tuple[Any, str | None, list[tuple[str, str]]]:
     loader = loader_class(text)
     with warnings.catch_warnings(record=True) as caught:
@@ -85,7 +98,7 @@ def _construct(text: str, loader_class: type, *, standard: bool) -> tuple[Any, s
             else:
                 data, error = loader.construct_document(node), None
         except Exception as exc:  # noqa: BLE001
-            data, error = None, f"{type(exc).__name__}: {exc}"
+            data, error = None, _error_message(exc)
         finally:
             loader.dispose()
     return data, error, [(str(item.message), item.category.__name__) for item in caught]
@@ -365,7 +378,7 @@ def test_fast_constructor_preserves_custom_map_seq_constructors(  # noqa: PLR091
         try:
             public_error_data, public_error_message = yaml.load(error_text, Loader=CustomMapSeqFastSafeLoader), None
         except Exception as exc:  # noqa: BLE001
-            public_error_data, public_error_message = None, f"{type(exc).__name__}: {exc}"
+            public_error_data, public_error_message = None, _error_message(exc)
     public_error = (
         public_error_data,
         public_error_message,

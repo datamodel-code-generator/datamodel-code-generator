@@ -726,7 +726,7 @@ async def _async_paths(package: ModuleType, lines: list[str]) -> None:
 
 _PET: Final = json.dumps({"id": 3, "name": "fox"}).encode()
 _ERROR: Final = json.dumps({"code": 7, "message": "boom"}).encode()
-_BOMB: Final = gzip.compress(b'{"id":3,"name":"' + b"x" * (2 * 1024 * 1024) + b'"}', mtime=0)
+_BOMB: Final = gzip.compress(b'{"id":3,"name":"' + b"x" * (2 * 1024 * 1024) + b'"}', compresslevel=9, mtime=0)
 
 
 def _coded(coding: str, content: bytes, status: int = 200) -> Callable[[Any], Any]:
@@ -748,18 +748,25 @@ def codings(package: ModuleType, lines: list[str]) -> None:
     ):
         pet, trace = _pet(package, "getPet"), _trace(package)
         for label, responder in (
-            ("gzip", _coded("gzip", gzip.compress(_PET, mtime=0))),
-            ("x-gzip", _coded("X-Gzip", gzip.compress(_PET, mtime=0))),
+            ("gzip", _coded("gzip", gzip.compress(_PET, compresslevel=9, mtime=0))),
+            ("x-gzip", _coded("X-Gzip", gzip.compress(_PET, compresslevel=9, mtime=0))),
             ("deflate", _coded("deflate", zlib.compress(_PET))),
-            ("stacked", _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0)))),
+            ("stacked", _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, compresslevel=9, mtime=0)))),
             ("identity", _coded("identity", _PET)),
-            ("members", _coded("gzip", gzip.compress(_PET[:5], mtime=0) + gzip.compress(_PET[5:], mtime=0))),
+            (
+                "members",
+                _coded(
+                    "gzip",
+                    gzip.compress(_PET[:5], compresslevel=9, mtime=0)
+                    + gzip.compress(_PET[5:], compresslevel=9, mtime=0),
+                ),
+            ),
             ("layers", _coded("gzip, deflate, gzip", _PET)),
             ("unknown", _coded("gzip, compress", _PET)),
-            ("truncated", _coded("gzip", gzip.compress(_PET, mtime=0)[:-4])),
-            ("corrupt", _coded("gzip", _corrupt(gzip.compress(_PET, mtime=0)))),
+            ("truncated", _coded("gzip", gzip.compress(_PET, compresslevel=9, mtime=0)[:-4])),
+            ("corrupt", _coded("gzip", _corrupt(gzip.compress(_PET, compresslevel=9, mtime=0)))),
             ("deflate trailing", _coded("deflate", zlib.compress(_PET) + b"x")),
-            ("gzip trailing", _coded("gzip", gzip.compress(_PET, mtime=0) + b"garbage")),
+            ("gzip trailing", _coded("gzip", gzip.compress(_PET, compresslevel=9, mtime=0) + b"garbage")),
         ):
             exchange.respond(responder)
             record(lines, f"coding {label}", lambda: api.pets.get_pet(petId=pet))
@@ -770,7 +777,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(
             chunked_response(
                 200,
-                gzip.compress(pets, mtime=0),
+                gzip.compress(pets, compresslevel=9, mtime=0),
                 100,
                 "application/json",
                 **{"content-encoding": "gzip", "X-Rate": "1"},
@@ -778,8 +785,8 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         )
         record(lines, "coding chunked", lambda: len(api.pets.list_pets(X_Trace=trace).root))
         exchange.respond(
-            *((_coded("gzip", gzip.compress(_ERROR, mtime=0), 500),) * 3),
-            *((_coded("gzip", gzip.compress(_ERROR, mtime=0)[:-4], 500),) * 3),
+            *((_coded("gzip", gzip.compress(_ERROR, compresslevel=9, mtime=0), 500),) * 3),
+            *((_coded("gzip", gzip.compress(_ERROR, compresslevel=9, mtime=0)[:-4], 500),) * 3),
             chunked_response(302, b"moved", 5, "text/plain", **{"content-encoding": "compress"}),
             chunked_response(204, b"", 1, "text/plain", **{"content-encoding": "compress"}),
         )
@@ -798,11 +805,11 @@ async def _async_codings(package: ModuleType, exchange: Exchange, lines: list[st
     pet = _pet(package, "getPet")
     async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
         exchange.respond(
-            _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, mtime=0))),
+            _coded("gzip, deflate", zlib.compress(gzip.compress(_PET, compresslevel=9, mtime=0))),
             _coded("identity", _PET),
-            _coded("gzip", gzip.compress(_PET, mtime=0)[:-4]),
+            _coded("gzip", gzip.compress(_PET, compresslevel=9, mtime=0)[:-4]),
             injected(lambda _: httpx2.Response(200, json={"id": 3, "name": "fox"})),
-            _coded("gzip", _corrupt(gzip.compress(_PET, mtime=0))),
+            _coded("gzip", _corrupt(gzip.compress(_PET, compresslevel=9, mtime=0))),
         )
         await arecord(lines, "async coding stacked", lambda: api.pets.get_pet(petId=pet))
         await arecord(lines, "async coding identity", lambda: api.pets.get_pet(petId=pet))

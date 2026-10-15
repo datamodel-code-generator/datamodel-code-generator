@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 from copy import deepcopy
 from fractions import Fraction
 from typing import TYPE_CHECKING, Any
@@ -22,6 +23,11 @@ if TYPE_CHECKING:
 
     from .models import SchemaCase
 
+
+_UNICODE_BEYOND_SHARED_REGEX_TABLES = tuple(map(int, unicodedata.unidata_version.split("."))) > (16, 0, 0)
+"""Whether Python's re uses Unicode tables newer than 16.0, the newest that pydantic-core's regex shares with it."""
+_NON_ASCII_WORD_CHARACTER = re.compile(r"(?=[^\x00-\x7f])\w")
+_UNICODE_CLASS_ESCAPE = re.compile(r"\\[dDwWbB]")
 
 _SourceSchemaCacheKey = tuple[str, str, str]
 _source_schema_validator_cache: dict[_SourceSchemaCacheKey, SourceSchemaValidator] = {}
@@ -123,6 +129,20 @@ def _bound_float_multiples(schema: dict[str, Any]) -> None:
         node["maximum"] = min(maximum, limit)
 
 
+def _within_shared_regex_tables(value: Any) -> bool:  # pragma: >=3.15 cover
+    """Keep word characters ASCII, where Python's re and pydantic-core's regex classify them alike."""
+    match value:
+        case str():
+            return _NON_ASCII_WORD_CHARACTER.search(value) is None
+        case dict():
+            return all(
+                _within_shared_regex_tables(key) and _within_shared_regex_tables(item) for key, item in value.items()
+            )
+        case list():
+            return all(map(_within_shared_regex_tables, value))
+    return True
+
+
 def payload_strategy(case: SchemaCase) -> st.SearchStrategy[Any]:
     """Build the deterministic payload strategy for a schema case."""
     cache_key = _source_schema_cache_key(case)
@@ -145,15 +165,14 @@ def payload_strategy(case: SchemaCase) -> st.SearchStrategy[Any]:
     # Literal regex fragments provide constructive witnesses for intersections whose
     # Unicode alphabet is prohibitively unlikely under rejection sampling. Each
     # candidate is proved against the unchanged source, including refs and bounds.
-    literals = [
-        pattern
-        for node in _iter_schema_nodes(schema)
-        if isinstance(pattern := node.get("pattern"), str) and not re.search(r"[.\\^$*+?{}\[\]|()]", pattern)
-    ]
+    patterns = [pattern for node in _iter_schema_nodes(schema) if isinstance(pattern := node.get("pattern"), str)]
+    literals = [pattern for pattern in patterns if not re.search(r"[.\\^$*+?{}\[\]|()]", pattern)]
     if literals:
         candidates = dict.fromkeys([*literals, "".join(literals), "".join(reversed(literals))])
         if witnesses := [candidate for candidate in candidates if validator.is_valid(candidate)]:
             strategy = st.one_of(st.sampled_from(witnesses), strategy)
     strategy = strategy.filter(validator.is_valid)
+    if _UNICODE_BEYOND_SHARED_REGEX_TABLES and any(map(_UNICODE_CLASS_ESCAPE.search, patterns)):  # pragma: >=3.15 cover
+        strategy = strategy.filter(_within_shared_regex_tables)
     _payload_strategy_cache[cache_key] = strategy
     return strategy

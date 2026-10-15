@@ -181,24 +181,25 @@ def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> tuple[Weights
     node_totals: dict[str, float] = {}
     slow_tests: dict[str, float] = {}
     for path in paths:
-        for _, element in iterparse(path):
-            if element.tag != "testcase":
-                continue
-            located = _module_file(element.get("classname", ""), modules)
-            seconds = float(element.get("time", "0"))
-            name = element.get("name", "")
-            element.clear()
-            if located is None:
-                continue
-            file, classes = located
-            if seconds * 1000 >= SLOW_TEST_MS:
-                test = "::".join(part for part in (file, classes, name) if part)
-                slow_tests[test] = max(seconds, slow_tests.get(test, 0.0))
-            if file not in SPLIT_NODE_FILES:
-                file_totals[file] = file_totals.get(file, 0.0) + seconds
-                continue
-            nodeid = "::".join(part for part in (file, classes, name.partition("[")[0]) if part)
-            node_totals[nodeid] = node_totals.get(nodeid, 0.0) + seconds
+        with path.open("rb") as source:
+            for _, element in iterparse(source):
+                if element.tag != "testcase":
+                    continue
+                located = _module_file(element.get("classname", ""), modules)
+                seconds = float(element.get("time", "0"))
+                name = element.get("name", "")
+                element.clear()
+                if located is None:
+                    continue
+                file, classes = located
+                if seconds * 1000 >= SLOW_TEST_MS:
+                    test = "::".join(part for part in (file, classes, name) if part)
+                    slow_tests[test] = max(seconds, slow_tests.get(test, 0.0))
+                if file not in SPLIT_NODE_FILES:
+                    file_totals[file] = file_totals.get(file, 0.0) + seconds
+                    continue
+                nodeid = "::".join(part for part in (file, classes, name.partition("[")[0]) if part)
+                node_totals[nodeid] = node_totals.get(nodeid, 0.0) + seconds
     if not file_totals:
         msg = "no sharded module durations found in JUnit reports"
         raise SystemExit(msg)
