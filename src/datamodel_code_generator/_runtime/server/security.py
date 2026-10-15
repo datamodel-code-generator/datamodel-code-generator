@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from base64 import b64decode
 from collections.abc import Awaitable, Callable, Mapping
 from typing import TypeAlias
 
@@ -25,14 +26,21 @@ def bearer_token(authorization: str | None) -> str | None:
 
 
 class OptionalHTTPBasic(HTTPBasic):
-    """FastAPI's `HTTPBasic`, reading a malformed Basic credential as none, as it reads a missing one."""
+    """FastAPI's `HTTPBasic`, reading a malformed Basic credential as none, as it reads a missing one.
+
+    The credential is UTF-8 (RFC 7617), as the generated client sends it, where `HTTPBasic` reads ASCII only.
+    """
 
     async def __call__(self, request: Request) -> HTTPBasicCredentials | None:  # type: ignore[override]
         """Return the credentials of a `Basic` `Authorization` header, or None without a well-formed one."""
-        try:
-            return await super().__call__(request)
-        except HTTPException:
+        scheme, credential = get_authorization_scheme_param(request.headers.get("authorization"))
+        if scheme.lower() != "basic":
             return None
+        try:
+            username, separator, password = b64decode(credential, validate=True).decode().partition(":")
+        except ValueError:
+            return None
+        return HTTPBasicCredentials(username=username, password=password) if separator else None
 
 
 class OAuth2Bearer(OAuth2):

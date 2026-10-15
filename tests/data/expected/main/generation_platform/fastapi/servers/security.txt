@@ -149,6 +149,16 @@ openapi tags [{"name": "pets", "description": "Pet operations."}, {"name": "publ
   global /session
 < 401 application/json {"detail":"Not authenticated"}
 < www-authenticate: APIKey, Bearer, Basic
+> GET /session
+  global /session
+  authorize [(('basic', ()),)]
+    credentials ['basic=ü']
+  get_session(principal='user-basic')
+< 204 - b''
+> GET /session
+  global /session
+< 401 application/json {"detail":"Not authenticated"}
+< www-authenticate: APIKey, Bearer, Basic
 > GET /custom
   global /custom
   authorize [(('digest', ()),)]

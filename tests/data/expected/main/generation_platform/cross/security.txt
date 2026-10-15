@@ -50,6 +50,12 @@ put_pet with the query key and Basic
   put_pet(principal='principal of basic, query_key', petId=3)
   < 204 -
   = None
+put_pet with the query key and Basic beyond ASCII
+  > PUT /v2/pets/4?key=key+3
+  authorize(requirement_sets=((('query_key', ()), ('basic', ())),), credentials={'query_key': 'key 3', 'basic': HTTPBasicCredentials(username='ü', password='pässword')})
+  put_pet(principal='principal of basic, query_key', petId=4)
+  < 204 -
+  = None
 get_session with the cookie key
   > GET /v2/session
   authorize(requirement_sets=((('cookie_key', ()),),), credentials={'cookie_key': 'cookie-1'})

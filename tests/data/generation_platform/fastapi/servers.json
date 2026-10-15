@@ -2402,6 +2402,23 @@
           },
           {
             "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic w7w6cMOkc3N3b3Jk"
+            }
+          },
+          {
+            "method": "GET",
+            "url": "/session",
+            "headers": {
+              "Authorization": "Basic /zpw"
+            },
+            "show_headers": [
+              "www-authenticate"
+            ]
+          },
+          {
+            "method": "GET",
             "url": "/custom",
             "headers": {
               "Authorization": "Digest d1"

@@ -1006,7 +1006,7 @@ exports no `AuthError`. An argument whose name another constructor argument or s
 scheme's prefix takes, as model class names are.
 
 An API key or bearer argument takes a string, and an HTTP Basic one a `(username, password)` tuple, which is encoded
-as UTF-8. Each also takes a callable returning its value, which the client calls for each request, so a rotating
+as UTF-8, the charset of RFC 7617, which the generated server reads. Each also takes a callable returning its value, which the client calls for each request, so a rotating
 token or a key read from a secret store stays current; a bearer argument also takes an OAuth provider. A callable's
 failure raises `AuthError` with the reason `provider_failed` before the request is sent, and a value of the wrong type
 `ConfigurationError` with the reason `invalid_type`. No environment variables or credentials are discovered by
