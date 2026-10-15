@@ -6,7 +6,6 @@ Python data models (Pydantic, dataclasses, TypedDict, msgspec) from various sche
 
 from __future__ import annotations
 
-import codecs
 import contextlib
 import gc
 import os
@@ -1576,19 +1575,13 @@ def _output_module_text(
 
 
 def _ensure_output_text_encodable(text: str, encoding: str) -> None:
-    """Raise a clean error when output text cannot be encoded, before any destination is opened."""
+    """Raise a clean error when output text cannot be encoded, before any destination is opened.
+
+    An unknown encoding and a codec that is not a text encoding cannot encode even empty text.
+    """
     try:
         text.encode(encoding)
-    except (UnicodeEncodeError, LookupError) as exc:
-        msg = f"Unable to encode output using encoding {encoding!r}: {exc}"
-        raise Error(msg) from exc
-
-
-def _reject_unknown_output_encoding(encoding: str) -> None:
-    """Raise a clean error for an unknown encoding name before input is read."""
-    try:
-        codecs.lookup(encoding)
-    except LookupError as exc:
+    except (UnicodeError, LookupError) as exc:
         msg = f"Unable to encode output using encoding {encoding!r}: {exc}"
         raise Error(msg) from exc
 
@@ -1761,12 +1754,18 @@ def _emit_results(  # noqa: PLR0913
     return None
 
 
-def _write_model_metadata(metadata_path: Path, metadata: ModelMetadata | None, encoding: str) -> None:
+def _model_metadata_text(metadata: ModelMetadata | None, encoding: str) -> str:
+    """Return the text of the model metadata file, refusing an encoding that cannot write it."""
     from datamodel_code_generator.model_metadata import dump_model_metadata  # noqa: PLC0415
 
+    _ensure_output_text_encodable(text := f"{dump_model_metadata(metadata)}\n", encoding)
+    return text
+
+
+def _write_model_metadata(metadata_path: Path, text: str, encoding: str) -> None:
     _ensure_file_output_path(metadata_path, _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR)
     metadata_path.parent.mkdir(parents=True, exist_ok=True)
-    metadata_path.write_text(f"{dump_model_metadata(metadata)}\n", encoding=encoding)
+    metadata_path.write_text(text, encoding=encoding)
 
 
 def generate(
@@ -1823,7 +1822,6 @@ def generate(
 
         return generate_selected_target(input_, config)
     config = _prepare_generate_facade_config(config)
-    _reject_unknown_output_encoding(config.encoding)
 
     atomic_remote_update = (
         config.update_lock
@@ -1843,7 +1841,10 @@ def generate(
 
 
 def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
-    """Apply existing facade warnings, presets, sentinels, and metadata checks in order."""
+    """Apply existing facade warnings, presets, sentinels, metadata checks, and the output encoding check in order.
+
+    The encoding is checked before any input is read with it.
+    """
     from pydantic import VERSION as PYDANTIC_VERSION  # ruff: ignore[import-outside-top-level]
 
     from datamodel_code_generator.base_config import implied_model_settings  # ruff: ignore[import-outside-top-level]
@@ -1861,6 +1862,7 @@ def _prepare_generate_facade_config(config: GenerateConfig) -> GenerateConfig:
 
     if (metadata_path := config.emit_model_metadata) is not None:
         _ensure_file_output_path(metadata_path, _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR)
+    _ensure_output_text_encodable("", config.encoding)
 
     return config
 
@@ -2812,7 +2814,14 @@ def _emit_generation(  # noqa: PLR0913
     owned_remote_lock: RemoteReferenceLock | None,
     allow_empty_api: bool = False,
 ) -> str | GeneratedModules | None:
-    """Emit generated artifacts and commit a generation-owned remote lock."""
+    """Emit generated artifacts and commit a generation-owned remote lock.
+
+    The model metadata text is encoded before any model file is written, so an encoding that cannot write it writes
+    nothing.
+    """
+    metadata = None
+    if (metadata_path := config.emit_model_metadata) is not None:
+        metadata = metadata_path, _model_metadata_text(model_metadata, config.encoding)
     emit_results = _emit_results
     if allow_empty_api:
         from functools import partial  # noqa: PLC0415
@@ -2828,8 +2837,8 @@ def _emit_generation(  # noqa: PLR0913
         data_model_types=data_model_types,
         settings_path=settings_path,
     )
-    if config.emit_model_metadata is not None:
-        _write_model_metadata(config.emit_model_metadata, model_metadata, config.encoding)
+    if metadata is not None:
+        _write_model_metadata(*metadata, config.encoding)
     if owned_remote_lock is not None:
         owned_remote_lock.commit()
     return generated

@@ -54,6 +54,19 @@ TRACEBACK_HEADER = "Traceback (most recent call last)"
 ISSUE_SCHEMA = '{"type": "object", "title": "Pet", "properties": {"name": {"type": "string"}}}\n'
 UNENCODABLE_HEADER = "# Café 漢"
 UNKNOWN_ENCODING_ERROR = "Unable to encode output using encoding 'nosuch': unknown encoding: nosuch"
+NON_TEXT_ENCODING_ERROR = (
+    "Unable to encode output using encoding 'hex': 'hex' is not a text encoding; "
+    "use codecs.encode() to handle arbitrary codecs"
+)
+ENCODING_ERRORS = pytest.mark.parametrize(
+    ("encoding", "message"),
+    [("nosuch", UNKNOWN_ENCODING_ERROR), ("hex", NON_TEXT_ENCODING_ERROR)],
+    ids=["unknown", "not-text"],
+)
+UNENCODABLE_METADATA_ERROR = (
+    "Unable to encode output using encoding 'latin-1': "
+    "'latin-1' codec can't encode character '\\u6f22' in position 258: ordinal not in range(256)"
+)
 
 ERROR_CASES: tuple[tuple[str, InputFileTypeLiteral, str], ...] = (
     (
@@ -1895,6 +1908,15 @@ def test_cli_unencodable_custom_header_is_one_error_line(
         capsys=capsys,
         expected_stderr=expected_stderr,
     )
+    run_main_and_assert(
+        input_path=schema,
+        output_path=existing,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", "latin-1", "--custom-file-header", UNENCODABLE_HEADER, "--check"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=expected_stderr,
+    )
     assert existing.read_bytes() == original
 
 
@@ -1924,21 +1946,24 @@ def test_cli_unencodable_later_module_leaves_every_module(
     assert [module.read_bytes() for module in modules] == [original] * len(modules)
 
 
+@ENCODING_ERRORS
 @pytest.mark.allow_direct_assert("compares output bytes an unknown encoding must leave unchanged")
 def test_cli_unknown_encoding_is_one_error_line(
+    encoding: str,
+    message: str,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """An unknown encoding name exits 2 on one line and does not create or truncate the output file."""
+    """An unknown encoding or a codec that is not a text encoding exits 2 on one line and writes nothing."""
     schema = tmp_path / "schema.json"
     schema.write_text(ISSUE_SCHEMA, encoding="utf-8")
-    expected_stderr = f"{UNKNOWN_ENCODING_ERROR}\n"
+    expected_stderr = f"{message}\n"
     missing = tmp_path / "missing" / "out.py"
     run_main_and_assert(
         input_path=schema,
         output_path=missing,
         input_file_type="jsonschema",
-        extra_args=["--encoding", "nosuch", "--formatters", "builtin"],
+        extra_args=["--encoding", encoding, "--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=expected_stderr,
@@ -1952,7 +1977,7 @@ def test_cli_unknown_encoding_is_one_error_line(
         input_path=schema,
         output_path=existing,
         input_file_type="jsonschema",
-        extra_args=["--encoding", "nosuch"],
+        extra_args=["--encoding", encoding],
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=expected_stderr,
@@ -1984,20 +2009,60 @@ def test_generate_unencodable_custom_header_leaves_existing_output(tmp_path: Pat
     assert output.read_bytes() == original
 
 
+@ENCODING_ERRORS
 @pytest.mark.allow_direct_assert("checks an unknown encoding creates neither the output nor its parent")
-def test_generate_unknown_encoding_does_not_create_output(tmp_path: Path) -> None:
-    """The public API rejects an unknown encoding before creating the output path."""
+def test_generate_unknown_encoding_does_not_create_output(encoding: str, message: str, tmp_path: Path) -> None:
+    """The public API rejects an unknown encoding or a binary codec before creating the output path."""
     schema = tmp_path / "schema.json"
     schema.write_text(ISSUE_SCHEMA, encoding="utf-8")
     output = tmp_path / "missing" / "out.py"
 
-    with pytest.raises(Error, match=rf"^{re.escape(UNKNOWN_ENCODING_ERROR)}$"):
+    with pytest.raises(Error, match=rf"^{re.escape(message)}$"):
         generate(
             schema,
             input_file_type=InputFileType.JsonSchema,
-            encoding="nosuch",
+            encoding=encoding,
             output=output,
         )
 
     assert not output.exists()
     assert not output.parent.exists()
+
+
+@pytest.mark.allow_direct_assert("compares model and metadata bytes an unencodable metadata file must leave unchanged")
+def test_cli_unencodable_model_metadata_leaves_outputs(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Latin-1 cannot encode a model title in the metadata, so the CLI exits 2 and changes neither file."""
+    output, metadata = tmp_path / "out.py", tmp_path / "meta.json"
+    original = b"# precious\n"
+    output.write_bytes(original)
+    metadata.write_bytes(original)
+    run_main_and_assert(
+        input_path=DATA_PATH / "jsonschema" / "unencodable_title.json",
+        output_path=output,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", "latin-1", "--emit-model-metadata", str(metadata)],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"{UNENCODABLE_METADATA_ERROR}\n",
+    )
+    assert [output.read_bytes(), metadata.read_bytes()] == [original, original]
+
+
+@pytest.mark.allow_direct_assert("checks an unencodable metadata file creates neither output")
+def test_generate_unencodable_model_metadata_writes_nothing(tmp_path: Path) -> None:
+    """The public API raises the metadata encode error before writing the models or the metadata."""
+    output, metadata = tmp_path / "models" / "out.py", tmp_path / "meta" / "meta.json"
+
+    with pytest.raises(Error, match=rf"^{re.escape(UNENCODABLE_METADATA_ERROR)}$"):
+        generate(
+            DATA_PATH / "jsonschema" / "unencodable_title.json",
+            input_file_type=InputFileType.JsonSchema,
+            encoding="latin-1",
+            emit_model_metadata=metadata,
+            output=output,
+        )
+
+    assert [output.parent.exists(), metadata.parent.exists()] == [False, False]
