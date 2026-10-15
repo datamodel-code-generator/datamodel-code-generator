@@ -229,11 +229,13 @@ class BodyMedia:
     """One declared request media type and how an argument becomes its bytes.
 
     A form-data body is written by the package's form encoder, from a call's parts or an object's members. A binary
-    body has a codec only when its models constrain its bytes.
+    body has a codec only when its models constrain its bytes. `null` marks the JSON media of an optional body whose
+    schema admits null, which sends None as null.
     """
 
     media_type: str
     kind: BodyKind
+    null: bool = False
     codec: OutboundModelCodec | None = None
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
@@ -285,18 +287,6 @@ class BodyMedia:
         """Return a form-data body and the media type it is sent in: an object's members as parts, or a call's parts."""
         form = cast("FormEncoder", self.form)
         return form.encode(value if self.codec is None else self.codec.dump(value), sent)
-
-    def takes_null(self) -> bool:
-        """Return whether the body can be JSON null: a JSON media without a schema, or whose model decodes null."""
-        if self.kind != "json":
-            return False
-        if (codec := self.codec) is None:
-            return True
-        try:
-            codec.decode(b"null")
-        except request_errors(codec):
-            return False
-        return True
 
 
 def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
@@ -361,8 +351,8 @@ class RequestBody:
 
     def _takes_null(self, operation_id: str | None, media_type: str | None) -> bool:
         if media_type is None and self.default is None:
-            return any(media.takes_null() for media in self.media)
-        return self.selected(operation_id, media_type)[0].takes_null()
+            return any(media.null for media in self.media)
+        return self.selected(operation_id, media_type)[0].null
 
     def selected(self, operation_id: str | None, media_type: str | None) -> tuple[BodyMedia, str]:
         """Return the declared media a call sends by its media type, and the media type sent.

@@ -276,5 +276,5 @@ OPERATION_23: Final[OperationPlan[ReplaceNoteResponse]] = OperationPlan(
     path='/notes',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json'), BodyMedia(media_type='text/plain', kind='text'))),
+    body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', null=True), BodyMedia(media_type='text/plain', kind='text'))),
 )
