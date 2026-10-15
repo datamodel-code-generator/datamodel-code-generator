@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._target_contract import (
+        BackendValue,
         FieldUseBinding,
         FinalModelSymbol,
         ModelArtifactAddress,
@@ -157,13 +158,35 @@ def _written_null(expression: PythonTypeExpr) -> bool:
     return null
 
 
-def keeps_extras(declared: FinalModelSymbol) -> bool:
-    """Return whether a Pydantic model's or dataclass's own configuration allows extra members, which it then keeps."""
-    return (facts := declared.facts) is not None and any(
-        setting.name == "extra" and setting.value == _ALLOW for setting in facts.configuration
-    )
+def keeps_extras(symbols: Mapping[SymbolId, FinalModelSymbol], symbol: SymbolId) -> bool:
+    """Return whether a Pydantic model or dataclass keeps extra members by the `extra` its configuration takes."""
+    return _extra(symbols, symbol) == _ALLOW
+
+
+def _extra(symbols: Mapping[SymbolId, FinalModelSymbol], symbol: SymbolId) -> BackendValue | None:
+    """Return the `extra` a model takes: its own setting, else a base's as Pydantic reads them, else None.
+
+    A model takes the last base's that sets one, and a dataclass the first's, which its method resolution reaches.
+    """
+    declared = symbols[symbol]
+    if (own := _own_extra(declared)) is not None:
+        return own
+    first = declared.facts is not None and declared.facts.backend == "pydantic_dataclass"
+    bases = declared.bases if first else declared.bases[::-1]
+    return next((found for base in bases if (found := _extra(symbols, base)) is not None), None)
+
+
+def _own_extra(declared: FinalModelSymbol) -> BackendValue | None:
+    """Return the `extra` a Pydantic model's or dataclass's own configuration sets, or None when it sets none."""
+    if (facts := declared.facts) is None:
+        return None
+    return next((setting.value for setting in facts.configuration if setting.name == "extra" and setting.present), None)
 
 
 def _allows_extras(declared: FinalModelSymbol) -> bool:
     """Return whether a Pydantic dataclass's own configuration allows extra members."""
-    return (facts := declared.facts) is not None and facts.backend == "pydantic_dataclass" and keeps_extras(declared)
+    return (
+        (facts := declared.facts) is not None
+        and facts.backend == "pydantic_dataclass"
+        and _own_extra(declared) == _ALLOW
+    )

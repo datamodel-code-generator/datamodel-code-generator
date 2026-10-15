@@ -58,6 +58,7 @@ if TYPE_CHECKING:
         FrozenLiteral,
         LeafStep,
         MemberShape,
+        SymbolId,
         TypeUseBinding,
         TypeView,
     )
@@ -829,7 +830,7 @@ class LexicalKinds:
         }
 
     @cached_property
-    def _symbols(self) -> dict[int, FinalModelSymbol]:
+    def _symbols(self) -> dict[SymbolId, FinalModelSymbol]:
         return {symbol.id: symbol for symbol in self._batch.symbols}
 
     @cached_property
@@ -878,13 +879,14 @@ class LexicalKinds:
         )
 
     def configured(self, use: TypeUseBinding) -> bool:
-        """Return whether a use's model keeps its other properties by its configuration or by a base's it inherits."""
-        pending = [value.symbol] if isinstance(value := use.type, GeneratedSymbolType) else []
-        while pending:
-            if keeps_extras(declared := self._symbols[pending.pop()]):
-                return True
-            pending.extend(declared.bases)
-        return False
+        """Return whether the model a use's type stands for keeps its other properties by the configuration it takes.
+
+        The type stands for the model through aliases, root models and a union with None alone, and the model takes
+        its own setting over the one it inherits.
+        """
+        return isinstance(value := self._unwrapped(use.type), GeneratedSymbolType) and keeps_extras(
+            self._symbols, value.symbol
+        )
 
     def bound(self, direction: Direction, *places: tuple[SourceLocation, tuple[LeafStep, ...]]) -> TypeView | None:
         """Return the type bound for a value at the first of its places that binds one.
