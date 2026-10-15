@@ -262,6 +262,14 @@ _NON_IDENTIFIER_PATTERN: Pattern[str] = re.compile(r"[¹²³⁴⁵⁶⁷⁸⁹]|
 
 SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
 
+
+def _source_path(path: str) -> str:
+    """Return a reference path without the marker of a read or write variant of its model."""
+    if (variant := path.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
+        return variant[0].rstrip("/")
+    return path
+
+
 T = TypeVar("T")
 
 

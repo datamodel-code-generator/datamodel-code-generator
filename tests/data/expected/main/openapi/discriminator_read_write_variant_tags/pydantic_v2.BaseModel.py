@@ -9,12 +9,12 @@ from pydantic import BaseModel, Field, RootModel
 
 
 class CatRequest(BaseModel):
-    petType: Literal['Cat#-datamodel-code-generator-#-read-write-request-#-special-#']
+    petType: Literal['cat']
     name: str
 
 
 class CatResponse(BaseModel):
-    petType: Literal['Cat#-datamodel-code-generator-#-read-write-response-#-special-#']
+    petType: Literal['cat']
     name: str
     lives: int | None = None
 

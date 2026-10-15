@@ -120,10 +120,10 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
-    SPECIAL_PATH_MARKER,
     ModelResolver,
     ModelType,
     Reference,
+    _source_path,
     split_module_name,
 )
 from datamodel_code_generator.types import (
@@ -2019,16 +2019,17 @@ def _check_discriminator_mapping_paths(
     mapping: dict[str, str],
     discriminator_values: list[DiscriminatorValue],
 ) -> None:
+    model_path = _source_path(model.path)
     for name, path in mapping.items():
         if "/" not in path and "#" not in path:
-            if model.path.rsplit("/", 1)[-1] == path:
+            if model_path.rsplit("/", 1)[-1] == path:
                 discriminator_values.append(name)
             continue
-        if (model.path.split("#/")[-1] != path.split("#/")[-1]) and (
-            path.startswith("#/") or model.path[:-1] != path.split("/")[-1]
+        if (model_path.split("#/")[-1] != path.split("#/")[-1]) and (
+            path.startswith("#/") or model_path[:-1] != path.split("/")[-1]
         ):
             t_path = path[str(path).find("/") + 1 :]
-            t_disc = model.path[: str(model.path).find("#")].lstrip("../")  # noqa: B005
+            t_disc = model_path[: str(model_path).find("#")].lstrip("../")  # noqa: B005
             t_disc_2 = "/".join(t_disc.split("/")[1:])
             if t_path not in {t_disc, t_disc_2}:  # pragma: no branch
                 continue
@@ -2097,7 +2098,9 @@ def _get_discriminator_values(
     if require_literal:
         return []
 
-    return _get_mapping_discriminator_values(discriminator_model, mapping) or [discriminator_model.path.split("/")[-1]]
+    return _get_mapping_discriminator_values(discriminator_model, mapping) or [
+        _source_path(discriminator_model.path).split("/")[-1]
+    ]
 
 
 def _get_mapping_discriminator_values(
@@ -2130,14 +2133,8 @@ class _VariantDiscriminatorTags:
 
     def warning_messages(self) -> Iterator[str]:
         """Describe the tags that the generated variant cannot carry."""
-        name = self.variant.class_name
-        if marked := next((tag for tag in self.kept if isinstance(tag, str) and SPECIAL_PATH_MARKER in tag), None):
-            yield (
-                f"{name} takes the internal path {marked!r} as its {self.property_name!r} discriminator tag; "
-                f"it should take the tag of the unsplit model "
-                f"{self.variant.path.partition(SPECIAL_PATH_MARKER)[0].rstrip('/').rsplit('/', 1)[-1]}."
-            )
         if self.others:
+            name = self.variant.class_name
             unions = ", ".join(f"{union} ({_format_tags(tags)})" for union, tags in self.others.items())
             yield (
                 f"{name} is a variant of discriminated unions that map {self.property_name!r} to different tags: "

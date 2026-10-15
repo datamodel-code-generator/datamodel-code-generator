@@ -741,6 +741,11 @@ def test_main_openapi_discriminator_msgspec_default(input_file: str, expected_fi
             "pydantic_v2.BaseModel",
             ["--read-only-write-only-model-type", "request-response"],
         ),
+        (
+            "discriminator_read_write_variant_tags",
+            "msgspec.Struct",
+            ["--read-only-write-only-model-type", "request-response"],
+        ),
     ],
 )
 def test_main_openapi_discriminator_variant_tag_warnings(

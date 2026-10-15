@@ -99,7 +99,7 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER
+from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, _source_path
 from datamodel_code_generator.types import DataType, Types
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
@@ -316,13 +316,6 @@ class _Union:
 
 
 _REUSE: Final = "/reuse"
-
-
-def _source_path(path: str) -> str:
-    """Return a reference path without the marker of a read or write variant of its model."""
-    if (variant := path.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
-        return variant[0].rstrip("/")
-    return path
 
 
 @dataclass(slots=True)
