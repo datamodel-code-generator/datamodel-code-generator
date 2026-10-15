@@ -72,6 +72,7 @@ from tests.main.conftest import (
     TIMESTAMP,
     _generated_model,
     _generated_package_module,
+    _model_json_validator,
     assert_generated_model_json_invalid,
     assert_generated_model_json_validation,
     installed_pydantic_runs_target,
@@ -824,6 +825,64 @@ def test_main_openapi_discriminator_variant_tag_warnings(
         "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
         EXPECTED_OPENAPI_PATH / input_name / f"{output_model_type}_warnings.txt",
     )
+
+
+@pytest.mark.parametrize(
+    ("expected_name", "extra_args"),
+    [
+        ("pydantic_v2.BaseModel", []),
+        ("dataclasses.dataclass", ["--output-model-type", "dataclasses.dataclass"]),
+        ("msgspec.Struct", ["--output-model-type", "msgspec.Struct"]),
+        ("msgspec_tagged_unions", ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"]),
+    ],
+)
+def test_main_openapi_discriminator_reuse_variant_mapping(
+    output_file: Path, expected_name: str, extra_args: list[str]
+) -> None:
+    """Give a variant that reuse replaced the tag that a discriminator mapping gives its schema, at runtime too."""
+    import msgspec
+
+    name = "discriminator_reuse_variant_mapping"
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / name / f"{expected_name}.py",
+            extra_args=[
+                "--reuse-model",
+                *extra_args,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                "--target-python-version",
+                "3.10",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_OPENAPI_PATH / name / f"{expected_name}_warnings.txt",
+    )
+    decoded = []
+    for union, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+        with _generated_model(output_file, name, union) as model:
+            for payload in payloads:
+                try:
+                    if "msgspec.Struct" in extra_args:
+                        value = msgspec.json.decode(json.dumps(payload), type=model)
+                    else:
+                        value = _model_json_validator(model)(json.dumps(payload))
+                except (msgspec.ValidationError, pydantic.ValidationError):
+                    result = "rejected"
+                except TypeError:
+                    result = "TypeError"
+                else:
+                    result = type(getattr(value, "root", value)).__name__
+                decoded.append(f"{union} {json.dumps(payload)}: {result}\n")
+    assert_output("".join(decoded), EXPECTED_OPENAPI_PATH / name / f"{expected_name}_decoded.txt")
 
 
 def test_main_openapi_msgspec_union_tag_clashes(output_file: Path) -> None:

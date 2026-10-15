@@ -2035,12 +2035,19 @@ def _iter_matching_duplicates(
         yield canonical, model
 
 
+def _get_schema_path(model: DataModel | Reference) -> str:
+    """Return the path of the schema a model is generated from, through read and write variants and reuse."""
+    source = model if isinstance(model, DataModel) else model.source
+    reused = source.reused_reference if isinstance(source, DataModel) else None
+    return _source_path((reused or model).path)
+
+
 def _check_discriminator_mapping_paths(
     model: DataModel | Reference,
     mapping: dict[str, str],
     discriminator_values: list[DiscriminatorValue],
 ) -> None:
-    model_path = _source_path(model.path)
+    model_path = _get_schema_path(model)
     for name, path in mapping.items():
         if "/" not in path and "#" not in path:
             if model_path.rsplit("/", 1)[-1] == path:
@@ -2103,23 +2110,35 @@ def _get_discriminator_values(
 ) -> list[DiscriminatorValue]:
     if (
         value := _find_discriminator_value(discriminator_model.fields, field_name, field_name_mode=field_name_mode)
+    ) is not None or (
+        value := _find_reused_discriminator_value(discriminator_model, field_name, field_name_mode=field_name_mode)
     ) is not None:
         return [value]
 
-    # Reuse models are created as empty subclasses with a "/reuse" path suffix.
     # Nested choices cannot be updated later, so also accept inherited literals.
-    if (require_literal or discriminator_model.path.endswith("/reuse")) and (
-        value := _find_discriminator_value(
-            discriminator_model.iter_all_fields(),
-            field_name,
-            field_name_mode=field_name_mode,
-        )
-    ) is not None:
-        return [value]
     if require_literal:
-        return []
+        value = _find_discriminator_value(
+            discriminator_model.iter_all_fields(), field_name, field_name_mode=field_name_mode
+        )
+        return [] if value is None else [value]
 
     return _get_union_discriminator_values(discriminator_model, field_name, mapping, field_name_mode=field_name_mode)
+
+
+def _find_reused_discriminator_value(
+    discriminator_model: DataModel,
+    field_name: str,
+    *,
+    field_name_mode: Literal["original", "resolved", "either"],
+) -> DiscriminatorValue | None:
+    """Return the tag that the schema of a model gives it when reuse replaced it with an empty subclass.
+
+    The base class the subclass inherits from can carry the tag another union wrote, which is not its own.
+    """
+    reused = discriminator_model.reused_reference
+    if reused is None or not isinstance(source := reused.source, DataModel):
+        return None
+    return _find_discriminator_value(source.fields, field_name, field_name_mode=field_name_mode)
 
 
 def _get_union_discriminator_values(
@@ -2129,20 +2148,14 @@ def _get_union_discriminator_values(
     *,
     field_name_mode: Literal["original", "resolved", "either"],
 ) -> list[DiscriminatorValue]:
-    """Return the tags a union selects a variant by: mapping values, a reuse model's inherited tag, else its name."""
+    """Return the tags a union selects a variant by: mapping values, the tag of its own schema, else its name."""
     if mapped := _get_mapping_discriminator_values(discriminator_model, mapping):
         return mapped
     if (
-        discriminator_model.path.endswith("/reuse")
-        and (
-            value := _find_discriminator_value(
-                discriminator_model.iter_all_fields(), field_name, field_name_mode=field_name_mode
-            )
-        )
-        is not None
-    ):
+        value := _find_reused_discriminator_value(discriminator_model, field_name, field_name_mode=field_name_mode)
+    ) is not None:
         return [value]
-    return [_source_path(discriminator_model.path).split("/")[-1]]
+    return [_get_schema_path(discriminator_model).split("/")[-1]]
 
 
 def _get_mapping_discriminator_values(

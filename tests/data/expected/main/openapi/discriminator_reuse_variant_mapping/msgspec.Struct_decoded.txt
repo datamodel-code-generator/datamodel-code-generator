@@ -1,0 +1,10 @@
+Feline {"kind": "cat", "name": "Tom"}: TypeError
+Feline {"kind": "kitty"}: TypeError
+Feline {"kind": "dog"}: TypeError
+Pet {"kind": "kitty", "name": "Tom"}: TypeError
+Pet {"kind": "cat"}: TypeError
+Pet {"kind": "reuse"}: TypeError
+Pet {"kind": "dog"}: TypeError
+Aquarium {"kind": "goldie", "fins": 2}: TypeError
+Aquarium {"kind": "reuse"}: TypeError
+Aquarium {"kind": "dog"}: TypeError
