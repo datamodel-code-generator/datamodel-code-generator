@@ -11,11 +11,21 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 Label: TypeAlias = str
 
 
+LabelOrFlag: TypeAlias = Label | bool
+
+
 class NumberConstraintsOnDeclaredNumbers(Struct):
     label: str | UnsetType = UNSET
     shared_label: Label | UnsetType = UNSET
     label_or_flag: Label | bool | UnsetType = UNSET
     labels: dict[str, Label] | UnsetType = UNSET
+    sized_labels: Annotated[dict[str, Label], Meta(min_length=1)] | UnsetType = UNSET
+    limited_choices: (
+        Annotated[dict[str, Label | bool], Meta(max_length=3)] | UnsetType
+    ) = UNSET
+    label_or_flag_items: list[Label | bool] | UnsetType = UNSET
+    label_items: list[Label] | UnsetType = UNSET
+    shared_label_or_flag: LabelOrFlag | UnsetType = UNSET
     day: str | UnsetType = UNSET
     clock: str | UnsetType = UNSET
     code: Literal['a', 'b'] | UnsetType = UNSET

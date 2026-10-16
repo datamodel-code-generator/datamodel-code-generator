@@ -13,12 +13,20 @@ from typing_extensions import TypeAliasType
 Label = TypeAliasType("Label", str)
 
 
+LabelOrFlag = TypeAliasType("LabelOrFlag", Label | bool)
+
+
 @dataclass
 class NumberConstraintsOnDeclaredNumbers:
     label: str | None = None
     shared_label: Label | None = None
     label_or_flag: Label | bool | None = None
     labels: dict[str, Label] | None = None
+    sized_labels: dict[str, Label] | None = Field(None, min_length=1)
+    limited_choices: dict[str, Label | bool] | None = Field(None, max_length=3)
+    label_or_flag_items: list[Label | bool] | None = None
+    label_items: list[Label] | None = None
+    shared_label_or_flag: LabelOrFlag | None = None
     day: date | None = None
     clock: time | None = None
     code: Literal['a', 'b'] | None = None

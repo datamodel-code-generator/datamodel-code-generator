@@ -6,11 +6,15 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any, Literal
 
-from pydantic import BaseModel, RootModel, confloat, conint
+from pydantic import BaseModel, Field, RootModel, confloat, conint
 
 
 class Label(RootModel[str]):
     root: str
+
+
+class LabelOrFlag(RootModel[Label | bool]):
+    root: Label | bool
 
 
 class NumberConstraintsOnDeclaredNumbers(BaseModel):
@@ -18,6 +22,11 @@ class NumberConstraintsOnDeclaredNumbers(BaseModel):
     shared_label: Label | None = None
     label_or_flag: Label | bool | None = None
     labels: dict[str, Label] | None = None
+    sized_labels: dict[str, Label] | None = Field(None, min_length=1)
+    limited_choices: dict[str, Label | bool] | None = Field(None, max_length=3)
+    label_or_flag_items: list[Label | bool] | None = None
+    label_items: list[Label] | None = None
+    shared_label_or_flag: LabelOrFlag | None = None
     day: date | None = None
     clock: confloat(multiple_of=2.0) | None = None
     code: Literal['a', 'b'] | None = None

@@ -14,6 +14,11 @@ class NumberConstraintsOnDeclaredNumbers(BaseModel):
     shared_label: str | None = None
     label_or_flag: bool | str | None = None
     labels: dict[str, str] | None = None
+    sized_labels: dict[str, str] | None = Field(None, min_length=1)
+    limited_choices: dict[str, bool | str] | None = Field(None, max_length=3)
+    label_or_flag_items: list[bool | str] | None = None
+    label_items: list[str] | None = None
+    shared_label_or_flag: bool | str | None = None
     day: date | None = None
     clock: time | None = None
     code: Literal['a', 'b'] | None = None

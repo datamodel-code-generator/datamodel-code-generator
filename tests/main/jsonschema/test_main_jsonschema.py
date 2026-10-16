@@ -6203,6 +6203,15 @@ _DECLARED_NUMBER_TYPE_OVERRIDES = {
     "NumberConstraintsOnDeclaredNumbers.stamp": "datetime.date",
     "NumberConstraintsOnDeclaredNumbers.held": "typing.Any",
 }
+_COLLAPSED_NUMBER_TYPE_OVERRIDES = {
+    "NumberConstraintsOnDeclaredNumbers.shared_label": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.label_or_flag": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.sized_labels": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.limited_choices": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.label_or_flag_items": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.label_items": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.shared_label_or_flag": "decimal.Decimal",
+}
 
 
 @pytest.mark.parametrize(
@@ -6220,7 +6229,7 @@ _DECLARED_NUMBER_TYPE_OVERRIDES = {
                 "--field-constraints",
                 "--collapse-root-models",
                 "--type-overrides",
-                json.dumps({"NumberConstraintsOnDeclaredNumbers.label_or_flag": "decimal.Decimal"}),
+                json.dumps(_COLLAPSED_NUMBER_TYPE_OVERRIDES),
             ],
         ),
         (
@@ -6247,8 +6256,9 @@ def test_main_number_constraints_on_declared_numbers(
     A type with numbers among its values, a union with a number member and a ``con*`` factory override keep the keyword,
     as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it. A root model that
     collapsing inlines into a field, an item, a union member or a mapping value hands its warning to the field; an
-    override of that union replaces the member with its constraint. msgspec decodes a date only from a string, so its
-    runtime check is left to the other outputs, as it is for a target the installed Pydantic cannot run.
+    override keeps the constraint of a root that is the field's whole type and drops those of the parts it replaces.
+    msgspec decodes a date only from a string, so its runtime check is left to the other outputs, as it is for a target
+    the installed Pydantic cannot run.
     """
     name = "number_constraints_on_declared_numbers"
     stem = expected_file.removesuffix(".py")

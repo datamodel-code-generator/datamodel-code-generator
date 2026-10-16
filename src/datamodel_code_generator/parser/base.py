@@ -5059,7 +5059,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if replacement_context is None:  # pragma: no cover
                         continue
                     model_field.inherit_unconstrained_union_members(root_type_field)
-                    model_field.inherit_untaken_constraints(root_type_field)
+                    model_field.inherit_untaken_constraints(
+                        root_type_field, whole_type=isinstance(field_, self.data_model_field_type)
+                    )
                     with replacement_context:
                         for d in copied_data_type.all_data_types:
                             _register_data_type_import(
@@ -6299,9 +6301,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Keep the constraints that the emitted type decides only when the override type at ``path`` takes them.
 
         An output model that writes constraints as ``Field()`` arguments also decides the number constraints of a
-        declared number this way, and remembers the ones it leaves out to warn about them. A field without constraints
-        of its own, such as a union that collapsing inlines a member into, declares no number: the constraints it
-        remembers are the members', which leave with the members the override replaces.
+        declared number this way, and remembers the ones it leaves out to warn about them. The untaken constraints of
+        the members, items and values that collapsing inlines into the field leave with the type the override replaces.
         """
         type_dependent = field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY) or {}
         constraints = field.constraints
@@ -6311,13 +6312,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
             if value is not None
         }
-        declared_numbers: dict[str, Any] = {}
-        if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS:
-            untaken = field.pop_untaken_constraints()
-            declared_numbers = {
+        declared_numbers = (
+            {
                 **{key: value for key, value in values.items() if key in NUMBER_KEYWORDS and key not in type_dependent},
-                **(untaken if constraints is not None else {}),
+                **field.pop_untaken_constraints(),
             }
+            if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
+            else {}
+        )
         if not (decided := {**type_dependent, **declared_numbers}):
             return
         target = self.target_python_version.version_key

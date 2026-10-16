@@ -6,6 +6,19 @@
     "labels": {
       "key": "1"
     },
+    "sized_labels": {
+      "key": "1"
+    },
+    "limited_choices": {
+      "key": "1"
+    },
+    "label_or_flag_items": [
+      "1"
+    ],
+    "label_items": [
+      "1"
+    ],
+    "shared_label_or_flag": "1",
     "day": 0,
     "clock": 2,
     "code": "a",

@@ -9377,7 +9377,7 @@ are written, as `con*` types by default and as `Field()` arguments with `--field
 Pydantic models and dataclasses write such a `Field()` argument only when a number value of the Python type written
 for the field meets it: the type takes the keyword, as the Pydantic column of the table below lists, a member of a
 union or a value of a `Literal` (also of a `const` or `enum`) does, or the type has numbers among its values, as
-`bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag` and the `typing.Supports*` protocols do. Pydantic cannot
+`bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag` and the number protocols of `typing` do. Pydantic cannot
 build or validate a field whose `Field()` holds any other, so a keyword they leave out, such as `minimum` on the `str`
 of `{"type": "integer", "x-python-type": "str", "minimum": 0}` or `multipleOf` on the `time` of format `time`, is named
 with its field in a warning. A `--type-overrides` builtin or standard-library class replaces the `con*` type of a field
@@ -9416,7 +9416,7 @@ integer the `float` members admit.
 | `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
 | `time` | the four bounds, read as seconds since midnight | none |
 | a type the generator does not know (`fractions.Fraction`, a class of your own) or a model that the schema references | all five keywords | all five keywords |
-| `bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag`, the `typing.Supports*` protocols | all five keywords for a schema that holds a number, none otherwise | none |
+| `bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag`, the number protocols `SupportsAbs`, `SupportsComplex`, `SupportsFloat`, `SupportsIndex`, `SupportsInt` and `SupportsRound` of `typing` | all five keywords for a schema that holds a number, none otherwise | none |
 | any other known type: `str`, `bytes`, `None`, `date`, `UUID`, paths, IP addresses, lists, dicts and other containers | none | none |
 
 `multipleOf` is not written on `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field, 2.11 to 2.13
@@ -9432,9 +9432,10 @@ generator itself imports; its row above decides. A name the target does not have
 target below 3.15, is read as a type the generator does not know. A `typing` alias or an abstract collection is read as the class it stands for (`typing.List`,
 `collections.abc.Sequence` and `collections.abc.Collection` as `list`), and `Annotated[T, ...]` or `Final[T]` as `T`;
 a `typing_extensions` name that `typing` also exports is read as the `typing` name. Any other `typing` or
-`collections.abc` name, such as `collections.abc.Callable`, is a known type that takes no number keyword; only the
-`typing.Supports*` protocols and `Hashable` of the table take them, for a schema that holds a number. A union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the
-keywords in Pydantic models and `int | str` does not; `msgspec` writes no type-dependent keyword (number, string or
+`collections.abc` name, such as `collections.abc.Callable` or `typing.SupportsBytes`, is a known type that takes no
+number keyword; only the number protocols and `Hashable` of the table take them, for a schema that holds a number. A
+union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the keywords in Pydantic
+models and `int | str` does not; `msgspec` writes no type-dependent keyword (number, string or
 array) on an `x-python-type` union. A `Literal` is read like a union of the types of its values (`str`, `bytes`, `int`,
 `float` or `bool`, with the values of a nested `Literal` and without `None`), so `Literal[1, 2.5]` and
 `Literal[1, None]` keep the number keywords in Pydantic models, while `Literal["a", 1]` and `Literal[True, False]` keep

@@ -81,7 +81,7 @@ _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_PATHS_KEY = "_nested_model_default_facto
 _NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY = "_nested_model_required_constructor_fields"
 _REQUIRED_INHERITED_DEFAULT_FACTORY_KEY = "_required_inherited_default_factory"
 _UNTAKEN_CONSTRAINTS_KEY = "_untaken_constraints"
-_UNTAKEN_CONSTRAINT_MINIMUMS_KEY = "_untaken_constraint_minimums"
+_MEMBER_UNTAKEN_CONSTRAINTS_KEY = "_member_untaken_constraints"
 _OVERRIDDEN_CONSTRAINTS_KEY = "_overridden_constraints"
 _RUNTIME_EXPRESSION_IMPORTS_FIELD_KEY = "_runtime_expression_imports"
 _EXTRA_TEMPLATE_DATA_MAPPING_ERROR = "extra template data must be a dictionary"
@@ -635,29 +635,45 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     @property
     def untaken_constraints(self) -> tuple[dict[str, Any], dict[str, str]]:
-        """Return the declared number constraints the field's type does not take, and the target taking some of them.
+        """Return the declared number constraints the field is generated without, and the target taking some of them.
 
-        The second mapping names, for a constraint an explicit later target model version takes, that version.
+        They are the field's own and those of the members, items and values that collapsing inlines into its type. The
+        second mapping names, for a constraint an explicit later target model version takes, that version.
         """
-        return self.__dict__.get(_UNTAKEN_CONSTRAINTS_KEY, {}), self.__dict__.get(_UNTAKEN_CONSTRAINT_MINIMUMS_KEY, {})
+        own = self.__dict__.get(_UNTAKEN_CONSTRAINTS_KEY)
+        if (member := self.__dict__.get(_MEMBER_UNTAKEN_CONSTRAINTS_KEY)) is None:
+            return own or ({}, {})
+        if own is None:
+            return member
+        return {**member[0], **own[0]}, {**member[1], **own[1]}
 
     def record_untaken_constraints(self, untaken: dict[str, Any], minimums: dict[str, str]) -> None:
-        """Remember the declared number constraints the field's type does not take, to warn about them."""
-        self.__dict__[_UNTAKEN_CONSTRAINTS_KEY] = untaken
-        if minimums:
-            self.__dict__[_UNTAKEN_CONSTRAINT_MINIMUMS_KEY] = minimums
+        """Remember the declared number constraints of this field that its type does not take, to warn about them."""
+        self.__dict__[_UNTAKEN_CONSTRAINTS_KEY] = (untaken, minimums)
 
     def pop_untaken_constraints(self) -> dict[str, Any]:
-        """Forget the remembered untaken constraints and return them."""
-        self.__dict__.pop(_UNTAKEN_CONSTRAINT_MINIMUMS_KEY, None)
-        return self.__dict__.pop(_UNTAKEN_CONSTRAINTS_KEY, {})
+        """Forget the remembered untaken constraints, and return those this field declares itself."""
+        self.__dict__.pop(_MEMBER_UNTAKEN_CONSTRAINTS_KEY, None)
+        return own[0] if (own := self.__dict__.pop(_UNTAKEN_CONSTRAINTS_KEY, None)) else {}
 
-    def inherit_untaken_constraints(self, source: DataModelFieldBase) -> None:
-        """Take over the untaken constraints of a collapsed root field, to warn about them on this field."""
-        untaken, minimums = source.untaken_constraints
-        if untaken:
-            own_untaken, own_minimums = self.untaken_constraints
-            self.record_untaken_constraints({**untaken, **own_untaken}, {**minimums, **own_minimums})
+    def inherit_untaken_constraints(self, source: DataModelFieldBase, *, whole_type: bool) -> None:
+        """Take over the untaken constraints of a root field that collapsing inlines into this field's type.
+
+        A root inlined as the ``whole_type`` declares this field's own constraints; one inlined as a member, an item or
+        a value of the type declares those of that part, which this field only warns about.
+        """
+        if whole_type:
+            self._merge_untaken_constraints(_UNTAKEN_CONSTRAINTS_KEY, source.__dict__.get(_UNTAKEN_CONSTRAINTS_KEY))
+            inherited = source.__dict__.get(_MEMBER_UNTAKEN_CONSTRAINTS_KEY)
+        else:
+            inherited = source.untaken_constraints
+        self._merge_untaken_constraints(_MEMBER_UNTAKEN_CONSTRAINTS_KEY, inherited)
+
+    def _merge_untaken_constraints(self, key: str, inherited: tuple[dict[str, Any], dict[str, str]] | None) -> None:
+        """Add ``inherited`` untaken constraints under ``key``, keeping those this field already remembers there."""
+        if inherited and inherited[0]:
+            untaken, minimums = self.__dict__.get(key) or ({}, {})
+            self.__dict__[key] = ({**inherited[0], **untaken}, {**inherited[1], **minimums})
 
     @property
     def overridden_constraints(self) -> tuple[str, int] | None:

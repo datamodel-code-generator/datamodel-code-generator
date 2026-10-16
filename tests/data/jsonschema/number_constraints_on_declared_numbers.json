@@ -7,6 +7,16 @@
       "type": "integer",
       "x-python-type": "str",
       "minimum": 0
+    },
+    "LabelOrFlag": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Label"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
     }
   },
   "properties": {
@@ -33,6 +43,49 @@
       "additionalProperties": {
         "$ref": "#/definitions/Label"
       }
+    },
+    "sized_labels": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/definitions/Label"
+      }
+    },
+    "limited_choices": {
+      "type": "object",
+      "maxProperties": 3,
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Label"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      }
+    },
+    "label_or_flag_items": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Label"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      }
+    },
+    "label_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Label"
+      }
+    },
+    "shared_label_or_flag": {
+      "$ref": "#/definitions/LabelOrFlag"
     },
     "day": {
       "type": "number",

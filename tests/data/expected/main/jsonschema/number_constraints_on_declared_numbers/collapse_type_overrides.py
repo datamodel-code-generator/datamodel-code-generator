@@ -12,9 +12,14 @@ from pydantic import BaseModel, Field
 
 class NumberConstraintsOnDeclaredNumbers(BaseModel):
     label: str | None = None
-    shared_label: str | None = None
+    shared_label: Decimal | None = Field(None, ge=0)
     label_or_flag: Decimal | None = None
     labels: dict[str, str] | None = None
+    sized_labels: dict[str, Decimal] | None = Field(None, min_length=1)
+    limited_choices: dict[str, Any] | None = Field(None, max_length=3)
+    label_or_flag_items: Any | None = None
+    label_items: Any | None = None
+    shared_label_or_flag: Decimal | None = None
     day: date | None = None
     clock: time | None = None
     code: Literal['a', 'b'] | None = None

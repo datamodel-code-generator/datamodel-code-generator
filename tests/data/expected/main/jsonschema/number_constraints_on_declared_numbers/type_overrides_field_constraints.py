@@ -14,11 +14,20 @@ class Label(RootModel[str]):
     root: str
 
 
+class LabelOrFlag(RootModel[Label | bool]):
+    root: Label | bool
+
+
 class NumberConstraintsOnDeclaredNumbers(BaseModel):
     label: Decimal | None = Field(None, ge=0)
     shared_label: Label | None = None
     label_or_flag: Label | bool | None = None
     labels: dict[str, Label] | None = None
+    sized_labels: dict[str, Label] | None = Field(None, min_length=1)
+    limited_choices: dict[str, Label | bool] | None = Field(None, max_length=3)
+    label_or_flag_items: list[Label | bool] | None = None
+    label_items: list[Label] | None = None
+    shared_label_or_flag: LabelOrFlag | None = None
     day: date | None = None
     clock: time | None = None
     code: Literal['a', 'b'] | None = None
