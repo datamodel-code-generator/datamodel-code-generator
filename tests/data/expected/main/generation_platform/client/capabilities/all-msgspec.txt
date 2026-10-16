@@ -1,6 +1,6 @@
 # all-msgspec
 backend msgspec.Struct
-dependencies httpx2[ws]>=2.13.0 typing-extensions>=4.16 msgspec>=0.21.1 cryptography>=50.0.0
+dependencies httpx2[ws]>=2.13.0 typing-extensions>=4.16 msgspec>=0.22.0 cryptography>=50.0.0
 imports of the dependencies cryptography httpx2 msgspec typing_extensions
 other third-party imports anyio httpcore2 wsproto
 copied runtime

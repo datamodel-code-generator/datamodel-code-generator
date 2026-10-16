@@ -1,5 +1,5 @@
 Add the runtime dependencies of publication_client to your project:
-  uv add "httpx2[ws]>=2.13.0" "typing-extensions>=4.16" "msgspec>=0.21.1" "cryptography>=50.0.0"
+  uv add "httpx2[ws]>=2.13.0" "typing-extensions>=4.16" "msgspec>=0.22.0" "cryptography>=50.0.0"
 Next steps: call the API with the client:
   from publication_client import Client
 

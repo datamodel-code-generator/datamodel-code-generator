@@ -1,7 +1,7 @@
 --generate-client set the options it needs that you left unset; to set them yourself, run:
   datamodel-codegen --input options.yaml --input-file-type openapi --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --output-model-type msgspec.Struct --output models.py --generate-client httpx2 --client-output client --client-package client --client-model-package models --use-msgspec-tagged-unions --use-msgspec-nullable-enum-alias
 Add the runtime dependencies of client to your project:
-  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "msgspec>=0.21.1"
+  uv add "httpx2>=2.13.0" "typing-extensions>=4.16" "msgspec>=0.22.0"
 Next steps: call the API with the client:
   from client import Client
 
