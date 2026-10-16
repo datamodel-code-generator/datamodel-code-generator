@@ -816,10 +816,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         uses these types by default.
   --use-tag-as-union-variant-name
                         Name inline oneOf/anyOf branch models after their tag:
-                        what --infer-union-variant-names does, plus single-
-                        branch unions (type: "exec" -> LocalShellActionExec)
-                        and single-key branches ({"granular": ...} ->
-                        AskForApprovalGranular)
+                        what --infer-union-variant-names does, skipping tags
+                        whose class names collide, plus single-branch unions
+                        (type: "exec" -> LocalShellActionExec) and single-key
+                        branches ({"granular": ...} -> AskForApprovalGranular)
   --use-title-as-name   use titles as class names of models
 
 [36;1mTemplate customization[0m:

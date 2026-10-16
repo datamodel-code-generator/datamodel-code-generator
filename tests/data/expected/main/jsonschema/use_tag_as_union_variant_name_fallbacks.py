@@ -152,8 +152,116 @@ class NestedB(BaseModel):
     q: str
 
 
+class NestedLiteralOuterA(BaseModel):
+    type: Literal['x']
+    kind: Literal['a']
+    p: str | None = None
+
+
+class NestedLiteralOuterB(BaseModel):
+    type: Literal['x']
+    kind: Literal['b']
+    q: str | None = None
+
+
+class RefAllOfBranch(Enum):
+    never = 'never'
+
+
+class InlineAllOfBranch(Enum):
+    never = 'never'
+
+
+class InlineAllOfBranch1(BaseModel):
+    z: str | None = None
+    extra: str
+
+
+class AnyOfAllOfBranch(Enum):
+    never = 'never'
+
+
+class AnyOfAllOfBranch11(BaseModel):
+    a: str | None = None
+
+
+class AnyOfAllOfBranch12(BaseModel):
+    b: str | None = None
+
+
+class AnyOfAllOfBranch13(BaseModel):
+    extra: str
+
+
+class AnyOfAllOfBranch14(AnyOfAllOfBranch11, AnyOfAllOfBranch13):
+    extra: str
+
+
+class AnyOfAllOfBranch15(AnyOfAllOfBranch12, AnyOfAllOfBranch13):
+    extra: str
+
+
+class AnyOfAllOfBranch1(RootModel[AnyOfAllOfBranch14 | AnyOfAllOfBranch15]):
+    root: AnyOfAllOfBranch14 | AnyOfAllOfBranch15
+
+
+class ConstraintAllOfBranch(Enum):
+    never = 'never'
+
+
+class ConstraintAllOfBranchExtra(BaseModel):
+    extra: str
+
+
+class ClassNameCollision(BaseModel):
+    type: Literal['foo-bar']
+    a: str
+
+
+class ClassNameCollision1(BaseModel):
+    type: Literal['fooBar']
+    b: str
+
+
+class ClassNameCollisionNextK1(BaseModel):
+    type: Literal['foo-bar']
+    kind: Literal['k1']
+
+
+class ClassNameCollisionNextK2(BaseModel):
+    type: Literal['fooBar']
+    kind: Literal['k2']
+
+
+class KeyClassNameCollisionExec(BaseModel):
+    type: Literal['exec']
+    v: str
+
+
+class KeyClassNameCollision(BaseModel):
+    foo_bar: str = Field(..., alias='foo-bar')
+
+
+class KeyClassNameCollision1(BaseModel):
+    fooBar: int
+
+
+class KeyLiteralClassNameCollisionFooBar(BaseModel):
+    type: Literal['foo-bar']
+    v: str
+
+
+class KeyLiteralClassNameCollision(BaseModel):
+    fooBar: str
+
+
 class SingleKeyBranchGranular(BaseModel):
     granular: bool
+
+
+class Base(BaseModel):
+    x: str | None = None
+    y: str | None = None
 
 
 class Null(RootModel[None]):
@@ -162,6 +270,18 @@ class Null(RootModel[None]):
 
 class NullAlias(RootModel[Null | None]):
     root: Null | None
+
+
+class RefAllOfBranch1(Base):
+    extra: str
+
+
+class UnionAllOfP(Base):
+    p: str
+
+
+class UnionAllOfQ(Base):
+    q: int
 
 
 class TagVariantNameFallbacks(BaseModel):
@@ -191,4 +311,25 @@ class TagVariantNameFallbacks(BaseModel):
     ) = None
     parent_literal_branch_literal: ParentLiteralBranchLiteralA | None = None
     nested: Nested | NestedA | NestedB | None = None
+    nested_literal_outer: NestedLiteralOuterA | NestedLiteralOuterB | None = None
+    ref_all_of_branch: RefAllOfBranch | RefAllOfBranch1 | None = None
+    inline_all_of_branch: InlineAllOfBranch | InlineAllOfBranch1 | None = None
+    any_of_all_of_branch: AnyOfAllOfBranch | AnyOfAllOfBranch1 | None = None
+    constraint_all_of_branch: (
+        ConstraintAllOfBranch | ConstraintAllOfBranchExtra | None
+    ) = None
+    union_all_of: UnionAllOfP | UnionAllOfQ | None = None
+    class_name_collision: ClassNameCollision | ClassNameCollision1 | None = None
+    class_name_collision_next: (
+        ClassNameCollisionNextK1 | ClassNameCollisionNextK2 | None
+    ) = None
+    key_class_name_collision: (
+        KeyClassNameCollisionExec
+        | KeyClassNameCollision
+        | KeyClassNameCollision1
+        | None
+    ) = None
+    key_literal_class_name_collision: (
+        KeyLiteralClassNameCollisionFooBar | KeyLiteralClassNameCollision | None
+    ) = None
     single_key_branch: SingleKeyBranchGranular | None = None

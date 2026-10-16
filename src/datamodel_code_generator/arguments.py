@@ -627,9 +627,9 @@ model_options.add_argument(
 )
 model_options.add_argument(
     "--use-tag-as-union-variant-name",
-    help="Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, plus "
-    'single-branch unions (type: "exec" -> LocalShellActionExec) and single-key branches '
-    '({"granular": ...} -> AskForApprovalGranular)',
+    help="Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, skipping "
+    'tags whose class names collide, plus single-branch unions (type: "exec" -> LocalShellActionExec) and '
+    'single-key branches ({"granular": ...} -> AskForApprovalGranular)',
     action="store_true",
     default=None,
 )

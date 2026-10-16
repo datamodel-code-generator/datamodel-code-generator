@@ -309,6 +309,198 @@
         }
       ]
     },
+    "nested_literal_outer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {"const": "x"}
+          },
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": {"const": "a"},
+                "p": {"type": "string"}
+              }
+            },
+            {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": {"const": "b"},
+                "q": {"type": "string"}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ref_all_of_branch": {
+      "oneOf": [
+        {"type": "string", "enum": ["never"]},
+        {
+          "allOf": [{"$ref": "#/definitions/Base"}],
+          "required": ["extra"],
+          "properties": {
+            "extra": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "inline_all_of_branch": {
+      "oneOf": [
+        {"type": "string", "enum": ["never"]},
+        {
+          "type": "object",
+          "allOf": [{"properties": {"z": {"type": "string"}}}],
+          "required": ["extra"],
+          "properties": {
+            "extra": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "any_of_all_of_branch": {
+      "oneOf": [
+        {"type": "string", "enum": ["never"]},
+        {
+          "type": "object",
+          "allOf": [
+            {
+              "anyOf": [
+                {"properties": {"a": {"type": "string"}}},
+                {"properties": {"b": {"type": "string"}}}
+              ]
+            }
+          ],
+          "required": ["extra"],
+          "properties": {
+            "extra": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "constraint_all_of_branch": {
+      "oneOf": [
+        {"type": "string", "enum": ["never"]},
+        {
+          "type": "object",
+          "allOf": [{"minProperties": 1}],
+          "required": ["extra"],
+          "properties": {
+            "extra": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "union_all_of": {
+      "type": "object",
+      "allOf": [{"$ref": "#/definitions/Base"}],
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["p"],
+          "properties": {
+            "p": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["q"],
+          "properties": {
+            "q": {"type": "integer"}
+          }
+        }
+      ]
+    },
+    "class_name_collision": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "a"],
+          "properties": {
+            "type": {"const": "foo-bar"},
+            "a": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "b"],
+          "properties": {
+            "type": {"const": "fooBar"},
+            "b": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "class_name_collision_next": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "kind"],
+          "properties": {
+            "type": {"const": "foo-bar"},
+            "kind": {"const": "k1"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "kind"],
+          "properties": {
+            "type": {"const": "fooBar"},
+            "kind": {"const": "k2"}
+          }
+        }
+      ]
+    },
+    "key_class_name_collision": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "v"],
+          "properties": {
+            "type": {"const": "exec"},
+            "v": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["foo-bar"],
+          "properties": {
+            "foo-bar": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["fooBar"],
+          "properties": {
+            "fooBar": {"type": "integer"}
+          }
+        }
+      ]
+    },
+    "key_literal_class_name_collision": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "v"],
+          "properties": {
+            "type": {"const": "foo-bar"},
+            "v": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["fooBar"],
+          "properties": {
+            "fooBar": {"type": "string"}
+          }
+        }
+      ]
+    },
     "single_key_branch": {
       "oneOf": [
         {
@@ -322,6 +514,13 @@
     }
   },
   "definitions": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "x": {"type": "string"},
+        "y": {"type": "string"}
+      }
+    },
     "Null": {"type": "null"},
     "NullAlias": {"$ref": "#/definitions/Null"}
   }
