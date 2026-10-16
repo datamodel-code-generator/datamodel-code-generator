@@ -46,7 +46,6 @@ from datamodel_code_generator.model.pydantic_base import (
 )
 from datamodel_code_generator.model.pydantic_v2._annotated_types import (
     AnnotatedConstraintDataType,
-    EncodedBytesDataType,
     annotated_constraint_metadata,
 )
 from datamodel_code_generator.model.pydantic_v2._config import (
@@ -79,6 +78,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
+from datamodel_code_generator.model.pydantic_v2.types import EncodedBytesDataType
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
     PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM,
