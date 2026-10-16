@@ -355,33 +355,22 @@ def _import_node_category(
 
 
 def _format_import_node(
-    node: ast.Import | ast.ImportFrom,
+    node: ast.ImportFrom,
     line_length: int,
     known_first_party: frozenset[str] = DEFAULT_KNOWN_FIRST_PARTY,
     names: _ImportNames = _PLAIN_NAMES,
 ) -> tuple[_ImportCategory, str]:
     category = _import_node_category(node, known_first_party, names)
-    match node:
-        case ast.Import():
-            lines = [
-                f"import {_format_alias(alias)}"
-                for alias in sorted(node.names, key=lambda alias: names.restore(alias.name))
-            ]
-            return category, "\n".join(lines)
-        case ast.ImportFrom():
-            module = "." * node.level + (node.module or "")
-            if any(alias.asname is not None for alias in node.names):
-                lines = [
-                    _format_from_import(module, [_format_alias(alias)], line_length)
-                    for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias), names))
-                ]
-                return category, "\n".join(lines)
+    module = "." * node.level + (node.module or "")
+    if any(alias.asname is not None for alias in node.names):
+        lines = [
+            _format_from_import(module, [_format_alias(alias)], line_length)
+            for alias in sorted(node.names, key=lambda alias: _alias_sort_key(_format_alias(alias), names))
+        ]
+        return category, "\n".join(lines)
 
-            aliases = sorted(
-                (_format_alias(alias) for alias in node.names), key=lambda alias: _alias_sort_key(alias, names)
-            )
-            return category, _format_from_import(module, aliases, line_length)
-    raise AssertionError  # pragma: no cover
+    aliases = sorted((_format_alias(alias) for alias in node.names), key=lambda alias: _alias_sort_key(alias, names))
+    return category, _format_from_import(module, aliases, line_length)
 
 
 def _from_import_key(node: ast.ImportFrom) -> tuple[int, str]:
@@ -481,6 +470,12 @@ def _build_builtin_import_block(
             category = _import_category(names.restore(module), node.level, known_first_party, names.python_version)
             for alias in node.names:
                 grouped_from_imports[category, node.level, module].add(_format_alias(alias))
+            continue
+
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                category = _import_category(names.restore(alias.name), 0, known_first_party, names.python_version)
+                categorized_lines[category].add(f"import {_format_alias(alias)}")
             continue
 
         category, import_line = _format_import_node(node, line_length, known_first_party, names)

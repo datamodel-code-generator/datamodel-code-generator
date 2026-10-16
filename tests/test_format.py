@@ -921,6 +921,21 @@ def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_p
     )
 
 
+def test_builtin_formatter_groups_each_module_of_an_import_by_target() -> None:
+    """Group each module one import statement names in its own section, as isort does, by the target's library.
+
+    tomllib joins the standard library in Python 3.11.
+    """
+    code = "import tomllib, pydantic, os\nimport yaml\n\n\nclass Model(pydantic.BaseModel):\n    pass\n"
+    assert_output(
+        "\n".join(
+            apply_builtin_formatter(code, python_version=version)
+            for version in (PythonVersion.PY_310, PythonVersion.PY_311)
+        ),
+        BUILTIN_FORMATTER_EXPECTED_PATH / "import_modules_by_target.txt",
+    )
+
+
 def test_builtin_formatter_string_normalization_fallback_handles_private_inputs() -> None:
     """Keep the private normalization helper safe for non-exact strings and lexical whitespace."""
     assert (
