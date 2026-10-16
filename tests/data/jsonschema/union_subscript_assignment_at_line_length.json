@@ -5,7 +5,9 @@
   "required": [
     "at_line_length",
     "one_beyond_line",
-    "four_beyond_limits"
+    "four_beyond_limits",
+    "described_beyond",
+    "described_well_beyond_limit"
   ],
   "properties": {
     "at_line_length": {
@@ -28,6 +30,21 @@
         {"$ref": "#/definitions/NextUnionMemberWithLongName"}
       ],
       "title": "Head"
+    },
+    "described_beyond": {
+      "anyOf": [
+        {"$ref": "#/definitions/FirstUnionMemberWithLongName"},
+        {"$ref": "#/definitions/NextUnionMemberWithLongName"}
+      ],
+      "description": "A description long enough to push the closing line past the limit"
+    },
+    "described_well_beyond_limit": {
+      "anyOf": [
+        {"$ref": "#/definitions/FirstUnionMemberWithLongName"},
+        {"$ref": "#/definitions/NextUnionMemberWithLongName"}
+      ],
+      "title": "Head",
+      "description": "A description long enough to push the closing line past the limit"
     }
   },
   "definitions": {

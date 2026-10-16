@@ -26,3 +26,16 @@ class UnionSubscriptAssignmentAtLineLength(BaseModel):
     four_beyond_limits: Union[
         FirstUnionMemberWithLongName, NextUnionMemberWithLongName
     ] = Field(..., title='Head')
+    described_beyond: Union[
+        FirstUnionMemberWithLongName, NextUnionMemberWithLongName
+    ] = Field(
+        ...,
+        description='A description long enough to push the closing line past the limit',
+    )
+    described_well_beyond_limit: Union[
+        FirstUnionMemberWithLongName, NextUnionMemberWithLongName
+    ] = Field(
+        ...,
+        description='A description long enough to push the closing line past the limit',
+        title='Head',
+    )

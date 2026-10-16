@@ -8407,7 +8407,8 @@ def test_main_subscript_annotation_at_line_length(
 ) -> None:
     """Test the built-in formatter splits an `Annotated[...]` or `Union[...]` annotation like black.
 
-    Black splits the annotation once `<annotation> = (` exceeds the line, even when the annotation alone fits.
+    Black splits the annotation once `<annotation> = (` exceeds the line, even when the annotation alone fits, and
+    then splits a `Field(...)` default that overflows the closing line.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
