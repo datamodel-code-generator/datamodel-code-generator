@@ -1764,7 +1764,8 @@ def _format_nested_annotated_type_alias_assignment(
             _format_type_alias_argument_line(argument, continuation_indent, line_length, source)
             for argument in call.args
         )
-    return f"{indent}{_source_segment(source, statement.targets[0])} = TypeAliasType(\n{body}\n{indent})"
+    target = _source_segment(source, statement.targets[0])
+    return f"{indent}{target} = {_source_segment(source, call.func)}(\n{body}\n{indent})"
 
 
 def _format_type_checking_block(

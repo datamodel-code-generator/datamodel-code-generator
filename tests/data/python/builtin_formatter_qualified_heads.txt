@@ -22,3 +22,5 @@ class Other(pydantic.RootModel[FirstUnionMemberWithLongName | NextUnionMemberWit
 Alias: TypeAlias = typing.Union[FirstUnionMemberWithLongName, NextUnionMemberWithLongName, ThirdUnionMemberWithLongName]
 Pair = typing_extensions.TypeAliasType('Pair', typing.Annotated[str, Field(min_length=1, max_length=255, pattern='^[a-z]+$')])
 Movie = typing.TypedDict('Movie', {'title-with-dash': str, 'year-of-release': int, 'name-of-the-film-director': str, 'rating': float})
+Words = typing_extensions.TypeAliasType('Words', list[typing.Annotated[str, Field(min_length=1, max_length=255, pattern='^[a-z]+$', description='xx')]])
+Counts = typing_extensions.TypeAliasType('Counts', dict[str, typing.Annotated[int, Field(ge=0, le=1000, multiple_of=5, description='Counted things')]])
