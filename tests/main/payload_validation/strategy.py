@@ -10,6 +10,7 @@ from fractions import Fraction
 from functools import cache, partial, partialmethod
 from typing import TYPE_CHECKING, Any
 
+from attrs import fields
 from hypothesis import strategies as st
 from hypothesis_jsonschema import from_schema
 from jsonschema import validators
@@ -202,12 +203,18 @@ def _agreed(
 def _evolve_within_dialect(
     validator: Validator, evolve: Callable[..., Validator], dialect: type[Validator], **changes: Any
 ) -> Validator:
-    """Evolve into a subschema, such as the root a reference re-enters, without its ``$schema`` dropping the checks."""
+    """Evolve into a subschema, such as the root a reference re-enters, without its ``$schema`` dropping the checks.
+
+    A subschema declaring another dialect switches to that dialect's extended class, as jsonschema switches classes.
+    """
     if isinstance(schema := changes.get("schema", validator.schema), dict) and "$schema" in schema:
-        if validators.validator_for(schema, default=dialect) is not dialect:
-            msg = f"Regex agreement checks cover one dialect, but a subschema declares {schema['$schema']}"
-            raise ValueError(msg)
         changes["schema"] = {keyword: value for keyword, value in schema.items() if keyword != "$schema"}
+        if (declared := validators.validator_for(schema, default=dialect)) is not dialect:
+            declared_class = _regex_agreement_class(declared)
+            return declared_class(
+                **{field.alias: getattr(validator, field.name) for field in fields(declared_class) if field.init}
+                | changes
+            )
     return evolve(validator, **changes)
 
 

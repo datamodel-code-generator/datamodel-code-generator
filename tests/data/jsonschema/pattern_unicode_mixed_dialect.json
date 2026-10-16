@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MixedDialectWords",
+  "type": "object",
+  "properties": {
+    "words": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Word"
+      },
+      "minItems": 4
+    }
+  },
+  "required": [
+    "words"
+  ],
+  "$defs": {
+    "Word": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "$id": "https://example.com/schemas/word",
+      "type": "string",
+      "pattern": "^\\w+$"
+    }
+  }
+}
