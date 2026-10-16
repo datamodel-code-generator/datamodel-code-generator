@@ -2963,7 +2963,7 @@ def test_type_overrides_replace_custom_type_path_unavailable_for_target(output_f
             "builtin",
             "--disable-timestamp",
             "--type-overrides",
-            json.dumps({"Model.kind": "mylib.Kind", "A": "mylib.A"}),
+            json.dumps({"Model.kind": "decimal.Decimal", "A": "uuid.UUID"}),
         ],
     )
 

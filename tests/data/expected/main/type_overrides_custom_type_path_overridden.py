@@ -3,12 +3,13 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import TypedDict
+from uuid import UUID
 
-from mylib import A, Kind
 from typing_extensions import NotRequired
 
 
 class Model(TypedDict):
-    kind: NotRequired[Kind]
-    a: NotRequired[A]
+    kind: NotRequired[Decimal]
+    a: NotRequired[UUID]
