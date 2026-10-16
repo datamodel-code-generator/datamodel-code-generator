@@ -2173,7 +2173,8 @@ def test_apply_builtin_formatter_handles_simple_edge_cases(code: str, expected_c
 def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files(bucket: int, tmp_path: Path) -> None:
     """Keep built-in formatting aligned with black + isort for generated model outputs.
 
-    Each bucket checks every PARITY_BUCKETS-th expected file, so the buckets together check every file once.
+    Each bucket checks every PARITY_BUCKETS-th expected file, so the buckets together check every file once. Files
+    black cannot parse are skipped; black 24.1 reports a name holding a letter its own Python lacks as a KeyError.
     """
     expected_path = Path(__file__).parent / "data" / "expected"
     isort_config = isort.Config(settings_path=str(tmp_path))
@@ -2192,7 +2193,7 @@ def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_fil
                 isort.code(code, config=isort_config),
                 mode=black_mode,
             )
-        except black.InvalidInput:
+        except (black.InvalidInput, KeyError):
             continue
 
         if code != black_isort_code:
