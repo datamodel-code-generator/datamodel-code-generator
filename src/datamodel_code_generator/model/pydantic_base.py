@@ -23,13 +23,7 @@ from datamodel_code_generator.model import ConstraintsBase as _ConstraintsBase
 from datamodel_code_generator.model._constraints import Constraints
 from datamodel_code_generator.model._constraints import PatternConstraints as _PatternConstraints
 from datamodel_code_generator.model._pydantic_imports import IMPORT_ANYURL, IMPORT_FIELD
-from datamodel_code_generator.model.base import (
-    _OVERRIDDEN_CONSTRAINTS_KEY,
-    _UNTAKEN_CONSTRAINT_MINIMUMS_KEY,
-    _UNTAKEN_CONSTRAINTS_KEY,
-    _nested_model_default_factory,
-    _remember_custom_template_dependency,
-)
+from datamodel_code_generator.model.base import _nested_model_default_factory, _remember_custom_template_dependency
 from datamodel_code_generator.python_literal import represent_python_value
 from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 from datamodel_code_generator.types import (
@@ -102,8 +96,8 @@ class DataModelField(DataModelFieldBase):
         """
         reasons: list[str] = []
         count = 0
-        if untaken := self.__dict__.get(_UNTAKEN_CONSTRAINTS_KEY):
-            minimums = self.__dict__.get(_UNTAKEN_CONSTRAINT_MINIMUMS_KEY, {})
+        untaken, minimums = self.untaken_constraints
+        if untaken:
             groups: dict[str | None, list[str]] = {}
             for key in untaken:
                 groups.setdefault(minimums.get(key), []).append(key)
@@ -116,7 +110,7 @@ class DataModelField(DataModelFieldBase):
                     f"an explicit --target-pydantic-version {minimum} or later selects"
                 )
                 count += len(keys)
-        if overridden := self.__dict__.get(_OVERRIDDEN_CONSTRAINTS_KEY):
+        if overridden := self.overridden_constraints:
             replaced, arguments_count = overridden
             reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {replaced}")
             count += arguments_count
