@@ -19768,6 +19768,31 @@ def test_schema_import_paths_reject_types_unavailable_for_target(
     )
 
 
+def test_schema_import_paths_unavailable_types_moved_by_import_overrides(output_file: Path) -> None:
+    """Generate a type the target lacks once --import-overrides moves its import to a module that provides it."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "import_overrides_unavailable_types.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="import_overrides_unavailable_types.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.TypingTypedDict.value,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--type-overrides",
+            json.dumps({"Model.overridden": "enum.StrEnum"}),
+            "--import-overrides",
+            json.dumps({"StrEnum": "tests.data.python.x_python_type_symbols"}),
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_x_python_type_builtin_and_enum_helpers_for_target_311(output_file: Path) -> None:
     """Keep bare builtins distinct from target-gated enum helper classes."""
     run_main_and_assert(

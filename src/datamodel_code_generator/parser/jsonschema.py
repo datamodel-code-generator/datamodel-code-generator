@@ -3536,7 +3536,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not module or not type_name:
             msg = "x-python-import requires both module and name"
             raise Error(msg)
-        return self._get_target_python_type_path(
+        return self._get_emitted_python_type_path(
             _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import")
         )
 
