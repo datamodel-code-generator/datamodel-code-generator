@@ -6215,6 +6215,15 @@ _DECLARED_NUMBER_TYPE_OVERRIDES = {
         ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
         ("collapse.py", ["--field-constraints", "--collapse-root-models"]),
         (
+            "collapse_type_overrides.py",
+            [
+                "--field-constraints",
+                "--collapse-root-models",
+                "--type-overrides",
+                json.dumps({"NumberConstraintsOnDeclaredNumbers.label_or_flag": "decimal.Decimal"}),
+            ],
+        ),
+        (
             "type_overrides.py",
             [
                 "--type-overrides",
@@ -6236,11 +6245,18 @@ def test_main_number_constraints_on_declared_numbers(
     """Test a number schema keeps a number keyword only where a number value meets it, warns otherwise, and validates.
 
     A type with numbers among its values, a union with a number member and a ``con*`` factory override keep the keyword,
-    as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it. msgspec decodes a
-    date only from a string, so its runtime check is left to the other outputs.
+    as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it. A root model that
+    collapsing inlines into a field, an item, a union member or a mapping value hands its warning to the field; an
+    override of that union replaces the member with its constraint. msgspec decodes a date only from a string, so its
+    runtime check is left to the other outputs, as it is for a target the installed Pydantic cannot run.
     """
     name = "number_constraints_on_declared_numbers"
     stem = expected_file.removesuffix(".py")
+    runs = installed_pydantic_runs_target(
+        extra_args[extra_args.index("--target-pydantic-version") + 1]
+        if "--target-pydantic-version" in extra_args
+        else None
+    )
     with warnings.catch_warnings(record=True) as recorded_warnings:
         warnings.simplefilter("always")
         run_main_and_assert(
@@ -6255,6 +6271,7 @@ def test_main_number_constraints_on_declared_numbers(
                 *("--disable-timestamp", "--target-python-version", "3.11"),
             ],
             force_exec_validation=True,
+            skip_code_validation=not runs,
         )
     assert_output(
         "".join(
@@ -6262,7 +6279,7 @@ def test_main_number_constraints_on_declared_numbers(
         ),
         EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
     )
-    if "msgspec.Struct" in extra_args:
+    if "msgspec.Struct" in extra_args or not runs:
         return
     payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
     with _generated_model(output_file, name, "NumberConstraintsOnDeclaredNumbers") as model:

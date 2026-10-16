@@ -18,6 +18,22 @@
     "shared_label": {
       "$ref": "#/definitions/Label"
     },
+    "label_or_flag": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Label"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Label"
+      }
+    },
     "day": {
       "type": "number",
       "format": "day",

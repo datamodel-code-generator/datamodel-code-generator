@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 class NumberConstraintsOnDeclaredNumbers(BaseModel):
     label: str | None = None
     shared_label: str | None = None
+    label_or_flag: bool | str | None = None
+    labels: dict[str, str] | None = None
     day: date | None = None
     clock: time | None = None
     code: Literal['a', 'b'] | None = None

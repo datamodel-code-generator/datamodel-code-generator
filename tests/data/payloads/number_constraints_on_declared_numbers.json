@@ -2,6 +2,10 @@
   "valid": {
     "label": "1",
     "shared_label": "1",
+    "label_or_flag": "1",
+    "labels": {
+      "key": "1"
+    },
     "day": 0,
     "clock": 2,
     "code": "a",

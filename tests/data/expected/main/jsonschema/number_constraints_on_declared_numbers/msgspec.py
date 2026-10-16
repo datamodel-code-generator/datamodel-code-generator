@@ -14,6 +14,8 @@ Label: TypeAlias = str
 class NumberConstraintsOnDeclaredNumbers(Struct):
     label: str | UnsetType = UNSET
     shared_label: Label | UnsetType = UNSET
+    label_or_flag: Label | bool | UnsetType = UNSET
+    labels: dict[str, Label] | UnsetType = UNSET
     day: str | UnsetType = UNSET
     clock: str | UnsetType = UNSET
     code: Literal['a', 'b'] | UnsetType = UNSET

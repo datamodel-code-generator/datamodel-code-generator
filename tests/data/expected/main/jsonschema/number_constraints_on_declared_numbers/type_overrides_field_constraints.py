@@ -17,6 +17,8 @@ class Label(RootModel[str]):
 class NumberConstraintsOnDeclaredNumbers(BaseModel):
     label: Decimal | None = Field(None, ge=0)
     shared_label: Label | None = None
+    label_or_flag: Label | bool | None = None
+    labels: dict[str, Label] | None = None
     day: date | None = None
     clock: time | None = None
     code: Literal['a', 'b'] | None = None
