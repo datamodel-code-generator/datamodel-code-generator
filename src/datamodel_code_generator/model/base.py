@@ -640,11 +640,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         They are the field's own and those of the members, items and values that collapsing inlines into its type. The
         second mapping names, for a constraint an explicit later target model version takes, that version.
         """
-        own = self.__dict__.get(_UNTAKEN_CONSTRAINTS_KEY)
+        own = self.__dict__.get(_UNTAKEN_CONSTRAINTS_KEY) or ({}, {})
         if (member := self.__dict__.get(_MEMBER_UNTAKEN_CONSTRAINTS_KEY)) is None:
-            return own or ({}, {})
-        if own is None:
-            return member
+            return own
         return {**member[0], **own[0]}, {**member[1], **own[1]}
 
     def record_untaken_constraints(self, untaken: dict[str, Any], minimums: dict[str, str]) -> None:
