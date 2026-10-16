@@ -18558,6 +18558,18 @@ def test_main_module_named_by_newer_target() -> None:
     )
 
 
+def test_main_reuse_model_masks_references_named_beyond_ascii(output_file: Path) -> None:
+    """Reuse models whose referenced models differ only in names that start beyond ASCII, as with ASCII names."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_reference_identifier_starts" / "probe.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="reuse_reference_identifier_starts.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--reuse-model"],
+    )
+
+
 @pytest.mark.benchmark
 def test_main_root_model_config_populate_by_name(output_file: Path) -> None:
     """Test that RootModel subclasses don't get populate_by_name config (issue #2483).

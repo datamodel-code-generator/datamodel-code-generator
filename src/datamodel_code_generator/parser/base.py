@@ -160,19 +160,19 @@ _ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]
 _PYDANTIC_V2_BASE_MODEL_MODULE: Final = "datamodel_code_generator.model.pydantic_v2.base_model"
 _MODEL_MODULE_PREFIX: Final = "datamodel_code_generator.model."
 _CLASS_NAME_SEPARATOR_PATTERN: Final = re.compile(r"[^A-Za-z0-9]+")
-_STRING_OR_IDENTIFIER_SOURCE: Final = (
-    r"""'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"|'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|"""
-    r"""^[ \t]*[A-Za-z_]\w*(?=:)|([A-Za-z_]\w*)"""
+_STRING_LITERAL_SOURCE: Final = r"""'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"|'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|"""
+_STRING_OR_IDENTIFIER_PATTERN: Final = re.compile(
+    _STRING_LITERAL_SOURCE + r"""^[ \t]*[A-Za-z_]\w*(?=:)|([A-Za-z_]\w*)""", re.MULTILINE
 )
-_STRING_OR_IDENTIFIER_PATTERN: Final = re.compile(_STRING_OR_IDENTIFIER_SOURCE, re.MULTILINE)
+_STRING_OR_TARGET_IDENTIFIER_SOURCE: Final = _STRING_LITERAL_SOURCE + r"""^[ \t]*(?#identifier)(?=:)|((?#identifier))"""
 
 
 def _string_or_identifier_pattern(text: str, target_python_version: PythonVersion) -> re.Pattern[str]:
-    r"""Return the pattern that finds string literals, field declarations and names in text, with the target's `\w`."""
+    """Return the pattern that finds string literals, field declarations and names in text, as the target names them."""
     return (
         _STRING_OR_IDENTIFIER_PATTERN
         if text.isascii()
-        else target_pattern(_STRING_OR_IDENTIFIER_SOURCE, target_python_version, re.MULTILINE)
+        else target_pattern(_STRING_OR_TARGET_IDENTIFIER_SOURCE, target_python_version, re.MULTILINE)
     )
 
 
