@@ -80,7 +80,7 @@ from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_TIMEDELTA_MULTIPLE_OF_MINIMUM,
     target_supports,
 )
-from datamodel_code_generator.python_literal import PythonCode
+from datamodel_code_generator.python_literal import PythonCode, represent_python_value
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -493,9 +493,6 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         if kwargs.get("base64_encoded"):
             if not data_type_kwargs:
                 return self.data_type.from_import(IMPORT_BASE64BYTES, strict=strict)
-            from datamodel_code_generator.model.pydantic_v2._annotated_types import (  # noqa: PLC0415
-                EncodedBytesDataType,
-            )
             from datamodel_code_generator.types import _create_context_data_type  # noqa: PLC0415
 
             data_type = _create_context_data_type(
@@ -590,6 +587,36 @@ class PydanticV2DataType(DataType):
 
         if self._needs_serialize_as_any_import():
             yield IMPORT_SERIALIZE_AS_ANY
+
+
+class EncodedBytesDataType(PydanticV2DataType):
+    """Bytes written as base64 text, with the lengths that Pydantic checks on that text before it decodes it.
+
+    JSON Schema counts ``minLength`` and ``maxLength`` on the base64 text, while Pydantic checks a ``Field()`` length
+    of ``Base64Bytes`` on the decoded bytes in some forms, so the lengths stay in front of the decoding
+    ``EncodedBytes``. Pydantic checks them so from 2.10 on.
+    """
+
+    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = frozenset({"minLength", "maxLength"})
+    annotated_bytes: ClassVar[bool] = True
+
+    def _binding(self, name: str) -> str:
+        return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
+
+    @property
+    def type_hint(self) -> str:
+        """Render the lengths and the base64 decoding inside an Annotated subscript."""
+        keywords = ", ".join(f"{name}={represent_python_value(value)}" for name, value in (self.kwargs or {}).items())
+        return (
+            f"{self._binding('Annotated')}[bytes, {self._binding('Field')}({keywords}), "
+            f"{self._binding('EncodedBytes')}(encoder={self._binding('Base64Encoder')})]"
+        )
+
+    @property
+    def imports(self) -> Iterator[Import]:
+        """Yield the annotation imports, which aliasing reaches."""
+        yield from (import_ for import_ in super().imports if import_ != self.import_)
+        yield from self.runtime_expression_imports
 
 
 class DataTypeManager(_PydanticDataTypeManager):

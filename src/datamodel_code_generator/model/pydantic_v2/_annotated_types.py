@@ -91,33 +91,3 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
         """Replace the ``con*`` import with the annotation imports."""
         yield from (import_ for import_ in super().imports if import_ != self.import_)
         yield from self.runtime_expression_imports
-
-
-class EncodedBytesDataType(PydanticV2DataType):
-    """Bytes written as base64 text, with the lengths that Pydantic checks on that text before it decodes it.
-
-    JSON Schema counts ``minLength`` and ``maxLength`` on the base64 text, while Pydantic checks a ``Field()`` length
-    of ``Base64Bytes`` on the decoded bytes in some forms, so the lengths stay in front of the decoding
-    ``EncodedBytes``. Pydantic checks them so from 2.10 on.
-    """
-
-    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = frozenset({"minLength", "maxLength"})
-    annotated_bytes: ClassVar[bool] = True
-
-    def _binding(self, name: str) -> str:
-        return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
-
-    @property
-    def type_hint(self) -> str:
-        """Render the lengths and the base64 decoding inside an Annotated subscript."""
-        keywords = ", ".join(f"{name}={represent_python_value(value)}" for name, value in (self.kwargs or {}).items())
-        return (
-            f"{self._binding('Annotated')}[bytes, {self._binding('Field')}({keywords}), "
-            f"{self._binding('EncodedBytes')}(encoder={self._binding('Base64Encoder')})]"
-        )
-
-    @property
-    def imports(self) -> Iterator[Import]:
-        """Yield the annotation imports, which aliasing reaches."""
-        yield from (import_ for import_ in super().imports if import_ != self.import_)
-        yield from self.runtime_expression_imports

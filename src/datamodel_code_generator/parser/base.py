@@ -87,9 +87,6 @@ from datamodel_code_generator.imports import (
     Imports,
 )
 from datamodel_code_generator.model.base import (
-    _OVERRIDDEN_CONSTRAINTS_KEY,
-    _UNTAKEN_CONSTRAINT_MINIMUMS_KEY,
-    _UNTAKEN_CONSTRAINTS_KEY,
     ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
     GENERIC_BASE_CLASS_NAME,
     GENERIC_BASE_CLASS_PATH,
@@ -350,13 +347,6 @@ def _has_root_field_constraints(root_field: DataModelFieldBase) -> bool:
     return (isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints) or any(
         data_type.CARRIED_CONSTRAINT_KEYWORDS for data_type in (root_field.data_type, *root_field.data_type.data_types)
     )
-
-
-def _inherit_untaken_constraints(field: DataModelFieldBase, root_field: DataModelFieldBase) -> None:
-    """Take over the constraints a collapsed root field leaves out on its type, to warn about them on the field."""
-    for key in (_UNTAKEN_CONSTRAINTS_KEY, _UNTAKEN_CONSTRAINT_MINIMUMS_KEY):
-        if untaken := root_field.__dict__.get(key):
-            field.__dict__[key] = {**untaken, **field.__dict__.get(key, {})}
 
 
 ComponentId: TypeAlias = int
@@ -5015,7 +5005,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 )
                             ) is not None:
                                 model_field.__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent_constraints
-                            _inherit_untaken_constraints(model_field, root_type_field)
+                            model_field.inherit_untaken_constraints(root_type_field)
 
                         replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                             data_type,
@@ -5029,7 +5019,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             model_field.constraints = ConstraintsBase.merge_constraints(
                                 root_type_field.constraints, model_field.constraints
                             )
-                            _inherit_untaken_constraints(model_field, root_type_field)
+                            model_field.inherit_untaken_constraints(root_type_field)
                         discriminator = root_type_field.extras.get("discriminator")
                         if discriminator and root_type_field.SUPPORTS_DISCRIMINATOR:
                             has_any_variant = any(_is_any_variant(dt) for dt in copied_data_type.data_types)
@@ -6286,10 +6276,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         data_type = deepcopy(field.data_type)
         data_type.import_ = override_import
         data_type.alias = override_import.import_
-        if data_type.kwargs and is_known_python_type_path(
-            f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_,
-            self.target_python_version.version_key,
-        ):
+        path = (
+            f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_
+        )
+        if data_type.kwargs and is_known_python_type_path(path, self.target_python_version.version_key):
             data_type.kwargs = None
         if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS and (
             dropped := [
@@ -6300,14 +6290,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if name != "strict"
             ]
         ):
-            field.__dict__[_OVERRIDDEN_CONSTRAINTS_KEY] = (field.data_type.type_hint, len(dropped))
-        self._decide_overridden_constraints(field, override_import)
+            field.record_overridden_constraints(field.data_type.type_hint, len(dropped))
+        self._decide_overridden_constraints(field, path)
         self.generation_store.replace_field_type(field, data_type)
         self.generation_store.detach_data_type_ref(field.data_type)
         self.generation_store.set_nested_data_types(field.data_type, [])
 
-    def _decide_overridden_constraints(self, field: DataModelFieldBase, override_import: Import) -> None:
-        """Keep the constraints that the emitted type decides only when the override type takes them.
+    def _decide_overridden_constraints(self, field: DataModelFieldBase, path: str) -> None:
+        """Keep the constraints that the emitted type decides only when the override type at ``path`` takes them.
 
         An output model that writes constraints as ``Field()`` arguments also decides the number constraints of a
         declared number this way, and remembers the ones it leaves out to warn about them.
@@ -6323,14 +6313,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         declared_numbers = (
             {
                 **{key: value for key, value in values.items() if key in NUMBER_KEYWORDS and key not in type_dependent},
-                **field.__dict__.pop(_UNTAKEN_CONSTRAINTS_KEY, {}),
+                **field.pop_untaken_constraints(),
             }
             if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
             else {}
         )
         if not (decided := {**type_dependent, **declared_numbers}):
             return
-        path = f"{override_import.from_}.{override_import.import_}"
         target = self.target_python_version.version_key
         keywords = self.data_type_manager.type_constraint_keywords(path, target)
         number_keywords = self.data_type_manager.type_constraint_keywords(
@@ -6339,7 +6328,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         values = {key: value for key, value in values.items() if key not in decided}
         values.update({key: value for key, value in type_dependent.items() if key in keywords})
         values.update({key: value for key, value in declared_numbers.items() if key in number_keywords})
-        field.__dict__.pop(_UNTAKEN_CONSTRAINT_MINIMUMS_KEY, None)
         self._mark_untaken_constraints(
             field,
             {key: value for key, value in declared_numbers.items() if key not in number_keywords},
@@ -6361,7 +6349,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         if not untaken:
             return
-        field.__dict__[_UNTAKEN_CONSTRAINTS_KEY] = untaken
         minimums: dict[str, str] = {}
         for minimum in sorted(
             {minimum for minimum, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()},
@@ -6369,8 +6356,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ):
             taken = keywords_for(minimum)
             minimums.update({key: minimum for key in untaken if key in taken and key not in minimums})
-        if minimums:
-            field.__dict__[_UNTAKEN_CONSTRAINT_MINIMUMS_KEY] = minimums
+        field.record_untaken_constraints(untaken, minimums)
 
     @staticmethod
     def _append_model_import(model: DataModel, import_: Import) -> None:
