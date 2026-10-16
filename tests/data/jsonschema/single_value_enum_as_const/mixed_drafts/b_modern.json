@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Modern",
+  "type": "object",
+  "properties": {
+    "kind": {"type": "string", "enum": ["modern"]},
+    "level": {"$ref": "#/definitions/Level"}
+  },
+  "definitions": {
+    "Level": {"oneOf": [{"type": "string", "enum": ["low"]}, {"type": "string", "enum": ["high"]}]}
+  }
+}

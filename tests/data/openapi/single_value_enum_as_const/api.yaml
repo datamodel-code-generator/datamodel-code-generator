@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: Runs
+  version: 1.0.0
+servers:
+  - url: https://{region}.example.com
+    variables:
+      region: {default: us, enum: [us]}
+paths:
+  /runs:
+    get:
+      operationId: listRuns
+      parameters:
+        - name: order
+          in: query
+          schema: {type: string, enum: [newest]}
+      responses:
+        '200':
+          description: Runs.
+          headers:
+            x-mode:
+              schema: {type: string, enum: [fast]}
+            X-Rate:
+              $ref: 'headers.yaml#/x-rate'
+            server:
+              schema: {type: string, enum: [edge]}
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Run'}
+          links:
+            first:
+              operationId: listRuns
+              parameters: {order: {enum: [newest]}}
+        default:
+          description: Error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code: {type: string, enum: [error]}
+                required: [code]
+    post:
+      operationId: createRun
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                default: {type: string, enum: [upload]}
+            encoding:
+              default:
+                headers:
+                  X-Part:
+                    schema: {type: string, enum: [part]}
+      callbacks:
+        examples:
+          '{$request.query.url}':
+            post:
+              operationId: runCallback
+              requestBody:
+                content:
+                  application/json:
+                    schema: {type: string, enum: [called]}
+              responses:
+                '200': {description: Received.}
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: {$ref: 'schemas.yaml#/created'}
+webhooks:
+  default:
+    post:
+      operationId: runEvent
+      requestBody:
+        content:
+          application/json:
+            schema: {type: string, enum: [hook]}
+      responses:
+        '200': {description: Received.}
+components:
+  schemas:
+    Status:
+      description: Run status.
+      oneOf:
+        - {type: string, enum: [queued], description: Waiting to start.}
+        - {type: string, enum: [running], description: Running now.}
+    Run:
+      type: object
+      properties:
+        kind: {type: string, enum: [run]}
+        status: {$ref: '#/components/schemas/Status'}
+        region: {$ref: 'region.yaml'}
+        note: {$ref: 'common.yaml#/Note'}
+        retries: {type: integer, enum: [0], default: 0}
+      required: [kind, status]

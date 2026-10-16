@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings",
+  "type": "object",
+  "x-meta": {"enum": ["kept"]},
+  "properties": {
+    "level": {"$ref": "#/$defs/Level"},
+    "phase": {"$ref": "#/$defs/Phase"},
+    "code": {"$ref": "#/$defs/Code"},
+    "mode": {"$ref": "#/$defs/Mode"},
+    "source": {"$ref": "#/$defs/Source"},
+    "region": {"$ref": "#/$defs/Region"},
+    "method": {
+      "type": "string",
+      "enum": ["settings/update"],
+      "x-meta": {"enum": ["kept"]}
+    },
+    "version": {"type": "integer", "enum": [2], "default": 2},
+    "default": {"type": "string", "enum": ["named"]},
+    "both": {"type": "string", "enum": ["same"], "const": "same"},
+    "options": {
+      "type": "object",
+      "additionalProperties": true,
+      "default": {"enum": ["kept"]},
+      "examples": [{"enum": ["kept"]}]
+    },
+    "pick": {"$ref": "#/$defs/Pick"}
+  },
+  "required": ["method"],
+  "x-generator": {"name": "schemars", "enum": ["kept"]},
+  "$defs": {
+    "Level": {
+      "description": "How much effort to spend.",
+      "oneOf": [
+        {"type": "string", "enum": ["low"], "description": "Low effort."},
+        {"type": "string", "enum": ["high"], "description": "High effort."}
+      ]
+    },
+    "Phase": {
+      "oneOf": [
+        {"type": "string", "enum": ["commentary"], "title": "Commentary"},
+        {"type": "string", "enum": ["final_answer"], "title": "FinalAnswer"}
+      ]
+    },
+    "Code": {
+      "oneOf": [
+        {"type": "integer", "enum": [1], "description": "One."},
+        {"type": "integer", "enum": [2], "description": "Two."}
+      ]
+    },
+    "Mode": {
+      "anyOf": [{"type": "string", "enum": ["fast"]}, {"type": "string", "enum": ["safe"]}, {"type": "null"}]
+    },
+    "Source": {
+      "oneOf": [
+        {"type": "string", "enum": ["user"]},
+        {"type": "string", "const": "agent", "description": "Agent."}
+      ]
+    },
+    "Region": {"type": "string", "enum": ["us"]},
+    "AB": {"type": "string", "enum": ["a", "b"]},
+    "Pick": {"allOf": [{"$ref": "#/$defs/AB", "enum": ["b", "c"]}]}
+  }
+}

@@ -195,6 +195,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-serialization-alias": "Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).",
     "--use-serialize-as-any": "Wrap fields with subtypes in Pydantic's SerializeAsAny.",
     "--use-single-line-docstring": "Emit short docstrings on a single line.",
+    "--use-single-value-enum-as-const": "Treat `enum` with a single value as `const` with that value.",
     "--use-specialized-enum": "Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).",
     "--use-standard-collections": "Use built-in dict/list instead of typing.Dict/List.",
     "--use-standard-primitive-types": "Use Python standard library types for string formats instead of str.",

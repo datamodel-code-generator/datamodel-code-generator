@@ -17,6 +17,7 @@ from fractions import Fraction
 from functools import cached_property, lru_cache
 from itertools import chain, starmap
 from math import gcd, lcm
+from operator import is_not
 from pathlib import Path
 from string import digits
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, Union, cast
@@ -803,6 +804,76 @@ _JSON_SCHEMA_SINGLE_KEYWORDS = frozenset({
     "unevaluatedProperties",
 })
 _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS = frozenset({"extends", "items"})
+_NON_SCHEMA_KEYWORDS = frozenset({
+    "const",
+    "default",
+    "enum",
+    "example",
+    "examples",
+    "links",
+    "security",
+    "server",
+    "serverVariables",
+    "servers",
+})
+_NAMED_ENTRY_MAP_KEYWORDS = _JSON_SCHEMA_MAP_KEYWORDS | {
+    "callbacks",
+    "channels",
+    "content",
+    "encoding",
+    "messages",
+    "operations",
+    "parameters",
+    "responses",
+    "webhooks",
+}
+_DocumentEntries = Literal["object", "names", "maps"]
+
+
+def _document_child_entries(
+    entries: _DocumentEntries, key: object, named_entry_maps: frozenset[str]
+) -> _DocumentEntries | None:
+    """Return how the value under a key of a document object is read, or None when it holds no schemas."""
+    if entries == "names":
+        return "object"
+    if key in _NON_SCHEMA_KEYWORDS or (isinstance(key, str) and key.startswith("x-") and key != "x-propertyNames"):
+        return None
+    child: _DocumentEntries = "object"
+    match entries, key:
+        case "maps", _:
+            child = "names"
+        case "object", "components":
+            child = "maps"
+        case "object", str() if key in named_entry_maps:
+            child = "names"
+    return child
+
+
+def _single_value_enum_as_const(
+    value: YamlValue, named_entry_maps: frozenset[str], entries: _DocumentEntries = "object"
+) -> YamlValue:
+    """Return a document with the enum of each schema that lists one value written as the const it equals.
+
+    The values of instance data keywords, extensions other than x-propertyNames, links, security requirements and
+    servers hold no schemas and stay as written. Those words are names, not keywords, in maps of named entries such
+    as properties, $defs, responses, webhooks, channels or the component maps. Unchanged parts are shared, so cached
+    documents stay intact.
+    """
+    if isinstance(value, list):
+        items = [_single_value_enum_as_const(item, named_entry_maps) for item in value]
+        return items if any(map(is_not, items, value)) else value
+    if not isinstance(value, dict):
+        return value
+    changed = {
+        key: updated
+        for key, child in value.items()
+        if (child_entries := _document_child_entries(entries, key, named_entry_maps)) is not None
+        and (updated := _single_value_enum_as_const(child, named_entry_maps, child_entries)) is not child
+    }
+    result = {**value, **changed} if changed else value
+    if entries == "object" and isinstance(enum := value.get("enum"), list) and len(enum) == 1 and "const" not in value:
+        return {("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in result.items()}
+    return result
 
 
 def _is_object_only_type(type_: str | list[str] | None) -> bool:
@@ -1528,6 +1599,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     _cache_parsed_sources_from_path: ClassVar[bool] = True
     _input_file_type: ClassVar[InputFileType] = InputFileType.JsonSchema
     _non_dict_source_is_invalid: ClassVar[bool] = False
+    _named_entry_maps: ClassVar[frozenset[str]] = _NAMED_ENTRY_MAP_KEYWORDS
     _component_schemas_are_resources: ClassVar[bool] = False
 
     COMPATIBLE_PYTHON_TYPES: ClassVar[dict[str, frozenset[str]]] = {
@@ -1609,6 +1681,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self.reserved_refs: defaultdict[tuple[str, ...], set[str]] = defaultdict(set)
         self._loads_only_used_references = False
         self._dangling_refs: set[tuple[str, str]] = set()
+        self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]] = {}
         self._recursive_anchor_index: dict[tuple[str, ...], list[str]] = {}
         self._ref_data_type_facts: dict[str, tuple[Any, bool]] = {}
@@ -1765,10 +1838,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     @cached_property
     def schema_features(self) -> JsonSchemaFeatures:
         """Get schema features based on config or detected version."""
+        return self._schema_features_for(self.raw_obj)
+
+    def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
+        """Get the schema features of a root document based on config or its detected version."""
         config_version = getattr(self.config, "jsonschema_version", None)
         if config_version is not None and config_version != JsonSchemaVersion.Auto:
             return JsonSchemaFeatures.from_version(config_version)
-        version = detect_jsonschema_version(self.raw_obj) if self.raw_obj else JsonSchemaVersion.Auto
+        version = detect_jsonschema_version(root) if root else JsonSchemaVersion.Auto
         return JsonSchemaFeatures.from_version(version)
 
     @cached_property
@@ -11948,17 +12025,41 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         raise Error(msg)
 
+    def _read_document(
+        self, document: dict[str, YamlValue], root: dict[str, YamlValue] | None = None
+    ) -> dict[str, YamlValue]:
+        """Return a document as read, with each single-value enum as const under --use-single-value-enum-as-const.
+
+        A document parsed where const is no keyword is kept as written: under the draft-04 schema features the
+        parser already uses, or else those of its root document. The document as written is kept beside a rewritten
+        one for the targets that serve it.
+        """
+        if not self.use_single_value_enum_as_const:
+            return document
+        features = self.__dict__.get("schema_features") or self._schema_features_for(root or document)
+        if not features.const_support:
+            return document
+        read = cast("dict[str, YamlValue]", _single_value_enum_as_const(document, self._named_entry_maps))
+        if read is not document:
+            self._documents_as_written[id(read)] = read, document
+        return read
+
+    def _document_as_written(self, document: dict[str, YamlValue]) -> dict[str, YamlValue]:
+        """Return a document as written, before --use-single-value-enum-as-const read its single-value enums."""
+        entry = self._documents_as_written.get(id(document))
+        return entry[1] if entry is not None and entry[0] is document else document
+
     def _load_ref_data_from_path(self, path: Path) -> dict[str, YamlValue]:
         """Load one referenced path and contextualize only its decode failures."""
         try:
-            return load_data_from_path(path, self.encoding)
+            return self._read_document(load_data_from_path(path, self.encoding), self.raw_obj)
         except (json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
             raise InvalidFileFormatError(exc, self._input_file_type, source=path) from exc
 
     def _load_ref_data_from_text(self, text: str, source: str) -> dict[str, YamlValue]:
         """Decode one referenced text body and contextualize only that operation."""
         try:
-            return load_data(text)
+            return self._read_document(load_data(text), self.raw_obj)
         except (json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
             raise InvalidFileFormatError(exc, self._input_file_type, source=source) from exc
 
@@ -11973,7 +12074,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         except (UnicodeDecodeError, json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
             raise InvalidFileFormatError(exc, self._input_file_type, source=path) from exc
         if isinstance(result, dict):
-            return result
+            return self._read_document(result, self.raw_obj)
         msg = f"Expected dict, got {type(result).__name__}"
         raise InvalidFileFormatError(TypeError(msg), self._input_file_type, source=path)
 
@@ -12919,7 +13020,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Load a source into a schema dictionary."""
         if source.raw_data is None:
             try:
-                return load_data(source.text)
+                return self._read_document(load_data(source.text))
             except (json.JSONDecodeError, *get_yaml_parse_errors()) as exc:
                 source_path = self._source_path_for_diagnostics(source.path)
                 raise InvalidFileFormatError(exc, self._input_file_type, source=source_path) from exc
@@ -12929,7 +13030,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 source_path = self._source_path_for_diagnostics(source.path)
                 raise InvalidFileFormatError(exc, self._input_file_type, source=source_path) from exc
         if isinstance(source.raw_data, dict):
-            return {**source.raw_data}
+            return self._read_document({**source.raw_data})
 
         msg = f"Expected dict, got {type(source.raw_data).__name__}"
         error = TypeError(msg)

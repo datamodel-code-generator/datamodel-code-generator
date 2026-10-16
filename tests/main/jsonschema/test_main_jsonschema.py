@@ -8869,6 +8869,138 @@ def test_main_jsonschema_oneof_const_enum_literal(output_file: Path) -> None:
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-single-value-enum-as-const"],
+    option_description="""Treat `enum` with a single value as `const` with that value.
+
+JSON Schema defines `{"enum": ["low"]}` as equal to `{"const": "low"}`. With
+`--use-single-value-enum-as-const`, each schema in the JSON Schema, OpenAPI and AsyncAPI documents
+whose `enum` lists one value is read as that `const`, so the output is the same as for the documents
+written with `const`, while the enums that allOf intersections leave stay enums:
+oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented unit variants,
+become one Enum with branch titles as member names, and a schema with one enum value is typed
+`Literal[...]` instead of a one-member Enum. Instance data such as `default` and `examples`,
+extension values (`x-...` except `x-propertyNames`), links and servers stay as written, so a schema
+kept under an extension key, such as one referenced as `headers.yaml#/x-rate`, is read as written too.
+A document parsed with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol
+Buffers, XML Schema and GraphQL inputs are not changed.""",
+    input_schema="jsonschema/single_value_enum_as_const/schema.json",
+    cli_args=["--use-single-value-enum-as-const"],
+    model_outputs={
+        "pydantic_v2": "main/jsonschema/single_value_enum_as_const/pydantic_v2.py",
+        "msgspec": "main/jsonschema/single_value_enum_as_const/msgspec.py",
+    },
+)
+def test_main_jsonschema_single_value_enum_as_const(output_file: Path) -> None:
+    """Treat `enum` with a single value as `const` with that value.
+
+    JSON Schema defines `{"enum": ["low"]}` as equal to `{"const": "low"}`. With
+    `--use-single-value-enum-as-const`, each schema in the JSON Schema, OpenAPI and AsyncAPI documents
+    whose `enum` lists one value is read as that `const`, so the output is the same as for the documents
+    written with `const`, while the enums that allOf intersections leave stay enums:
+    oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented unit variants,
+    become one Enum with branch titles as member names, and a schema with one enum value is typed
+    `Literal[...]` instead of a one-member Enum. Instance data such as `default` and `examples`,
+    extension values (`x-...` except `x-propertyNames`), links and servers stay as written, so a schema
+    kept under an extension key, such as one referenced as `headers.yaml#/x-rate`, is read as written too.
+    A document parsed with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol
+    Buffers, XML Schema and GraphQL inputs are not changed.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "schema.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="single_value_enum_as_const/pydantic_v2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-single-value-enum-as-const",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "output_model", "extra_args", "expected_file"),
+    [
+        pytest.param(
+            "single_value_enum_as_const/schema.json",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const"],
+            "single_value_enum_as_const/msgspec.py",
+            id="msgspec",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/schema.json",
+            "pydantic_v2.BaseModel",
+            [],
+            "single_value_enum_as_const/pydantic_v2.py",
+            id="written-as-const-pydantic-v2",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/schema.json",
+            "msgspec.Struct",
+            [],
+            "single_value_enum_as_const/msgspec.py",
+            id="written-as-const-msgspec",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/schema.json",
+            "pydantic_v2.BaseModel",
+            ["--field-extra-keys", "x-meta", "--model-extra-keys", "x-meta", "--use-single-value-enum-as-const"],
+            "single_value_enum_as_const/extension_data.py",
+            id="extension-data",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/schema.json",
+            "pydantic_v2.BaseModel",
+            ["--field-extra-keys", "x-meta", "--model-extra-keys", "x-meta"],
+            "single_value_enum_as_const/extension_data.py",
+            id="written-as-const-extension-data",
+        ),
+    ],
+)
+def test_main_jsonschema_single_value_enum_as_const_matches_const(
+    input_path: str, output_model: str, extra_args: list[str], expected_file: str, output_file: Path
+) -> None:
+    """Generate the same models as for the schemas written with const, keeping extension data as written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_jsonschema_single_value_enum_as_const_keeps_draft_04(extra_args: list[str], output_file: Path) -> None:
+    """Keep the single-value enums of a draft-04 document, which has no const, as enums."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "draft_04.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="single_value_enum_as_const/draft_04.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_jsonschema_single_value_enum_as_const_mixed_drafts(extra_args: list[str], output_dir: Path) -> None:
+    """Keep a draft-07 file as written when the directory's models are parsed with an earlier draft-04 file's draft."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "mixed_drafts",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "single_value_enum_as_const" / "mixed_drafts",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
 def test_main_jsonschema_enum_complex_values_literal(output_file: Path) -> None:
     """Test complex enum values with --enum-field-as-literal all use type-safe fallbacks."""
     run_main_and_assert(

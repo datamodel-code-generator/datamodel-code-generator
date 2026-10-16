@@ -50,6 +50,7 @@
 - `--use-object-type`: Use object instead of Any for unspecified object and array values.
 - `--use-pendulum`: Use pendulum types for date, time, and duration fields.
 - `--use-root-model-type-alias`: Generate RootModel as type alias format for better mypy support.
+- `--use-single-value-enum-as-const`: Treat `enum` with a single value as `const` with that value.
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.

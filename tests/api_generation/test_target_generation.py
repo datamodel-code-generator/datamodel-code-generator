@@ -60,6 +60,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "local-references",
         "nullable-map-layout",
         "nullable-map-class-keys",
+        "single-value-enum-as-const",
     ],
 )
 def test_target_render(

@@ -58,6 +58,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-object-type`](typing-customization.md#use-object-type) | Use object instead of Any for unspecified object and array values. |
 | [`--use-pendulum`](typing-customization.md#use-pendulum) | Use pendulum types for date, time, and duration fields. |
 | [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias) | Generate RootModel as type alias format for better mypy support. |
+| [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const) | Treat `enum` with a single value as `const` with that value. |
 | [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) | Generate StrEnum/IntEnum for string/integer enums (Python 3.11+). |
 | [`--use-standard-collections`](typing-customization.md#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) | Use Python standard library types for string formats instead of str. |
@@ -493,6 +494,7 @@ All options sorted alphabetically:
 - [`--use-serialization-alias`](field-customization.md#use-serialization-alias) - Use serialization_alias instead of alias for field aliasing ...
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any) - Wrap fields with subtypes in Pydantic's SerializeAsAny.
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring) - Emit short docstrings on a single line.
+- [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const) - Treat `enum` with a single value as `const` with that value.
 - [`--use-specialized-enum`](typing-customization.md#use-specialized-enum) - Generate StrEnum/IntEnum for string/integer enums (Python 3....
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections) - Use built-in dict/list instead of typing.Dict/List.
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) - Use Python standard library types for string formats instead...

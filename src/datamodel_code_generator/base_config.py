@@ -237,6 +237,7 @@ class BaseGenerateConfig(BaseModel):
     use_msgspec_tagged_unions: bool = False
     use_msgspec_nullable_enum_alias: bool = False
     use_typed_nullable_map_values: bool = False
+    use_single_value_enum_as_const: bool = False
     set_default_enum_member: bool = False
     use_subclass_enum: bool = False
     use_specialized_enum: bool = True

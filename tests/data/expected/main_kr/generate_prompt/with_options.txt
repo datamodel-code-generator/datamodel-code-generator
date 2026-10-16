@@ -56,6 +56,7 @@ What other options should I use?
 - `--use-object-type`: Use object instead of Any for unspecified object and array values.
 - `--use-pendulum`: Use pendulum types for date, time, and duration fields.
 - `--use-root-model-type-alias`: Generate RootModel as type alias format for better mypy support.
+- `--use-single-value-enum-as-const`: Treat `enum` with a single value as `const` with that value.
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.
@@ -500,6 +501,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
+  --use-single-value-enum-as-const
+                        Treat `enum` with a single value as `const` with that
+                        value, which JSON Schema defines as equal: oneOf/anyOf
+                        branches such as {"type": "string", "enum": ["low"]}
+                        merge into one Enum as const branches do, and a schema
+                        with one enum value is typed Literal[...] instead of a
+                        one-member Enum
   --use-specialized-enum, --no-use-specialized-enum
                         Use specialized Enum class (StrEnum, IntEnum).
                         Requires --target-python-version 3.11+

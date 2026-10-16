@@ -1,0 +1,33 @@
+asyncapi: 3.0.0
+info:
+  title: Runs
+  version: 1.0.0
+servers:
+  production:
+    host: '{region}.example.com'
+    protocol: mqtt
+    variables:
+      region: {default: us, enum: [us]}
+channels:
+  runs:
+    address: runs
+    messages:
+      default:
+        headers:
+          type: object
+          properties:
+            default: {type: string, enum: [trace]}
+        payload:
+          type: object
+          properties:
+            kind: {type: string, enum: [run]}
+          required: [kind]
+      examples:
+        payload:
+          oneOf:
+            - {type: string, enum: [queued], description: Waiting to start.}
+            - {type: string, enum: [running], description: Running now.}
+operations:
+  default:
+    action: receive
+    channel: {$ref: '#/channels/runs'}

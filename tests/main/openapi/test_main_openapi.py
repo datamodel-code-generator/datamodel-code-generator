@@ -3731,6 +3731,49 @@ def test_main_openapi_enum_models_as_literal_one(min_version: str, output_file: 
     )
 
 
+@pytest.mark.parametrize(
+    ("input_path", "extra_args"),
+    [
+        pytest.param("single_value_enum_as_const/api.yaml", ["--use-single-value-enum-as-const"], id="enum"),
+        pytest.param("single_value_enum_as_const/written_as_const/api.yaml", [], id="written-as-const"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("scopes", "expected_file"),
+    [
+        pytest.param(
+            ["schemas", "paths", "parameters"], "single_value_enum_as_const.py", id="schemas-paths-parameters"
+        ),
+        pytest.param(["api"], "single_value_enum_as_const_api.py", id="api"),
+    ],
+)
+def test_main_openapi_single_value_enum_as_const(
+    input_path: str, extra_args: list[str], scopes: list[str], expected_file: str, output_file: Path
+) -> None:
+    """Read the single-value enums of schemas, headers, webhooks and callbacks as the const they equal.
+
+    Entries named like keywords, such as the default response, a header named server or a webhook named default,
+    are read as entries, while server variables, link parameters and a header kept under an extension key of a
+    referenced document stay as written.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--openapi-scopes",
+            *scopes,
+            *extra_args,
+        ],
+    )
+
+
 @pytest.mark.skipif(
     version.parse(pydantic.VERSION) < version.parse("1.9.0"),
     reason="Require Pydantic version 1.9.0 or later ",

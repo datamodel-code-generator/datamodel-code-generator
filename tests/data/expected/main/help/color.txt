@@ -246,6 +246,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
+  --use-single-value-enum-as-const
+                        Treat `enum` with a single value as `const` with that
+                        value, which JSON Schema defines as equal: oneOf/anyOf
+                        branches such as {"type": "string", "enum": ["low"]}
+                        merge into one Enum as const branches do, and a schema
+                        with one enum value is typed Literal[...] instead of a
+                        one-member Enum
   --use-specialized-enum, --no-use-specialized-enum
                         Use specialized Enum class (StrEnum, IntEnum).
                         Requires --target-python-version 3.11+

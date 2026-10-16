@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info:
+  title: Servers
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+security:
+  - enum: [read]
+paths:
+  /regional:
+    get:
+      operationId: getRegional
+      security:
+        - enum: [read]
+      servers:
+        - url: https://{zone}.example.com
+          variables:
+            zone: {default: east, enum: [east]}
+      parameters:
+        - name: order
+          in: query
+          schema: {type: string, enum: [newest]}
+      responses:
+        '204':
+          description: Up.
+components:
+  securitySchemes:
+    enum:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            read: Read access
