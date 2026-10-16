@@ -3540,18 +3540,26 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _validate_schema_python_import_path(f"{module}.{type_name}", "x-python-import")
         )
 
-    def _get_x_python_runtime_symbol(  # ruff: ignore[no-self-use]
-        self, x_python_import: dict[str, Any]
-    ) -> PythonTypeRuntimeSymbol | None:
-        """Retain nested runtime module boundaries; snooper requires an instance method."""
-        if (qualname := x_python_import.get("qualname")) is None:
-            return None
+    def _get_target_runtime_symbol(self, module: str, qualname: str) -> PythonTypeRuntimeSymbol:
+        """Bind ``module.qualname`` through ``import module``, which import overrides cannot move.
+
+        The type the target must have is therefore checked here rather than in the emitted imports.
+        """
         from datamodel_code_generator._python_type_annotation import (  # ruff: ignore[import-outside-top-level]
             PythonTypeRuntimeSymbol,
         )
 
-        qualname = _validate_schema_python_import_path(qualname, "x-python-import qualname")
-        return PythonTypeRuntimeSymbol(x_python_import["module"], tuple(qualname.split(".")))
+        parts = tuple(qualname.split("."))
+        self._get_target_python_type_path(f"{module}.{parts[0]}")
+        return PythonTypeRuntimeSymbol(module, parts)
+
+    def _get_x_python_runtime_symbol(self, x_python_import: dict[str, Any]) -> PythonTypeRuntimeSymbol | None:
+        """Retain nested runtime module boundaries."""
+        if (qualname := x_python_import.get("qualname")) is None:
+            return None
+        return self._get_target_runtime_symbol(
+            x_python_import["module"], _validate_schema_python_import_path(qualname, "x-python-import qualname")
+        )
 
     def _get_x_python_import_expression(
         self, x_python_import: dict[str, Any], resolved_ref: str
@@ -3567,10 +3575,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if path:
             from datamodel_code_generator._python_type_annotation import (  # ruff: ignore[import-outside-top-level]
                 PythonTypeModelField,
-                PythonTypeRuntimeSymbol,
             )
 
-            expression: PythonTypeExpr = PythonTypeRuntimeSymbol(path["module"], tuple(path["qualname"].split(".")))
+            expression: PythonTypeExpr = self._get_target_runtime_symbol(path["module"], path["qualname"])
             for field in path["fields"]:
                 expression = PythonTypeModelField(
                     expression, field["name"], tuple(field["arguments"]), field["pydantic"]

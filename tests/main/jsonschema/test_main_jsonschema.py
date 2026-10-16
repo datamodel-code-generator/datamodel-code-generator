@@ -19746,6 +19746,18 @@ def test_schema_import_paths_for_target(output_file: Path, target_python_version
             "pathlib.types.PathInfo is unavailable for target Python 3.13",
             id="x-python-import",
         ),
+        pytest.param(
+            "x_python_import_qualname_unavailable.json",
+            "3.10",
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="x-python-import-qualname",
+        ),
+        pytest.param(
+            "x_python_import_native_field_unavailable.json",
+            "3.10",
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="x-python-import-native-field",
+        ),
     ],
 )
 def test_schema_import_paths_reject_types_unavailable_for_target(
