@@ -17,7 +17,7 @@ STDLIB_MODULE_NAMES: Final[dict[str, tuple[int, int]]] = {
     "_abc": (0, 6),
     "_aix_support": (0, 6),
     "_android_support": (3, 6),
-    "_apple_support": (4, 6),
+    "_apple_support": (3, 6),
     "_ast": (0, 6),
     "_ast_unparse": (4, 6),
     "_asyncio": (0, 6),

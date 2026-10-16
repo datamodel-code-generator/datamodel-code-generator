@@ -10,8 +10,9 @@ and `src/datamodel_code_generator/_target_stdlib_data.py`.
     python scripts/build_target_python_tables.py --check [--python ...]
     python scripts/build_target_python_tables.py --check-interpreter
 
-Interpreters not given with `--python` are found with `uv python find --managed-python`. `--check` reports a module
-that differs from what the interpreters answer; `--check-interpreter` checks the tables of the running interpreter's
+Interpreters not given with `--python` are found with `uv python find --managed-python`. Give the newest patch release
+of each version, which CI runs: a patch release can add standard library modules. `--check` reports a module that
+differs from what the interpreters answer; `--check-interpreter` checks the tables of the running interpreter's
 version against the running interpreter alone, including the rules that rebuild case mappings and normalization from
 the tables.
 """
