@@ -138,8 +138,9 @@ def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
 def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tmp_path: Path) -> None:
     """Invalid caller input exits the real shell step before any API or credential use.
 
-    The step runs in the C.UTF-8 locale of the Ubuntu runner, where ``[0-9]`` matches ASCII digits only, and
-    without the runner's variables, so a step that accepted the input would stop before reaching the API.
+    The test runs the step with ``LC_ALL=C``, where ``[0-9]`` matches ASCII digits only as in the C.UTF-8 locale of
+    the Ubuntu runner, and without the runner's variables, so a step that accepted the input would stop before
+    reaching the API.
     """
     root = Path(__file__).parents[1]
     workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
