@@ -9273,6 +9273,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._finalize_required_inherited_field(field)
         self._apply_final_class_field_aliases(fields, reference.name, original_class_name)
         if extra_field is not None:
+            extra_field.target_python_version = self.target_python_version
             fields.insert(0, extra_field)
         self._set_schema_metadata(reference.path, obj)
         self.set_schema_extensions(reference.path, obj)
@@ -10037,18 +10038,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else None
         )
 
-        if (
-            field := self.data_model_type.create_typed_extra_field(
-                field_model=self.data_model_field_type,
-                data_type=self.data_type(
-                    data_types=[extra_value_type],
-                    is_dict=True,
-                    dict_key=dict_key,
-                ),
-            )
-        ) is not None:
-            field.target_python_version = self.target_python_version
-        return field
+        return self.data_model_type.create_typed_extra_field(
+            field_model=self.data_model_field_type,
+            data_type=self.data_type(
+                data_types=[extra_value_type],
+                is_dict=True,
+                dict_key=dict_key,
+            ),
+        )
 
     @cached_property
     def _nested_constrained_model_type(self) -> type[DataModel]:
@@ -10363,6 +10360,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         has_declared_fields = bool(fields)
         if has_declared_fields and (extra_field := self._get_typed_additional_properties_field(class_name, obj, path)):
+            extra_field.target_python_version = self.target_python_version
             fields.insert(0, extra_field)
         should_parse_dict_root = not has_declared_fields and (
             isinstance(obj.additionalProperties, JsonSchemaObject) or self._should_parse_empty_object_as_dict(obj)
