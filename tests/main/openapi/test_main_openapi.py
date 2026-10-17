@@ -1084,6 +1084,39 @@ def test_main_openapi_msgspec_nullable_enum(
     )
 
 
+@pytest.mark.parametrize("stem", ["default", "collapse_root_models"])
+def test_main_openapi_msgspec_enum_unions(stem: str, output_file: Path) -> None:
+    """Report each msgspec union that holds an Enum beside another member of its JSON type, and keep the output.
+
+    msgspec decodes a union only if it holds an Enum of str values as its one str-like member and an Enum of int
+    values as its one int-like member, so the `Level1 | Level2` of a `oneOf` of single-value enums cannot be decoded.
+    A union that names an alias msgspec refuses on its own is reported by that alias; Literal values beside str, an
+    int Enum beside a str Enum and members of other types decode.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "msgspec_enum_unions.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / "msgspec_enum_unions" / f"{stem}.py",
+            extra_args=[
+                *("--output-model-type", "msgspec.Struct", "--formatters", "builtin"),
+                *("--target-python-version", "3.10", "--disable-timestamp"),
+                *(["--collapse-root-models"] if stem == "collapse_root_models" else []),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_OPENAPI_PATH / "msgspec_enum_unions" / f"{stem}_warnings.txt",
+    )
+
+
 @pytest.mark.parametrize("extra_args", [[], ["--use-msgspec-nullable-enum-alias"]], ids=["default", "alias"])
 def test_main_openapi_nullable_enum_alias_ignored_by_pydantic(extra_args: list[str], output_file: Path) -> None:
     """Write the same Pydantic models for an enum that lists null with and without --use-msgspec-nullable-enum-alias."""
