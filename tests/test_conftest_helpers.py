@@ -832,6 +832,19 @@ def test_stored_path_of_another_drive(tmp_path: Path, monkeypatch: pytest.Monkey
     assert units.RefsIndex(tmp_path).stored_path(tmp_path / "x.txt") == tmp_path / "x.txt"
 
 
+def test_ledger_repairs_a_label_listed_twice_that_is_no_longer_compared(ledger: LedgerProject) -> None:
+    """A creating run drops both lines a merge left for a label the test no longer compares."""
+    ledger.write("test_m.py", ONE_TEST)
+    ledger.store("m/a.txt", "x\n")
+    ledger.store("m/old.txt", "o\n")
+    ledger.store("m/b.txt", "o\n")
+    (ledger.suite / "test_m.refs").write_text(
+        HEADER + "[test_a]\n\tm/a.txt\n\tm/old.txt\n\tm/old.txt\t= m/b.txt\n", encoding="utf-8"
+    )
+    ledger.run("suite").assert_outcomes(passed=1)
+    assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n"
+
+
 def test_format_refs_writes_each_line_once() -> None:
     """A test comparing one label several times records one line for it."""
     line = units.RefLine("test_p", "case", "../shared.txt")
@@ -1833,8 +1846,8 @@ def test_fix_expected_from_ci_and_all_environments(
             case ["tox", "run", "-e", _]:
                 addopts = str(kwargs["env"]["PYTEST_ADDOPTS"])  # type: ignore[index]
                 command = [sys.executable, "-m", "pytest", *addopts.split(), "suite"]
-            case [_, *arguments]:
-                command = [sys.executable, *arguments]
+            case _:
+                command = [sys.executable, *command[1:]]
         if result is None:
             return real_run(command, **kwargs)
         return subprocess.CompletedProcess(command, result[0], stdout=result[1])
@@ -2390,6 +2403,11 @@ def test_ledger_payload_from_this_environment_is_refused(
     assert "this environment is yours, run: pytest suite/test_m.py --inline-snapshot=fix" in (
         ledger.run(f"--expected-apply={apply_file}", "suite").stderr.str()
     )
+    assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
+    skipping = json.loads(apply_file.read_text()) | {"skip_rejected": True}
+    apply_file.write_text(json.dumps(skipping))
+    skipped = ledger.run(f"--expected-apply={apply_file}", "suite").stdout.str()
+    assert "expected: skipped a payload: it comes from this environment" in skipped
     assert (ledger.refs(), ledger.files()) == (HEADER + "[test_a]\n\tm/a.txt\n", {"m/a.txt": "x\n"})
     assert _fix_expected(ledger, monkeypatch, "--apply", _foreign(payload)) == 0
     predicate = units.payload_predicate(foreign := _other_platform(local), local)
