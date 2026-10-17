@@ -183,6 +183,7 @@
 20261017-practical-314-formatters97	main/formatter_policy/practical-314-black.py
 20261017-practical-314-formatters98	main/formatter_policy/no_warning.txt
 20261017-practical-314-formatters98	main/formatter_policy/practical-314-ruff-check.py
+20261017-practical-315-formatters100	main/formatter_policy/practical-315-black.py
 20261017-practical-315-formatters101	main/formatter_policy/no_warning.txt
 20261017-practical-315-formatters101	main/formatter_policy/practical-315-ruff-check.py
 20261017-practical-315-formatters99	main/formatter_policy/no_warning.txt
@@ -219,6 +220,7 @@
 20261017-standard-314-formatters80	main/formatter_policy/standard-314-ruff-check.py
 20261017-standard-315-formatters81	main/formatter_policy/no_warning.txt
 20261017-standard-315-formatters81	main/formatter_policy/standard-315-builtin.py
+20261017-standard-315-formatters82	main/formatter_policy/standard-315-black.py
 20261017-standard-315-formatters83	main/formatter_policy/no_warning.txt
 20261017-standard-315-formatters83	main/formatter_policy/standard-315-ruff-check.py
 [test_check_directory_extra_file]
