@@ -1,0 +1,3 @@
+--type-overrides writes Decimal in place of conint(ge=0); NumberConstraintsOnDeclaredNumbers.amount is generated without this constraint.
+--type-overrides writes date in place of conint(ge=0); NumberConstraintsOnDeclaredNumbers.stamp is generated without this constraint.
+--type-overrides writes Any in place of conint(ge=0); NumberConstraintsOnDeclaredNumbers.held is generated without this constraint.

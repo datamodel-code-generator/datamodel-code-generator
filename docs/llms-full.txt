@@ -7691,6 +7691,12 @@ class Config(TypedDict):
 
 !!! tip "Fully Qualified Paths"
     You can also use fully qualified paths in `x-python-type` (e.g., `collections.defaultdict`), which are always resolved correctly regardless of the static mapping.
+    A dotted value of a `Literal` of three names or more, such as `Literal[http.HTTPStatus.OK]`, is a member, such as an
+    enum member, of what the names before it import: `from http import HTTPStatus` and `HTTPStatus.OK`, or the
+    submodule `client` of `Literal[http.client.OK]`. A msgspec `Literal` holds only None, bool, int and str values, so
+    msgspec cannot decode an enum member there, an `IntEnum` member included, while it decodes a plain constant such as
+    `Literal[http.client.HTTP_PORT]`. `msgspec.Struct` output warns about an enum member that `--input-model` or
+    `x-python-import` symbols transport, and conditionally about a dotted value, which may be either.
 
 ---
 
@@ -9086,6 +9092,12 @@ Generates Pydantic strict types that don't perform type coercion during validati
 | `bool` | `StrictBool` | Strings, integers |
 | `bytes` | `StrictBytes` | Strings |
 
+A `format: byte` string stays `Base64Str`, or `Base64Bytes` with `--type-mappings string+byte=binary`, which decode
+base64 text, also with `--strict-types str` or `bytes`. With `minLength` or `maxLength`, such bytes are written as
+`Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]`, which checks the lengths on the base64
+text, as JSON Schema counts them, before decoding it. Pydantic checks them so from 2.10 on, and an explicit
+`--target-pydantic-version 2` warns about each such field.
+
 ### Without `--strict-types`
 
 ```python
@@ -10118,6 +10130,15 @@ No errors! 🎉
 **The schema holds a number.** The schema type is `number` or `integer`, or the type and format map to a number type
 (`string` with `decimal`, `integer` or `unixtime`, or a format that `--type-mappings` maps to one). All five keywords
 are written, as `con*` types by default and as `Field()` arguments with `--field-constraints` or `--use-annotated`.
+Pydantic models and dataclasses write such a `Field()` argument only when a number value of the Python type written
+for the field meets it: the type takes the keyword, as the Pydantic column of the table below lists, a member of a
+union or a value of a `Literal` (also of a `const` or `enum`) does, or the type has numbers among its values, as
+`bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag` and the number protocols of `typing` do. Pydantic cannot
+build or validate a field whose `Field()` holds any other, so a keyword they leave out, such as `minimum` on the `str`
+of `{"type": "integer", "x-python-type": "str", "minimum": 0}` or `multipleOf` on the `time` of format `time`, is named
+with its field in a warning. A `--type-overrides` builtin or standard-library class replaces the `con*` type of a field
+without its arguments, which such a class does not take, and names them in the same warning; another override, such as
+`pydantic.conint` or a factory of your own, keeps them.
 
 **The Python type written for the field takes the keyword**, whatever the schema type is: a string format such as
 `duration`, `date-time` or `time`, `x-python-type`, `customTypePath`, `--type-overrides`. A schema without `type` is
@@ -10147,15 +10168,18 @@ integer the `float` members admit.
 |-------------|----------|---------|
 | `int`, `float` | all five keywords | all five keywords |
 | `Decimal` | all five keywords | none |
-| `timedelta` | the four bounds, read as seconds | none |
+| `timedelta` | the four bounds, read as seconds; `multipleOf` too for a number schema with an explicit `--target-pydantic-version 2.14` | none |
 | `datetime`, `AwareDatetime`, `NaiveDatetime`, `PastDatetime`, `FutureDatetime` | the four bounds, read as seconds since the Unix epoch | none |
 | `time` | the four bounds, read as seconds since midnight | none |
 | a type the generator does not know (`fractions.Fraction`, a class of your own) or a model that the schema references | all five keywords | all five keywords |
-| any other known type: `str`, `bytes`, `bool`, `None`, `date`, `UUID`, `Any`, `object`, paths, IP addresses, lists, dicts and other containers | none | none |
+| `bool`, `Any`, `object`, `Hashable`, `IntEnum`, `IntFlag`, the number protocols `SupportsAbs`, `SupportsComplex`, `SupportsFloat`, `SupportsIndex`, `SupportsInt` and `SupportsRound` of `typing` | all five keywords for a schema that holds a number, none otherwise | none |
+| any other known type: `str`, `bytes`, `None`, `date`, `UUID`, paths, IP addresses, lists, dicts and other containers | none | none |
 
-`multipleOf` is not written on `timedelta`, `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field,
-and later versions ignore the keyword or fail on valid values. A `date` takes no number keyword in any Pydantic
-version. `msgspec` accepts number constraints on `int` and `float` only, so a type the generator does not know has to
+`multipleOf` is not written on `datetime` and `time`: Pydantic 2.0 to 2.10 cannot build such a field, 2.11 to 2.13
+ignore the keyword and 2.14 fails on valid values. On `timedelta` Pydantic 2.0 to 2.10 cannot build it either and
+2.11 to 2.13 ignore it, while 2.14 checks it on the seconds, so a number schema writes `multipleOf` on a `timedelta`
+only with an explicit `--target-pydantic-version 2.14`; otherwise it is left out with the warning, which names that
+option. A `date` takes no number keyword in any Pydantic version. `msgspec` accepts number constraints on `int` and `float` only, so a type the generator does not know has to
 be one of them at runtime, for example a `NewType` of `int`.
 Pydantic 2.11 cannot build a `time` field that has a number bound; use Pydantic 2.12 or later for such schemas.
 
@@ -10164,9 +10188,10 @@ generator itself imports; its row above decides. A name the target does not have
 target below 3.15, is read as a type the generator does not know. A `typing` alias or an abstract collection is read as the class it stands for (`typing.List`,
 `collections.abc.Sequence` and `collections.abc.Collection` as `list`), and `Annotated[T, ...]` or `Final[T]` as `T`;
 a `typing_extensions` name that `typing` also exports is read as the `typing` name. Any other `typing` or
-`collections.abc` name, such as `typing.SupportsInt` or `collections.abc.Callable`, is a known type that takes no
-number keyword. A union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the
-keywords in Pydantic models and `int | str` does not; `msgspec` writes no type-dependent keyword (number, string or
+`collections.abc` name, such as `collections.abc.Callable` or `typing.SupportsBytes`, is a known type that takes no
+number keyword; only the number protocols and `Hashable` of the table take them, for a schema that holds a number. A
+union keeps a keyword only when every member other than `None` takes it, so `int | None` keeps the keywords in Pydantic
+models and `int | str` does not; `msgspec` writes no type-dependent keyword (number, string or
 array) on an `x-python-type` union. A `Literal` is read like a union of the types of its values (`str`, `bytes`, `int`,
 `float` or `bool`, with the values of a nested `Literal` and without `None`), so `Literal[1, 2.5]` and
 `Literal[1, None]` keep the number keywords in Pydantic models, while `Literal["a", 1]` and `Literal[True, False]` keep
@@ -14884,8 +14909,9 @@ a `Decimal` field gets the float's value (`0.1000000000000000000000000001` becom
 JSON past pydantic's limits such as an integer of thousands of digits or deep nesting, answers `422` with
 `json_invalid`.
 
-A strict bytes type (`--strict-types bytes` with `format: byte` and `--type-mappings string+byte=binary`) cannot be a
-path, query, header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query, header, or cookie
+parameter, since a parameter carries text: generation stops with an error that names it. `format: byte` with
+`--type-mappings string+byte=binary` stays a `Base64Bytes`, which a parameter carries as base64 text.
 A path, query, header, or cookie parameter whose schema mixes scalar kinds keeps every member when one of them is a
 string, such as `int | str` for `type: [integer, string]`. Without a string member, such as `type: [integer, boolean]`,
 and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops with

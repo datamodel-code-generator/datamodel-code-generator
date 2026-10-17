@@ -572,7 +572,8 @@ model_options.add_argument(
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
     "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine; "
-    "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class).",
+    "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class; "
+    "a number schema keeps multipleOf on a timedelta).",
     choices=[v.value for v in TargetPydanticVersion],
     default=None,
 )

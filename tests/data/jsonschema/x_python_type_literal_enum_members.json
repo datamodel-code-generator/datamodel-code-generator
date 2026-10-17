@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "XPythonTypeLiteralEnumMembers",
+  "type": "object",
+  "required": [
+    "ok",
+    "success",
+    "maybe",
+    "client",
+    "bounded",
+    "port",
+    "accepted"
+  ],
+  "properties": {
+    "ok": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[http.HTTPStatus.OK]"
+    },
+    "success": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[http.HTTPStatus.OK, http.HTTPStatus.CREATED]"
+    },
+    "maybe": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "x-python-type": "typing.Literal[http.HTTPStatus.NO_CONTENT] | None"
+    },
+    "client": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[http.client.OK]"
+    },
+    "bounded": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[http.HTTPStatus.OK, http.HTTPStatus.CREATED]",
+      "minimum": 201
+    },
+    "port": {
+      "type": "integer",
+      "x-python-type": "typing.Literal[http.client.HTTP_PORT]"
+    },
+    "accepted": {
+      "$ref": "#/$defs/Accepted"
+    }
+  },
+  "$defs": {
+    "Accepted": {
+      "x-python-import": {
+        "module": "typing",
+        "name": "Literal",
+        "x-python-type": "typing.Literal[http.HTTPStatus.ACCEPTED]",
+        "symbols": {
+          "http.HTTPStatus.ACCEPTED": {
+            "module": "http",
+            "qualname": "HTTPStatus.ACCEPTED"
+          }
+        }
+      }
+    }
+  }
+}

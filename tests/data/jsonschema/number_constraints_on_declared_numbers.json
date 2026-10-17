@@ -1,0 +1,147 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NumberConstraintsOnDeclaredNumbers",
+  "type": "object",
+  "definitions": {
+    "Label": {
+      "type": "integer",
+      "x-python-type": "str",
+      "minimum": 0
+    },
+    "LabelOrFlag": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Label"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "label": {
+      "type": "integer",
+      "x-python-type": "str",
+      "minimum": 0
+    },
+    "shared_label": {
+      "$ref": "#/definitions/Label"
+    },
+    "label_or_flag": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/Label"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Label"
+      }
+    },
+    "sized_labels": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/definitions/Label"
+      }
+    },
+    "limited_choices": {
+      "type": "object",
+      "maxProperties": 3,
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Label"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      }
+    },
+    "label_or_flag_items": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Label"
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      }
+    },
+    "label_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Label"
+      }
+    },
+    "shared_label_or_flag": {
+      "$ref": "#/definitions/LabelOrFlag"
+    },
+    "day": {
+      "type": "number",
+      "format": "day",
+      "minimum": 0
+    },
+    "clock": {
+      "type": "number",
+      "format": "time",
+      "multipleOf": 2
+    },
+    "code": {
+      "type": "integer",
+      "x-python-type": "typing.Literal['a', 'b']",
+      "maximum": 5
+    },
+    "level": {
+      "type": "integer",
+      "const": 3,
+      "minimum": 0
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "amount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stamp": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "held": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "any_value": {
+      "type": "integer",
+      "x-python-type": "typing.Any",
+      "minimum": 0
+    },
+    "count_or_label": {
+      "type": "integer",
+      "x-python-type": "int | str",
+      "minimum": 0
+    },
+    "flag": {
+      "type": "integer",
+      "x-python-type": "bool",
+      "minimum": 1
+    },
+    "wait": {
+      "type": "number",
+      "x-python-type": "datetime.timedelta",
+      "multipleOf": 2
+    }
+  }
+}
