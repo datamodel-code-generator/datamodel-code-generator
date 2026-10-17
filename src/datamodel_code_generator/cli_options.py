@@ -479,6 +479,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--use-serialization-alias": CLIOptionMeta(name="--use-serialization-alias", category=OptionCategory.FIELD),
     "--use-title-as-name": CLIOptionMeta(name="--use-title-as-name", category=OptionCategory.FIELD),
     "--infer-union-variant-names": CLIOptionMeta(name="--infer-union-variant-names", category=OptionCategory.FIELD),
+    "--use-tag-as-union-variant-name": CLIOptionMeta(
+        name="--use-tag-as-union-variant-name", category=OptionCategory.FIELD
+    ),
     "--use-schema-description": CLIOptionMeta(name="--use-schema-description", category=OptionCategory.FIELD),
     "--use-field-description": CLIOptionMeta(name="--use-field-description", category=OptionCategory.FIELD),
     "--use-field-description-example": CLIOptionMeta(
@@ -576,6 +579,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--enum-field-as-literal": CLIOptionMeta(name="--enum-field-as-literal", category=OptionCategory.TYPING),
     "--enum-field-as-literal-map": CLIOptionMeta(name="--enum-field-as-literal-map", category=OptionCategory.TYPING),
     "--ignore-enum-constraints": CLIOptionMeta(name="--ignore-enum-constraints", category=OptionCategory.TYPING),
+    "--use-single-value-enum-as-const": CLIOptionMeta(
+        name="--use-single-value-enum-as-const", category=OptionCategory.TYPING
+    ),
     "--disable-future-imports": CLIOptionMeta(
         name="--disable-future-imports",
         category=OptionCategory.TYPING,

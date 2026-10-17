@@ -1775,6 +1775,26 @@ def test_main_invalid_dotted_schema_name_stdout(capsys: pytest.CaptureFixture[st
 
 
 @pytest.mark.isolate_builtin_formatter_config
+def test_main_invalid_dotted_schema_name_stdout_model_name_map_warnings(capsys: pytest.CaptureFixture[str]) -> None:
+    """Report a --model-name-map key that matches no model once, though stdout output parses the input again."""
+    with freeze_time(TIMESTAMP), warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "invalid_dotted_schema_name.yaml",
+            output_path=None,
+            input_file_type="openapi",
+            extra_args=["--model-name-map", '{"#/components/schemas/SaveTrifectaV2.2": "Trifecta"}'],
+            expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_stdout.py",
+            capsys=capsys,
+            assert_no_stderr=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_model_name_map_warnings.txt",
+    )
+
+
+@pytest.mark.isolate_builtin_formatter_config
 def test_main_collapse_root_models_recursive_invalid_dotted_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Carry the circular-root fallback into the invalid-dotted stdout repair."""
     expected_path = EXPECTED_OPENAPI_PATH / "collapse_root_models_recursive_invalid_dotted_stdout.py"
@@ -3729,6 +3749,49 @@ def test_main_openapi_enum_models_as_literal_one(min_version: str, output_file: 
         assert_func=assert_file_content,
         expected_file="enum_models/one.py",
         extra_args=["--enum-field-as-literal", "one", "--target-python-version", min_version],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "extra_args"),
+    [
+        pytest.param("single_value_enum_as_const/api.yaml", ["--use-single-value-enum-as-const"], id="enum"),
+        pytest.param("single_value_enum_as_const/written_as_const/api.yaml", [], id="written-as-const"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("scopes", "expected_file"),
+    [
+        pytest.param(
+            ["schemas", "paths", "parameters"], "single_value_enum_as_const.py", id="schemas-paths-parameters"
+        ),
+        pytest.param(["api"], "single_value_enum_as_const_api.py", id="api"),
+    ],
+)
+def test_main_openapi_single_value_enum_as_const(
+    input_path: str, extra_args: list[str], scopes: list[str], expected_file: str, output_file: Path
+) -> None:
+    """Read the single-value enums of schemas, headers, webhooks and callbacks as the const they equal.
+
+    Entries named like keywords, such as the default response, a header named server or a webhook named default,
+    are read as entries, while server variables, link parameters and a header kept under an extension key of a
+    referenced document stay as written.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--openapi-scopes",
+            *scopes,
+            *extra_args,
+        ],
     )
 
 

@@ -112,6 +112,7 @@ def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
                 "analyze_needs": analyze["needs"],
                 "analyze_if": analyze["if"],
                 "analyze_checkout": analysis_steps["Checkout repository"]["with"],
+                "analyze_verify_checkout": analysis_steps["Verify trusted checkout"],
                 "diff_env": analysis_steps["Prepare exact PR diff"]["env"],
                 "route": analysis_steps["Prepare release analysis route"]["run"],
                 "validator_pr": analysis_steps["Parse Claude output"]["env"]["PR_NUMBER"],
@@ -136,14 +137,19 @@ def test_manual_release_analysis_uses_validated_pr_outputs() -> None:
 )
 @pytest.mark.skipif(sys.platform == "win32", reason="The workflow shell step runs on Ubuntu, not WSL.")
 def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tmp_path: Path) -> None:
-    """Invalid caller input exits the real shell step before any API or credential use."""
+    """Invalid caller input exits the real shell step before any API or credential use.
+
+    The test runs the step with ``LC_ALL=C``, where ``[0-9]`` matches ASCII digits only as in the C.UTF-8 locale of
+    the Ubuntu runner, and without the runner's variables, so a step that accepted the input would stop before
+    reaching the API.
+    """
     root = Path(__file__).parents[1]
     workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
     step = workflow["jobs"]["resolve-pr"]["steps"][-1]
     result = subprocess.run(
         ["bash", "-c", step["run"]],
         cwd=tmp_path,
-        env={**os.environ, "REQUESTED_PR": requested_pr},
+        env={"PATH": os.environ["PATH"], "LC_ALL": "C", "REQUESTED_PR": requested_pr},
         capture_output=True,
         check=False,
         text=True,
@@ -160,4 +166,70 @@ def test_manual_release_analysis_rejects_unsafe_pr_numbers(requested_pr: str, tm
         )
         + "\n",
         root / "tests/data/expected/release_draft_workflow/invalid_pr_number.txt",
+    )
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="The workflow shell step runs on Ubuntu, not WSL.")
+def test_trusted_checkout_rejects_other_commits(tmp_path: Path) -> None:
+    """Both checkout jobs stop before repository scripts run unless HEAD is the workflow commit."""
+    root = Path(__file__).parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/release-draft.yaml").read_text(encoding="utf-8"))
+    environment = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "Test",
+        "GIT_AUTHOR_EMAIL": "test@example.com",
+        "GIT_COMMITTER_NAME": "Test",
+        "GIT_COMMITTER_EMAIL": "test@example.com",
+    }
+    repository = tmp_path / "repository"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    subprocess.run(["git", "init", "--quiet", repository], check=True, env=environment)
+    tree = subprocess.run(
+        ["git", "hash-object", "-w", "-t", "tree", "--stdin"],
+        input="",
+        cwd=repository,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    commits: dict[str, str] = {}
+    for name, parent in (("other", None), ("workflow", "other")):
+        commits[name] = subprocess.run(
+            ["git", "commit-tree", tree, *(["-p", commits[parent]] if parent else [])],
+            input=name + "\n",
+            cwd=repository,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    subprocess.run(["git", "update-ref", "HEAD", commits["workflow"]], cwd=repository, check=True)
+    cases = (
+        ("workflow", repository, commits["workflow"]),
+        ("other", repository, commits["other"]),
+        ("missing", repository, ""),
+        ("non_git", workspace, commits["workflow"]),
+    )
+    results = {}
+    for job in ("resolve-pr", "analyze"):
+        step = next(step for step in workflow["jobs"][job]["steps"] if step["name"] == "Verify trusted checkout")
+        for case, cwd, trusted_sha in cases:
+            result = subprocess.run(
+                ["bash", "-c", step["run"]],
+                cwd=cwd,
+                env={**os.environ, "TRUSTED_SHA": trusted_sha, "GIT_CEILING_DIRECTORIES": str(tmp_path)},
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            results[f"{job}/{case}"] = {
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "last_stderr_line": next(reversed(result.stderr.splitlines()), ""),
+            }
+    assert_output(
+        json.dumps(results, indent=2, sort_keys=True) + "\n",
+        root / "tests/data/expected/release_draft_workflow/trusted_checkout.txt",
     )

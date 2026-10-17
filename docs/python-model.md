@@ -332,6 +332,12 @@ class Config(TypedDict):
 
 !!! tip "Fully Qualified Paths"
     You can also use fully qualified paths in `x-python-type` (e.g., `collections.defaultdict`), which are always resolved correctly regardless of the static mapping.
+    A dotted value of a `Literal` of three names or more, such as `Literal[http.HTTPStatus.OK]`, is a member, such as an
+    enum member, of what the names before it import: `from http import HTTPStatus` and `HTTPStatus.OK`, or the
+    submodule `client` of `Literal[http.client.OK]`. A msgspec `Literal` holds only None, bool, int and str values, so
+    msgspec cannot decode an enum member there, an `IntEnum` member included, while it decodes a plain constant such as
+    `Literal[http.client.HTTP_PORT]`. `msgspec.Struct` output warns about an enum member that `--input-model` or
+    `x-python-import` symbols transport, and conditionally about a dotted value, which may be either.
 
 ---
 

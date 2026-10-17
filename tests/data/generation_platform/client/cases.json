@@ -457,6 +457,24 @@
       "server_base_url": "https://api.example.com/root/"
     }
   },
+  "servers-single-value-enum": {
+    "input": "single-value-enum-servers.yaml",
+    "model": {"use_single_value_enum_as_const": true},
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
   "default-server": {
     "input": "default-server.yaml",
     "config": {

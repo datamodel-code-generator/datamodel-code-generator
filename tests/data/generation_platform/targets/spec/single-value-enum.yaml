@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Runs
+  version: 1.0.0
+servers:
+  - url: https://{region}.example.com
+    variables:
+      region: {default: us, enum: [us]}
+paths:
+  /runs:
+    get:
+      operationId: listRuns
+      tags: [runs]
+      parameters:
+        - name: order
+          in: query
+          schema: {type: string, enum: [newest]}
+      responses:
+        "200":
+          description: Runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Run"
+components:
+  schemas:
+    Run:
+      type: object
+      properties:
+        kind: {type: string, enum: [run]}
+      required: [kind]

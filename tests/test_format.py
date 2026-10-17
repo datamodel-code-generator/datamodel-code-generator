@@ -75,6 +75,7 @@ BUILTIN_PEP695_INVALID_INPUT_PATH = Path(__file__).parent / "data" / "python" / 
 BUILTIN_PEP695_INVALID_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
     "pep695_invalid.txt" if sys.version_info[:2] >= (3, 12) else "pep695_invalid_legacy.txt"
 )
+BUILTIN_QUALIFIED_HEADS_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_qualified_heads.txt"
 
 
 def test_builtin_formatter_moved_names_are_reexported() -> None:
@@ -293,6 +294,7 @@ def test_builtin_generated_formatter_edge_cases() -> None:
         ("import-only", "import package\n", {}),
         ("import-class", "import package\n\n\nclass Model:\n    pass\n", {}),
         ("import-statement", "import package\n\nvalue = 1\n", {}),
+        ("qualified-heads", BUILTIN_QUALIFIED_HEADS_INPUT_PATH.read_text(encoding="utf-8"), {}),
     )
     formatted_cases = [
         f"[{name}]\n{builtin_formatter._apply_builtin_generated_formatter(source, **options)!r}"

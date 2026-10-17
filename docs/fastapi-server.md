@@ -159,7 +159,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
     input-file-type = "openapi"
     openapi-scopes = ["schemas", "api"]
     output-model-type = "pydantic_v2.BaseModel"
-    preset = "standard-py312-20261015"
+    preset = "standard-py312-20261017"
     output = "app/models.py"
     generate-server = "fastapi"
     server-output = "app/server"
@@ -182,7 +182,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261015 \
+      --preset standard-py312-20261017 \
       --output app/models.py \
       --generate-server fastapi \
       --server-output app/server \
@@ -1173,7 +1173,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261015",
+    preset="standard-py312-20261017",
     output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
     server_output=Path("app/server"),
@@ -1210,7 +1210,7 @@ models only.
 input-file-type = "openapi"
 output-model-type = "pydantic_v2.BaseModel"
 openapi-scopes = ["schemas", "api"]
-preset = "standard-py312-20261015"
+preset = "standard-py312-20261017"
 disable-timestamp = true
 
 [tool.datamodel-codegen.profiles.server]
@@ -1298,7 +1298,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --output app/server/models.py \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --openapi-scopes schemas api \
   --generate-server fastapi \
   --server-output app/server \
@@ -1496,8 +1496,9 @@ a `Decimal` field gets the float's value (`0.1000000000000000000000000001` becom
 JSON past pydantic's limits such as an integer of thousands of digits or deep nesting, answers `422` with
 `json_invalid`.
 
-A strict bytes type (`--strict-types bytes` with `format: byte` and `--type-mappings string+byte=binary`) cannot be a
-path, query, header, or cookie parameter, since a parameter carries text: generation stops with an error that names it.
+A strict bytes type (`--strict-types bytes` with `format: binary`) cannot be a path, query, header, or cookie
+parameter, since a parameter carries text: generation stops with an error that names it. `format: byte` with
+`--type-mappings string+byte=binary` stays a `Base64Bytes`, which a parameter carries as base64 text.
 A path, query, header, or cookie parameter whose schema mixes scalar kinds keeps every member when one of them is a
 string, such as `int | str` for `type: [integer, string]`. Without a string member, such as `type: [integer, boolean]`,
 and for an enum whose values mix kinds, such as `enum: [1, a]`, generation stops with
@@ -1726,7 +1727,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \

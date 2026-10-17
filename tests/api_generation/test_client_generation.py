@@ -66,6 +66,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "retry-security-context-conflicts",
         "media",
         "servers",
+        "servers-single-value-enum",
         "default-server",
         "implicit-server",
         "names",

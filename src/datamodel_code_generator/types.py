@@ -54,7 +54,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator.enums import DefaultValueType
+from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion, _is_pydantic_version_at_least
 from datamodel_code_generator.imports import (
     IMPORT_ABC_MAPPING,
     IMPORT_ABC_SEQUENCE,
@@ -1198,6 +1198,9 @@ class DataType(_BaseModel):
         """Return whether this DataType represents a union of multiple types."""
         return len(self.data_types) > 1
 
+    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = frozenset()
+    """Schema keywords that the type writes itself, which a field of the type leaves out of its constraints."""
+
     # Historical conversion policy retained for direct DataType users and
     # external subclasses. Output backends must declare their own policy.
     _CONSTRAINED_TYPE_TO_BASE: ClassVar[dict[str, str]] = {
@@ -1341,6 +1344,7 @@ _LITERAL_VALUE_TYPE_PATHS: Mapping[type, str] = MappingProxyType({
     bytes: "bytes",
     int: "int",
     float: "float",
+    bool: "bool",
 })
 _STANDARD_CLASS_PATHS: Mapping[str, str] = MappingProxyType({
     "typing.Text": "str",
@@ -1423,6 +1427,19 @@ class DataTypeManager(ABC):
         "typing.AnyStr": STRING_KEYWORDS,
     })
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
+    NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = frozenset({
+        "bool",
+        "object",
+        "typing.Any",
+        "typing.Hashable",
+        "collections.abc.Hashable",
+        "enum.IntEnum",
+        "enum.IntFlag",
+        *(f"typing.Supports{name}" for name in ("Abs", "Complex", "Float", "Index", "Int", "Round")),
+    })
+    """Known types that a number is a value of, which check the number keywords of a number schema on it."""
+    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[str, frozenset[str]]]] = MappingProxyType({})
+    """Number keywords a type takes from an explicit target version of the output model on, by the type's path."""
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = True
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = True
@@ -1527,30 +1544,71 @@ class DataTypeManager(ABC):
         return TYPE_DEPENDENT_KEYWORDS if data_type.reference else None
 
     @classmethod
-    def constraint_keywords(cls, data_type: DataType, target_version: tuple[int, int]) -> frozenset[str]:
-        """Return the type-dependent keywords that every member of an emitted type takes in this output model."""
+    def constraint_keywords(
+        cls,
+        data_type: DataType,
+        target_version: tuple[int, int],
+        *,
+        number_values: bool = False,
+        target_model_version: TargetPydanticVersion | str | None = None,
+    ) -> frozenset[str]:
+        """Return the type-dependent keywords that every member of an emitted type takes in this output model.
+
+        The ``Literal`` of a const or an enum takes none. With ``number_values`` the keywords that a number value of
+        the type meets are returned instead: those a member takes, as a number validates as that member, where the
+        ``Literal`` of a const or an enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number
+        keywords, and an explicit ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches.
+        """
         if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
             return keywords
         if data_type.data_types:
-            return frozenset.intersection(
-                *(cls.constraint_keywords(member, target_version) for member in data_type.data_types)
+            return (frozenset.union if number_values else frozenset.intersection)(
+                *(
+                    cls.constraint_keywords(
+                        member,
+                        target_version,
+                        number_values=number_values,
+                        target_model_version=target_model_version,
+                    )
+                    for member in data_type.data_types
+                )
+            )
+        if number_values and data_type.literals and not data_type.type and data_type.import_ is None:
+            return (
+                NUMBER_KEYWORDS
+                if cls.LITERALS_TAKE_CONSTRAINTS and any(type(value) is not str for value in data_type.literals)
+                else _NO_KEYWORDS
             )
         if data_type.python_type is None:
             import_ = data_type.import_
             return cls.type_constraint_keywords(
                 f"{import_.from_}.{import_.import_}" if import_ and import_.from_ else data_type.type or "",
                 target_version,
+                number_values=number_values,
+                target_model_version=target_model_version,
             )
-        return cls._annotation_constraint_keywords(data_type.python_type.expression, target_version)
+        return cls._annotation_constraint_keywords(
+            data_type.python_type.expression,
+            target_version,
+            number_values=number_values,
+            target_model_version=target_model_version,
+        )
 
     @classmethod
     def _annotation_constraint_keywords(
-        cls, expression: PythonTypeExpr, target_version: tuple[int, int]
+        cls,
+        expression: PythonTypeExpr,
+        target_version: tuple[int, int],
+        *,
+        number_values: bool = False,
+        target_model_version: TargetPydanticVersion | str | None = None,
     ) -> frozenset[str]:
         """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies.
 
         A ``Literal`` takes the keywords every value other than ``None`` takes as an instance of its type, where a
-        ``bool`` takes none and a nested ``Literal`` contributes its values.
+        ``bool`` takes none and a nested ``Literal`` contributes its values. With ``number_values`` a union and a
+        ``Literal`` take what one member or value takes, as for ``constraint_keywords``, where a value of a type the
+        generator cannot classify, such as an enum member, takes them all.
         """
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeBoundName,
@@ -1580,10 +1638,19 @@ class DataTypeManager(ABC):
             )
         elif base is not expression and path in _QUALIFIER_PATHS:
             members = python_type_expr_arguments(expression)[:1]
+        combine = frozenset.union if number_values else frozenset.intersection
         if members is not None:
             return (
-                frozenset.intersection(
-                    *(cls._annotation_constraint_keywords(member, target_version) for member in members)
+                combine(
+                    *(
+                        cls._annotation_constraint_keywords(
+                            member,
+                            target_version,
+                            number_values=number_values,
+                            target_model_version=target_model_version,
+                        )
+                        for member in members
+                    )
                 )
                 if members
                 else _NO_KEYWORDS
@@ -1593,7 +1660,14 @@ class DataTypeManager(ABC):
                 return _NO_KEYWORDS
             value_paths = set(cls._literal_value_paths(expression))
             return (
-                frozenset.intersection(*(cls.type_constraint_keywords(value, target_version) for value in value_paths))
+                combine(
+                    *(
+                        cls.type_constraint_keywords(value, target_version, number_values=number_values)
+                        if value or not number_values
+                        else TYPE_DEPENDENT_KEYWORDS
+                        for value in value_paths
+                    )
+                )
                 if value_paths
                 else _NO_KEYWORDS
             )
@@ -1604,7 +1678,9 @@ class DataTypeManager(ABC):
             and not any(isinstance(argument, PythonTypeEllipsis) for argument in python_type_expr_arguments(expression))
         ):
             return _NO_KEYWORDS
-        return cls.type_constraint_keywords(path, target_version)
+        return cls.type_constraint_keywords(
+            path, target_version, number_values=number_values, target_model_version=target_model_version
+        )
 
     @staticmethod
     def _literal_value_paths(expression: PythonTypeExpr) -> Iterator[str]:
@@ -1627,16 +1703,33 @@ class DataTypeManager(ABC):
                 )
 
     @classmethod
-    def type_constraint_keywords(cls, path: str, target_version: tuple[int, int]) -> frozenset[str]:
+    def type_constraint_keywords(
+        cls,
+        path: str,
+        target_version: tuple[int, int],
+        *,
+        number_values: bool = False,
+        target_model_version: TargetPydanticVersion | str | None = None,
+    ) -> frozenset[str]:
         """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
 
         The table lists the keywords that the output model enforces on a type across its supported versions.
         A typing alias or an abstract collection takes what the builtin or standard-library class it stands for takes.
         A known type is a Python builtin or a standard-library type of the import registry that the target has, or a
         type that the generator itself imports; a type the generator cannot classify keeps the keywords the schema
-        declares.
+        declares. With ``number_values`` a type of ``NUMBER_VALUE_TYPES`` takes the number keywords, and a type of
+        ``TARGET_NUMBER_KEYWORDS`` also those an explicit ``target_model_version`` reaches.
         """
         path = _standard_type_path(path, target_version)
+        if number_values:
+            if path in cls.NUMBER_VALUE_TYPES:
+                return NUMBER_KEYWORDS
+            if (
+                target_model_version is not None
+                and (added := cls.TARGET_NUMBER_KEYWORDS.get(path)) is not None
+                and _is_pydantic_version_at_least(target_model_version, added[0])
+            ):
+                return cls.CONSTRAINT_KEYWORDS.get(path, _NO_KEYWORDS) | added[1]
         if (keywords := cls.CONSTRAINT_KEYWORDS.get(path)) is not None:
             return keywords
         if not path or any(path in _import_paths(module) for module in cls.KNOWN_TYPE_IMPORTS):

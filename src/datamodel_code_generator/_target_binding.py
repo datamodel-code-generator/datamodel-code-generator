@@ -599,10 +599,11 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
         document = "/".join(path_parts)
         facts: list[tuple[str, FrozenLiteral]] = []
+        written = self._document_as_written(specification)
         for key in _DOCUMENT_FACTS:
-            if key in specification:
+            if key in written:
                 with suppress(_UnsupportedError):
-                    facts.append((key, _freeze_literal(specification[key], set())))
+                    facts.append((key, _freeze_literal(written[key], set())))
         self.document_facts[document] = tuple(facts)
         self._reader.versions.append(str(specification.get("openapi", "")))
         super()._parse_specification(specification, path_parts)
@@ -1387,7 +1388,7 @@ class _Hints:
         """Render one DataType without its containers and optionality, as the model's own type hint spells it.
 
         Its import, runtime-expression imports and enum class are slots. Statically, a constrained scalar is its base
-        type and a constrained string is str.
+        type, a constrained string is str and bytes decoded from base64 text with lengths are bytes.
         """
         if (python_type := data_type.python_type) is not None:
             return self.hint(self.bound(python_type))
@@ -1414,6 +1415,8 @@ class _Hints:
             base = (
                 "str"
                 if getattr(data_type, "annotated_string", False)
+                else "bytes"
+                if getattr(data_type, "annotated_bytes", False)
                 else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
             )
             static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())
@@ -3981,16 +3984,19 @@ def bind_operations(
 def _pristine(
     parser: TargetApiOpenAPIParser, documents: dict[str, dict[str, YamlValue]]
 ) -> tuple[tuple[str, dict[str, YamlValue]], ...]:
-    """Return every document the attempt loaded as it was read, by the location it was read from.
+    """Return every document the attempt loaded as it was written, by the location it was read from.
 
     The walked documents come first, in contract order, then the others the models' references loaded. The parser
-    walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it.
+    walks a rebased copy of a document with nested `$id` resources and keeps the loaded one beside it, and keeps a
+    document as written beside the one --use-single-value-enum-as-const read.
     """
     cache = parser._schema_resource_cache  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    as_written = parser._document_as_written  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
     located = {id(prepared): (location or _unnamed(parser), raw) for location, (raw, prepared) in cache.items()}
     walked = [located.get(id(document), (uri or _unnamed(parser), document)) for uri, document in documents.items()]
     seen = {id(document) for _, document in walked}
-    return (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen and location))
+    loaded = (*walked, *((location, raw) for location, (raw, _) in cache.items() if id(raw) not in seen and location))
+    return tuple((location, as_written(document)) for location, document in loaded)
 
 
 def _unnamed(parser: TargetApiOpenAPIParser) -> str:

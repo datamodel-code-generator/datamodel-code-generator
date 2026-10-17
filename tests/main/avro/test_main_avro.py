@@ -965,6 +965,19 @@ def test_main_avro_official_spec_long_list(output_file: Path) -> None:
 
 
 @_SKIP_BLACK
+def test_main_avro_single_value_enum_as_const_keeps_converted_enums(output_file: Path) -> None:
+    """Keep one-symbol Avro enums as Enum classes, as Avro is converted rather than read as a JSON Schema document."""
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / "spec_matrix.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        assert_func=assert_file_content,
+        expected_file=_expected_file("spec_matrix.py"),
+        extra_args=get_current_version_args("--use-field-description", "--use-single-value-enum-as-const"),
+    )
+
+
+@_SKIP_BLACK
 def test_main_avro_spec_matrix(output_file: Path) -> None:
     """Generate models for Avro specification schema forms and edge-case attributes."""
     run_main_and_assert(

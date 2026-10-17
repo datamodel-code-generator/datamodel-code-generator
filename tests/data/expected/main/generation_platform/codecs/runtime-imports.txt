@@ -19,7 +19,7 @@ client/operations.py: ..model_codecs.errors, ..model_codecs.media, ..model_codec
 client/options.py: ..model_codecs.parameters, ..model_codecs.unset, .errors, .timing, __future__, collections.abc, dataclasses, httpx2, math, types, typing, urllib.parse
 client/parts.py: ..model_codecs.errors, ..model_codecs.parameters, .media, __future__, typing
 client/paths.py: __future__, collections.abc, re, typing
-client/positions.py: __future__, functools, typing
+client/positions.py: __future__, collections.abc, functools, typing
 client/raw.py: ..model_codecs.media, .content, .errors, .logical, .media, .operations, .responses, __future__, collections.abc, contextlib, errno, httpx2, os, pathlib, threading, types, typing, typing_extensions
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
 client/retry.py: ..model_codecs.unset, .errors, .options, .responses, __future__, collections.abc, dataclasses, datetime, email.utils, enum, math, re, typing

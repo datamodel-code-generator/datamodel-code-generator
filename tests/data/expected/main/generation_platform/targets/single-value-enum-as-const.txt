@@ -1,0 +1,100 @@
+# single-value-enum-as-const
+generate
+  Next steps: implement the stubs in services/runs.py, then run the server:
+    uv add uvicorn && uv run uvicorn --app-dir .. example.server.main:app --reload
+  or: uv add "fastapi[standard]" && uv run --directory .. fastapi dev --entrypoint example.server.main:app
+  See server/README.md.
+tree
+  models.py
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/openapi.json
+  server/_generated/openapi.py
+  server/application.py
+  server/main.py
+  server/py.typed
+  server/routers/__init__.py
+  server/routers/runs.py
+  server/services.py
+  services/__init__.py
+  services/runs.py
+  5 runtime modules ['present']
+check
+show server/_generated/openapi.json
+  | {
+  |  "openapi": "3.0.3",
+  |  "info": {
+  |   "title": "Runs",
+  |   "version": "1.0.0"
+  |  },
+  |  "servers": [
+  |   {
+  |    "url": "https://{region}.example.com",
+  |    "variables": {
+  |     "region": {
+  |      "default": "us",
+  |      "enum": [
+  |       "us"
+  |      ]
+  |     }
+  |    }
+  |   }
+  |  ],
+  |  "paths": {
+  |   "/runs": {
+  |    "get": {
+  |     "operationId": "listRuns",
+  |     "tags": [
+  |      "runs"
+  |     ],
+  |     "parameters": [
+  |      {
+  |       "name": "order",
+  |       "in": "query",
+  |       "schema": {
+  |        "type": "string",
+  |        "enum": [
+  |         "newest"
+  |        ]
+  |       }
+  |      }
+  |     ],
+  |     "responses": {
+  |      "200": {
+  |       "description": "Runs",
+  |       "content": {
+  |        "application/json": {
+  |         "schema": {
+  |          "type": "array",
+  |          "items": {
+  |           "$ref": "#/components/schemas/Run"
+  |          }
+  |         }
+  |        }
+  |       }
+  |      }
+  |     }
+  |    }
+  |   }
+  |  },
+  |  "components": {
+  |   "schemas": {
+  |    "Run": {
+  |     "type": "object",
+  |     "properties": {
+  |      "kind": {
+  |       "type": "string",
+  |       "enum": [
+  |        "run"
+  |       ]
+  |      }
+  |     },
+  |     "required": [
+  |      "kind"
+  |     ]
+  |    }
+  |   }
+  |  }
+  | }

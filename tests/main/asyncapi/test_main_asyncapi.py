@@ -87,6 +87,28 @@ def test_main_asyncapi_2_yaml(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("version", ["v2", "v3"])
+@pytest.mark.parametrize(
+    ("directory", "extra_args"),
+    [
+        pytest.param("single_value_enum_as_const", ["--use-single-value-enum-as-const"], id="enum"),
+        pytest.param("single_value_enum_as_const/written_as_const", [], id="written-as-const"),
+    ],
+)
+def test_main_asyncapi_single_value_enum_as_const(
+    directory: str, extra_args: list[str], version: str, output_file: Path
+) -> None:
+    """Read single-value enums of payloads and parameters as const, with entries named like keywords."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / directory / f"{version}.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        assert_func=assert_file_content,
+        expected_file=f"single_value_enum_as_const_{version}.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
 def test_main_asyncapi_3_json(output_file: Path) -> None:
     """Generate models from an AsyncAPI 3.x JSON document."""
     run_main_and_assert(

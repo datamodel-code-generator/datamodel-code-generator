@@ -68,6 +68,19 @@ class PythonTypeRuntimeSymbol(PythonTypeExpr):
 
 
 @dataclass(frozen=True, slots=True)
+class PythonTypeMember(PythonTypeExpr):
+    """A member of a class written as a ``Literal`` value, such as ``HTTPStatus.OK``."""
+
+    owner: PythonTypeExpr
+    name: str
+
+    def __post_init__(self) -> None:
+        if not _is_python_identifier(self.name):
+            msg = f"Python type member must be one identifier: {self.name!r}"
+            raise ValueError(msg)
+
+
+@dataclass(frozen=True, slots=True)
 class PythonTypeBoundName(PythonTypeExpr):
     """A rendered name tied to the exact import that introduced it."""
 
@@ -143,6 +156,7 @@ class PythonTypeStarred(PythonTypeExpr):
 
 
 _LITERAL_VALUE_TYPES = (str, bytes, int, float, bool)
+_MODULE_MEMBER_PARTS = 3
 
 
 @dataclass(frozen=True, slots=True, eq=False)
@@ -230,6 +244,8 @@ def render_python_type_expr(expression: PythonTypeExpr) -> str:  # ruff: ignore[
         case PythonTypeRuntimeSymbol():
             name = ".".join(expression.qualname_parts)
             return f"{expression.module}.{name}" if expression.module else name
+        case PythonTypeMember():
+            return f"{render_python_type_expr(expression.owner)}.{expression.name}"
         case PythonTypeSubscript():
             rendered_base = render_python_type_expr(expression.base)
             if isinstance(expression.base, PythonTypeUnion):
@@ -308,6 +324,8 @@ def iter_python_type_expr_names(expression: PythonTypeExpr) -> Iterator[str]:
                 yield from iter_python_type_expr_names(argument)
         case PythonTypeModelField():
             yield from iter_python_type_expr_names(expression.model)
+        case PythonTypeMember():
+            yield from iter_python_type_expr_names(expression.owner)
         case PythonTypeStarred():
             yield from iter_python_type_expr_names(expression.value)
         case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
@@ -351,6 +369,8 @@ def iter_python_type_expr_qualified_names(expression: PythonTypeExpr) -> Iterato
                 yield from iter_python_type_expr_qualified_names(argument)
         case PythonTypeModelField():
             yield from iter_python_type_expr_qualified_names(expression.model)
+        case PythonTypeMember():
+            yield from iter_python_type_expr_qualified_names(expression.owner)
         case PythonTypeStarred():
             yield from iter_python_type_expr_qualified_names(expression.value)
         case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
@@ -397,7 +417,59 @@ def rewrite_python_type_expr(  # noqa: PLR0911
         case PythonTypeStarred():
             value = rewrite_python_type_expr(expression.value, transform_leaf)
             return expression if value is expression.value else PythonTypeStarred(value)
+        case PythonTypeMember():
+            owner = rewrite_python_type_expr(expression.owner, transform_leaf)
+            return expression if owner is expression.owner else PythonTypeMember(owner, expression.name)
     return transform_leaf(expression)
+
+
+def read_literal_enum_members(expression: PythonTypeExpr) -> PythonTypeExpr:
+    """Read a dotted ``package.module.MEMBER`` value of a ``Literal`` as the member ``MEMBER`` of ``package.module``.
+
+    A ``Literal`` holds values, so the last name is a member, such as an enum member, of what the names before it
+    import: ``http.HTTPStatus.OK`` imports ``HTTPStatus`` from ``http`` and ``http.client.OK`` imports the module
+    ``client`` from ``http``, as a from-import takes a class or a submodule alike. A dotted name of two parts keeps
+    naming an imported symbol.
+    """
+    match expression:
+        case PythonTypeSubscript():
+            literal = python_type_expr_base_name(expression.base) == "Literal"
+            arguments = tuple(
+                PythonTypeMember(PythonTypeQualifiedName(argument.parts[:-1]), argument.parts[-1])
+                if literal
+                and isinstance(argument, PythonTypeQualifiedName)
+                and len(argument.parts) >= _MODULE_MEMBER_PARTS
+                else read_literal_enum_members(argument)
+                for argument in expression.arguments
+            )
+            if all(rewritten is original for rewritten, original in zip(arguments, expression.arguments, strict=True)):
+                return expression
+            return PythonTypeSubscript(expression.base, arguments)
+        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
+            items = tuple(map(read_literal_enum_members, expression.items))
+            if all(rewritten is original for rewritten, original in zip(items, expression.items, strict=True)):
+                return expression
+            return type(expression)(items)
+        case _:
+            pass
+    return expression
+
+
+def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]:
+    """Yield each value of a ``Literal`` that is a member of a class or module, such as an enum member."""
+    match expression:
+        case PythonTypeSubscript():
+            literal = python_type_expr_base_name(expression.base) == "Literal"
+            for argument in expression.arguments:
+                if literal and isinstance(argument, PythonTypeMember | PythonTypeRuntimeSymbol):
+                    yield argument
+                else:
+                    yield from iter_literal_members(argument)
+        case PythonTypeUnion() | PythonTypeParameterList() | PythonTypeTuple():
+            for item in expression.items:
+                yield from iter_literal_members(item)
+        case _:
+            pass
 
 
 __all__ = [
@@ -405,6 +477,7 @@ __all__ = [
     "PythonTypeEllipsis",
     "PythonTypeExpr",
     "PythonTypeLiteralValue",
+    "PythonTypeMember",
     "PythonTypeModelField",
     "PythonTypeName",
     "PythonTypeOpaqueText",
@@ -416,12 +489,14 @@ __all__ = [
     "PythonTypeTuple",
     "PythonTypeUnion",
     "is_union_python_type_expr",
+    "iter_literal_members",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
     "parse_python_type_annotation",
     "python_type_expr_arguments",
     "python_type_expr_base_name",
     "python_type_name",
+    "read_literal_enum_members",
     "render_python_type_expr",
     "rewrite_python_type_expr",
 ]

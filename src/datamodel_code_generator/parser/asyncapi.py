@@ -19,13 +19,17 @@ from datamodel_code_generator import Error, InputFileType, snooper_to_methods
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AsyncAPIVersion
-from datamodel_code_generator.parser.jsonschema import get_model_by_path, unescape_json_pointer_segment
+from datamodel_code_generator.parser.jsonschema import (
+    JsonSchemaParser,
+    get_model_by_path,
+    unescape_json_pointer_segment,
+)
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.reference import is_url
 from datamodel_code_generator.util import BaseModel, create_module_getattr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator, Iterator
     from urllib.parse import ParseResult
 
     from datamodel_code_generator._source import YamlValue
@@ -233,6 +237,7 @@ class AsyncAPIParser(OpenAPIParser):
 
     _config_class_name: ClassVar[str] = "AsyncAPIParserConfig"
     _input_file_type: ClassVar[InputFileType] = InputFileType.AsyncAPI
+    _named_entry_maps: ClassVar[frozenset[str]] = JsonSchemaParser._named_entry_maps  # ruff: ignore[private-member-access]
 
     def __init__(
         self,
@@ -248,6 +253,10 @@ class AsyncAPIParser(OpenAPIParser):
     def schema_features(self) -> OpenAPISchemaFeatures:
         """Get Schema Object features based on config or detected AsyncAPI version."""
         # Keep this uncached because AsyncAPI reference parsing swaps raw_obj between document contexts.
+        return self._schema_features_for(self.raw_obj)
+
+    def _schema_features_for(self, root: dict[str, YamlValue]) -> OpenAPISchemaFeatures:
+        """Get the Schema Object features of a root document based on config or its detected AsyncAPI version."""
         from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
             OpenAPISchemaFeatures,
             detect_asyncapi_version,
@@ -256,7 +265,7 @@ class AsyncAPIParser(OpenAPIParser):
         config_version = getattr(self.config, "asyncapi_version", None)
         if config_version is not None and config_version != AsyncAPIVersion.Auto:
             return OpenAPISchemaFeatures.from_asyncapi_version(config_version)
-        version = detect_asyncapi_version(self.raw_obj) if self.raw_obj else AsyncAPIVersion.Auto
+        version = detect_asyncapi_version(root) if root else AsyncAPIVersion.Auto
         return OpenAPISchemaFeatures.from_asyncapi_version(version)
 
     def _collect_discriminator_schemas(self) -> None:
@@ -286,7 +295,7 @@ class AsyncAPIParser(OpenAPIParser):
         )
 
     @contextmanager
-    def _asyncapi_context(self, context: AsyncAPIContext) -> Iterator[None]:
+    def _asyncapi_context(self, context: AsyncAPIContext) -> Generator[None]:
         previous_raw_obj = self.raw_obj
         self.raw_obj = context.raw_obj
         try:

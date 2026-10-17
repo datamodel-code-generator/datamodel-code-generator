@@ -1,0 +1,16 @@
+asyncapi: 2.6.0
+info:
+  title: Runs
+  version: 1.0.0
+channels:
+  runs/{default}:
+    parameters:
+      default:
+        schema: {type: string, enum: [primary]}
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            kind: {type: string, enum: [run]}
+          required: [kind]

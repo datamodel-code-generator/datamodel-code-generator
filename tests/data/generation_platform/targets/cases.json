@@ -618,5 +618,10 @@
     "input": {"path": "nullable-map-class-keys.yaml"},
     "model": {"openapi_scopes": ["api"], "aliases": {"Tags.label": "tag_label"}},
     "steps": [{"generate": {}}, {"check": {}}]
+  },
+  "single-value-enum-as-const": {
+    "input": {"path": "single-value-enum.yaml"},
+    "model": {"openapi_scopes": ["api"], "use_single_value_enum_as_const": true},
+    "steps": [{"generate": {}}, {"check": {}}, {"show": "server/_generated/openapi.json"}]
   }
 }

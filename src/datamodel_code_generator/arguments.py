@@ -572,7 +572,8 @@ model_options.add_argument(
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
     "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine; "
-    "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class).",
+    "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class; "
+    "a number schema keeps multipleOf on a timedelta).",
     choices=[v.value for v in TargetPydanticVersion],
     default=None,
 )
@@ -620,7 +621,16 @@ model_options.add_argument(
 )
 model_options.add_argument(
     "--infer-union-variant-names",
-    help="Infer inline oneOf/anyOf branch model names from literal discriminator-style fields",
+    help='Name inline oneOf/anyOf branch models after the value of their tag field (Pet + type: "cat" -> PetCat) '
+    "instead of Pet1, Pet2",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
+    "--use-tag-as-union-variant-name",
+    help="Name inline oneOf/anyOf branch models after their tag: what --infer-union-variant-names does, skipping "
+    'tags whose class names collide, plus single-branch unions (type: "exec" -> LocalShellActionExec) and '
+    'single-key branches ({"granular": ...} -> AskForApprovalGranular)',
     action="store_true",
     default=None,
 )
@@ -749,6 +759,14 @@ typing_options.add_argument(
 typing_options.add_argument(
     "--ignore-enum-constraints",
     help="Ignore enum constraints and use the base type (e.g., str, int) instead of generating Enum classes",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
+    "--use-single-value-enum-as-const",
+    help="Treat `enum` with a single value as `const` with that value, which JSON Schema defines as equal: "
+    'oneOf/anyOf branches such as {"type": "string", "enum": ["low"]} merge into one Enum as const branches do, '
+    "and a schema with one enum value is typed Literal[...] instead of a one-member Enum",
     action="store_true",
     default=None,
 )

@@ -10,13 +10,14 @@ import enum as _enum
 import json
 import math
 import re
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
 from contextlib import contextmanager, suppress
 from copy import copy
 from fractions import Fraction
 from functools import cached_property, lru_cache
 from itertools import chain, starmap
 from math import gcd, lcm
+from operator import is_not
 from pathlib import Path
 from string import digits
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, Union, cast
@@ -62,7 +63,12 @@ from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
-from datamodel_code_generator.model.base import UNDEFINED, c3_merge, get_inherited_fields, sanitize_module_name
+from datamodel_code_generator.model.base import (
+    UNDEFINED,
+    c3_merge,
+    get_inherited_fields,
+    sanitize_module_name,
+)
 from datamodel_code_generator.model.enum import (
     NULL_ENUM_MEMBER_VALUE,
     SPECIALIZED_ENUM_TYPE_MATCH,
@@ -137,7 +143,7 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Container, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
     from typing_extensions import TypeIs
@@ -549,6 +555,15 @@ def _get_data_type_constraint_kwargs(
     }
 
 
+def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
+    """Return the keywords that a type, or a member of a union it is, writes itself, which its field leaves out."""
+    if data_type.is_list or data_type.is_dict or data_type.is_tuple or data_type.is_set or data_type.is_frozen_set:
+        return data_type.CARRIED_CONSTRAINT_KEYWORDS
+    return data_type.CARRIED_CONSTRAINT_KEYWORDS.union(
+        *(member.CARRIED_CONSTRAINT_KEYWORDS for member in data_type.data_types)
+    )
+
+
 def _get_discriminator_property_name(obj: JsonSchemaObject) -> str | None:
     """Return the discriminator property name from either JSON Schema or OpenAPI shape."""
     discriminator = obj.discriminator
@@ -803,6 +818,76 @@ _JSON_SCHEMA_SINGLE_KEYWORDS = frozenset({
     "unevaluatedProperties",
 })
 _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS = frozenset({"extends", "items"})
+_NON_SCHEMA_KEYWORDS = frozenset({
+    "const",
+    "default",
+    "enum",
+    "example",
+    "examples",
+    "links",
+    "security",
+    "server",
+    "serverVariables",
+    "servers",
+})
+_NAMED_ENTRY_MAP_KEYWORDS = _JSON_SCHEMA_MAP_KEYWORDS | {
+    "callbacks",
+    "channels",
+    "content",
+    "encoding",
+    "messages",
+    "operations",
+    "parameters",
+    "responses",
+    "webhooks",
+}
+_DocumentEntries = Literal["object", "names", "maps"]
+
+
+def _document_child_entries(
+    entries: _DocumentEntries, key: object, named_entry_maps: frozenset[str]
+) -> _DocumentEntries | None:
+    """Return how the value under a key of a document object is read, or None when it holds no schemas."""
+    if entries == "names":
+        return "object"
+    if key in _NON_SCHEMA_KEYWORDS or (isinstance(key, str) and key.startswith("x-") and key != "x-propertyNames"):
+        return None
+    child: _DocumentEntries = "object"
+    match entries, key:
+        case "maps", _:
+            child = "names"
+        case "object", "components":
+            child = "maps"
+        case "object", str() if key in named_entry_maps:
+            child = "names"
+    return child
+
+
+def _single_value_enum_as_const(
+    value: YamlValue, named_entry_maps: frozenset[str], entries: _DocumentEntries = "object"
+) -> YamlValue:
+    """Return a document with the enum of each schema that lists one value written as the const it equals.
+
+    The values of instance data keywords, extensions other than x-propertyNames, links, security requirements and
+    servers hold no schemas and stay as written. Those words are names, not keywords, in maps of named entries such
+    as properties, $defs, responses, webhooks, channels or the component maps. Unchanged parts are shared, so cached
+    documents stay intact.
+    """
+    if isinstance(value, list):
+        items = [_single_value_enum_as_const(item, named_entry_maps) for item in value]
+        return items if any(map(is_not, items, value)) else value
+    if not isinstance(value, dict):
+        return value
+    changed = {
+        key: updated
+        for key, child in value.items()
+        if (child_entries := _document_child_entries(entries, key, named_entry_maps)) is not None
+        and (updated := _single_value_enum_as_const(child, named_entry_maps, child_entries)) is not child
+    }
+    result = {**value, **changed} if changed else value
+    if entries == "object" and isinstance(enum := value.get("enum"), list) and len(enum) == 1 and "const" not in value:
+        return {("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in result.items()}
+    return result
 
 
 def _is_object_only_type(type_: str | list[str] | None) -> bool:
@@ -1528,6 +1613,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     _cache_parsed_sources_from_path: ClassVar[bool] = True
     _input_file_type: ClassVar[InputFileType] = InputFileType.JsonSchema
     _non_dict_source_is_invalid: ClassVar[bool] = False
+    _named_entry_maps: ClassVar[frozenset[str]] = _NAMED_ENTRY_MAP_KEYWORDS
     _component_schemas_are_resources: ClassVar[bool] = False
 
     COMPATIBLE_PYTHON_TYPES: ClassVar[dict[str, frozenset[str]]] = {
@@ -1609,6 +1695,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self.reserved_refs: defaultdict[tuple[str, ...], set[str]] = defaultdict(set)
         self._loads_only_used_references = False
         self._dangling_refs: set[tuple[str, str]] = set()
+        self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]] = {}
         self._recursive_anchor_index: dict[tuple[str, ...], list[str]] = {}
         self._ref_data_type_facts: dict[str, tuple[Any, bool]] = {}
@@ -1723,11 +1810,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _get_type(type_, format_, data_formats)
 
     def _get_format_data_type(self, type_: str, format_: str) -> DataType:
-        """Map a type and format without constraints, keeping string time formats out of float strictness."""
+        """Map a type and format without constraints."""
         types = self._get_type_with_mappings(type_, format_)
+        return self.data_type_manager.get_data_type(types, **self._get_format_type_kwargs(type_, format_, types))
+
+    def _get_format_type_kwargs(self, type_: str, format_: str, types: Types) -> dict[str, bool]:
+        """Keep bytes mapped from base64 text decoded, and string time formats out of float strictness."""
+        if types == Types.binary and self._is_base64_encoded_binary_mapping(type_, format_):
+            return {"base64_encoded": True}
         if types == Types.time and type_ == "string":
-            return self.data_type_manager.get_data_type(types, string_format=True)
-        return self.data_type_manager.get_data_type(types)
+            return {"string_format": True}
+        return {}
 
     def _is_base64_encoded_binary_mapping(self, type_: str, format_: str) -> bool:
         if type_ != "string" or format_ != "byte" or not self.type_mappings:
@@ -1765,10 +1858,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     @cached_property
     def schema_features(self) -> JsonSchemaFeatures:
         """Get schema features based on config or detected version."""
+        return self._schema_features_for(self.raw_obj)
+
+    def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
+        """Get the schema features of a root document based on config or its detected version."""
         config_version = getattr(self.config, "jsonschema_version", None)
         if config_version is not None and config_version != JsonSchemaVersion.Auto:
             return JsonSchemaFeatures.from_version(config_version)
-        version = detect_jsonschema_version(self.raw_obj) if self.raw_obj else JsonSchemaVersion.Auto
+        version = detect_jsonschema_version(root) if root else JsonSchemaVersion.Auto
         return JsonSchemaFeatures.from_version(version)
 
     @cached_property
@@ -1985,14 +2082,35 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return JSON Schema constraint values, with the type-dependent keywords that the field takes.
 
         A declared schema type that holds a keyword's kind (number, string or array) takes the keyword;
-        otherwise the emitted Python type decides each keyword.
+        otherwise the emitted Python type decides each keyword. An output model that writes constraints as
+        ``Field()`` arguments writes the number keywords of a declared number only when a number value of the
+        emitted type meets them, which a type that holds no number, such as ``str`` or ``date``, does not.
         """
         values = {
             constraint: value
             for constraint in obj.__constraint_field_order__
             if (value := getattr(obj, constraint)) is not None
         }
-        if not values or values.keys() <= (declared := self._declared_constraint_keywords(obj)):
+        if data_type is not None and (carried := _carried_constraint_keywords(data_type)):
+            values = {key: value for key, value in values.items() if key not in carried}
+        if not values:
+            return values
+        declared = self._declared_constraint_keywords(obj)
+        if (
+            data_type is not None
+            and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
+            and not declared.isdisjoint(NUMBER_KEYWORDS)
+        ):
+            declared = (declared - NUMBER_KEYWORDS) | (
+                self.data_type_manager.constraint_keywords(
+                    data_type,
+                    self.target_python_version.version_key,
+                    number_values=True,
+                    target_model_version=self.target_pydantic_version,
+                )
+                & NUMBER_KEYWORDS
+            )
+        if values.keys() <= declared:
             return values
         keywords = (
             declared | self.data_type_manager.constraint_keywords(data_type, self.target_python_version.version_key)
@@ -2012,6 +2130,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if key not in declared and (value := getattr(obj, key)) is not None
         }:
             model_field.__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent_constraints
+
+    def _untaken_number_constraints(self, obj: JsonSchemaObject, constraints: Mapping[str, Any]) -> dict[str, Any]:
+        """Return the number constraints of a declared number that the emitted type does not take, to warn about."""
+        if not self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS or not (
+            missing := {
+                key: value
+                for key in _NUMBER_CONSTRAINT_KEYS
+                if key not in constraints and (value := getattr(obj, key)) is not None
+            }
+        ):
+            return {}
+        declared = self._declared_constraint_keywords(obj)
+        return {key: value for key, value in missing.items() if key in declared}
 
     def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
         """Check if an array field represents a fixed-length tuple."""
@@ -2991,13 +3122,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if class_name_suffix and base_name_without_index.endswith(class_name_suffix)
             else f"{base_reference.name}{suffix}"
         )
-        yields = {"yields": True} if self.model_resolver.is_yielding(base_reference) else {}
+        yielding = self.model_resolver.is_yielding(base_reference)
         unique_name = self.model_resolver.get_class_name(
             variant_name,
             unique=True,
             skip_affix=True,
             preserve_name=True,
-            **yields,
+            yields=yielding,
         ).name
         reference = self.model_resolver.add(
             get_special_path(f"read-write-{suffix.lower()}", base_reference.path.split("/")),
@@ -3005,7 +3136,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             class_name=False,
             unique=False,
             loaded=loaded,
-            **yields,
+            yields=yielding or None,
         )
         source_reference_path = _get_unique_rw_model_variant_source_path(
             source_variant_ref,
@@ -3332,8 +3463,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and not self._has_shared_numeric_union_constraints(field)
         ) or (isinstance(field.type, list) and bool(self._get_array_union_non_array_types(field)))
         constraints = None
+        untaken: dict[str, Any] = {}
         if not skip_constraints and self.is_constraints_field(field):
             constraints = self._get_constraint_values(field, field_type)
+            untaken = self._untaken_number_constraints(field, constraints)
         consumed = self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS
         if constraints is not None and field_type.type in consumed:
             for key in consumed[field_type.type]:
@@ -3394,6 +3527,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         if constraints is not None:
             self._mark_type_dependent_constraints(model_field, field)
+        self._mark_untaken_constraints(
+            model_field,
+            untaken,
+            lambda minimum: self.data_type_manager.constraint_keywords(
+                field_type,
+                self.target_python_version.version_key,
+                number_values=True,
+                target_model_version=minimum,
+            ),
+        )
         if _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY in field.__dict__:
             model_field.__dict__[_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY] = field.__dict__[
                 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY
@@ -3444,11 +3587,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 kwargs_to_pass = {}
                 kwargs_to_pass.update(_get_data_type_constraint_kwargs(obj, types))
 
-            if types == Types.binary and self._is_base64_encoded_binary_mapping(type_, format__):
-                kwargs_to_pass["base64_encoded"] = True
-            elif types == Types.time and type_ == "string":
-                kwargs_to_pass["string_format"] = True
-
+            if format_kwargs := self._get_format_type_kwargs(type_, format__, types):
+                kwargs_to_pass.update(format_kwargs)
+                if format_kwargs.get("base64_encoded"):
+                    kwargs_to_pass.update(_get_data_type_constraint_kwargs(obj, types))
             return self.data_type_manager.get_data_type(
                 types,
                 field_constraints=self.field_constraints and not localize_constraints,
@@ -3957,6 +4099,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             PythonTypeName,
             PythonTypeQualifiedName,
             PythonTypeRuntimeSymbol,
+            read_literal_enum_members,
             rewrite_python_type_expr,
         )
         from datamodel_code_generator._python_type_binding import (  # noqa: PLC0415
@@ -4010,7 +4153,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             raise Error(msg)
                         resolving_names.add(name)
                         try:
-                            return rewrite_python_type_expr(resolved, bind_leaf)
+                            return rewrite_python_type_expr(read_literal_enum_members(resolved), bind_leaf)
                         finally:
                             resolving_names.remove(name)
                     if resolved:
@@ -4018,7 +4161,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         return PythonTypeBoundName(bound_name, import_.from_, import_.import_)
             return item
 
-        return BoundPythonType(rewrite_python_type_expr(expression, bind_leaf), tuple(imports))
+        return BoundPythonType(
+            rewrite_python_type_expr(read_literal_enum_members(expression), bind_leaf), tuple(imports)
+        )
 
     def _get_python_type_override(self, obj: JsonSchemaObject) -> DataType | None:
         """Get DataType from x-python-type if it's incompatible with schema type."""
@@ -4066,10 +4211,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self,
         combined_schemas: Sequence[JsonSchemaObject],
         field_name: str,
+        tag_keys: Mapping[int, str] | None = None,
     ) -> dict[int, JsonSchemaLiteral] | None:
+        """Return each property branch's distinct literal for a field; key branches count only for their own key.
+
+        Without `tag_keys`, at least two branches must carry a literal; with them, one is enough, and branches that are
+        unions themselves are skipped.
+        """
         values: dict[int, JsonSchemaLiteral] = {}
         for index, item in enumerate(combined_schemas):
-            if not item.properties:
+            if not item.properties or (
+                tag_keys is not None and (item.oneOf or item.anyOf or tag_keys.get(index, field_name) != field_name)
+            ):
                 continue
             field = item.properties.get(field_name)
             if not isinstance(field, JsonSchemaObject):
@@ -4079,7 +4232,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return None
             values[index] = value
 
-        if len(values) < _MIN_UNION_VARIANT_LITERAL_VALUES:
+        if len(values) < (_MIN_UNION_VARIANT_LITERAL_VALUES if tag_keys is None else 1):
             return None
         unique_values = {_literal_uniqueness_key(value) for value in values.values()}
         return values if len(unique_values) == len(values) else None
@@ -4103,24 +4256,145 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 seen.add(field_name)
                 yield field_name
 
-    def _infer_union_variant_names(
+    def _is_null_only_schema(self, obj: JsonSchemaObject, seen_refs: set[str] | None = None) -> bool:
+        """Return whether a schema, or the schema its `$ref` chain reaches, admits only null by type, const, or enum."""
+        if (
+            obj.type in ("null", ["null"])
+            or obj.enum == [None]
+            or ("const" in obj.extras and obj.extras["const"] is None)
+        ):
+            return True
+        if not obj.ref:
+            return False
+        seen_refs = seen_refs or set()
+        resolved_ref = self.model_resolver.resolve_ref(obj.ref)
+        if self._resolve_external_ref_mapping(obj.ref) or resolved_ref in seen_refs:
+            return False
+        seen_refs.add(resolved_ref)
+        return self._is_null_only_schema(self._load_ref_schema_object(obj.ref), seen_refs)
+
+    def _is_single_literal_schema(self, obj: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
+        """Return whether a property schema admits a single literal value."""
+        return isinstance(obj, JsonSchemaObject) and self._get_single_literal_value(obj) is not None
+
+    def _all_of_adds_properties(self, items: Iterable[JsonSchemaObject | bool]) -> bool:
+        """Return whether allOf members add properties inline, through nested allOf/oneOf/anyOf, or through a `$ref`."""
+        return any(
+            isinstance(item, JsonSchemaObject)
+            and bool(
+                item.ref
+                or item.properties
+                or self._all_of_adds_properties(item.allOf)
+                or self._all_of_adds_properties(item.oneOf)
+                or self._all_of_adds_properties(item.anyOf)
+            )
+            for item in items
+        )
+
+    def _get_union_variant_class_name(self, variant_name: str) -> str:
+        """Return the class name a variant name becomes before the model resolver makes it unique."""
+        return self.model_resolver.get_class_name(variant_name, unique=False).name
+
+    def _get_union_variant_tag_keys(
+        self,
+        obj: JsonSchemaObject,
+        combined_schemas: Sequence[JsonSchemaObject],
+        literal_fields: Container[str],
+    ) -> dict[int, str]:
+        """Return the key of each key branch by branch index.
+
+        A key branch has no `oneOf`/`anyOf` and no `allOf` of its own that adds properties (the union schema's `allOf`
+        is copied into every branch first), one own property (one the union schema does not declare) that is required
+        and not a single literal, and no single literal for a field the union declares without one. A union of one
+        branch beside null has no key branch.
+        """
+        tag_keys: dict[int, str] = {}
+        non_null_branches = (item for item in combined_schemas if not self._is_null_only_schema(item))
+        if (
+            len(combined_schemas) > 1
+            and next(non_null_branches, None) is not None
+            and next(non_null_branches, None) is None
+        ):
+            return tag_keys
+        shared = obj.properties or {}
+        open_fields = [field_name for field_name in shared if field_name not in literal_fields]
+        for index, item in enumerate(combined_schemas):
+            if (
+                not item.properties
+                or item.oneOf
+                or item.anyOf
+                or self._all_of_adds_properties(item.allOf[len(obj.allOf) :])
+            ):
+                continue
+            own_properties = [(key, value) for key, value in item.properties.items() if key not in shared]
+            if len(own_properties) != 1:
+                continue
+            key, value = own_properties[0]
+            if (
+                key in item.required
+                and not self._is_single_literal_schema(value)
+                and not any(self._is_single_literal_schema(item.properties.get(field)) for field in open_fields)
+            ):
+                tag_keys[index] = key
+        return tag_keys
+
+    def _infer_union_variant_literal_names(
         self,
         name: str,
         obj: JsonSchemaObject,
         combined_schemas: Sequence[JsonSchemaObject],
+        tag_keys: Mapping[int, str] | None = None,
+        skipped_fields: Container[str] = (),
     ) -> list[str | None] | None:
+        """Name the branches after the first field not in `skipped_fields` whose literals give distinct names."""
         for field_name in self._iter_union_variant_literal_field_names(obj, combined_schemas):
-            values = self._get_union_variant_literal_values(combined_schemas, field_name)
+            if field_name in skipped_fields:
+                continue
+            values = self._get_union_variant_literal_values(combined_schemas, field_name, tag_keys)
             if values is None:
                 continue
             variant_names: list[str | None] = [None] * len(combined_schemas)
             for index, literal in values.items():
                 variant_names[index] = _get_union_variant_name(name, literal)
             generated_names = [variant_name for variant_name in variant_names if variant_name]
+            if self.use_tag_as_union_variant_name:
+                generated_names = [self._get_union_variant_class_name(variant_name) for variant_name in generated_names]
             if len(set(generated_names)) != len(generated_names):
                 continue
             return variant_names
         return None
+
+    def _infer_union_variant_names(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        combined_schemas: Sequence[JsonSchemaObject],
+    ) -> list[str | None] | None:
+        """Name the branches from literal fields, or with tag names only for a union literal fields leave unnamed.
+
+        Tag names come from a literal that one branch alone may carry, skipping fields the union schema fixes to a
+        literal, then from the keys of key branches; a key name whose class name equals that of a literal name or
+        another key name is dropped. With tags, names must also differ as class names.
+        """
+        variant_names = self._infer_union_variant_literal_names(name, obj, combined_schemas)
+        if not self.use_tag_as_union_variant_name or (variant_names and any(variant_names)):
+            return variant_names
+        literal_fields = {
+            field_name for field_name, field in (obj.properties or {}).items() if self._is_single_literal_schema(field)
+        }
+        tag_keys = self._get_union_variant_tag_keys(obj, combined_schemas, literal_fields)
+        tag_names = self._infer_union_variant_literal_names(name, obj, combined_schemas, tag_keys, literal_fields)
+        tag_names = tag_names or [None] * len(combined_schemas)
+        key_names = {
+            index: key_name for index, key in tag_keys.items() if (key_name := _get_union_variant_name(name, key))
+        }
+        key_class_names = {index: self._get_union_variant_class_name(key_name) for index, key_name in key_names.items()}
+        literal_class_names = {self._get_union_variant_class_name(tag_name) for tag_name in tag_names if tag_name}
+        counts = Counter(key_class_names.values())
+        for index, class_name in key_class_names.items():
+            if counts[class_name] == 1 and class_name not in literal_class_names:
+                tag_names[index] = key_names[index]
+        return tag_names
 
     def _get_inferred_union_variant_names(
         self,
@@ -8239,7 +8513,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else data_types
         )
         if not executable_data_types:
-            return cast("set[UniqueItemsPath]", set())
+            return set()
         common_paths = self._get_executable_unique_items_paths(executable_data_types[0], path, visited)
         for data_type in executable_data_types[1:]:
             common_paths.intersection_update(self._get_executable_unique_items_paths(data_type, path, visited))
@@ -8287,7 +8561,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             visited = set()
         data_type_id = id(data_type)
         if data_type_id in visited:
-            return cast("set[UniqueItemsPath]", set())
+            return set()
         visited.add(data_type_id)
         try:
             if data_type.reference and isinstance(data_type.reference.source, DataModel):
@@ -8304,7 +8578,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     and _is_internal_schema_runtime_validation(runtime_validation)
                 ):
                     if self.collapse_root_models and source.IS_ROOT_MODEL:
-                        return cast("set[UniqueItemsPath]", set())
+                        return set()
                     return {(*path, *rule.path) for rule in runtime_validation.unique_items}
 
             match data_type:
@@ -11473,9 +11747,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
         self._set_schema_metadata(reference.path, obj)
         self.set_schema_extensions(reference.path, obj)
-        constraints = array_constraints or (
-            self._get_constraint_values(obj, data_type) if self.field_constraints or preserve_constraints else {}
-        )
+        constraints = array_constraints or {}
+        untaken: dict[str, Any] = {}
+        if not constraints and (self.field_constraints or preserve_constraints):
+            constraints = self._get_constraint_values(obj, data_type)
+            untaken = self._untaken_number_constraints(obj, constraints)
         if self._should_skip_root_field_constraints_for_multiple_types(obj):
             constraints = {}
         elif self.field_constraints and obj.format == "hostname":
@@ -11502,6 +11778,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ]
         if self.field_constraints and not self._should_skip_root_field_constraints_for_multiple_types(obj):
             self._mark_type_dependent_constraints(fields[0], obj)
+            self._mark_untaken_constraints(
+                fields[0],
+                untaken,
+                lambda minimum: self.data_type_manager.constraint_keywords(
+                    data_type,
+                    self.target_python_version.version_key,
+                    number_values=True,
+                    target_model_version=minimum,
+                ),
+            )
         root_default = default_value if has_default_override else UNDEFINED
         if data_model_root_type is not None:
             JsonSchemaParser._register_root_model_as(
@@ -11948,17 +12234,41 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         raise Error(msg)
 
+    def _read_document(
+        self, document: dict[str, YamlValue], root: dict[str, YamlValue] | None = None
+    ) -> dict[str, YamlValue]:
+        """Return a document as read, with each single-value enum as const under --use-single-value-enum-as-const.
+
+        A document parsed where const is no keyword is kept as written: under the draft-04 schema features the
+        parser already uses, or else those of its root document. The document as written is kept beside a rewritten
+        one for the targets that serve it.
+        """
+        if not self.use_single_value_enum_as_const:
+            return document
+        features = self.__dict__.get("schema_features") or self._schema_features_for(root or document)
+        if not features.const_support:
+            return document
+        read = cast("dict[str, YamlValue]", _single_value_enum_as_const(document, self._named_entry_maps))
+        if read is not document:
+            self._documents_as_written[id(read)] = read, document
+        return read
+
+    def _document_as_written(self, document: dict[str, YamlValue]) -> dict[str, YamlValue]:
+        """Return a document as written, before --use-single-value-enum-as-const read its single-value enums."""
+        entry = self._documents_as_written.get(id(document))
+        return entry[1] if entry is not None and entry[0] is document else document
+
     def _load_ref_data_from_path(self, path: Path) -> dict[str, YamlValue]:
         """Load one referenced path and contextualize only its decode failures."""
         try:
-            return load_data_from_path(path, self.encoding)
+            return self._read_document(load_data_from_path(path, self.encoding), self.raw_obj)
         except (json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
             raise InvalidFileFormatError(exc, self._input_file_type, source=path) from exc
 
     def _load_ref_data_from_text(self, text: str, source: str) -> dict[str, YamlValue]:
         """Decode one referenced text body and contextualize only that operation."""
         try:
-            return load_data(text)
+            return self._read_document(load_data(text), self.raw_obj)
         except (json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
             raise InvalidFileFormatError(exc, self._input_file_type, source=source) from exc
 
@@ -11973,7 +12283,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         except (UnicodeDecodeError, json.JSONDecodeError, TypeError, *get_yaml_parse_errors()) as exc:
             raise InvalidFileFormatError(exc, self._input_file_type, source=path) from exc
         if isinstance(result, dict):
-            return result
+            return self._read_document(result, self.raw_obj)
         msg = f"Expected dict, got {type(result).__name__}"
         raise InvalidFileFormatError(TypeError(msg), self._input_file_type, source=path)
 
@@ -12919,7 +13229,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Load a source into a schema dictionary."""
         if source.raw_data is None:
             try:
-                return load_data(source.text)
+                return self._read_document(load_data(source.text))
             except (json.JSONDecodeError, *get_yaml_parse_errors()) as exc:
                 source_path = self._source_path_for_diagnostics(source.path)
                 raise InvalidFileFormatError(exc, self._input_file_type, source=source_path) from exc
@@ -12929,7 +13239,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 source_path = self._source_path_for_diagnostics(source.path)
                 raise InvalidFileFormatError(exc, self._input_file_type, source=source_path) from exc
         if isinstance(source.raw_data, dict):
-            return {**source.raw_data}
+            return self._read_document({**source.raw_data})
 
         msg = f"Expected dict, got {type(source.raw_data).__name__}"
         error = TypeError(msg)

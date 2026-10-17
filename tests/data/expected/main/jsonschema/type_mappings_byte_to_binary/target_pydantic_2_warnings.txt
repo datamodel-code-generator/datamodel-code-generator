@@ -1,0 +1,7 @@
+Pydantic before 2.10 does not check max_length on base64 text, so Item checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so Choice checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so Mapping checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so TypeMappingsByteToBinary.limited checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length, min_length on base64 text, so TypeMappingsByteToBinary.sized checks them only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so TypeMappingsByteToBinary.top checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so TypeMappingsByteToBinary.nullable checks it only on Pydantic 2.10 or later.

@@ -78,15 +78,18 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
+from datamodel_code_generator.model.pydantic_v2.types import EncodedBytesDataType
 from datamodel_code_generator.model.pydantic_v2.version import (
     PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
     PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM,
     PYDANTIC_V2_BYTES_PATTERN_MINIMUM,
     PYDANTIC_V2_COMPILED_PATTERN_MINIMUM,
+    PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM,
     PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
     PYDANTIC_V2_MISSING_MINIMUM,
     PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
     _includes_dict_key_reference_classes,
+    explicit_model_target_predates,
     explicit_model_target_supports,
     model_target_supports,
 )
@@ -650,10 +653,32 @@ class DataModelField(_PydanticBaseDataModelField):
         "pattern",
     }
     _DEFAULT_FIELD_KEYS: ClassVar[frozenset[str]] = _PYDANTIC_V2_DEFAULT_FIELD_KEYS
-    constraints: Optional[Constraints] = None  # noqa: UP045
+    constraints: Optional[Constraints] = None  # noqa: UP045  # ty: ignore[invalid-mutable-override]
     can_have_extra_keys: ClassVar[bool] = False
     _PYDANTIC_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     _PYDANTIC_EXTRA_PLAIN_ANNOTATION_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
+
+    @property
+    def dropped_constraints_warning(self) -> str | None:
+        """Return the warning of the base field, and one naming base64 lengths that the explicit target does not check.
+
+        Pydantic checks the lengths of bytes written as base64 text on that text only from 2.10 on.
+        """
+        messages = [super().dropped_constraints_warning]
+        if explicit_model_target_predates(self.parent, PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM) and (
+            lengths := sorted({
+                name
+                for data_type in self.data_type.all_data_types
+                if isinstance(data_type, EncodedBytesDataType)
+                for name in data_type.kwargs or ()
+            })
+        ):
+            messages.append(
+                f"Pydantic before {PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM} does not check {', '.join(lengths)} on "
+                f"base64 text, so {self._constraint_owner} checks {'it' if len(lengths) == 1 else 'them'} only on "
+                f"Pydantic {PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM} or later."
+            )
+        return " ".join(message for message in messages if message) or None
 
     @field_validator("extras")
     def validate_extras(cls, values: Any) -> dict[str, Any]:  # noqa: N805
@@ -1438,8 +1463,8 @@ class BaseModel(BaseModelBase):
     CUSTOM_TEMPLATE_ADAPTER = staticmethod(_adapt_legacy_pydantic_extra_template)
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)
     _TYPED_EXTRA_DICT_KEY_CAPABILITY = staticmethod(_supports_pydantic_typed_extra_dict_key)
-    TYPED_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
-    TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
+    TYPED_EXTRA_FIELD_NAME: ClassVar[str | None] = "__pydantic_extra__"
+    TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str | None] = "pydantic_extra_plain_annotation"
     # In Pydantic 2.11+, populate_by_name is deprecated in favor of validate_by_name + validate_by_alias
     # Default to V2 compatible (populate_by_name) unless target_pydantic_version is specified
     _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = [

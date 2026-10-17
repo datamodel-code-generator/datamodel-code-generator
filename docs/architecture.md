@@ -155,16 +155,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 179 | Shared generation options. |
-| `GenerateConfig` | 194 | Public `generate()` configuration. |
-| `ParserConfig` | 145 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 147 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 153 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 154 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 148 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 148 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 147 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 148 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 181 | Shared generation options. |
+| `GenerateConfig` | 196 | Public `generate()` configuration. |
+| `ParserConfig` | 147 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 149 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 155 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 156 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 150 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 150 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 149 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 150 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -212,8 +212,9 @@ classDiagram
 
 `GenerationStore` is the preferred mutation boundary for parser-side changes that affect dependency facts. Parser code
 should register models and update references, fields, bases, names, and paths through store methods instead of mutating
-the live objects directly. `GenerationIndex` rebuilds stable facts from the model list and gives later phases efficient
-queries such as "which data types point at this reference?".
+the live objects directly. `GenerationIndex` keeps stable facts about the model list and gives later phases efficient
+queries such as "which data types point at this reference?". A refresh records only the models that were appended or
+that store mutations changed, and rebuilds every fact only when the model list changes otherwise.
 
 ## References And Names
 
@@ -222,8 +223,8 @@ known references while parsers traverse documents. It also applies naming option
 prefixes, suffixes, duplicate suffixes, enum member normalization, and field name safety.
 
 `Reference.children` still links references back to users, but newer parser post-processing should prefer
-`GenerationIndex` when it needs dependency facts. The index is rebuilt from live models and avoids depending on legacy
-side effects alone.
+`GenerationIndex` when it needs dependency facts. The index records live models and avoids depending on legacy side
+effects alone.
 
 ## Output Backends
 

@@ -1333,6 +1333,32 @@ def test_fastapi_cli_input_diff(
     )
 
 
+def test_fastapi_cli_input_diff_model_name_map_warnings(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report the --model-name-map keys that match no model once, for the current input and not for the baseline."""
+    monkeypatch.chdir(tmp_path)
+    _copy(tmp_path)
+    shutil.copy2(CLI / "pets-baseline.yaml", tmp_path / "pets-baseline.yaml")
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=Path("pets.yaml"),
+            output_path=Path("models.py"),
+            input_file_type="openapi",
+            extra_args=_server("--diff-against", "pets-baseline.yaml", "--model-name-map", '{"Nope": "Unused"}'),
+            expected_exit=Exit.DIFF,
+            capsys=capsys,
+            assert_no_stderr=True,
+            expected_stdout_path=EXPECTED / "cli" / "input-diff" / "changed.txt",
+            file_should_not_exist=[tmp_path / "models.py", tmp_path / "server"],
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED / "cli" / "input-diff" / "model-name-map-warnings.txt",
+    )
+
+
 def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
     """Write the models and the package of a server job as a single run does, check them, then check a drift."""
     monkeypatch.chdir(tmp_path)

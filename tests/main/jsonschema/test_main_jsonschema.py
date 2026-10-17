@@ -3539,6 +3539,24 @@ def test_main_jsonschema_field_type_collision_cross_module(
             "Bar",
             id="child-module-first-rename-type-base-model-exact-import",
         ),
+        pytest.param(
+            "field_type_collision_inherited_modules_package",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_inherited_modules_package/base_model_rename_type",
+            "child",
+            "Bar",
+            id="packages-first-rename-type-base-model",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules_package",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "field_type_collision_inherited_modules_package/base_model_rename_type_exact",
+            "child",
+            "Bar",
+            id="packages-first-rename-type-base-model-exact-import",
+        ),
     ],
 )
 def test_main_jsonschema_field_type_collision_inherited_modules(
@@ -3553,7 +3571,7 @@ def test_main_jsonschema_field_type_collision_inherited_modules(
     """Rename an inherited field named like its type, or the type, under one name in every module of its family.
 
     The child keeps the alias of a renamed field, and imports a renamed type by its new name, whichever of the
-    modules comes first.
+    modules comes first, also where the type or its importer is a package ``__init__``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -5957,6 +5975,69 @@ def test_main_constraints_on_typing_protocols(output_file: Path) -> None:
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / f"{name}_rejected.txt")
 
 
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("pydantic_v2.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_x_python_type_literal_enum_members(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test a dotted member of a Literal imports what holds it, a class or a submodule, and validates as that member.
+
+    The member may be an enum member or a module constant; number bounds stay on enum members of a number schema.
+    msgspec takes no enum member in a Literal, so it warns, conditionally where the member may be a constant and not
+    for an enum member that ``x-python-import`` symbols name, and the runtime check is left to the other outputs.
+    """
+    name = "x_python_type_literal_enum_members"
+    stem = expected_file.removesuffix(".py")
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--target-python-version",
+                "3.11",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "Literal" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    if "msgspec.Struct" in extra_args:
+        return
+    valid = {"ok": 200, "success": 201, "maybe": 204, "client": 200, "bounded": 201, "port": 80, "accepted": 202}
+    with _generated_model(output_file, name, "XPythonTypeLiteralEnumMembers") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        values = {field: getattr(instance, field) for field in valid}
+        accepted = "".join(
+            f"{field}: {type(value).__name__}.{getattr(value, 'name', value)}\n" for field, value in values.items()
+        )
+        rejected = []
+        invalid = {"ok": 201, "success": 204, "maybe": 200, "client": 201, "bounded": 200, "port": 81, "accepted": 200}
+        for field_name, value in invalid.items():
+            with suppress(ValidationError):
+                validate(json.dumps(valid | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        accepted + "".join(f"rejected: {field_name}\n" for field_name in rejected),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_validated.txt",
+    )
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(
@@ -6132,6 +6213,113 @@ def test_main_number_constraints_on_emitted_types(
         "\n".join(rejected) + "\n",
         EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
     )
+
+
+_DECLARED_NUMBER_TYPE_OVERRIDES = {
+    "NumberConstraintsOnDeclaredNumbers.label": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.amount": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.stamp": "datetime.date",
+    "NumberConstraintsOnDeclaredNumbers.held": "typing.Any",
+}
+_COLLAPSED_NUMBER_TYPE_OVERRIDES = {
+    "NumberConstraintsOnDeclaredNumbers.shared_label": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.label_or_flag": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.sized_labels": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.limited_choices": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.label_or_flag_items": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.label_items": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.shared_label_or_flag": "decimal.Decimal",
+}
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("target_pydantic_214.py", ["--field-constraints", "--target-pydantic-version", "2.14"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+        ("collapse.py", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapse_type_overrides.py",
+            [
+                "--field-constraints",
+                "--collapse-root-models",
+                "--type-overrides",
+                json.dumps(_COLLAPSED_NUMBER_TYPE_OVERRIDES),
+            ],
+        ),
+        (
+            "type_overrides.py",
+            [
+                "--type-overrides",
+                json.dumps(
+                    _DECLARED_NUMBER_TYPE_OVERRIDES | {"NumberConstraintsOnDeclaredNumbers.count": "pydantic.conint"}
+                ),
+            ],
+        ),
+        (
+            "type_overrides_field_constraints.py",
+            ["--field-constraints", "--type-overrides", json.dumps(_DECLARED_NUMBER_TYPE_OVERRIDES)],
+        ),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_number_constraints_on_declared_numbers(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test a number schema keeps a number keyword only where a number value meets it, warns otherwise, and validates.
+
+    A type with numbers among its values, a union with a number member and a ``con*`` factory override keep the keyword,
+    as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it. A root model that
+    collapsing inlines into a field, an item, a union member or a mapping value hands its warning to the field; an
+    override keeps the constraint of a root that is the field's whole type and drops those of the parts it replaces.
+    msgspec decodes a date only from a string, so its runtime check is left to the other outputs, as it is for a target
+    the installed Pydantic cannot run.
+    """
+    name = "number_constraints_on_declared_numbers"
+    stem = expected_file.removesuffix(".py")
+    runs = installed_pydantic_runs_target(
+        extra_args[extra_args.index("--target-pydantic-version") + 1]
+        if "--target-pydantic-version" in extra_args
+        else None
+    )
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                *("--type-mappings", "number+day=date", "--formatters", "builtin"),
+                *("--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+            skip_code_validation=not runs,
+        )
+    assert_output(
+        "".join(
+            f"{warning.message}\n" for warning in recorded_warnings if "is generated without" in str(warning.message)
+        ),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    if "msgspec.Struct" in extra_args or not runs:
+        return
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "NumberConstraintsOnDeclaredNumbers") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_rejected.txt")
 
 
 @LEGACY_BLACK_SKIP
@@ -7453,7 +7641,7 @@ current generated class name such as `Foo1`. Values are final Python class names
 
 This is useful when a schema cannot be edited but generated model names must be
 stable for public APIs or downstream code. Colliding mapped names fail instead
-of being silently suffixed.""",
+of being silently suffixed. Keys that match no model are reported in a warning.""",
     input_schema="jsonschema/model_name_map.json",
     cli_args=[
         "--model-name-map",
@@ -7495,6 +7683,37 @@ def test_main_jsonschema_model_name_map_from_file(output_file: Path, tmp_path: P
         assert_func=assert_file_content,
         expected_file="model_name_map.py",
         extra_args=["--model-name-map", str(mapping_path)],
+    )
+
+
+def test_main_jsonschema_model_name_map_warns_on_unmatched_keys(output_file: Path) -> None:
+    """Report once and redacted the keys that match no model, not a name key that a path key of the model shadows."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "model_name_map.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file="model_name_map.py",
+            extra_args=[
+                "--model-name-map",
+                json.dumps({
+                    "#/definitions/Foo": "RenamedFoo",
+                    "Bar": "RenamedBar",
+                    "model-name": "OriginalMapped",
+                    "Foo": "ShadowedFoo",
+                    "Ownr": "Owner",
+                    "#/definitions/pet": "Pet",
+                    "https://user:s3cret@example.com/schema.json?token=abc#/definitions/Foo": "RemoteFoo",
+                }),
+                "--formatters",
+                "builtin",
+            ],
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_JSON_SCHEMA_PATH / "model_name_map_unmatched_keys_warnings.txt",
     )
 
 
@@ -8188,7 +8407,10 @@ def test_jsonschema_titles_use_title_as_name(output_file: Path) -> None:
 
 @pytest.mark.cli_doc(
     options=["--infer-union-variant-names"],
-    option_description="""Infer names for inline oneOf/anyOf object variants from literal fields.
+    option_description=(
+        'Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` + `type: "cat"` -> `PetCat`) '
+        "instead of `Pet1`, `Pet2`."
+        """
 
 The `--infer-union-variant-names` flag uses branch-local `const` values or
 single-value enums on a shared discriminator-style property to name generated
@@ -8196,12 +8418,16 @@ inline union models. This is useful when inline union branches would otherwise
 receive position-based names such as `Event` and `Event1`.
 
 The literal value can also come from a single-value enum or an internal `$ref`.
-Existing generated output is preserved unless this option is enabled.""",
+At least two branches need distinct values on the field; to also name a union's
+only tagged branch and branches tagged by their only key, use
+`--use-tag-as-union-variant-name`.
+Existing generated output is preserved unless this option is enabled."""
+    ),
     input_schema="jsonschema/infer_union_variant_names.json",
     cli_args=["--infer-union-variant-names"],
     golden_output="jsonschema/infer_union_variant_names.py",
     comparison_output="jsonschema/infer_union_variant_names_baseline.py",
-    related_options=["--use-title-as-name"],
+    related_options=["--use-tag-as-union-variant-name", "--use-title-as-name"],
 )
 def test_jsonschema_infer_union_variant_names(output_file: Path) -> None:
     """Infer inline union variant model names from literal branch fields."""
@@ -8241,6 +8467,125 @@ def test_jsonschema_infer_union_variant_names_edges(output_file: Path) -> None:
             "external_kind.json=external.models",
             "--disable-timestamp",
         ],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--use-tag-as-union-variant-name"],
+    option_description=(
+        "Name inline oneOf/anyOf branch models after their tag: what `--infer-union-variant-names` does, skipping "
+        'tags whose class names collide, plus single-branch unions (`type: "exec"` -> `LocalShellActionExec`) and '
+        'single-key branches (`{"granular": ...}` -> `AskForApprovalGranular`).'
+        """
+
+`--infer-union-variant-names` needs at least two branches with distinct literals
+on one field, so a union with one tagged branch keeps a position-based name that
+changes once a second branch is added, and a branch tagged by its only key, as in
+externally tagged enums, is never named. `--use-tag-as-union-variant-name` gives
+the names `--infer-union-variant-names` gives wherever that option names a union
+with distinct class names, and in the other unions also names:
+
+- the branches after a literal field that only one branch carries or that the key
+  branches below lack, picked like `--infer-union-variant-names` picks it (the
+  `discriminator` property first, then property order) except that a field the
+  union schema itself fixes to a single literal is skipped; a branch that is a
+  union itself is not named this way;
+- a key branch after its key: its only own property (one the union schema does
+  not declare), required and not a single literal, when the branch has no
+  `oneOf`/`anyOf` and no `allOf` of its own that adds properties (the union
+  schema's `allOf` is shared by every branch), and fixes no field the union
+  declares without a literal to a single literal, unless the union is one branch
+  beside `null`.
+
+String enum branches and branches with several untagged properties keep
+position-based names. Names are compared as the class names they become, so
+`foo-bar` and `fooBar` (both `FooBar`) collide: a literal field whose names
+collide is skipped for the next one, and literal names win over key names, so a
+key name that collides with a literal name or another key name is dropped and
+its branch keeps a position-based name.
+
+| Branches | default | `--infer-union-variant-names` | `--use-tag-as-union-variant-name` |
+|----------|---------|-------------------------------|-----------------------------------|
+| Several branches, distinct `type` literals | `Pet1`, `Pet2` | `PetCat`, `PetDog` | `PetCat`, `PetDog` |
+| Single branch (`type: "exec"`) | `LocalShellAction1` | `LocalShellAction1` | `LocalShellActionExec` |
+| Single-key branch (`{"granular": ...}`) | `AskForApproval2` | `AskForApproval2` | `AskForApprovalGranular` |"""
+    ),
+    input_schema="jsonschema/use_tag_as_union_variant_name.json",
+    cli_args=["--use-tag-as-union-variant-name"],
+    golden_output="jsonschema/use_tag_as_union_variant_name.py",
+    comparison_output="jsonschema/use_tag_as_union_variant_name_default.py",
+    related_options=["--infer-union-variant-names", "--use-title-as-name"],
+)
+def test_jsonschema_use_tag_as_union_variant_name(output_file: Path) -> None:
+    """Name single-branch and single-key union branches after their tag."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_tag_as_union_variant_name.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="use_tag_as_union_variant_name.py",
+        extra_args=["--use-tag-as-union-variant-name"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected_file"),
+    [
+        ([], "use_tag_as_union_variant_name_default.py"),
+        (["--infer-union-variant-names"], "use_tag_as_union_variant_name_infer.py"),
+    ],
+)
+def test_jsonschema_use_tag_as_union_variant_name_off(
+    output_file: Path, extra_args: list[str], expected_file: str
+) -> None:
+    """Keep single-branch and single-key union branches numbered without the option."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_tag_as_union_variant_name.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=extra_args,
+    )
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("input_file", "option", "expected_file"),
+    [
+        (
+            "use_tag_as_union_variant_name_edges.json",
+            "--use-tag-as-union-variant-name",
+            "use_tag_as_union_variant_name_edges.py",
+        ),
+        (
+            "use_tag_as_union_variant_name_edges.json",
+            "--infer-union-variant-names",
+            "use_tag_as_union_variant_name_edges_infer.py",
+        ),
+        (
+            "use_tag_as_union_variant_name_fallbacks.json",
+            "--use-tag-as-union-variant-name",
+            "use_tag_as_union_variant_name_fallbacks.py",
+        ),
+        (
+            "use_tag_as_union_variant_name_fallbacks.json",
+            "--infer-union-variant-names",
+            "use_tag_as_union_variant_name_fallbacks_infer.py",
+        ),
+    ],
+)
+def test_jsonschema_use_tag_as_union_variant_name_edges(
+    output_file: Path, input_file: str, option: str, expected_file: str
+) -> None:
+    """Name nested, nullable, mixed, and colliding tagged union branches, or keep them numbered without the option."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[option, "--external-ref-mapping", "external_null.json=external.models", "--disable-timestamp"],
     )
 
 
@@ -8367,6 +8712,39 @@ def test_main_union_annotation_at_line_length(output_file: Path, formatters: lis
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
+            "--target-python-version",
+            "3.11",
+            "--disable-timestamp",
+            "--formatters",
+            *formatters,
+        ],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["builtin"], ["black", "isort"]])
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        ("annotated_assignment_at_line_length", ["--use-annotated"]),
+        ("union_subscript_assignment_at_line_length", ["--no-use-union-operator"]),
+    ],
+)
+def test_main_subscript_annotation_at_line_length(
+    output_file: Path, name: str, extra_args: list[str], formatters: list[str]
+) -> None:
+    """Test the built-in formatter splits an `Annotated[...]` or `Union[...]` annotation like black.
+
+    Black splits the annotation once `<annotation> = (` exceeds the line, even when the annotation alone fits, and
+    then splits a `Field(...)` default that overflows the closing line.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}.py",
+        extra_args=[
+            *extra_args,
             "--target-python-version",
             "3.11",
             "--disable-timestamp",
@@ -8866,6 +9244,138 @@ def test_main_jsonschema_oneof_const_enum_literal(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="oneof_const_enum_literal.py",
         extra_args=["--enum-field-as-literal", "all"],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--use-single-value-enum-as-const"],
+    option_description="""Treat `enum` with a single value as `const` with that value.
+
+JSON Schema defines `{"enum": ["low"]}` as equal to `{"const": "low"}`. With
+`--use-single-value-enum-as-const`, each schema in the JSON Schema, OpenAPI and AsyncAPI documents
+whose `enum` lists one value is read as that `const`, so the output is the same as for the documents
+written with `const`, while the enums that allOf intersections leave stay enums:
+oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented unit variants,
+become one Enum with branch titles as member names, and a schema with one enum value is typed
+`Literal[...]` instead of a one-member Enum. Instance data such as `default` and `examples`,
+extension values (`x-...` except `x-propertyNames`), links and servers stay as written, so a schema
+kept under an extension key, such as one referenced as `headers.yaml#/x-rate`, is read as written too.
+A document parsed with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol
+Buffers, XML Schema and GraphQL inputs are not changed.""",
+    input_schema="jsonschema/single_value_enum_as_const/schema.json",
+    cli_args=["--use-single-value-enum-as-const"],
+    model_outputs={
+        "pydantic_v2": "main/jsonschema/single_value_enum_as_const/pydantic_v2.py",
+        "msgspec": "main/jsonschema/single_value_enum_as_const/msgspec.py",
+    },
+)
+def test_main_jsonschema_single_value_enum_as_const(output_file: Path) -> None:
+    """Treat `enum` with a single value as `const` with that value.
+
+    JSON Schema defines `{"enum": ["low"]}` as equal to `{"const": "low"}`. With
+    `--use-single-value-enum-as-const`, each schema in the JSON Schema, OpenAPI and AsyncAPI documents
+    whose `enum` lists one value is read as that `const`, so the output is the same as for the documents
+    written with `const`, while the enums that allOf intersections leave stay enums:
+    oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented unit variants,
+    become one Enum with branch titles as member names, and a schema with one enum value is typed
+    `Literal[...]` instead of a one-member Enum. Instance data such as `default` and `examples`,
+    extension values (`x-...` except `x-propertyNames`), links and servers stay as written, so a schema
+    kept under an extension key, such as one referenced as `headers.yaml#/x-rate`, is read as written too.
+    A document parsed with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol
+    Buffers, XML Schema and GraphQL inputs are not changed.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "schema.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="single_value_enum_as_const/pydantic_v2.py",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--use-single-value-enum-as-const",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "output_model", "extra_args", "expected_file"),
+    [
+        pytest.param(
+            "single_value_enum_as_const/schema.json",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const"],
+            "single_value_enum_as_const/msgspec.py",
+            id="msgspec",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/schema.json",
+            "pydantic_v2.BaseModel",
+            [],
+            "single_value_enum_as_const/pydantic_v2.py",
+            id="written-as-const-pydantic-v2",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/schema.json",
+            "msgspec.Struct",
+            [],
+            "single_value_enum_as_const/msgspec.py",
+            id="written-as-const-msgspec",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/schema.json",
+            "pydantic_v2.BaseModel",
+            ["--field-extra-keys", "x-meta", "--model-extra-keys", "x-meta", "--use-single-value-enum-as-const"],
+            "single_value_enum_as_const/extension_data.py",
+            id="extension-data",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/schema.json",
+            "pydantic_v2.BaseModel",
+            ["--field-extra-keys", "x-meta", "--model-extra-keys", "x-meta"],
+            "single_value_enum_as_const/extension_data.py",
+            id="written-as-const-extension-data",
+        ),
+    ],
+)
+def test_main_jsonschema_single_value_enum_as_const_matches_const(
+    input_path: str, output_model: str, extra_args: list[str], expected_file: str, output_file: Path
+) -> None:
+    """Generate the same models as for the schemas written with const, keeping extension data as written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_jsonschema_single_value_enum_as_const_keeps_draft_04(extra_args: list[str], output_file: Path) -> None:
+    """Keep the single-value enums of a draft-04 document, which has no const, as enums."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "draft_04.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="single_value_enum_as_const/draft_04.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_jsonschema_single_value_enum_as_const_mixed_drafts(extra_args: list[str], output_dir: Path) -> None:
+    """Keep a draft-07 file as written when the directory's models are parsed with an earlier draft-04 file's draft."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "mixed_drafts",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        expected_directory=EXPECTED_JSON_SCHEMA_PATH / "single_value_enum_as_const" / "mixed_drafts",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
     )
 
 
@@ -14626,6 +15136,91 @@ def test_main_jsonschema_type_mappings_to_boolean(output_file: Path) -> None:
             "--type-mappings",
             "binary=boolean",
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("strict_bytes.py", ["--strict-types", "bytes"]),
+        ("strict_bytes_field_constraints.py", ["--strict-types", "bytes", "--field-constraints"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--strict-types", "bytes"]),
+        ("target_pydantic_2.py", ["--field-constraints", "--target-pydantic-version", "2"]),
+        ("collapse_field_constraints.py", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapse_use_annotated_dataclass.py",
+            ["--output-model-type", "pydantic_v2.dataclass", "--use-annotated", "--collapse-root-models"],
+        ),
+    ],
+)
+def test_main_jsonschema_type_mappings_byte_to_binary(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test bytes mapped from base64 text decode it and check its lengths on the text, as the schema counts them.
+
+    The lengths hold on required, optional and nullable fields, with strict bytes, in unions, items and mapping values,
+    whose root models collapsing keeps as it keeps those of strings; an explicit target before Pydantic 2.10, which
+    checks them on the text only from then on, warns.
+    """
+    name = "type_mappings_byte_to_binary"
+    stem = expected_file.removesuffix(".py")
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                *("--type-mappings", "string+byte=binary", "--formatters", "builtin"),
+                *("--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "base64 text" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    valid = {
+        "plain": "aGk=",
+        "limited": "aGk=",
+        "either": "aGk=",
+        "sized": "aGk=",
+        "top": "aGk=",
+        "nullable": "aGk=",
+        "items": ["aGk="],
+        "choice": "aGk=",
+        "mapping": {"key": "aGk="},
+    }
+    long_text = "YWJjZGVmZw=="
+    invalid = {
+        "limited": long_text,
+        "sized": "YWI=",
+        "plain": long_text,
+        "top": long_text,
+        "nullable": long_text,
+        "items": [long_text],
+        "choice": long_text,
+        "mapping": {"key": long_text},
+    }
+    with _generated_model(output_file, name, "TypeMappingsByteToBinary") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        rejected = []
+        for field_name, value in invalid.items():
+            with suppress(ValidationError):
+                validate(json.dumps(valid | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "".join(f"{field}: {getattr(instance, field)!r}\n" for field in valid)
+        + "".join(f"rejected: {field_name}\n" for field_name in rejected),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_validated.txt",
     )
 
 

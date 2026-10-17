@@ -105,6 +105,12 @@ Generates Pydantic strict types that don't perform type coercion during validati
 | `bool` | `StrictBool` | Strings, integers |
 | `bytes` | `StrictBytes` | Strings |
 
+A `format: byte` string stays `Base64Str`, or `Base64Bytes` with `--type-mappings string+byte=binary`, which decode
+base64 text, also with `--strict-types str` or `bytes`. With `minLength` or `maxLength`, such bytes are written as
+`Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]`, which checks the lengths on the base64
+text, as JSON Schema counts them, before decoding it. Pydantic checks them so from 2.10 on, and an explicit
+`--target-pydantic-version 2` warns about each such field.
+
 ### Without `--strict-types`
 
 ```python

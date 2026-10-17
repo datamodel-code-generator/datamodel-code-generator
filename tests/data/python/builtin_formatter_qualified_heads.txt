@@ -1,0 +1,26 @@
+import builtins
+import typing
+
+import pydantic
+import typing_extensions
+
+
+class Model(pydantic.BaseModel):
+    one_beyond_line: typing.Union[FirstUnionMemberWithLong, NextUnionMemberWithLongName] = Field(..., title='Head')
+    described_beyond_limit: typing.Union[FirstUnionMemberWithLongName, NextUnionMemberWithLongName] = Field(..., description='A description long enough to push the closing line past the limit')
+    values: builtins.list[typing.Annotated[str, Field(min_length=1, max_length=255, pattern='^[a-z]+$')]]
+
+
+class Root(pydantic.RootModel[constr(pattern=r'^[a-z]+[0-9]*[A-Z]*[a-z]*[0-9]*[A-Z]*[a-z]*$', min_length=1) | None]):
+    root: str
+
+
+class Other(pydantic.RootModel[FirstUnionMemberWithLongName | NextUnionMemberWithLongName | ThirdUnionMemberLonger]):
+    root: str
+
+
+Alias: TypeAlias = typing.Union[FirstUnionMemberWithLongName, NextUnionMemberWithLongName, ThirdUnionMemberWithLongName]
+Pair = typing_extensions.TypeAliasType('Pair', typing.Annotated[str, Field(min_length=1, max_length=255, pattern='^[a-z]+$')])
+Movie = typing.TypedDict('Movie', {'title-with-dash': str, 'year-of-release': int, 'name-of-the-film-director': str, 'rating': float})
+Words = typing_extensions.TypeAliasType('Words', list[typing.Annotated[str, Field(min_length=1, max_length=255, pattern='^[a-z]+$', description='xx')]])
+Counts = typing_extensions.TypeAliasType('Counts', dict[str, typing.Annotated[int, Field(ge=0, le=1000, multiple_of=5, description='Counted things')]])
