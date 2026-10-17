@@ -467,7 +467,7 @@ class Struct(DataModel):
         return tag, tag_field if (own_tag_field := options.get("tag_field")) is None else own_tag_field
 
     @property
-    def discriminator_tag(self) -> tuple[Any, Any] | None:
+    def discriminator_tag(self) -> tuple[Any, Any] | None:  # ty: ignore[invalid-property-type-override]
         """Return the tag field and the tag msgspec tells the struct apart by in a union, or None if it is untagged."""
         tag, tag_field = self._tag_options()
         if tag is None and tag_field is None:
@@ -1191,12 +1191,8 @@ class DataModelField(DataModelFieldBase):
             )
         if not reasons:
             return None
-        owner = getattr(self.parent, "class_name", "")
-        owner = f"{owner}.{self.name}" if self.name else owner
-        dropped = untaken | union_keywords | integer_keywords
-        return (
-            f"{'; '.join(reasons)}; {owner} is generated without "
-            f"{'this constraint' if len(dropped) + inexact == 1 else 'these constraints'}."
+        return self._generated_without_constraints(
+            "; ".join(reasons), len(untaken | union_keywords | integer_keywords) + inexact
         )
 
     def _get_meta_string(self) -> str | None:

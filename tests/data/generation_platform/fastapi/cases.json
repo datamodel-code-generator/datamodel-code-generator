@@ -241,8 +241,7 @@
       "type_mappings": [
         "string+byte=binary"
       ]
-    },
-    "package_snapshots": []
+    }
   },
   "binary-mapped": {
     "input": "binary-mapped.yaml",

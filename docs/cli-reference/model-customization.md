@@ -3717,7 +3717,7 @@ current generated class name such as `Foo1`. Values are final Python class names
 
 This is useful when a schema cannot be edited but generated model names must be
 stable for public APIs or downstream code. Colliding mapped names fail instead
-of being silently suffixed.
+of being silently suffixed. Keys that match no model are reported in a warning.
 
 **Related:** [`--naming-strategy`](#naming-strategy), [`--use-title-as-name`](field-customization.md#use-title-as-name)
 

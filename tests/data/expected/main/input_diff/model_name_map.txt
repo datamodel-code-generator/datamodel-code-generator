@@ -1,0 +1,15 @@
+--- output.py (baseline input)
++++ output.py (current input)
+@@ -6,10 +6,10 @@
+ from pydantic import BaseModel
+ 
+ 
+-class Owner(BaseModel):
++class Person(BaseModel):
+     name: str | None = None
+ 
+ 
+ class Pet(BaseModel):
+     name: str | None = None
+-    owner: Owner | None = None
++    petOwner: Person | None = None

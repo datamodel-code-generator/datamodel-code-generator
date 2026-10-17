@@ -260,7 +260,7 @@ class TargetPydanticVersion(Enum):
     V2_12: Generate code for Pydantic 2.12+ (supports MISSING sentinel).
     V2_14: Generate code for Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's
         regex engine; pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of
-        the same class).
+        the same class; a number schema keeps multipleOf on a timedelta).
     """
 
     V2 = "2"

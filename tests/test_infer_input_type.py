@@ -141,6 +141,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "webhooks_ref_with_external_schema" in file.parts and file.name != "openapi.yaml":
             continue
+        if "single_value_enum_as_const" in file.parts and file.name != "api.yaml":
+            continue
         if "component_embedded_ids" in file.parts and file.suffix == ".json":
             continue
         if file.name.endswith((

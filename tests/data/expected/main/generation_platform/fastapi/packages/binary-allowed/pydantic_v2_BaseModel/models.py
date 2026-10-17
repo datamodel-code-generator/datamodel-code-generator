@@ -4,8 +4,18 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Annotated
 
-from pydantic import Base64Bytes, BaseModel, Field, RootModel, SecretStr, conbytes
+from pydantic import (
+    Base64Bytes,
+    Base64Encoder,
+    BaseModel,
+    EncodedBytes,
+    Field,
+    RootModel,
+    SecretStr,
+    conbytes,
+)
 from typing_extensions import TypeAliasType
 
 
@@ -15,6 +25,12 @@ class Mark(Enum):
 
 
 FilesPostQueryDigestParameter = TypeAliasType("FilesPostQueryDigestParameter", Base64Bytes)
+
+
+FilesPostQueryShortParameter = TypeAliasType(
+    "FilesPostQueryShortParameter",
+    Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)],
+)
 
 
 class FilesPostRequest(RootModel[bytes]):

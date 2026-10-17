@@ -1030,6 +1030,31 @@ def test_standard_preset_typed_dict(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "date", "expected_name"),
+    [
+        ("typing.TypedDict", "20261015", "typed_dict_20261015"),
+        ("typing.TypedDict", "20261017", "typed_dict_20261017"),
+        ("dataclasses.dataclass", "20261015", "dataclass_20261015"),
+        ("dataclasses.dataclass", "20261017", "dataclass_20261017"),
+        ("pydantic_v2.BaseModel", "20261015", "pydantic_v2"),
+        ("pydantic_v2.BaseModel", "20261017", "pydantic_v2"),
+        ("pydantic_v2.dataclass", "20261015", "pydantic_v2_dataclass"),
+        ("pydantic_v2.dataclass", "20261017", "pydantic_v2_dataclass"),
+    ],
+)
+def test_standard_preset_enum_shapes(output_model_type: str, date: str, expected_name: str, output_file: Path) -> None:
+    """The 20261017 presets render raw-value enums as Literal only for stdlib dataclass and TypedDict output."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "preset_enum_shapes.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--preset", f"standard-py314-{date}", "--output-model-type", output_model_type],
+        assert_func=assert_file_content,
+        expected_file=f"preset_enum_shapes/{expected_name}.py",
+    )
+
+
 @freeze_time(TIMESTAMP)
 def test_standard_preset_target_py310_does_not_force_specialized_enum(output_file: Path) -> None:
     """The standard preset does not force StrEnum when target Python is 3.10."""
@@ -6392,6 +6417,7 @@ def test_all_exports_includes_generate_config() -> None:
         for date, targets in (
             ("20260909", ("310", "311", "312", "313", "314")),
             ("20261015", ("310", "311", "312", "313", "314", "315")),
+            ("20261017", ("310", "311", "312", "313", "314", "315")),
         )
         for family in ("standard", "practical")
         for target in targets

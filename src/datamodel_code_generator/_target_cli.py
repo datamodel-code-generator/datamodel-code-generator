@@ -161,6 +161,9 @@ def _run(  # noqa: PLR0913, PLR0917
         prepare_target,
     )
     from datamodel_code_generator._target_selection import target_of  # noqa: PLC0415
+    from datamodel_code_generator.reference import (  # noqa: PLC0415
+        _unmatched_model_name_keys_unreported,  # pyright: ignore[reportPrivateUsage]
+    )
 
     lockfile = _target_lockfile(config, pyproject_path)
     generator, target = target_of(config, partial(_base, config, namespace, pyproject_path))
@@ -183,7 +186,8 @@ def _run(  # noqa: PLR0913, PLR0917
         return _DIFF if comparison.differences else _OK
     if config.diff_against is not None:
         effective = effective.model_copy(update={"input_filename": "<input>"})
-        baseline = plan_target(config.diff_against, model_config=effective, config=target, generator=generator)
+        with _unmatched_model_name_keys_unreported():
+            baseline = plan_target(config.diff_against, model_config=effective, config=target, generator=generator)
         current = plan_target(
             source, model_config=effective, config=target, generator=generator, timestamp=baseline.timestamp
         )

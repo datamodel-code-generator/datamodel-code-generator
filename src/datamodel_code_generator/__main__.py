@@ -2977,6 +2977,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             )
 
         if compare_output is not None:
+            from datamodel_code_generator.reference import _unmatched_model_name_keys_unreported  # noqa: PLC0415
+
             comparison_context = GenerationRunContext(
                 generation_timestamp=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
                 config=config,
@@ -2989,7 +2991,8 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 validators=validators_config,
                 default_value_overrides=default_value_overrides,
             )
-            comparison_context.run(cast("Path", config.diff_against), compare_output, input_filename="<input>")
+            with _unmatched_model_name_keys_unreported():
+                comparison_context.run(cast("Path", config.diff_against), compare_output, input_filename="<input>")
             result = comparison_context.run(input_, generate_output, input_filename="<input>")
         elif watch_dependencies is None:
             result = run_generate_from_config(

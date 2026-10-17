@@ -50,6 +50,7 @@
 - `--use-object-type`: Use object instead of Any for unspecified object and array values.
 - `--use-pendulum`: Use pendulum types for date, time, and duration fields.
 - `--use-root-model-type-alias`: Generate RootModel as type alias format for better mypy support.
+- `--use-single-value-enum-as-const`: Treat `enum` with a single value as `const` with that value.
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.
@@ -74,7 +75,7 @@
 - `--field-extra-keys-without-x-prefix`: Include schema extension keys in Field() without requiring 'x-' prefix.
 - `--field-include-all-keys`: Include all schema keys in Field() json_schema_extra.
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
-- `--infer-union-variant-names`: Infer names for inline oneOf/anyOf object variants from literal fields.
+- `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-snake-case-field`
@@ -92,6 +93,7 @@
 - `--use-schema-description`: Use schema description as class docstring.
 - `--use-serialization-alias`: Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).
 - `--use-single-line-docstring`: Emit short docstrings on a single line.
+- `--use-tag-as-union-variant-name`: Name inline oneOf/anyOf branch models after their tag: what `--infer-union-...
 - `--use-title-as-name`: Use schema title as the generated class name.
 
 ### Model Customization
@@ -367,7 +369,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
-  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015}
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017}
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
@@ -494,6 +496,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
+  --use-single-value-enum-as-const
+                        Treat `enum` with a single value as `const` with that
+                        value, which JSON Schema defines as equal: oneOf/anyOf
+                        branches such as {"type": "string", "enum": ["low"]}
+                        merge into one Enum as const branches do, and a schema
+                        with one enum value is typed Literal[...] instead of a
+                        one-member Enum
   --use-specialized-enum, --no-use-specialized-enum
                         Use specialized Enum class (StrEnum, IntEnum).
                         Requires --target-python-version 3.11+
@@ -701,8 +710,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --frozen-dataclasses  Generate frozen dataclasses (dataclass(frozen=True)).
                         Only applies to dataclass output.
   --infer-union-variant-names
-                        Infer inline oneOf/anyOf branch model names from
-                        literal discriminator-style fields
+                        Name inline oneOf/anyOf branch models after the value
+                        of their tag field (Pet + type: "cat" -> PetCat)
+                        instead of Pet1, Pet2
   --keep-model-order    Keep generated models' order
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
@@ -769,7 +779,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         patterns can select Python's regex engine;
                         pydantic_v2.dataclass writes required Field(...)
                         fields before the fields with defaults of the same
-                        class).
+                        class; a number schema keeps multipleOf on a
+                        timedelta).
   --target-python-version {3.10,3.11,3.12,3.13,3.14,3.15}
                         target python version
   --treat-dot-as-module, --no-treat-dot-as-module
@@ -812,6 +823,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         (UUID, IPv4Address, etc.) instead of str. Affects
                         dataclass, msgspec, TypedDict output. Pydantic already
                         uses these types by default.
+  --use-tag-as-union-variant-name
+                        Name inline oneOf/anyOf branch models after their tag:
+                        what --infer-union-variant-names does, skipping tags
+                        whose class names collide, plus single-branch unions
+                        (type: "exec" -> LocalShellActionExec) and single-key
+                        branches ({"granular": ...} -> AskForApprovalGranular)
   --use-title-as-name   use titles as class names of models
 
 [36;1mTemplate customization[0m:

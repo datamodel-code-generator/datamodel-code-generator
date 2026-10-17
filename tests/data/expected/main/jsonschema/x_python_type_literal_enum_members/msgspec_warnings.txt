@@ -1,0 +1,8 @@
+msgspec.Meta does not take ge on Literal[HTTPStatus.OK, HTTPStatus.CREATED]; XPythonTypeLiteralEnumMembers.bounded is generated without this constraint.
+msgspec decodes XPythonTypeLiteralEnumMembers.ok only if HTTPStatus.OK is a plain None, bool, int or str value: a msgspec Literal holds no other value, such as an enum member.
+msgspec decodes XPythonTypeLiteralEnumMembers.success only if HTTPStatus.OK is a plain None, bool, int or str value: a msgspec Literal holds no other value, such as an enum member.
+msgspec decodes XPythonTypeLiteralEnumMembers.maybe only if HTTPStatus.NO_CONTENT is a plain None, bool, int or str value: a msgspec Literal holds no other value, such as an enum member.
+msgspec decodes XPythonTypeLiteralEnumMembers.client only if client_aliased.OK is a plain None, bool, int or str value: a msgspec Literal holds no other value, such as an enum member.
+msgspec decodes XPythonTypeLiteralEnumMembers.bounded only if HTTPStatus.OK is a plain None, bool, int or str value: a msgspec Literal holds no other value, such as an enum member.
+msgspec decodes XPythonTypeLiteralEnumMembers.port only if client_aliased.HTTP_PORT is a plain None, bool, int or str value: a msgspec Literal holds no other value, such as an enum member.
+msgspec cannot decode XPythonTypeLiteralEnumMembers.accepted: its Literal holds the enum member http.HTTPStatus.ACCEPTED, while a msgspec Literal holds only None, bool, int and str values.

@@ -218,6 +218,7 @@ class ParserConfig(BaseModel):
     wrap_string_literal: bool | None = None
     use_title_as_name: bool = False
     infer_union_variant_names: bool = False
+    use_tag_as_union_variant_name: bool = False
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False
     use_tuple_for_fixed_items: bool = False
@@ -257,6 +258,7 @@ class ParserConfig(BaseModel):
     use_msgspec_tagged_unions: bool = False
     use_msgspec_nullable_enum_alias: bool = False
     use_typed_nullable_map_values: bool = False
+    use_single_value_enum_as_const: bool = False
     known_third_party: list[str] | None = None
     custom_formatters: list[str] | None = None
     custom_formatters_kwargs: dict[str, Any] | None = None

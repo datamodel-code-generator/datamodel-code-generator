@@ -218,6 +218,10 @@ class OpenAPIParser(JsonSchemaParser):
         """Get schema features based on config or detected OpenAPI version."""
         # OpenAPI parses a single document context, so caching is intentional.
         # AsyncAPI overrides this with a live property because it swaps raw_obj while resolving refs.
+        return self._schema_features_for(self.raw_obj)
+
+    def _schema_features_for(self, root: dict[str, YamlValue]) -> OpenAPISchemaFeatures:
+        """Get the Schema Object features of a root document based on config or its detected OpenAPI version."""
         from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
             OpenAPISchemaFeatures,
             detect_openapi_version,
@@ -226,11 +230,12 @@ class OpenAPIParser(JsonSchemaParser):
         config_version = getattr(self.config, "openapi_version", None)
         if config_version is not None and config_version != OpenAPIVersion.Auto:
             return OpenAPISchemaFeatures.from_openapi_version(config_version)
-        version = detect_openapi_version(self.raw_obj) if self.raw_obj else OpenAPIVersion.Auto
+        version = detect_openapi_version(root) if root else OpenAPIVersion.Auto
         return OpenAPISchemaFeatures.from_openapi_version(version)
 
     _config_class_name: ClassVar[str] = "OpenAPIParserConfig"
     _supports_api_scope: ClassVar[bool] = False
+    _named_entry_maps: ClassVar[frozenset[str]] = JsonSchemaParser._named_entry_maps | {"headers"}  # ruff: ignore[private-member-access]
 
     def __init__(
         self,

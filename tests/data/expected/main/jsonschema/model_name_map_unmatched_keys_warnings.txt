@@ -1,0 +1,1 @@
+--model-name-map: 3 keys matched no generated model: '#/definitions/pet', 'Ownr', 'https://example.com/schema.json#/definitions/Foo'
