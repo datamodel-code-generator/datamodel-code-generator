@@ -303,7 +303,36 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
 }
 ```
 
-### Step 4: Generate and verify documentation
+### Step 4: Register the option in the recommender (Required)
+
+Every option needs a decision in the [option recommender](recommend-options.md). Add an entry for the config field
+(the snake_case name, such as `my_new_option` for `--my-new-option`) to the `options` table of
+`src/datamodel_code_generator/resources/recommender_rules.json`, in alphabetical order.
+
+If a recommender rule decides the option, list the rule ids. Each rule's `set` must include the field:
+
+```json
+"my_new_option": {"rules": ["naming.my-rule"]}
+```
+
+Otherwise, record why the recommender leaves the option to the user, with one of the categories `io`, `target`,
+`preset`, `style`, `runtime-behaviour`, `formatting`, `compat`, `debug`, `platform`, `command`, or `pending`:
+
+```json
+"my_new_option": {"not_recommended": "style", "reason": "A naming convention only the project can choose."}
+```
+
+Use `pending` only while a rule for the option is being measured: give the follow-up id in `follow_up` and the
+release it must be decided by in `release`, such as `"release": "0.86.0"`. Once a newer version is built, the
+registry test fails until the entry gets a rule or a category.
+
+`test_every_option_is_registered_with_the_recommender` in `tests/main/test_main_recommend_options.py` fails when a
+config field or CLI option has no entry (`Options missing from the recommender registry: ...`) or an entry has no
+option. `test_recommender_rules_match_the_option_registry` fails when an entry names a rule that does not set that
+field, when a rule sets a field whose entry does not list it, or when a `pending` entry lacks `follow_up` and `release`
+or outlives its release. Both messages name this file.
+
+### Step 5: Generate and verify documentation
 
 ```bash
 # Regenerate CLI docs

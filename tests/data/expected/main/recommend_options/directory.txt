@@ -1,0 +1,21 @@
+Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+Schema  not analysed (directory input)
+
+Start from  --preset standard-py310-20261017
+
+Add  nothing on top of the preset
+
+Notes
+  - Target Python is not set: the recommendation assumes 3.10, the default. Set
+    --target-python-version to start from the preset of the Python version the project runs.
+  - Only the preset is recommended: a directory input is not analysed; the rules cover OpenAPI,
+    AsyncAPI, and JSON Schema documents.
+
+Command
+  datamodel-codegen --input . --preset standard-py310-20261017
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "."
+  preset = "standard-py310-20261017"

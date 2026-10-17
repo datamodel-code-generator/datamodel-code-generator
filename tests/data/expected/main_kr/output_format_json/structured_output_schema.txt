@@ -904,6 +904,432 @@
       "title": "PyprojectConfigOutputPayload",
       "type": "object"
     },
+    "RecommendBaselinePayload": {
+      "additionalProperties": false,
+      "description": "The dated preset the recommendation starts from.",
+      "properties": {
+        "preset": {
+          "title": "Preset",
+          "type": "string"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "configured": {
+          "description": "Whether the configuration already selects this preset.",
+          "title": "Configured",
+          "type": "boolean"
+        },
+        "covers": {
+          "description": "Rule outcomes the preset already sets.",
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Covers",
+          "type": "array"
+        },
+        "rejected": {
+          "items": {
+            "$ref": "#/$defs/RecommendRejectedPayload"
+          },
+          "title": "Rejected",
+          "type": "array"
+        }
+      },
+      "required": [
+        "preset",
+        "family",
+        "configured",
+        "covers",
+        "rejected"
+      ],
+      "title": "RecommendBaselinePayload",
+      "type": "object"
+    },
+    "RecommendContextPayload": {
+      "additionalProperties": false,
+      "description": "The output model type and target Python version the recommendation chose presets for.",
+      "properties": {
+        "output_model_type": {
+          "title": "Output Model Type",
+          "type": "string"
+        },
+        "target_python_version": {
+          "title": "Target Python Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "output_model_type",
+        "target_python_version"
+      ],
+      "title": "RecommendContextPayload",
+      "type": "object"
+    },
+    "RecommendDisagreementPayload": {
+      "additionalProperties": false,
+      "description": "A configured value the recommendation keeps although the rules suggest another value.",
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "kind": {
+          "description": "explicit: the configuration sets the field; preset: the configured preset sets it and no option undoes it; newer-preset: a newer dated preset of the same family exists.",
+          "enum": [
+            "explicit",
+            "preset",
+            "newer-preset"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "configured": {
+          "title": "Configured"
+        },
+        "recommended": {
+          "title": "Recommended"
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Rule"
+        }
+      },
+      "required": [
+        "field",
+        "kind",
+        "configured",
+        "recommended",
+        "rule"
+      ],
+      "title": "RecommendDisagreementPayload",
+      "type": "object"
+    },
+    "RecommendInputPayload": {
+      "additionalProperties": false,
+      "description": "The input a recommendation read and whether its schema rules could analyse it.",
+      "properties": {
+        "source": {
+          "enum": [
+            "file",
+            "url",
+            "stdin",
+            "directory",
+            "input-model"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "input_file_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The configured or detected input file type.",
+          "title": "Input File Type"
+        },
+        "document": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The schema format and version, such as OpenAPI 3.1.0; null when not analysed.",
+          "title": "Document"
+        },
+        "analysed": {
+          "title": "Analysed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "source",
+        "input_file_type",
+        "document",
+        "analysed"
+      ],
+      "title": "RecommendInputPayload",
+      "type": "object"
+    },
+    "RecommendOptionPayload": {
+      "additionalProperties": false,
+      "description": "One rule outcome: the config values it sets, the CLI arguments for them, and why.",
+      "properties": {
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "decision": {
+          "title": "Decision",
+          "type": "string"
+        },
+        "set": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "description": "Config fields and values, as pyproject.toml spells them.",
+          "title": "Set",
+          "type": "object"
+        },
+        "arguments": {
+          "description": "The CLI arguments of the values; for not_recommended, the options the rule advises against.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "contested_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Why the schema also argues against the values; set only for consider entries.",
+          "title": "Contested Reason"
+        },
+        "caveats": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Caveats",
+          "type": "array"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rule",
+        "decision",
+        "set",
+        "arguments",
+        "reason",
+        "contested_reason",
+        "caveats",
+        "evidence"
+      ],
+      "title": "RecommendOptionPayload",
+      "type": "object"
+    },
+    "RecommendOptionsPayload": {
+      "additionalProperties": false,
+      "description": "Structured JSON payload emitted by --recommend-options --output-format json (experimental).",
+      "properties": {
+        "version": {
+          "const": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "format": {
+          "const": "json",
+          "title": "Format",
+          "type": "string"
+        },
+        "kind": {
+          "const": "recommend-options",
+          "title": "Kind",
+          "type": "string"
+        },
+        "mode": {
+          "const": "quick",
+          "title": "Mode",
+          "type": "string"
+        },
+        "rules_revision": {
+          "title": "Rules Revision",
+          "type": "string"
+        },
+        "calibrated_presets": {
+          "title": "Calibrated Presets",
+          "type": "string"
+        },
+        "input": {
+          "$ref": "#/$defs/RecommendInputPayload"
+        },
+        "context": {
+          "$ref": "#/$defs/RecommendContextPayload"
+        },
+        "signals": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Signals",
+          "type": "object"
+        },
+        "facts": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Facts",
+          "type": "object"
+        },
+        "baseline": {
+          "$ref": "#/$defs/RecommendBaselinePayload"
+        },
+        "recommendations": {
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Recommendations",
+          "type": "array"
+        },
+        "consider": {
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Consider",
+          "type": "array"
+        },
+        "not_recommended": {
+          "items": {
+            "$ref": "#/$defs/RecommendOptionPayload"
+          },
+          "title": "Not Recommended",
+          "type": "array"
+        },
+        "disagreements": {
+          "items": {
+            "$ref": "#/$defs/RecommendDisagreementPayload"
+          },
+          "title": "Disagreements",
+          "type": "array"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        },
+        "arguments": {
+          "description": "The recommended command's arguments, without the program name.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "config": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The pyproject.toml keys to write, nested under their table; null when they stay on the command line.",
+          "title": "Config"
+        },
+        "config_complete": {
+          "description": "Whether config is a complete table, or only the keys to add or change in an existing one.",
+          "title": "Config Complete",
+          "type": "boolean"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "format",
+        "kind",
+        "mode",
+        "rules_revision",
+        "calibrated_presets",
+        "input",
+        "context",
+        "signals",
+        "facts",
+        "baseline",
+        "recommendations",
+        "consider",
+        "not_recommended",
+        "disagreements",
+        "notes",
+        "arguments",
+        "config",
+        "config_complete",
+        "content"
+      ],
+      "title": "RecommendOptionsPayload",
+      "type": "object"
+    },
+    "RecommendRejectedPayload": {
+      "additionalProperties": false,
+      "description": "A preset the recommendation does not start from: no option turns off a value a rule rejects.",
+      "properties": {
+        "preset": {
+          "title": "Preset",
+          "type": "string"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "arguments": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "preset",
+        "rule",
+        "arguments",
+        "reason"
+      ],
+      "title": "RecommendRejectedPayload",
+      "type": "object"
+    },
     "TargetPayload": {
       "additionalProperties": false,
       "description": "The package a server or client generation renders and the requirements it needs at run time.",
@@ -943,7 +1369,8 @@
       "generation": "#/$defs/GenerationPayload",
       "input-diff": "#/$defs/CheckOutputPayload",
       "prompt": "#/$defs/PromptPayload",
-      "pyproject-config": "#/$defs/PyprojectConfigOutputPayload"
+      "pyproject-config": "#/$defs/PyprojectConfigOutputPayload",
+      "recommend-options": "#/$defs/RecommendOptionsPayload"
     },
     "propertyName": "kind"
   },
@@ -971,6 +1398,9 @@
     },
     {
       "$ref": "#/$defs/PromptPayload"
+    },
+    {
+      "$ref": "#/$defs/RecommendOptionsPayload"
     }
   ],
   "title": "StructuredOutputPayload",

@@ -244,10 +244,11 @@ General utility, HTTP, checking, and project integration options.
 - `--no-color`: disable colorized output
 - `--output-format`: Format for command output (default: text). Use json for structured output when supported. Choices: `text`, `json`.
 - `--fail-on-multi-module-stdout`: Return an error instead of concatenating multiple generated modules in text stdout. This does not affect single-module, JSON, or file output.
-- `--output-format-json-schema`: Output JSON Schema for the selected JSON output or JSON configuration format and exit. Choices: `config`, `generate-prompt`, `generation`, `model-metadata`, `structured-output`.
+- `--output-format-json-schema`: Output JSON Schema for the selected JSON output or JSON configuration format and exit. Choices: `config`, `generate-prompt`, `generation`, `model-metadata`, `recommend-options`, `structured-output`.
 - `--generate-pyproject-config`: Generate pyproject.toml configuration from the provided CLI arguments and exit
 - `--generate-cli-command`: Generate CLI command from pyproject.toml configuration and exit
 - `--generate-prompt`: Generate a prompt for consulting LLMs about CLI options. Optionally provide your question as an argument. Pipe to CLI tools (e.g., `| claude -p`, `| codex exec`) or copy to clipboard (e.g., `| pbcopy`, `| xclip`) for web LLM chats.
+- `--recommend-options`: Analyse the input schema and print the options to add on top of the latest dated preset, with the reasons, as a command and a pyproject.toml block, then exit (experimental). 'quick' (the default) applies the schema rules without generating code. Choices: `quick`.
 - `--ignore-pyproject`: Ignore pyproject.toml configuration
 - `--install-skill`: Install the bundled datamodel-code-generator Agent Skill and exit (experimental). Use --skill-scope to select a project or personal installation. Choices: `codex`, `claude-code`.
 - `--skill-scope`: Installation scope for --install-skill (default: project). Project installs use .agents/skills or .claude/skills; user installs use the matching home directory. Choices: `project`, `user`.

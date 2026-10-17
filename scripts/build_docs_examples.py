@@ -666,6 +666,18 @@ def docs_examples() -> tuple[DocsExample, ...]:
             render=render_reuse_scope_tree_example,
         ),
         _file_example(
+            "recommend-options.schema",
+            "recommend-options.md",
+            language="yaml",
+            path=TEST_DATA / "recommend_options" / "titled_variants.yaml",
+        ),
+        _file_example(
+            "recommend-options.report",
+            "recommend-options.md",
+            language="text",
+            path=EXPECTED_MAIN / "recommend_options" / "titled_variants.txt",
+        ),
+        _file_example(
             "model-reuse.use-type-alias.schema",
             "model-reuse.md",
             language="json",

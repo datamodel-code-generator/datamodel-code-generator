@@ -1,0 +1,47 @@
+Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+Schema  OpenAPI 3.1.0
+  components                       6, 1 operations
+  inline objects / enums           8 / 2, nesting depth 1
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  2 of 1 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           3 oneOf/anyOf, 1 with a discriminator, 12 inline variants
+  union branch tags                2 tagged, 1 single required key, 1 tagged only through allOf $ref, 1 copy their parent
+  component keys                   snake_case (2 of 6); 0 dotted in 0 namespaces
+
+Start from  --preset practical-py314-20261017
+  already sets --use-title-as-name   [titles.names-from-unique-titles]
+
+Add (1 option)
+  --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
+      Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
+      sibling shares: 2; objects with one required key: 1); otherwise they are named after their
+      parent and a number.
+      caveat: Tags that only a referenced schema declares through allOf are not used (branches: 1;
+      #4839).
+      caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
+      the key (FieldValueFieldValue).
+      measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
+      (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
+      measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805
+      (Changes23 -> ChangesBody)
+      measured: SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 ->
+      WorkflowDispatchInputString, Boolean, ...)
+      measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
+      schemas without tagged or key branches: no change
+
+Notes
+  - The rules were calibrated on the 20261015 presets.
+
+Command
+  datamodel-codegen --input union_edges.yaml --preset practical-py314-20261017 --target-python-version 3.14 --use-tag-as-union-variant-name
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "union_edges.yaml"
+  preset = "practical-py314-20261017"
+  target-python-version = "3.14"
+  use-tag-as-union-variant-name = true

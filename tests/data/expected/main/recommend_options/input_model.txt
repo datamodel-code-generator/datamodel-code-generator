@@ -1,0 +1,20 @@
+Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+Schema  not analysed (input-model input)
+
+Start from  --preset standard-py312-20261017
+
+Add  nothing on top of the preset
+
+Notes
+  - Only the preset is recommended: --input-model inputs are not analysed; the rules cover OpenAPI,
+    AsyncAPI, and JSON Schema documents.
+
+Command
+  datamodel-codegen --input-model models.py:Pet --preset standard-py312-20261017 --target-python-version 3.12
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input-model = ["models.py:Pet"]
+  preset = "standard-py312-20261017"
+  target-python-version = "3.12"

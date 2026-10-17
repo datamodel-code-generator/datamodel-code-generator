@@ -196,6 +196,7 @@ EXCLUDED_CONFIG_OPTIONS: frozenset[str] = frozenset({
     "generate_pyproject_config",
     "generate_cli_command",
     "generate_prompt",
+    "recommend_options",
     "ignore_pyproject",
     "install_skill",
     "skill_scope",
@@ -1102,22 +1103,28 @@ def _format_toml_value(value: TomlValue) -> str:
     return f"[{', '.join(formatted_items)}]"
 
 
+def _cli_config_values(args: Namespace) -> dict[str, TomlValue]:
+    """Return the configuration values of CLI arguments, keyed by field name."""
+    return {
+        key: _pyproject_toml_value(key, value)
+        for key, value in sorted(vars(args).items())
+        if value is not None and key not in EXCLUDED_CONFIG_OPTIONS
+    }
+
+
 def _pyproject_config_data(args: Namespace) -> dict[str, TomlValue]:
     """Return pyproject.toml configuration data from CLI arguments."""
-    config_data: dict[str, TomlValue] = {}
-    args_dict: dict[str, object] = vars(args)
-    for key, value in sorted(args_dict.items()):
-        if value is None:
-            continue
-        if key in EXCLUDED_CONFIG_OPTIONS:
-            continue
-
-        config_data[key.replace("_", "-")] = _pyproject_toml_value(key, value)
-    return config_data
+    return {key.replace("_", "-"): value for key, value in _cli_config_values(args).items()}
 
 
-def _format_pyproject_config(config_data: Mapping[str, TomlValue]) -> str:
-    lines: list[str] = ["[tool.datamodel-codegen]"]
+def _toml_key(key: str) -> str:
+    return key if key and all(char.isalnum() or char in "-_" for char in key) else json.dumps(key, ensure_ascii=False)
+
+
+def _format_pyproject_config(
+    config_data: Mapping[str, TomlValue], table: tuple[str, ...] = ("tool", "datamodel-codegen")
+) -> str:
+    lines: list[str] = [f"[{'.'.join(_toml_key(key) for key in table)}]"]
     for key, value in config_data.items():
         lines.append(f"{key} = {_format_toml_value(value)}")
     return "\n".join(lines) + "\n"
@@ -1530,6 +1537,78 @@ def _write_comparison_output(
         )
         return
     sys.stdout.write(comparison.content)
+
+
+def _recommend_options_conflict(args: Namespace) -> str | None:
+    """Return the first option that cannot be combined with --recommend-options."""
+    conflicts = (
+        (args.check, "--check"),
+        (args.watch, "--watch"),
+        (args.diff_against is not None, "--diff-against"),
+        (args.all_jobs, "--all-jobs"),
+        (len(args.job or ()) > 1, "more than one --job"),
+        (args.generate_pyproject_config, "--generate-pyproject-config"),
+        (args.generate_cli_command, "--generate-cli-command"),
+    )
+    return next((option for conflict, option in conflicts if conflict), None)
+
+
+def _run_recommend_options(  # noqa: PLR0913
+    args: Namespace,
+    config: Config,
+    pyproject_config: Mapping[str, Any],
+    cli_config_args: Mapping[str, _RawConfigValue],
+    *,
+    table: tuple[str, ...] = ("tool", "datamodel-codegen"),
+    selector: tuple[str, ...] = (),
+) -> Exit:
+    """Print option recommendations for the resolved configuration (experimental)."""
+    from datamodel_code_generator._recommend import RecommendRequest, recommend_options  # noqa: PLC0415
+    from datamodel_code_generator._recommend._report import render_json, render_text  # noqa: PLC0415
+
+    preset_on_command_line = "preset" in cli_config_args
+    explicit = set(cli_config_args) if preset_on_command_line else {*pyproject_config, *cli_config_args}
+    explicit.discard("preset")
+    try:
+        recommendation = recommend_options(
+            RecommendRequest(
+                config=config,
+                explicit_fields=frozenset(explicit),
+                cli_values=_cli_config_values(args),
+                has_project_config=bool(pyproject_config),
+                preset_on_command_line=preset_on_command_line,
+                read_stdin=sys.stdin.read,
+                table=table,
+                selector=selector,
+                mode=args.recommend_options,
+            )
+        )
+    except Error as e:
+        print(str(e), file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
+    command = shlex.join(["datamodel-codegen", *recommendation.command_selector]) + generate_cli_command(
+        recommendation.command_values
+    ).removeprefix("datamodel-codegen")
+    pyproject = (
+        None
+        if recommendation.config_values is None
+        else _format_pyproject_config(
+            {key.replace("_", "-"): value for key, value in sorted(recommendation.config_values.items())},
+            recommendation.table,
+        )
+    )
+    content = render_text(recommendation, command=command, pyproject=pyproject)
+    if args.output_format == "json":
+        print(render_json(recommendation, content=content, arguments=shlex.split(command)[1:]))  # noqa: T201
+    else:
+        print(content, end="")  # noqa: T201
+    return Exit.OK
+
+
+def _recommend_options_json_schema() -> str:
+    from datamodel_code_generator._structured_output import recommend_options_json_schema  # noqa: PLC0415
+
+    return recommend_options_json_schema()
 
 
 def _generation_output_json_schema() -> str:
@@ -2549,6 +2628,13 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     if namespace.output_format_json_schema == "structured-output":
         print(_structured_output_json_schema())  # noqa: T201
         return Exit.OK
+    if namespace.output_format_json_schema == "recommend-options":
+        print(_recommend_options_json_schema())  # noqa: T201
+        return Exit.OK
+
+    if namespace.recommend_options is not None and (conflict := _recommend_options_conflict(namespace)):
+        print(f"Error: --recommend-options cannot be used with {conflict}", file=sys.stderr)  # noqa: T201
+        return Exit.ERROR
 
     if namespace.generate_pyproject_config:
         config_data = _pyproject_config_data(namespace)
@@ -2581,6 +2667,16 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 _record_raw_batch_watch_dependencies(namespace, dependencies)
             print(str(e), file=sys.stderr)  # noqa: T201
             return Exit.ERROR
+        if namespace.recommend_options is not None:
+            (job_plan,) = batch_plan.jobs
+            return _run_recommend_options(
+                namespace,
+                job_plan.config,
+                job_plan.raw_config,
+                job_plan.cli_config_args,
+                table=("tool", "datamodel-codegen", "jobs", job_plan.name),
+                selector=("--job", job_plan.name),
+            )
         if not batch_plan.watch:
             return _run_jobs(args, batch_plan.jobs)
         if any(plan.config.check for plan in batch_plan.jobs):
@@ -2669,6 +2765,17 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                 raise
             print(f"Invalid configuration: {e}", file=sys.stderr)  # noqa: T201
             return Exit.ERROR
+        if namespace.recommend_options is not None:
+            return _run_recommend_options(
+                namespace,
+                config,
+                pyproject_config,
+                cli_config_args,
+                selector=() if namespace.profile is None else ("--profile", namespace.profile),
+                table=("tool", "datamodel-codegen")
+                if namespace.profile is None
+                else ("tool", "datamodel-codegen", "profiles", namespace.profile),
+            )
 
     watch_dependencies = dependencies
     if config.watch:

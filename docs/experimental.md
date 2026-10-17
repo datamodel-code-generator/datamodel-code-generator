@@ -12,6 +12,7 @@ This page lists features that are available but still experimental.
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
 | `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
+| `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, and its JSON payload` | 0.86.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
@@ -85,6 +86,16 @@ FastAPI server generation from the CLI is experimental; its options and generate
 Bundled Agent Skill installation is experimental; supported clients, scopes, and installed skill contents may change.
 
 Use --install-skill with codex or claude-code. --skill-scope selects a project or user installation, and --overwrite-skill safely replaces an existing regular skill directory.
+
+### `cli-option.recommend-options`
+
+- **Kind:** cli-option
+- **Target:** `--recommend-options, its rule data, and its JSON payload`
+- **Since:** 0.86.0
+
+Option recommendations are experimental; the rules, the schema signals they read, the report, and the JSON payload may change.
+
+--recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. 'quick' applies the rules without generating code.
 
 ### `cli-option.schema-validator-type`
 

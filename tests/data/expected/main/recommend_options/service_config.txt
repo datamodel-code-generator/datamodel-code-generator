@@ -1,0 +1,66 @@
+Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
+  components                       3, 0 operations
+  inline objects / enums           1 / 5, nesting depth 1
+  shared property names            1 (type x2)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           7 oneOf/anyOf, 0 with a discriminator, 14 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 2 copy their parent
+  component keys                   lowercase (3 of 3); 0 dotted in 0 namespaces
+  root schema                      object model 1, title words 4
+
+Start from  --preset standard-py314-20261017
+
+Add (2 options)
+  --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
+      Most enums are inline value sets of one property (inline enums: 5 of 5). As Enum classes they
+      add one class name each, the longest and most numbered names; Literal types keep the values
+      without a class.
+      measured: GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227
+      measured: Stripe API description: problem names 348 -> 158
+      measured: SchemaStore workflow schema: Type1 to Type19 disappear
+  --class-name ServiceConfig   [root.class-name-for-root-object]
+      The root schema is an object model. Without --class-name its class is Model (with
+      --use-title-as-name, its title: Service configuration file schema), and full-path prefixes
+      that name onto root-level models. The suggested name comes from the input file name; replace
+      it with the name the project wants.
+      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
+      became TsConfig, names over 40 characters 6 -> 0
+      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
+      Workflow, Compose and PackageJson
+
+Consider (the schema also has signals against these)
+  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      Inline schemas under different parents share property names (names: 1, e.g. type x2; inline
+      names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order
+      and shift when the schema grows; full-path names each inline model after its parent.
+      against: Inline union variants are named after their parent property (14 variants), and
+      full-path prefixes the parent again on those (doubled names such as EnvFileEnvFile), so
+      whether it helps depends on the schema.
+      caveat: full-path repeats the parent name where a union branch or array item already carries
+      it (#4826).
+      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+      versions 17% -> 0.0%
+      measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+      measured: Stripe API description: the expandable ID string of charge no longer displaces the
+      charge component (ChargeModel)
+      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+      lost
+
+Notes
+  - The rules were calibrated on the 20261015 presets.
+
+Command
+  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --preset standard-py314-20261017 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  class-name = "ServiceConfig"
+  enum-field-as-literal = "all"
+  input = "service-config.json"
+  preset = "standard-py314-20261017"
+  target-python-version = "3.14"

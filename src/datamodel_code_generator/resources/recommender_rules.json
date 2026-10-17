@@ -1,0 +1,1209 @@
+{
+  "format_version": 1,
+  "rules_revision": "2026-10-17",
+  "calibrated_presets": "20261015",
+  "families": [
+    "standard",
+    "practical"
+  ],
+  "rules": [
+    {
+      "id": "titles.keys-when-titles-collide",
+      "decision": "title-source",
+      "when": {
+        "any": [
+          {
+            "signal": "component_title_duplicate_groups",
+            "op": ">=",
+            "value": 3
+          },
+          {
+            "signal": "component_titles_equal_other_key",
+            "op": ">=",
+            "value": 3
+          },
+          {
+            "signal": "inline_title_max_repeat",
+            "op": ">=",
+            "value": 5
+          },
+          {
+            "all": [
+              {
+                "signal": "titled_components",
+                "op": ">=",
+                "value": 10
+              },
+              {
+                "ratio": [
+                  "component_titles_equal_own_key",
+                  "titled_components"
+                ],
+                "op": ">=",
+                "value": 0.8
+              }
+            ]
+          }
+        ]
+      },
+      "set": {
+        "use_title_as_name": false
+      },
+      "reason": "Titles do not identify the schemas (shared titles: {component_title_duplicate_groups}, covering {component_titles_in_duplicate_groups} components; titles equal to another component's key: {component_titles_equal_other_key}; most repeated inline title: {inline_title_max_repeat}; titles that repeat their own key: {component_titles_equal_own_key} of {titled_components}). Titles as class names would number components, or rename them when a title changes; names from the keys avoid both.",
+      "evidence": [
+        "GitHub REST API description: 53 shared component titles numbered components (page-deployment became GitHubPages1, Actor2)",
+        "OpenAI API description: 503 problem names with titles off, 544 with titles on",
+        "Stripe API description: 17% of component titles changed in four months; class names from keys renamed 0.0% of locations"
+      ]
+    },
+    {
+      "id": "titles.names-from-unique-titles",
+      "decision": "title-source",
+      "when": {
+        "all": [
+          {
+            "signal": "inline_titled_union_variants",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "not": {
+              "any": [
+                {
+                  "signal": "component_title_duplicate_groups",
+                  "op": ">=",
+                  "value": 1
+                },
+                {
+                  "signal": "component_titles_equal_other_key",
+                  "op": ">=",
+                  "value": 1
+                },
+                {
+                  "signal": "inline_title_max_repeat",
+                  "op": ">=",
+                  "value": 2
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "set": {
+        "use_title_as_name": true
+      },
+      "reason": "Inline union variants carry titles that no other schema uses (titled variants: {inline_titled_union_variants}, e.g. {inline_title_examples}). Titles name them after what they are, instead of their parent property and a number.",
+      "evidence": [
+        "Train Travel API: BookingPayment.source variants became Card and BankAccount instead of Source and Source1"
+      ]
+    },
+    {
+      "id": "naming.qualify-shared-inline-names",
+      "decision": "naming-strategy",
+      "when": {
+        "any": [
+          {
+            "signal": "shared_inline_names",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "signal": "inline_names_equal_component",
+            "op": ">=",
+            "value": 1
+          }
+        ]
+      },
+      "contested_when": {
+        "ratio": [
+          "inline_union_variants",
+          "shared_inline_names"
+        ],
+        "op": ">=",
+        "value": 10
+      },
+      "contested_reason": "Inline union variants are named after their parent property ({inline_union_variants} variants), and full-path prefixes the parent again on those (doubled names such as EnvFileEnvFile), so whether it helps depends on the schema.",
+      "set": {
+        "naming_strategy": "full-path"
+      },
+      "reason": "Inline schemas under different parents share property names (names: {shared_inline_names}, e.g. {shared_inline_name_examples}; inline names equal to a component name: {inline_names_equal_component}). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+      "caveats": [
+        "full-path repeats the parent name where a union branch or array item already carries it (#4826)."
+      ],
+      "evidence": [
+        "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
+        "Petstore: Status and Status1 became OrderStatus and PetStatus",
+        "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
+        "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
+      ]
+    },
+    {
+      "id": "enums.inline-value-sets-as-literal",
+      "decision": "enum-shape",
+      "when": {
+        "all": [
+          {
+            "signal": "inline_enums",
+            "op": ">=",
+            "value": 5
+          },
+          {
+            "ratio": [
+              "inline_enums",
+              "all_enums"
+            ],
+            "op": ">=",
+            "value": 0.5
+          }
+        ]
+      },
+      "set": {
+        "enum_field_as_literal": "all"
+      },
+      "reason": "Most enums are inline value sets of one property (inline enums: {inline_enums} of {all_enums}). As Enum classes they add one class name each, the longest and most numbered names; Literal types keep the values without a class.",
+      "evidence": [
+        "GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227",
+        "Stripe API description: problem names 348 -> 158",
+        "SchemaStore workflow schema: Type1 to Type19 disappear"
+      ]
+    },
+    {
+      "id": "reuse.identical-inline-shapes",
+      "decision": "reuse",
+      "when": {
+        "any": [
+          {
+            "signal": "duplicate_inline_objects",
+            "op": ">=",
+            "value": 10
+          },
+          {
+            "signal": "duplicate_inline_enums",
+            "op": ">=",
+            "value": 10
+          },
+          {
+            "signal": "parent_copy_union_branches",
+            "op": ">=",
+            "value": 5
+          }
+        ]
+      },
+      "set": {
+        "reuse_model": true,
+        "collapse_reuse_models": true
+      },
+      "reason": "The schema repeats shapes (inline objects repeating a shape: {duplicate_inline_objects}, in {duplicate_inline_shapes} shapes; inline enums repeating a value set: {duplicate_inline_enums}, in {duplicate_inline_enum_shapes} sets; union branches that only constrain their parent's properties, which generation copies per branch: {parent_copy_union_branches}). Reuse emits each shape once, and collapse refers to it instead of an empty subclass.",
+      "evidence": [
+        "GitHub REST API description: 3263 -> 1872 types, numbered names 1774 -> 663",
+        "Stripe API description: 2512 -> 2022 types",
+        "SchemaStore workflow schema: the step branches' copies With1 to With11 became one With1"
+      ]
+    },
+    {
+      "id": "root.class-name-for-root-object",
+      "decision": "root-name",
+      "applies_to": {
+        "input_file_types": [
+          "jsonschema"
+        ]
+      },
+      "when": {
+        "signal": "root_is_object",
+        "op": "==",
+        "value": 1
+      },
+      "value_from": {
+        "class_name": "pascal_case_input_stem"
+      },
+      "reason": "The root schema is an object model. Without --class-name its class is Model (with --use-title-as-name, its title: {root_title}), and full-path prefixes that name onto root-level models. The suggested name comes from the input file name; replace it with the name the project wants.",
+      "evidence": [
+        "SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile became TsConfig, names over 40 characters 6 -> 0",
+        "SchemaStore workflow, docker-compose and package.json schemas: Model became Workflow, Compose and PackageJson"
+      ]
+    },
+    {
+      "id": "dotted-keys.flat-when-namespaces-cycle",
+      "decision": "dotted-keys",
+      "when": {
+        "all": [
+          {
+            "signal": "dotted_key_namespaces",
+            "op": ">=",
+            "value": 2
+          },
+          {
+            "signal": "dotted_namespace_reference_cycles",
+            "op": ">=",
+            "value": 1
+          }
+        ]
+      },
+      "set": {
+        "treat_dot_as_module": false
+      },
+      "reason": "Dotted keys ({dotted_keys}, in {dotted_key_namespaces} namespaces) reference each other in cycles (namespace groups: {dotted_namespace_reference_cycles}). As modules, cycle members move to _internal.py, where same-named classes of different namespaces get _1 suffixes; flat names avoid that.",
+      "evidence": [
+        "Stripe API description: Card_1 and Customer_1 disappear, problem names 158 -> 153",
+        "Kubernetes apps/v1: no cycles, so modules stay (median name length 16 as modules, 32 flat)"
+      ]
+    },
+    {
+      "id": "unions.name-variants-after-tags",
+      "decision": "union-variant-names",
+      "when": {
+        "any": [
+          {
+            "signal": "inline_tagged_union_branches",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "signal": "single_key_required_open",
+            "op": ">=",
+            "value": 1
+          }
+        ]
+      },
+      "set": {
+        "use_tag_as_union_variant_name": true,
+        "infer_union_variant_names": false
+      },
+      "reason": "Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no sibling shares: {inline_tagged_union_branches}; objects with one required key: {single_key_required_open}); otherwise they are named after their parent and a number.",
+      "caveats": [
+        "Tags that only a referenced schema declares through allOf are not used (branches: {tagged_behind_ref}; #4839).",
+        "With --naming-strategy full-path, a single-key branch whose value is an object repeats the key (FieldValueFieldValue)."
+      ],
+      "evidence": [
+        "OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)",
+        "GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805 (Changes23 -> ChangesBody)",
+        "SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 -> WorkflowDispatchInputString, Boolean, ...)",
+        "with full-path on the GitHub and OpenAI descriptions: no change in problem names; schemas without tagged or key branches: no change"
+      ]
+    }
+  ],
+  "options": {
+    "additional_imports": {
+      "not_recommended": "style",
+      "reason": "Imports for the project's own code in custom templates or types."
+    },
+    "alias_generator": {
+      "not_recommended": "style",
+      "reason": "A pydantic alias convention of the project."
+    },
+    "aliases": {
+      "not_recommended": "style",
+      "reason": "Per-field renames; only the project knows the names it wants."
+    },
+    "all_exports_collision_strategy": {
+      "not_recommended": "style",
+      "reason": "Handles __all__ name collisions; a package layout choice."
+    },
+    "all_exports_scope": {
+      "not_recommended": "style",
+      "reason": "__all__ re-exports of modular output; a package layout choice."
+    },
+    "all_jobs": {
+      "not_recommended": "command",
+      "reason": "Runs every pyproject.toml job."
+    },
+    "allof_class_hierarchy": {
+      "not_recommended": "style",
+      "reason": "How allOf maps to subclasses; a modelling choice of the project."
+    },
+    "allof_merge_mode": {
+      "not_recommended": "style",
+      "reason": "How allOf fields merge; a modelling choice of the project."
+    },
+    "allow_extra_fields": {
+      "not_recommended": "compat",
+      "reason": "Deprecated; use --extra-fields allow."
+    },
+    "allow_leading_underscore_class_name": {
+      "not_recommended": "style",
+      "reason": "Allows a root class name the project chose to start with an underscore."
+    },
+    "allow_population_by_field_name": {
+      "not_recommended": "preset",
+      "reason": "Set by the dated presets for pydantic output with snake_case fields; the recommendation starts from the preset."
+    },
+    "allow_private_network": {
+      "not_recommended": "io",
+      "reason": "Whether private network hosts may be fetched; a security decision of the project."
+    },
+    "allow_remote_refs": {
+      "not_recommended": "io",
+      "reason": "Whether remote $ref URLs may be fetched; a security decision of the project."
+    },
+    "apply_default_values_for_required_fields": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Python API spelling of --use-default; changes validation."
+    },
+    "base_class": {
+      "not_recommended": "style",
+      "reason": "The project's own base class."
+    },
+    "base_class_map": {
+      "not_recommended": "style",
+      "reason": "The project's own base classes per model."
+    },
+    "builtin_format_line_length": {
+      "not_recommended": "formatting",
+      "reason": "Line length of the builtin formatter; pyproject.toml only."
+    },
+    "capitalise_enum_members": {
+      "not_recommended": "style",
+      "reason": "Enum member naming convention of the project."
+    },
+    "check": {
+      "not_recommended": "command",
+      "reason": "Compares generated output with files on disk."
+    },
+    "class_decorators": {
+      "not_recommended": "style",
+      "reason": "The project's own class decorators."
+    },
+    "class_name": {
+      "rules": [
+        "root.class-name-for-root-object"
+      ]
+    },
+    "class_name_affix_scope": {
+      "not_recommended": "style",
+      "reason": "Selects which classes --class-name-prefix/--class-name-suffix apply to."
+    },
+    "class_name_prefix": {
+      "not_recommended": "style",
+      "reason": "Adds a fixed prefix to every class; it avoids clashes with the project's names but disambiguates nothing."
+    },
+    "class_name_suffix": {
+      "not_recommended": "style",
+      "reason": "Adds a fixed suffix to every class; it avoids clashes with the project's names but disambiguates nothing."
+    },
+    "client_body_arguments": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_default_base_url": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_model_package": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_operations": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_output": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_package": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_protocols": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_resource_names": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_server_base_url": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "client_signature_style": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "collapse_reuse_models": {
+      "rules": [
+        "reuse.identical-inline-shapes"
+      ]
+    },
+    "collapse_root_models": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset; the recommendation starts from the preset."
+    },
+    "collapse_root_models_name_strategy": {
+      "not_recommended": "style",
+      "reason": "Which name survives --collapse-root-models; a naming preference."
+    },
+    "command_line": {
+      "not_recommended": "formatting",
+      "reason": "Python API only: the command shown in file headers."
+    },
+    "custom_class_name_generator": {
+      "not_recommended": "style",
+      "reason": "Python API only: the project's own class naming function."
+    },
+    "custom_file_header": {
+      "not_recommended": "formatting",
+      "reason": "The project's file header."
+    },
+    "custom_file_header_mode": {
+      "not_recommended": "formatting",
+      "reason": "How the project's file header combines with the generated one."
+    },
+    "custom_file_header_path": {
+      "not_recommended": "formatting",
+      "reason": "The project's file header."
+    },
+    "custom_formatters": {
+      "not_recommended": "formatting",
+      "reason": "The project's own formatters."
+    },
+    "custom_formatters_kwargs": {
+      "not_recommended": "formatting",
+      "reason": "Arguments of the project's own formatters."
+    },
+    "custom_template_dir": {
+      "not_recommended": "style",
+      "reason": "The project's own model templates."
+    },
+    "dataclass_arguments": {
+      "not_recommended": "style",
+      "reason": "dataclass() arguments; an API choice of the project."
+    },
+    "debug": {
+      "not_recommended": "debug",
+      "reason": "Debug messages."
+    },
+    "default_value_overrides": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Python API spelling of --default-values; only the project knows the values."
+    },
+    "default_values": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Overrides field defaults; only the project knows the values."
+    },
+    "deserialize_default_values": {
+      "not_recommended": "preset",
+      "reason": "Set by the dated presets; the recommendation starts from the preset."
+    },
+    "diff_against": {
+      "not_recommended": "command",
+      "reason": "Compares the output of two schema versions."
+    },
+    "disable_appending_item_suffix": {
+      "not_recommended": "style",
+      "reason": "Drops the Item suffix of array item models, which makes doubled names or collisions."
+    },
+    "disable_future_imports": {
+      "not_recommended": "formatting",
+      "reason": "Leaves out __future__ imports."
+    },
+    "disable_timestamp": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset for reproducible output; the recommendation starts from the preset."
+    },
+    "disable_warnings": {
+      "not_recommended": "debug",
+      "reason": "Hides warnings; it does not change the models."
+    },
+    "duplicate_name_suffix": {
+      "not_recommended": "style",
+      "reason": "Replaces the first collision number with a word; the names stay counters, so it disambiguates nothing."
+    },
+    "emit_model_metadata": {
+      "not_recommended": "io",
+      "reason": "Writes a metadata file next to the models; it does not change them."
+    },
+    "empty_enum_field_name": {
+      "not_recommended": "style",
+      "reason": "Enum member name for an empty value; a project convention."
+    },
+    "enable_command_header": {
+      "not_recommended": "formatting",
+      "reason": "Adds the command to file headers."
+    },
+    "enable_faux_immutability": {
+      "not_recommended": "style",
+      "reason": "Immutable pydantic models; an API choice of the project."
+    },
+    "enable_generated_header_marker": {
+      "not_recommended": "formatting",
+      "reason": "Adds an @generated marker to file headers."
+    },
+    "enable_version_header": {
+      "not_recommended": "formatting",
+      "reason": "Adds the generator version to file headers."
+    },
+    "encoding": {
+      "not_recommended": "io",
+      "reason": "The encoding of the input and output files."
+    },
+    "enum_field_as_literal": {
+      "rules": [
+        "enums.inline-value-sets-as-literal"
+      ]
+    },
+    "enum_field_as_literal_map": {
+      "not_recommended": "style",
+      "reason": "Per-field enum shape; only the project knows which fields need it."
+    },
+    "external_ref_mapping": {
+      "not_recommended": "io",
+      "reason": "Maps external schema files to packages the project already has; only the project knows them."
+    },
+    "extra_fields": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Whether models accept unknown fields changes validation; the project decides."
+    },
+    "extra_template_data": {
+      "not_recommended": "style",
+      "reason": "Data for the project's own model templates."
+    },
+    "fail_on_multi_module_stdout": {
+      "not_recommended": "io",
+      "reason": "How multi-module output is written to stdout; it does not change the models."
+    },
+    "field_constraints": {
+      "not_recommended": "style",
+      "reason": "Constraint spelling (Field arguments instead of con* types); the presets' --use-annotated turns it on."
+    },
+    "field_extra_keys": {
+      "not_recommended": "style",
+      "reason": "Copies schema keys into Field(); a project need."
+    },
+    "field_extra_keys_without_x_prefix": {
+      "not_recommended": "style",
+      "reason": "Copies x- schema keys into Field(); a project need."
+    },
+    "field_include_all_keys": {
+      "not_recommended": "style",
+      "reason": "Copies all schema keys into Field(); a project need."
+    },
+    "field_type_collision_strategy": {
+      "not_recommended": "style",
+      "reason": "Which name changes when a field and its type share a name; a project convention."
+    },
+    "force_optional": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Makes required fields optional; changes validation."
+    },
+    "force_optional_for_required_fields": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Python API spelling of --force-optional; changes validation."
+    },
+    "formatters": {
+      "not_recommended": "formatting",
+      "reason": "Use the formatter of the project; presets dated 20260909 or later select builtin."
+    },
+    "frozen_dataclasses": {
+      "not_recommended": "style",
+      "reason": "Frozen dataclasses; an API choice of the project."
+    },
+    "generate_cli_command": {
+      "not_recommended": "command",
+      "reason": "Prints the command for a pyproject.toml configuration and exits."
+    },
+    "generate_client": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "generate_prompt": {
+      "not_recommended": "command",
+      "reason": "Prints a prompt for consulting an LLM and exits."
+    },
+    "generate_pyproject_config": {
+      "not_recommended": "command",
+      "reason": "Prints a pyproject.toml configuration and exits."
+    },
+    "generate_schema_validators": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Adds runtime validators; validation options come with the validation recommendations."
+    },
+    "generate_server": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "graphql_no_typename": {
+      "not_recommended": "style",
+      "reason": "GraphQL input only; the recommender analyses OpenAPI, AsyncAPI and JSON Schema."
+    },
+    "graphql_scopes": {
+      "not_recommended": "style",
+      "reason": "Python API only, GraphQL input; the recommender analyses OpenAPI, AsyncAPI and JSON Schema."
+    },
+    "help": {
+      "not_recommended": "command",
+      "reason": "Prints help and exits."
+    },
+    "http_backend": {
+      "not_recommended": "io",
+      "reason": "Selects the HTTP client used to fetch remote schemas."
+    },
+    "http_headers": {
+      "not_recommended": "io",
+      "reason": "Request headers for remote schemas; credentials are never repeated in recommendations."
+    },
+    "http_ignore_tls": {
+      "not_recommended": "io",
+      "reason": "Disables TLS verification for remote schemas; a security decision of the project."
+    },
+    "http_local_ref_path": {
+      "not_recommended": "io",
+      "reason": "Resolves remote $ref URLs from a local directory."
+    },
+    "http_query_parameters": {
+      "not_recommended": "io",
+      "reason": "Request query parameters for remote schemas; credentials are never repeated in recommendations."
+    },
+    "http_timeout": {
+      "not_recommended": "io",
+      "reason": "Timeout for remote schema requests."
+    },
+    "ignore_enum_constraints": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Accepts any value where the schema lists enum values; loses validation."
+    },
+    "ignore_pyproject": {
+      "not_recommended": "command",
+      "reason": "Ignores pyproject.toml configuration."
+    },
+    "import_overrides": {
+      "not_recommended": "style",
+      "reason": "Imports symbols from the project's modules."
+    },
+    "include_path_parameters": {
+      "not_recommended": "style",
+      "reason": "Adds path parameters to parameter models; the project decides which models it needs."
+    },
+    "infer_union_variant_names": {
+      "rules": [
+        "unions.name-variants-after-tags"
+      ]
+    },
+    "input": {
+      "not_recommended": "io",
+      "reason": "The schema to generate from; the recommender reads it."
+    },
+    "input_file_type": {
+      "not_recommended": "io",
+      "reason": "The type of the input; the recommender reads or detects it."
+    },
+    "input_filename": {
+      "not_recommended": "io",
+      "reason": "Python API only: the file name shown for text input."
+    },
+    "input_model": {
+      "not_recommended": "io",
+      "reason": "A Python model to generate from; the recommender reads the input, it does not choose it."
+    },
+    "input_model_ref_strategy": {
+      "not_recommended": "io",
+      "reason": "How --input-model reuses the types it references; a project decision."
+    },
+    "install_skill": {
+      "not_recommended": "command",
+      "reason": "Installs the Agent Skill and exits."
+    },
+    "job": {
+      "not_recommended": "command",
+      "reason": "Selects a pyproject.toml job; the recommendation keeps it."
+    },
+    "keep_model_order": {
+      "not_recommended": "style",
+      "reason": "Keeps the schema order of models in the output."
+    },
+    "keyword_only": {
+      "not_recommended": "style",
+      "reason": "Keyword-only model constructors; an API choice of the project."
+    },
+    "list_deprecations": {
+      "not_recommended": "command",
+      "reason": "Lists deprecations and exits."
+    },
+    "list_experimental": {
+      "not_recommended": "command",
+      "reason": "Lists experimental features and exits."
+    },
+    "locked": {
+      "not_recommended": "io",
+      "reason": "Requires the remote reference lock; a reproducibility policy of the project."
+    },
+    "lockfile": {
+      "not_recommended": "io",
+      "reason": "Selects the remote reference lock file."
+    },
+    "model_extra_keys": {
+      "not_recommended": "style",
+      "reason": "Copies x- schema keys into model configuration; a project need."
+    },
+    "model_extra_keys_without_x_prefix": {
+      "not_recommended": "style",
+      "reason": "Copies x- schema keys into model configuration; a project need."
+    },
+    "model_name_map": {
+      "not_recommended": "style",
+      "reason": "Renames individual classes; use it for the names the rules cannot fix (see --emit-model-metadata for current names)."
+    },
+    "module_split_mode": {
+      "not_recommended": "style",
+      "reason": "Writes one module per model; a package layout choice."
+    },
+    "naming_strategy": {
+      "rules": [
+        "naming.qualify-shared-inline-names"
+      ]
+    },
+    "no_alias": {
+      "not_recommended": "style",
+      "reason": "Drops field aliases; the project decides how fields are serialized."
+    },
+    "no_color": {
+      "not_recommended": "command",
+      "reason": "Disables colored help."
+    },
+    "openapi_include_info_version": {
+      "not_recommended": "style",
+      "reason": "Adds the API version as a constant; a project need."
+    },
+    "openapi_include_paths": {
+      "not_recommended": "io",
+      "reason": "Selects which OpenAPI paths to generate; the project decides what it needs."
+    },
+    "openapi_scopes": {
+      "not_recommended": "style",
+      "reason": "Which OpenAPI sections generate models; the project decides which models it needs."
+    },
+    "original_field_name_delimiter": {
+      "not_recommended": "style",
+      "reason": "Word delimiter for --snake-case-field; a project convention."
+    },
+    "output": {
+      "not_recommended": "io",
+      "reason": "Where the models are written; it also selects file or package layout."
+    },
+    "output_date_class": {
+      "not_recommended": "style",
+      "reason": "Date class for date fields; a typing choice of the project."
+    },
+    "output_datetime_class": {
+      "not_recommended": "style",
+      "reason": "Datetime class for date-time fields; a typing choice of the project."
+    },
+    "output_format": {
+      "not_recommended": "command",
+      "reason": "Format of the command output."
+    },
+    "output_format_json_schema": {
+      "not_recommended": "command",
+      "reason": "Prints a JSON Schema of a JSON output and exits."
+    },
+    "output_model_type": {
+      "not_recommended": "target",
+      "reason": "The model library the project uses; the recommender reads it and picks the preset for it."
+    },
+    "overwrite_skill": {
+      "not_recommended": "command",
+      "reason": "Option of --install-skill."
+    },
+    "parent_scoped_naming": {
+      "not_recommended": "compat",
+      "reason": "Deprecated; use --naming-strategy parent-prefixed."
+    },
+    "preset": {
+      "not_recommended": "preset",
+      "reason": "The recommendation starts from the latest dated preset for the output model type and target Python version."
+    },
+    "profile": {
+      "not_recommended": "command",
+      "reason": "Selects a pyproject.toml profile; the recommendation keeps it."
+    },
+    "read_only_write_only_model_type": {
+      "not_recommended": "style",
+      "reason": "Whether request and response models are split; the project decides which models it needs."
+    },
+    "recommend_options": {
+      "not_recommended": "command",
+      "reason": "Prints these recommendations and exits."
+    },
+    "remove_special_field_name_prefix": {
+      "not_recommended": "style",
+      "reason": "Removes leading underscores of field names; a project convention."
+    },
+    "reuse_model": {
+      "rules": [
+        "reuse.identical-inline-shapes"
+      ]
+    },
+    "reuse_scope": {
+      "not_recommended": "style",
+      "reason": "Deduplicates across modules of modular output; a package layout choice."
+    },
+    "schema_validator_base_class_name": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Base class name of --generate-schema-validators."
+    },
+    "schema_validator_type": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Backend of --generate-schema-validators."
+    },
+    "schema_version": {
+      "not_recommended": "io",
+      "reason": "How the input is read; it follows the schema, not a naming choice."
+    },
+    "schema_version_mode": {
+      "not_recommended": "io",
+      "reason": "Whether features outside the declared schema version are reported; a validation policy of the project."
+    },
+    "serialization_aliases": {
+      "not_recommended": "style",
+      "reason": "Per-field serialization names; only the project knows the names it wants."
+    },
+    "server_body_mode": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_body_modes": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_handler_mode": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_handler_modes": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_include_request": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_layout": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_model_package": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_operation_names": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_output": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_package": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_parameter_names": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_primary_responses": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "server_router_names": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
+    "set_default_enum_member": {
+      "not_recommended": "compat",
+      "reason": "Deprecated; use --deserialize-default-values enum."
+    },
+    "settings_path": {
+      "not_recommended": "io",
+      "reason": "Python API only: where formatter settings are looked up."
+    },
+    "shared_module_name": {
+      "not_recommended": "style",
+      "reason": "Module name for models shared across modules; a package layout choice."
+    },
+    "skill_scope": {
+      "not_recommended": "command",
+      "reason": "Scope of --install-skill."
+    },
+    "skip_root_model": {
+      "not_recommended": "style",
+      "reason": "Skips the model of the JSON Schema root; the project decides whether it needs it."
+    },
+    "snake_case_field": {
+      "not_recommended": "preset",
+      "reason": "Field naming convention set by the dated presets for outputs with aliases; the recommendation starts from the preset."
+    },
+    "special_field_name_prefix": {
+      "not_recommended": "style",
+      "reason": "Field name prefix for names Python cannot use; a project convention."
+    },
+    "strict_dotted_module_names": {
+      "not_recommended": "style",
+      "reason": "Which dotted keys become modules; a package layout choice."
+    },
+    "strict_nullable": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset; the recommendation starts from the preset."
+    },
+    "strict_refs": {
+      "not_recommended": "io",
+      "reason": "Whether unresolved $ref pointers fail generation; a policy of the project."
+    },
+    "strict_types": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Strict types reject values that lax validation coerces; the project decides."
+    },
+    "strip_default_none": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Drops None defaults; changes which fields are required."
+    },
+    "target_pydantic_version": {
+      "not_recommended": "target",
+      "reason": "The oldest pydantic version the project supports; only the project knows it."
+    },
+    "target_python_version": {
+      "not_recommended": "target",
+      "reason": "The Python version the project runs; the recommender reads it and picks the preset for it."
+    },
+    "treat_dot_as_module": {
+      "rules": [
+        "dotted-keys.flat-when-namespaces-cycle"
+      ]
+    },
+    "type_mappings": {
+      "not_recommended": "style",
+      "reason": "Maps schema types to the project's types."
+    },
+    "type_overrides": {
+      "not_recommended": "style",
+      "reason": "Replaces models with the project's own types."
+    },
+    "union_mode": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "pydantic union validation mode; changes validation."
+    },
+    "update_lock": {
+      "not_recommended": "io",
+      "reason": "Writes the remote reference lock."
+    },
+    "url": {
+      "not_recommended": "io",
+      "reason": "The schema to generate from; the recommender reads it."
+    },
+    "use_annotated": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset; the recommendation starts from the preset."
+    },
+    "use_attribute_docstrings": {
+      "not_recommended": "style",
+      "reason": "Attribute docstrings in pydantic configuration; a documentation choice."
+    },
+    "use_closed_typed_dict": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Closed TypedDicts reject extra keys in type checking; the project decides."
+    },
+    "use_decimal_for_multiple_of": {
+      "not_recommended": "style",
+      "reason": "Decimal for multipleOf numbers; validation options come with the validation recommendations."
+    },
+    "use_default": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Fills required fields from schema defaults; changes validation."
+    },
+    "use_default_factory_for_optional_nested_models": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Creates nested models by default; changes field values."
+    },
+    "use_default_kwarg": {
+      "not_recommended": "preset",
+      "reason": "Code style chosen by the practical presets; the recommendation starts from a preset."
+    },
+    "use_double_quotes": {
+      "not_recommended": "formatting",
+      "reason": "Quote style of the formatter."
+    },
+    "use_enum_values_in_discriminator": {
+      "not_recommended": "style",
+      "reason": "Discriminator literal spelling; a typing style choice."
+    },
+    "use_exact_imports": {
+      "not_recommended": "style",
+      "reason": "Import style of modular output."
+    },
+    "use_field_description": {
+      "not_recommended": "preset",
+      "reason": "Documentation style chosen by the practical presets; the recommendation starts from a preset."
+    },
+    "use_field_description_example": {
+      "not_recommended": "preset",
+      "reason": "Documentation style chosen by the practical presets; the recommendation starts from a preset."
+    },
+    "use_frozen_field": {
+      "not_recommended": "preset",
+      "reason": "Set by the dated presets for readOnly fields; the recommendation starts from the preset."
+    },
+    "use_generic_base_class": {
+      "not_recommended": "style",
+      "reason": "Moves shared model configuration into one base class; a code layout choice."
+    },
+    "use_generic_container_types": {
+      "not_recommended": "style",
+      "reason": "Abstract container types in annotations; a typing style choice."
+    },
+    "use_inline_field_description": {
+      "not_recommended": "style",
+      "reason": "Inline field docstrings; a documentation choice."
+    },
+    "use_missing_sentinel": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "MISSING instead of None for absent fields; changes field values."
+    },
+    "use_msgspec_nullable_enum_alias": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "msgspec.Struct output only: changes how enums that list null decode."
+    },
+    "use_msgspec_tagged_unions": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "msgspec.Struct output only: decodes discriminated unions as tagged structs; changes the generated API."
+    },
+    "use_non_positive_negative_number_constrained_types": {
+      "not_recommended": "style",
+      "reason": "Constrained number type spelling; a typing style choice."
+    },
+    "use_object_type": {
+      "not_recommended": "preset",
+      "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
+    },
+    "use_one_literal_as_default": {
+      "not_recommended": "style",
+      "reason": "Defaults one-value literals; an API choice of the project."
+    },
+    "use_operation_id_as_name": {
+      "not_recommended": "style",
+      "reason": "Names operation models; the schemas scope the recommender analyses has none."
+    },
+    "use_pendulum": {
+      "not_recommended": "style",
+      "reason": "pendulum types for dates and times; a library choice of the project."
+    },
+    "use_root_model_sequence_interface": {
+      "not_recommended": "style",
+      "reason": "Sequence behaviour for list root models; an API choice of the project."
+    },
+    "use_root_model_type_alias": {
+      "not_recommended": "style",
+      "reason": "RootModel aliases instead of classes; a typing style choice."
+    },
+    "use_schema_description": {
+      "not_recommended": "preset",
+      "reason": "Documentation style chosen by the practical presets; the recommendation starts from a preset."
+    },
+    "use_serialization_alias": {
+      "not_recommended": "style",
+      "reason": "Serialization-only aliases; the project decides how fields are populated."
+    },
+    "use_serialize_as_any": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Serializes subclasses by their runtime type; changes serialization."
+    },
+    "use_single_line_docstring": {
+      "not_recommended": "preset",
+      "reason": "Documentation style chosen by the practical presets; the recommendation starts from a preset."
+    },
+    "use_single_value_enum_as_const": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "Never improved class names on the measured schemas and adds types; a nullable one-value enum also loses null."
+    },
+    "use_specialized_enum": {
+      "not_recommended": "preset",
+      "reason": "Set by the dated presets for Python 3.11 and later; the recommendation starts from the preset."
+    },
+    "use_standard_collections": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset; the recommendation starts from the preset."
+    },
+    "use_standard_primitive_types": {
+      "not_recommended": "preset",
+      "reason": "Set by the dated presets for stdlib-typed outputs; the recommendation starts from the preset."
+    },
+    "use_status_code_in_response_name": {
+      "not_recommended": "style",
+      "reason": "Names response models; the schemas scope the recommender analyses has none."
+    },
+    "use_subclass_enum": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset; the recommendation starts from the preset."
+    },
+    "use_tag_as_union_variant_name": {
+      "rules": [
+        "unions.name-variants-after-tags"
+      ]
+    },
+    "use_title_as_name": {
+      "rules": [
+        "titles.keys-when-titles-collide",
+        "titles.names-from-unique-titles"
+      ]
+    },
+    "use_total_false_for_typed_dict": {
+      "not_recommended": "style",
+      "reason": "TypedDict totality spelling; a typing style choice."
+    },
+    "use_tuple_for_fixed_items": {
+      "not_recommended": "preset",
+      "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
+    },
+    "use_tuple_for_fixed_length_arrays": {
+      "not_recommended": "style",
+      "reason": "Tuples for fixed-length arrays; a typing style choice."
+    },
+    "use_type_alias": {
+      "not_recommended": "style",
+      "reason": "Type aliases instead of root models; a typing style choice."
+    },
+    "use_type_alias_type": {
+      "not_recommended": "style",
+      "reason": "TypeAliasType for type aliases; a typing style choice."
+    },
+    "use_type_checking_imports": {
+      "not_recommended": "style",
+      "reason": "Import style for typing-only imports."
+    },
+    "use_typed_nullable_map_values": {
+      "not_recommended": "style",
+      "reason": "Types the values of nullable maps; a typing choice."
+    },
+    "use_union_operator": {
+      "not_recommended": "preset",
+      "reason": "Set by every dated preset; the recommendation starts from the preset."
+    },
+    "use_unique_items_as_set": {
+      "not_recommended": "preset",
+      "reason": "Chosen by the practical presets; validation options come with the validation recommendations."
+    },
+    "validation": {
+      "not_recommended": "compat",
+      "reason": "Deprecated; use --field-constraints."
+    },
+    "validators": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "The project's own validators."
+    },
+    "version": {
+      "not_recommended": "command",
+      "reason": "Prints the version and exits."
+    },
+    "watch": {
+      "not_recommended": "command",
+      "reason": "Regenerates on changes."
+    },
+    "watch_delay": {
+      "not_recommended": "command",
+      "reason": "Debounce delay of --watch."
+    },
+    "wrap_string_literal": {
+      "not_recommended": "formatting",
+      "reason": "Formatter string wrapping."
+    }
+  }
+}

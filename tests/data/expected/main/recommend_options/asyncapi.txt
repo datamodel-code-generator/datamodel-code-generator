@@ -1,0 +1,43 @@
+Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+Schema  AsyncAPI 2.6.0
+  components                       2, 0 operations
+  inline objects / enums           2 / 1, nesting depth 1
+  shared property names            1 (user x2)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces
+
+Start from  --preset standard-py314-20261017
+
+Add (1 option)
+  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      Inline schemas under different parents share property names (names: 1, e.g. user x2; inline
+      names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order
+      and shift when the schema grows; full-path names each inline model after its parent.
+      caveat: full-path repeats the parent name where a union branch or array item already carries
+      it (#4826).
+      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+      versions 17% -> 0.0%
+      measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+      measured: Stripe API description: the expandable ID string of charge no longer displaces the
+      charge component (ChargeModel)
+      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+      lost
+
+Notes
+  - The rules were calibrated on the 20261015 presets.
+
+Command
+  datamodel-codegen --input events.yaml --naming-strategy full-path --preset standard-py314-20261017 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "events.yaml"
+  naming-strategy = "full-path"
+  preset = "standard-py314-20261017"
+  target-python-version = "3.14"

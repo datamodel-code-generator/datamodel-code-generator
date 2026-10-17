@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "recommend-options",
+  "mode": "quick",
+  "rules_revision": "2026-10-17",
+  "calibrated_presets": "20261015",
+  "input": {
+    "source": "file",
+    "input_file_type": "openapi",
+    "document": "OpenAPI 3.1.0",
+    "analysed": true
+  },
+  "context": {
+    "output_model_type": "pydantic_v2.BaseModel",
+    "target_python_version": "3.14"
+  },
+  "signals": {
+    "all_enums": 6,
+    "component_enums": 0,
+    "component_title_duplicate_groups": 0,
+    "component_titles_equal_other_key": 0,
+    "component_titles_equal_own_key": 0,
+    "component_titles_in_duplicate_groups": 0,
+    "components": 6,
+    "discriminated_unions": 0,
+    "dotted_key_namespaces": 2,
+    "dotted_keys": 2,
+    "dotted_namespace_reference_cycles": 1,
+    "duplicate_inline_enum_shapes": 0,
+    "duplicate_inline_enums": 0,
+    "duplicate_inline_objects": 10,
+    "duplicate_inline_shapes": 2,
+    "estimated_models": 26,
+    "inline_enums": 6,
+    "inline_names_equal_component": 1,
+    "inline_object_union_variants": 2,
+    "inline_objects": 12,
+    "inline_scalar_union_variants": 0,
+    "inline_tagged_union_branches": 2,
+    "inline_title_max_repeat": 5,
+    "inline_titled_objects": 5,
+    "inline_titled_union_variants": 0,
+    "inline_union_variants": 2,
+    "max_inline_depth": 1,
+    "operations": 2,
+    "parent_copy_union_branches": 0,
+    "root_is_object": 0,
+    "root_title_words": 0,
+    "shared_inline_enum_names": 2,
+    "shared_inline_names": 4,
+    "shared_inline_object_names": 2,
+    "single_key_required_open": 0,
+    "single_key_union_branches": 0,
+    "single_value_enum_union_branches": 0,
+    "single_value_enums": 0,
+    "tagged_behind_ref": 0,
+    "titled_components": 0,
+    "unions": 1
+  },
+  "facts": {
+    "schema": "OpenAPI 3.1.0",
+    "shared_inline_name_examples": "status x3, owner x3, total x2, state x2",
+    "inline_title_examples": "User x5",
+    "duplicate_title_examples": "",
+    "key_style": "PascalCase (4 of 6)",
+    "root_title": ""
+  },
+  "baseline": {
+    "preset": "standard-py314-20261017",
+    "family": "standard",
+    "configured": false,
+    "covers": [],
+    "rejected": [
+      {
+        "preset": "practical-py314-20261017",
+        "rule": "titles.keys-when-titles-collide",
+        "arguments": [
+          "--use-title-as-name"
+        ],
+        "reason": "Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to another component's key: 0; most repeated inline title: 5; titles that repeat their own key: 0 of 0). Titles as class names would number components, or rename them when a title changes; names from the keys avoid both."
+      }
+    ]
+  },
+  "recommendations": [
+    {
+      "rule": "naming.qualify-shared-inline-names",
+      "decision": "naming-strategy",
+      "set": {
+        "naming_strategy": "full-path"
+      },
+      "arguments": [
+        "--naming-strategy",
+        "full-path"
+      ],
+      "reason": "Inline schemas under different parents share property names (names: 4, e.g. status x3, owner x3, total x2, state x2; inline names equal to a component name: 1). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+      "contested_reason": null,
+      "caveats": [
+        "full-path repeats the parent name where a union branch or array item already carries it (#4826)."
+      ],
+      "evidence": [
+        "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
+        "Petstore: Status and Status1 became OrderStatus and PetStatus",
+        "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
+        "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
+      ]
+    },
+    {
+      "rule": "enums.inline-value-sets-as-literal",
+      "decision": "enum-shape",
+      "set": {
+        "enum_field_as_literal": "all"
+      },
+      "arguments": [
+        "--enum-field-as-literal",
+        "all"
+      ],
+      "reason": "Most enums are inline value sets of one property (inline enums: 6 of 6). As Enum classes they add one class name each, the longest and most numbered names; Literal types keep the values without a class.",
+      "contested_reason": null,
+      "caveats": [],
+      "evidence": [
+        "GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227",
+        "Stripe API description: problem names 348 -> 158",
+        "SchemaStore workflow schema: Type1 to Type19 disappear"
+      ]
+    },
+    {
+      "rule": "reuse.identical-inline-shapes",
+      "decision": "reuse",
+      "set": {
+        "reuse_model": true,
+        "collapse_reuse_models": true
+      },
+      "arguments": [
+        "--reuse-model",
+        "--collapse-reuse-models"
+      ],
+      "reason": "The schema repeats shapes (inline objects repeating a shape: 10, in 2 shapes; inline enums repeating a value set: 0, in 0 sets; union branches that only constrain their parent's properties, which generation copies per branch: 0). Reuse emits each shape once, and collapse refers to it instead of an empty subclass.",
+      "contested_reason": null,
+      "caveats": [],
+      "evidence": [
+        "GitHub REST API description: 3263 -> 1872 types, numbered names 1774 -> 663",
+        "Stripe API description: 2512 -> 2022 types",
+        "SchemaStore workflow schema: the step branches' copies With1 to With11 became one With1"
+      ]
+    },
+    {
+      "rule": "dotted-keys.flat-when-namespaces-cycle",
+      "decision": "dotted-keys",
+      "set": {
+        "treat_dot_as_module": false
+      },
+      "arguments": [
+        "--no-treat-dot-as-module"
+      ],
+      "reason": "Dotted keys (2, in 2 namespaces) reference each other in cycles (namespace groups: 1). As modules, cycle members move to _internal.py, where same-named classes of different namespaces get _1 suffixes; flat names avoid that.",
+      "contested_reason": null,
+      "caveats": [],
+      "evidence": [
+        "Stripe API description: Card_1 and Customer_1 disappear, problem names 158 -> 153",
+        "Kubernetes apps/v1: no cycles, so modules stay (median name length 16 as modules, 32 flat)"
+      ]
+    },
+    {
+      "rule": "unions.name-variants-after-tags",
+      "decision": "union-variant-names",
+      "set": {
+        "use_tag_as_union_variant_name": true
+      },
+      "arguments": [
+        "--use-tag-as-union-variant-name"
+      ],
+      "reason": "Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no sibling shares: 2; objects with one required key: 0); otherwise they are named after their parent and a number.",
+      "contested_reason": null,
+      "caveats": [
+        "Tags that only a referenced schema declares through allOf are not used (branches: 0; #4839).",
+        "With --naming-strategy full-path, a single-key branch whose value is an object repeats the key (FieldValueFieldValue)."
+      ],
+      "evidence": [
+        "OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)",
+        "GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805 (Changes23 -> ChangesBody)",
+        "SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 -> WorkflowDispatchInputString, Boolean, ...)",
+        "with full-path on the GitHub and OpenAI descriptions: no change in problem names; schemas without tagged or key branches: no change"
+      ]
+    }
+  ],
+  "consider": [],
+  "not_recommended": [
+    {
+      "rule": "titles.keys-when-titles-collide",
+      "decision": "title-source",
+      "set": {
+        "use_title_as_name": false
+      },
+      "arguments": [
+        "--use-title-as-name"
+      ],
+      "reason": "Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to another component's key: 0; most repeated inline title: 5; titles that repeat their own key: 0 of 0). Titles as class names would number components, or rename them when a title changes; names from the keys avoid both.",
+      "contested_reason": null,
+      "caveats": [],
+      "evidence": [
+        "GitHub REST API description: 53 shared component titles numbered components (page-deployment became GitHubPages1, Actor2)",
+        "OpenAI API description: 503 problem names with titles off, 544 with titles on",
+        "Stripe API description: 17% of component titles changed in four months; class names from keys renamed 0.0% of locations"
+      ]
+    }
+  ],
+  "disagreements": [],
+  "notes": [
+    "The rules were calibrated on the 20261015 presets."
+  ],
+  "arguments": [
+    "--collapse-reuse-models",
+    "--enum-field-as-literal",
+    "all",
+    "--input",
+    "api.yaml",
+    "--naming-strategy",
+    "full-path",
+    "--preset",
+    "standard-py314-20261017",
+    "--reuse-model",
+    "--target-python-version",
+    "3.14",
+    "--no-treat-dot-as-module",
+    "--use-tag-as-union-variant-name"
+  ],
+  "config": {
+    "tool": {
+      "datamodel-codegen": {
+        "collapse-reuse-models": true,
+        "enum-field-as-literal": "all",
+        "input": "api.yaml",
+        "naming-strategy": "full-path",
+        "preset": "standard-py314-20261017",
+        "reuse-model": true,
+        "target-python-version": "3.14",
+        "treat-dot-as-module": false,
+        "use-tag-as-union-variant-name": true
+      }
+    }
+  },
+  "config_complete": true,
+  "content": "Option recommendations (experimental; quick mode; rules 2026-10-17)\n\nSchema  OpenAPI 3.1.0\n  components                       6, 2 operations\n  inline objects / enums           12 / 6, nesting depth 1\n  shared property names            4 (status x3, owner x3, total x2, state x2)\n  inline names = component names   1\n  repeated inline objects / enums  10 of 2 shapes / 0 of 0 value sets\n  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key\n  inline titles                    5 objects, most repeated 5 (User x5)\n  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants\n  union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent\n  component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces\n\nStart from  --preset standard-py314-20261017\n  not practical-py314-20261017: --use-title-as-name cannot be turned off on it   [titles.keys-when-titles-collide]\n\nAdd (6 options)\n  --naming-strategy full-path   [naming.qualify-shared-inline-names]\n      Inline schemas under different parents share property names (names: 4, e.g. status x3, owner\n      x3, total x2, state x2; inline names equal to a component name: 1). Numbered names (Status,\n      Status1) depend on parse order and shift when the schema grows; full-path names each inline\n      model after its parent.\n      caveat: full-path repeats the parent name where a union branch or array item already carries\n      it (#4826).\n      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two\n      versions 17% -> 0.0%\n      measured: Petstore: Status and Status1 became OrderStatus and PetStatus\n      measured: Stripe API description: the expandable ID string of charge no longer displaces the\n      charge component (ChargeModel)\n      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and\n      lost\n  --enum-field-as-literal all   [enums.inline-value-sets-as-literal]\n      Most enums are inline value sets of one property (inline enums: 6 of 6). As Enum classes they\n      add one class name each, the longest and most numbered names; Literal types keep the values\n      without a class.\n      measured: GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227\n      measured: Stripe API description: problem names 348 -> 158\n      measured: SchemaStore workflow schema: Type1 to Type19 disappear\n  --reuse-model --collapse-reuse-models   [reuse.identical-inline-shapes]\n      The schema repeats shapes (inline objects repeating a shape: 10, in 2 shapes; inline enums\n      repeating a value set: 0, in 0 sets; union branches that only constrain their parent's\n      properties, which generation copies per branch: 0). Reuse emits each shape once, and collapse\n      refers to it instead of an empty subclass.\n      measured: GitHub REST API description: 3263 -> 1872 types, numbered names 1774 -> 663\n      measured: Stripe API description: 2512 -> 2022 types\n      measured: SchemaStore workflow schema: the step branches' copies With1 to With11 became one\n      With1\n  --no-treat-dot-as-module   [dotted-keys.flat-when-namespaces-cycle]\n      Dotted keys (2, in 2 namespaces) reference each other in cycles (namespace groups: 1). As\n      modules, cycle members move to _internal.py, where same-named classes of different namespaces\n      get _1 suffixes; flat names avoid that.\n      measured: Stripe API description: Card_1 and Customer_1 disappear, problem names 158 -> 153\n      measured: Kubernetes apps/v1: no cycles, so modules stay (median name length 16 as modules, 32\n      flat)\n  --use-tag-as-union-variant-name   [unions.name-variants-after-tags]\n      Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no\n      sibling shares: 2; objects with one required key: 0); otherwise they are named after their\n      parent and a number.\n      caveat: Tags that only a referenced schema declares through allOf are not used (branches: 0;\n      #4839).\n      caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats\n      the key (FieldValueFieldValue).\n      measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names\n      (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)\n      measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805\n      (Changes23 -> ChangesBody)\n      measured: SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 ->\n      WorkflowDispatchInputString, Boolean, ...)\n      measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;\n      schemas without tagged or key branches: no change\n\nNot recommended\n  --use-title-as-name   [titles.keys-when-titles-collide]\n      Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to\n      another component's key: 0; most repeated inline title: 5; titles that repeat their own key: 0\n      of 0). Titles as class names would number components, or rename them when a title changes;\n      names from the keys avoid both.\n      measured: GitHub REST API description: 53 shared component titles numbered components\n      (page-deployment became GitHubPages1, Actor2)\n      measured: OpenAI API description: 503 problem names with titles off, 544 with titles on\n      measured: Stripe API description: 17% of component titles changed in four months; class names\n      from keys renamed 0.0% of locations\n\nNotes\n  - The rules were calibrated on the 20261015 presets.\n\nCommand\n  datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --naming-strategy full-path --preset standard-py314-20261017 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name\n\npyproject.toml\n  [tool.datamodel-codegen]\n  collapse-reuse-models = true\n  enum-field-as-literal = \"all\"\n  input = \"api.yaml\"\n  naming-strategy = \"full-path\"\n  preset = \"standard-py314-20261017\"\n  reuse-model = true\n  target-python-version = \"3.14\"\n  treat-dot-as-module = false\n  use-tag-as-union-variant-name = true\n"
+}

@@ -969,6 +969,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--ignore-pyproject": CLIOptionMeta(name="--ignore-pyproject", category=OptionCategory.GENERAL),
     "--generate-cli-command": CLIOptionMeta(name="--generate-cli-command", category=OptionCategory.GENERAL),
     "--generate-pyproject-config": CLIOptionMeta(name="--generate-pyproject-config", category=OptionCategory.GENERAL),
+    "--recommend-options": CLIOptionMeta(name="--recommend-options", category=OptionCategory.GENERAL),
     "--shared-module-name": CLIOptionMeta(
         name="--shared-module-name",
         category=OptionCategory.GENERAL,

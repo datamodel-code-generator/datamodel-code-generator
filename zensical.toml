@@ -10,6 +10,7 @@ nav = [
   { "Overview" = "index.md" },
   { "Getting Started" = "getting-started.md" },
   { "Presets" = "presets.md" },
+  { "Option Recommendations (Experimental)" = "recommend-options.md" },
   { "Playground" = "playground.md" },
   { "Supported Data Types" = "supported-data-types.md" },
   { "Schema Version Support" = "supported_formats.md" },

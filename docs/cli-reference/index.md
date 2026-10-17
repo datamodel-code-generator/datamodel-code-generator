@@ -15,7 +15,7 @@ This documentation is auto-generated from test cases.
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
+| ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
@@ -285,6 +285,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### R {#r}
 
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
+- [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
 - [`--reuse-model`](model-customization.md#reuse-model)
 - [`--reuse-scope`](model-customization.md#reuse-scope)

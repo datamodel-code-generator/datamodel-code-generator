@@ -126,6 +126,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--parent-scoped-naming": "Namespace models by their parent scope to avoid naming conflicts.",
     "--preset": "Apply an immutable built-in option preset.",
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
+    "--recommend-options": "Recommend options for the input schema on top of the latest dated preset (experimental).",
     "--remove-special-field-name-prefix": "Remove the special prefix from field names.",
     "--reuse-model": "Reuse identical model definitions instead of generating duplicates.",
     "--reuse-scope": "Scope for model reuse detection (root or tree).",

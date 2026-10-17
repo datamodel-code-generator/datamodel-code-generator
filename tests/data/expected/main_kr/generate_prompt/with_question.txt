@@ -215,6 +215,7 @@ How do I convert enums to Literal types?
 - `--module-split-mode`: Split generated models into separate files, one per model class.
 - `--no-allow-private-network`
 - `--no-allow-remote-refs`
+- `--recommend-options`: Recommend options for the input schema on top of the latest dated preset (experimental).
 - `--shared-module-name`: Customize the name of the shared module for deduplicated models.
 - `--strict-refs`: Treat unresolved local `$ref` JSON pointers as errors.
 - `--update-lock`: Create or atomically update the selected remote lock after generation (experimental).
@@ -999,13 +1000,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output-format {text,json}
                         Format for command output (default: text). Use json
                         for structured output when supported.
-  --output-format-json-schema {config,generate-prompt,generation,model-metadata,structured-output}
+  --output-format-json-schema {config,generate-prompt,generation,model-metadata,recommend-options,structured-output}
                         Output JSON Schema for the selected JSON output or
                         JSON configuration format and exit.
   --overwrite-skill     Replace an existing regular skill directory when used
                         with --install-skill.
   --profile PROFILE     Use a named profile from pyproject.toml
                         [tool.datamodel-codegen.profiles.<name>]
+  --recommend-options [{quick}]
+                        Analyse the input schema and print the options to add
+                        on top of the latest dated preset, with the reasons,
+                        as a command and a pyproject.toml block, then exit
+                        (experimental). 'quick' (the default) applies the
+                        schema rules without generating code.
   --skill-scope {project,user}
                         Installation scope for --install-skill (default:
                         project). Project installs use .agents/skills or
@@ -1110,6 +1117,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
 
 Documentation: https://datamodel-code-generator.koxudaxi.dev
 Agent skill: https://datamodel-code-generator.koxudaxi.dev/coding-agent-skill/
+Option recommendations: datamodel-codegen --input SCHEMA --recommend-options (experimental)
 GitHub: https://github.com/datamodel-code-generator/datamodel-code-generator
 
 ```

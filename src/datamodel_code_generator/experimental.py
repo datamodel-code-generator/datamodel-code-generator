@@ -17,6 +17,7 @@ ExperimentalFeatureId = Literal[
     "cli-option.generate-schema-validators",
     "cli-option.generate-server",
     "cli-option.install-skill",
+    "cli-option.recommend-options",
     "cli-option.schema-validator-type",
     "cli-option.use-missing-sentinel",
     "cli-option.use-type-alias",
@@ -170,6 +171,22 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         note=(
             "Use --install-skill with codex or claude-code. --skill-scope selects a project or user installation, "
             "and --overwrite-skill safely replaces an existing regular skill directory."
+        ),
+    ),
+    "cli-option.recommend-options": ExperimentalFeature(
+        id="cli-option.recommend-options",
+        kind="cli-option",
+        target="--recommend-options, its rule data, and its JSON payload",
+        message=(
+            "Option recommendations are experimental; the rules, the schema signals they read, the report, and the "
+            "JSON payload may change."
+        ),
+        since_version="0.86.0",
+        note=(
+            "--recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and "
+            "JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a "
+            "command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. "
+            "'quick' applies the rules without generating code."
         ),
     ),
     "cli-option.schema-validator-type": ExperimentalFeature(

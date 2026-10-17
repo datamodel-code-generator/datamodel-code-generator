@@ -274,6 +274,123 @@ class BatchOutputPayload(BaseModel):
     jobs: list[BatchJobPayload]
 
 
+RecommendOptionValue: TypeAlias = bool | str | list[str]
+
+
+class RecommendInputPayload(BaseModel):
+    """The input a recommendation read and whether its schema rules could analyse it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal["file", "url", "stdin", "directory", "input-model"]
+    input_file_type: str | None = Field(description="The configured or detected input file type.")
+    document: str | None = Field(
+        description="The schema format and version, such as OpenAPI 3.1.0; null when not analysed."
+    )
+    analysed: bool
+
+
+class RecommendContextPayload(BaseModel):
+    """The output model type and target Python version the recommendation chose presets for."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    output_model_type: str
+    target_python_version: str
+
+
+class RecommendOptionPayload(BaseModel):
+    """One rule outcome: the config values it sets, the CLI arguments for them, and why."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rule: str
+    decision: str
+    set: dict[str, RecommendOptionValue] = Field(description="Config fields and values, as pyproject.toml spells them.")
+    arguments: list[str] = Field(
+        description="The CLI arguments of the values; for not_recommended, the options the rule advises against."
+    )
+    reason: str
+    contested_reason: str | None = Field(
+        description="Why the schema also argues against the values; set only for consider entries."
+    )
+    caveats: list[str]
+    evidence: list[str]
+
+
+class RecommendRejectedPayload(BaseModel):
+    """A preset the recommendation does not start from: no option turns off a value a rule rejects."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    preset: str
+    rule: str
+    arguments: list[str]
+    reason: str
+
+
+class RecommendBaselinePayload(BaseModel):
+    """The dated preset the recommendation starts from."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    preset: str
+    family: str
+    configured: bool = Field(description="Whether the configuration already selects this preset.")
+    covers: list[RecommendOptionPayload] = Field(description="Rule outcomes the preset already sets.")
+    rejected: list[RecommendRejectedPayload]
+
+
+class RecommendDisagreementPayload(BaseModel):
+    """A configured value the recommendation keeps although the rules suggest another value."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    kind: Literal["explicit", "preset", "newer-preset"] = Field(
+        description=(
+            "explicit: the configuration sets the field; preset: the configured preset sets it and no option "
+            "undoes it; newer-preset: a newer dated preset of the same family exists."
+        )
+    )
+    configured: Any
+    recommended: Any
+    rule: str | None
+
+
+class RecommendOptionsPayload(BaseModel):
+    """Structured JSON payload emitted by --recommend-options --output-format json (experimental)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal[1]
+    format: Literal["json"]
+    kind: Literal["recommend-options"]
+    mode: Literal["quick"]
+    rules_revision: str
+    calibrated_presets: str
+    input: RecommendInputPayload
+    context: RecommendContextPayload
+    signals: dict[str, int]
+    facts: dict[str, str]
+    baseline: RecommendBaselinePayload
+    recommendations: list[RecommendOptionPayload]
+    consider: list[RecommendOptionPayload]
+    not_recommended: list[RecommendOptionPayload]
+    disagreements: list[RecommendDisagreementPayload]
+    notes: list[str]
+    arguments: list[str] = Field(description="The recommended command's arguments, without the program name.")
+    config: dict[str, Any] | None = Field(
+        description=(
+            "The pyproject.toml keys to write, nested under their table; null when they stay on the command line."
+        )
+    )
+    config_complete: bool = Field(
+        description="Whether config is a complete table, or only the keys to add or change in an existing one."
+    )
+    content: str
+
+
 CommandOutputPayload: TypeAlias = (
     PyprojectConfigOutputPayload | CliCommandOutputPayload | DeprecationsOutputPayload | ExperimentalOutputPayload
 )
@@ -285,7 +402,8 @@ StructuredOutputPayload: TypeAlias = Annotated[
     | ExperimentalOutputPayload
     | CheckOutputPayload
     | BatchOutputPayload
-    | PromptPayload,
+    | PromptPayload
+    | RecommendOptionsPayload,
     Field(discriminator="kind"),
 ]
 
@@ -415,5 +533,15 @@ def structured_output_json_schema() -> str:
             _STRUCTURED_OUTPUT_ADAPTER.json_schema(mode="serialization"),
             title="StructuredOutputPayload",
             description="Schema for all structured JSON outputs emitted by the CLI.",
+        )
+    )
+
+
+def recommend_options_json_schema() -> str:
+    return _dump_json(
+        _schema_with_metadata(
+            RecommendOptionsPayload.model_json_schema(mode="serialization"),
+            title="RecommendOptionsPayload",
+            description="Structured JSON payload emitted by --recommend-options --output-format json.",
         )
     )

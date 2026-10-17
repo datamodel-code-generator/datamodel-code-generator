@@ -211,6 +211,7 @@
 - `--module-split-mode`: Split generated models into separate files, one per model class.
 - `--no-allow-private-network`
 - `--no-allow-remote-refs`
+- `--recommend-options`: Recommend options for the input schema on top of the latest dated preset (experimental).
 - `--shared-module-name`: Customize the name of the shared module for deduplicated models.
 - `--strict-refs`: Treat unresolved local `$ref` JSON pointers as errors.
 - `--update-lock`: Create or atomically update the selected remote lock after generation (experimental).

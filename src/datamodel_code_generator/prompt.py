@@ -26,6 +26,7 @@ PROMPT_EXCLUDED_OPTIONS: frozenset[str] = frozenset({
     "generate_prompt",
     "generate_pyproject_config",
     "generate_cli_command",
+    "recommend_options",
     "install_skill",
     "skill_scope",
     "overwrite_skill",

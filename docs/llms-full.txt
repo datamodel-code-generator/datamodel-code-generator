@@ -4154,6 +4154,243 @@ These snippets show the equivalent expanded configuration without `--preset` for
 
 ---
 
+# Option recommendations
+
+Source: https://datamodel-code-generator.koxudaxi.dev/recommend-options/
+
+Analyse a schema and get the `datamodel-codegen` options that suit it, starting from the latest dated preset.
+
+!!! warning "Experimental"
+    `--recommend-options`, its rules, the report, and its JSON payload are experimental and may change as the rules
+    are calibrated on more schemas.
+
+A [preset](presets.md) is a good general starting point, but some choices depend on the shape of your schema: how
+inline models should be named, whether titles make good class names, whether inline enums should become `Literal`
+types, or whether repeated inline objects should be reused. `--recommend-options` reads your schema, measures the
+signals that drive these choices, and prints:
+
+- the latest dated preset to start from,
+- the options to add on top of it, each with the rule that chose it, the reason with counts from your schema, caveats,
+  and the effect measured on public schemas,
+- options worth considering when the schema has signals for and against them,
+- where your existing configuration differs from the rules,
+- a ready command and a `pyproject.toml` block.
+
+## Run it
+
+Add `--recommend-options` to the command you would use to generate models:
+
+```bash
+datamodel-codegen --input openapi.yaml --input-file-type openapi --recommend-options
+```
+
+Pass the options you have already decided on, such as `--output-model-type` and `--target-python-version`, so the
+recommendation starts from the matching preset. When they are in `pyproject.toml`, run the command from the project
+directory; `--profile NAME` and a single `--job NAME` select a profile or a job as they do for generation.
+
+The command prints the report and exits. It does not generate models, write files, or change your configuration.
+
+## Read the report
+
+For example, for this schema (`titled_variants.yaml`):
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: recommend-options.schema -->
+<!-- fmt: off -->
+
+```yaml
+openapi: 3.1.0
+info:
+  title: Travel API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Booking:
+      type: object
+      properties:
+        passenger:
+          type: string
+        payment:
+          oneOf:
+            - title: Card
+              type: object
+              properties:
+                object:
+                  const: card
+                number:
+                  type: string
+            - title: Bank Account
+              type: object
+              properties:
+                object:
+                  const: bank_account
+                iban:
+                  type: string
+    Trip:
+      type: object
+      properties:
+        origin:
+          type: string
+        destination:
+          type: string
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: recommend-options.schema -->
+
+`datamodel-codegen --input titled_variants.yaml --target-python-version 3.14 --recommend-options` prints:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: recommend-options.report -->
+<!-- fmt: off -->
+
+```text
+Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+Schema  OpenAPI 3.1.0
+  components                       2, 0 operations
+  inline objects / enums           2 / 0, nesting depth 1
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    2 objects, most repeated 1 (Card x1, Bank Account x1)
+  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+  union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces
+
+Start from  --preset practical-py314-20261017
+  already sets --use-title-as-name   [titles.names-from-unique-titles]
+
+Add (1 option)
+  --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
+      Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
+      sibling shares: 2; objects with one required key: 0); otherwise they are named after their
+      parent and a number.
+      caveat: Tags that only a referenced schema declares through allOf are not used (branches: 0;
+      #4839).
+      caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
+      the key (FieldValueFieldValue).
+      measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
+      (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
+      measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805
+      (Changes23 -> ChangesBody)
+      measured: SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 ->
+      WorkflowDispatchInputString, Boolean, ...)
+      measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
+      schemas without tagged or key branches: no change
+
+Notes
+  - The rules were calibrated on the 20261015 presets.
+
+Command
+  datamodel-codegen --input titled_variants.yaml --preset practical-py314-20261017 --target-python-version 3.14 --use-tag-as-union-variant-name
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "titled_variants.yaml"
+  preset = "practical-py314-20261017"
+  target-python-version = "3.14"
+  use-tag-as-union-variant-name = true
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: recommend-options.report -->
+
+The counts, presets and options come from your schema and the installed version. The report has these sections:
+
+| Section | Meaning |
+|---|---|
+| Schema | The signals the rules read: components, inline objects and enums, shared property names, repeated shapes, titles, unions and their tags, key style. |
+| Start from | The latest dated preset of the family (`standard` or `practical`) that needs the fewest extra options, and the rules it already satisfies. A family that cannot express a rule's value is listed with `not`. |
+| Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits (with issue numbers), and `measured:` lines with the effect seen on public schemas. |
+| Consider | Options the schema has signals for and against (`against:`). Decide from your schema; they are not in the command. |
+| Not recommended | Options a rule argues against for this schema. |
+| Your configuration | Options you set that differ from the rules, and a newer preset when you set an older one. Your values are kept. |
+| Notes | Assumptions, such as the target Python version used when you did not set one. |
+| Command / pyproject.toml | The same recommendation as a command and as configuration. |
+
+## Apply it
+
+- **No `pyproject.toml` configuration yet:** copy the `pyproject.toml` block into your `pyproject.toml`, add `output`,
+  and run `datamodel-codegen`. Or run the printed command with `--output`.
+- **Existing `[tool.datamodel-codegen]` table:** the report shows `pyproject.toml: keys to add or change` with only
+  the keys to add or change. Keys the recommender did not decide are never shown as removed. With `--profile` or `--job`,
+  the changes are for that profile or job table.
+- **Preset given on the command line:** the printed command includes the additions.
+
+Options you set on the command line or in `pyproject.toml` always stay as you set them. When a rule disagrees, the
+report lists it under "Your configuration" instead of changing it. Adopting a new naming option can rename generated
+classes, so review imports of the generated models before switching an existing project.
+
+`--http-headers` and `--http-query-parameters` are not repeated in the printed command, and URLs are shown redacted;
+add them again when you run it.
+
+## JSON output
+
+For tools and coding agents, add `--output-format json`:
+
+```bash
+datamodel-codegen --input openapi.yaml --input-file-type openapi --recommend-options --output-format json
+datamodel-codegen --output-format-json-schema recommend-options
+```
+
+The payload has `kind: "recommend-options"` and contains the `signals`, the starting preset under `baseline`, the
+`recommendations`, `consider`, `not_recommended` and `disagreements` entries (each with its `rule`, `set` config
+values and CLI `arguments`), `notes`, the full command as `arguments`, the `config` table, and the text report as
+`content`. `rules_revision` identifies the rule data that produced it.
+
+## What `quick` does
+
+`--recommend-options` with no value runs `quick`, the only mode in this release:
+
+- It reads the input once and measures the schema signals; no models are generated, so it is fast even on large
+  specifications.
+- It applies the rules to the signals and computes the options on top of the latest preset for your output model type
+  and target Python version.
+- Schema rules cover OpenAPI, AsyncAPI, and JSON Schema documents. For other input types, a directory input, or
+  `--input-model`, it recommends only the preset.
+- When `--target-python-version` is not set, it assumes the default target and says so in the notes.
+
+It cannot be combined with `--check`, `--watch`, `--diff-against`, `--all-jobs`, more than one `--job`,
+`--generate-pyproject-config`, or `--generate-cli-command`.
+
+## How recommendations are maintained
+
+- **Rules are data.** The rules ship in the package as `recommender_rules.json`. Each rule maps schema signals to
+  option values and carries its reason, caveats, and evidence. Rule values are validated through the same model as
+  presets, so a rule cannot name an option that does not exist.
+- **Every option is registered.** Each option has an entry in the rule data: either the rules that decide it or the
+  reason the recommender leaves it to you (input/output paths, the target, runtime behaviour, formatting, and so on).
+  A new option cannot be released without that decision.
+- **Re-calibration.** The rules were derived from measurements of class names on public API descriptions and
+  schemas. They are re-checked against a set of public schemas over time, and rule changes go through normal reviewed
+  pull requests. The report notes when the rules were calibrated on older presets than the one it recommends.
+- **Presets stay immutable.** A dated preset never changes. An option that the rules recommend for most schemas is
+  proposed for a new dated preset; once it exists, the recommendation starts from it and stops listing that option.
+
+## FAQ
+
+**Does it generate code?**
+No. `quick` only reads the schema and evaluates the rules.
+
+**Does it change my `pyproject.toml`?**
+No. It prints a command and a configuration block; you decide what to apply.
+
+**Will it override options I set?**
+No. Explicit options are kept, and disagreements are reported under "Your configuration".
+
+**Is the output stable?**
+The same input, options, and installed version give the same report. The report does not depend on the machine or
+on installed libraries. Upgrading datamodel-code-generator can change the recommendation when a new preset or a rule
+revision is released.
+
+**Why is an option I expected missing?**
+Either the preset already sets it (listed under "Start from"), the schema does not show the signal its rule needs,
+or the option is a project decision the recommender never makes. Check [Presets](presets.md) and the
+[CLI Reference](cli-reference/index.md) for the full list of options.
+
+---
+
 # Playground
 
 Source: https://datamodel-code-generator.koxudaxi.dev/playground/
@@ -20632,7 +20869,7 @@ This documentation is auto-generated from test cases.
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 8 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 24 | Utilities and meta options |
+| ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
@@ -20902,6 +21139,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### R {#r}
 
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
+- [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
 - [`--reuse-model`](model-customization.md#reuse-model)
 - [`--reuse-scope`](model-customization.md#reuse-scope)
@@ -48270,6 +48508,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/general-opti
 | [`--locked`](#locked) | Require an existing remote lock and validate each fetched re... |
 | [`--lockfile`](#lockfile) | Select the remote reference integrity lock file (experimenta... |
 | [`--module-split-mode`](#module-split-mode) | Split generated models into separate files, one per model cl... |
+| [`--recommend-options`](#recommend-options) | Recommend options for the input schema on top of the latest ... |
 | [`--shared-module-name`](#shared-module-name) | Customize the name of the shared module for deduplicated mod... |
 | [`--strict-refs`](#strict-refs) | Treat unresolved local `$ref` JSON pointers as errors. |
 | [`--update-lock`](#update-lock) | Create or atomically update the selected remote lock after g... |
@@ -50671,6 +50910,308 @@ create an __init__.py that re-exports all models for convenient imports.
     class User(BaseModel):
         id: int | None = None
         name: str | None = None
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--recommend-options` {#recommend-options}
+
+Recommend options for the input schema on top of the latest dated preset (experimental).
+
+`--recommend-options` reads the input schema, measures how it is written (shared property names, inline
+enums and objects, repeated shapes, titles, tagged unions, dotted keys), and applies the recommender's rule
+data. It prints the latest dated preset to start from, the options to add with the reason for each and what
+they changed on measured schemas, options it advises against, and the resulting command and pyproject.toml
+block. Nothing is generated or written. Options set on the command line or in pyproject.toml are kept and
+reported when the rules suggest another value. Add `--output-format json` for a structured payload.
+
+**Related:** [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal), [`--naming-strategy`](model-customization.md#naming-strategy), `--output-format`, [`--preset`](base-options.md#preset)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input api.yaml --input-file-type openapi --recommend-options # (1)!
+    ```
+
+    1. :material-arrow-left: `--recommend-options` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: Store API
+      version: 1.0.0
+    paths:
+      /pets:
+        get:
+          operationId: listPets
+          responses:
+            '200':
+              description: Pets
+              content:
+                application/json:
+                  schema:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pet'
+      /orders:
+        post:
+          operationId: createOrder
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Order'
+          responses:
+            '201':
+              description: Created
+    components:
+      schemas:
+        Pet:
+          type: object
+          properties:
+            name:
+              type: string
+            status:
+              type: string
+              enum: [available, pending, sold]
+            size:
+              type: string
+              enum: [small, medium, large]
+            owner:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+        Order:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [placed, approved, delivered]
+            owner:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            total:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            payment:
+              $ref: '#/components/schemas/Payment'
+        Store:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [open, closed]
+            owner:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            revenue:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+        Payment:
+          oneOf:
+            - type: object
+              properties:
+                type:
+                  const: card
+                number:
+                  type: string
+            - type: object
+              properties:
+                type:
+                  const: bank
+                iban:
+                  type: string
+        billing.Invoice:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [draft, sent, paid]
+            payer:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            total:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            tax:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            shipment:
+              $ref: '#/components/schemas/shipping.Shipment'
+        shipping.Shipment:
+          type: object
+          properties:
+            state:
+              type: string
+              enum: [packed, shipped, delivered]
+            recipient:
+              title: User
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            cost:
+              type: object
+              properties:
+                amount:
+                  type: number
+                currency:
+                  type: string
+            invoice:
+              $ref: '#/components/schemas/billing.Invoice'
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```
+    Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+    Schema  OpenAPI 3.1.0
+      components                       6, 2 operations
+      inline objects / enums           12 / 6, nesting depth 1
+      shared property names            4 (status x3, owner x3, total x2, state x2)
+      inline names = component names   1
+      repeated inline objects / enums  10 of 2 shapes / 0 of 0 value sets
+      titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+      inline titles                    5 objects, most repeated 5 (User x5)
+      unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+      union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+      component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces
+
+    Start from  --preset standard-py310-20261017
+      not practical-py310-20261017: --use-title-as-name cannot be turned off on it   [titles.keys-when-titles-collide]
+
+    Add (6 options)
+      --naming-strategy full-path   [naming.qualify-shared-inline-names]
+          Inline schemas under different parents share property names (names: 4, e.g. status x3, owner
+          x3, total x2, state x2; inline names equal to a component name: 1). Numbered names (Status,
+          Status1) depend on parse order and shift when the schema grows; full-path names each inline
+          model after its parent.
+          caveat: full-path repeats the parent name where a union branch or array item already carries
+          it (#4826).
+          measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+          versions 17% -> 0.0%
+          measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+          measured: Stripe API description: the expandable ID string of charge no longer displaces the
+          charge component (ChargeModel)
+          measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+          lost
+      --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
+          Most enums are inline value sets of one property (inline enums: 6 of 6). As Enum classes they
+          add one class name each, the longest and most numbered names; Literal types keep the values
+          without a class.
+          measured: GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227
+          measured: Stripe API description: problem names 348 -> 158
+          measured: SchemaStore workflow schema: Type1 to Type19 disappear
+      --reuse-model --collapse-reuse-models   [reuse.identical-inline-shapes]
+          The schema repeats shapes (inline objects repeating a shape: 10, in 2 shapes; inline enums
+          repeating a value set: 0, in 0 sets; union branches that only constrain their parent's
+          properties, which generation copies per branch: 0). Reuse emits each shape once, and collapse
+          refers to it instead of an empty subclass.
+          measured: GitHub REST API description: 3263 -> 1872 types, numbered names 1774 -> 663
+          measured: Stripe API description: 2512 -> 2022 types
+          measured: SchemaStore workflow schema: the step branches' copies With1 to With11 became one
+          With1
+      --no-treat-dot-as-module   [dotted-keys.flat-when-namespaces-cycle]
+          Dotted keys (2, in 2 namespaces) reference each other in cycles (namespace groups: 1). As
+          modules, cycle members move to _internal.py, where same-named classes of different namespaces
+          get _1 suffixes; flat names avoid that.
+          measured: Stripe API description: Card_1 and Customer_1 disappear, problem names 158 -> 153
+          measured: Kubernetes apps/v1: no cycles, so modules stay (median name length 16 as modules, 32
+          flat)
+      --use-tag-as-union-variant-name   [unions.name-variants-after-tags]
+          Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
+          sibling shares: 2; objects with one required key: 0); otherwise they are named after their
+          parent and a number.
+          caveat: Tags that only a referenced schema declares through allOf are not used (branches: 0;
+          #4839).
+          caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
+          the key (FieldValueFieldValue).
+          measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
+          (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
+          measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805
+          (Changes23 -> ChangesBody)
+          measured: SchemaStore workflow schema (5 tagged): 49 -> 44 (WorkflowDispatchInput1 to 5 ->
+          WorkflowDispatchInputString, Boolean, ...)
+          measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
+          schemas without tagged or key branches: no change
+
+    Not recommended
+      --use-title-as-name   [titles.keys-when-titles-collide]
+          Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to
+          another component's key: 0; most repeated inline title: 5; titles that repeat their own key: 0
+          of 0). Titles as class names would number components, or rename them when a title changes;
+          names from the keys avoid both.
+          measured: GitHub REST API description: 53 shared component titles numbered components
+          (page-deployment became GitHubPages1, Actor2)
+          measured: OpenAI API description: 503 problem names with titles off, 544 with titles on
+          measured: Stripe API description: 17% of component titles changed in four months; class names
+          from keys renamed 0.0% of locations
+
+    Notes
+      - Target Python is not set: the recommendation assumes 3.10, the default. Set
+        --target-python-version to start from the preset of the Python version the project runs.
+      - The rules were calibrated on the 20261015 presets.
+
+    Command
+      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --naming-strategy full-path --preset standard-py310-20261017 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
+
+    pyproject.toml
+      [tool.datamodel-codegen]
+      collapse-reuse-models = true
+      enum-field-as-literal = "all"
+      input = "api.yaml"
+      input-file-type = "openapi"
+      naming-strategy = "full-path"
+      preset = "standard-py310-20261017"
+      reuse-model = true
+      treat-dot-as-module = false
+      use-tag-as-union-variant-name = true
     ```
 
     <!-- fmt: on -->
@@ -57492,6 +58033,7 @@ datamodel-codegen [OPTIONS]
 | [`--locked`](general-options.md#locked) | Require an existing remote lock and validate each fetched resource against it (e... |
 | [`--lockfile`](general-options.md#lockfile) | Select the remote reference integrity lock file (experimental). |
 | [`--module-split-mode`](general-options.md#module-split-mode) | Split generated models into separate files, one per model class. |
+| [`--recommend-options`](general-options.md#recommend-options) | Recommend options for the input schema on top of the latest dated preset (experi... |
 | [`--shared-module-name`](general-options.md#shared-module-name) | Customize the name of the shared module for deduplicated models. |
 | [`--strict-refs`](general-options.md#strict-refs) | Treat unresolved local `$ref` JSON pointers as errors. |
 | [`--update-lock`](general-options.md#update-lock) | Create or atomically update the selected remote lock after generation (experimen... |
@@ -57686,6 +58228,7 @@ All options sorted alphabetically:
 - [`--preset`](base-options.md#preset) - Apply an immutable built-in option preset.
 - [`--profile`](utility-options.md#profile) - Use a named profile from pyproject.toml
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) - Generate separate request and response models for readOnly/w...
+- [`--recommend-options`](general-options.md#recommend-options) - Recommend options for the input schema on top of the latest ...
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) - Remove the special prefix from field names.
 - [`--reuse-model`](model-customization.md#reuse-model) - Reuse identical model definitions instead of generating dupl...
 - [`--reuse-scope`](model-customization.md#reuse-scope) - Scope for model reuse detection (root or tree).
@@ -58888,6 +59431,7 @@ This page lists features that are available but still experimental.
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
 | `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
+| `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, and its JSON payload` | 0.86.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
@@ -58961,6 +59505,16 @@ FastAPI server generation from the CLI is experimental; its options and generate
 Bundled Agent Skill installation is experimental; supported clients, scopes, and installed skill contents may change.
 
 Use --install-skill with codex or claude-code. --skill-scope selects a project or user installation, and --overwrite-skill safely replaces an existing regular skill directory.
+
+### `cli-option.recommend-options`
+
+- **Kind:** cli-option
+- **Target:** `--recommend-options, its rule data, and its JSON payload`
+- **Since:** 0.86.0
+
+Option recommendations are experimental; the rules, the schema signals they read, the report, and the JSON payload may change.
+
+--recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. 'quick' applies the rules without generating code.
 
 ### `cli-option.schema-validator-type`
 
@@ -60127,7 +60681,36 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
 }
 ```
 
-### Step 4: Generate and verify documentation
+### Step 4: Register the option in the recommender (Required)
+
+Every option needs a decision in the [option recommender](recommend-options.md). Add an entry for the config field
+(the snake_case name, such as `my_new_option` for `--my-new-option`) to the `options` table of
+`src/datamodel_code_generator/resources/recommender_rules.json`, in alphabetical order.
+
+If a recommender rule decides the option, list the rule ids. Each rule's `set` must include the field:
+
+```json
+"my_new_option": {"rules": ["naming.my-rule"]}
+```
+
+Otherwise, record why the recommender leaves the option to the user, with one of the categories `io`, `target`,
+`preset`, `style`, `runtime-behaviour`, `formatting`, `compat`, `debug`, `platform`, `command`, or `pending`:
+
+```json
+"my_new_option": {"not_recommended": "style", "reason": "A naming convention only the project can choose."}
+```
+
+Use `pending` only while a rule for the option is being measured: give the follow-up id in `follow_up` and the
+release it must be decided by in `release`, such as `"release": "0.86.0"`. Once a newer version is built, the
+registry test fails until the entry gets a rule or a category.
+
+`test_every_option_is_registered_with_the_recommender` in `tests/main/test_main_recommend_options.py` fails when a
+config field or CLI option has no entry (`Options missing from the recommender registry: ...`) or an entry has no
+option. `test_recommender_rules_match_the_option_registry` fails when an entry names a rule that does not set that
+field, when a rule sets a field whose entry does not list it, or when a `pending` entry lacks `follow_up` and `release`
+or outlives its release. Both messages name this file.
+
+### Step 5: Generate and verify documentation
 
 ```bash
 # Regenerate CLI docs

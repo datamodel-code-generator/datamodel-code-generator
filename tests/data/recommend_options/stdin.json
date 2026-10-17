@@ -1,0 +1,8 @@
+{
+  "title": "Settings",
+  "type": "object",
+  "properties": {
+    "theme": {"type": "string", "enum": ["light", "dark"]},
+    "items": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "integer"}]}
+  }
+}

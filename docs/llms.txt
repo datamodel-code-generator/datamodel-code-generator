@@ -5,6 +5,7 @@
 - [datamodel-code-generator](https://datamodel-code-generator.koxudaxi.dev/): Generate Python data models from schema definitions in seconds.
 - [Getting Started](https://datamodel-code-generator.koxudaxi.dev/getting-started/): Install `datamodel-code-generator` and generate your first Pydantic v2 model.
 - [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/): Presets are immutable named groups of CLI options. A preset name never changes behavior; new recommendations are published as new dated preset names.
+- [Option recommendations](https://datamodel-code-generator.koxudaxi.dev/recommend-options/): Analyse a schema and get the `datamodel-codegen` options that suit it, starting from the latest dated preset.
 - [Playground](https://datamodel-code-generator.koxudaxi.dev/playground/): Run datamodel-code-generator in your browser. The deployed site serves this route as a standalone app so Pyodide only starts after you open it.
 - [Supported Input Formats](https://datamodel-code-generator.koxudaxi.dev/supported-data-types/): This code generator supports the following input formats:
 - [Schema Version Support](https://datamodel-code-generator.koxudaxi.dev/supported_formats/): This document describes the JSON Schema, OpenAPI, AsyncAPI, Apache Avro, XML Schema, and Protocol Buffers versions supported by datamodel-code-gene...

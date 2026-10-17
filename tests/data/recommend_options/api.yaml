@@ -1,0 +1,160 @@
+openapi: 3.1.0
+info:
+  title: Store API
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        '200':
+          description: Pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        '201':
+          description: Created
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [available, pending, sold]
+        size:
+          type: string
+          enum: [small, medium, large]
+        owner:
+          title: User
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+    Order:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [placed, approved, delivered]
+        owner:
+          title: User
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        total:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        payment:
+          $ref: '#/components/schemas/Payment'
+    Store:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, closed]
+        owner:
+          title: User
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        revenue:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+    Payment:
+      oneOf:
+        - type: object
+          properties:
+            type:
+              const: card
+            number:
+              type: string
+        - type: object
+          properties:
+            type:
+              const: bank
+            iban:
+              type: string
+    billing.Invoice:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [draft, sent, paid]
+        payer:
+          title: User
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        total:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        tax:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        shipment:
+          $ref: '#/components/schemas/shipping.Shipment'
+    shipping.Shipment:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [packed, shipped, delivered]
+        recipient:
+          title: User
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        cost:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+        invoice:
+          $ref: '#/components/schemas/billing.Invoice'

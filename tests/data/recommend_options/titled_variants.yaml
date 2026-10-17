@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: Travel API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Booking:
+      type: object
+      properties:
+        passenger:
+          type: string
+        payment:
+          oneOf:
+            - title: Card
+              type: object
+              properties:
+                object:
+                  const: card
+                number:
+                  type: string
+            - title: Bank Account
+              type: object
+              properties:
+                object:
+                  const: bank_account
+                iban:
+                  type: string
+    Trip:
+      type: object
+      properties:
+        origin:
+          type: string
+        destination:
+          type: string

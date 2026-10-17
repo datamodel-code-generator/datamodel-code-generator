@@ -1,0 +1,38 @@
+Option recommendations (experimental; quick mode; rules 2026-10-17)
+
+Schema  OpenAPI 3.1.0
+  components                       6, 2 operations
+  inline objects / enums           12 / 6, nesting depth 1
+  shared property names            4 (status x3, owner x3, total x2, state x2)
+  inline names = component names   1
+  repeated inline objects / enums  10 of 2 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    5 objects, most repeated 5 (User x5)
+  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+  union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces
+
+Start from  --preset standard-py314-20261017
+
+Add  nothing on top of the preset
+
+Not recommended
+  --use-title-as-name   [titles.keys-when-titles-collide]
+      Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to
+      another component's key: 0; most repeated inline title: 5; titles that repeat their own key: 0
+      of 0). Titles as class names would number components, or rename them when a title changes;
+      names from the keys avoid both.
+      measured: GitHub REST API description: 53 shared component titles numbered components
+      (page-deployment became GitHubPages1, Actor2)
+      measured: OpenAI API description: 503 problem names with titles off, 544 with titles on
+      measured: Stripe API description: 17% of component titles changed in four months; class names
+      from keys renamed 0.0% of locations
+
+Notes
+  - The rules were calibrated on the 20261015 presets.
+
+Command
+  datamodel-codegen
+
+pyproject.toml: keys to add or change
+  nothing to change
