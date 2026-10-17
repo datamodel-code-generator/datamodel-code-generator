@@ -6,6 +6,13 @@
         "module": "tests.data.python.x_python_type_symbols",
         "name": "StrEnum"
       }
+    },
+    "ZeroDivisionError": {
+      "type": "string",
+      "x-python-import": {
+        "module": "tests.data.python.x_python_type_symbols",
+        "name": "ZeroDivisionError"
+      }
     }
   },
   "title": "TargetUnavailableDefsOverride",
@@ -14,7 +21,11 @@
     "value": {
       "type": "string",
       "x-python-type": "StrEnum"
+    },
+    "error": {
+      "type": "string",
+      "x-python-type": "ZeroDivisionError"
     }
   },
-  "required": ["value"]
+  "required": ["value", "error"]
 }

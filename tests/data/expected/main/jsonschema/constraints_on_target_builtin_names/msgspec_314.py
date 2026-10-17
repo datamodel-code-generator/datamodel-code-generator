@@ -14,3 +14,4 @@ class ConstraintsOnTargetBuiltinNames(Struct):
     finalization_length: PythonFinalizationError
     finalization_minimum: PythonFinalizationError
     exception_group_minimum: ExceptionGroup
+    zero_division_minimum: ZeroDivisionError

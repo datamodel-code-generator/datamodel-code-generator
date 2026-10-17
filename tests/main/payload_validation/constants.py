@@ -333,16 +333,6 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     "jsonschema/msgspec_boolean_enum_literal.json": {
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },
-    "openapi/discriminator_mapping_msgspec_tags.yaml::components.schemas.Cat": {
-        PayloadBackend.MSGSPEC: ("--use-msgspec-tagged-unions",),
-    },
-    **{
-        case_id: {PayloadBackend.MSGSPEC: ("--use-msgspec-nullable-enum-alias",)}
-        for case_id in (
-            "jsonschema/msgspec_enum_diagnostics/nullable.json",
-            "jsonschema/nullable_enum_literal_typed_dict.json",
-        )
-    },
 }
 ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(
@@ -387,15 +377,25 @@ PYDANTIC_V2_0_RUNTIME_MAX_VERSION = "2.1.0"
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION = "2.12.0"
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION = "2.10.0"
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION = "2.5.2"
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION = "2.11.0"
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION = "2.11.0"
 """The oldest Pydantic whose payload target, the newest target it runs, writes compiled alias patterns (2.8)."""
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS = (
     "jsonschema/numeric_constraint_precision/ordinary.json",
     "jsonschema/native_decimal_default_constrained.json",
     "jsonschema/serialized_decimal_default_multiple_of.json",
+    "jsonschema/msgspec_union_member_constraints.json",
 )
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON = (
-    "Pydantic before 2.5.2 can reject schema-valid float multipleOf values near float boundaries"
+    "Pydantic before 2.5.2 rejects schema-valid negative float multipleOf values"
+)
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_CASE_IDS = (
+    "jsonschema/msgspec_float_multiple_of.json",
+    "jsonschema/use_decimal_for_multiple_of.json",
+)
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_EXCLUSION_REASON = (
+    "Pydantic before 2.11.0 rejects schema-valid negative float multipleOf values of steps that floats cannot "
+    "represent exactly, such as 0.1"
 )
 LITERAL_PATTERN_INTERSECTION_CASE_IDS = (
     "jsonschema/allof_literal_patterns/anchored.json",
@@ -510,27 +510,26 @@ PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[s
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2: {
         **PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES,
-        "jsonschema/use_decimal_for_multiple_of.json": (
-            "Pydantic before 2.5.0 can reject schema-valid Decimal multipleOf values near float boundaries"
-        ),
         "openapi/allof_with_required_inherited_coverage.yaml::components.schemas.MultipleOfBase": (
             "Pydantic before 2.5.0 can reject schema-valid inherited Decimal multipleOf values"
         ),
     },
     PayloadBackend.PYDANTIC_V2_DATACLASS: {
-        **{
-            case_id: PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES[case_id]
-            for case_id in PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS
-        },
-        "jsonschema/use_decimal_for_multiple_of.json": (
-            "Pydantic before 2.5.0 can reject schema-valid dataclass float multipleOf values near float boundaries"
-        ),
+        case_id: PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES[case_id]
+        for case_id in PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS
     },
 }
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     backend: dict.fromkeys(
         PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,
         PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
+    )
+    for backend in (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS)
+}
+PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
+    backend: dict.fromkeys(
+        PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_CASE_IDS,
+        PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
     )
     for backend in (PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS)
 }
@@ -595,4 +594,6 @@ PAYLOAD_TARGET_PYDANTIC_VERSION = max(
     (target.value for target in TargetPydanticVersion if installed_pydantic_runs_target(target.value)),
     key=lambda value: tuple(map(int, value.split("."))),
 )
-"""The newest target the installed Pydantic can run, so payload models execute on every pinned runtime."""
+"""The newest target the installed Pydantic can run, passed only when it cannot run the output of an unset target."""
+PAYLOAD_RUNS_UNSET_TARGET_PYDANTIC_VERSION = installed_pydantic_runs_target(None)
+"""Whether the installed Pydantic runs the output of an unset target, so payload models keep the default output."""

@@ -209,6 +209,16 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     ),
     **dict.fromkeys(
         (
+            "jsonschema/msgspec_enum_diagnostics/nullable.json",
+            "jsonschema/nullable_enum_literal_typed_dict.json",
+            "jsonschema/preset_enum_shapes.json",
+        ),
+        "default msgspec output keeps the 0.83.0 None member of enums that list null, which msgspec cannot decode "
+        "and generation warns about; test_msgspec_enum_diagnostics_preserve_supported_representations decodes the "
+        "--use-msgspec-nullable-enum-alias form",
+    ),
+    **dict.fromkeys(
+        (
             "jsonschema/msgspec_enum_diagnostics/boolean.json",
             "jsonschema/msgspec_enum_diagnostics/boolean_false.json",
             "jsonschema/msgspec_enum_diagnostics/boolean_first_alias.json",
@@ -366,6 +376,14 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/anyof_const_with_constraints.json": (
         "msgspec generation warns that it leaves the constraints of union members of one type out of Meta; "
         "test_main_msgspec_union_member_constraints decodes such models"
+    ),
+    **dict.fromkeys(
+        (
+            "jsonschema/msgspec_nested_unions.json",
+            "jsonschema/type_alias_forward_ref.json",
+        ),
+        "msgspec generation warns that msgspec cannot decode their unions of untagged Struct types; "
+        "test_main_msgspec_nested_unions pins the warning",
     ),
     "jsonschema/invalid_model_name.json": (
         "msgspec conversion does not accept nullable alias shapes generated for this schema"

@@ -7,22 +7,26 @@ as a model field named after that wire name is: `--snake-case-field`, `--aliases
 the field name delimiter apply to it.
 
 A derived name never fails: in a scope that already holds it, it takes the model's duplicate suffix. An explicit name
-(a configured name or an `--aliases` entry) is a user choice and is validated, never renamed.
+(a configured name or an `--aliases` entry) is a user choice and is validated, never renamed. Names follow the Unicode
+rules of the target Python version; settings read before the model settings name a target check explicit names against
+the newest one, and the target checks them again.
 """
 
 from __future__ import annotations
 
 import keyword
 import re
-import unicodedata
 from copy import copy
 from typing import TYPE_CHECKING, Final, TypeAlias
 
+from datamodel_code_generator._format_types import PythonVersionMin
+from datamodel_code_generator._target_unicode import casefold, is_identifier, is_nfkc, target_pattern
 from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.reference import FieldNameResolver, ModelResolver
 
 __all__ = (
@@ -36,7 +40,8 @@ __all__ = (
 )
 
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
-_WORDS: Final = re.compile(r"[^\W_]+")
+_WORDS_SOURCE: Final = r"(?:(?!_)\w)+"
+_WORDS: Final = re.compile(_WORDS_SOURCE)
 _PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath})
 WINDOWS_DEVICES: Final = frozenset({
     "aux",
@@ -48,14 +53,14 @@ WINDOWS_DEVICES: Final = frozenset({
 })
 
 
-def explicit_name(value: object) -> bool:
-    """Return whether an explicit name is a Python identifier: no keyword, no leading `__`, and in NFKC form."""
+def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
+    """Return whether an explicit name is an identifier of the target: no keyword, no leading `__`, and in NFKC form."""
     return (
         isinstance(value, str)
-        and value.isidentifier()
+        and is_identifier(value, target_python_version)
         and not keyword.iskeyword(value)
         and not value.startswith("__")
-        and unicodedata.normalize("NFKC", value) == value
+        and is_nfkc(value, target_python_version)
     )
 
 
@@ -64,16 +69,19 @@ def path_placeholders(path: str) -> list[str]:
     return _PLACEHOLDER.findall(path)
 
 
-def operation_basis(method: str, path: str, operation_id: str | None) -> str:
+def operation_basis(method: str, path: str, operation_id: str | None, target_python_version: PythonVersion) -> str:
     """Return the text an operation's derived name comes from: its operationId, or its method and path.
 
-    The path gives its literal words, and `by_` before the words of each placeholder; a path with neither is `root`.
+    The path gives its literal words, as the target's word characters spell them, and `by_` before the words of each
+    placeholder; a path with neither is `root`.
     """
     if operation_id:
         return operation_id
     parts: list[str] = []
     for index, piece in enumerate(_PLACEHOLDER.split(path)):
-        if words := _WORDS.findall(piece):
+        if words := (_WORDS if piece.isascii() else target_pattern(_WORDS_SOURCE, target_python_version)).findall(
+            piece
+        ):
             parts.append(f"by_{'_'.join(words)}" if index % 2 else "_".join(words))
     return "_".join((method.lower(), *(parts or ["root"])))
 
@@ -81,18 +89,26 @@ def operation_basis(method: str, path: str, operation_id: str | None) -> str:
 class NameScope:
     """The names one namespace already holds: its support names first, then each name claimed in order.
 
-    A folded scope compares names case-insensitively, because its names become paths on case-insensitive file systems.
+    A folded scope compares names case-insensitively, as the target case-folds them, because its names become paths
+    on case-insensitive file systems.
     """
 
-    __slots__ = ("_folded", "_taken")
+    __slots__ = ("_folded", "_taken", "_target_python_version")
 
-    def __init__(self, reserved: Iterable[str] = (), *, folded: bool = False) -> None:
+    def __init__(
+        self,
+        reserved: Iterable[str] = (),
+        *,
+        folded: bool = False,
+        target_python_version: PythonVersion | None = None,
+    ) -> None:
         """Hold the support names the namespace defines itself."""
         self._folded = folded
+        self._target_python_version = target_python_version
         self._taken = {self._key(name) for name in reserved}
 
     def _key(self, name: str) -> str:
-        return name.casefold() if self._folded else name
+        return casefold(name, self._target_python_version) if self._folded else name
 
     def __contains__(self, name: object) -> bool:
         """Return whether the scope already holds a name."""
@@ -149,6 +165,11 @@ class TargetNames:
         self._function = function
         self.suffix = suffix or None
         self.strategy = strategy
+
+    @property
+    def python_version(self) -> PythonVersion:
+        """The target Python version whose Unicode rules the names follow."""
+        return self._resolver.target_python_version or PythonVersionMin
 
     @classmethod
     def of(cls, model_resolver: ModelResolver) -> TargetNames:

@@ -154,7 +154,9 @@ class _Fields:
 
     def base(self, field: ModelField) -> str:
         """Return the name a field's argument derives from: its model field's name, or for a key, a field's name."""
-        return field.name if explicit_name(field.name) else self.names.argument(field.wire_name)
+        return (
+            field.name if explicit_name(field.name, self.names.python_version) else self.names.argument(field.wire_name)
+        )
 
 
 def _local(spec: OperationSpec) -> bool:

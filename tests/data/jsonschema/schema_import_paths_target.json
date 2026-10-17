@@ -1,0 +1,22 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "literal": {
+      "type": "string",
+      "customTypePath": "typing.LiteralString"
+    },
+    "buffer": {
+      "$ref": "#/$defs/Buffer"
+    }
+  },
+  "$defs": {
+    "Buffer": {
+      "type": "string",
+      "x-python-import": {
+        "module": "collections.abc",
+        "name": "Buffer"
+      }
+    }
+  }
+}

@@ -311,6 +311,14 @@ use-annotated = true
 | `frozendict` in `x-python-type` | N/A | N/A | N/A | N/A | N/A | native |
 | `TypeForm`, `NoExtraItems`, `disjoint_base` in `x-python-type` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | `typing_extensions` | native |
 
+A standard-library type named by `--type-overrides`, `customTypePath` or `x-python-import` follows the same rules as
+`x-python-type`: a `typing` or `collections.abc` name newer than the target is imported from `typing_extensions`, and
+a type that the target does not have, such as `enum.StrEnum` for 3.10 or `pathlib.DirEntryInfo` for 3.15, stops the
+generation with `<type> is unavailable for target Python <version>`. These types are checked only where the output
+imports them, after `--import-overrides`, so an override that no model uses, or a `customTypePath` that an override
+replaces, is left alone, and `--import-overrides` can move such an import to a backport module, as
+`--import-overrides '{"StrEnum": "backports.strenum"}'` does for `enum.StrEnum` on 3.10.
+
 ---
 
 ## Troubleshooting

@@ -22,6 +22,8 @@ from datamodel_code_generator._target_documents import canonical_bytes
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
+    from datamodel_code_generator._format_types import PythonVersion
+
 __all__ = (
     "Converter",
     "Helper",
@@ -127,9 +129,14 @@ def _literal_problem(value: object) -> str | None:
     return None
 
 
-def validate(tree: Mapping[str, object]) -> tuple[tuple[Helper, ...], list[Diagnostic]]:
-    """Validate a helper configuration object, returning its valid helpers and every problem in declaration order."""
-    validator = _Validator()
+def validate(
+    tree: Mapping[str, object], target_python_version: PythonVersion
+) -> tuple[tuple[Helper, ...], list[Diagnostic]]:
+    """Validate a helper configuration object, returning its valid helpers and every problem in declaration order.
+
+    Helper names are checked as identifiers of the target Python version.
+    """
+    validator = _Validator(target_python_version)
     helpers = validator.helpers(tree, _ROOT)
     return helpers, validator.problems
 
@@ -146,7 +153,8 @@ def _collides(name: str, other: str) -> bool:
 class _Validator:  # noqa: PLR0904
     """Validate helper configuration trees, collecting problems and the schema references of the current helper."""
 
-    def __init__(self) -> None:
+    def __init__(self, target_python_version: PythonVersion) -> None:
+        self.target_python_version = target_python_version
         self.problems: list[Diagnostic] = []
         self.schemas: list[tuple[str, SchemaRef]] = []
 
@@ -384,13 +392,14 @@ class _Validator:  # noqa: PLR0904
         helpers: list[Helper] = []
         for name, body in value.items():
             here = f"{at}[{name!r}]"
-            if (problem := helper_name_problem(name)) is not None:
+            target = self.target_python_version
+            if (problem := helper_name_problem(name, target)) is not None:
                 self.value(here, problem)
-            elif other := next((other for key, other in names if _collides(folded(name), key)), None):
+            elif other := next((other for key, other in names if _collides(folded(name, target), key)), None):
                 message = f"The helper names {other!r} and {name!r} collide"
                 self.problems.append(_diagnostic("E_NAME_COLLISION", here, message))
             else:
-                names.append((folded(name), name))
+                names.append((folded(name, target), name))
             if (helper := self.helper(name, body, here)) is not None:
                 helpers.append(helper)
         return tuple(helpers)

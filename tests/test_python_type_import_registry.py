@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pickle
+
 import pytest
 
 from datamodel_code_generator._python_type_import_registry import (
@@ -28,6 +30,13 @@ def test_target_stable_python_type_import_lookup_is_lazy_and_bounded() -> None:
         get_python_type_import_path("PathInfo", (3, 10))
     assert exc_info.value.type_name == "PathInfo"
     assert exc_info.value.target_version == (3, 10)
+    assert str(exc_info.value) == "PathInfo is unavailable for target Python 3.10"
+    unpickled = pickle.loads(pickle.dumps(exc_info.value))
+    assert (unpickled.type_name, unpickled.target_version, str(unpickled)) == (
+        "PathInfo",
+        (3, 10),
+        "PathInfo is unavailable for target Python 3.10",
+    )
     assert get_python_type_import_path("PathInfo", (3, 14)) == "pathlib.types.PathInfo"
     with pytest.raises(PythonTypeUnavailableError):
         get_python_type_import_path("StrEnum", (3, 10))

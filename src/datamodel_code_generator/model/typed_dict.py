@@ -8,6 +8,7 @@ from __future__ import annotations
 import keyword
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model.base import UNDEFINED
@@ -55,7 +56,7 @@ def _field_source_name(field: DataModelFieldBase) -> str | None:
 def _is_valid_field_name(field: DataModelFieldBase) -> bool:
     if (name := _field_source_name(field)) is None:  # pragma: no cover
         return False
-    return name.isidentifier() and not keyword.iskeyword(name)
+    return is_identifier(name, field.data_type.python_version) and not keyword.iskeyword(name)
 
 
 class TypedDict(DataModel):

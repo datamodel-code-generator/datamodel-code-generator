@@ -15,7 +15,6 @@ from dataclasses import dataclass, is_dataclass, replace
 from dataclasses import fields as dataclass_fields
 from decimal import Decimal
 from functools import cached_property
-from keyword import iskeyword
 from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
@@ -1106,12 +1105,8 @@ def _policy(model: DataModel, configured: type[DataModel]) -> _Policy:
     functional = (
         backend == "typeddict"
         and kind == "model"
-        and any(
-            (name := field.original_name if field.original_name is not None else field.name) is None
-            or not name.isidentifier()
-            or iskeyword(name)
-            for field in model.fields
-        )
+        and isinstance(model, typed_dict.TypedDict)
+        and model.is_functional_syntax
     )
     return _Policy(backend, kind, functional)
 

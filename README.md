@@ -127,11 +127,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --output model.py
 ```
 
-This quick start uses `standard-py312-20261015` as the modern Python 3.12 baseline.
+This quick start uses `standard-py312-20261017` as the modern Python 3.12 baseline.
 Preset names include the target Python version: `py312` means Python 3.12.
 
 See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/) for all options. See [Presets](https://datamodel-code-generator.koxudaxi.dev/presets/),
@@ -139,7 +139,7 @@ See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/
 [`--output-model-type`](https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-customization/#output-model-type) for this command.
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
-documentation, use [`practical-py312-20261015`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261015).
+documentation, use [`practical-py312-20261017`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261017).
 
 <details>
 <summary>Input (<code>schema.json</code>)</summary>
@@ -360,7 +360,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \
@@ -373,7 +373,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --output app/models.py \
   --generate-client httpx2 \
   --client-output app/client \

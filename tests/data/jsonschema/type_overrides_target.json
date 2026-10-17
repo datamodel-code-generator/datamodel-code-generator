@@ -1,0 +1,20 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "c": {
+      "type": "string"
+    },
+    "d": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/D"
+      }
+    }
+  },
+  "$defs": {
+    "D": {
+      "type": "string"
+    }
+  }
+}
