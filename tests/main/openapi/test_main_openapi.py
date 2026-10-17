@@ -985,7 +985,8 @@ model types ignore it. Client generation (`--generate-client`) with `msgspec.Str
 Without the flag the output keeps the 0.83.0 form of an enum that lists `null` without `type: string` or
 `nullable: true`, such as `type: [integer, "null"]` with `enum: [1, 2, null]`: an Enum class with a `None` member
 such as `NoneType_None = None`. msgspec cannot decode such an Enum, because its members must be all `str` or all
-`int` values, and the `IntEnum` written for `type: integer` cannot be imported at all.
+`int` values. An enum whose class has a value type base, the `IntEnum` of `type: integer` or a `--use-subclass-enum`
+class such as `(int, Enum)`, cannot hold a `None` member and is written as with the flag in any case.
 
 With the flag the enum is written as a `type: string` or `nullable` enum is: an Enum class with an `Enum` suffix and
 without the `None` member, and the schema name becomes a type alias of that class or `None`, so that msgspec decodes
@@ -1025,7 +1026,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
     ("input_file", "extra_args", "expected_file", "imports"),
     [
         pytest.param("msgspec_nullable_enum_31.yaml", [], "openapi_31.py", True, id="openapi-31"),
-        pytest.param("msgspec_nullable_enum.yaml", [], "openapi_30.py", False, id="openapi-30"),
+        pytest.param("msgspec_nullable_enum.yaml", [], "openapi_30.py", True, id="openapi-30"),
         pytest.param(
             "msgspec_nullable_enum.yaml",
             ["--use-msgspec-nullable-enum-alias"],
@@ -1037,7 +1038,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
             "msgspec_nullable_enum.yaml",
             ["--set-default-enum-member"],
             "openapi_30_set_default_enum_member.py",
-            False,
+            True,
             id="openapi-30-set-default-enum-member",
         ),
         pytest.param(
@@ -1047,6 +1048,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
             True,
             id="openapi-30-set-default-enum-member-alias",
         ),
+        pytest.param("msgspec_nullable_enum_inherited.yaml", [], "openapi_inherited.py", False, id="inherited"),
     ],
 )
 def test_main_openapi_msgspec_nullable_enum(
@@ -1054,7 +1056,9 @@ def test_main_openapi_msgspec_nullable_enum(
 ) -> None:
     """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
 
-    The 0.83.0 `IntEnum` of `type: integer` with a `None` member fails at import, so only its source is compared.
+    The `IntEnum` of `type: integer`, which cannot hold a `None` member, gets the alias also without the option. An
+    allOf of enums still merges into the class of its first enum, an `IntEnum` with a `None` member that fails at
+    import, so only its source is compared.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")

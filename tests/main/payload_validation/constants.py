@@ -140,14 +140,6 @@ ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
 )
 EXCLUDED_CASES: dict[str, str] = {
-    **dict.fromkeys(
-        (
-            "openapi/msgspec_nullable_enum.yaml::components.schemas.Level",
-            "openapi/msgspec_nullable_enum.yaml::components.schemas.LevelDefault",
-        ),
-        "an integer enum that lists null without nullable is an IntEnum with a None member that fails at import, "
-        "as in 0.83.0; test_main_openapi_msgspec_nullable_enum pins its msgspec output",
-    ),
     "jsonschema/number_constraints_on_mapped_formats.json": (
         "the boolean numeric format needs --type-mappings; "
         "test_main_number_constraints_on_mapped_formats checks the mapped number bound"
