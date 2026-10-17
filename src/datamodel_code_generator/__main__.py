@@ -2977,7 +2977,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             )
 
         if compare_output is not None:
-            from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # noqa: PLC0415
+            from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # ruff: ignore[import-outside-top-level]
 
             comparison_context = GenerationRunContext(
                 generation_timestamp=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),

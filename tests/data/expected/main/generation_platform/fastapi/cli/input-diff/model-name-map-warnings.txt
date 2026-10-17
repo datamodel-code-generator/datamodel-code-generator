@@ -1,1 +1,1 @@
---model-name-map: 1 key renamed no model: 'Nope'
+--model-name-map: 1 key matched no generated model: 'Nope'

@@ -5527,14 +5527,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._variant_discriminator_tags.clear()
 
     def __warn_about_unmatched_model_name_keys(self) -> None:
-        """Warn about the ``--model-name-map`` keys that renamed no model, after parsing has named every model."""
+        """Warn about the ``--model-name-map`` keys that matched no model, after parsing has named every model."""
         if _UNMATCHED_MODEL_NAME_KEYS_REPORTED.get() and (
             unmatched_keys := sorted({redact_reference(key) for key in self.model_resolver.unmatched_model_name_keys()})
         ):
             listed = ", ".join(map(repr, unmatched_keys))
             warn(
                 f"--model-name-map: {len(unmatched_keys)} key{'' if len(unmatched_keys) == 1 else 's'} "
-                f"renamed no model: {listed}",
+                f"matched no generated model: {listed}",
                 stacklevel=2,
             )
 

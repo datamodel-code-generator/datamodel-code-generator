@@ -161,7 +161,7 @@ def _run(  # noqa: PLR0913, PLR0917
         prepare_target,
     )
     from datamodel_code_generator._target_selection import target_of  # noqa: PLC0415
-    from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # noqa: PLC0415
+    from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # ruff: ignore[import-outside-top-level]
 
     lockfile = _target_lockfile(config, pyproject_path)
     generator, target = target_of(config, partial(_base, config, namespace, pyproject_path))
