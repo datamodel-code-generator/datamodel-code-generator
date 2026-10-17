@@ -417,7 +417,9 @@ def test_fast_constructor_preserves_custom_map_seq_constructors(  # noqa: PLR091
     )
 
 
-@pytest.mark.parametrize("path", _SCHEMA_PATHS, ids=lambda path: str(path.relative_to(Path(__file__).parent / "data")))
+@pytest.mark.parametrize(
+    "path", _SCHEMA_PATHS, ids=lambda path: path.relative_to(Path(__file__).parent / "data").as_posix()
+)
 def test_fast_constructor_matches_schema_fixtures(path: Path) -> None:
     """Keep the optimized C-loader path identical for every OpenAPI and AsyncAPI YAML fixture."""
     _assert_parity(path.read_text(encoding="utf-8"), get_safe_loader())
