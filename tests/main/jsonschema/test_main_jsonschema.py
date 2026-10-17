@@ -9926,6 +9926,84 @@ def test_main_jsonschema_schema_validators_pattern_properties_own_typed_extras(o
     )
 
 
+@pytest.mark.parametrize(
+    ("input_name", "expected_name", "extra_args", "model_name", "valid_json", "invalid_json"),
+    [
+        pytest.param(
+            "schema_validators_pattern_ref_order",
+            "schema_validators_pattern_ref_order",
+            [],
+            "Compose",
+            '{"services":{"web":{"image":"x"}}}',
+            '{"services":{"Web":{}}}',
+            id="inline-object",
+        ),
+        pytest.param(
+            "schema_validators_pattern_ref_definition_order",
+            "schema_validators_pattern_ref_definition_order",
+            [],
+            "Compose",
+            '{"services":{"web":{"image":"x"}}}',
+            '{"services":{"Web":{}}}',
+            id="definitions",
+        ),
+        pytest.param(
+            "schema_validators_pattern_ref_definition_order",
+            "schema_validators_pattern_ref_definition_order_keep_model_order",
+            ["--keep-model-order"],
+            "Compose",
+            '{"services":{"web":{"image":"x"}}}',
+            '{"services":{"Web":{}}}',
+            id="keep-model-order",
+        ),
+        pytest.param(
+            "schema_validators_pattern_ref_field_cycle",
+            "schema_validators_pattern_ref_field_cycle",
+            [],
+            "Workspace",
+            '{"registry":{"name":"r","plugin_a":{"parent":{"name":"inner"}}}}',
+            '{"registry":{"other":{}}}',
+            id="field-cycle",
+        ),
+    ],
+)
+def test_main_jsonschema_schema_validators_pattern_ref_defined_first(
+    output_file: Path,
+    input_name: str,
+    expected_name: str,
+    extra_args: list[str],
+    model_name: str,
+    valid_json: str,
+    invalid_json: str,
+) -> None:
+    """Define a model before the class whose patternProperties rule names it, so the module imports."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{expected_name}.py",
+        extra_args=[
+            "--generate-schema-validators",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=expected_name,
+        model_name=model_name,
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type="value_error",
+    )
+
+
 def test_main_jsonschema_empty_anyof_uses_any(output_file: Path) -> None:
     """Test empty anyOf remains an unconstrained root type."""
     expected = (

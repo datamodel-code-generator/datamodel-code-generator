@@ -11143,6 +11143,28 @@ def test_main_openapi_circular_imports_class_conflict(output_dir: Path) -> None:
         )
 
 
+def test_main_openapi_circular_imports_pattern_properties_ref(output_dir: Path) -> None:
+    """Define a model merged into _internal.py before the class whose patternProperties rule names it."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "circular_imports_pattern_properties_ref.yaml",
+        output_path=output_dir,
+        expected_directory=EXPECTED_OPENAPI_PATH / "circular_imports_pattern_properties_ref",
+        input_file_type="openapi",
+        extra_args=[
+            "--generate-schema-validators",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+        runtime_validation_module="a",
+        runtime_validation_model_name="Services",
+        runtime_validation_data={"name": "n", "svc_web": {"owner": {"other": {"id": "x"}}}},
+    )
+
+
 def test_main_openapi_circular_imports_with_inheritance(output_dir: Path) -> None:
     """Test that circular imports with base class inheritance are resolved."""
     with freeze_time(TIMESTAMP):

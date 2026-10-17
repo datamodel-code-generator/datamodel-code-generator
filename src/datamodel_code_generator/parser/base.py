@@ -690,6 +690,8 @@ def _build_keep_model_order_dependency_maps(
 ) -> _KeepModelOrderDeps:
     strong_deps: ModelDeps = {}
     all_deps: ModelDeps = {}
+    runtime_validation_references = _runtime_validation_reference_paths(models, same_module=False)
+    class_names = {model.path: model.class_name for model in models} if runtime_validation_references else {}
     for model in models:
         strong, deps = _collect_keep_model_order_deps(
             model,
@@ -698,6 +700,10 @@ def _build_keep_model_order_dependency_maps(
             pydantic_v2_root_model_type=pydantic_v2_root_model_type,
             use_deferred_annotations=use_deferred_annotations,
         )
+        if reference_paths := runtime_validation_references.get(model.path):
+            runtime_validation_deps = {class_names[reference_path] for reference_path in reference_paths} - imported
+            strong |= runtime_validation_deps
+            deps |= runtime_validation_deps
         strong_deps[model.class_name] = strong
         all_deps[model.class_name] = deps
     return _KeepModelOrderDeps(strong=strong_deps, all=all_deps)
@@ -794,11 +800,12 @@ def _reorder_models_keep_model_order(
     models[:] = [model_by_name[name] for name in ordered_names]
 
 
-def _sort_internal_module_models(
+def _sort_models_by_class_body_references(
     models: list[DataModel],
     pydantic_v2_root_model_type: type[DataModel] | None,
+    runtime_validation_references: Mapping[str, frozenset[str]],
 ) -> list[DataModel]:
-    """Order models moved to _internal.py so runtime base classes are defined first."""
+    """Define first the models a class body evaluates: base classes, root types and runtime rule types."""
     model_paths = {model.path for model in models}
     order_index = {model.path: index for index, model in enumerate(models)}
     edges: dict[str, set[str]] = {model.path: set() for model in models}
@@ -810,6 +817,8 @@ def _sort_internal_module_models(
     for model in models:
         for base_class in model.base_classes:
             add_dependency(model, base_class.reference.path if base_class.reference else None)
+        for reference_path in runtime_validation_references.get(model.path, ()):
+            add_dependency(model, reference_path)
         if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
             for field in model.fields:
                 for data_type in field.data_type.all_data_types:
@@ -818,6 +827,41 @@ def _sort_internal_module_models(
     sorted_paths = stable_toposort(list(order_index), edges, key=order_index.__getitem__)
     model_by_path = {model.path: model for model in models}
     return [model_by_path[path] for path in sorted_paths]
+
+
+def _runtime_validation_reference_paths(models: Sequence[DataModel], *, same_module: bool) -> dict[str, frozenset[str]]:
+    """Map models to the listed models their runtime rules name; with ``same_module``, other modules are imported."""
+    references_by_path: dict[str, frozenset[str]] = {}
+    model_paths: set[str] = set()
+    for model in models:
+        if not (references := model.schema_runtime_validation_references):
+            continue
+        model_paths = model_paths or {listed_model.path for listed_model in models}
+        module_path = model.module_path if same_module else None
+        if reference_paths := frozenset(
+            reference.path
+            for reference in references
+            if reference.path in model_paths
+            and (
+                module_path is None
+                or (isinstance(source := reference.source, DataModel) and source.module_path == module_path)
+            )
+        ):
+            references_by_path[model.path] = reference_paths
+    return references_by_path
+
+
+def _runtime_validation_names_later_model(
+    models: list[DataModel],
+    runtime_validation_references: Mapping[str, frozenset[str]],
+) -> bool:
+    """Return whether a runtime rule names a model that ``models`` list after the rule's model."""
+    positions = {model.path: index for index, model in enumerate(models)}
+    return any(
+        positions.get(reference_path, -1) > index
+        for index, model in enumerate(models)
+        for reference_path in runtime_validation_references.get(model.path, ())
+    )
 
 
 SPECIAL_PATH_FORMAT: str = "#-datamodel-code-generator-#-{}-#-special-#"
@@ -1170,10 +1214,13 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     generation_index: GenerationIndex | None = None,
     *,
     pydantic_v2_root_model_type: type[DataModel] | None = None,
+    runtime_validation_references: Mapping[str, frozenset[str]] | None = None,
 ) -> tuple[list[DataModel], SortedDataModels, list[str]]:
     """Sort data models by dependency order for correct forward references."""
     if sorted_data_models is None:
         sorted_data_models = OrderedDict()
+
+    runtime_validation_references = runtime_validation_references or {}
 
     if require_update_action_models is None:
         require_update_action_models = []
@@ -1189,9 +1236,12 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         require_update_action_model_paths.add(path)
 
     def get_reference_classes(model: DataModel) -> frozenset[str]:
-        if generation_index is None:
-            return model.reference_classes
-        return generation_index.reference_classes_for_model(model)
+        reference_classes = (
+            model.reference_classes if generation_index is None else generation_index.reference_classes_for_model(model)
+        )
+        if model_runtime_validation_references := runtime_validation_references.get(model.path):
+            return reference_classes | model_runtime_validation_references
+        return reference_classes
 
     sorted_model_count: int = len(sorted_data_models)
     sorted_model_paths = set(sorted_data_models)
@@ -1224,6 +1274,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     recursion_count - 1,
                     generation_index,
                     pydantic_v2_root_model_type=pydantic_v2_root_model_type,
+                    runtime_validation_references=runtime_validation_references,
                 )
             except RecursionError:  # pragma: no cover
                 pass
@@ -1273,6 +1324,13 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
             seen_orderings.add(sig)
             unresolved_references = sorted_unresolved_models
+
+        if runtime_validation_references and _runtime_validation_names_later_model(
+            unresolved_references, runtime_validation_references
+        ):
+            unresolved_references = _sort_models_by_class_body_references(
+                unresolved_references, pydantic_v2_root_model_type, runtime_validation_references
+            )
 
         # circular reference
         unsorted_data_model_names = set(path_to_index.keys())
@@ -7272,7 +7330,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_class_mappings, path_mapping = self.__rename_and_relocate_scc_models(
                 all_scc_models, model_to_original_module, internal_module, internal_path
             )
-            all_scc_models = _sort_internal_module_models(all_scc_models, self.pydantic_v2_root_model_type)
+            all_scc_models = _sort_models_by_class_body_references(
+                all_scc_models,
+                self.pydantic_v2_root_model_type,
+                _runtime_validation_reference_paths(all_scc_models, same_module=False),
+            )
             all_path_mappings.update(path_mapping)
 
             for scc_module in scc:
@@ -8699,6 +8761,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.results,
             generation_index=self.generation_store.index,
             pydantic_v2_root_model_type=self.pydantic_v2_root_model_type,
+            runtime_validation_references=(
+                None if self.keep_model_order else _runtime_validation_reference_paths(self.results, same_module=True)
+            ),
         )
         source_reference_paths: Mapping[DataModel, str] | None = (
             {
