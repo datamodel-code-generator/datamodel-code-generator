@@ -67,11 +67,11 @@ datamodel-codegen \
   --input schema.json \
   --input-file-type jsonschema \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --output model.py
 ```
 
-This quick start uses `standard-py312-20261015` as the modern Python 3.12 baseline.
+This quick start uses `standard-py312-20261017` as the modern Python 3.12 baseline.
 Preset names include the target Python version: `py312` means Python 3.12.
 
 See [CLI Reference](cli-reference/index.md) for all options. See [Presets](presets.md),
@@ -79,7 +79,7 @@ See [CLI Reference](cli-reference/index.md) for all options. See [Presets](prese
 [`--output-model-type`](cli-reference/model-customization.md#output-model-type) for this command.
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
-documentation, use [`practical-py312-20261015`](presets.md#practical-py312-20261015).
+documentation, use [`practical-py312-20261017`](presets.md#practical-py312-20261017).
 
 <details>
 <summary>Input (<code>schema.json</code>)</summary>

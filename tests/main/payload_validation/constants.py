@@ -337,6 +337,7 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         for case_id in (
             "jsonschema/msgspec_enum_diagnostics/nullable.json",
             "jsonschema/nullable_enum_literal_typed_dict.json",
+            "jsonschema/preset_enum_shapes.json",
         )
     },
 }
