@@ -1,0 +1,9 @@
+exit=1
+fail-both: person.json | pydantic_v2.BaseModel | --no-such-option: datamodel-codegen: error: unrecognized arguments: --no-such-option
+summary: identical=0, differ=0, fail-both=1, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+
+exit=1
+fail-both: person.json | pydantic_v2.BaseModel | --no-such-option: datamodel-codegen: error: unrecognized arguments: --no-such-option
+summary: identical=0, differ=0, fail-both=1, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 1 of 1

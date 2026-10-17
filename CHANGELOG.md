@@ -5,6 +5,48 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.85.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.85.0) - 2026-10-16
+
+## Breaking Changes
+
+### Error Handling Changes
+* Output encoding failures now raise `Error` instead of raw codec exceptions - Generated output, model metadata from `--emit-model-metadata`, and API target package files are now encoded before anything is written. If the chosen `--encoding` / `encoding` cannot encode the text, `generate()` raises `datamodel_code_generator.Error` with the message `Unable to encode output using encoding '...': ...` instead of letting `UnicodeEncodeError` escape. The CLI now prints this as a single error line and exits with code 2 instead of showing a traceback. Python API callers that caught `UnicodeEncodeError` or `UnicodeError` need to catch `Error` instead. Also, when one module of a modular output fails to encode, no files are written; before, earlier modules could be written before the failure (#4615)
+* Unknown or non-text encodings are rejected up front with `Error` - `generate()` now checks the `encoding` option during config preparation, before any input is read or any output path is created. An unknown encoding such as `nosuch`, or a codec that is not a text encoding such as `hex`, now raises `datamodel_code_generator.Error` (CLI exit code 2, one-line message) instead of a raw `LookupError` raised later. Code that caught `LookupError` for a bad encoding must catch `Error` instead (#4615)
+* Explicit names are now checked as identifiers of the target Python version - This applies to `--class-name`, `--class-name-prefix`, `--class-name-suffix`, `--special-field-name-prefix`, `--model-name-map` values and explicit field aliases. It also applies to client and FastAPI generation settings such as `package`, `model_package`, resource namespaces, operation, parameter and router names, and protocol helper names. These are now checked against the identifier rules of `--target-python-version`, not the running interpreter, so a name that uses characters only a newer Python accepts is now rejected (for example with `E_CONFIG_VALUE` or an invalid identifier error) when targeting an older Python, even if the running interpreter accepts it (#4790)
+* Generation now fails when an override or schema import names a standard-library type the target lacks - A standard-library type named by `--type-overrides`, `customTypePath` or `x-python-import` (including its `qualname` and `native-field` paths) that does not exist in the target Python version now stops generation with `TYPE is unavailable for target Python X.Y`. Examples are `enum.StrEnum` for 3.10, `pathlib.types.PathInfo` for 3.13, `builtins.frozendict` for 3.14 and `pathlib.DirEntryInfo` for 3.15. Before this change the import was written as given and generation succeeded. The check runs only when the final output imports the type. To fix this, raise `--target-python-version` or use `--import-overrides` to point the import at a backport module, for example `--import-overrides '{"StrEnum": "backports.strenum"}'`. (#4788)
+
+### Code Generation Changes
+* Non-ASCII identifiers now follow the target Python version's Unicode rules - Field names, class names, enum member names, module names, alias generator output (`to_camel`, `to_pascal`, `to_snake`), OpenAPI operation model names and the builtin formatter's import ordering are now worked out from Unicode tables for `--target-python-version`. Those tables cover identifier characters, `\w`, numeric characters, case mappings and NFKC normalization. Before, these names came from the `str`, `re` and `unicodedata` behaviour of the interpreter running datamodel-codegen. ASCII names are unaffected, but output for non-ASCII schema names can change when the running interpreter's Unicode version differs from the target's. For example, a property `京都` (U+4EAC is numeric from Python 3.13) used to become `field_京都` when generated on Python 3.13 or later. It is now emitted as `京都` for targets up to 3.12, and the reverse happens when generating on an older Python for a 3.13 or later target. Likewise, `--capitalise-enum-members` no longer turns `ɤ` into `Ɤ` for targets older than 3.14, even when running on Python 3.14. Regenerate and review models whose names contain non-ASCII characters, because renamed fields and members break code that refers to them (#4790)
+* Newer typing names from type overrides and schema import paths now come from `typing_extensions` - Standard-library `typing` or `collections.abc` names given through `--type-overrides`, `customTypePath` or `x-python-import` are now resolved against `--target-python-version`. If the name is newer than the target, the import now comes from `typing_extensions`. For example, `typing.LiteralString` and `collections.abc.Buffer` with target 3.10 now produce `from typing_extensions import Buffer, LiteralString` instead of importing them from `typing` and `collections.abc` as before. Projects that compare generated output, or that do not have `typing_extensions` installed, will see different imports. (#4788)
+* Builtin formatter groups standard library imports by target Python version - With `--formatters builtin`, whether an import goes in the standard library section or the third party section now depends on the standard library modules of `--target-python-version`. When no target is given, the minimum supported target, 3.10, is used. Before this change, the formatter used `sys.stdlib_module_names` of the running interpreter. When the running Python differs from the target, imports in generated files can move to a different section. For example, `tomllib` is grouped as third party when targeting 3.10, `distutils` is grouped as standard library when targeting 3.10 even on a newer interpreter, and `sre_parse` becomes third party while `profiling` becomes standard library when targeting 3.15 (#4791)
+* Builtin formatter places each module of a multi-module import in its own section - With `--formatters builtin`, an `import a, b, c` statement that names modules from different categories (standard library, third party, first party) now puts each module in its own section, as isort does. Before, all modules from that statement went into the section of the highest-priority module among them, so the order of generated imports can change (#4791)
+* Reuse model now deduplicates models whose referenced names start with non-ASCII letters - With `--reuse-model`, model names that start with characters beyond ASCII (for example `Ñumber` or `Ölen`) are now masked as whole identifiers when models are compared. Models that are identical except for such references are now reused as subclasses (for example `class Distance(Speed): pass`) instead of being generated as separate duplicate classes. This matches how ASCII names already worked. As a result, some previously generated duplicate classes and their numbered names may no longer appear in the output (#4791)
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* fix: report output encoding failures without truncating the file by @mvanhorn in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4615
+* Add Python 3.15 as a target version by @Kaboka22 in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4609
+* Lock dependencies with Python 3.15 wheels by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4766
+* Run the test suite on Python 3.15 in CI by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4768
+* Keep target names and type imports independent of the host for Python 3.15 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4769
+* Use the newest target when the interpreter is newer than every target by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4770
+* Name the black requirement when black cannot format the target by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4771
+* Add 20261015 presets with Python 3.15 targets by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4772
+* Document Python 3.15 targets by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4773
+* Read builtin names for field collisions from the static target table by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4786
+* Follow the target Python's Unicode version for generated names by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4790
+* Group the builtin formatter's imports by the target Python's standard library by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4791
+* Take the target Python of model type decisions from the field configuration by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4787
+* Check type overrides, customTypePath and x-python-import against the target Python by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4788
+
+## New Contributors
+* @Kaboka22 made their first contribution in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4609
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.84.0...0.85.0
+
+---
+
 ## [0.84.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.84.0) - 2026-10-15
 
 ## Highlights

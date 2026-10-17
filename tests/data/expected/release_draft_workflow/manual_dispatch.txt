@@ -1,11 +1,17 @@
 {
   "analyze_checkout": {
     "fetch-depth": 0,
-    "persist-credentials": false,
-    "ref": "${{ github.workflow_sha }}"
+    "persist-credentials": false
   },
   "analyze_if": "needs.resolve-pr.outputs.should_analyze == 'true'",
   "analyze_needs": "resolve-pr",
+  "analyze_verify_checkout": {
+    "env": {
+      "TRUSTED_SHA": "${{ github.workflow_sha }}"
+    },
+    "name": "Verify trusted checkout",
+    "run": "set -euo pipefail\nif [[ ! \"$TRUSTED_SHA\" =~ ^[0-9a-f]{40}$ ]]; then\n  echo \"Expected a full trusted workflow commit SHA.\" >&2\n  exit 1\nfi\nif ! actual_sha=\"$(git rev-parse --verify --quiet 'HEAD^{commit}')\" || [ \"$actual_sha\" != \"$TRUSTED_SHA\" ]; then\n  echo \"Checked-out commit does not match the trusted workflow commit.\" >&2\n  exit 1\nfi\n"
+  },
   "diff_env": {
     "GH_TOKEN": "${{ github.token }}",
     "MERGE_SHA": "${{ needs.resolve-pr.outputs.merge_sha }}",
@@ -38,9 +44,15 @@
         "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
         "with": {
           "fetch-depth": 0,
-          "persist-credentials": false,
-          "ref": "${{ github.workflow_sha }}"
+          "persist-credentials": false
         }
+      },
+      {
+        "env": {
+          "TRUSTED_SHA": "${{ github.workflow_sha }}"
+        },
+        "name": "Verify trusted checkout",
+        "run": "set -euo pipefail\nif [[ ! \"$TRUSTED_SHA\" =~ ^[0-9a-f]{40}$ ]]; then\n  echo \"Expected a full trusted workflow commit SHA.\" >&2\n  exit 1\nfi\nif ! actual_sha=\"$(git rev-parse --verify --quiet 'HEAD^{commit}')\" || [ \"$actual_sha\" != \"$TRUSTED_SHA\" ]; then\n  echo \"Checked-out commit does not match the trusted workflow commit.\" >&2\n  exit 1\nfi\n"
       },
       {
         "env": {

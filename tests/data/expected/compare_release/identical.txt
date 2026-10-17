@@ -1,0 +1,7 @@
+exit=0
+summary: identical=4, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 4
+
+exit=0
+summary: identical=4, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 4 of 4

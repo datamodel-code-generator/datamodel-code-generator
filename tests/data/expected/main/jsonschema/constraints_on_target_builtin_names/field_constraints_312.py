@@ -14,3 +14,4 @@ class ConstraintsOnTargetBuiltinNames(BaseModel):
     finalization_length: PythonFinalizationError = Field(..., min_length=2)
     finalization_minimum: PythonFinalizationError = Field(..., ge=1)
     exception_group_minimum: ExceptionGroup
+    zero_division_minimum: ZeroDivisionError
