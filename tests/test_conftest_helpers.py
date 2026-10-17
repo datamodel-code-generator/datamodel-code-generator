@@ -821,6 +821,12 @@ def test_ledger_rejects_hand_edited_refs(ledger: LedgerProject, monkeypatch: pyt
 UNSORTED = "lines are not sorted, or the file differs from what pytest writes"
 
 
+def test_format_refs_writes_each_line_once() -> None:
+    """A test comparing one label several times records one line for it."""
+    line = units.RefLine("test_p", "case", "../shared.txt")
+    assert units.format_refs([line, line, line]) == HEADER + "[test_p]\ncase\t../shared.txt\n"
+
+
 @pytest.mark.parametrize(
     ("text", "reason", "kind"),
     [

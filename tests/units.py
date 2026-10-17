@@ -371,7 +371,7 @@ class Problem(NamedTuple):
 
 
 def format_refs(lines: Iterable[RefLine]) -> str:
-    """Return the canonical text of a sidecar: the header, then sections per function, lines sorted.
+    """Return the canonical text of a sidecar: the header, then sections per function, lines sorted and unique.
 
     A line names its storage only when it differs from the label; a sidecar without lines is empty.
     """
@@ -388,7 +388,8 @@ def format_refs(lines: Iterable[RefLine]) -> str:
             columns.append(f"@{predicate_text(line.predicate)}")
         if line.storage is not None and line.storage != line.label:
             columns.append(f"= {line.storage}")
-        output.append("\t".join(columns))
+        if (text := "\t".join(columns)) != output[-1]:
+            output.append(text)
     return REFS_HEADER + "".join(f"{text}\n" for text in output) if output else ""
 
 
