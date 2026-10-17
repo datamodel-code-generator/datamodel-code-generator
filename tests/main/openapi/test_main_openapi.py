@@ -10959,6 +10959,25 @@ def test_main_openapi_dot_notation_collapse_reuse_models(
     )
 
 
+def test_main_openapi_collapse_root_models_module_named_field(output_dir: Path) -> None:
+    """Drop the import of a collapsed model's module when a field has the module's name."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "collapse_root_models_module_named_field.yaml",
+        output_path=output_dir,
+        expected_directory=EXPECTED_OPENAPI_PATH / "collapse_root_models_module_named_field",
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--disable-timestamp",
+        ],
+        runtime_validation_module="core.v1",
+        runtime_validation_model_name="Selector",
+        runtime_validation_data={"resource": "cpu", "divisor": "1m"},
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     [

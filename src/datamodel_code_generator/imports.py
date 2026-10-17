@@ -233,17 +233,15 @@ class Imports(defaultdict[str | None, set[str]]):
         self.alias[key[0]][key[1]] = import_.alias
 
     def remove_unused(self, used_names: set[str]) -> None:
-        """Remove imports not referenced in used_names.
+        """Remove imports whose bound name is not in used_names.
 
-        Note: Checks both effective name (after alias) and original name to handle
-        cases where code may reference either form (e.g., type annotations may use
-        original name while runtime code uses alias).
+        An aliased import binds only its alias, so a use of its original name does not keep it.
         """
         unused = [
             (from_, import_)
             for from_, imports_ in self.items()
             for import_ in imports_
-            if not {self.get_effective_name(from_, import_), import_}.intersection(used_names)
+            if self.get_effective_name(from_, import_) not in used_names
         ]
         # Build reverse lookup dict for O(1) access instead of O(n) linear scan per import
         reverse_lookup: dict[tuple[str | None, str], str | None] = {
