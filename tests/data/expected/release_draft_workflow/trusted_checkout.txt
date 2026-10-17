@@ -1,0 +1,42 @@
+{
+  "analyze/missing": {
+    "last_stderr_line": "Expected a full trusted workflow commit SHA.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "analyze/non_git": {
+    "last_stderr_line": "Checked-out commit does not match the trusted workflow commit.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "analyze/other": {
+    "last_stderr_line": "Checked-out commit does not match the trusted workflow commit.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "analyze/workflow": {
+    "last_stderr_line": "",
+    "returncode": 0,
+    "stdout": ""
+  },
+  "resolve-pr/missing": {
+    "last_stderr_line": "Expected a full trusted workflow commit SHA.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "resolve-pr/non_git": {
+    "last_stderr_line": "Checked-out commit does not match the trusted workflow commit.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "resolve-pr/other": {
+    "last_stderr_line": "Checked-out commit does not match the trusted workflow commit.",
+    "returncode": 1,
+    "stdout": ""
+  },
+  "resolve-pr/workflow": {
+    "last_stderr_line": "",
+    "returncode": 0,
+    "stdout": ""
+  }
+}

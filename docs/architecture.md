@@ -212,8 +212,9 @@ classDiagram
 
 `GenerationStore` is the preferred mutation boundary for parser-side changes that affect dependency facts. Parser code
 should register models and update references, fields, bases, names, and paths through store methods instead of mutating
-the live objects directly. `GenerationIndex` rebuilds stable facts from the model list and gives later phases efficient
-queries such as "which data types point at this reference?".
+the live objects directly. `GenerationIndex` keeps stable facts about the model list and gives later phases efficient
+queries such as "which data types point at this reference?". A refresh records only the models that were appended or
+that store mutations changed, and rebuilds every fact only when the model list changes otherwise.
 
 ## References And Names
 
@@ -222,8 +223,8 @@ known references while parsers traverse documents. It also applies naming option
 prefixes, suffixes, duplicate suffixes, enum member normalization, and field name safety.
 
 `Reference.children` still links references back to users, but newer parser post-processing should prefer
-`GenerationIndex` when it needs dependency facts. The index is rebuilt from live models and avoids depending on legacy
-side effects alone.
+`GenerationIndex` when it needs dependency facts. The index records live models and avoids depending on legacy side
+effects alone.
 
 ## Output Backends
 

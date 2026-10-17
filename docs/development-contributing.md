@@ -207,6 +207,9 @@ Use `GenerationStore` for parser-side mutations that affect generation facts:
   `set_base_classes(...)`.
 - Move or rename generated models with `move_model(...)`,
   `rename_model(...)`, or `update_model_reference(...)`.
+- Report models whose fields, base classes, or data types changed without the
+  store, for example through a model method, with `note_changed_models(...)`.
+  A refresh records again only the models the store knows have changed.
 
 Parser code should not directly assign `data_type.reference`, `model.fields`,
 `model.base_classes`, `model.reference.name`, or call reference child mutation
@@ -218,6 +221,32 @@ The local pre-commit hook `generation-store-usage` runs
 that bypass the store. If a new mutation helper is needed, add the method to
 `GENERATION_STORE_MUTATION_METHODS` and update the checker tests so contributors
 get an actionable message.
+
+## Comparing output with a release
+
+Before sending a change to parsing, naming or rendering, compare the output of your checkout with the latest
+release over the test inputs and the option sets your change touches:
+
+```bash
+.venv/bin/python scripts/compare_release.py --base 0.85.0 \
+  --types pydantic_v2.BaseModel,msgspec.Struct \
+  --options 'default;--collapse-root-models --reuse-model' \
+  --extra '--input-file-type openapi' --import-check --show-diff 30 \
+  tests/data/openapi/*.yaml
+```
+
+The script installs the release once into a cached virtual environment with `uv`, next to the same versions
+of every other package in your environment, and caches the release's outputs, so later runs only generate
+your side. A cached output is reused while the input's directory, the local files it references through `$ref`, the
+files named by arguments and the arguments stay the same; pass `--no-cache` to regenerate it. Old environments and outputs are not removed;
+delete the cache directory (`~/.cache/datamodel-code-generator/compare-release` by default) to reclaim space.
+Every run goes through warm worker processes that fork a fresh child per generation in a temporary working
+directory, so give files in `--options` and `--extra` as absolute paths.
+
+The script prints one line for each run that differs, fails on either side, or imports on one side only,
+then a summary. It exits with 1 when any run differs, fails only on your side or imports only on the release
+side, or when every run fails on both sides. Use `--base-python` to compare with another interpreter, such as a build of another branch, and
+`--no-cache` when that build changes without a version change. The script needs a POSIX system.
 
 ## ➕ Adding a New CLI Option
 

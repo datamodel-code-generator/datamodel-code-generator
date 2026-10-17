@@ -152,7 +152,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
     input-file-type = "openapi"
     openapi-scopes = ["schemas", "api"]
     output-model-type = "pydantic_v2.BaseModel"
-    preset = "standard-py312-20261015"
+    preset = "standard-py312-20261017"
     output = "app/models.py"
     generate-client = "httpx2"
     client-output = "app/client"
@@ -175,7 +175,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261015 \
+      --preset standard-py312-20261017 \
       --output app/models.py \
       --generate-client httpx2 \
       --client-output app/client \
@@ -1604,7 +1604,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261015",
+    preset="standard-py312-20261017",
     output=Path("app/models.py"),
     generate_client=ClientType.HTTPX2,
     client_output=Path("app/client"),

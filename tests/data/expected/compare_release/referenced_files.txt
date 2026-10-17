@@ -1,0 +1,11 @@
+integer: exit=0
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
+
+integer: exit=0
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 1 of 1
+
+string: exit=0
+summary: identical=1, differ=0, fail-both=0, fail-base-only=0, fail-candidate-only=0
+cached base outputs: 0 of 1
