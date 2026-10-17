@@ -1295,7 +1295,9 @@ class _Ledger:
     def recorded_outside(self, observation: _Observation) -> bool:
         """Whether another line of the sidecar already compares this label outside the expected directory."""
         return any(
-            line.label == observation.label for lines in self.index.item_lines(observation.sidecar).values() for line in lines
+            line.label == observation.label
+            for lines in self.index.item_lines(observation.sidecar).values()
+            for line in lines
         )
 
     def encode(self, payload: dict[str, object]) -> str | None:

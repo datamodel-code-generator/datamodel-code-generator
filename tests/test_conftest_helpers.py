@@ -2153,7 +2153,9 @@ def test_ledger_leaves_equal_units_outside_the_run(ledger: LedgerProject) -> Non
     (ledger.suite / "test_m.refs").write_text(HEADER + "[test_a]\n\tm/a.txt\n[test_b]\n\tm/b.b.txt\n", encoding="utf-8")
     before = ledger.refs()
     ledger.store("n/c.txt", "same\n")
-    ledger.write("test_n.py", "from tests.conftest import assert_output\n\n\ndef test_c():\n    assert_output('same\\n')\n")
+    ledger.write(
+        "test_n.py", "from tests.conftest import assert_output\n\n\ndef test_c():\n    assert_output('same\\n')\n"
+    )
     ledger.run("suite/test_n.py").assert_outcomes(passed=1)
     assert ledger.refs() == before
     assert ledger.files() == {"m/a.txt": "same\n", "m/b.b.txt": "same\n"}
