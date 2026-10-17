@@ -416,8 +416,7 @@ class Size(Enum):
     NoneType_None = None
 ```
 
-`Size.int_1` works, but decoding a struct with a `Size` field raises msgspec's `TypeError`, and the `IntEnum` that a
-`type: integer` enum is written as fails at import.
+`Size.int_1` works, but decoding a struct with a `Size` field raises msgspec's `TypeError`.
 [`--use-msgspec-nullable-enum-alias`](cli-reference/model-customization.md#use-msgspec-nullable-enum-alias) writes
 it as a `type: string` or `nullable` enum is written instead, an Enum without the `None` member and an alias that
 adds `None`:
@@ -433,7 +432,9 @@ Size: TypeAlias = SizeEnum | None
 
 msgspec then decodes the members and `null`, while code that used `Size.int_1` or `Size.NoneType_None` uses
 `SizeEnum.int_1` and `None`. The default of a field of such an enum is then its raw value, also with
-`--set-default-enum-member`, and an enum that lists only `null` becomes `None`.
+`--set-default-enum-member`, and an enum that lists only `null` becomes `None`. An enum whose class has a value type
+base, the `IntEnum` of a `type: integer` enum or a `--use-subclass-enum` class such as `(int, Enum)`, cannot hold a
+`None` member, so it is written in this form also without the option.
 
 ### When to use
 

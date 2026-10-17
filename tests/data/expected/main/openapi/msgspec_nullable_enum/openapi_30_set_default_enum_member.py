@@ -4,21 +4,25 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Struct, UnsetType
 
 
-class Level(IntEnum):
+class LevelEnum(IntEnum):
     integer_1 = 1
-    integer_None = None
     integer_2 = 2
 
 
-class LevelDefault(IntEnum):
+Level: TypeAlias = LevelEnum | None
+
+
+class LevelDefaultEnum(IntEnum):
     integer_1 = 1
-    integer_None = None
     integer_2 = 2
+
+
+LevelDefault: TypeAlias = Annotated[LevelDefaultEnum | None, LevelDefaultEnum.integer_2]
 
 
 class Untyped(Enum):
@@ -38,18 +42,20 @@ class OnlyNull(Enum):
     NoneType_None = None
 
 
-class Inline(IntEnum):
+class InlineEnum(IntEnum):
     integer_5 = 5
-    integer_None = None
     integer_6 = 6
+
+
+Inline: TypeAlias = Annotated[InlineEnum | None, InlineEnum.integer_5]
 
 
 class Pet(Struct):
     level: Level
-    level_default: LevelDefault | UnsetType = LevelDefault.integer_2
+    level_default: LevelDefault | UnsetType = 2
     untyped: Untyped | UnsetType = UNSET
     nullable: LevelNullable | UnsetType = UNSET
     only_null: OnlyNull | UnsetType = UNSET
-    inline: Inline | UnsetType = Inline.integer_5
+    inline: Inline | UnsetType = 5
     levels: list[Level] | UnsetType = UNSET
     by_name: dict[str, Level] | UnsetType = UNSET
