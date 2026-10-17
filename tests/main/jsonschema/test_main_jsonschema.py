@@ -3539,6 +3539,24 @@ def test_main_jsonschema_field_type_collision_cross_module(
             "Bar",
             id="child-module-first-rename-type-base-model-exact-import",
         ),
+        pytest.param(
+            "field_type_collision_inherited_modules_package",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_inherited_modules_package/base_model_rename_type",
+            "child",
+            "Bar",
+            id="packages-first-rename-type-base-model",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules_package",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "field_type_collision_inherited_modules_package/base_model_rename_type_exact",
+            "child",
+            "Bar",
+            id="packages-first-rename-type-base-model-exact-import",
+        ),
     ],
 )
 def test_main_jsonschema_field_type_collision_inherited_modules(
@@ -3553,7 +3571,7 @@ def test_main_jsonschema_field_type_collision_inherited_modules(
     """Rename an inherited field named like its type, or the type, under one name in every module of its family.
 
     The child keeps the alias of a renamed field, and imports a renamed type by its new name, whichever of the
-    modules comes first.
+    modules comes first, also where the type or its importer is a package ``__init__``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -8188,7 +8206,10 @@ def test_jsonschema_titles_use_title_as_name(output_file: Path) -> None:
 
 @pytest.mark.cli_doc(
     options=["--infer-union-variant-names"],
-    option_description="""Infer names for inline oneOf/anyOf object variants from literal fields.
+    option_description=(
+        'Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` + `type: "cat"` -> `PetCat`) '
+        "instead of `Pet1`, `Pet2`."
+        """
 
 The `--infer-union-variant-names` flag uses branch-local `const` values or
 single-value enums on a shared discriminator-style property to name generated
@@ -8196,12 +8217,16 @@ inline union models. This is useful when inline union branches would otherwise
 receive position-based names such as `Event` and `Event1`.
 
 The literal value can also come from a single-value enum or an internal `$ref`.
-Existing generated output is preserved unless this option is enabled.""",
+At least two branches need distinct values on the field; to also name a union's
+only tagged branch and branches tagged by their only key, use
+`--use-tag-as-union-variant-name`.
+Existing generated output is preserved unless this option is enabled."""
+    ),
     input_schema="jsonschema/infer_union_variant_names.json",
     cli_args=["--infer-union-variant-names"],
     golden_output="jsonschema/infer_union_variant_names.py",
     comparison_output="jsonschema/infer_union_variant_names_baseline.py",
-    related_options=["--use-title-as-name"],
+    related_options=["--use-tag-as-union-variant-name", "--use-title-as-name"],
 )
 def test_jsonschema_infer_union_variant_names(output_file: Path) -> None:
     """Infer inline union variant model names from literal branch fields."""
@@ -8241,6 +8266,125 @@ def test_jsonschema_infer_union_variant_names_edges(output_file: Path) -> None:
             "external_kind.json=external.models",
             "--disable-timestamp",
         ],
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--use-tag-as-union-variant-name"],
+    option_description=(
+        "Name inline oneOf/anyOf branch models after their tag: what `--infer-union-variant-names` does, skipping "
+        'tags whose class names collide, plus single-branch unions (`type: "exec"` -> `LocalShellActionExec`) and '
+        'single-key branches (`{"granular": ...}` -> `AskForApprovalGranular`).'
+        """
+
+`--infer-union-variant-names` needs at least two branches with distinct literals
+on one field, so a union with one tagged branch keeps a position-based name that
+changes once a second branch is added, and a branch tagged by its only key, as in
+externally tagged enums, is never named. `--use-tag-as-union-variant-name` gives
+the names `--infer-union-variant-names` gives wherever that option names a union
+with distinct class names, and in the other unions also names:
+
+- the branches after a literal field that only one branch carries or that the key
+  branches below lack, picked like `--infer-union-variant-names` picks it (the
+  `discriminator` property first, then property order) except that a field the
+  union schema itself fixes to a single literal is skipped; a branch that is a
+  union itself is not named this way;
+- a key branch after its key: its only own property (one the union schema does
+  not declare), required and not a single literal, when the branch has no
+  `oneOf`/`anyOf` and no `allOf` of its own that adds properties (the union
+  schema's `allOf` is shared by every branch), and fixes no field the union
+  declares without a literal to a single literal, unless the union is one branch
+  beside `null`.
+
+String enum branches and branches with several untagged properties keep
+position-based names. Names are compared as the class names they become, so
+`foo-bar` and `fooBar` (both `FooBar`) collide: a literal field whose names
+collide is skipped for the next one, and literal names win over key names, so a
+key name that collides with a literal name or another key name is dropped and
+its branch keeps a position-based name.
+
+| Branches | default | `--infer-union-variant-names` | `--use-tag-as-union-variant-name` |
+|----------|---------|-------------------------------|-----------------------------------|
+| Several branches, distinct `type` literals | `Pet1`, `Pet2` | `PetCat`, `PetDog` | `PetCat`, `PetDog` |
+| Single branch (`type: "exec"`) | `LocalShellAction1` | `LocalShellAction1` | `LocalShellActionExec` |
+| Single-key branch (`{"granular": ...}`) | `AskForApproval2` | `AskForApproval2` | `AskForApprovalGranular` |"""
+    ),
+    input_schema="jsonschema/use_tag_as_union_variant_name.json",
+    cli_args=["--use-tag-as-union-variant-name"],
+    golden_output="jsonschema/use_tag_as_union_variant_name.py",
+    comparison_output="jsonschema/use_tag_as_union_variant_name_default.py",
+    related_options=["--infer-union-variant-names", "--use-title-as-name"],
+)
+def test_jsonschema_use_tag_as_union_variant_name(output_file: Path) -> None:
+    """Name single-branch and single-key union branches after their tag."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_tag_as_union_variant_name.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="use_tag_as_union_variant_name.py",
+        extra_args=["--use-tag-as-union-variant-name"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected_file"),
+    [
+        ([], "use_tag_as_union_variant_name_default.py"),
+        (["--infer-union-variant-names"], "use_tag_as_union_variant_name_infer.py"),
+    ],
+)
+def test_jsonschema_use_tag_as_union_variant_name_off(
+    output_file: Path, extra_args: list[str], expected_file: str
+) -> None:
+    """Keep single-branch and single-key union branches numbered without the option."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_tag_as_union_variant_name.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=extra_args,
+    )
+
+
+@LEGACY_BLACK_SKIP
+@pytest.mark.parametrize(
+    ("input_file", "option", "expected_file"),
+    [
+        (
+            "use_tag_as_union_variant_name_edges.json",
+            "--use-tag-as-union-variant-name",
+            "use_tag_as_union_variant_name_edges.py",
+        ),
+        (
+            "use_tag_as_union_variant_name_edges.json",
+            "--infer-union-variant-names",
+            "use_tag_as_union_variant_name_edges_infer.py",
+        ),
+        (
+            "use_tag_as_union_variant_name_fallbacks.json",
+            "--use-tag-as-union-variant-name",
+            "use_tag_as_union_variant_name_fallbacks.py",
+        ),
+        (
+            "use_tag_as_union_variant_name_fallbacks.json",
+            "--infer-union-variant-names",
+            "use_tag_as_union_variant_name_fallbacks_infer.py",
+        ),
+    ],
+)
+def test_jsonschema_use_tag_as_union_variant_name_edges(
+    output_file: Path, input_file: str, option: str, expected_file: str
+) -> None:
+    """Name nested, nullable, mixed, and colliding tagged union branches, or keep them numbered without the option."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[option, "--external-ref-mapping", "external_null.json=external.models", "--disable-timestamp"],
     )
 
 
@@ -8367,6 +8511,39 @@ def test_main_union_annotation_at_line_length(output_file: Path, formatters: lis
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
+            "--target-python-version",
+            "3.11",
+            "--disable-timestamp",
+            "--formatters",
+            *formatters,
+        ],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["builtin"], ["black", "isort"]])
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        ("annotated_assignment_at_line_length", ["--use-annotated"]),
+        ("union_subscript_assignment_at_line_length", ["--no-use-union-operator"]),
+    ],
+)
+def test_main_subscript_annotation_at_line_length(
+    output_file: Path, name: str, extra_args: list[str], formatters: list[str]
+) -> None:
+    """Test the built-in formatter splits an `Annotated[...]` or `Union[...]` annotation like black.
+
+    Black splits the annotation once `<annotation> = (` exceeds the line, even when the annotation alone fits, and
+    then splits a `Field(...)` default that overflows the closing line.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}.py",
+        extra_args=[
+            *extra_args,
             "--target-python-version",
             "3.11",
             "--disable-timestamp",

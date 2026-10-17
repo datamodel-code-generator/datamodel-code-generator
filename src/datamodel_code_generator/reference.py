@@ -1669,11 +1669,18 @@ class ModelResolver:  # noqa: PLR0904
 
     def delete(self, path: Sequence[str] | str) -> None:
         """Delete a reference by path if it exists, together with the name it yields."""
-        resolved = self.resolve_ref(path)
-        if (reference := self.references.pop(resolved, None)) is not None:
-            if self.is_yielding(reference):
-                del self._yielding_names[reference.name]
-            self._remove_reference_name(reference.name)
+        if (reference := self.references.pop(self.resolve_ref(path), None)) is not None:
+            self._release_reference_name(reference)
+
+    def delete_names(self, names: AbstractSet[str]) -> None:
+        """Delete the references holding any of ``names``, whatever paths they were added under."""
+        for path in [path for path, reference in self.references.items() if reference.name in names]:
+            self._release_reference_name(self.references.pop(path))
+
+    def _release_reference_name(self, reference: Reference) -> None:
+        if self.is_yielding(reference):
+            del self._yielding_names[reference.name]
+        self._remove_reference_name(reference.name)
 
     def default_class_name_generator(self, name: str) -> str:
         """Generate a valid class name from a string."""

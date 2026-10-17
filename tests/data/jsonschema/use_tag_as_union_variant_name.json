@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Session",
+  "type": "object",
+  "required": ["pet", "action", "approval"],
+  "properties": {
+    "pet": {"$ref": "#/definitions/Pet"},
+    "action": {"$ref": "#/definitions/LocalShellAction"},
+    "approval": {"$ref": "#/definitions/AskForApproval"}
+  },
+  "definitions": {
+    "Pet": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "meows"],
+          "properties": {
+            "type": {"const": "cat"},
+            "meows": {"type": "boolean"}
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "barks"],
+          "properties": {
+            "type": {"const": "dog"},
+            "barks": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "LocalShellAction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["command", "type"],
+          "properties": {
+            "command": {"type": "array", "items": {"type": "string"}},
+            "type": {"type": "string", "enum": ["exec"]}
+          }
+        }
+      ]
+    },
+    "AskForApproval": {
+      "oneOf": [
+        {"type": "string", "enum": ["untrusted", "never"]},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["granular"],
+          "properties": {
+            "granular": {
+              "type": "object",
+              "required": ["sandbox"],
+              "properties": {
+                "sandbox": {"type": "boolean"}
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -10,7 +10,7 @@ import enum as _enum
 import json
 import math
 import re
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
 from contextlib import contextmanager, suppress
 from copy import copy
 from fractions import Fraction
@@ -138,7 +138,7 @@ from datamodel_code_generator.types import (
 from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Container, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
     from typing_extensions import TypeIs
@@ -4143,10 +4143,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self,
         combined_schemas: Sequence[JsonSchemaObject],
         field_name: str,
+        tag_keys: Mapping[int, str] | None = None,
     ) -> dict[int, JsonSchemaLiteral] | None:
+        """Return each property branch's distinct literal for a field; key branches count only for their own key.
+
+        Without `tag_keys`, at least two branches must carry a literal; with them, one is enough, and branches that are
+        unions themselves are skipped.
+        """
         values: dict[int, JsonSchemaLiteral] = {}
         for index, item in enumerate(combined_schemas):
-            if not item.properties:
+            if not item.properties or (
+                tag_keys is not None and (item.oneOf or item.anyOf or tag_keys.get(index, field_name) != field_name)
+            ):
                 continue
             field = item.properties.get(field_name)
             if not isinstance(field, JsonSchemaObject):
@@ -4156,7 +4164,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return None
             values[index] = value
 
-        if len(values) < _MIN_UNION_VARIANT_LITERAL_VALUES:
+        if len(values) < (_MIN_UNION_VARIANT_LITERAL_VALUES if tag_keys is None else 1):
             return None
         unique_values = {_literal_uniqueness_key(value) for value in values.values()}
         return values if len(unique_values) == len(values) else None
@@ -4180,24 +4188,145 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 seen.add(field_name)
                 yield field_name
 
-    def _infer_union_variant_names(
+    def _is_null_only_schema(self, obj: JsonSchemaObject, seen_refs: set[str] | None = None) -> bool:
+        """Return whether a schema, or the schema its `$ref` chain reaches, admits only null by type, const, or enum."""
+        if (
+            obj.type in ("null", ["null"])
+            or obj.enum == [None]
+            or ("const" in obj.extras and obj.extras["const"] is None)
+        ):
+            return True
+        if not obj.ref:
+            return False
+        seen_refs = seen_refs or set()
+        resolved_ref = self.model_resolver.resolve_ref(obj.ref)
+        if self._resolve_external_ref_mapping(obj.ref) or resolved_ref in seen_refs:
+            return False
+        seen_refs.add(resolved_ref)
+        return self._is_null_only_schema(self._load_ref_schema_object(obj.ref), seen_refs)
+
+    def _is_single_literal_schema(self, obj: JsonSchemaObject | bool | None) -> bool:  # noqa: FBT001
+        """Return whether a property schema admits a single literal value."""
+        return isinstance(obj, JsonSchemaObject) and self._get_single_literal_value(obj) is not None
+
+    def _all_of_adds_properties(self, items: Iterable[JsonSchemaObject | bool]) -> bool:
+        """Return whether allOf members add properties inline, through nested allOf/oneOf/anyOf, or through a `$ref`."""
+        return any(
+            isinstance(item, JsonSchemaObject)
+            and bool(
+                item.ref
+                or item.properties
+                or self._all_of_adds_properties(item.allOf)
+                or self._all_of_adds_properties(item.oneOf)
+                or self._all_of_adds_properties(item.anyOf)
+            )
+            for item in items
+        )
+
+    def _get_union_variant_class_name(self, variant_name: str) -> str:
+        """Return the class name a variant name becomes before the model resolver makes it unique."""
+        return self.model_resolver.get_class_name(variant_name, unique=False).name
+
+    def _get_union_variant_tag_keys(
+        self,
+        obj: JsonSchemaObject,
+        combined_schemas: Sequence[JsonSchemaObject],
+        literal_fields: Container[str],
+    ) -> dict[int, str]:
+        """Return the key of each key branch by branch index.
+
+        A key branch has no `oneOf`/`anyOf` and no `allOf` of its own that adds properties (the union schema's `allOf`
+        is copied into every branch first), one own property (one the union schema does not declare) that is required
+        and not a single literal, and no single literal for a field the union declares without one. A union of one
+        branch beside null has no key branch.
+        """
+        tag_keys: dict[int, str] = {}
+        non_null_branches = (item for item in combined_schemas if not self._is_null_only_schema(item))
+        if (
+            len(combined_schemas) > 1
+            and next(non_null_branches, None) is not None
+            and next(non_null_branches, None) is None
+        ):
+            return tag_keys
+        shared = obj.properties or {}
+        open_fields = [field_name for field_name in shared if field_name not in literal_fields]
+        for index, item in enumerate(combined_schemas):
+            if (
+                not item.properties
+                or item.oneOf
+                or item.anyOf
+                or self._all_of_adds_properties(item.allOf[len(obj.allOf) :])
+            ):
+                continue
+            own_properties = [(key, value) for key, value in item.properties.items() if key not in shared]
+            if len(own_properties) != 1:
+                continue
+            key, value = own_properties[0]
+            if (
+                key in item.required
+                and not self._is_single_literal_schema(value)
+                and not any(self._is_single_literal_schema(item.properties.get(field)) for field in open_fields)
+            ):
+                tag_keys[index] = key
+        return tag_keys
+
+    def _infer_union_variant_literal_names(
         self,
         name: str,
         obj: JsonSchemaObject,
         combined_schemas: Sequence[JsonSchemaObject],
+        tag_keys: Mapping[int, str] | None = None,
+        skipped_fields: Container[str] = (),
     ) -> list[str | None] | None:
+        """Name the branches after the first field not in `skipped_fields` whose literals give distinct names."""
         for field_name in self._iter_union_variant_literal_field_names(obj, combined_schemas):
-            values = self._get_union_variant_literal_values(combined_schemas, field_name)
+            if field_name in skipped_fields:
+                continue
+            values = self._get_union_variant_literal_values(combined_schemas, field_name, tag_keys)
             if values is None:
                 continue
             variant_names: list[str | None] = [None] * len(combined_schemas)
             for index, literal in values.items():
                 variant_names[index] = _get_union_variant_name(name, literal)
             generated_names = [variant_name for variant_name in variant_names if variant_name]
+            if self.use_tag_as_union_variant_name:
+                generated_names = [self._get_union_variant_class_name(variant_name) for variant_name in generated_names]
             if len(set(generated_names)) != len(generated_names):
                 continue
             return variant_names
         return None
+
+    def _infer_union_variant_names(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        combined_schemas: Sequence[JsonSchemaObject],
+    ) -> list[str | None] | None:
+        """Name the branches from literal fields, or with tag names only for a union literal fields leave unnamed.
+
+        Tag names come from a literal that one branch alone may carry, skipping fields the union schema fixes to a
+        literal, then from the keys of key branches; a key name whose class name equals that of a literal name or
+        another key name is dropped. With tags, names must also differ as class names.
+        """
+        variant_names = self._infer_union_variant_literal_names(name, obj, combined_schemas)
+        if not self.use_tag_as_union_variant_name or (variant_names and any(variant_names)):
+            return variant_names
+        literal_fields = {
+            field_name for field_name, field in (obj.properties or {}).items() if self._is_single_literal_schema(field)
+        }
+        tag_keys = self._get_union_variant_tag_keys(obj, combined_schemas, literal_fields)
+        tag_names = self._infer_union_variant_literal_names(name, obj, combined_schemas, tag_keys, literal_fields)
+        tag_names = tag_names or [None] * len(combined_schemas)
+        key_names = {
+            index: key_name for index, key in tag_keys.items() if (key_name := _get_union_variant_name(name, key))
+        }
+        key_class_names = {index: self._get_union_variant_class_name(key_name) for index, key_name in key_names.items()}
+        literal_class_names = {self._get_union_variant_class_name(tag_name) for tag_name in tag_names if tag_name}
+        counts = Counter(key_class_names.values())
+        for index, class_name in key_class_names.items():
+            if counts[class_name] == 1 and class_name not in literal_class_names:
+                tag_names[index] = key_names[index]
+        return tag_names
 
     def _get_inferred_union_variant_names(
         self,

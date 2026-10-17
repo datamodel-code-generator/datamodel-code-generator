@@ -3198,7 +3198,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.current_source_path: Path | None = None
         self._run_context: ParserRunContext | None = None
         self.use_title_as_name: bool = config.use_title_as_name
-        self.infer_union_variant_names: bool = config.infer_union_variant_names
+        self.use_tag_as_union_variant_name: bool = config.use_tag_as_union_variant_name
+        self.infer_union_variant_names: bool = config.infer_union_variant_names or self.use_tag_as_union_variant_name
         self.use_operation_id_as_name: bool = config.use_operation_id_as_name
         self.use_unique_items_as_set: bool = config.use_unique_items_as_set
         self.use_tuple_for_fixed_items: bool = config.use_tuple_for_fixed_items
@@ -4069,7 +4070,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Import a type by its new name where a module processed before the type's module imported the old one.
 
         A field of the type's module can hide the type, which then gets a new name after modules that come first
-        built their imports of it. The stale import releases its name for the new one.
+        built their imports of it. The stale import releases the name it binds for the new one, found by name, as
+        neither the import of a package ``__init__`` nor a ``from .`` path leads back to the path it was added under.
         """
         if not (renamed := self._renamed_types):
             return
@@ -4085,9 +4087,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 and (import_ := ctx.imports.reference_paths.get(reference.path)) is not None
                 and (import_.import_ == old_name or (data_type.alias or "").endswith(f".{old_name}"))
             ]
+            if not stale_users:
+                continue
             for *_, import_ in stale_users:
                 ctx.imports.remove(import_)
-                ctx.scoped_model_resolver.delete((cast("str", import_.from_), import_.import_))
+            ctx.scoped_model_resolver.delete_names({import_.binding_name for *_, import_ in stale_users})
             for data_type, reference, model, _ in stale_users:
                 data_type.alias = self.__register_reference_import(
                     reference,
@@ -4523,6 +4527,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         except TypeError:
                             # Keep the unhashable default unchanged. Nested list types may
                             # already have been converted in place, so invalidate their imports.
+                            self.generation_store.note_changed_models(model)
                             _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                             continue
                         model_field.default = converted_default
@@ -4984,6 +4989,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 )
                             )
                         model_field.process_const()
+                        generation_store.note_changed_models(model)
 
                         if self.field_constraints:
                             model_field.constraints = ConstraintsBase.merge_constraints(
@@ -7806,17 +7812,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         return self.__remove_overridden_models(models)
 
-    def __assign_forward_reference_fields(  # noqa: PLR6301
-        self, models: list[DataModel], *, can_retain_cache: bool
-    ) -> None:
+    def __assign_forward_reference_fields(self, models: list[DataModel], *, can_retain_cache: bool) -> None:
         """Let each model render fields by assignment when ``Field()`` inside ``Annotated`` would be unsafe.
 
-        This remains an instance method because ``snooper_to_methods`` does not preserve staticmethod descriptors
-        on parser subclasses.
+        A model that writes fields by assignment may reorder them.
         """
         positions = {model.path: index for index, model in enumerate(models)}
         for index, model in enumerate(models):
             if model.assign_forward_reference_fields(positions, index):
+                self.generation_store.note_changed_models(model)
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __finalize_module_models(
@@ -8630,6 +8634,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for model in models:
                     for field in model.fields:
                         field.unconstrain_union_members()
+                self.generation_store.note_changed_models(*models)
 
         if self.collapse_root_models:
             self.__set_circular_root_model_paths(

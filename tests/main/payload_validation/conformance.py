@@ -367,6 +367,14 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
         "msgspec generation warns that it leaves the constraints of union members of one type out of Meta; "
         "test_main_msgspec_union_member_constraints decodes such models"
     ),
+    **dict.fromkeys(
+        (
+            "jsonschema/msgspec_nested_unions.json",
+            "jsonschema/type_alias_forward_ref.json",
+        ),
+        "msgspec generation warns that msgspec cannot decode their unions of untagged Struct types; "
+        "test_main_msgspec_nested_unions pins the warning",
+    ),
     "jsonschema/invalid_model_name.json": (
         "msgspec conversion does not accept nullable alias shapes generated for this schema"
     ),

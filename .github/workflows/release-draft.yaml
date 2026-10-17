@@ -34,12 +34,27 @@ jobs:
       changed_files: ${{ steps.pr.outputs.changed_files }}
       should_analyze: ${{ steps.pr.outputs.should_analyze }}
     steps:
+      # Leave ref unset: checkout v7 refuses an explicit SHA equal to a merged fork PR's merge commit,
+      # while the default checkout is this event's base-branch commit, verified in the next step.
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ github.workflow_sha }}
+
+      - name: Verify trusted checkout
+        env:
+          TRUSTED_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TRUSTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Expected a full trusted workflow commit SHA." >&2
+            exit 1
+          fi
+          if ! actual_sha="$(git rev-parse --verify --quiet 'HEAD^{commit}')" || [ "$actual_sha" != "$TRUSTED_SHA" ]; then
+            echo "Checked-out commit does not match the trusted workflow commit." >&2
+            exit 1
+          fi
 
       - name: Resolve merged PR
         id: pr
@@ -74,12 +89,26 @@ jobs:
     outputs:
       skip_changelog: ${{ steps.analysis-route.outputs.skip_changelog }}
     steps:
+      # Leave ref unset for the same reason as in resolve-pr.
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ github.workflow_sha }}
+
+      - name: Verify trusted checkout
+        env:
+          TRUSTED_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TRUSTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Expected a full trusted workflow commit SHA." >&2
+            exit 1
+          fi
+          if ! actual_sha="$(git rev-parse --verify --quiet 'HEAD^{commit}')" || [ "$actual_sha" != "$TRUSTED_SHA" ]; then
+            echo "Checked-out commit does not match the trusted workflow commit." >&2
+            exit 1
+          fi
 
       - name: Prepare exact PR diff
         id: pr-diff

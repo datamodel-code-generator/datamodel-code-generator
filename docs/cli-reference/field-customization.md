@@ -15,7 +15,7 @@
 | [`--field-extra-keys-without-x-prefix`](#field-extra-keys-without-x-prefix) | Include schema extension keys in Field() without requiring '... |
 | [`--field-include-all-keys`](#field-include-all-keys) | Include all schema keys in Field() json_schema_extra. |
 | [`--field-type-collision-strategy`](#field-type-collision-strategy) | Rename type class instead of field when names collide (Pydan... |
-| [`--infer-union-variant-names`](#infer-union-variant-names) | Infer names for inline oneOf/anyOf object variants from lite... |
+| [`--infer-union-variant-names`](#infer-union-variant-names) | Name inline oneOf/anyOf branch models after the value of the... |
 | [`--no-alias`](#no-alias) | Disable Field alias generation for non-Python-safe property ... |
 | [`--no-deserialize-default-values`](#no-deserialize-default-values) | Keep serialized schema defaults instead of deserializing sel... |
 | [`--original-field-name-delimiter`](#original-field-name-delimiter) | Specify delimiter for original field names when using snake-... |
@@ -32,6 +32,7 @@
 | [`--use-schema-description`](#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing ... |
 | [`--use-single-line-docstring`](#use-single-line-docstring) | Emit short docstrings on a single line. |
+| [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name) | Name inline oneOf/anyOf branch models after their tag: what ... |
 | [`--use-title-as-name`](#use-title-as-name) | Use schema title as the generated class name. |
 
 ---
@@ -1991,7 +1992,7 @@ to preserve the original field name, instead of renaming the field and adding an
 
 ## `--infer-union-variant-names` {#infer-union-variant-names}
 
-Infer names for inline oneOf/anyOf object variants from literal fields.
+Name inline oneOf/anyOf branch models after the value of their tag field (`Pet` + `type: "cat"` -> `PetCat`) instead of `Pet1`, `Pet2`.
 
 The `--infer-union-variant-names` flag uses branch-local `const` values or
 single-value enums on a shared discriminator-style property to name generated
@@ -1999,9 +2000,12 @@ inline union models. This is useful when inline union branches would otherwise
 receive position-based names such as `Event` and `Event1`.
 
 The literal value can also come from a single-value enum or an internal `$ref`.
+At least two branches need distinct values on the field; to also name a union's
+only tagged branch and branches tagged by their only key, use
+`--use-tag-as-union-variant-name`.
 Existing generated output is preserved unless this option is enabled.
 
-**Related:** [`--use-title-as-name`](#use-title-as-name)
+**Related:** [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name), [`--use-title-as-name`](#use-title-as-name)
 
 !!! tip "Usage"
 
@@ -4438,6 +4442,271 @@ format as the default.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-tag-as-union-variant-name` {#use-tag-as-union-variant-name}
+
+Name inline oneOf/anyOf branch models after their tag: what `--infer-union-variant-names` does, skipping tags whose class names collide, plus single-branch unions (`type: "exec"` -> `LocalShellActionExec`) and single-key branches (`{"granular": ...}` -> `AskForApprovalGranular`).
+
+`--infer-union-variant-names` needs at least two branches with distinct literals
+on one field, so a union with one tagged branch keeps a position-based name that
+changes once a second branch is added, and a branch tagged by its only key, as in
+externally tagged enums, is never named. `--use-tag-as-union-variant-name` gives
+the names `--infer-union-variant-names` gives wherever that option names a union
+with distinct class names, and in the other unions also names:
+
+- the branches after a literal field that only one branch carries or that the key
+  branches below lack, picked like `--infer-union-variant-names` picks it (the
+  `discriminator` property first, then property order) except that a field the
+  union schema itself fixes to a single literal is skipped; a branch that is a
+  union itself is not named this way;
+- a key branch after its key: its only own property (one the union schema does
+  not declare), required and not a single literal, when the branch has no
+  `oneOf`/`anyOf` and no `allOf` of its own that adds properties (the union
+  schema's `allOf` is shared by every branch), and fixes no field the union
+  declares without a literal to a single literal, unless the union is one branch
+  beside `null`.
+
+String enum branches and branches with several untagged properties keep
+position-based names. Names are compared as the class names they become, so
+`foo-bar` and `fooBar` (both `FooBar`) collide: a literal field whose names
+collide is skipped for the next one, and literal names win over key names, so a
+key name that collides with a literal name or another key name is dropped and
+its branch keeps a position-based name.
+
+| Branches | default | `--infer-union-variant-names` | `--use-tag-as-union-variant-name` |
+|----------|---------|-------------------------------|-----------------------------------|
+| Several branches, distinct `type` literals | `Pet1`, `Pet2` | `PetCat`, `PetDog` | `PetCat`, `PetDog` |
+| Single branch (`type: "exec"`) | `LocalShellAction1` | `LocalShellAction1` | `LocalShellActionExec` |
+| Single-key branch (`{"granular": ...}`) | `AskForApproval2` | `AskForApproval2` | `AskForApprovalGranular` |
+
+**Related:** [`--infer-union-variant-names`](#infer-union-variant-names), [`--use-title-as-name`](#use-title-as-name)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input use_tag_as_union_variant_name.json --use-tag-as-union-variant-name # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-tag-as-union-variant-name` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Session",
+      "type": "object",
+      "required": ["pet", "action", "approval"],
+      "properties": {
+        "pet": {"$ref": "#/definitions/Pet"},
+        "action": {"$ref": "#/definitions/LocalShellAction"},
+        "approval": {"$ref": "#/definitions/AskForApproval"}
+      },
+      "definitions": {
+        "Pet": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "meows"],
+              "properties": {
+                "type": {"const": "cat"},
+                "meows": {"type": "boolean"}
+              }
+            },
+            {
+              "type": "object",
+              "required": ["type", "barks"],
+              "properties": {
+                "type": {"const": "dog"},
+                "barks": {"type": "boolean"}
+              }
+            }
+          ]
+        },
+        "LocalShellAction": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["command", "type"],
+              "properties": {
+                "command": {"type": "array", "items": {"type": "string"}},
+                "type": {"type": "string", "enum": ["exec"]}
+              }
+            }
+          ]
+        },
+        "AskForApproval": {
+          "oneOf": [
+            {"type": "string", "enum": ["untrusted", "never"]},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["granular"],
+              "properties": {
+                "granular": {
+                  "type": "object",
+                  "required": ["sandbox"],
+                  "properties": {
+                    "sandbox": {"type": "boolean"}
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  use_tag_as_union_variant_name.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal
+
+        from pydantic import BaseModel, ConfigDict, RootModel
+
+
+        class PetCat(BaseModel):
+            type: Literal['cat']
+            meows: bool
+
+
+        class PetDog(BaseModel):
+            type: Literal['dog']
+            barks: bool
+
+
+        class Pet(RootModel[PetCat | PetDog]):
+            root: PetCat | PetDog
+
+
+        class Type(Enum):
+            exec = 'exec'
+
+
+        class LocalShellActionExec(BaseModel):
+            command: list[str]
+            type: Type
+
+
+        class LocalShellAction(RootModel[LocalShellActionExec]):
+            root: LocalShellActionExec
+
+
+        class AskForApproval1(Enum):
+            untrusted = 'untrusted'
+            never = 'never'
+
+
+        class Granular(BaseModel):
+            sandbox: bool
+
+
+        class AskForApprovalGranular(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            granular: Granular
+
+
+        class AskForApproval(RootModel[AskForApproval1 | AskForApprovalGranular]):
+            root: AskForApproval1 | AskForApprovalGranular
+
+
+        class Session(BaseModel):
+            pet: Pet
+            action: LocalShellAction
+            approval: AskForApproval
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  use_tag_as_union_variant_name.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Literal
+
+        from pydantic import BaseModel, ConfigDict, RootModel
+
+
+        class Pet1(BaseModel):
+            type: Literal['cat']
+            meows: bool
+
+
+        class Pet2(BaseModel):
+            type: Literal['dog']
+            barks: bool
+
+
+        class Pet(RootModel[Pet1 | Pet2]):
+            root: Pet1 | Pet2
+
+
+        class Type(Enum):
+            exec = 'exec'
+
+
+        class LocalShellAction1(BaseModel):
+            command: list[str]
+            type: Type
+
+
+        class LocalShellAction(RootModel[LocalShellAction1]):
+            root: LocalShellAction1
+
+
+        class AskForApproval1(Enum):
+            untrusted = 'untrusted'
+            never = 'never'
+
+
+        class Granular(BaseModel):
+            sandbox: bool
+
+
+        class AskForApproval2(BaseModel):
+            model_config = ConfigDict(
+                extra='forbid',
+            )
+            granular: Granular
+
+
+        class AskForApproval(RootModel[AskForApproval1 | AskForApproval2]):
+            root: AskForApproval1 | AskForApproval2
+
+
+        class Session(BaseModel):
+            pet: Pet
+            action: LocalShellAction
+            approval: AskForApproval
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

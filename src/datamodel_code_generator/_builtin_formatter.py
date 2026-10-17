@@ -1248,8 +1248,11 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         if len(f"{indent}) = {value}") > line_length:
             return f"{target_prefix}{formatted_annotation} = (\n{indent}    {value}\n{indent})"
         return f"{target_prefix}{formatted_annotation} = {value}"
-    if _is_union(statement.annotation) and statement.value is not None and len(annotation_prefix) > line_length:
-        value = _source_segment(source, statement.value)
+    value_opening_fits = len(f"{value_prefix}(") <= line_length
+    if _is_union(statement.annotation) and statement.value is not None and not value_opening_fits:
+        value = _format_closing_default(
+            statement.value, indent, line_length, source, wrap_string_literal=wrap_string_literal
+        )
         return (
             f"{target_prefix}"
             f"{_format_union_subscript(statement.annotation, indent, source, f' = {value}', line_length)}"
@@ -1315,11 +1318,7 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         )
         return f"{value_prefix}{formatted_value}"
     if _is_annotated(statement.annotation):
-        if (
-            statement.value is not None
-            and len(annotation_prefix) <= line_length
-            and len(line) <= line_length + MAX_SHORT_DEFAULT_OVERFLOW
-        ):
+        if statement.value is not None and value_opening_fits and len(line) <= line_length + MAX_SHORT_DEFAULT_OVERFLOW:
             value = _source_segment(source, statement.value)
             return f"{value_prefix}(\n{indent}    {value}\n{indent})"
         closing_suffix = "" if statement.value is None else f" = {_source_segment(source, statement.value)}"
@@ -1462,7 +1461,22 @@ def _format_list_of_annotated(annotation: ast.Subscript, indent: str, line_lengt
             _format_annotated(annotation.slice, continuation_indent, line_length, source)
         )
         formatted_annotated = "\n".join(_indent_first_line(annotated_lines, continuation_indent))
-    return f"list[\n{formatted_annotated}\n{indent}]"
+    return f"{_source_segment(source, annotation.value)}[\n{formatted_annotated}\n{indent}]"
+
+
+def _format_closing_default(
+    value: ast.expr,
+    indent: str,
+    line_length: int,
+    source: str,
+    *,
+    wrap_string_literal: bool,
+) -> str:
+    """Split a call default overflowing the closing line of a split subscript annotation, as black does."""
+    value_source = _source_segment(source, value)
+    if isinstance(value, ast.Call) and len(f"{indent}] = {value_source}") > line_length:
+        return _format_call(value, indent, line_length, source, wrap_string_literal=wrap_string_literal)
+    return value_source
 
 
 def _format_union_subscript(
@@ -1473,12 +1487,13 @@ def _format_union_subscript(
     line_length: int = DEFAULT_LINE_LENGTH,
 ) -> str:
     continuation_indent = f"{indent}    "
+    head = f"{_source_segment(source, union.value)}["
     elements = [_source_segment(source, element) for element in _iter_subscript_elements(union)]
     joined_elements = ", ".join(elements)
     if len(f"{continuation_indent}{joined_elements}") <= line_length:
-        return f"Union[\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
+        return f"{head}\n{continuation_indent}{joined_elements}\n{indent}]{closing_suffix}"
 
-    formatted_lines = ["Union["]
+    formatted_lines = [head]
     formatted_lines.extend(f"{continuation_indent}{element}," for element in elements)
     formatted_lines.append(f"{indent}]{closing_suffix}")
     return "\n".join(formatted_lines)
@@ -1572,10 +1587,11 @@ def _format_type_alias_type_call(call: ast.Call, indent: str, line_length: int, 
         )
         and "\n" not in inline_arguments
     )
+    head = f"{_source_segment(source, call.func)}("
     if can_inline_type_alias_arguments and len(f"{continuation_indent}{inline_arguments}") <= line_length:
-        return f"TypeAliasType(\n{continuation_indent}{inline_arguments}\n{indent})"
+        return f"{head}\n{continuation_indent}{inline_arguments}\n{indent})"
 
-    formatted_lines = ["TypeAliasType("]
+    formatted_lines = [head]
     for argument in call.args:
         formatted_lines.extend(_format_type_alias_type_argument(argument, continuation_indent, line_length, source))
     formatted_lines.extend(
@@ -1615,7 +1631,7 @@ def _format_type_alias_union_assignment(
 
 def _format_typed_dict_call(call: ast.Call, indent: str, source: str) -> str:
     continuation_indent = f"{indent}    "
-    formatted_lines = ["TypedDict("]
+    formatted_lines = [f"{_source_segment(source, call.func)}("]
     for argument in call.args:
         if isinstance(argument, ast.Dict):
             dict_lines = _split_python_lines(_format_dict_literal(argument, continuation_indent, source))
@@ -1650,7 +1666,7 @@ def _format_root_model_constrained_union_base(
     inner_indent = f"{continuation_indent}    "
     union = base.slice
     assert isinstance(union, ast.BinOp)
-    formatted_lines = ["RootModel["]
+    formatted_lines = [f"{_source_segment(source, base.value)}["]
     if _is_constrained_string_call(union.left):
         call_lines = _split_python_lines(_format_constrained_call(union.left, inner_indent, line_length, source))
         formatted_lines.extend(_indent_first_line(call_lines, inner_indent))
@@ -1673,7 +1689,7 @@ def _format_root_model_union_base(
     continuation_indent = f"{indent}    "
     inner_indent = f"{continuation_indent}    "
     assert isinstance(base.slice, ast.BinOp)
-    formatted_lines = ["RootModel["]
+    formatted_lines = [f"{_source_segment(source, base.value)}["]
     formatted_lines.extend(_format_bit_or_elements(base.slice, inner_indent, line_length, source))
     formatted_lines.append(f"{continuation_indent}]")
     return "\n".join(formatted_lines)
@@ -1805,7 +1821,8 @@ def _format_nested_annotated_type_alias_assignment(
             _format_type_alias_argument_line(argument, continuation_indent, line_length, source)
             for argument in call.args
         )
-    return f"{indent}{_source_segment(source, statement.targets[0])} = TypeAliasType(\n{body}\n{indent})"
+    target = _source_segment(source, statement.targets[0])
+    return f"{indent}{target} = {_source_segment(source, call.func)}(\n{body}\n{indent})"
 
 
 def _format_type_checking_block(
