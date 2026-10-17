@@ -1172,7 +1172,9 @@ class GenerationStore:  # noqa: PLR0904
                     next_data_type_id=self._next_data_type_id,
                 )
             except BaseException:
+                # The update may have recorded ids for appended models before it failed; never reuse them.
                 self._rebuild_required = True
+                self._next_model_id = max(self._next_model_id, max(self._model_ids_by_object.values(), default=-1) + 1)
                 raise
         self._facts = result.facts
         self._model_ids_by_object = result.model_ids_by_object
