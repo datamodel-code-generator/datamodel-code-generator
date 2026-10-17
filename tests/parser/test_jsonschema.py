@@ -3591,6 +3591,41 @@ def test_parse_enum_preserves_explicit_null_member() -> None:
     assert enum.find_member("None").field is enum.fields[1]  # ty: ignore[union-attr]
 
 
+def test_parse_schema_item_shape_enum_with_const() -> None:
+    """Do not generate an unused Enum class when a property defines both enum and const."""
+    from datamodel_code_generator.model.enum import Enum
+
+    parser = JsonSchemaParser("")
+    obj = JsonSchemaObject.model_validate({
+        "type": "string",
+        "enum": ["a", "b"],
+        "const": "a",
+    })
+    result = parser._parse_schema_item_shape("kind", obj, ["Model", "kind"], singular_name=False, parent=None)
+    assert result.literals == ["a"]
+    assert not any(isinstance(model, Enum) for model in parser.results)
+
+
+def test_generate_property_with_enum_and_const() -> None:
+    """Property with enum and const generates Literal without unused Enum class."""
+    from datamodel_code_generator import InputFileType, generate
+
+    schema = """{
+        "title": "Model",
+        "type": "object",
+        "properties": {
+            "kind": {
+                "type": "string",
+                "enum": ["a", "b"],
+                "const": "a"
+            }
+        }
+    }"""
+    code = generate(schema, input_file_type=InputFileType.JsonSchema)
+    assert "class Kind(Enum):" not in code
+    assert "kind: Literal['a']" in code
+
+
 @pytest.mark.parametrize(
     ("schema", "expected"),
     [

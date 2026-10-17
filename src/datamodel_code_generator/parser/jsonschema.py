@@ -2389,6 +2389,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.data_type(literals=[const])
         return self._get_data_type_from_json_value(const)
 
+    def _has_const(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the schema object defines a const constraint supported by this version."""
+        return bool(self.schema_features.const_support and "const" in obj.extras)
+
     def _partition_enum_values(self, enum_values: list[Any]) -> tuple[list[JsonSchemaLiteral], list[object], bool]:
         """Split enum values into literal and non-literal values."""
         literal_values: list[JsonSchemaLiteral] = []
@@ -8082,7 +8086,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _schema_literal_values(self, obj: JsonSchemaObject) -> tuple[object, ...] | None:
         """Return direct const/enum values after their JSON Schema intersection."""
-        has_const = self.schema_features.const_support and "const" in obj.extras
+        has_const = self._has_const(obj)
         const = obj.extras.get("const") if has_const else None
         has_enum = "enum" in obj.model_fields_set
         if not has_const and not has_enum:
@@ -10955,7 +10959,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.data_type_manager.get_data_type(
                 Types.object,
             )
-        if item.enum and not self.ignore_enum_constraints:
+        if item.enum and not self.ignore_enum_constraints and not self._has_const(item):
             if self.should_parse_enum_as_literal(item, property_name=name):
                 return self.parse_enum_as_literal(item)
             return self.parse_enum(name, item, get_special_path("enum", path), singular_name=singular_name)

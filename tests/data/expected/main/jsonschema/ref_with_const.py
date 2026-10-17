@@ -10,16 +10,11 @@ from typing import Literal
 from pydantic import BaseModel
 
 
-class Status(Enum):
-    active = 'active'
-    inactive = 'inactive'
-
-
-class NullableStatus(Enum):
-    active = 'active'
-    inactive = 'inactive'
-
-
 class Model(BaseModel):
     status: Literal['active']
     nullable_status: Literal['active'] | None = None
+
+
+class Status(Enum):
+    active = 'active'
+    inactive = 'inactive'

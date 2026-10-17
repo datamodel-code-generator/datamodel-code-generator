@@ -3,21 +3,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
-
 from msgspec import UNSET, Struct, UnsetType
-
-
-class Kind(Enum):
-    cat = 'cat'
 
 
 class Cat(Struct, tag_field='kind', tag='cat'):
     lives: int | UnsetType = UNSET
-
-
-class Kind1(Enum):
-    dog = 'dog'
 
 
 class Dog(Struct, tag_field='kind', tag='dog'):
