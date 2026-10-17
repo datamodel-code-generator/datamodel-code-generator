@@ -651,7 +651,8 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             case bool() | int() | str():
                 self.replace_data_type(self.data_type.__class__(literals=[const]), clear_old_parent=False)
             case _:
-                self.nullable = False
+                if self.required or self.has_default or self.default is not None:
+                    self.nullable = False
                 return
 
         # A const is only a generated Python default when the field would carry one anyway:

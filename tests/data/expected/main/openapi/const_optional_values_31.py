@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 
 class ConstOptionalValues(BaseModel):
-    ratio: float = None
-    settings: dict[str, bool | int] = None
-    choices: list[int | str] = None
+    ratio: float | None = None
+    settings: dict[str, bool | int] | None = None
+    choices: list[int | str] | None = None
     name: Literal['fixed']
