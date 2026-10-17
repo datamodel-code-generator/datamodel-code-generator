@@ -13416,6 +13416,34 @@ def test_main_msgspec_nullable_enum(output_file: Path, extra_args: list[str], ex
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_file"),
+    [
+        pytest.param([], "default.py", id="default"),
+        pytest.param(["--use-subclass-enum"], "subclass.py", id="subclass"),
+        pytest.param(
+            ["--use-subclass-enum", "--no-use-specialized-enum"],
+            "subclass_no_specialized.py",
+            id="subclass-no-specialized",
+        ),
+    ],
+)
+def test_main_jsonschema_value_base_enum_null(output_file: Path, extra_args: list[str], expected_file: str) -> None:
+    """Write null in an enum whose class has a value type base as nullability, as for a type: string enum.
+
+    An IntEnum or an (int, Enum) or (float, Enum) class cannot hold a None member; a plain Enum keeps it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "integer_enum_null.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"integer_enum_null/{expected_file}",
+        extra_args=["--target-python-version", "3.10", "--disable-timestamp", *extra_args],
+        force_exec_validation=True,
+    )
+
+
 @MSGSPEC_LEGACY_BLACK_SKIP
 def test_main_msgspec_discriminator_with_meta(output_file: Path) -> None:
     """Test msgspec Struct generation with discriminator ClassVar having Meta constraints."""

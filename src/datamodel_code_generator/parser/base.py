@@ -2604,6 +2604,86 @@ def _msgspec_union_message(name: str, refusal: _MsgspecRefusal, *, discriminated
     )
 
 
+_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS: frozenset[str] = frozenset({
+    "bytes",
+    "bytearray",
+    "datetime",
+    "date",
+    "time",
+    "timedelta",
+    "UUID",
+    "Decimal",
+})
+_MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...]]
+
+
+def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
+    """Yield the members of a union as written, spreading the member unions that render as part of it."""
+    for data_type in data_types:
+        if data_type.is_union and not _is_discriminator_container(data_type):
+            yield from _iter_written_union_members(data_type.data_types)
+        else:
+            yield data_type
+
+
+def _msgspec_enum_clash(data_types: Iterable[DataType]) -> _MsgspecEnumClash | None:
+    """Return the kind and the written members of a union that msgspec decodes once its Enums are written as Literal.
+
+    msgspec decodes a union only if it holds an Enum of str values as its one str-like member and an Enum of int
+    values as its one int-like member, while it takes Literal values beside each other and beside str or int. A
+    member of another str-like type, such as bytes, refuses a Literal of str values too, so it leaves the str side be.
+    """
+    enums: dict[str, set[int]] = {"str": set(), "int": set()}
+    names: dict[str, dict[str, None]] = {"str": {}, "int": {}}
+    others: set[str] = set()
+    refused: set[str] = set()
+    for member in _iter_written_union_members(data_types):
+        for leaf, _, _ in _iter_discriminator_data_types((member,)):
+            if isinstance(source := leaf.reference.source if leaf.reference else None, Enum):
+                if (kinds := {type(get_raw_enum_member_value(field.default)).__name__ for field in source.fields}) in (
+                    {"str"},
+                    {"int"},
+                ):
+                    enums[kind := kinds.pop()].add(id(source))
+                    names[kind][member.type_hint] = None
+            elif source is None and not leaf.data_types and not leaf.enum_member_literals:
+                if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
+                    refused.add("str")
+                for kind in ({type(literal).__name__ for literal in leaf.literals} or {leaf.type or ""}) & names.keys():
+                    others.add(kind)
+                    names[kind][member.type_hint] = None
+    return next(
+        (
+            (kind, (*names[kind],))
+            for kind, ids in enums.items()
+            if ids and len(ids) + (kind in others) > 1 and kind not in refused
+        ),
+        None,
+    )
+
+
+def _msgspec_refused_union_enums(data_type: DataType) -> _MsgspecEnumClash | None:
+    """Return the members of a union msgspec refuses for an Enum, unless an alias it names is refused on its own."""
+    if (
+        not data_type.is_union
+        or _is_discriminator_container(data_type)
+        or (clash := _msgspec_enum_clash(data_type.data_types)) is None
+        or any(_msgspec_enum_clash((root,)) for root in _iter_union_alias_roots(data_type))
+    ):
+        return None
+    return clash
+
+
+def _msgspec_enum_union_message(name: str, clash: _MsgspecEnumClash) -> str:
+    """Describe a union that msgspec refuses to decode because it holds an Enum beside another member of its kind."""
+    kind, members = clash
+    return (
+        f"msgspec cannot decode the union {name}: its {kind}-like members {', '.join(members)} include an Enum, "
+        f"while a msgspec union holds an Enum only as its one {kind}-like member. Pass --enum-field-as-literal all "
+        f"to write enums as Literal values, which msgspec decodes beside {kind} and other Literal values."
+    )
+
+
 def _literal_member(data_type: DataType) -> tuple[str, bool] | None:
     """Return the first member of a class or module written as a ``Literal`` value in a type, as written.
 
@@ -5577,23 +5657,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     continue
                 member = _literal_member(field.data_type)
                 discriminated = bool(field.extras.get("discriminator"))
+                nested = [*field.data_type.all_data_types][::-1]
                 refusal = next(
-                    filter(
-                        operator.itemgetter(0),
-                        map(_msgspec_refused_union_structs, reversed([*field.data_type.all_data_types])),
-                    ),
-                    _NO_MSGSPEC_REFUSAL,
+                    filter(operator.itemgetter(0), map(_msgspec_refused_union_structs, nested)), _NO_MSGSPEC_REFUSAL
                 )
                 refused = bool(refusal[0]) and (
                     refusal[1] is not None or not (discriminated and self.use_msgspec_tagged_unions)
                 )
-                if member is None and not refused:
+                clash = next(filter(None, map(_msgspec_refused_union_enums, nested)), None)
+                if member is None and not refused and clash is None:
                     continue
                 name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
                 if member is not None:
                     warn(_msgspec_literal_member_message(name, member), stacklevel=2)
                 if refused:
                     warn(_msgspec_union_message(name, refusal, discriminated=discriminated), stacklevel=2)
+                if clash is not None:
+                    warn(_msgspec_enum_union_message(name, clash), stacklevel=2)
 
     def _apply_inherited_field_default(
         self,
