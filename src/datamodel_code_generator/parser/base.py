@@ -17,7 +17,7 @@ from collections import Counter, OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache, partial
-from itertools import chain, groupby, pairwise
+from itertools import chain, groupby, islice, pairwise
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -2235,20 +2235,31 @@ def _get_source_field_name(field: DataModelFieldBase) -> str | None:
     return field.original_name if field.original_name is not None else field.alias or field.name
 
 
-def _find_discriminator_value(
+def _iter_discriminator_fields(
     fields: Iterable[DataModelFieldBase],
     field_name: str,
     *,
     field_name_mode: Literal["original", "resolved", "either"] = "either",
-) -> DiscriminatorValue | None:
+) -> Iterator[tuple[DataModelFieldBase, DiscriminatorValue]]:
+    """Yield the fields of the discriminator's name that carry one discriminator value, with that value."""
     for field in fields:
         if field_name_mode == "original":
             matches = _get_source_field_name(field) == field_name
         else:
             matches = field.name == field_name or (field_name_mode == "either" and field.original_name == field_name)
         if matches and (value := _get_discriminator_field_value(field)) is not None:
-            return value
-    return None
+            yield field, value
+
+
+def _find_discriminator_value(
+    fields: Iterable[DataModelFieldBase],
+    field_name: str,
+    *,
+    field_name_mode: Literal["original", "resolved", "either"] = "either",
+) -> DiscriminatorValue | None:
+    return next(
+        (value for _, value in _iter_discriminator_fields(fields, field_name, field_name_mode=field_name_mode)), None
+    )
 
 
 def _get_discriminator_values(
@@ -2527,6 +2538,45 @@ def _remove_discriminator(field: DataModelFieldBase) -> None:
     field.data_type.discriminator = None
 
 
+def _drop_discriminator_tag_pattern(field: DataModelFieldBase) -> None:
+    """Write a discriminator tag without its pattern where an output model writes constraints as ``Field()`` arguments.
+
+    Pydantic checks a pattern on the tag's ``Literal`` by validating the value again as a ``str``, which hides the
+    ``Literal`` from the discriminator, and the ``Literal`` decides the tag anyway. The other constraints stay.
+    """
+    if not field.SUPPORTS_FIELD_CONSTRAINTS or not isinstance(constraints := field.constraints, ConstraintsBase):
+        return
+    values = constraints.model_dump(by_alias=True, exclude_unset=True)
+    if values.pop("pattern", None) is None:
+        return
+    field.constraints = type(constraints).model_validate(values)
+    field.invalidate_semantic_caches()
+
+
+def _drop_nested_discriminator_tag_patterns(
+    data_types: Iterable[DataType],
+    field_name: str,
+    *,
+    field_name_mode: Literal["original", "either"],
+) -> None:
+    """Write the tags of the variants that nested choices give a union without their patterns.
+
+    Such a variant keeps the tag it declares or inherits, so the field giving it is its own one, else the inherited
+    one, which the empty subclass of a reused model also reads.
+    """
+    for data_type, can_update_discriminator, _ in _iter_discriminator_data_types(data_types):
+        source = data_type.reference.source if data_type.reference else None
+        if can_update_discriminator or not isinstance(source, DataModel):
+            continue
+        for tag_field, _ in islice(
+            _iter_discriminator_fields(
+                chain(source.fields, source.iter_all_fields()), field_name, field_name_mode=field_name_mode
+            ),
+            1,
+        ):
+            _drop_discriminator_tag_pattern(tag_field)
+
+
 def _is_discriminator_container(data_type: DataType) -> bool:
     return (
         data_type.is_dict
@@ -2659,6 +2709,86 @@ def _msgspec_union_message(name: str, refusal: _MsgspecRefusal, *, discriminated
     return (
         f"msgspec cannot decode {union}: its Struct types {names} are not all tagged, and only the "
         "variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
+    )
+
+
+_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS: frozenset[str] = frozenset({
+    "bytes",
+    "bytearray",
+    "datetime",
+    "date",
+    "time",
+    "timedelta",
+    "UUID",
+    "Decimal",
+})
+_MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...]]
+
+
+def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
+    """Yield the members of a union as written, spreading the member unions that render as part of it."""
+    for data_type in data_types:
+        if data_type.is_union and not _is_discriminator_container(data_type):
+            yield from _iter_written_union_members(data_type.data_types)
+        else:
+            yield data_type
+
+
+def _msgspec_enum_clash(data_types: Iterable[DataType]) -> _MsgspecEnumClash | None:
+    """Return the kind and the written members of a union that msgspec decodes once its Enums are written as Literal.
+
+    msgspec decodes a union only if it holds an Enum of str values as its one str-like member and an Enum of int
+    values as its one int-like member, while it takes Literal values beside each other and beside str or int. A
+    member of another str-like type, such as bytes, refuses a Literal of str values too, so it leaves the str side be.
+    """
+    enums: dict[str, set[int]] = {"str": set(), "int": set()}
+    names: dict[str, dict[str, None]] = {"str": {}, "int": {}}
+    others: set[str] = set()
+    refused: set[str] = set()
+    for member in _iter_written_union_members(data_types):
+        for leaf, _, _ in _iter_discriminator_data_types((member,)):
+            if isinstance(source := leaf.reference.source if leaf.reference else None, Enum):
+                if (kinds := {type(get_raw_enum_member_value(field.default)).__name__ for field in source.fields}) in (
+                    {"str"},
+                    {"int"},
+                ):
+                    enums[kind := kinds.pop()].add(id(source))
+                    names[kind][member.type_hint] = None
+            elif source is None and not leaf.data_types and not leaf.enum_member_literals:
+                if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
+                    refused.add("str")
+                for kind in ({type(literal).__name__ for literal in leaf.literals} or {leaf.type or ""}) & names.keys():
+                    others.add(kind)
+                    names[kind][member.type_hint] = None
+    return next(
+        (
+            (kind, (*names[kind],))
+            for kind, ids in enums.items()
+            if ids and len(ids) + (kind in others) > 1 and kind not in refused
+        ),
+        None,
+    )
+
+
+def _msgspec_refused_union_enums(data_type: DataType) -> _MsgspecEnumClash | None:
+    """Return the members of a union msgspec refuses for an Enum, unless an alias it names is refused on its own."""
+    if (
+        not data_type.is_union
+        or _is_discriminator_container(data_type)
+        or (clash := _msgspec_enum_clash(data_type.data_types)) is None
+        or any(_msgspec_enum_clash((root,)) for root in _iter_union_alias_roots(data_type))
+    ):
+        return None
+    return clash
+
+
+def _msgspec_enum_union_message(name: str, clash: _MsgspecEnumClash) -> str:
+    """Describe a union that msgspec refuses to decode because it holds an Enum beside another member of its kind."""
+    kind, members = clash
+    return (
+        f"msgspec cannot decode the union {name}: its {kind}-like members {', '.join(members)} include an Enum, "
+        f"while a msgspec union holds an Enum only as its one {kind}-like member. Pass --enum-field-as-literal all "
+        f"to write enums as Literal values, which msgspec decodes beside {kind} and other Literal values."
     )
 
 
@@ -4409,6 +4539,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     _remove_discriminator(field)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                     continue
+                _drop_nested_discriminator_tag_patterns(
+                    field.data_type.data_types,
+                    property_name if field.SUPPORTS_DISCRIMINATOR else field_name,
+                    field_name_mode="original" if field.SUPPORTS_DISCRIMINATOR else "either",
+                )
 
                 if field.SUPPORTS_DISCRIMINATOR:
                     field_name = self._get_discriminator_field_name(
@@ -4485,6 +4620,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             and (literal := literals[0]) == expected_value
                         ):
                             has_one_literal = True
+                            _drop_discriminator_tag_pattern(discriminator_field)
                             if not has_reused_variant:
                                 self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=False)
                             match discriminator_model:
@@ -4529,6 +4665,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
+                        _drop_discriminator_tag_pattern(discriminator_field)
                         self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
                         if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
@@ -5635,23 +5772,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     continue
                 member = _literal_member(field.data_type)
                 discriminated = bool(field.extras.get("discriminator"))
+                nested = [*field.data_type.all_data_types][::-1]
                 refusal = next(
-                    filter(
-                        operator.itemgetter(0),
-                        map(_msgspec_refused_union_structs, reversed([*field.data_type.all_data_types])),
-                    ),
-                    _NO_MSGSPEC_REFUSAL,
+                    filter(operator.itemgetter(0), map(_msgspec_refused_union_structs, nested)), _NO_MSGSPEC_REFUSAL
                 )
                 refused = bool(refusal[0]) and (
                     refusal[1] is not None or not (discriminated and self.use_msgspec_tagged_unions)
                 )
-                if member is None and not refused:
+                clash = next(filter(None, map(_msgspec_refused_union_enums, nested)), None)
+                if member is None and not refused and clash is None:
                     continue
                 name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
                 if member is not None:
                     warn(_msgspec_literal_member_message(name, member), stacklevel=2)
                 if refused:
                     warn(_msgspec_union_message(name, refusal, discriminated=discriminated), stacklevel=2)
+                if clash is not None:
+                    warn(_msgspec_enum_union_message(name, clash), stacklevel=2)
 
     def _apply_inherited_field_default(
         self,

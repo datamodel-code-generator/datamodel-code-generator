@@ -985,7 +985,8 @@ model types ignore it. Client generation (`--generate-client`) with `msgspec.Str
 Without the flag the output keeps the 0.83.0 form of an enum that lists `null` without `type: string` or
 `nullable: true`, such as `type: [integer, "null"]` with `enum: [1, 2, null]`: an Enum class with a `None` member
 such as `NoneType_None = None`. msgspec cannot decode such an Enum, because its members must be all `str` or all
-`int` values, and the `IntEnum` written for `type: integer` cannot be imported at all.
+`int` values. An enum whose class has a value type base, the `IntEnum` of `type: integer` or a `--use-subclass-enum`
+class such as `(int, Enum)`, cannot hold a `None` member and is written as with the flag in any case.
 
 With the flag the enum is written as a `type: string` or `nullable` enum is: an Enum class with an `Enum` suffix and
 without the `None` member, and the schema name becomes a type alias of that class or `None`, so that msgspec decodes
@@ -1025,7 +1026,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
     ("input_file", "extra_args", "expected_file", "imports"),
     [
         pytest.param("msgspec_nullable_enum_31.yaml", [], "openapi_31.py", True, id="openapi-31"),
-        pytest.param("msgspec_nullable_enum.yaml", [], "openapi_30.py", False, id="openapi-30"),
+        pytest.param("msgspec_nullable_enum.yaml", [], "openapi_30.py", True, id="openapi-30"),
         pytest.param(
             "msgspec_nullable_enum.yaml",
             ["--use-msgspec-nullable-enum-alias"],
@@ -1037,7 +1038,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
             "msgspec_nullable_enum.yaml",
             ["--set-default-enum-member"],
             "openapi_30_set_default_enum_member.py",
-            False,
+            True,
             id="openapi-30-set-default-enum-member",
         ),
         pytest.param(
@@ -1047,6 +1048,7 @@ def test_main_openapi_use_msgspec_nullable_enum_alias(output_file: Path) -> None
             True,
             id="openapi-30-set-default-enum-member-alias",
         ),
+        pytest.param("msgspec_nullable_enum_inherited.yaml", [], "openapi_inherited.py", False, id="inherited"),
     ],
 )
 def test_main_openapi_msgspec_nullable_enum(
@@ -1054,7 +1056,9 @@ def test_main_openapi_msgspec_nullable_enum(
 ) -> None:
     """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
 
-    The 0.83.0 `IntEnum` of `type: integer` with a `None` member fails at import, so only its source is compared.
+    The `IntEnum` of `type: integer`, which cannot hold a `None` member, gets the alias also without the option. An
+    allOf of enums still merges into the class of its first enum, an `IntEnum` with a `None` member that fails at
+    import, so only its source is compared.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
@@ -1081,6 +1085,39 @@ def test_main_openapi_msgspec_nullable_enum(
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
         EXPECTED_OPENAPI_PATH / "msgspec_nullable_enum" / f"{expected_file.removesuffix('.py')}_warnings.txt",
+    )
+
+
+@pytest.mark.parametrize("stem", ["default", "collapse_root_models"])
+def test_main_openapi_msgspec_enum_unions(stem: str, output_file: Path) -> None:
+    """Report each msgspec union that holds an Enum beside another member of its JSON type, and keep the output.
+
+    msgspec decodes a union only if it holds an Enum of str values as its one str-like member and an Enum of int
+    values as its one int-like member, so the `Level1 | Level2` of a `oneOf` of single-value enums cannot be decoded.
+    A union that names an alias msgspec refuses on its own is reported by that alias; Literal values beside str, an
+    int Enum beside a str Enum and members of other types decode.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "msgspec_enum_unions.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / "msgspec_enum_unions" / f"{stem}.py",
+            extra_args=[
+                *("--output-model-type", "msgspec.Struct", "--formatters", "builtin"),
+                *("--target-python-version", "3.10", "--disable-timestamp"),
+                *(["--collapse-root-models"] if stem == "collapse_root_models" else []),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_OPENAPI_PATH / "msgspec_enum_unions" / f"{stem}_warnings.txt",
     )
 
 
@@ -1343,6 +1380,67 @@ def test_main_openapi_discriminator_with_properties(output_file: Path) -> None:
         expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "with_properties.py",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
     )
+
+
+@pytest.mark.parametrize(
+    ("option", "expected_file"),
+    [
+        ("--use-annotated", "discriminator/pattern_use_annotated.py"),
+        ("--field-constraints", "discriminator/pattern_field_constraints.py"),
+    ],
+)
+def test_main_openapi_discriminator_pattern(option: str, expected_file: str, output_file: Path) -> None:
+    """Discriminator tags drop the pattern Pydantic cannot check on a tag Literal and keep their lengths."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_pattern.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            option,
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_discriminator_pattern_nested_choices(output_file: Path) -> None:
+    """Variants that nested choices give a union drop the pattern of the tag they declare or inherit."""
+    name = "discriminator_pattern_nested_choices"
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_nested_choices.py",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--use-annotated",
+        ],
+        force_exec_validation=True,
+    )
+    decoded = []
+    for model_name, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+        with _generated_model(output_file, name, model_name) as model:
+            validate = _model_json_validator(model)
+            for payload in payloads:
+                try:
+                    result = repr(validate(json.dumps(payload)))
+                except pydantic.ValidationError:
+                    result = "rejected"
+                decoded.append(f"{model_name} {json.dumps(payload)}: {result}\n")
+    assert_output("".join(decoded), EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_nested_choices_decoded.txt")
 
 
 def test_main_openapi_discriminator_allof(output_file: Path) -> None:
@@ -10956,6 +11054,25 @@ def test_main_openapi_dot_notation_collapse_reuse_models(
         runtime_validation_module="holder",
         runtime_validation_model_name="Holder",
         runtime_validation_data={"entry": {"name": "one"}, "local": {"name": "two"}},
+    )
+
+
+def test_main_openapi_collapse_root_models_module_named_field(output_dir: Path) -> None:
+    """Drop the import of a collapsed model's module when a field has the module's name."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "collapse_root_models_module_named_field.yaml",
+        output_path=output_dir,
+        expected_directory=EXPECTED_OPENAPI_PATH / "collapse_root_models_module_named_field",
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--disable-timestamp",
+        ],
+        runtime_validation_module="core.v1",
+        runtime_validation_model_name="Selector",
+        runtime_validation_data={"resource": "cpu", "divisor": "1m"},
     )
 
 

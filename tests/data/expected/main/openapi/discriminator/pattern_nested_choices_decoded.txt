@@ -1,0 +1,9 @@
+Outer {"v": {"type": "a"}}: Outer(v=A(type='a'), w=None)
+Outer {"v": {"type": "b"}}: Outer(v=Inner(root=B(type='b')), w=None)
+Outer {"v": {"type": "d", "x": "y"}}: Outer(v=Inner(root=D(type='d', x='y')), w=None)
+Outer {"v": {"type": "c"}}: rejected
+Outer {"v": {"type": "e"}}: rejected
+Outer {"w": {"type": "a"}}: Outer(v=None, w=A(type='a'))
+Outer {"w": {"type": "b"}}: Outer(v=None, w=B(type='b'))
+Outer {"w": {"type": "c"}}: Outer(v=None, w=C(type='c'))
+Outer {"w": {"type": "d"}}: rejected

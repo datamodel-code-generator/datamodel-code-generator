@@ -1,0 +1,19 @@
+openapi: 3.0.0
+info: {title: collapsed module named like a field, version: "1"}
+paths: {}
+components:
+  schemas:
+    api.resource.Quantity:
+      type: string
+    core.v1.Selector:
+      type: object
+      properties:
+        resource:
+          type: string
+        divisor:
+          $ref: '#/components/schemas/api.resource.Quantity'
+    core.v1.Requirements:
+      type: object
+      properties:
+        limits:
+          $ref: '#/components/schemas/api.resource.Quantity'
