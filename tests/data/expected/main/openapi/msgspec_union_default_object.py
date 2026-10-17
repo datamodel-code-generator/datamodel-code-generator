@@ -4,21 +4,19 @@
 
 from __future__ import annotations
 
-from typing import Dict, Union
-
 from msgspec import UNSET, Struct, UnsetType, convert, field
 
 
 class Interval(Struct):
-    start: Union[int, UnsetType] = UNSET
-    end: Union[int, UnsetType] = UNSET
+    start: int | UnsetType = UNSET
+    end: int | UnsetType = UNSET
 
 
 class Container(Struct):
-    interval_or_string: Union[Interval, str, UnsetType] = field(
+    interval_or_string: Interval | str | UnsetType = field(
         default_factory=lambda: convert({'start': 2009, 'end': 2019}, type=Interval)
     )
-    string_or_interval: Union[Interval, str, UnsetType] = 'some string value'
-    dict_or_interval: Union[Dict[str, str], Interval, UnsetType] = field(
+    string_or_interval: Interval | str | UnsetType = 'some string value'
+    dict_or_interval: dict[str, str] | Interval | UnsetType = field(
         default_factory=lambda: {'key': 'value'}
     )
