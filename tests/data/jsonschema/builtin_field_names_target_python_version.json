@@ -13,6 +13,18 @@
     "PythonFinalizationError": {
       "type": "string",
       "x-python-type": "PythonFinalizationError"
+    },
+    "ZeroDivisionError": {
+      "type": "string",
+      "x-python-type": "ZeroDivisionError"
+    },
+    "len": {
+      "type": "string",
+      "x-python-type": "len"
+    },
+    "help": {
+      "type": "string",
+      "x-python-type": "help"
     }
   }
 }

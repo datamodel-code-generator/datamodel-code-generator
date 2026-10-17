@@ -13,7 +13,7 @@ import sys
 import threading
 import warnings
 from collections import defaultdict
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Generator, Mapping
 from datetime import datetime, timezone
 from functools import lru_cache as _lru_cache
 from pathlib import Path
@@ -168,7 +168,7 @@ _gc_saved_threshold: tuple[int, int, int]
 
 
 @contextlib.contextmanager
-def _tuned_gc() -> Iterator[None]:
+def _tuned_gc() -> Generator[None]:
     """Raise the young-generation GC threshold while one generation run is in progress.
 
     Process-global by nature: only the outermost concurrent caller changes and restores the
@@ -368,7 +368,7 @@ def snooper_to_methods() -> Callable[..., Any]:
 
 
 @contextlib.contextmanager
-def chdir(path: Path | None) -> Iterator[None]:
+def chdir(path: Path | None) -> Generator[None]:
     """Change working directory and return to previous on exit."""
     if path is None:
         yield
@@ -1016,7 +1016,7 @@ def _warn_if_input_string_points_to_existing_path(
 @contextlib.contextmanager
 def _warn_on_input_string_path_failure(
     input_: _GenerationInput,
-) -> Iterator[None]:
+) -> Generator[None]:
     try:
         yield
     except Exception:

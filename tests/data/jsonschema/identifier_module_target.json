@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "item": {
+      "$ref": "#/$defs/pkg\u0c5c.Item"
+    },
+    "label": {
+      "$ref": "#/$defs/labels.Label"
+    }
+  },
+  "$defs": {
+    "pkg\u0c5c.Item": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer"
+        }
+      }
+    },
+    "labels.Label": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

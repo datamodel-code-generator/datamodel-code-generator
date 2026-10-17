@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AnnotatedAssignmentAtLineLength",
+  "type": "object",
+  "properties": {
+    "at_line_length": {
+      "type": "string",
+      "title": "AnnotatedHeadBoundaryTitle"
+    },
+    "one_beyond_line": {
+      "type": "string",
+      "title": "AnnotatedHeadBoundaryTitle"
+    },
+    "four_beyond_limits": {
+      "type": "string",
+      "title": "AnnotatedHeadBoundaryTitle"
+    }
+  }
+}

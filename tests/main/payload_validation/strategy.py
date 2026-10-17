@@ -7,9 +7,10 @@ import re
 import sys
 from copy import deepcopy
 from fractions import Fraction
-from functools import cache, partial
+from functools import cache, partial, partialmethod
 from typing import TYPE_CHECKING, Any
 
+from attrs import fields
 from hypothesis import strategies as st
 from hypothesis_jsonschema import from_schema
 from jsonschema import validators
@@ -20,7 +21,7 @@ from .native_numeric import NATIVE_FLOAT_CONTRACT
 from .schema import _schema_for_payload_generation
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
 
     from jsonschema.exceptions import ValidationError
     from jsonschema.protocols import Validator
@@ -46,9 +47,11 @@ def _json_number(token: str) -> int | Fraction:
     return value.numerator if value.denominator == 1 else value
 
 
-def _canonical_json_numbers(value: Any) -> Any:
+def _canonical_json_numbers(
+    value: Any, object_pairs_hook: Callable[[list[tuple[str, Any]]], dict[str, Any]] | None = None
+) -> Any:
     """Interpret the canonical JSON representation without binary numeric rounding."""
-    return json.loads(json.dumps(value, allow_nan=False), parse_float=_json_number)
+    return json.loads(json.dumps(value, allow_nan=False), parse_float=_json_number, object_pairs_hook=object_pairs_hook)
 
 
 class SourceSchemaValidator:
@@ -155,42 +158,99 @@ class _RegexEnginesDisagreeError(Exception):
     """Abort source validation instead of reporting an error that not, if or oneOf would invert."""
 
 
-def _agreed_pattern(
-    pattern: Callable[[Validator, str, Any, dict[str, Any]], Iterator[ValidationError]],
+def _pattern_strings(
+    validator: Validator, regex: str, instance: Any, _schema: dict[str, Any]
+) -> Iterable[tuple[str, str]]:
+    """Return the string the pattern keyword matches against its regex."""
+    return ((regex, instance),) if validator.is_type(instance, "string") else ()
+
+
+def _property_names(
+    validator: Validator, _value: Any, instance: Any, schema: dict[str, Any]
+) -> Iterable[tuple[str, str]]:
+    """Return the property names a keyword matches against the patternProperties regexes of its schema."""
+    if not validator.is_type(instance, "object"):
+        return ()
+    return ((regex, name) for regex in schema.get("patternProperties", {}) for name in instance)
+
+
+_REGEX_MATCHES = {
+    "pattern": _pattern_strings,
+    **dict.fromkeys(("patternProperties", "additionalProperties", "unevaluatedProperties"), _property_names),
+}
+"""The regex and string pairs each regex-matching keyword matches."""
+
+
+def _agreed(
+    matches: Callable[[Validator, Any, Any, dict[str, Any]], Iterable[tuple[str, str]]],
+    keyword: Callable[[Validator, Any, Any, dict[str, Any]], Iterator[ValidationError]],
     validator: Validator,
-    regex: str,
+    value: Any,
     instance: Any,
     schema: dict[str, Any],
 ) -> Iterator[ValidationError]:
-    """Apply the pattern keyword unless the regex engines classify a character of the string differently."""
-    if validator.is_type(instance, "string") and not all(
-        _regex_engines_agree(regex_class, character) for regex_class in _regex_classes(regex) for character in instance
+    """Apply a keyword unless the regex engines classify a character of a string it matches differently."""
+    if not all(
+        _regex_engines_agree(regex_class, character)
+        for regex, string in matches(validator, value, instance, schema)
+        for regex_class in _regex_classes(regex)
+        for character in string
     ):
         raise _RegexEnginesDisagreeError
-    yield from pattern(validator, regex, instance, schema)
+    yield from keyword(validator, value, instance, schema)
+
+
+def _evolve_within_dialect(
+    validator: Validator, evolve: Callable[..., Validator], dialect: type[Validator], **changes: Any
+) -> Validator:
+    """Evolve into a subschema, such as the root a reference re-enters, without its ``$schema`` dropping the checks.
+
+    A subschema declaring another dialect switches to that dialect's extended class, as jsonschema switches classes.
+    """
+    if isinstance(schema := changes.get("schema", validator.schema), dict) and "$schema" in schema:
+        changes["schema"] = {keyword: value for keyword, value in schema.items() if keyword != "$schema"}
+        if (declared := validators.validator_for(schema, default=dialect)) is not dialect:
+            declared_class = _regex_agreement_class(declared)
+            return declared_class(
+                **{field.alias: getattr(validator, field.name) for field in fields(declared_class) if field.init}
+                | changes
+            )
+    return evolve(validator, **changes)
 
 
 @cache
 def _regex_agreement_class(validator_class: type[Validator]) -> type[Validator]:
-    """Extend a dialect's validator class with the regex agreement check on its pattern keyword."""
-    return validators.extend(
-        validator_class, {"pattern": partial(_agreed_pattern, validator_class.VALIDATORS["pattern"])}
+    """Extend a dialect's validator class with the regex agreement check on every keyword that matches a regex."""
+    agreement_class = validators.extend(
+        validator_class,
+        {
+            keyword: partial(_agreed, matches, validator_class.VALIDATORS[keyword])
+            for keyword, matches in _REGEX_MATCHES.items()
+            if keyword in validator_class.VALIDATORS
+        },
     )
+    agreement_class.evolve = partialmethod(_evolve_within_dialect, agreement_class.evolve, validator_class)
+    return agreement_class
+
+
+def _unevaluated_properties_last(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Order unevaluatedProperties after its adjacent keywords, as JSON Schema evaluates it.
+
+    It reuses the patternProperties regexes of the subschemas those keywords apply, so their checks run first.
+    """
+    return dict(sorted(pairs, key=lambda pair: pair[0] == "unevaluatedProperties"))
 
 
 def _regex_agreement_validator(case: SchemaCase) -> SourceSchemaValidator:
-    """Build the source validator whose pattern keyword checks exactly the strings it is applied to.
-
-    The root drops ``$schema`` so references back into it keep the extended validator class.
-    """
+    """Build the source validator whose regex keywords check exactly the strings they match."""
     agreement_class = _regex_agreement_class(validators.validator_for(case.source_schema))
-    schema = _canonical_json_numbers(case.source_schema)
-    schema.pop("$schema", None)
-    return SourceSchemaValidator(agreement_class(schema))
+    return SourceSchemaValidator(
+        agreement_class(_canonical_json_numbers(case.source_schema, _unevaluated_properties_last))
+    )
 
 
 def _valid_where_regex_engines_agree(validator: SourceSchemaValidator, payload: Any) -> bool:
-    """Keep source-valid payloads whose applied patterns both regex engines decide alike."""
+    """Keep source-valid payloads whose matched regexes both regex engines decide alike."""
     try:
         return validator.is_valid(payload)
     except _RegexEnginesDisagreeError:

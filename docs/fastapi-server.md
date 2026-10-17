@@ -159,7 +159,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
     input-file-type = "openapi"
     openapi-scopes = ["schemas", "api"]
     output-model-type = "pydantic_v2.BaseModel"
-    preset = "standard-py312-20261015"
+    preset = "standard-py312-20261017"
     output = "app/models.py"
     generate-server = "fastapi"
     server-output = "app/server"
@@ -182,7 +182,7 @@ Put the settings in `pyproject.toml` and run `datamodel-codegen` without argumen
       --input-file-type openapi \
       --openapi-scopes schemas api \
       --output-model-type pydantic_v2.BaseModel \
-      --preset standard-py312-20261015 \
+      --preset standard-py312-20261017 \
       --output app/models.py \
       --generate-server fastapi \
       --server-output app/server \
@@ -1173,7 +1173,7 @@ generate(
     input_file_type=InputFileType.OpenAPI,
     openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
     output_model_type=DataModelType.PydanticV2BaseModel,
-    preset="standard-py312-20261015",
+    preset="standard-py312-20261017",
     output=Path("app/models.py"),
     generate_server=ServerType.FastAPI,
     server_output=Path("app/server"),
@@ -1210,7 +1210,7 @@ models only.
 input-file-type = "openapi"
 output-model-type = "pydantic_v2.BaseModel"
 openapi-scopes = ["schemas", "api"]
-preset = "standard-py312-20261015"
+preset = "standard-py312-20261017"
 disable-timestamp = true
 
 [tool.datamodel-codegen.profiles.server]
@@ -1298,7 +1298,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --output app/server/models.py \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --openapi-scopes schemas api \
   --generate-server fastapi \
   --server-output app/server \
@@ -1726,7 +1726,7 @@ datamodel-codegen \
   --input-file-type openapi \
   --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
-  --preset standard-py312-20261015 \
+  --preset standard-py312-20261017 \
   --output app/models.py \
   --generate-server fastapi \
   --server-output app/server \

@@ -4,10 +4,15 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Model(BaseModel):
     ExceptionGroup: ExceptionGroup | None = None
     BaseExceptionGroup: BaseExceptionGroup | None = None
     PythonFinalizationError: PythonFinalizationError | None = None
+    ZeroDivisionError_: ZeroDivisionError | None = Field(
+        None, alias='ZeroDivisionError'
+    )
+    len_: len | None = Field(None, alias='len')
+    help_: help | None = Field(None, alias='help')

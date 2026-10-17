@@ -1,0 +1,10 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "customTypePath": "enum.StrEnum"
+    }
+  }
+}

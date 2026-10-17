@@ -1,0 +1,18 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "representation": {
+      "type": "string",
+      "customTypePath": "enum.ReprEnum"
+    },
+    "check": {
+      "type": "string",
+      "customTypePath": "enum.EnumCheck"
+    },
+    "kind": {
+      "type": "string",
+      "customTypePath": "enum.StrEnum"
+    }
+  }
+}

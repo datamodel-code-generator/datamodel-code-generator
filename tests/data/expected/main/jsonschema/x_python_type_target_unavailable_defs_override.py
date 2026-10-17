@@ -10,3 +10,4 @@ from tests.data.python.x_python_type_symbols import StrEnum
 
 class TargetUnavailableDefsOverride(TypedDict):
     value: StrEnum
+    error: ZeroDivisionError

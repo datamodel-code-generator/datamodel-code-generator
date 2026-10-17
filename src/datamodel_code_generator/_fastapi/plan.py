@@ -720,7 +720,11 @@ class Planner:  # noqa: PLR0904
         )
         derived = [operation for operation in operations if operation.id.use_site.pointer not in self.names]
         bases = [
-            self.target_names.function(operation_basis(operation.method, operation.path, operation.operation_id))
+            self.target_names.function(
+                operation_basis(
+                    operation.method, operation.path, operation.operation_id, self.target_names.python_version
+                )
+            )
             for operation in derived
         ]
         claimed = dict(
@@ -748,12 +752,14 @@ class Planner:  # noqa: PLR0904
         members: dict[str, list[OperationSpec]] = {}
         for spec in specs:
             members.setdefault(spec.group, []).append(spec)
-        scope = NameScope((*BUILDER_NAMES, *EXPORTED_NAMES), folded=True)
+        scope = NameScope(
+            (*BUILDER_NAMES, *EXPORTED_NAMES), folded=True, target_python_version=self.target_names.python_version
+        )
         conflicts = {
             name
             for key in members
             if (name := self.config.router_names.get(key)) is not None
-            and (file_stem_conflict(name) or not scope.take(name))
+            and (file_stem_conflict(name, self.target_names.python_version) or not scope.take(name))
         }
         derived = [key for key in members if key not in self.config.router_names]
         bases = [self.target_names.function(group_basis(key)) for key in derived]
@@ -763,7 +769,7 @@ class Planner:  # noqa: PLR0904
         stems = {
             key: self.config.router_names.get(key) or dict(zip(derived, claimed, strict=True))[key] for key in members
         }
-        conflicts.update(stem for stem in stems.values() if file_stem_conflict(stem))
+        conflicts.update(stem for stem in stems.values() if file_stem_conflict(stem, self.target_names.python_version))
         self.problems.extend(
             _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
             for stem in sorted(conflicts)
@@ -1576,7 +1582,9 @@ class Planner:  # noqa: PLR0904
 
     def alias(self, operation: OperationContract, parameter: ParameterSpec) -> str | None:
         """Return the `--aliases` entry naming a parameter's argument, which must be an identifier."""
-        if (alias := self.target_names.alias(parameter.wire_name)) is not None and not explicit_name(alias):
+        if (alias := self.target_names.alias(parameter.wire_name)) is not None and not explicit_name(
+            alias, self.target_names.python_version
+        ):
             message = (
                 f"The --aliases entry {alias!r} of the {parameter.location} parameter {parameter.wire_name!r} of "
                 f"{_label(operation)} is not an identifier"

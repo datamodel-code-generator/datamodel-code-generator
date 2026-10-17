@@ -155,6 +155,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "type-checking-imports-off",
         "templates-not-found",
         "api-scope-required",
+        "typeddict-target-keys",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

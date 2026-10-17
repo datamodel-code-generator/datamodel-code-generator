@@ -1,0 +1,22 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "$ref": "#/$defs/Kind"
+    }
+  },
+  "$defs": {
+    "Kind": {
+      "x-python-import": {
+        "module": "enum",
+        "name": "StrEnum",
+        "native-field": {
+          "module": "enum",
+          "qualname": "StrEnum.Inner",
+          "fields": []
+        }
+      }
+    }
+  }
+}

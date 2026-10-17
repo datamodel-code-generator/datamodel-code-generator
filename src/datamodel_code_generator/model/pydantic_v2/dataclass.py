@@ -8,6 +8,7 @@ from __future__ import annotations
 import keyword
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
+from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model import dataclass as _dataclass_module
@@ -453,7 +454,9 @@ class DataModelFieldBackport(DataModelField):
     def __init__(self, **data: Any) -> None:
         """Initialize and make non-identifier aliases safe for dataclass signatures."""
         super().__init__(**data)
-        if self.alias is None or (self.alias.isidentifier() and not keyword.iskeyword(self.alias)):
+        if self.alias is None or (
+            is_identifier(self.alias, self.data_type.python_version) and not keyword.iskeyword(self.alias)
+        ):
             return
 
         validation_aliases = list(self.validation_aliases or ())
