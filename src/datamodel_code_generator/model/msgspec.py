@@ -467,7 +467,7 @@ class Struct(DataModel):
         return tag, tag_field if (own_tag_field := options.get("tag_field")) is None else own_tag_field
 
     @property
-    def discriminator_tag(self) -> tuple[Any, Any] | None:
+    def discriminator_tag(self) -> tuple[Any, Any] | None:  # ty: ignore[invalid-property-type-override]
         """Return the tag field and the tag msgspec tells the struct apart by in a union, or None if it is untagged."""
         tag, tag_field = self._tag_options()
         if tag is None and tag_field is None:

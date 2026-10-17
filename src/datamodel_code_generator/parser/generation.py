@@ -251,7 +251,7 @@ class _GenerationModelList(list["DataModel"]):
         """Sort the model list and invalidate derived facts."""
         try:
             if key is None:
-                super().sort(reverse=reverse)
+                super().sort(reverse=reverse)  # ty: ignore[invalid-argument-type]
                 return
             super().sort(key=key, reverse=reverse)
         finally:

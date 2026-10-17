@@ -6,10 +6,14 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
+    from collections.abc import Hashable
     from typing import Protocol, TypeAlias
 
-    class CredentialPosition(Protocol):
-        """Where a declared security scheme places its credential; a scheme that cannot place one has no location."""
+    class CredentialPosition(Hashable, Protocol):
+        """Where a declared security scheme places its credential, hashable as the caches key on it.
+
+        A scheme that cannot place one has no location.
+        """
 
         @property
         def location(self) -> str | None:

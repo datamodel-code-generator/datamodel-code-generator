@@ -111,7 +111,7 @@ class ClientOperationConfig:
 class ClientGenerationConfig(TargetConfig):
     """Settings of one client target; model settings stay in the model configuration."""
 
-    _option_prefix: ClassVar[str] = OPTION_PREFIX
+    _option_prefix: ClassVar[str | None] = OPTION_PREFIX
 
     transport: Transport = "httpx2"
     resource_names: tuple[ResourceName, ...] = ()

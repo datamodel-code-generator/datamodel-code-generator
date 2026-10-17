@@ -46,7 +46,6 @@ class _StructuredEnumMemberValue:
     """Common identity for enum values preserved independently of source text."""
 
     __slots__ = ()
-    value: Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,7 +95,7 @@ def _get_legacy_raw_enum_member_value(default: str) -> Any:
 def get_raw_enum_member_value(default: Any) -> Any:
     """Return one semantic value from structured or legacy rendered defaults."""
     match default:
-        case _StructuredEnumMemberValue():
+        case EnumMemberValue() | _NullEnumMemberValue():
             return default.value
         case str():
             return _get_legacy_raw_enum_member_value(default)
