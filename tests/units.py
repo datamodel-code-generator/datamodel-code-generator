@@ -541,7 +541,10 @@ class RefsIndex:
                     name, storage = split_label(line.label)[0], split_label(line.stored)[0]
                     if name not in self._storages or storage == name:
                         self._storages[name] = storage
-        relative = PurePosixPath(Path(os.path.relpath(path, self.expected_root)).as_posix())
+        try:
+            relative = PurePosixPath(Path(os.path.relpath(path, self.expected_root)).as_posix())
+        except ValueError:  # another drive on Windows: nothing in the index names it
+            return path
         for candidate in (relative, *relative.parents):
             if (storage := self._storages.get(str(candidate))) is not None:
                 return label_path(storage, self.expected_root) / relative.relative_to(candidate)

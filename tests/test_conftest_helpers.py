@@ -821,6 +821,17 @@ def test_ledger_rejects_hand_edited_refs(ledger: LedgerProject, monkeypatch: pyt
 UNSORTED = "lines are not sorted, or the file differs from what pytest writes"
 
 
+def test_stored_path_of_another_drive(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A path on another Windows drive than the expected root is not in the index and stays as it is."""
+
+    def other_drive(*_: object) -> str:
+        msg = "path is on mount 'C:', start on mount 'D:'"
+        raise ValueError(msg)
+
+    monkeypatch.setattr(units.os.path, "relpath", other_drive)
+    assert units.RefsIndex(tmp_path).stored_path(tmp_path / "x.txt") == tmp_path / "x.txt"
+
+
 def test_format_refs_writes_each_line_once() -> None:
     """A test comparing one label several times records one line for it."""
     line = units.RefLine("test_p", "case", "../shared.txt")

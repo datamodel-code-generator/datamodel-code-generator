@@ -1836,15 +1836,13 @@ def _stored_cli_doc_paths(config: pytest.Config, item: pytest.Item, kwargs: Mapp
         return stored.get(f"main/{path}", stored.get(path, path))
 
     def resolve_value(key: str, value: Any) -> Any:
-        match key, value:
-            case (("golden_output" | "expected_stdout"), str()):
-                return resolve(value)
-            case (("version_outputs" | "model_outputs"), dict()):
-                return {name: resolve(path) for name, path in value.items()}
-            case "extra_outputs", list():
-                return [{**output, "path": resolve(output["path"])} for output in value]
-            case _:
-                return value
+        if key in {"golden_output", "expected_stdout"} and isinstance(value, str):
+            value = resolve(value)
+        elif key in {"version_outputs", "model_outputs"} and isinstance(value, dict):
+            value = {name: resolve(path) for name, path in value.items()}
+        elif key == "extra_outputs" and isinstance(value, list):
+            value = [{**output, "path": resolve(output["path"])} for output in value]
+        return value
 
     return {key: resolve_value(key, value) for key, value in kwargs.items()}
 
