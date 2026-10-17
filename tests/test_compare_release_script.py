@@ -82,3 +82,35 @@ def test_compare_release(case: str, args: list[str], tmp_path: Path) -> None:
             ])
         outputs.append(f"exit={code}\n{stdout.getvalue()}")
     assert_output("\n".join(outputs), EXPECTED / f"{case}.txt")
+
+
+def test_compare_release_tracks_referenced_files(tmp_path: Path) -> None:
+    """A change to a file referenced from outside the input's directory invalidates the cached base output."""
+    schemas = tmp_path / "schemas"
+    (schemas / "nested").mkdir(parents=True)
+    common = schemas / "common.json"
+    common.write_text('{"type": "object", "properties": {"id": {"type": "integer"}}}', encoding="utf-8")
+    schema = schemas / "nested" / "root.json"
+    schema.write_text('{"type": "object", "properties": {"item": {"$ref": "../common.json"}}}', encoding="utf-8")
+    outputs = []
+    for revision in ("integer", "integer", "string"):
+        common.write_text(
+            f'{{"type": "object", "properties": {{"id": {{"type": "{revision}"}}}}}}',
+            encoding="utf-8",
+        )
+        stdout = StringIO()
+        with redirect_stdout(stdout), redirect_stderr(StringIO()):
+            code = compare_release.main([
+                "--base-python",
+                sys.executable,
+                "--candidate-python",
+                sys.executable,
+                "--cache-dir",
+                str(tmp_path / "cache"),
+                "--types",
+                "pydantic_v2.BaseModel",
+                "--extra=--input-file-type jsonschema",
+                str(schema),
+            ])
+        outputs.append(f"{revision}: exit={code}\n{stdout.getvalue()}")
+    assert_output("\n".join(outputs), EXPECTED / "referenced_files.txt")

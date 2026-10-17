@@ -28,6 +28,7 @@ import hashlib
 import importlib
 import json
 import os
+import re
 import shlex
 import shutil
 import signal
@@ -100,6 +101,7 @@ def _run_child(job: dict[str, Any], main: Callable[[list[str]], Any]) -> int:
     log = os.open(job["log"], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.dup2(log, 1)
     os.dup2(log, 2)
+    os.close(log)
     os.chdir(job["cwd"])
     if job["kind"] == "import":
         return _import_modules(job["out"])
@@ -201,20 +203,21 @@ def _probe(python: Path) -> tuple[str, str]:
     return python_version, dcg_version
 
 
+def _is_generator_requirement(line: str) -> bool:
+    """Return whether a `pip freeze` line installs datamodel-code-generator itself, e.g. this checkout."""
+    if line.startswith("-e "):
+        source = Path(line.removeprefix("-e ").removeprefix("file://"))
+        return any((source / sub / "datamodel_code_generator").is_dir() for sub in ("src", "."))
+    return line.lower().replace("_", "-").startswith(("datamodel-code-generator==", "datamodel-code-generator @"))
+
+
 def _base_python(version: str, candidate: Path, cache_dir: Path) -> Path:
     """Install the release next to the candidate's other packages, pinned to the same versions."""
     python_version, _ = _probe(candidate)
     freeze = subprocess.run(
-        ["uv", "pip", "freeze", "--exclude-editable", "--python", str(candidate)],
-        capture_output=True,
-        text=True,
-        check=True,
+        ["uv", "pip", "freeze", "--python", str(candidate)], capture_output=True, text=True, check=True
     ).stdout
-    pins = sorted(
-        line
-        for line in freeze.splitlines()
-        if line and not line.lower().replace("_", "-").startswith("datamodel-code-generator")
-    )
+    pins = sorted(line for line in freeze.splitlines() if line and not _is_generator_requirement(line))
     key = hashlib.sha256(json.dumps([version, python_version, pins]).encode()).hexdigest()[:12]
     root = cache_dir / "venvs" / f"{version}-py{python_version}-{key}"
     complete = root / ".complete"
@@ -350,6 +353,30 @@ def _content_hash(path: Path) -> str | None:
     return digest.hexdigest()
 
 
+LOCAL_REFERENCE = re.compile(r"""\$ref["']?\s*:\s*["']?([^"'#\s,}]+)""")
+
+
+@functools.cache
+def _referenced_files(path: Path) -> frozenset[Path]:
+    """Return the local files a schema file or directory references through `$ref`, followed transitively."""
+    found: set[Path] = set()
+    pending = list(_hashed_files(path))
+    while pending:
+        file = pending.pop()
+        try:
+            text = file.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        for target in LOCAL_REFERENCE.findall(text):
+            if "://" in target:
+                continue
+            referenced = (file.parent / target).resolve()
+            if referenced not in found and referenced.is_file():
+                found.add(referenced)
+                pending.append(referenced)
+    return frozenset(found)
+
+
 def _path_arguments(args: list[str]) -> list[Path]:
     """Return existing absolute paths among the arguments, including `--option=path` values."""
     values = [arg.partition("=")[2] if arg.startswith("--") else arg for arg in args]
@@ -359,9 +386,9 @@ def _path_arguments(args: list[str]) -> list[Path]:
 class OutputCache:
     """Base outputs keyed by the input, the files it can reference, and the arguments.
 
-    The key covers every file under the input's directory, so references to sibling files are tracked, and every
-    file or directory named by an absolute path argument, such as `--aliases` or `--custom-template-dir`.
-    Runs whose files cannot all be read are not cached.
+    The key covers every file under the input's directory, the local files the input references through `$ref`
+    (transitively, also outside that directory), and every file or directory named by an absolute path argument,
+    such as `--aliases` or `--custom-template-dir`. Runs whose files cannot all be read are not cached.
     """
 
     def __init__(self, root: Path | None) -> None:
@@ -372,10 +399,12 @@ class OutputCache:
     def _path(self, schema: Path, args: list[str], *, import_check: bool) -> Path | None:
         if self.root is None:
             return None
-        files = [_content_hash(path) for path in [schema.resolve().parent, *_path_arguments(args)]]
-        if None in files:
+        schema = schema.resolve()
+        paths = [schema.parent, *sorted(_referenced_files(schema)), *_path_arguments(args)]
+        files = [(str(path), _content_hash(path)) for path in paths]
+        if any(digest is None for _, digest in files):
             return None
-        key = json.dumps([CACHE_FORMAT, str(schema.resolve()), files, args, import_check])
+        key = json.dumps([CACHE_FORMAT, str(schema), files, args, import_check])
         return self.root / f"{hashlib.sha256(key.encode()).hexdigest()}.json"
 
     def get(self, schema: Path, args: list[str], *, import_check: bool) -> Outcome | None:
@@ -428,6 +457,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     """Run the comparison."""
     ns = _parse_args(argv)
+    _content_hash.cache_clear()
+    _referenced_files.cache_clear()
     candidate_python = ns.candidate_python.absolute()
     if ns.base_python is not None:
         base_python = ns.base_python.absolute()
@@ -473,16 +504,23 @@ def main(argv: list[str] | None = None) -> int:
         elif b.import_error and not c.import_error:
             note = f" [import fixed: {b.import_error}]"
         if b.tree == c.tree:
+            if c.import_error and not b.import_error:
+                return "fail-candidate-only", f"{name}:{note}"
             return "identical", (f"{name}:{note}" if note else "")
         return "differ", f"{name}{note}{_diff(b.tree, c.tree, ns.show_diff) if ns.show_diff else ''}"
 
     started = time.monotonic()
+    pool = ThreadPoolExecutor(ns.j)
     try:
-        with ThreadPoolExecutor(ns.j) as pool:
-            for status, line in pool.map(one, runs):
-                counts[status] += 1
-                if line:
-                    print(f"{status}: {line}", flush=True)
+        for status, line in pool.map(one, runs):
+            counts[status] += 1
+            if line:
+                print(f"{status}: {line}", flush=True)
+    except BaseException:
+        pool.shutdown(wait=True, cancel_futures=True)
+        raise
+    else:
+        pool.shutdown(wait=True)
     finally:
         base.close()
         cand.close()
