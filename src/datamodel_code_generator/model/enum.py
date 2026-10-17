@@ -238,8 +238,8 @@ class Enum(DataModel):
 
     @property
     def imports(self) -> tuple[Import, ...]:
-        """Get imports excluding Any."""
-        return tuple(i for i in super().imports if i != IMPORT_ANY)
+        """Imports excluding Any and field call imports."""
+        return tuple(i for i in super().imports if i != IMPORT_ANY and i.import_ not in {"Field", "field"})
 
 
 class StrEnum(Enum):
