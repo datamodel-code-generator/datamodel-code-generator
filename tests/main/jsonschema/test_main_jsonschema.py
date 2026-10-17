@@ -3539,6 +3539,24 @@ def test_main_jsonschema_field_type_collision_cross_module(
             "Bar",
             id="child-module-first-rename-type-base-model-exact-import",
         ),
+        pytest.param(
+            "field_type_collision_inherited_modules_package",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type"],
+            "field_type_collision_inherited_modules_package/base_model_rename_type",
+            "child",
+            "Bar",
+            id="packages-first-rename-type-base-model",
+        ),
+        pytest.param(
+            "field_type_collision_inherited_modules_package",
+            DataModelType.PydanticV2BaseModel,
+            ["--field-type-collision-strategy", "rename-type", "--use-exact-imports"],
+            "field_type_collision_inherited_modules_package/base_model_rename_type_exact",
+            "child",
+            "Bar",
+            id="packages-first-rename-type-base-model-exact-import",
+        ),
     ],
 )
 def test_main_jsonschema_field_type_collision_inherited_modules(
@@ -3553,7 +3571,7 @@ def test_main_jsonschema_field_type_collision_inherited_modules(
     """Rename an inherited field named like its type, or the type, under one name in every module of its family.
 
     The child keeps the alias of a renamed field, and imports a renamed type by its new name, whichever of the
-    modules comes first.
+    modules comes first, also where the type or its importer is a package ``__init__``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -8367,6 +8385,39 @@ def test_main_union_annotation_at_line_length(output_file: Path, formatters: lis
         extra_args=[
             "--output-model-type",
             "msgspec.Struct",
+            "--target-python-version",
+            "3.11",
+            "--disable-timestamp",
+            "--formatters",
+            *formatters,
+        ],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["builtin"], ["black", "isort"]])
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        ("annotated_assignment_at_line_length", ["--use-annotated"]),
+        ("union_subscript_assignment_at_line_length", ["--no-use-union-operator"]),
+    ],
+)
+def test_main_subscript_annotation_at_line_length(
+    output_file: Path, name: str, extra_args: list[str], formatters: list[str]
+) -> None:
+    """Test the built-in formatter splits an `Annotated[...]` or `Union[...]` annotation like black.
+
+    Black splits the annotation once `<annotation> = (` exceeds the line, even when the annotation alone fits, and
+    then splits a `Field(...)` default that overflows the closing line.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=f"{name}.py",
+        extra_args=[
+            *extra_args,
             "--target-python-version",
             "3.11",
             "--disable-timestamp",
@@ -18161,6 +18212,48 @@ def test_main_rust_unsupported_target_python(
     )
 
 
+@pytest.mark.parametrize(
+    ("target_python_version", "collapse_args", "expected_file", "switched"),
+    [
+        pytest.param("3.10", [], "rust_unsupported_typed_extra_py310.py", False, id="python-3.10"),
+        pytest.param("3.11", [], "rust_unsupported_typed_extra_py311.py", True, id="python-3.11"),
+        pytest.param(
+            "3.11",
+            ["--collapse-root-models"],
+            "rust_unsupported_typed_extra_py311.py",
+            True,
+            id="python-3.11-collapse-root-models",
+        ),
+    ],
+)
+def test_main_rust_unsupported_typed_extra_target_python(
+    target_python_version: str, collapse_args: list[str], expected_file: str, switched: bool, output_file: Path
+) -> None:
+    """Select Python's regex engine for a pattern of typed extra values by the target Python, as for declared fields.
+
+    Switched models are imported, so a pattern pydantic-core rejects fails the test when the engine is not switched.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_typed_extra.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *collapse_args,
+        ],
+        skip_code_validation=not switched,
+        force_exec_validation=switched,
+    )
+
+
 def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
     """Rust-rejected syntax selects Python's regex engine even when Python's ``re`` rejects the pattern too.
 
@@ -18410,6 +18503,163 @@ def test_main_builtin_field_names_python_315_builtins(
             "builtin",
             "--disable-timestamp",
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "target_python_version", "expected_file"),
+    [
+        pytest.param(
+            "dataclasses.dataclass", "3.12", "identifier_unicode_target_dataclass_312.py", id="dataclass-3.12"
+        ),
+        pytest.param(
+            "dataclasses.dataclass", "3.13", "identifier_unicode_target_dataclass_313.py", id="dataclass-3.13"
+        ),
+        pytest.param(
+            "dataclasses.dataclass", "3.14", "identifier_unicode_target_dataclass_314.py", id="dataclass-3.14"
+        ),
+        pytest.param(
+            "dataclasses.dataclass", "3.15", "identifier_unicode_target_dataclass_315.py", id="dataclass-3.15"
+        ),
+        pytest.param("typing.TypedDict", "3.14", "identifier_unicode_target_typed_dict_314.py", id="typed-dict-3.14"),
+        pytest.param("pydantic_v2.BaseModel", "3.15", "identifier_unicode_target_pydantic_315.py", id="pydantic-3.15"),
+    ],
+)
+def test_main_identifier_unicode_follows_target(
+    output_file: Path, output_model_type: str, target_python_version: str, expected_file: str
+) -> None:
+    """Name fields by the Unicode version of the target Python, whatever Python generates them.
+
+    U+0C5C is an identifier character from Python 3.15 on, and U+4EAC numeric from Python 3.13 on.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "identifier_unicode_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.13", "identifier_case_target_313.py", id="python-3.13"),
+        pytest.param("3.14", "identifier_case_target_314.py", id="python-3.14"),
+    ],
+)
+def test_main_capitalised_enum_members_follow_target(
+    output_file: Path, target_python_version: str, expected_file: str
+) -> None:
+    """Uppercase enum members by the case mappings of the target Python: U+0264 has an uppercase from 3.14 on."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "identifier_case_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--capitalise-enum-members",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+def test_main_type_alias_named_with_letters_beyond_ascii(output_file: Path) -> None:
+    """Format a type statement named with letters beyond ASCII alike on Pythons older than the target's syntax."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "identifier_type_alias_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="identifier_type_alias_target_312.py",
+        extra_args=[
+            "--use-type-alias",
+            "--target-python-version",
+            "3.12",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.10", "builtin_formatter_stdlib_imports_310.py", id="python-3.10"),
+        pytest.param("3.14", "builtin_formatter_stdlib_imports_314.py", id="python-3.14"),
+        pytest.param("3.15", "builtin_formatter_stdlib_imports_315.py", id="python-3.15"),
+    ],
+)
+def test_main_builtin_formatter_groups_target_stdlib(
+    output_file: Path, target_python_version: str, expected_file: str
+) -> None:
+    """Group imports with the standard library of the target Python, whatever Python formats them.
+
+    tomllib joins the standard library in 3.11, distutils leaves it in 3.12, sre_parse in 3.15, and profiling joins
+    it in 3.15.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        skip_code_validation=True,
+        extra_args=[
+            "--additional-imports",
+            "tomllib.loads,profiling.sampling,sre_parse.Pattern,distutils.version.LooseVersion",
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+def test_main_module_named_by_newer_target() -> None:
+    """Name and format a module with a character only the target knows, on any Python.
+
+    The modules are compared as one text, since not every file system can name a file with that character.
+    """
+    modules = generate(
+        JSON_SCHEMA_DATA_PATH / "identifier_module_target.json",
+        input_file_type=InputFileType.JsonSchema,
+        treat_dot_as_module=True,
+        target_python_version=PythonVersion.PY_315,
+        formatters=[Formatter.BUILTIN],
+        disable_timestamp=True,
+    )
+    assert_output(
+        "".join(f"# {'/'.join(path)}\n{body}\n" for path, body in sorted(modules.items())),
+        EXPECTED_JSON_SCHEMA_PATH / "identifier_module_target_315.txt",
+    )
+
+
+def test_main_reuse_model_masks_references_named_beyond_ascii(output_file: Path) -> None:
+    """Reuse models whose referenced models differ only in names that start beyond ASCII, as with ASCII names."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_reference_identifier_starts" / "probe.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="reuse_reference_identifier_starts.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--reuse-model"],
     )
 
 
@@ -19655,6 +19905,114 @@ def test_x_python_type_rejects_symbol_unavailable_for_target(
     )
 
 
+@pytest.mark.parametrize(
+    ("target_python_version", "expected_file"),
+    [
+        pytest.param("3.10", "schema_import_paths_target_310.py", id="python-3.10"),
+        pytest.param("3.12", "schema_import_paths_target_312.py", id="python-3.12"),
+    ],
+)
+def test_schema_import_paths_for_target(output_file: Path, target_python_version: str, expected_file: str) -> None:
+    """Import a customTypePath or x-python-import typing name newer than the target from its backport."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_import_paths_target.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.TypingTypedDict.value,
+            "--target-python-version",
+            target_python_version,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=tuple(map(int, target_python_version.split("."))) <= sys.version_info[:2],
+    )
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "target_python_version", "expected_error"),
+    [
+        pytest.param(
+            "custom_type_path_unavailable.json",
+            "3.10",
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="custom-type-path",
+        ),
+        pytest.param(
+            "custom_type_path_unavailable_many.json",
+            "3.10",
+            "enum.ReprEnum is unavailable for target Python 3.10",
+            id="custom-type-path-first-in-schema-order",
+        ),
+        pytest.param(
+            "x_python_import_unavailable.json",
+            "3.13",
+            "pathlib.types.PathInfo is unavailable for target Python 3.13",
+            id="x-python-import",
+        ),
+        pytest.param(
+            "x_python_import_qualname_unavailable.json",
+            "3.10",
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="x-python-import-qualname",
+        ),
+        pytest.param(
+            "x_python_import_native_field_unavailable.json",
+            "3.10",
+            "enum.StrEnum is unavailable for target Python 3.10",
+            id="x-python-import-native-field",
+        ),
+    ],
+)
+def test_schema_import_paths_reject_types_unavailable_for_target(
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+    fixture_name: str,
+    target_python_version: str,
+    expected_error: str,
+) -> None:
+    """Reject a customTypePath or x-python-import naming a standard-library type the target lacks."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        output_should_not_exist=True,
+        capsys=capsys,
+        expected_stderr_contains=expected_error,
+        extra_args=["--target-python-version", target_python_version, "--formatters", "builtin"],
+    )
+
+
+def test_schema_import_paths_unavailable_types_moved_by_import_overrides(output_file: Path) -> None:
+    """Generate a type the target lacks once --import-overrides moves its import to a module that provides it."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "import_overrides_unavailable_types.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="import_overrides_unavailable_types.py",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.TypingTypedDict.value,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--type-overrides",
+            json.dumps({"Model.overridden": "enum.StrEnum"}),
+            "--import-overrides",
+            json.dumps({"StrEnum": "tests.data.python.x_python_type_symbols"}),
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_x_python_type_builtin_and_enum_helpers_for_target_311(output_file: Path) -> None:
     """Keep bare builtins distinct from target-gated enum helper classes."""
     run_main_and_assert(
@@ -19737,7 +20095,7 @@ def test_main_constraints_on_target_builtin_names(
 
 
 def test_x_python_type_explicit_defs_override_target_unavailable_symbol(output_file: Path) -> None:
-    """Prefer an explicit schema import when a same-named stdlib type is target-newer."""
+    """Prefer an explicit schema import when a same-named stdlib type is target-newer, not over a builtin it has."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "x_python_type_target_unavailable_defs_override.json",
         output_path=output_file,

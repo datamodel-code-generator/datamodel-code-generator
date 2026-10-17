@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: TypedDict target keys
+  version: 1.0.0
+servers:
+  - url: https://pets.example.com
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        '200':
+          description: A pet, with a property that only Python 3.13 and later accept as an identifier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        "ア・イ":
+          type: string

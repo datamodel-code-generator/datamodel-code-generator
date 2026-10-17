@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import DiagnosticStage
     from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocols import Helper, Link
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._runtime.model_codecs.media import JSONValue
     from datamodel_code_generator._target_contract import OperationContract, OperationId
 
@@ -31,6 +32,7 @@ class Protocols:
     helpers: tuple[Helper, ...]
     operations: Mapping[OperationRef, OperationContract]
     documents: Mapping[SchemaRef, str]
+    python_version: PythonVersion
 
 
 def _label(operation: OperationContract) -> str:
@@ -70,7 +72,7 @@ def plan_protocols(request: TargetRequest, source: Mapping[str, object] | None, 
         return None
     from datamodel_code_generator._client.protocols import validate  # noqa: PLC0415
 
-    helpers, problems = validate(source)
+    helpers, problems = validate(source, request.model_config.target_python_version)
     resolver = _Resolver(request, base)
     for helper in helpers:
         for link in helper.links:
@@ -79,7 +81,12 @@ def plan_protocols(request: TargetRequest, source: Mapping[str, object] | None, 
             problems.extend(resolver.schema(at, schema))
     if problems:
         raise APIGenerationError(tuple(problems), option_prefix=OPTION_PREFIX)
-    return Protocols(helpers=helpers, operations=resolver.operations, documents=resolver.documents)
+    return Protocols(
+        helpers=helpers,
+        operations=resolver.operations,
+        documents=resolver.documents,
+        python_version=request.model_config.target_python_version,
+    )
 
 
 class _Resolver:
@@ -195,7 +202,7 @@ def _class_problems(helpers: tuple[Helper, ...], protocols: Protocols) -> Iterat
     """Refuse an enabled helper whose name gives a namespace or helper class name another name already gave."""
     owners: dict[str, tuple[str, ...]] = {}
     for helper in helpers:
-        for parts, class_name in helper_classes(helper.name, helper.kind):
+        for parts, class_name in helper_classes(helper.name, helper.kind, protocols.python_version):
             if (owner := owners.setdefault(class_name, parts)) != parts:
                 message = (
                     f"The helper name {helper.name!r} gives the class name {class_name!r}, which {'.'.join(owner)!r} "

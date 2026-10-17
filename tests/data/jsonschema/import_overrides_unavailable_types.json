@@ -1,0 +1,25 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "customTypePath": "enum.StrEnum"
+    },
+    "imported": {
+      "$ref": "#/$defs/Imported"
+    },
+    "overridden": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "Imported": {
+      "type": "string",
+      "x-python-import": {
+        "module": "enum",
+        "name": "StrEnum"
+      }
+    }
+  }
+}

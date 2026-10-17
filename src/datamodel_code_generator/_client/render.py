@@ -25,7 +25,13 @@ from datamodel_code_generator._client._compiled_templates import types as types_
 from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.codec_render import render_model_bindings
 from datamodel_code_generator._client.facade import Attribute, Lazy, Subclass, facade_module, name_set, statement
-from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, TYPE_EXPORTS, VIEW_KEYWORDS, helper_classes
+from datamodel_code_generator._client.naming import (
+    CLIENT_KEYWORDS,
+    TYPE_EXPORTS,
+    VIEW_KEYWORDS,
+    helper_classes,
+    pascal_parts,
+)
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.runtime import (
@@ -52,7 +58,6 @@ from datamodel_code_generator._target_render import (
 )
 from datamodel_code_generator._target_templates import builtin_role, templated
 from datamodel_code_generator.model.base import escape_docstring, format_docstring
-from datamodel_code_generator.reference import snake_to_upper_camel
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping
@@ -78,6 +83,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.security import CredentialSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.client.parts import PartPlan
     from datamodel_code_generator._target_contract import (
@@ -796,9 +802,9 @@ def _helpers_module(*, asynchronous: bool) -> str:
     return "_async_helpers" if asynchronous else "_helpers"
 
 
-def _handle(spec: PollingSpec, prefix: str) -> str:
+def _handle(spec: PollingSpec, prefix: str, python_version: PythonVersion) -> str:
     """Return the name of a polling helper's own handle class, after its dotted name's PascalCase parts."""
-    return f"{prefix}{''.join(map(snake_to_upper_camel, spec.helper.name.split('.')))}Handle"
+    return f"{prefix}{pascal_parts(spec.helper.name.split('.'), python_version)}Handle"
 
 
 def _route(operation: OperationSpec) -> str:
@@ -2251,13 +2257,14 @@ _DEFAULT_STATUSES: Final = [200]
 class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     """Render the protocol helpers of a client package: their plans and their sync and asyncio namespaces."""
 
-    def __init__(self, resources: _Resources, fingerprints: Mapping[str, str]) -> None:
-        """Keep the resources' typing context, its helpers, and each helper's contract fingerprint."""
+    def __init__(self, resources: _Resources, fingerprints: Mapping[str, str], python_version: PythonVersion) -> None:
+        """Keep the resources' typing context, its helpers, each helper's contract fingerprint, and the target."""
         self.resources = resources
         self.helpers = resources.helpers
         self.streams = resources.streams
         self.sockets = resources.sockets
         self.fingerprints = fingerprints
+        self.python_version = python_version
 
     @staticmethod
     def page(module: TargetModule, spec: PaginationSpec | PollingSpec | UploadSpec) -> str:
@@ -2565,7 +2572,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         kinds: dict[str, str] = {}
         for spec in (*self.helpers, *self.streams, *self.sockets):
             helper = spec.helper
-            for parts, class_name in helper_classes(helper.name, helper.kind):
+            for parts, class_name in helper_classes(helper.name, helper.kind, self.python_version):
                 nodes.setdefault(parts[:-1], {})[parts[-1]] = (f"{prefix}{class_name}", ".".join(parts))
                 if parts == tuple(helper.name.split(".")):
                     named[helper.name] = f"{prefix}{class_name}"
@@ -2576,7 +2583,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         streams = {named[spec.helper.name]: spec for spec in self.streams}
         sockets = {named[spec.helper.name]: spec for spec in self.sockets}
         handles = {
-            name: _handle(spec, prefix)
+            name: _handle(spec, prefix, self.python_version)
             for name, spec in leaves.items()
             if isinstance(spec, PollingSpec) and spec.cancel is not None
         }
@@ -2591,7 +2598,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         cached = module.name("functools", "cached_property")
         namespaces = [
             Namespace(
-                f"{prefix}{''.join(map(snake_to_upper_camel, parts))}Protocols" if parts else root,
+                f"{prefix}{pascal_parts(parts, self.python_version)}Protocols" if parts else root,
                 f"The {'.'.join(parts)} protocol helpers." if parts else "The protocol helpers of this API.",
                 core if parts else base_core,
                 "" if parts else core,
@@ -3380,7 +3387,8 @@ class ClientRenderer:
         """Return the modules of the package's protocol helpers, none without helpers."""
         if not (self.helpers or self.streams or self.sockets):
             return ()
-        helpers = _Helpers(resources, self.fingerprints)
+        assert self.batch.names is not None
+        helpers = _Helpers(resources, self.fingerprints, self.batch.names.python_version)
         return (
             self.file(PurePosixPath("protocols", "_plans.py"), "protocols", helpers.plans()),
             self.file(PurePosixPath("protocols", "_helpers.py"), "protocols", helpers.module(asynchronous=False)),

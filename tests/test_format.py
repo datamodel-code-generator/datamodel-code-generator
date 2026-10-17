@@ -75,6 +75,7 @@ BUILTIN_PEP695_INVALID_INPUT_PATH = Path(__file__).parent / "data" / "python" / 
 BUILTIN_PEP695_INVALID_EXPECTED_PATH = BUILTIN_FORMATTER_EXPECTED_PATH / (
     "pep695_invalid.txt" if sys.version_info[:2] >= (3, 12) else "pep695_invalid_legacy.txt"
 )
+BUILTIN_QUALIFIED_HEADS_INPUT_PATH = Path(__file__).parent / "data" / "python" / "builtin_formatter_qualified_heads.txt"
 
 
 def test_builtin_formatter_moved_names_are_reexported() -> None:
@@ -293,6 +294,7 @@ def test_builtin_generated_formatter_edge_cases() -> None:
         ("import-only", "import package\n", {}),
         ("import-class", "import package\n\n\nclass Model:\n    pass\n", {}),
         ("import-statement", "import package\n\nvalue = 1\n", {}),
+        ("qualified-heads", BUILTIN_QUALIFIED_HEADS_INPUT_PATH.read_text(encoding="utf-8"), {}),
     )
     formatted_cases = [
         f"[{name}]\n{builtin_formatter._apply_builtin_generated_formatter(source, **options)!r}"
@@ -887,6 +889,52 @@ def test_builtin_formatter_string_normalization_preserves_pep695_invalid_errors(
     assert_output(
         "\n".join(formatted_cases),
         BUILTIN_PEP695_INVALID_EXPECTED_PATH,
+    )
+
+
+def test_builtin_formatter_keeps_target_identifiers_and_joiners_alike_on_every_python() -> None:
+    """Format code the running Python cannot parse alike on every Python.
+
+    Letters the running Python lacks are lent away while formatting and given back, never as a letter the NFKC form
+    of the code uses. Joiners, which Python 3.13 lets identifiers hold, are lent in names and keep their escapes when
+    strings are rewrapped.
+    """
+    description = "joined\u200dword " * 12
+    joiners = (
+        "from pydantic import BaseModel, Field\n\n\nclass Model(BaseModel):\n"
+        f"    text: str = Field(..., description='{description}')\n"
+    )
+    compatibility = (
+        "# \u4e00\u4e01\u4e02\u4e03\u4e04\u4e05\u4e06\u4e07\u4e08\u4e09\u4e0a\u4e0b\u4e0c\n"
+        "from pydantic import BaseModel\n\nfrom .m import Y\u0c5c, X\uf967\n\n\n"
+        "class Model(BaseModel):\n    value: X\uf967 | Y\u0c5c | None = None\n"
+    )
+    joined_names = (
+        "from pydantic import BaseModel\nfrom __future__ import annotations\n\nfrom .mo\u200ddels import Pet\n"
+        "import json\nclass Mo\u200ddel(BaseModel):\n    pet: Pet\n"
+    )
+    assert_output(
+        "\n".join((
+            apply_builtin_formatter(joiners, wrap_string_literal=True, python_version=PythonVersion.PY_315),
+            apply_builtin_formatter(compatibility, python_version=PythonVersion.PY_315),
+            apply_builtin_formatter(joined_names, python_version=PythonVersion.PY_313),
+        )),
+        BUILTIN_FORMATTER_EXPECTED_PATH / "target_identifiers.txt",
+    )
+
+
+def test_builtin_formatter_groups_each_module_of_an_import_by_target() -> None:
+    """Group each module one import statement names in its own section, as isort does, by the target's library.
+
+    tomllib joins the standard library in Python 3.11.
+    """
+    code = "import tomllib, pydantic, os\nimport yaml\n\n\nclass Model(pydantic.BaseModel):\n    pass\n"
+    assert_output(
+        "\n".join(
+            apply_builtin_formatter(code, python_version=version)
+            for version in (PythonVersion.PY_310, PythonVersion.PY_311)
+        ),
+        BUILTIN_FORMATTER_EXPECTED_PATH / "import_modules_by_target.txt",
     )
 
 
@@ -2142,7 +2190,8 @@ def test_apply_builtin_formatter_handles_simple_edge_cases(code: str, expected_c
 def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files(bucket: int, tmp_path: Path) -> None:
     """Keep built-in formatting aligned with black + isort for generated model outputs.
 
-    Each bucket checks every PARITY_BUCKETS-th expected file, so the buckets together check every file once.
+    Each bucket checks every PARITY_BUCKETS-th expected file, so the buckets together check every file once. Files
+    black cannot parse are skipped; black 24.1 reports a name holding a letter its own Python lacks as a KeyError.
     """
     expected_path = Path(__file__).parent / "data" / "expected"
     isort_config = isort.Config(settings_path=str(tmp_path))
@@ -2161,7 +2210,7 @@ def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_fil
                 isort.code(code, config=isort_config),
                 mode=black_mode,
             )
-        except black.InvalidInput:
+        except (black.InvalidInput, KeyError):
             continue
 
         if code != black_isort_code:

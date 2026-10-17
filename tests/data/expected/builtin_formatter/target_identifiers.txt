@@ -1,0 +1,33 @@
+from pydantic import BaseModel, Field
+
+
+class Model(BaseModel):
+    text: str = Field(
+        ...,
+        description=(
+            'joined\u200dword joined\u200dword joined\u200dword joined\u200dword'
+            ' joined\u200dword joined\u200dword joined\u200dword joined\u200dword'
+            ' joined\u200dword joined\u200dword joined\u200dword joined\u200dword '
+        ),
+    )
+
+# 一丁丂七丄丅丆万丈三上下丌
+from pydantic import BaseModel
+
+from .m import X不, Y౜
+
+
+class Model(BaseModel):
+    value: X不 | Y౜ | None = None
+
+from __future__ import annotations
+
+import json
+
+from pydantic import BaseModel
+
+from .mo‍dels import Pet
+
+
+class Mo‍del(BaseModel):
+    pet: Pet

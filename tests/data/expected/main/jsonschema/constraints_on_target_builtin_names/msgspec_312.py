@@ -16,3 +16,4 @@ class ConstraintsOnTargetBuiltinNames(Struct):
     finalization_length: Annotated[PythonFinalizationError, Meta(min_length=2)]
     finalization_minimum: Annotated[PythonFinalizationError, Meta(ge=1)]
     exception_group_minimum: ExceptionGroup
+    zero_division_minimum: ZeroDivisionError

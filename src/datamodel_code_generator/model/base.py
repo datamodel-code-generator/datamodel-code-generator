@@ -24,7 +24,9 @@ from pydantic import ConfigDict, Field
 from typing_extensions import Self
 
 from datamodel_code_generator import Error, cached_path_exists
+from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
+from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_ANY,
@@ -54,7 +56,6 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
-    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
@@ -249,7 +250,7 @@ def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
         return frozenset()
 
     try:
-        tree = ast.parse(annotation, mode="eval")
+        tree = ast.parse(lent.source if (lent := host_identifiers(annotation)) else annotation, mode="eval")
     except SyntaxError:
         return frozenset()
 
@@ -589,6 +590,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     use_default_kwarg: bool = False
     use_missing_sentinel: bool = False
     use_one_literal_as_default: bool = False
+    target_python_version: Optional[PythonVersion] = None  # noqa: UP045
     _exclude_fields: ClassVar[set[str]] = {"parent"}
     _pass_fields: ClassVar[set[str]] = {"parent", "data_type"}
     can_have_extra_keys: ClassVar[bool] = True
@@ -611,6 +613,13 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def process_const(self) -> None:
         """Process const fields in subclasses."""
+
+    def target_version_key(self, data_type: DataType) -> tuple[int, int]:
+        """Return the target Python of a decision on ``data_type``: the parser's target, else the one the type carries.
+
+        The parser sets the target on every field it builds, so a field built without one keeps the type's version.
+        """
+        return (data_type.python_version if (target := self.target_python_version) is None else target).version_key
 
     @property
     def dropped_constraints_warning(self) -> str | None:
@@ -1873,12 +1882,18 @@ def _field_participates_in_constructor(_: DataModelFieldBase) -> bool:
 
 
 def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
-    """Bind names in field annotations and defaults without changing template objects."""
+    """Bind names in field annotations and defaults without changing template objects.
+
+    Identifier characters the running interpreter does not know are lent letters of the same UTF-8 length, so the
+    offsets it parses hold for the rendered text.
+    """
     source = rendered.encode()
     offsets = [0, *accumulate(map(len, source.splitlines(keepends=True)))]
     replacements: list[tuple[int, int, str]] = []
-    for statement in ast.parse(rendered).body:
-        if not isinstance(statement, ast.ClassDef) or statement.name != class_name:
+    lent = host_identifiers(rendered)
+    restore_name = lent.restore_name if lent else str
+    for statement in ast.parse(lent.source if lent else rendered).body:
+        if not isinstance(statement, ast.ClassDef) or restore_name(statement.name) != class_name:
             continue
         for field in statement.body:
             if not isinstance(field, ast.AnnAssign):
@@ -1892,7 +1907,7 @@ def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[st
                             ctx=ast.Load(),
                             end_lineno=int() as end_line,
                             end_col_offset=int() as end_column,
-                        ) if (alias := bindings.get(name)) is not None:
+                        ) if (alias := bindings.get(restore_name(name))) is not None:
                             replacements.append((
                                 offsets[node.lineno - 1] + node.col_offset,
                                 offsets[end_line - 1] + end_column,
