@@ -2991,13 +2991,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if class_name_suffix and base_name_without_index.endswith(class_name_suffix)
             else f"{base_reference.name}{suffix}"
         )
-        yields = {"yields": True} if self.model_resolver.is_yielding(base_reference) else {}
+        yielding = self.model_resolver.is_yielding(base_reference)
         unique_name = self.model_resolver.get_class_name(
             variant_name,
             unique=True,
             skip_affix=True,
             preserve_name=True,
-            **yields,
+            yields=yielding,
         ).name
         reference = self.model_resolver.add(
             get_special_path(f"read-write-{suffix.lower()}", base_reference.path.split("/")),
@@ -3005,7 +3005,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             class_name=False,
             unique=False,
             loaded=loaded,
-            **yields,
+            yields=yielding or None,
         )
         source_reference_path = _get_unique_rw_model_variant_source_path(
             source_variant_ref,
@@ -8239,7 +8239,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else data_types
         )
         if not executable_data_types:
-            return cast("set[UniqueItemsPath]", set())
+            return set()
         common_paths = self._get_executable_unique_items_paths(executable_data_types[0], path, visited)
         for data_type in executable_data_types[1:]:
             common_paths.intersection_update(self._get_executable_unique_items_paths(data_type, path, visited))
@@ -8287,7 +8287,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             visited = set()
         data_type_id = id(data_type)
         if data_type_id in visited:
-            return cast("set[UniqueItemsPath]", set())
+            return set()
         visited.add(data_type_id)
         try:
             if data_type.reference and isinstance(data_type.reference.source, DataModel):
@@ -8304,7 +8304,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     and _is_internal_schema_runtime_validation(runtime_validation)
                 ):
                     if self.collapse_root_models and source.IS_ROOT_MODEL:
-                        return cast("set[UniqueItemsPath]", set())
+                        return set()
                     return {(*path, *rule.path) for rule in runtime_validation.unique_items}
 
             match data_type:

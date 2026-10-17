@@ -650,7 +650,7 @@ class DataModelField(_PydanticBaseDataModelField):
         "pattern",
     }
     _DEFAULT_FIELD_KEYS: ClassVar[frozenset[str]] = _PYDANTIC_V2_DEFAULT_FIELD_KEYS
-    constraints: Optional[Constraints] = None  # noqa: UP045
+    constraints: Optional[Constraints] = None  # noqa: UP045  # ty: ignore[invalid-mutable-override]
     can_have_extra_keys: ClassVar[bool] = False
     _PYDANTIC_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     _PYDANTIC_EXTRA_PLAIN_ANNOTATION_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
@@ -1438,8 +1438,8 @@ class BaseModel(BaseModelBase):
     CUSTOM_TEMPLATE_ADAPTER = staticmethod(_adapt_legacy_pydantic_extra_template)
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)
     _TYPED_EXTRA_DICT_KEY_CAPABILITY = staticmethod(_supports_pydantic_typed_extra_dict_key)
-    TYPED_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
-    TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
+    TYPED_EXTRA_FIELD_NAME: ClassVar[str | None] = "__pydantic_extra__"
+    TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY: ClassVar[str | None] = "pydantic_extra_plain_annotation"
     # In Pydantic 2.11+, populate_by_name is deprecated in favor of validate_by_name + validate_by_alias
     # Default to V2 compatible (populate_by_name) unless target_pydantic_version is specified
     _CONFIG_ATTRIBUTES_V2: ClassVar[list[ConfigAttribute]] = [

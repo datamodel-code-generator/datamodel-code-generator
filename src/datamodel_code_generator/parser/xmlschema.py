@@ -934,6 +934,7 @@ class _XMLSchemaConverter:
         return array_schema
 
     def _convert_simple_type(self, simple_type: ET.Element) -> JsonSchema:
+        schema: JsonSchema
         if (restriction := _first_xsd_child(simple_type, "restriction")) is not None:
             base_schema = self._restriction_base_schema(restriction)
             schema = self._apply_restriction_facets(restriction, base_schema)
