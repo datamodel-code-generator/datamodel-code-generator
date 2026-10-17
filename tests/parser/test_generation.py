@@ -6,7 +6,7 @@ import ast
 from collections import defaultdict
 from operator import iadd, imul
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pytest
 from inline_snapshot import snapshot
@@ -959,6 +959,10 @@ def test_generation_store_updates_model_and_field_metadata() -> None:
     store.remove_field(model, field_a)
     store.rename_model(model, class_name="RenamedModel", reference_name="Renamed")
     store.move_model(model, new_path="pkg.Renamed", new_file_path=Path("pkg.py"))
+    fact = store.index.model_fact(model)
+    assert fact is not None
+    stored_names = (fact.path, fact.file_path, fact.name, fact.class_name)
+    model.reference.name = "pkg.Resolved"
 
     assert {
         "fields": [field.data_type.reference.path for field in model.fields if field.data_type.reference],
@@ -967,14 +971,18 @@ def test_generation_store_updates_model_and_field_metadata() -> None:
         "path": model.path,
         "file_path": model.file_path,
         "reference_classes": sorted(store.index.reference_classes_for_model(model)),
+        "stored_names": stored_names,
+        "names_after_renaming_outside_the_store": (fact.name, fact.class_name),
     } == snapshot(
         {
             "fields": ["B"],
-            "class_name": "Renamed",
-            "reference_name": "Renamed",
+            "class_name": "Resolved",
+            "reference_name": "pkg.Resolved",
             "path": "pkg.Renamed",
             "file_path": Path("pkg.py"),
             "reference_classes": ["B"],
+            "stored_names": ("pkg.Renamed", Path("pkg.py"), "Renamed", "Renamed"),
+            "names_after_renaming_outside_the_store": ("pkg.Resolved", "Resolved"),
         },
     )
 
@@ -1872,6 +1880,40 @@ def test_generation_store_indexes_each_shared_base_class_owner_once() -> None:
 
     assert isinstance(owner_ids, list)
     assert [facts.model_facts[model_id].model for model_id in owner_ids] == [first_model, second_model]
+
+
+def test_generation_store_rebuilds_every_fact_after_a_failed_refresh() -> None:
+    """A refresh that fails while recording a changed model leaves the facts and rebuilds them all next time.
+
+    Generated models only hold data types, so only a caller that breaks a model reaches this.
+    """
+    model = _base_model("Model", [DataModelField(data_type=DataType(reference=Reference(path="A", name="A")))])
+    store = GenerationStore()
+    store.register_model(model)
+    facts = store.current_facts()
+    version = store.facts_version
+
+    store.set_base_classes(model, [cast("BaseClassDataType", object())])
+    with pytest.raises(AttributeError):
+        store.refresh()
+    failed = {
+        "same_facts": store._facts is facts,
+        "version": store.facts_version - version,
+        "rebuild_required": store._rebuild_required,
+    }
+    store.set_base_classes(model, [])
+
+    assert {
+        "failed": failed,
+        "rebuilt": store.current_facts() is not facts,
+        "version": store.facts_version - version,
+        "reference_classes": sorted(store.index.reference_classes_for_model(model)),
+    } == snapshot({
+        "failed": {"same_facts": True, "version": 0, "rebuild_required": True},
+        "rebuilt": True,
+        "version": 1,
+        "reference_classes": ["A"],
+    })
 
 
 def test_generation_store_refresh_moves_one_owner_of_a_shared_base_class() -> None:

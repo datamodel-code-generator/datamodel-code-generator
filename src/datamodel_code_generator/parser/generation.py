@@ -128,16 +128,27 @@ def _detach_data_type_tree(root: DataType) -> None:
 
 @dataclass(frozen=True, slots=True)
 class ModelFact:
-    """A parsed model and the stable facts derived from its reference."""
+    """A parsed model and the stable facts derived from its reference.
+
+    The names are read from the model, since parser code renames models without the store.
+    """
 
     id: ModelId
     parse_order: int
     model: DataModel
     reference: Reference
     path: str
-    name: str
-    class_name: str
     file_path: Path | None
+
+    @property
+    def name(self) -> str:
+        """The model's reference name."""
+        return self.model.reference.name
+
+    @property
+    def class_name(self) -> str:
+        """The model's class name."""
+        return self.model.class_name
 
 
 @dataclass(frozen=True, slots=True)
@@ -597,8 +608,6 @@ def _model_fact(model_id: ModelId, parse_order: int, model: DataModel) -> ModelF
         model=model,
         reference=model.reference,
         path=model.path,
-        name=model.reference.name,
-        class_name=model.class_name,
         file_path=model.file_path,
     )
 
@@ -1151,16 +1160,20 @@ class GenerationStore:  # noqa: PLR0904
                 next_model_id=self._next_model_id,
             )
         else:
-            result = GenerationIndexBuilder().update(
-                self._facts,
-                self.models,
-                appended_count=len(self._appended_model_ids),
-                changed_model_ids=self._changed_model_ids,
-                renamed_model_ids=self._renamed_model_ids,
-                model_ids_by_object=self._model_ids_by_object,
-                next_model_id=self._next_model_id,
-                next_data_type_id=self._next_data_type_id,
-            )
+            try:
+                result = GenerationIndexBuilder().update(
+                    self._facts,
+                    self.models,
+                    appended_count=len(self._appended_model_ids),
+                    changed_model_ids=self._changed_model_ids,
+                    renamed_model_ids=self._renamed_model_ids,
+                    model_ids_by_object=self._model_ids_by_object,
+                    next_model_id=self._next_model_id,
+                    next_data_type_id=self._next_data_type_id,
+                )
+            except BaseException:
+                self._rebuild_required = True
+                raise
         self._facts = result.facts
         self._model_ids_by_object = result.model_ids_by_object
         self._next_model_id = result.next_model_id

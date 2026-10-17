@@ -214,7 +214,8 @@ classDiagram
 should register models and update references, fields, bases, names, and paths through store methods instead of mutating
 the live objects directly. `GenerationIndex` keeps stable facts about the model list and gives later phases efficient
 queries such as "which data types point at this reference?". A refresh records only the models that were appended or
-that store mutations changed, and rebuilds every fact only when the model list changes otherwise.
+that store mutations changed, and rebuilds every fact only when the model list changes otherwise or
+`discard_derived_facts()` drops them.
 
 ## References And Names
 
