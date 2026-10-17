@@ -1345,6 +1345,67 @@ def test_main_openapi_discriminator_with_properties(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("option", "expected_file"),
+    [
+        ("--use-annotated", "discriminator/pattern_use_annotated.py"),
+        ("--field-constraints", "discriminator/pattern_field_constraints.py"),
+    ],
+)
+def test_main_openapi_discriminator_pattern(option: str, expected_file: str, output_file: Path) -> None:
+    """Discriminator tags drop the pattern Pydantic cannot check on a tag Literal and keep their lengths."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_pattern.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            option,
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_discriminator_pattern_nested_choices(output_file: Path) -> None:
+    """Variants that nested choices give a union drop the pattern of the tag they declare or inherit."""
+    name = "discriminator_pattern_nested_choices"
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_nested_choices.py",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--use-annotated",
+        ],
+        force_exec_validation=True,
+    )
+    decoded = []
+    for model_name, payloads in json.loads((DATA_PATH / f"payloads/{name}.json").read_text()).items():
+        with _generated_model(output_file, name, model_name) as model:
+            validate = _model_json_validator(model)
+            for payload in payloads:
+                try:
+                    result = repr(validate(json.dumps(payload)))
+                except pydantic.ValidationError:
+                    result = "rejected"
+                decoded.append(f"{model_name} {json.dumps(payload)}: {result}\n")
+    assert_output("".join(decoded), EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_nested_choices_decoded.txt")
+
+
 def test_main_openapi_discriminator_allof(output_file: Path) -> None:
     """Test OpenAPI generation with allOf discriminator polymorphism."""
     run_main_and_assert(

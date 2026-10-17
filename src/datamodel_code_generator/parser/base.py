@@ -17,7 +17,7 @@ from collections import Counter, OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache, partial
-from itertools import chain, groupby, pairwise
+from itertools import chain, groupby, islice, pairwise
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -2177,20 +2177,31 @@ def _get_source_field_name(field: DataModelFieldBase) -> str | None:
     return field.original_name if field.original_name is not None else field.alias or field.name
 
 
-def _find_discriminator_value(
+def _iter_discriminator_fields(
     fields: Iterable[DataModelFieldBase],
     field_name: str,
     *,
     field_name_mode: Literal["original", "resolved", "either"] = "either",
-) -> DiscriminatorValue | None:
+) -> Iterator[tuple[DataModelFieldBase, DiscriminatorValue]]:
+    """Yield the fields of the discriminator's name that carry one discriminator value, with that value."""
     for field in fields:
         if field_name_mode == "original":
             matches = _get_source_field_name(field) == field_name
         else:
             matches = field.name == field_name or (field_name_mode == "either" and field.original_name == field_name)
         if matches and (value := _get_discriminator_field_value(field)) is not None:
-            return value
-    return None
+            yield field, value
+
+
+def _find_discriminator_value(
+    fields: Iterable[DataModelFieldBase],
+    field_name: str,
+    *,
+    field_name_mode: Literal["original", "resolved", "either"] = "either",
+) -> DiscriminatorValue | None:
+    return next(
+        (value for _, value in _iter_discriminator_fields(fields, field_name, field_name_mode=field_name_mode)), None
+    )
 
 
 def _get_discriminator_values(
@@ -2467,6 +2478,45 @@ def _get_mapped_discriminator_tag(
 def _remove_discriminator(field: DataModelFieldBase) -> None:
     field.extras.pop("discriminator", None)
     field.data_type.discriminator = None
+
+
+def _drop_discriminator_tag_pattern(field: DataModelFieldBase) -> None:
+    """Write a discriminator tag without its pattern where an output model writes constraints as ``Field()`` arguments.
+
+    Pydantic checks a pattern on the tag's ``Literal`` by validating the value again as a ``str``, which hides the
+    ``Literal`` from the discriminator, and the ``Literal`` decides the tag anyway. The other constraints stay.
+    """
+    if not field.SUPPORTS_FIELD_CONSTRAINTS or not isinstance(constraints := field.constraints, ConstraintsBase):
+        return
+    values = constraints.model_dump(by_alias=True, exclude_unset=True)
+    if values.pop("pattern", None) is None:
+        return
+    field.constraints = type(constraints).model_validate(values)
+    field.invalidate_semantic_caches()
+
+
+def _drop_nested_discriminator_tag_patterns(
+    data_types: Iterable[DataType],
+    field_name: str,
+    *,
+    field_name_mode: Literal["original", "either"],
+) -> None:
+    """Write the tags of the variants that nested choices give a union without their patterns.
+
+    Such a variant keeps the tag it declares or inherits, so the field giving it is its own one, else the inherited
+    one, which the empty subclass of a reused model also reads.
+    """
+    for data_type, can_update_discriminator, _ in _iter_discriminator_data_types(data_types):
+        source = data_type.reference.source if data_type.reference else None
+        if can_update_discriminator or not isinstance(source, DataModel):
+            continue
+        for tag_field, _ in islice(
+            _iter_discriminator_fields(
+                chain(source.fields, source.iter_all_fields()), field_name, field_name_mode=field_name_mode
+            ),
+            1,
+        ):
+            _drop_discriminator_tag_pattern(tag_field)
 
 
 def _is_discriminator_container(data_type: DataType) -> bool:
@@ -4351,6 +4401,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     _remove_discriminator(field)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                     continue
+                _drop_nested_discriminator_tag_patterns(
+                    field.data_type.data_types,
+                    property_name if field.SUPPORTS_DISCRIMINATOR else field_name,
+                    field_name_mode="original" if field.SUPPORTS_DISCRIMINATOR else "either",
+                )
 
                 if field.SUPPORTS_DISCRIMINATOR:
                     field_name = self._get_discriminator_field_name(
@@ -4427,6 +4482,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             and (literal := literals[0]) == expected_value
                         ):
                             has_one_literal = True
+                            _drop_discriminator_tag_pattern(discriminator_field)
                             if not has_reused_variant:
                                 self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=False)
                             match discriminator_model:
@@ -4471,6 +4527,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
+                        _drop_discriminator_tag_pattern(discriminator_field)
                         self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
                         if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
