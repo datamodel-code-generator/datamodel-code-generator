@@ -8685,6 +8685,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if len(top_level_dirs) > 1:
                 results[root_init] = Result(body="")
 
+        if unmatched_keys := self.model_resolver.unmatched_model_name_keys():
+            listed = ", ".join(map(repr, unmatched_keys))
+            warn(
+                f"--model-name-map: {len(unmatched_keys)} key{'' if len(unmatched_keys) == 1 else 's'} "
+                f"matched no generated model: {listed}",
+                stacklevel=2,
+            )
+
         return self.__render_modules(
             results,
             contexts=contexts,

@@ -1011,10 +1011,13 @@ class ModelResolver:  # noqa: PLR0904
         names = (generated_name, original_name) if match_names else ()
         for candidate in (*paths, *names):
             if (mapped_name := self.model_name_map.get(candidate)) is not None:
-                if candidate in names:
-                    self._matched_model_name_keys.add(candidate)
+                self._matched_model_name_keys.add(candidate)
                 return mapped_name
         return None
+
+    def unmatched_model_name_keys(self) -> list[str]:
+        """List the ``--model-name-map`` keys that matched no generated model."""
+        return sorted(set(self.model_name_map) - self._matched_model_name_keys)
 
     def _ensure_model_name_map_value(
         self,
@@ -1104,6 +1107,7 @@ class ModelResolver:  # noqa: PLR0904
                 mapped_name := self.model_name_map.get(name)
             ) is not None:
                 self._ensure_model_name_map_value(reference.path, name, mapped_name, name)
+                self._matched_model_name_keys.add(name)
                 reference.name = mapped_name
                 reference.duplicate_name = None
                 self._update_reference_name(name, mapped_name)

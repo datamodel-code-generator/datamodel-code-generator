@@ -29108,3 +29108,20 @@ def test_custom_pattern_annotation_context(tmp_path: Path, monkeypatch: pytest.M
         json.dumps({"contexts": contexts, "values": records}, indent=2),
         UNKNOWN_PATTERN_EXPECTED / f"custom_{expected_case}_runtime.txt",
     )
+
+
+def test_main_jsonschema_model_name_map_warns_on_unmatched_keys(output_file: Path) -> None:
+    """A --model-name-map key that matches no generated model is reported in a warning."""
+    with pytest.warns(
+        UserWarning,
+        match=r"--model-name-map: 2 keys matched no generated model: '#/definitions/pet', 'Ownr'",
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "model_name_map.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--model-name-map",
+                '{"#/definitions/Foo": "RenamedFoo", "Ownr": "Typo", "#/definitions/pet": "WrongCase"}',
+            ],
+        )
