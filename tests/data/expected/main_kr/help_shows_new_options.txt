@@ -550,8 +550,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         msgspec.Struct output only: write an enum that lists
                         null as an Enum without the None member plus an Enum |
                         None type alias, so that msgspec can decode it.
-                        Without it the 0.83.0 form is kept, an Enum with a
-                        None member, which msgspec cannot decode.
+                        Without it a plain Enum keeps the 0.83.0 None member,
+                        which msgspec cannot decode; an IntEnum or --use-
+                        subclass-enum enum, which cannot hold it, always takes
+                        the alias form.
   --use-msgspec-tagged-unions
                         msgspec.Struct output only: write a discriminated
                         union as msgspec tagged structs as a whole. Every

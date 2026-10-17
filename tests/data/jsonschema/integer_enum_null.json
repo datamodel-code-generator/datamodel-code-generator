@@ -1,0 +1,12 @@
+{
+  "title": "Pet",
+  "type": "object",
+  "properties": {
+    "level": {"type": "integer", "enum": [1, 2, null]},
+    "color": {"type": "string", "enum": ["red", "blue", null]},
+    "weight": {"type": "number", "enum": [1.5, null, 2.5]},
+    "rank": {"type": "integer", "enum": [1, null, 2], "x-enum-varnames": ["One", "Nothing", "Two"], "default": 2},
+    "nothing": {"type": "integer", "enum": [null]},
+    "untyped": {"enum": [1, null]}
+  }
+}

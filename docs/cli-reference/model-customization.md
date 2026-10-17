@@ -6410,7 +6410,8 @@ model types ignore it. Client generation (`--generate-client`) with `msgspec.Str
 Without the flag the output keeps the 0.83.0 form of an enum that lists `null` without `type: string` or
 `nullable: true`, such as `type: [integer, "null"]` with `enum: [1, 2, null]`: an Enum class with a `None` member
 such as `NoneType_None = None`. msgspec cannot decode such an Enum, because its members must be all `str` or all
-`int` values, and the `IntEnum` written for `type: integer` cannot be imported at all.
+`int` values. An enum whose class has a value type base, the `IntEnum` of `type: integer` or a `--use-subclass-enum`
+class such as `(int, Enum)`, cannot hold a `None` member and is written as with the flag in any case.
 
 With the flag the enum is written as a `type: string` or `nullable` enum is: an Enum class with an `Enum` suffix and
 without the `None` member, and the schema name becomes a type alias of that class or `None`, so that msgspec decodes
