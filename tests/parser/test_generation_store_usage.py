@@ -47,6 +47,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "discard_derived_facts",
             "insert_field",
             "move_model",
+            "note_changed_models",
             "redirect_model_reference_users",
             "redirect_reference_users",
             "register_model",

@@ -14,6 +14,10 @@ Contributor guide:
   references, fields, base classes, model paths, or model names. Do not assign
   ``data_type.reference``, ``model.fields``, ``model.base_classes``, or
   ``model.reference.name`` directly in parser code.
+* A refresh records again only the models that changed since the last one.
+  Code that changes a tracked model's fields, base classes, or data types
+  without the store, such as a model method that rewrites its own types, must
+  report the model with ``GenerationStore.note_changed_models()``.
 * Read dependency facts through ``GenerationIndex``. Parser post-processing
   should not treat ``Reference.children`` as the source of truth.
 * Treat output template metadata as opaque. Read model-owned dependency
@@ -35,13 +39,15 @@ checker and its tests stay aligned with the public parser-facing surface.
 
 from __future__ import annotations
 
+from bisect import insort
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from itertools import chain
 from typing import TYPE_CHECKING, Any, Literal, SupportsIndex, TypeAlias, TypeVar, overload
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator
+    from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
     from pathlib import Path
 
     from typing_extensions import Self
@@ -64,6 +70,7 @@ Reference: TypeAlias = Any
 ModelId: TypeAlias = int
 DataTypeId: TypeAlias = int
 DataTypeRole = Literal["field", "base", "nested", "dict_key"]
+DataTypeOccurrence: TypeAlias = tuple[DataType, int | None, DataTypeRole]
 _OrderedSetItem = TypeVar("_OrderedSetItem")
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
 
@@ -76,6 +83,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "discard_derived_facts",
     "insert_field",
     "move_model",
+    "note_changed_models",
     "redirect_model_reference_users",
     "redirect_reference_users",
     "register_model",
@@ -146,7 +154,11 @@ class DataTypeFact:
 
 @dataclass(slots=True)
 class GenerationFacts:
-    """A complete snapshot of derived generation facts."""
+    """A complete snapshot of derived generation facts.
+
+    A model's data type ids increase in traversal order, so ``(owner parse order, id)`` orders occurrences
+    as a full rebuild traverses them.
+    """
 
     model_facts: dict[ModelId, ModelFact] = field(default_factory=dict)
     data_type_facts: dict[DataTypeId, DataTypeFact] = field(default_factory=dict)
@@ -156,6 +168,15 @@ class GenerationFacts:
     model_by_ref_id: dict[int, ModelId] = field(default_factory=dict)
     data_types_by_model: dict[ModelId, tuple[DataTypeId, ...]] = field(default_factory=dict)
     reverse_edges: defaultdict[int, OrderedSet[DataTypeId]] = field(default_factory=lambda: defaultdict(dict))
+    shared_data_type_fact_ids: dict[int, list[DataTypeId]] = field(default_factory=dict)
+
+    def parse_order(self, model_id: ModelId) -> int:
+        """Return the position of a model in the model list."""
+        return self.model_facts[model_id].parse_order
+
+    def order_key(self, data_type_id: DataTypeId) -> tuple[int, DataTypeId]:
+        """Return the position of an occurrence in a full rebuild's traversal order."""
+        return self.parse_order(self.data_type_facts[data_type_id].owner_model), data_type_id
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,20 +186,22 @@ class GenerationBuildResult:
     facts: GenerationFacts
     model_ids_by_object: dict[int, ModelId]
     next_model_id: int
+    next_data_type_id: int
 
 
 class _GenerationModelList(list["DataModel"]):
     """List-compatible model collection that invalidates generation facts."""
 
-    def __init__(self, invalidate: Callable[[], None]) -> None:
-        """Create a model list with an invalidation callback."""
+    def __init__(self, invalidate: Callable[[], None], invalidate_append: Callable[[Any], None]) -> None:
+        """Create a model list with invalidation callbacks for any change and for an appended model."""
         super().__init__()
         self._invalidate = invalidate
+        self._invalidate_append = invalidate_append
 
     def append(self, item: Any) -> None:
         """Append a model and invalidate derived facts."""
         super().append(item)
-        self._invalidate()
+        self._invalidate_append(item)
 
     def extend(self, items: Iterable[Any]) -> None:
         """Extend the model list and invalidate derived facts."""
@@ -273,7 +296,7 @@ class _GenerationModelList(list["DataModel"]):
 
 
 class GenerationIndexBuilder:
-    """Build a full generation fact snapshot from live parser objects."""
+    """Record generation facts from live parser objects, in full or for changed models."""
 
     def build(
         self,
@@ -294,12 +317,65 @@ class GenerationIndexBuilder:
         self._next_data_type_id = 0
 
         self._record_models()
-        self._record_data_types()
+        for model_id, model_fact in self._facts.model_facts.items():
+            self._record_data_types(model_id, model_fact.model)
 
         return GenerationBuildResult(
             facts=self._facts,
             model_ids_by_object=self._model_ids_by_object,
             next_model_id=self._next_model_id,
+            next_data_type_id=self._next_data_type_id,
+        )
+
+    def update(  # noqa: PLR0913
+        self,
+        facts: GenerationFacts,
+        models: Sequence[DataModel],
+        *,
+        appended_count: int,
+        changed_model_ids: Iterable[ModelId],
+        renamed_model_ids: Iterable[ModelId],
+        model_ids_by_object: dict[int, ModelId],
+        next_model_id: int,
+        next_data_type_id: int,
+    ) -> GenerationBuildResult:
+        """Record the models appended to ``models`` and the changed and renamed ones in ``facts``.
+
+        Every model is read before ``facts`` changes, so a traversal that raises leaves the facts as they were.
+        """
+        self._facts = facts
+        self._next_data_type_id = next_data_type_id
+        model_facts = facts.model_facts
+        first_appended = len(models) - appended_count
+        appended = [
+            (parse_order, model, self._data_type_occurrences(model))
+            for parse_order, model in enumerate(models[first_appended:], first_appended)
+        ]
+        renamed_facts = [
+            _model_fact(model_id, (model_fact := model_facts[model_id]).parse_order, model_fact.model)
+            for model_id in renamed_model_ids
+        ]
+        changes = [
+            (model_id, self._data_type_occurrences(model_facts[model_id].model))
+            for model_id in sorted(changed_model_ids, key=facts.parse_order)
+        ]
+        for model_id, (parse_order, model, occurrences) in enumerate(appended, next_model_id):
+            model_ids_by_object[id(model)] = model_id
+            model_facts[model_id] = _model_fact(model_id, parse_order, model)
+            facts.model_by_path[model.path] = model_id
+            facts.model_by_ref_id[id(model.reference)] = model_id
+            self._record_data_types_again(model_id, occurrences)
+        if renamed_facts:
+            model_facts.update((model_fact.id, model_fact) for model_fact in renamed_facts)
+            facts.model_by_path = {model_fact.path: model_id for model_id, model_fact in model_facts.items()}
+            facts.model_by_ref_id = {id(model_fact.reference): model_id for model_id, model_fact in model_facts.items()}
+        for model_id, occurrences in changes:
+            self._record_data_types_again(model_id, occurrences)
+        return GenerationBuildResult(
+            facts=facts,
+            model_ids_by_object=model_ids_by_object,
+            next_model_id=next_model_id + len(appended),
+            next_data_type_id=self._next_data_type_id,
         )
 
     def _record_models(self) -> None:
@@ -310,61 +386,51 @@ class GenerationIndexBuilder:
                 self._next_model_id += 1
                 self._model_ids_by_object[id(model)] = model_id
 
-            fact = ModelFact(
-                id=model_id,
-                parse_order=parse_order,
-                model=model,
-                reference=model.reference,
-                path=model.path,
-                name=model.reference.name,
-                class_name=model.class_name,
-                file_path=model.file_path,
-            )
-            self._facts.model_facts[model_id] = fact
+            self._facts.model_facts[model_id] = _model_fact(model_id, parse_order, model)
             self._facts.model_by_path[model.path] = model_id
             self._facts.model_by_ref_id[id(model.reference)] = model_id
 
-    def _record_data_types(self) -> None:
-        for model_id, model_fact in self._facts.model_facts.items():
-            data_type_ids: list[DataTypeId] = []
+    def _data_type_occurrences(self, model: DataModel) -> list[DataTypeOccurrence]:
+        occurrences: list[DataTypeOccurrence] = []
+        for field_index, field_ in enumerate(model.fields):
+            self._collect_data_type_tree(field_.data_type, field_index, "field", occurrences)
+        for base_class in model.base_classes:
+            self._collect_data_type_tree(base_class, None, "base", occurrences)
+        return occurrences
 
-            for field_index, field_ in enumerate(model_fact.model.fields):
-                self._record_data_type_tree(
-                    field_.data_type,
-                    owner_model=model_id,
-                    owner_field_index=field_index,
-                    role="field",
-                    data_type_ids=data_type_ids,
-                )
+    def _collect_data_type_tree(
+        self,
+        data_type: DataType,
+        owner_field_index: int | None,
+        role: DataTypeRole,
+        occurrences: list[DataTypeOccurrence],
+    ) -> None:
+        occurrences.append((data_type, owner_field_index, role))
+        nested_role: DataTypeRole = "dict_key" if role == "dict_key" else "nested"
+        for nested_data_type in data_type.data_types:
+            self._collect_data_type_tree(nested_data_type, owner_field_index, nested_role, occurrences)
+        if data_type.dict_key:
+            self._collect_data_type_tree(data_type.dict_key, owner_field_index, "dict_key", occurrences)
 
-            for base_class in model_fact.model.base_classes:
-                base_class_id = id(base_class)
-                match self._facts.base_owner_model_ids_by_object.get(base_class_id):
-                    case None:
-                        self._facts.base_owner_model_ids_by_object[base_class_id] = model_id
-                    case int() as existing_model_id if existing_model_id != model_id:
-                        self._facts.base_owner_model_ids_by_object[base_class_id] = [existing_model_id, model_id]
-                    case list() as existing_model_ids if model_id not in existing_model_ids:
-                        existing_model_ids.append(model_id)
-                self._record_data_type_tree(
-                    base_class,
-                    owner_model=model_id,
-                    owner_field_index=None,
-                    role="base",
-                    data_type_ids=data_type_ids,
-                )
-
-            self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
+    def _record_data_types(self, model_id: ModelId, model: DataModel) -> None:
+        data_type_ids: list[DataTypeId] = []
+        for field_index, field_ in enumerate(model.fields):
+            self._record_data_type_tree(field_.data_type, model_id, field_index, "field", data_type_ids)
+        for base_class in model.base_classes:
+            self._add_base_owner(id(base_class), model_id)
+            self._record_data_type_tree(base_class, model_id, None, "base", data_type_ids)
+        self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
 
     def _record_data_type_tree(
         self,
         data_type: DataType,
-        *,
         owner_model: ModelId,
         owner_field_index: int | None,
         role: DataTypeRole,
         data_type_ids: list[DataTypeId],
     ) -> None:
+        """Record a data type tree in traversal order, as a full build visits it."""
+        facts = self._facts
         data_type_id = self._next_data_type_id
         self._next_data_type_id += 1
         fact = DataTypeFact(
@@ -375,31 +441,166 @@ class GenerationIndexBuilder:
             role=role,
             reference=data_type.reference,
         )
-        self._facts.data_type_facts[data_type_id] = fact
-        self._facts.data_type_fact_by_object[id(data_type)] = fact
+        facts.data_type_facts[data_type_id] = fact
+        if (current := facts.data_type_fact_by_object.get(object_id := id(data_type))) is not None:
+            facts.shared_data_type_fact_ids.setdefault(object_id, [current.id]).append(data_type_id)
+        facts.data_type_fact_by_object[object_id] = fact
         data_type_ids.append(data_type_id)
 
         if data_type.reference:
-            self._facts.reverse_edges[id(data_type.reference)][data_type_id] = None
+            facts.reverse_edges[id(data_type.reference)][data_type_id] = None
 
         nested_role: DataTypeRole = "dict_key" if role == "dict_key" else "nested"
         for nested_data_type in data_type.data_types:
-            self._record_data_type_tree(
-                nested_data_type,
-                owner_model=owner_model,
-                owner_field_index=owner_field_index,
-                role=nested_role,
-                data_type_ids=data_type_ids,
-            )
+            self._record_data_type_tree(nested_data_type, owner_model, owner_field_index, nested_role, data_type_ids)
 
         if data_type.dict_key:
-            self._record_data_type_tree(
-                data_type.dict_key,
-                owner_model=owner_model,
-                owner_field_index=owner_field_index,
-                role="dict_key",
-                data_type_ids=data_type_ids,
-            )
+            self._record_data_type_tree(data_type.dict_key, owner_model, owner_field_index, "dict_key", data_type_ids)
+
+    def _record_data_types_again(self, model_id: ModelId, occurrences: list[DataTypeOccurrence]) -> None:
+        """Record a changed or appended model in the ids it had, replacing only the occurrences that differ.
+
+        Keeping the ids keeps the dictionaries from growing with every change; occurrences beyond the old
+        count get new ids, which still follow every id the model keeps.
+        """
+        data_type_facts = self._facts.data_type_facts
+        old_ids = self._facts.data_types_by_model.get(model_id, ())
+        data_type_ids = list(old_ids[: len(occurrences)])
+        for _ in range(len(occurrences) - len(old_ids)):
+            data_type_ids.append(self._next_data_type_id)
+            self._next_data_type_id += 1
+        stale_facts = [data_type_facts[data_type_id] for data_type_id in old_ids[len(occurrences) :]]
+        fresh_facts: list[DataTypeFact] = []
+        for data_type_id, occurrence in zip(data_type_ids, occurrences, strict=True):
+            data_type, owner_field_index, role = occurrence
+            if (old_fact := data_type_facts.get(data_type_id)) is not None:
+                if (
+                    old_fact.data_type is data_type
+                    and old_fact.reference is data_type.reference
+                    and old_fact.owner_field_index == owner_field_index
+                    and old_fact.role == role
+                ):
+                    continue
+                stale_facts.append(old_fact)
+            fresh_facts.append(_data_type_fact(data_type_id, model_id, occurrence))
+        if any(fact.role == "base" for fact in chain(stale_facts, fresh_facts)):
+            self._update_base_owners(model_id, old_ids, occurrences)
+        for fact in stale_facts:
+            self._forget_fact(fact)
+        for data_type_id in old_ids[len(occurrences) :]:
+            del data_type_facts[data_type_id]
+        for fact in fresh_facts:
+            self._record_fact(fact)
+        self._facts.data_types_by_model[model_id] = tuple(data_type_ids)
+
+    def _record_fact(self, fact: DataTypeFact) -> None:
+        self._facts.data_type_facts[fact.id] = fact
+        self._index_data_type_object(fact)
+        if fact.reference:
+            self._add_reverse_edge(id(fact.reference), fact.id)
+
+    def _forget_fact(self, fact: DataTypeFact) -> None:
+        self._forget_data_type_object(fact)
+        if fact.reference:
+            reference_id = id(fact.reference)
+            data_type_ids = self._facts.reverse_edges[reference_id]
+            del data_type_ids[fact.id]
+            if not data_type_ids:
+                del self._facts.reverse_edges[reference_id]
+
+    def _update_base_owners(
+        self,
+        model_id: ModelId,
+        old_ids: tuple[DataTypeId, ...],
+        occurrences: list[DataTypeOccurrence],
+    ) -> None:
+        data_type_facts = self._facts.data_type_facts
+        old_base_class_ids = {
+            id(fact.data_type) for data_type_id in old_ids if (fact := data_type_facts[data_type_id]).role == "base"
+        }
+        new_base_class_ids = {id(data_type) for data_type, _, role in occurrences if role == "base"}
+        for base_class_id in old_base_class_ids - new_base_class_ids:
+            self._remove_base_owner(base_class_id, model_id)
+        for base_class_id in new_base_class_ids - old_base_class_ids:
+            self._add_base_owner(base_class_id, model_id)
+
+    def _index_data_type_object(self, fact: DataTypeFact) -> None:
+        facts = self._facts
+        object_id = id(fact.data_type)
+        if (current := facts.data_type_fact_by_object.get(object_id)) is None:
+            facts.data_type_fact_by_object[object_id] = fact
+            return
+        facts.shared_data_type_fact_ids.setdefault(object_id, [current.id]).append(fact.id)
+        if facts.order_key(fact.id) > facts.order_key(current.id):
+            facts.data_type_fact_by_object[object_id] = fact
+
+    def _forget_data_type_object(self, fact: DataTypeFact) -> None:
+        facts = self._facts
+        object_id = id(fact.data_type)
+        if (data_type_ids := facts.shared_data_type_fact_ids.get(object_id)) is None:
+            del facts.data_type_fact_by_object[object_id]
+            return
+        data_type_ids.remove(fact.id)
+        if len(data_type_ids) == 1:
+            del facts.shared_data_type_fact_ids[object_id]
+        if facts.data_type_fact_by_object[object_id] is fact:
+            facts.data_type_fact_by_object[object_id] = facts.data_type_facts[max(data_type_ids, key=facts.order_key)]
+
+    def _add_reverse_edge(self, reference_id: int, data_type_id: DataTypeId) -> None:
+        facts = self._facts
+        data_type_ids = facts.reverse_edges[reference_id]
+        if not data_type_ids or facts.order_key(next(reversed(data_type_ids))) < facts.order_key(data_type_id):
+            data_type_ids[data_type_id] = None
+            return
+        ordered_ids = sorted((*data_type_ids, data_type_id), key=facts.order_key)
+        data_type_ids.clear()
+        data_type_ids.update(dict.fromkeys(ordered_ids))
+
+    def _add_base_owner(self, base_class_id: int, model_id: ModelId) -> None:
+        owners = self._facts.base_owner_model_ids_by_object
+        if (current := owners.get(base_class_id)) is None:
+            owners[base_class_id] = model_id
+            return
+        model_ids = [current] if isinstance(current, int) else current
+        if model_id not in model_ids:
+            insort(model_ids, model_id, key=self._facts.parse_order)
+            owners[base_class_id] = model_ids
+
+    def _remove_base_owner(self, base_class_id: int, model_id: ModelId) -> None:
+        owners = self._facts.base_owner_model_ids_by_object
+        if isinstance(model_ids := owners[base_class_id], int):
+            del owners[base_class_id]
+            return
+        model_ids.remove(model_id)
+        if len(model_ids) == 1:
+            owners[base_class_id] = model_ids[0]
+
+
+def _data_type_fact(data_type_id: DataTypeId, model_id: ModelId, occurrence: DataTypeOccurrence) -> DataTypeFact:
+    """Record one data type occurrence of a model."""
+    data_type, owner_field_index, role = occurrence
+    return DataTypeFact(
+        id=data_type_id,
+        data_type=data_type,
+        owner_model=model_id,
+        owner_field_index=owner_field_index,
+        role=role,
+        reference=data_type.reference,
+    )
+
+
+def _model_fact(model_id: ModelId, parse_order: int, model: DataModel) -> ModelFact:
+    """Record a model's current name and location."""
+    return ModelFact(
+        id=model_id,
+        parse_order=parse_order,
+        model=model,
+        reference=model.reference,
+        path=model.path,
+        name=model.reference.name,
+        class_name=model.class_name,
+        file_path=model.file_path,
+    )
 
 
 class GenerationIndex:
@@ -609,13 +810,20 @@ class GenerationStore:  # noqa: PLR0904
 
     def __init__(self) -> None:
         """Initialize an empty generation store."""
-        self.models: _GenerationModelList = _GenerationModelList(self._invalidate)
+        self.models: _GenerationModelList = _GenerationModelList(
+            self._invalidate_models, self._invalidate_appended_model
+        )
         self.index = GenerationIndex(self)
         self._facts = GenerationFacts()
         self._model_ids_by_object: dict[int, ModelId] = {}
         self._next_model_id = 0
+        self._next_data_type_id = 0
         self._facts_version = 0
         self._dirty = True
+        self._rebuild_required = True
+        self._appended_model_ids: set[int] = set()
+        self._changed_model_ids: set[ModelId] = set()
+        self._renamed_model_ids: set[ModelId] = set()
         self._defer_refresh_depth = 0
         self._active_root_collapse_reference_scope: _RootCollapseReferenceScope | None = None
         self._root_collapse_internal_mutation_depth = 0
@@ -648,6 +856,9 @@ class GenerationStore:  # noqa: PLR0904
         self._facts = GenerationFacts()
         self._model_ids_by_object.clear()
         self.models.clear()
+        self._appended_model_ids.clear()
+        self._changed_model_ids.clear()
+        self._renamed_model_ids.clear()
         self._dirty = True
 
     @property
@@ -865,26 +1076,99 @@ class GenerationStore:  # noqa: PLR0904
             if not self._root_collapse_internal_mutation_depth:
                 scope.invalidate()
 
+    def _invalidate_models(self) -> None:
+        """Invalidate every fact after the model list changes."""
+        self._rebuild_required = True
+        self._invalidate()
+
+    def _invalidate_appended_model(self, model: DataModel) -> None:
+        """Record a model appended to the model list at the next refresh, or every model if it was listed already."""
+        if self._rebuild_required or id(model) in self._model_ids_by_object or id(model) in self._appended_model_ids:
+            self._invalidate_models()
+            return
+        self._appended_model_ids.add(id(model))
+        self._invalidate()
+
+    def _tracked_model_id(self, model: object) -> ModelId | None:
+        """Return the id of ``model`` when the current facts record it."""
+        if (
+            (model_id := self._model_ids_by_object.get(id(model))) is not None
+            and (model_fact := self._facts.model_facts.get(model_id)) is not None
+            and model_fact.model is model
+        ):
+            return model_id
+        return None
+
+    def note_changed_models(self, *models: object) -> None:
+        """Record ``models`` again at the next refresh, after their types changed outside the store.
+
+        The facts stay as they are until that refresh, as they did when every refresh rebuilt them all.
+        """
+        if self._rebuild_required:
+            return
+        for model in models:
+            if (model_id := self._tracked_model_id(model)) is not None:
+                self._changed_model_ids.add(model_id)
+
+    def _note_changed_data_types(self, data_types: Iterable[object]) -> None:
+        """Record again, at the next refresh, the models whose recorded facts contain ``data_types``.
+
+        A data type that joined a model's tree after the last refresh did so through a mutation that
+        already noted that model, so the recorded owners are the only ones left to note.
+        """
+        if self._rebuild_required:
+            return
+        facts = self._facts
+        for data_type in data_types:
+            object_id = id(data_type)
+            if (data_type_ids := facts.shared_data_type_fact_ids.get(object_id)) is not None:
+                self._changed_model_ids.update(
+                    facts.data_type_facts[data_type_id].owner_model for data_type_id in data_type_ids
+                )
+            elif (fact := facts.data_type_fact_by_object.get(object_id)) is not None and fact.data_type is data_type:
+                self._changed_model_ids.add(fact.owner_model)
+
     def refresh(self) -> None:
-        """Rebuild facts from the live model list."""
+        """Bring facts up to date with the live model list."""
         if self._defer_refresh_depth:
             return
 
         self.refresh_now()
 
     def refresh_now(self) -> None:
-        """Rebuild facts immediately, even inside a deferred mutation block."""
+        """Bring facts up to date immediately, even inside a deferred mutation block.
+
+        Appended models and the models that mutations noted are recorded on their own; any other change of the
+        model list rebuilds every fact.
+        """
         if not self._dirty:
             return
 
-        result = GenerationIndexBuilder().build(
-            self.models,
-            previous_model_ids_by_object=self._model_ids_by_object,
-            next_model_id=self._next_model_id,
-        )
+        if self._rebuild_required:
+            result = GenerationIndexBuilder().build(
+                self.models,
+                previous_model_ids_by_object=self._model_ids_by_object,
+                next_model_id=self._next_model_id,
+            )
+        else:
+            result = GenerationIndexBuilder().update(
+                self._facts,
+                self.models,
+                appended_count=len(self._appended_model_ids),
+                changed_model_ids=self._changed_model_ids,
+                renamed_model_ids=self._renamed_model_ids,
+                model_ids_by_object=self._model_ids_by_object,
+                next_model_id=self._next_model_id,
+                next_data_type_id=self._next_data_type_id,
+            )
         self._facts = result.facts
         self._model_ids_by_object = result.model_ids_by_object
         self._next_model_id = result.next_model_id
+        self._next_data_type_id = result.next_data_type_id
+        self._rebuild_required = False
+        self._appended_model_ids.clear()
+        self._changed_model_ids.clear()
+        self._renamed_model_ids.clear()
         self._facts_version += 1
         self._dirty = False
         if scope := self._active_root_collapse_reference_scope:
@@ -900,6 +1184,10 @@ class GenerationStore:  # noqa: PLR0904
             msg = "Derived facts cannot be discarded during a deferred refresh."
             raise RuntimeError(msg)
         self._facts = GenerationFacts()
+        self._appended_model_ids.clear()
+        self._changed_model_ids.clear()
+        self._renamed_model_ids.clear()
+        self._rebuild_required = True
         self._dirty = True
         if scope := self._active_root_collapse_reference_scope:
             scope.mutated = True
@@ -915,6 +1203,7 @@ class GenerationStore:  # noqa: PLR0904
         elif scope is not None:
             scope.invalidate()
         self._replace_data_type_reference(data_type, new_reference)
+        self._note_changed_data_types((data_type,))
         self._invalidate_owner_caches(*cache_owners)
         self._invalidate_after_mutation()
 
@@ -940,6 +1229,8 @@ class GenerationStore:  # noqa: PLR0904
             model.set_reference_path(new_path)
         if new_file_path is not None:
             model.file_path = new_file_path
+        if not self._rebuild_required and (model_id := self._tracked_model_id(model)) is not None:
+            self._renamed_model_ids.add(model_id)
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
@@ -962,7 +1253,10 @@ class GenerationStore:  # noqa: PLR0904
 
     def replace_field_type(self, field_: DataModelFieldBase, new_data_type: DataType) -> None:
         """Replace a field's data type and invalidate derived facts."""
+        old_data_type = field_.data_type
         field_.replace_data_type(new_data_type)
+        self._note_changed_data_types((old_data_type,))
+        self.note_changed_models(field_.parent)
         self._invalidate_after_mutation()
 
     def replace_nested_data_type(
@@ -977,6 +1271,7 @@ class GenerationStore:  # noqa: PLR0904
             old_data_type.parent = None
             parent_data_type.dict_key = new_data_type
             new_data_type.parent = parent_data_type
+            self._note_changed_data_types((parent_data_type,))
             self._invalidate_owner_caches(*cache_owners)
             self._invalidate_after_mutation()
             return
@@ -1068,6 +1363,7 @@ class GenerationStore:  # noqa: PLR0904
         self._root_collapse_internal_mutation_depth += 1
         try:
             self._replace_data_type_reference(data_type, None)
+            self._note_changed_data_types((data_type,))
             self._invalidate_after_mutation()
         finally:
             self._root_collapse_internal_mutation_depth -= 1
@@ -1080,6 +1376,7 @@ class GenerationStore:  # noqa: PLR0904
         data_type.data_types = list(nested_data_types)
         for nested_data_type in data_type.data_types:
             nested_data_type.parent = data_type
+        self._note_changed_data_types((data_type,))
         self._invalidate_owner_caches(*cache_owners)
         self._invalidate_after_mutation()
 
@@ -1088,6 +1385,7 @@ class GenerationStore:  # noqa: PLR0904
         field_.parent = model
         field_.invalidate_semantic_caches(invalidate_parent=False)
         model.fields.append(field_)
+        self.note_changed_models(model)
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
@@ -1096,6 +1394,7 @@ class GenerationStore:  # noqa: PLR0904
         field_.parent = model
         field_.invalidate_semantic_caches(invalidate_parent=False)
         model.fields.insert(index, field_)
+        self.note_changed_models(model)
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
@@ -1105,6 +1404,7 @@ class GenerationStore:  # noqa: PLR0904
         if field_.parent is model:
             field_.parent = None
             field_.invalidate_semantic_caches(invalidate_parent=False)
+        self.note_changed_models(model)
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
@@ -1120,18 +1420,21 @@ class GenerationStore:  # noqa: PLR0904
         for field_ in model.fields:
             field_.parent = model
             field_.invalidate_semantic_caches(invalidate_parent=False)
+        self.note_changed_models(model)
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
     def set_base_classes(self, model: DataModel, base_classes: Iterable[BaseClassDataType]) -> None:
         """Replace ``model`` base classes and invalidate derived facts."""
         model.base_classes = list(base_classes)
+        self.note_changed_models(model)
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
     def reset_base_classes(self, model: DataModel) -> None:
         """Reset ``model`` to its default base classes and invalidate derived facts."""
         model.set_base_class()
+        self.note_changed_models(model)
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
@@ -1140,6 +1443,7 @@ class GenerationStore:  # noqa: PLR0904
         children = [child for child in old_reference.children[:] if hasattr(child, "replace_reference")]
         cache_owners = [self._cache_owners_for_data_type(child) for child in children]
         self._replace_reference_children(old_reference, new_reference)
+        self._note_changed_data_types(children)
         self._invalidate_owner_caches_many(cache_owners)
         self._invalidate_after_mutation()
         return children
@@ -1175,6 +1479,7 @@ class GenerationStore:  # noqa: PLR0904
                 continue
             cache_owners.append(cache_owners_for_child)
             child.replace_reference(new_reference)  # ty: ignore[call-non-callable]
+            self._note_changed_data_types((child,))
         self._invalidate_owner_caches_many(cache_owners)
         self._invalidate_after_mutation()
 

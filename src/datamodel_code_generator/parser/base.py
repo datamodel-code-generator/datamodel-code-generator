@@ -4522,6 +4522,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         except TypeError:
                             # Keep the unhashable default unchanged. Nested list types may
                             # already have been converted in place, so invalidate their imports.
+                            self.generation_store.note_changed_models(model)
                             _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                             continue
                         model_field.default = converted_default
@@ -4983,6 +4984,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 )
                             )
                         model_field.process_const()
+                        generation_store.note_changed_models(model)
 
                         if self.field_constraints:
                             model_field.constraints = ConstraintsBase.merge_constraints(
@@ -7805,17 +7807,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         return self.__remove_overridden_models(models)
 
-    def __assign_forward_reference_fields(  # noqa: PLR6301
-        self, models: list[DataModel], *, can_retain_cache: bool
-    ) -> None:
+    def __assign_forward_reference_fields(self, models: list[DataModel], *, can_retain_cache: bool) -> None:
         """Let each model render fields by assignment when ``Field()`` inside ``Annotated`` would be unsafe.
 
-        This remains an instance method because ``snooper_to_methods`` does not preserve staticmethod descriptors
-        on parser subclasses.
+        A model that writes fields by assignment may reorder them.
         """
         positions = {model.path: index for index, model in enumerate(models)}
         for index, model in enumerate(models):
             if model.assign_forward_reference_fields(positions, index):
+                self.generation_store.note_changed_models(model)
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __finalize_module_models(
@@ -8629,6 +8629,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for model in models:
                     for field in model.fields:
                         field.unconstrain_union_members()
+                self.generation_store.note_changed_models(*models)
 
         if self.collapse_root_models:
             self.__set_circular_root_model_paths(
