@@ -11,6 +11,7 @@ import re
 import stat
 from collections import defaultdict
 from contextlib import contextmanager
+from contextvars import ContextVar
 from enum import Enum, auto
 from functools import cached_property, lru_cache
 from itertools import zip_longest
@@ -793,6 +794,22 @@ def _contains_symlink(path: Path) -> bool:
     return False
 
 
+_UNMATCHED_MODEL_NAME_KEYS_REPORTED: ContextVar[bool] = ContextVar("unmatched_model_name_keys_reported", default=True)
+
+
+@contextmanager
+def _unmatched_model_name_keys_unreported() -> Generator[None, None, None]:
+    """Leave the ``--model-name-map`` keys that match no model unreported by the generations run inside.
+
+    A comparison generates its baseline input inside, so the keys are reported for the current input alone.
+    """
+    token = _UNMATCHED_MODEL_NAME_KEYS_REPORTED.set(False)
+    try:
+        yield
+    finally:
+        _UNMATCHED_MODEL_NAME_KEYS_REPORTED.reset(token)
+
+
 class ModelResolver:  # noqa: PLR0904
     """Manages model references, class names, and field name resolution.
 
@@ -908,6 +925,7 @@ class ModelResolver:  # noqa: PLR0904
         self._yielding_names: dict[str, _YieldingName] = {}
         self._yielding_name_start_hints: dict[tuple[str, str, str, str], int] = {}
         self._matched_model_name_keys: set[str] = set()
+        self._found_model_name_keys: set[str] = set()
         self.assigned_yielding_names: Mapping[str, tuple[str, str | None]] = {}
         self.final_yielding_names: dict[str, tuple[str, str | None]] = {}
         self.yielding_name_changes: set[str] = set()
@@ -971,6 +989,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("_yielding_names", {})
         self.__dict__.setdefault("_yielding_name_start_hints", {})
         self.__dict__.setdefault("_matched_model_name_keys", set())
+        self.__dict__.setdefault("_found_model_name_keys", set())
         self.__dict__.setdefault("assigned_yielding_names", {})
         self.__dict__.setdefault("final_yielding_names", {})
         self.__dict__.setdefault("yielding_name_changes", set())
@@ -1001,7 +1020,8 @@ class ModelResolver:  # noqa: PLR0904
     ) -> str | None:
         """Return an explicit model rename for a source path or generated name.
 
-        A yielding reference matches only by path: its generated name is not final until parsing ends.
+        A yielding reference matches only by path: its generated name is not final until parsing ends. The first
+        matching candidate wins, and every matching key counts as found.
         """
         if not self.model_name_map:
             return None
@@ -1009,15 +1029,20 @@ class ModelResolver:  # noqa: PLR0904
         _, separator, fragment = path.partition("#")
         paths = (path, f"#{fragment}") if separator else (path,)
         names = (generated_name, original_name) if match_names else ()
+        mapped_name: str | None = None
         for candidate in (*paths, *names):
-            if (mapped_name := self.model_name_map.get(candidate)) is not None:
-                self._matched_model_name_keys.add(candidate)
-                return mapped_name
-        return None
+            if (value := self.model_name_map.get(candidate)) is None:
+                continue
+            self._found_model_name_keys.add(candidate)
+            if mapped_name is None:
+                mapped_name = value
+                if candidate in names:
+                    self._matched_model_name_keys.add(candidate)
+        return mapped_name
 
     def unmatched_model_name_keys(self) -> list[str]:
-        """List the ``--model-name-map`` keys that matched no generated model."""
-        return sorted(set(self.model_name_map) - self._matched_model_name_keys)
+        """List the ``--model-name-map`` keys that matched no model."""
+        return sorted(set(self.model_name_map) - self._found_model_name_keys)
 
     def _ensure_model_name_map_value(
         self,
@@ -1107,7 +1132,7 @@ class ModelResolver:  # noqa: PLR0904
                 mapped_name := self.model_name_map.get(name)
             ) is not None:
                 self._ensure_model_name_map_value(reference.path, name, mapped_name, name)
-                self._matched_model_name_keys.add(name)
+                self._found_model_name_keys.add(name)
                 reference.name = mapped_name
                 reference.duplicate_name = None
                 self._update_reference_name(name, mapped_name)

@@ -1774,6 +1774,26 @@ def test_main_invalid_dotted_schema_name_stdout(capsys: pytest.CaptureFixture[st
 
 
 @pytest.mark.isolate_builtin_formatter_config
+def test_main_invalid_dotted_schema_name_stdout_model_name_map_warnings(capsys: pytest.CaptureFixture[str]) -> None:
+    """Report a --model-name-map key that matches no model once, though stdout output parses the input again."""
+    with freeze_time(TIMESTAMP), warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "invalid_dotted_schema_name.yaml",
+            output_path=None,
+            input_file_type="openapi",
+            extra_args=["--model-name-map", '{"#/components/schemas/SaveTrifectaV2.2": "Trifecta"}'],
+            expected_stdout_path=EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_stdout.py",
+            capsys=capsys,
+            assert_no_stderr=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in recorded if record.category is UserWarning),
+        EXPECTED_OPENAPI_PATH / "invalid_dotted_schema_name_model_name_map_warnings.txt",
+    )
+
+
+@pytest.mark.isolate_builtin_formatter_config
 def test_main_collapse_root_models_recursive_invalid_dotted_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Carry the circular-root fallback into the invalid-dotted stdout repair."""
     expected_path = EXPECTED_OPENAPI_PATH / "collapse_root_models_recursive_invalid_dotted_stdout.py"

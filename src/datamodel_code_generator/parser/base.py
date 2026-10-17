@@ -120,6 +120,7 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
+    _UNMATCHED_MODEL_NAME_KEYS_REPORTED,
     ModelResolver,
     ModelType,
     Reference,
@@ -5465,6 +5466,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 warn(message, stacklevel=2)
         self._variant_discriminator_tags.clear()
 
+    def __warn_about_unmatched_model_name_keys(self) -> None:
+        """Warn about the ``--model-name-map`` keys that matched no model, after parsing has named every model."""
+        if _UNMATCHED_MODEL_NAME_KEYS_REPORTED.get() and (
+            unmatched_keys := sorted({redact_reference(key) for key in self.model_resolver.unmatched_model_name_keys()})
+        ):
+            listed = ", ".join(map(repr, unmatched_keys))
+            warn(
+                f"--model-name-map: {len(unmatched_keys)} key{'' if len(unmatched_keys) == 1 else 's'} "
+                f"matched no generated model: {listed}",
+                stacklevel=2,
+            )
+
     def __warn_about_msgspec_decoding(self, contexts: Sequence[ModuleContext]) -> None:
         """Warn once per union and enum of msgspec output that msgspec refuses to decode."""
         if not self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
@@ -8514,6 +8527,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._run_with_suppressed_warnings(self._report_parse_diagnostics)
         else:
             self._report_parse_diagnostics()
+            self.__warn_about_unmatched_model_name_keys()
 
         config = self._prepare_parse_config(
             with_import,
@@ -8684,14 +8698,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             top_level_dirs = {k[0] for k in results if len(k) >= 2}  # noqa: PLR2004
             if len(top_level_dirs) > 1:
                 results[root_init] = Result(body="")
-
-        if unmatched_keys := self.model_resolver.unmatched_model_name_keys():
-            listed = ", ".join(map(repr, unmatched_keys))
-            warn(
-                f"--model-name-map: {len(unmatched_keys)} key{'' if len(unmatched_keys) == 1 else 's'} "
-                f"matched no generated model: {listed}",
-                stacklevel=2,
-            )
 
         return self.__render_modules(
             results,

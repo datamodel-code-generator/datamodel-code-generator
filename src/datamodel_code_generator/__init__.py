@@ -2754,6 +2754,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                     prefetched_source=prefetched_source,
                     formatter_cwd=None if use_output_cwd else output_context_path,
                     preserve_circular_root_models=preserve_circular_root_models,
+                    suppress_parse_warnings=True,
                     untyped_nullable_maps=untyped_nullable_maps,
                     openapi_parser_factory=openapi_parser_factory,
                 )
