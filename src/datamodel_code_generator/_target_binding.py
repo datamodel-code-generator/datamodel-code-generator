@@ -1387,7 +1387,7 @@ class _Hints:
         """Render one DataType without its containers and optionality, as the model's own type hint spells it.
 
         Its import, runtime-expression imports and enum class are slots. Statically, a constrained scalar is its base
-        type and a constrained string is str.
+        type, a constrained string is str and bytes decoded from base64 text with lengths are bytes.
         """
         if (python_type := data_type.python_type) is not None:
             return self.hint(self.bound(python_type))
@@ -1414,6 +1414,8 @@ class _Hints:
             base = (
                 "str"
                 if getattr(data_type, "annotated_string", False)
+                else "bytes"
+                if getattr(data_type, "annotated_bytes", False)
                 else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
             )
             static = None if base is None else ((self.slot(IMPORT_DECIMAL) if base == "Decimal" else base), ())

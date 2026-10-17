@@ -1191,12 +1191,8 @@ class DataModelField(DataModelFieldBase):
             )
         if not reasons:
             return None
-        owner = getattr(self.parent, "class_name", "")
-        owner = f"{owner}.{self.name}" if self.name else owner
-        dropped = untaken | union_keywords | integer_keywords
-        return (
-            f"{'; '.join(reasons)}; {owner} is generated without "
-            f"{'this constraint' if len(dropped) + inexact == 1 else 'these constraints'}."
+        return self._generated_without_constraints(
+            "; ".join(reasons), len(untaken | union_keywords | integer_keywords) + inexact
         )
 
     def _get_meta_string(self) -> str | None:

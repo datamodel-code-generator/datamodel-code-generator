@@ -209,6 +209,16 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     ),
     **dict.fromkeys(
         (
+            "jsonschema/msgspec_enum_diagnostics/nullable.json",
+            "jsonschema/nullable_enum_literal_typed_dict.json",
+            "jsonschema/preset_enum_shapes.json",
+        ),
+        "default msgspec output keeps the 0.83.0 None member of enums that list null, which msgspec cannot decode "
+        "and generation warns about; test_msgspec_enum_diagnostics_preserve_supported_representations decodes the "
+        "--use-msgspec-nullable-enum-alias form",
+    ),
+    **dict.fromkeys(
+        (
             "jsonschema/msgspec_enum_diagnostics/boolean.json",
             "jsonschema/msgspec_enum_diagnostics/boolean_false.json",
             "jsonschema/msgspec_enum_diagnostics/boolean_first_alias.json",

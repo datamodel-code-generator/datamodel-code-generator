@@ -1,0 +1,15 @@
+plain: b'hi'
+limited: b'hi'
+either: b'hi'
+sized: b'hi'
+top: b'hi'
+nullable: b'hi'
+items: [b'hi']
+choice: b'hi'
+mapping: {'key': b'hi'}
+rejected: limited
+rejected: top
+rejected: nullable
+rejected: items
+rejected: choice
+rejected: mapping

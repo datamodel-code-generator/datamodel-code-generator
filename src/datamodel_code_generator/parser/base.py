@@ -72,7 +72,12 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._target_unicode import target_pattern, title
 from datamodel_code_generator._template_data import copy_extra_template_data
 from datamodel_code_generator._url_redaction import redact_reference
-from datamodel_code_generator.enums import DefaultValueType, StrictTypes, _is_pydantic_version_at_least
+from datamodel_code_generator.enums import (
+    DefaultValueType,
+    StrictTypes,
+    _is_pydantic_version_at_least,
+    _pydantic_version_key,
+)
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
     IMPORT_LITERAL,
@@ -129,6 +134,7 @@ from datamodel_code_generator.reference import (
 from datamodel_code_generator.types import (
     ANY,
     NONE,
+    NUMBER_KEYWORDS,
     DataType,
     DataTypeManager,
     DefaultValueDescriptor,
@@ -327,6 +333,13 @@ def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
         return bool(getattr(data_type, flag))
 
     return False
+
+
+def _has_root_field_constraints(root_field: DataModelFieldBase) -> bool:
+    """Return whether a root field has constraints, as Field() arguments or written inside its type."""
+    return (isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints) or any(
+        data_type.CARRIED_CONSTRAINT_KEYWORDS for data_type in (root_field.data_type, *root_field.data_type.data_types)
+    )
 
 
 ComponentId: TypeAlias = int
@@ -2577,6 +2590,44 @@ def _msgspec_union_message(name: str, refusal: _MsgspecRefusal, *, discriminated
     return (
         f"msgspec cannot decode {union}: its Struct types {names} are not all tagged, and only the "
         "variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
+    )
+
+
+def _literal_member(data_type: DataType) -> tuple[str, bool] | None:
+    """Return the first member of a class or module written as a ``Literal`` value in a type, as written.
+
+    The flag tells an enum member that ``--input-model`` or ``x-python-import`` symbols transport, which is one for
+    sure, from a dotted ``x-python-type`` value, which may also name a constant of a module, such as
+    ``http.client.HTTP_PORT``, that the generator cannot tell from an enum member.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeRuntimeSymbol,
+        iter_literal_members,
+        render_python_type_expr,
+    )
+
+    return next(
+        (
+            (render_python_type_expr(member), isinstance(member, PythonTypeRuntimeSymbol))
+            for nested in data_type.all_data_types
+            if nested.python_type is not None
+            for member in iter_literal_members(nested.python_type.expression)
+        ),
+        None,
+    )
+
+
+def _msgspec_literal_member_message(name: str, member: tuple[str, bool]) -> str:
+    """Describe a ``Literal`` value written as a member, which msgspec decodes only as None, bool, int or str."""
+    value, enum_member = member
+    if enum_member:
+        return (
+            f"msgspec cannot decode {name}: its Literal holds the enum member {value}, while a msgspec Literal holds "
+            "only None, bool, int and str values."
+        )
+    return (
+        f"msgspec decodes {name} only if {value} is a plain None, bool, int or str value: a msgspec Literal holds "
+        "no other value, such as an enum member."
     )
 
 
@@ -4881,8 +4932,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     root_type_field = root_type_model.fields[0]
                     if (
                         self.field_constraints
-                        and isinstance(root_constraints := root_type_field.constraints, ConstraintsBase)
-                        and root_constraints.has_constraints
+                        and _has_root_field_constraints(root_type_field)
                         and any(
                             data_type.is_dict or data_type.is_union or data_type.is_list
                             for data_type in model_field.data_type.all_data_types
@@ -5054,6 +5104,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if replacement_context is None:  # pragma: no cover
                         continue
                     model_field.inherit_unconstrained_union_members(root_type_field)
+                    model_field.inherit_untaken_constraints(
+                        root_type_field, whole_type=isinstance(field_, self.data_model_field_type)
+                    )
                     with replacement_context:
                         for d in copied_data_type.all_data_types:
                             _register_data_type_import(
@@ -5491,6 +5544,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for field in model.fields:
                 if field.is_class_var:
                     continue
+                member = _literal_member(field.data_type)
                 discriminated = bool(field.extras.get("discriminator"))
                 refusal = next(
                     filter(
@@ -5499,8 +5553,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     ),
                     _NO_MSGSPEC_REFUSAL,
                 )
-                if refusal[0] and (refusal[1] is not None or not (discriminated and self.use_msgspec_tagged_unions)):
-                    name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
+                refused = bool(refusal[0]) and (
+                    refusal[1] is not None or not (discriminated and self.use_msgspec_tagged_unions)
+                )
+                if member is None and not refused:
+                    continue
+                name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
+                if member is not None:
+                    warn(_msgspec_literal_member_message(name, member), stacklevel=2)
+                if refused:
                     warn(_msgspec_union_message(name, refusal, discriminated=discriminated), stacklevel=2)
 
     def _apply_inherited_field_default(
@@ -6254,26 +6315,101 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 model.clear_imports_cache()
 
     def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
-        """Apply override to entire field's data_type, keeping type-dependent constraints that the new type takes."""
+        """Apply override to entire field's data_type, keeping type-dependent constraints that the new type takes.
+
+        The arguments of a ``con*`` call stay on an override the generator does not know, which may be a factory such
+        as ``pydantic.conint``; a known class takes none, so they are left out, and so are those of the nested types the
+        override replaces. An output model that writes ``Field()`` arguments warns about the ones it leaves out.
+        """
+        from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
+            is_known_python_type_path,
+        )
+
         data_type = deepcopy(field.data_type)
         data_type.import_ = override_import
         data_type.alias = override_import.import_
-        if (type_dependent_constraints := field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY)) is not None:
-            constraints = field.constraints
-            is_model = isinstance(constraints, ConstraintsBase)
-            values = {
-                key: value
-                for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
-                if value is not None and key not in type_dependent_constraints
-            }
-            keywords = self.data_type_manager.type_constraint_keywords(
-                f"{override_import.from_}.{override_import.import_}", self.target_python_version.version_key
-            )
-            values.update({key: value for key, value in type_dependent_constraints.items() if key in keywords})
-            field.constraints = type(constraints).model_validate(values) if is_model else values
+        path = (
+            f"{override_import.from_}.{override_import.import_}" if override_import.from_ else override_import.import_
+        )
+        if data_type.kwargs and is_known_python_type_path(path, self.target_python_version.version_key):
+            data_type.kwargs = None
+        if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS and (
+            dropped := [
+                name
+                for nested in field.data_type.all_data_types
+                if nested is not field.data_type or data_type.kwargs is None
+                for name in nested.kwargs or ()
+                if name != "strict"
+            ]
+        ):
+            field.record_overridden_constraints(field.data_type.type_hint, len(dropped))
+        self._decide_overridden_constraints(field, path)
         self.generation_store.replace_field_type(field, data_type)
         self.generation_store.detach_data_type_ref(field.data_type)
         self.generation_store.set_nested_data_types(field.data_type, [])
+
+    def _decide_overridden_constraints(self, field: DataModelFieldBase, path: str) -> None:
+        """Keep the constraints that the emitted type decides only when the override type at ``path`` takes them.
+
+        An output model that writes constraints as ``Field()`` arguments also decides the number constraints of a
+        declared number this way, and remembers the ones it leaves out to warn about them. The untaken constraints of
+        the members, items and values that collapsing inlines into the field leave with the type the override replaces.
+        """
+        type_dependent = field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY) or {}
+        constraints = field.constraints
+        is_model = isinstance(constraints, ConstraintsBase)
+        values = {
+            key: value
+            for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
+            if value is not None
+        }
+        declared_numbers = (
+            {
+                **{key: value for key, value in values.items() if key in NUMBER_KEYWORDS and key not in type_dependent},
+                **field.pop_untaken_constraints(),
+            }
+            if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
+            else {}
+        )
+        if not (decided := {**type_dependent, **declared_numbers}):
+            return
+        target = self.target_python_version.version_key
+        keywords = self.data_type_manager.type_constraint_keywords(path, target)
+        number_keywords = self.data_type_manager.type_constraint_keywords(
+            path, target, number_values=True, target_model_version=self.target_pydantic_version
+        )
+        values = {key: value for key, value in values.items() if key not in decided}
+        values.update({key: value for key, value in type_dependent.items() if key in keywords})
+        values.update({key: value for key, value in declared_numbers.items() if key in number_keywords})
+        self._mark_untaken_constraints(
+            field,
+            {key: value for key, value in declared_numbers.items() if key not in number_keywords},
+            lambda minimum: self.data_type_manager.type_constraint_keywords(
+                path, target, number_values=True, target_model_version=minimum
+            ),
+        )
+        field.constraints = type(constraints).model_validate(values) if is_model else values
+
+    def _mark_untaken_constraints(
+        self,
+        field: DataModelFieldBase,
+        untaken: dict[str, Any],
+        keywords_for: Callable[[str], frozenset[str]],
+    ) -> None:
+        """Remember the declared number constraints a field leaves out, and the target version that would take each.
+
+        ``keywords_for`` returns the number keywords the field's type takes for an explicit target model version.
+        """
+        if not untaken:
+            return
+        minimums: dict[str, str] = {}
+        for minimum in sorted(
+            {minimum for minimum, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()},
+            key=_pydantic_version_key,
+        ):
+            taken = keywords_for(minimum)
+            minimums.update({key: minimum for key in untaken if key in taken and key not in minimums})
+        field.record_untaken_constraints(untaken, minimums)
 
     @staticmethod
     def _append_model_import(model: DataModel, import_: Import) -> None:

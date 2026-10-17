@@ -5975,6 +5975,69 @@ def test_main_constraints_on_typing_protocols(output_file: Path) -> None:
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / f"{name}_rejected.txt")
 
 
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("pydantic_v2.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass"]),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_x_python_type_literal_enum_members(output_file: Path, expected_file: str, extra_args: list[str]) -> None:
+    """Test a dotted member of a Literal imports what holds it, a class or a submodule, and validates as that member.
+
+    The member may be an enum member or a module constant; number bounds stay on enum members of a number schema.
+    msgspec takes no enum member in a Literal, so it warns, conditionally where the member may be a constant and not
+    for an enum member that ``x-python-import`` symbols name, and the runtime check is left to the other outputs.
+    """
+    name = "x_python_type_literal_enum_members"
+    stem = expected_file.removesuffix(".py")
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+                "--target-python-version",
+                "3.11",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "Literal" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    if "msgspec.Struct" in extra_args:
+        return
+    valid = {"ok": 200, "success": 201, "maybe": 204, "client": 200, "bounded": 201, "port": 80, "accepted": 202}
+    with _generated_model(output_file, name, "XPythonTypeLiteralEnumMembers") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        values = {field: getattr(instance, field) for field in valid}
+        accepted = "".join(
+            f"{field}: {type(value).__name__}.{getattr(value, 'name', value)}\n" for field, value in values.items()
+        )
+        rejected = []
+        invalid = {"ok": 201, "success": 204, "maybe": 200, "client": 201, "bounded": 200, "port": 81, "accepted": 200}
+        for field_name, value in invalid.items():
+            with suppress(ValidationError):
+                validate(json.dumps(valid | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        accepted + "".join(f"rejected: {field_name}\n" for field_name in rejected),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_validated.txt",
+    )
+
+
 def test_main_constraints_on_typing_lookalikes(output_file: Path) -> None:
     """Test classes named like typing special forms but imported from elsewhere keep the keywords as unknown types."""
     run_main_and_assert(
@@ -6150,6 +6213,113 @@ def test_main_number_constraints_on_emitted_types(
         "\n".join(rejected) + "\n",
         EXPECTED_JSON_SCHEMA_PATH / name / f"{expected_file.removesuffix('.py')}_rejected.txt",
     )
+
+
+_DECLARED_NUMBER_TYPE_OVERRIDES = {
+    "NumberConstraintsOnDeclaredNumbers.label": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.amount": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.stamp": "datetime.date",
+    "NumberConstraintsOnDeclaredNumbers.held": "typing.Any",
+}
+_COLLAPSED_NUMBER_TYPE_OVERRIDES = {
+    "NumberConstraintsOnDeclaredNumbers.shared_label": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.label_or_flag": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.sized_labels": "decimal.Decimal",
+    "NumberConstraintsOnDeclaredNumbers.limited_choices": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.label_or_flag_items": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.label_items": "typing.Any",
+    "NumberConstraintsOnDeclaredNumbers.shared_label_or_flag": "decimal.Decimal",
+}
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("target_pydantic_214.py", ["--field-constraints", "--target-pydantic-version", "2.14"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"]),
+        ("collapse.py", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapse_type_overrides.py",
+            [
+                "--field-constraints",
+                "--collapse-root-models",
+                "--type-overrides",
+                json.dumps(_COLLAPSED_NUMBER_TYPE_OVERRIDES),
+            ],
+        ),
+        (
+            "type_overrides.py",
+            [
+                "--type-overrides",
+                json.dumps(
+                    _DECLARED_NUMBER_TYPE_OVERRIDES | {"NumberConstraintsOnDeclaredNumbers.count": "pydantic.conint"}
+                ),
+            ],
+        ),
+        (
+            "type_overrides_field_constraints.py",
+            ["--field-constraints", "--type-overrides", json.dumps(_DECLARED_NUMBER_TYPE_OVERRIDES)],
+        ),
+        ("msgspec.py", ["--output-model-type", "msgspec.Struct"]),
+    ],
+)
+def test_main_number_constraints_on_declared_numbers(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test a number schema keeps a number keyword only where a number value meets it, warns otherwise, and validates.
+
+    A type with numbers among its values, a union with a number member and a ``con*`` factory override keep the keyword,
+    as ``timedelta`` keeps ``multipleOf`` for an explicit target of Pydantic 2.14, which checks it. A root model that
+    collapsing inlines into a field, an item, a union member or a mapping value hands its warning to the field; an
+    override keeps the constraint of a root that is the field's whole type and drops those of the parts it replaces.
+    msgspec decodes a date only from a string, so its runtime check is left to the other outputs, as it is for a target
+    the installed Pydantic cannot run.
+    """
+    name = "number_constraints_on_declared_numbers"
+    stem = expected_file.removesuffix(".py")
+    runs = installed_pydantic_runs_target(
+        extra_args[extra_args.index("--target-pydantic-version") + 1]
+        if "--target-pydantic-version" in extra_args
+        else None
+    )
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                *("--type-mappings", "number+day=date", "--formatters", "builtin"),
+                *("--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+            skip_code_validation=not runs,
+        )
+    assert_output(
+        "".join(
+            f"{warning.message}\n" for warning in recorded_warnings if "is generated without" in str(warning.message)
+        ),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    if "msgspec.Struct" in extra_args or not runs:
+        return
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "NumberConstraintsOnDeclaredNumbers") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_rejected.txt")
 
 
 @LEGACY_BLACK_SKIP
@@ -14803,6 +14973,91 @@ def test_main_jsonschema_type_mappings_to_boolean(output_file: Path) -> None:
             "--type-mappings",
             "binary=boolean",
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("expected_file", "extra_args"),
+    [
+        ("default.py", []),
+        ("field_constraints.py", ["--field-constraints"]),
+        ("use_annotated.py", ["--use-annotated"]),
+        ("strict_bytes.py", ["--strict-types", "bytes"]),
+        ("strict_bytes_field_constraints.py", ["--strict-types", "bytes", "--field-constraints"]),
+        ("pydantic_v2_dataclass.py", ["--output-model-type", "pydantic_v2.dataclass", "--strict-types", "bytes"]),
+        ("target_pydantic_2.py", ["--field-constraints", "--target-pydantic-version", "2"]),
+        ("collapse_field_constraints.py", ["--field-constraints", "--collapse-root-models"]),
+        (
+            "collapse_use_annotated_dataclass.py",
+            ["--output-model-type", "pydantic_v2.dataclass", "--use-annotated", "--collapse-root-models"],
+        ),
+    ],
+)
+def test_main_jsonschema_type_mappings_byte_to_binary(
+    output_file: Path, expected_file: str, extra_args: list[str]
+) -> None:
+    """Test bytes mapped from base64 text decode it and check its lengths on the text, as the schema counts them.
+
+    The lengths hold on required, optional and nullable fields, with strict bytes, in unions, items and mapping values,
+    whose root models collapsing keeps as it keeps those of strings; an explicit target before Pydantic 2.10, which
+    checks them on the text only from then on, warns.
+    """
+    name = "type_mappings_byte_to_binary"
+    stem = expected_file.removesuffix(".py")
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{name}/{expected_file}",
+            extra_args=[
+                *extra_args,
+                *("--type-mappings", "string+byte=binary", "--formatters", "builtin"),
+                *("--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "base64 text" in str(warning.message)),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_warnings.txt",
+    )
+    valid = {
+        "plain": "aGk=",
+        "limited": "aGk=",
+        "either": "aGk=",
+        "sized": "aGk=",
+        "top": "aGk=",
+        "nullable": "aGk=",
+        "items": ["aGk="],
+        "choice": "aGk=",
+        "mapping": {"key": "aGk="},
+    }
+    long_text = "YWJjZGVmZw=="
+    invalid = {
+        "limited": long_text,
+        "sized": "YWI=",
+        "plain": long_text,
+        "top": long_text,
+        "nullable": long_text,
+        "items": [long_text],
+        "choice": long_text,
+        "mapping": {"key": long_text},
+    }
+    with _generated_model(output_file, name, "TypeMappingsByteToBinary") as model:
+        validate = _model_json_validator(model)
+        instance = validate(json.dumps(valid))
+        rejected = []
+        for field_name, value in invalid.items():
+            with suppress(ValidationError):
+                validate(json.dumps(valid | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output(
+        "".join(f"{field}: {getattr(instance, field)!r}\n" for field in valid)
+        + "".join(f"rejected: {field_name}\n" for field_name in rejected),
+        EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_validated.txt",
     )
 
 

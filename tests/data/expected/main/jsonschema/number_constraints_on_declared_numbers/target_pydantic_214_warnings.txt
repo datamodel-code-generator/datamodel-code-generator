@@ -1,0 +1,5 @@
+Pydantic does not take ge on str; Label is generated without this constraint.
+Pydantic does not take ge on str; NumberConstraintsOnDeclaredNumbers.label is generated without this constraint.
+Pydantic does not take ge on date; NumberConstraintsOnDeclaredNumbers.day is generated without this constraint.
+Pydantic does not take multiple_of on time; NumberConstraintsOnDeclaredNumbers.clock is generated without this constraint.
+Pydantic does not take le on Literal['a', 'b']; NumberConstraintsOnDeclaredNumbers.code is generated without this constraint.

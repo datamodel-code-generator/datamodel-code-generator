@@ -45,6 +45,10 @@ ConstraintsBase = _ConstraintsBase
 PatternConstraints = _PatternConstraints
 UnionIntFloat = _UnionIntFloat
 
+_FIELD_CONSTRAINT_ARGUMENTS: dict[str, str] = {
+    info.alias: name for name, info in Constraints.model_fields.items() if info.alias is not None
+}
+
 
 class _PydanticFieldRenderPlan(NamedTuple):
     """Structured Field() output shared by render and compatibility properties."""
@@ -82,6 +86,35 @@ class DataModelField(DataModelFieldBase):
     def has_default_factory_in_field(self) -> bool:
         """Check the current structured field state for an effective default factory."""
         return self._get_effective_default_factory() is not None
+
+    @property
+    def dropped_constraints_warning(self) -> str | None:
+        """Return a warning naming the constraints this field is generated without, if any.
+
+        They are the declared number constraints Pydantic does not take on the type, and the arguments of the
+        ``con*`` type that ``--type-overrides`` replaces.
+        """
+        reasons: list[str] = []
+        count = 0
+        untaken, minimums = self.untaken_constraints
+        if untaken:
+            groups: dict[str | None, list[str]] = {}
+            for key in untaken:
+                groups.setdefault(minimums.get(key), []).append(key)
+            for minimum, keys in groups.items():
+                arguments = ", ".join(sorted(_FIELD_CONSTRAINT_ARGUMENTS[key] for key in keys))
+                reasons.append(
+                    f"Pydantic does not take {arguments} on {self.data_type.type_hint}"
+                    if minimum is None
+                    else f"Pydantic checks {arguments} on {self.data_type.type_hint} only from {minimum} on, which "
+                    f"an explicit --target-pydantic-version {minimum} or later selects"
+                )
+                count += len(keys)
+        if overridden := self.overridden_constraints:
+            replaced, arguments_count = overridden
+            reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {replaced}")
+            count += arguments_count
+        return self._generated_without_constraints("; ".join(reasons), count) if reasons else None
 
     @property
     def method(self) -> str | None:

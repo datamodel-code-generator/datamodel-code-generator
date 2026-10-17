@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TypeMappingsByteToBinary",
+  "type": "object",
+  "properties": {
+    "plain": {
+      "type": "string",
+      "format": "byte"
+    },
+    "limited": {
+      "type": "string",
+      "format": "byte",
+      "maxLength": 8
+    },
+    "either": {
+      "type": [
+        "string",
+        "array"
+      ],
+      "format": "byte",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "sized": {
+      "type": "string",
+      "format": "byte",
+      "minLength": 4,
+      "maxLength": 8
+    },
+    "top": {
+      "type": "string",
+      "format": "byte",
+      "maxLength": 8
+    },
+    "nullable": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "byte",
+      "maxLength": 8
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "byte",
+        "maxLength": 8
+      }
+    },
+    "choice": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "byte",
+          "maxLength": 8
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "format": "byte",
+        "maxLength": 8
+      }
+    }
+  },
+  "required": [
+    "plain",
+    "limited",
+    "either",
+    "sized"
+  ]
+}

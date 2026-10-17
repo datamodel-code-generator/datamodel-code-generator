@@ -22,6 +22,7 @@ from tests.main.conftest import EXPECTED_MAIN_PATH
 from .constants import (
     PAYLOAD_CLASS_NAME,
     PAYLOAD_CODEGEN_WARNING_FILES,
+    PAYLOAD_RUNS_UNSET_TARGET_PYDANTIC_VERSION,
     PAYLOAD_TARGET_PYDANTIC_VERSION,
     PAYLOAD_TARGET_PYTHON_VERSION,
 )
@@ -146,7 +147,10 @@ def _payload_codegen_args(case: SchemaCase, input_path: Path, output_path: Path,
     ]
     if case.input_file_type == "openapi":
         args.extend(["--openapi-scopes", "schemas", "--strict-nullable"])
-    if backend in {PayloadBackend.PYDANTIC_V2, PayloadBackend.PYDANTIC_V2_DATACLASS}:
+    if not PAYLOAD_RUNS_UNSET_TARGET_PYDANTIC_VERSION and backend in {
+        PayloadBackend.PYDANTIC_V2,
+        PayloadBackend.PYDANTIC_V2_DATACLASS,
+    }:
         args.extend(["--target-pydantic-version", PAYLOAD_TARGET_PYDANTIC_VERSION])
     args.extend(case.backend_extra_args.get(backend, ()))
     return args
