@@ -27,6 +27,7 @@
     "client-py315-nocov-e2e:ubuntu-24.04:/:",
     "fastapi-e2e:ubuntu-24.04:/:",
     "fastapi-install-nocov-e2e:ubuntu-24.04:/:",
+    "fastapi-py315-nocov-e2e:ubuntu-24.04:/:",
     "graphqlcore33:ubuntu-24.04:/:",
     "httpx-both-nocov-e2e:macos-latest:/:",
     "httpx-e2e:ubuntu-24.04:/:",
@@ -145,7 +146,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 115,
+  "job_count": 116,
   "permissions": {
     "contents": "read"
   },

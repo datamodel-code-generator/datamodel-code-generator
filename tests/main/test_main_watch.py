@@ -307,10 +307,19 @@ def _lines_contain(lines: list[str], expected_text: str) -> bool:
     return any(expected_text in line for line in lines)
 
 
+def _watched_text(path: Path) -> str:
+    """Return the text of a file the watch process writes, or an empty string while it is missing or being replaced.
+
+    Windows refuses to open a file while another process replaces it, which only means it is not ready yet.
+    """
+    try:
+        return path.read_text(encoding="utf-8")
+    except (FileNotFoundError, PermissionError):
+        return ""
+
+
 def _file_contains(path: Path, expected_text: str) -> bool:
-    if not path.is_file():
-        return False
-    return expected_text in path.read_text(encoding="utf-8")
+    return expected_text in _watched_text(path)
 
 
 @dataclass
@@ -328,7 +337,7 @@ class _WatchedOutput:
         """Return a wait condition that keeps the file's text once it has the included and not the excluded text."""
 
         def condition() -> bool:
-            text = self.path.read_text(encoding="utf-8") if self.path.is_file() else ""
+            text = _watched_text(self.path)
             if included not in text or (excluded is not None and excluded in text):
                 return False
             self.text = text

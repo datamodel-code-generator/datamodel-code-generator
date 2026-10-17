@@ -5410,5 +5410,24 @@
         "_sync.py"
       ]
     ]
+  },
+  "typeddict-target-keys": {
+    "input": "typeddict-target-keys.yaml",
+    "backends": [
+      "typing.TypedDict"
+    ],
+    "model": {
+      "target_python_version": "3.11"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
   }
 }

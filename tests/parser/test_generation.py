@@ -59,6 +59,7 @@ IMPORT_CACHE_CLEARING_MUTATION_METHODS = frozenset({
 IMPORT_CACHE_NEUTRAL_MUTATION_METHODS = frozenset({
     "defer_refresh",
     "discard_derived_facts",
+    "note_changed_models",
     "register_model",
 })
 GENERATION_MODEL_LIST_MUTATION_METHODS = frozenset({
@@ -1871,6 +1872,36 @@ def test_generation_store_indexes_each_shared_base_class_owner_once() -> None:
 
     assert isinstance(owner_ids, list)
     assert [facts.model_facts[model_id].model for model_id in owner_ids] == [first_model, second_model]
+
+
+def test_generation_store_refresh_moves_one_owner_of_a_shared_base_class() -> None:
+    """Recording one model again changes only its ownership of a shared base class, keeping the model order.
+
+    Generated models get base classes of their own, so only a caller that shares one reaches this.
+    """
+    models = [_base_model(name) for name in ("First", "Second", "Third")]
+    shared_base_class = BaseClassDataType(type="object")
+    store = GenerationStore()
+    for model in models:
+        store.register_model(model)
+        store.set_base_classes(model, [shared_base_class])
+
+    def owner_paths() -> str | list[str]:
+        facts = store.current_facts()
+        owner_ids = facts.base_owner_model_ids_by_object[id(shared_base_class)]
+        if isinstance(owner_ids, int):
+            return facts.model_facts[owner_ids].path
+        return [facts.model_facts[model_id].path for model_id in owner_ids]
+
+    owners = [owner_paths()]
+    store.set_base_classes(models[1], [])
+    owners.append(owner_paths())
+    store.set_base_classes(models[0], [])
+    owners.append(owner_paths())
+    store.set_base_classes(models[1], [shared_base_class])
+    owners.append(owner_paths())
+
+    assert owners == snapshot([["First", "Second", "Third"], ["First", "Third"], "Third", ["Second", "Third"]])
 
 
 def test_generation_store_detach_model_refs_resolves_deferred_base_class_owner() -> None:

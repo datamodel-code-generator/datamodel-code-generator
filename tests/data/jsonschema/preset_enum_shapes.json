@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "status": {"type": "string", "enum": ["pending", "shipped"]},
+    "priority": {"type": "integer", "enum": [1, 2, 3]},
+    "color": {"$ref": "#/$defs/Color"},
+    "channel": {"type": ["string", "null"], "enum": ["email", "sms", null]},
+    "size": {"type": "string", "enum": ["small", "large"], "default": "small"},
+    "level": {"$ref": "#/$defs/Level", "default": 2},
+    "fallback": {"anyOf": [{"$ref": "#/$defs/Color"}, {"type": "null"}]},
+    "colors": {"type": "array", "items": {"$ref": "#/$defs/Color"}},
+    "sizes": {"type": "array", "items": {"type": "string", "enum": ["small", "large"]}, "default": ["small"]},
+    "kind": {"type": "string", "enum": ["order"]}
+  },
+  "required": ["status", "priority", "color", "channel"],
+  "$defs": {
+    "Color": {"type": "string", "enum": ["red", "blue"]},
+    "Level": {"type": "integer", "enum": [1, 2]}
+  }
+}

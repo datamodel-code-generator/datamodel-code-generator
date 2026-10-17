@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from datamodel_code_generator import DataModelType, Formatter
+from datamodel_code_generator import DataModelType, Formatter, PythonVersion
 from datamodel_code_generator.config import JSONSchemaParserConfig
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace, get_data_model_types
@@ -480,6 +480,7 @@ def test_parser_simple_field_matches_validated_field() -> None:
         "use_default_kwarg": True,
         "use_missing_sentinel": True,
         "use_one_literal_as_default": True,
+        "target_python_version": PythonVersion.PY_313,
         "type_has_null": True,
         "read_only": True,
         "write_only": True,

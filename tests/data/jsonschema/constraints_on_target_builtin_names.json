@@ -39,6 +39,11 @@
       "type": "string",
       "x-python-type": "ExceptionGroup",
       "minimum": 1
+    },
+    "zero_division_minimum": {
+      "type": "string",
+      "x-python-type": "ZeroDivisionError",
+      "minimum": 1
     }
   },
   "required": [
@@ -48,6 +53,7 @@
     "import_cycle_minimum",
     "finalization_length",
     "finalization_minimum",
-    "exception_group_minimum"
+    "exception_group_minimum",
+    "zero_division_minimum"
   ]
 }

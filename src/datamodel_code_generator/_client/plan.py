@@ -50,6 +50,7 @@ from datamodel_code_generator._target_naming import (
     operation_basis,
     path_placeholders,
 )
+from datamodel_code_generator._target_unicode import casefold
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping
@@ -567,11 +568,14 @@ class Planner:
                     staying.setdefault(tag, operation)
         bases = [self.names.function("default" if tag is None else tag) for tag in first]
         names = self.names.claim(
-            NameScope(RESERVED_MEMBERS, folded=True),
+            NameScope(RESERVED_MEMBERS, folded=True, target_python_version=self.names.python_version),
             [(base, _local(operation), ()) for operation, base in zip(first.values(), bases, strict=True)],
         )
         for tag, namespace in zip(first, names, strict=True):
-            if namespace.casefold() in WINDOWS_DEVICES and (operation := staying.get(tag)) is not None:
+            if (
+                casefold(namespace, self.names.python_version) in WINDOWS_DEVICES
+                and (operation := staying.get(tag)) is not None
+            ):
                 message = f"The tag {tag!r} of {_label(operation)} needs an explicit resource name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return dict(zip(first, names, strict=True))
@@ -582,7 +586,9 @@ class Planner:
         The resource names derived names apart; an explicit name must not be a member the resource defines.
         """
         if setting is None or (name := setting.name) is None:
-            return self.names.function(operation_basis(operation.method, operation.path, operation.operation_id))
+            return self.names.function(
+                operation_basis(operation.method, operation.path, operation.operation_id, self.names.python_version)
+            )
         if name in RESERVED_MEMBERS:
             message = f"The method name {name!r} of {_label(operation)} is reserved"
             self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
@@ -735,7 +741,7 @@ class Planner:
         self, operation: OperationContract, declaration: WireDeclaration, location: str, wire_name: str
     ) -> str | None:
         """Return the `--aliases` entry naming a parameter's argument, which must be an identifier."""
-        if (alias := self.names.alias(wire_name)) is not None and not explicit_name(alias):
+        if (alias := self.names.alias(wire_name)) is not None and not explicit_name(alias, self.names.python_version):
             message = (
                 f"The --aliases entry {alias!r} of the {location} parameter {wire_name!r} of {_label(operation)} "
                 "is not an identifier"
@@ -1171,7 +1177,7 @@ class Planner:
                 children[namespace.rpartition(".")[0]].append(namespace)
         folded: dict[str, list[str]] = {}
         for namespace in members:
-            folded.setdefault(namespace.casefold(), []).append(namespace)
+            folded.setdefault(casefold(namespace, self.names.python_version), []).append(namespace)
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",

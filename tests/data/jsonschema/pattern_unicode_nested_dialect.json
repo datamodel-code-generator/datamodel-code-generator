@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DialectWords",
+  "type": "object",
+  "properties": {
+    "words": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Word"
+      },
+      "minItems": 4
+    }
+  },
+  "required": [
+    "words"
+  ],
+  "$defs": {
+    "Word": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "string",
+      "pattern": "^\\w+$"
+    }
+  }
+}

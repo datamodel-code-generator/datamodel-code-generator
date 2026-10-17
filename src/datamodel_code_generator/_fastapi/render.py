@@ -48,6 +48,7 @@ from datamodel_code_generator._target_contract import (
 from datamodel_code_generator._target_module import TargetModule
 from datamodel_code_generator._target_render import Keyword, Parameter, field_plan, parameter_plan, runtime_sources
 from datamodel_code_generator._target_templates import builtin_role, templated
+from datamodel_code_generator._target_unicode import casefold
 from datamodel_code_generator.model.base import escape_docstring, format_docstring
 from datamodel_code_generator.model.pydantic_v2._annotated_types import annotated_constraint_metadata
 
@@ -705,6 +706,8 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
     def main(self) -> Templated:
         """Return the entrypoint: the application of `create_app` with an instance of each implementation."""
         owned = self.owned
+        assert self.batch.names is not None
+        target = self.batch.names.python_version
         module = Module(self.types, {"app", "error", *(item.alias for item in owned)}, level=1, hints=False)
         create_app = module.local("application", "create_app")
         missing = module.local("_runtime.server.application", "missing_implementation") if owned else ""
@@ -713,7 +716,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             main_template.render,
             app=f"{self.config.package}.main:app",
             services=self.services_package,
-            implementations=sorted(owned, key=lambda item: item.module.casefold()),
+            implementations=sorted(owned, key=lambda item: casefold(item.module, target)),
             table=[Keyword(repr(item.module), repr(item.name)) for item in owned],
             missing=missing,
             create_app=create_app,
