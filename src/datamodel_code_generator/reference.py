@@ -798,8 +798,8 @@ _UNMATCHED_MODEL_NAME_KEYS_REPORTED: ContextVar[bool] = ContextVar("unmatched_mo
 
 
 @contextmanager
-def _unmatched_model_name_keys_unreported() -> Generator[None, None, None]:
-    """Leave the ``--model-name-map`` keys that match no model unreported by the generations run inside.
+def unmatched_model_name_keys_unreported() -> Generator[None, None, None]:
+    """Leave the ``--model-name-map`` keys that rename no model unreported by the generations run inside.
 
     A comparison generates its baseline input inside, so the keys are reported for the current input alone.
     """
@@ -1040,9 +1040,9 @@ class ModelResolver:  # noqa: PLR0904
                     self._matched_model_name_keys.add(candidate)
         return mapped_name
 
-    def unmatched_model_name_keys(self) -> list[str]:
-        """List the ``--model-name-map`` keys that matched no model."""
-        return sorted(set(self.model_name_map) - self._found_model_name_keys)
+    def unmatched_model_name_keys(self) -> set[str]:
+        """Return the ``--model-name-map`` keys that renamed no model."""
+        return set(self.model_name_map) - self._found_model_name_keys
 
     def _ensure_model_name_map_value(
         self,

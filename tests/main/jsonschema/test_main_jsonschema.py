@@ -7641,7 +7641,8 @@ current generated class name such as `Foo1`. Values are final Python class names
 
 This is useful when a schema cannot be edited but generated model names must be
 stable for public APIs or downstream code. Colliding mapped names fail instead
-of being silently suffixed. Keys that match no model are reported in a warning.""",
+of being silently suffixed. Keys that rename no model, such as a misspelled key, are reported in a
+warning. GraphQL input does not apply `--model-name-map`, so every key is reported there.""",
     input_schema="jsonschema/model_name_map.json",
     cli_args=[
         "--model-name-map",
