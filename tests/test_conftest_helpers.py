@@ -845,6 +845,20 @@ def test_ledger_repairs_a_label_listed_twice_that_is_no_longer_compared(ledger: 
     assert ledger.refs() == HEADER + "[test_a]\n\tm/a.txt\n"
 
 
+def test_ledger_tree_compares_only_the_files_its_pattern_selects(ledger: LedgerProject) -> None:
+    """Generated files outside the pattern are neither compared nor stored, so a second run passes."""
+    ledger.write(
+        "test_m.py",
+        "from pathlib import Path\n\nfrom tests.conftest import assert_generated_modules_output\n\n\n"
+        "def test_g():\n"
+        "    modules = {('pkg', '__init__.py'): 'a = 1\\n', ('pkg', 'py.typed'): ''}\n"
+        "    assert_generated_modules_output(modules, Path(__file__).parent / 'data' / 'expected' / 'g')\n",
+    )
+    ledger.run("suite").assert_outcomes(passed=1)
+    assert ledger.files() == {"g/pkg/__init__.py": "a = 1\n"}
+    ledger.run("suite").assert_outcomes(passed=1)
+
+
 def test_format_refs_writes_each_line_once() -> None:
     """A test comparing one label several times records one line for it."""
     line = units.RefLine("test_p", "case", "../shared.txt")

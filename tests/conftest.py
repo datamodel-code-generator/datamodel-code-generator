@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from functools import cached_property
 from itertools import islice, starmap
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
@@ -1864,6 +1864,9 @@ def _compare_expected(
     generated tree, are compared directly. ``hint`` says how to keep two different outputs apart.
     """
     __tracebackhide__ = True
+    if pattern is not None and isinstance(value, dict):
+        # The stored tree holds only the files the pattern selects; compare the same files of the output.
+        value = {name: text for name, text in value.items() if PurePosixPath(name).match(pattern)}
     ledger = _ledger()
     label = ledger.label(expected_path, pattern) if ledger is not None else None
     if ledger is None or label is None:
