@@ -27,7 +27,15 @@ if TYPE_CHECKING:
 SERVER_URL = "http://localhost:8000"
 RUNNING = re.compile(r"Uvicorn running on (\S+)")
 DURATION = re.compile(r" in \d+(?:\.\d+)?s\b")
-NOISY_VARIABLES = frozenset({"COLUMNS", "FORCE_COLOR", "PYTEST_ADDOPTS", "PYTEST_XDIST_WORKER", "PY_COLORS"})
+NOISY_VARIABLES = frozenset({
+    "CI",
+    "COLUMNS",
+    "FORCE_COLOR",
+    "GITHUB_ACTIONS",
+    "PYTEST_ADDOPTS",
+    "PYTEST_XDIST_WORKER",
+    "PY_COLORS",
+})
 
 
 @dataclass(frozen=True, slots=True)

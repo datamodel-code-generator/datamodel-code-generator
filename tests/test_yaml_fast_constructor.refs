@@ -16,6 +16,10 @@ asyncapi/non_finite_embedded_schemas.yaml	../yaml_fast_constructor/parity.txt
 asyncapi/protobuf-local-import.yaml	../yaml_fast_constructor/parity.txt
 asyncapi/protobuf-schema-format.yaml	../yaml_fast_constructor/parity.txt
 asyncapi/schema-format-v2.yaml	../yaml_fast_constructor/parity.txt
+asyncapi/single_value_enum_as_const/v2.yaml	../yaml_fast_constructor/parity.txt
+asyncapi/single_value_enum_as_const/v3.yaml	../yaml_fast_constructor/parity.txt
+asyncapi/single_value_enum_as_const/written_as_const/v2.yaml	../yaml_fast_constructor/parity.txt
+asyncapi/single_value_enum_as_const/written_as_const/v3.yaml	../yaml_fast_constructor/parity.txt
 asyncapi/stable-surface.yaml	../yaml_fast_constructor/parity.txt
 asyncapi/unknown-version.yaml	../yaml_fast_constructor/parity.txt
 asyncapi/user-events.yaml	../yaml_fast_constructor/parity.txt
@@ -161,6 +165,7 @@ openapi/discriminator_msgspec_tagged_unions_base_earlier.yaml	../yaml_fast_const
 openapi/discriminator_msgspec_tagged_unions_base_later.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_msgspec_tagged_unions_inherited.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_msgspec_tagged_unions_modules.yaml	../yaml_fast_constructor/parity.txt
+openapi/discriminator_msgspec_tagged_unions_modules_variants_first.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_no_mapping.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_no_mapping_no_subtypes.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_oneof_short_mapping.yaml	../yaml_fast_constructor/parity.txt
@@ -219,6 +224,8 @@ openapi/fixed_length_array_tuples.yaml	../yaml_fast_constructor/parity.txt
 openapi/http_openapi_with_custom_port.yaml	../yaml_fast_constructor/parity.txt
 openapi/include_path_parameters.yaml	../yaml_fast_constructor/parity.txt
 openapi/inheritance.yaml	../yaml_fast_constructor/parity.txt
+openapi/input_diff/model_name_map_new.yaml	../yaml_fast_constructor/parity.txt
+openapi/input_diff/model_name_map_old.yaml	../yaml_fast_constructor/parity.txt
 openapi/input_diff/new.yaml	../yaml_fast_constructor/parity.txt
 openapi/input_diff/old.yaml	../yaml_fast_constructor/parity.txt
 openapi/invalid.yaml	../yaml_fast_constructor/parity.txt
@@ -342,6 +349,16 @@ openapi/serialization_aliases_parameters.yaml	../yaml_fast_constructor/parity.tx
 openapi/serialize_as_any.yaml	../yaml_fast_constructor/parity.txt
 openapi/shadowed_imports.yaml	../yaml_fast_constructor/parity.txt
 openapi/shadowed_imports_base_and_fields.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/api.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/common.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/headers.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/region.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/schemas.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/api.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/common.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/headers.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/region.yaml	../yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/schemas.yaml	../yaml_fast_constructor/parity.txt
 openapi/special_yaml_keywords.yaml	../yaml_fast_constructor/parity.txt
 openapi/strict_types_field_constraints.yaml	../yaml_fast_constructor/parity.txt
 openapi/strip_default_none_pydantic_v2.yaml	../yaml_fast_constructor/parity.txt

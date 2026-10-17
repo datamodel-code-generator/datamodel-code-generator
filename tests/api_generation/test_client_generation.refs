@@ -50,10 +50,14 @@ templates	main/generation_platform/client/packages/templates/pydantic_v2_BaseMod
 uploads	main/generation_platform/client/packages/uploads/pydantic_v2_BaseModel//*.md
 [test_client_input]
 input-aliases	main/generation_platform/client/input-aliases.txt
-input-cycle-dict	main/generation_platform/client/input-cycle-dict.txt
-input-cycle-list	main/generation_platform/client/input-cycle-list.txt
-input-cycle-mutual	main/generation_platform/client/input-cycle-mutual.txt
-input-cycle-reference	main/generation_platform/client/input-cycle-reference.txt
+input-cycle-dict	main/generation_platform/client/input-cycle-dict-ryaml.txt	?
+input-cycle-dict	main/generation_platform/client/input-cycle-dict.txt	?
+input-cycle-list	main/generation_platform/client/input-cycle-list-ryaml.txt	?
+input-cycle-list	main/generation_platform/client/input-cycle-list.txt	?
+input-cycle-mutual	main/generation_platform/client/input-cycle-mutual-ryaml.txt	?
+input-cycle-mutual	main/generation_platform/client/input-cycle-mutual.txt	?
+input-cycle-reference	main/generation_platform/client/input-cycle-reference-ryaml.txt	?
+input-cycle-reference	main/generation_platform/client/input-cycle-reference.txt	?
 [test_client_output_options]
 black-isort-options4-module4	main/generation_platform/client/output-options/black-isort.py
 builtin-line-length-options3-module3	main/generation_platform/client/output-options/builtin-line-length.py
@@ -264,6 +268,8 @@ route-text	main/generation_platform/client/route-text.txt
 server-errors	main/generation_platform/client/server-errors.txt
 servers	main/generation_platform/client/packages/servers/pydantic_v2_BaseModel//*.py
 servers	main/generation_platform/client/servers.txt
+servers-single-value-enum	main/generation_platform/client/packages/servers-single-value-enum/pydantic_v2_BaseModel//*.py
+servers-single-value-enum	main/generation_platform/client/servers-single-value-enum.txt
 setting-errors	main/generation_platform/client/setting-errors.txt
 sockets	main/generation_platform/client/packages/sockets/pydantic_v2_BaseModel//*.py
 sockets	main/generation_platform/client/sockets.txt

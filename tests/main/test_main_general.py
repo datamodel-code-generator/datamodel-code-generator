@@ -4174,6 +4174,7 @@ def test_use_standard_primitive_types(output_file: Path) -> None:
             "--output-model-type",
             "dataclasses.dataclass",
             "--use-standard-primitive-types",
+            "--disable-timestamp",
         ],
         expected_file=EXPECTED_MAIN_PATH / "use_standard_primitive_types.py",
     )
