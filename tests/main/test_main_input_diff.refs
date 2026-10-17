@@ -22,6 +22,9 @@ identical	main/input_diff/identical.txt
 	main/input_diff/virtual_file_sentinel.py
 [test_diff_against_reports_added_and_removed_directory_files_without_writing_virtual_output]
 	main/input_diff/different_directory.txt
+[test_diff_against_reports_model_name_map_keys_that_match_no_model_of_the_current_input]
+	main/input_diff/model_name_map.txt
+	main/input_diff/model_name_map_warnings.txt
 [test_diff_against_reports_single_file_and_directory_results_by_path]
 directory-to-single-file	main/input_diff/directory_to_single_file.txt
 single-file-to-directory	main/input_diff/single_file_to_directory.txt

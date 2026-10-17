@@ -10,8 +10,9 @@ reviews:
     # Include source code
     - "src/**/*.py"
     - "tests/**/*.py"
-    # Include expected output (important for review)
+    # Include expected output (important for review) and the index of which tests compare it
     - "tests/data/expected/**/*.py"
+    - "tests/**/*.refs"
     # Include documentation
     - "docs/**/*.md"
     - "README.md"

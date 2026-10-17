@@ -153,6 +153,78 @@
 20261015-standard-315-formatters46	main/formatter_policy/standard-315-black.py
 20261015-standard-315-formatters47	main/formatter_policy/no_warning.txt
 20261015-standard-315-formatters47	main/formatter_policy/standard-315-ruff-check.py
+20261017-practical-310-formatters84	main/formatter_policy/no_warning.txt
+20261017-practical-310-formatters84	main/formatter_policy/practical-310-builtin.py
+20261017-practical-310-formatters85	main/formatter_policy/no_warning.txt
+20261017-practical-310-formatters85	main/formatter_policy/practical-310-black.py
+20261017-practical-310-formatters86	main/formatter_policy/no_warning.txt
+20261017-practical-310-formatters86	main/formatter_policy/practical-310-ruff-check.py
+20261017-practical-311-formatters87	main/formatter_policy/no_warning.txt
+20261017-practical-311-formatters87	main/formatter_policy/practical-311-builtin.py
+20261017-practical-311-formatters88	main/formatter_policy/no_warning.txt
+20261017-practical-311-formatters88	main/formatter_policy/practical-311-black.py
+20261017-practical-311-formatters89	main/formatter_policy/no_warning.txt
+20261017-practical-311-formatters89	main/formatter_policy/practical-311-ruff-check.py
+20261017-practical-312-formatters90	main/formatter_policy/no_warning.txt
+20261017-practical-312-formatters90	main/formatter_policy/practical-312-builtin.py
+20261017-practical-312-formatters91	main/formatter_policy/no_warning.txt
+20261017-practical-312-formatters91	main/formatter_policy/practical-312-black.py
+20261017-practical-312-formatters92	main/formatter_policy/no_warning.txt
+20261017-practical-312-formatters92	main/formatter_policy/practical-312-ruff-check.py
+20261017-practical-313-formatters93	main/formatter_policy/no_warning.txt
+20261017-practical-313-formatters93	main/formatter_policy/practical-313-builtin.py
+20261017-practical-313-formatters94	main/formatter_policy/no_warning.txt
+20261017-practical-313-formatters94	main/formatter_policy/practical-313-black.py
+20261017-practical-313-formatters95	main/formatter_policy/no_warning.txt
+20261017-practical-313-formatters95	main/formatter_policy/practical-313-ruff-check.py
+20261017-practical-314-formatters96	main/formatter_policy/no_warning.txt
+20261017-practical-314-formatters96	main/formatter_policy/practical-314-builtin.py
+20261017-practical-314-formatters97	main/formatter_policy/no_warning.txt
+20261017-practical-314-formatters97	main/formatter_policy/practical-314-black.py
+20261017-practical-314-formatters98	main/formatter_policy/no_warning.txt
+20261017-practical-314-formatters98	main/formatter_policy/practical-314-ruff-check.py
+20261017-practical-315-formatters100	main/formatter_policy/no_warning.txt	?
+20261017-practical-315-formatters100	main/formatter_policy/practical-315-black.py
+20261017-practical-315-formatters101	main/formatter_policy/no_warning.txt
+20261017-practical-315-formatters101	main/formatter_policy/practical-315-ruff-check.py
+20261017-practical-315-formatters99	main/formatter_policy/no_warning.txt
+20261017-practical-315-formatters99	main/formatter_policy/practical-315-builtin.py
+20261017-standard-310-formatters66	main/formatter_policy/no_warning.txt
+20261017-standard-310-formatters66	main/formatter_policy/standard-310-builtin.py
+20261017-standard-310-formatters67	main/formatter_policy/no_warning.txt
+20261017-standard-310-formatters67	main/formatter_policy/standard-310-black.py
+20261017-standard-310-formatters68	main/formatter_policy/no_warning.txt
+20261017-standard-310-formatters68	main/formatter_policy/standard-310-ruff-check.py
+20261017-standard-311-formatters69	main/formatter_policy/no_warning.txt
+20261017-standard-311-formatters69	main/formatter_policy/standard-311-builtin.py
+20261017-standard-311-formatters70	main/formatter_policy/no_warning.txt
+20261017-standard-311-formatters70	main/formatter_policy/standard-311-black.py
+20261017-standard-311-formatters71	main/formatter_policy/no_warning.txt
+20261017-standard-311-formatters71	main/formatter_policy/standard-311-ruff-check.py
+20261017-standard-312-formatters72	main/formatter_policy/no_warning.txt
+20261017-standard-312-formatters72	main/formatter_policy/standard-312-builtin.py
+20261017-standard-312-formatters73	main/formatter_policy/no_warning.txt
+20261017-standard-312-formatters73	main/formatter_policy/standard-312-black.py
+20261017-standard-312-formatters74	main/formatter_policy/no_warning.txt
+20261017-standard-312-formatters74	main/formatter_policy/standard-312-ruff-check.py
+20261017-standard-313-formatters75	main/formatter_policy/no_warning.txt
+20261017-standard-313-formatters75	main/formatter_policy/standard-313-builtin.py
+20261017-standard-313-formatters76	main/formatter_policy/no_warning.txt
+20261017-standard-313-formatters76	main/formatter_policy/standard-313-black.py
+20261017-standard-313-formatters77	main/formatter_policy/no_warning.txt
+20261017-standard-313-formatters77	main/formatter_policy/standard-313-ruff-check.py
+20261017-standard-314-formatters78	main/formatter_policy/no_warning.txt
+20261017-standard-314-formatters78	main/formatter_policy/standard-314-builtin.py
+20261017-standard-314-formatters79	main/formatter_policy/no_warning.txt
+20261017-standard-314-formatters79	main/formatter_policy/standard-314-black.py
+20261017-standard-314-formatters80	main/formatter_policy/no_warning.txt
+20261017-standard-314-formatters80	main/formatter_policy/standard-314-ruff-check.py
+20261017-standard-315-formatters81	main/formatter_policy/no_warning.txt
+20261017-standard-315-formatters81	main/formatter_policy/standard-315-builtin.py
+20261017-standard-315-formatters82	main/formatter_policy/no_warning.txt	?
+20261017-standard-315-formatters82	main/formatter_policy/standard-315-black.py
+20261017-standard-315-formatters83	main/formatter_policy/no_warning.txt
+20261017-standard-315-formatters83	main/formatter_policy/standard-315-ruff-check.py
 [test_check_directory_extra_file]
 	main/main_general/check_directory_extra_file/
 [test_check_directory_file_differs]
@@ -573,6 +645,15 @@ True	main/help/no_color.txt
 	main/standard_preset_pydantic_v2.py
 [test_standard_preset_cli_overrides_pyproject_option]
 	main/standard_preset_pydantic_v2.py
+[test_standard_preset_enum_shapes]
+dataclasses.dataclass-20261015-dataclass_20261015	main/preset_enum_shapes/dataclass_20261015.py
+dataclasses.dataclass-20261017-dataclass_20261017	main/preset_enum_shapes/dataclass_20261017.py
+pydantic_v2.BaseModel-20261015-pydantic_v2	main/preset_enum_shapes/pydantic_v2.py
+pydantic_v2.BaseModel-20261017-pydantic_v2	main/preset_enum_shapes/pydantic_v2.py
+pydantic_v2.dataclass-20261015-pydantic_v2_dataclass	main/preset_enum_shapes/pydantic_v2_dataclass.py
+pydantic_v2.dataclass-20261017-pydantic_v2_dataclass	main/preset_enum_shapes/pydantic_v2_dataclass.py
+typing.TypedDict-20261015-typed_dict_20261015	main/preset_enum_shapes/typed_dict_20261015.py
+typing.TypedDict-20261017-typed_dict_20261017	main/preset_enum_shapes/typed_dict_20261017.py
 [test_standard_preset_msgspec_struct]
 	main/standard_preset_msgspec_struct.py
 [test_standard_preset_no_snake_case_cli_override]

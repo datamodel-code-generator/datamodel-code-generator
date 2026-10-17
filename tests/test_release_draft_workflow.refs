@@ -17,3 +17,5 @@ $(touch sentinel)	release_draft_workflow/invalid_pr_number.txt
 \uff11\uff12\uff13	release_draft_workflow/invalid_pr_number.txt
 [test_manual_release_analysis_uses_validated_pr_outputs]
 	release_draft_workflow/manual_dispatch.txt
+[test_trusted_checkout_rejects_other_commits]
+	release_draft_workflow/trusted_checkout.txt

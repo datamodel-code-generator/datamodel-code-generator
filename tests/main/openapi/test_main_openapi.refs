@@ -460,6 +460,9 @@ True	main/openapi/custom_file_header_with_docstring_and_import.py
 	main/openapi/invalid_dotted_schema_name_json_stdout.txt
 [test_main_invalid_dotted_schema_name_stdout]
 	main/openapi/invalid_dotted_schema_name_stdout.py
+[test_main_invalid_dotted_schema_name_stdout_model_name_map_warnings]
+	main/openapi/invalid_dotted_schema_name_model_name_map_warnings.txt
+	main/openapi/invalid_dotted_schema_name_stdout.py
 [test_main_invalid_dotted_unsafe_retry_preserves_legacy]
 build_failure	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
 source_mismatch	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
@@ -1155,7 +1158,8 @@ base_later	main/openapi/discriminator/msgspec_tagged_unions_base_later.py
 api	main/openapi/discriminator/msgspec_tagged_unions_inherited.py
 cli	main/openapi/discriminator/msgspec_tagged_unions_inherited.py
 [test_main_openapi_msgspec_tagged_unions_modules]
-	main/openapi/discriminator/msgspec_tagged_unions_modules//*.py
+msgspec_tagged_unions_modules	main/openapi/discriminator/msgspec_tagged_unions_modules//*.py
+msgspec_tagged_unions_modules_variants_first	main/openapi/discriminator/msgspec_tagged_unions_modules_variants_first//*.py
 [test_main_openapi_msgspec_union_tag_clashes]
 	main/openapi/msgspec_union_tag_clashes.py
 	main/openapi/msgspec_union_tag_clashes_warnings.txt
@@ -1397,6 +1401,11 @@ modules-pydantic_v2	main/openapi/reuse_model_cross_module_users/modules_pydantic
 	main/openapi/shadowed_imports_base_and_fields.py
 [test_main_openapi_shadowed_imports_base_and_fields_custom_base]
 	main/openapi/shadowed_imports_base_and_fields_custom_base.py
+[test_main_openapi_single_value_enum_as_const]
+api-enum	main/openapi/single_value_enum_as_const_api.py
+api-written-as-const	main/openapi/single_value_enum_as_const_api.py
+schemas-paths-parameters-enum	main/openapi/single_value_enum_as_const.py
+schemas-paths-parameters-written-as-const	main/openapi/single_value_enum_as_const.py
 [test_main_openapi_strict_types_field_constraints_msgspec]
 	main/openapi/strict_types_field_constraints_msgspec.py
 [test_main_openapi_strict_types_field_constraints_pydantic_v2]

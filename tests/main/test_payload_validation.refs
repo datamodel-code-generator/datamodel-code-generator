@@ -110,6 +110,7 @@ jsonschema/allof_scalar_roots.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/allof_scoped_aliases/direct.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/allof_type_list.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/allof_with_true_schema.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/annotated_assignment_at_line_length.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/annotated_string_keys/extra.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/annotated_string_keys/extra_collision.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/annotated_string_keys/extra_union.json	../payloads/native_numeric_empty_errors.txt
@@ -293,6 +294,8 @@ jsonschema/field_name_shadows_class_name.json	../payloads/native_numeric_empty_e
 jsonschema/field_type_collision_cross_module/b.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_type_collision_inherited_modules/a.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_type_collision_inherited_modules_child_first/b.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/field_type_collision_inherited_modules_package/base.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/field_type_collision_inherited_modules_package/child/sibling.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_type_collision_rename_type_double.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_validators.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/forwarding_reference/commons.json	../payloads/native_numeric_empty_errors.txt
@@ -523,6 +526,7 @@ jsonschema/prefix_items_items_schema.json	../payloads/native_numeric_empty_error
 jsonschema/prefix_items_no_tuple.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/prefix_items_with_false_schema.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/prefix_items_with_true_schema.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/preset_enum_shapes.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/preset_quick_start_pet.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/property_count_constraints.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/property_names_additional_properties_schema_with_properties.json	../payloads/native_numeric_empty_errors.txt
@@ -680,6 +684,11 @@ jsonschema/simple_pydantic_v2_field_states.json	../payloads/native_numeric_empty
 jsonschema/simple_pydantic_v2_fields.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/simple_string.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/single_line_description_with_example.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/draft_04.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/mixed_drafts/a_legacy.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/mixed_drafts/b_modern.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/schema.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/written_as_const/schema.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/skip_root_model_test.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/space_field_enum.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/special_enum.json	../payloads/native_numeric_empty_errors.txt
@@ -788,6 +797,7 @@ jsonschema/unevaluated_properties_schema.json	../payloads/native_numeric_empty_e
 jsonschema/unevaluated_properties_true.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unicode_line_separators.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/union_annotation_at_line_length.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/union_subscript_assignment_at_line_length.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unique_items_additional_aliases.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unique_items_const_draft4.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unique_items_const_draft6.json	../payloads/native_numeric_empty_errors.txt
@@ -822,6 +832,8 @@ jsonschema/use_generic_base_class_with_inheritance.json	../payloads/native_numer
 jsonschema/use_non_positive_negative.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_pendulum.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_standard_primitive_types.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/use_tag_as_union_variant_name.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/use_tag_as_union_variant_name_edges.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_title_as_name_inline_types.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_total_false_for_typed_dict.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/valid_field_names.json	../payloads/native_numeric_empty_errors.txt
@@ -1253,6 +1265,8 @@ openapi/fixed_length_array_tuples.yaml::components.schemas.RefValue	../payloads/
 openapi/http_openapi_with_custom_port.yaml::components.schemas.User	../payloads/native_numeric_empty_errors.txt
 openapi/include_path_parameters.yaml::components.schemas.Post	../payloads/native_numeric_empty_errors.txt
 openapi/inheritance.yaml::components.schemas.Base	../payloads/native_numeric_empty_errors.txt
+openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	../payloads/native_numeric_empty_errors.txt
+openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	../payloads/native_numeric_empty_errors.txt
 openapi/issue_2953.yaml::components.schemas.DataType	../payloads/native_numeric_empty_errors.txt
 openapi/issue_2953.yaml::components.schemas.Metadata	../payloads/native_numeric_empty_errors.txt
 openapi/item_schema.yaml::components.schemas.Event	../payloads/native_numeric_empty_errors.txt
@@ -1417,6 +1431,10 @@ openapi/serialize_as_any.yaml::components.schemas.User	../payloads/native_numeri
 openapi/shadowed_imports.yaml::components.schemas.marketingOptIn	../payloads/native_numeric_empty_errors.txt
 openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	../payloads/native_numeric_empty_errors.txt
 openapi/shadowed_modules/single.json::components.schemas.Pet	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/api.yaml::components.schemas.Status	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/written_as_const/api.yaml::components.schemas.Status	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/written_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	../payloads/native_numeric_empty_errors.txt
 openapi/special_yaml_keywords.yaml::components.schemas.None	../payloads/native_numeric_empty_errors.txt
 openapi/special_yaml_keywords.yaml::components.schemas.True	../payloads/native_numeric_empty_errors.txt
 openapi/special_yaml_keywords.yaml::components.schemas.false	../payloads/native_numeric_empty_errors.txt
@@ -1567,6 +1585,7 @@ jsonschema/allof_scalar_roots.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/allof_scoped_aliases/direct.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/allof_type_list.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/allof_with_true_schema.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/annotated_assignment_at_line_length.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/annotated_string_keys/extra.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/annotated_string_keys/extra_collision.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/annotated_string_keys/extra_union.json	../payloads/native_numeric_empty_errors.txt
@@ -1748,6 +1767,8 @@ jsonschema/field_name_shadows_class_name.json	../payloads/native_numeric_empty_e
 jsonschema/field_type_collision_cross_module/b.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_type_collision_inherited_modules/a.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_type_collision_inherited_modules_child_first/b.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/field_type_collision_inherited_modules_package/base.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/field_type_collision_inherited_modules_package/child/sibling.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_type_collision_rename_type_double.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/field_validators.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/forwarding_reference/commons.json	../payloads/native_numeric_empty_errors.txt
@@ -1976,6 +1997,7 @@ jsonschema/prefix_items_items_schema.json	../payloads/native_numeric_empty_error
 jsonschema/prefix_items_no_tuple.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/prefix_items_with_false_schema.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/prefix_items_with_true_schema.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/preset_enum_shapes.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/preset_quick_start_pet.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/property_count_constraints.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/property_names_additional_properties_schema_with_properties.json	../payloads/native_numeric_empty_errors.txt
@@ -2133,6 +2155,11 @@ jsonschema/simple_pydantic_v2_field_states.json	../payloads/native_numeric_empty
 jsonschema/simple_pydantic_v2_fields.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/simple_string.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/single_line_description_with_example.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/draft_04.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/mixed_drafts/a_legacy.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/mixed_drafts/b_modern.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/schema.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/single_value_enum_as_const/written_as_const/schema.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/skip_root_model_test.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/space_field_enum.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/special_enum.json	../payloads/native_numeric_empty_errors.txt
@@ -2239,6 +2266,7 @@ jsonschema/unevaluated_properties_schema.json	../payloads/native_numeric_empty_e
 jsonschema/unevaluated_properties_true.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unicode_line_separators.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/union_annotation_at_line_length.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/union_subscript_assignment_at_line_length.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unique_items_additional_aliases.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unique_items_const_draft4.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/unique_items_const_draft6.json	../payloads/native_numeric_empty_errors.txt
@@ -2272,6 +2300,8 @@ jsonschema/use_generic_base_class_with_inheritance.json	../payloads/native_numer
 jsonschema/use_non_positive_negative.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_pendulum.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_standard_primitive_types.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/use_tag_as_union_variant_name.json	../payloads/native_numeric_empty_errors.txt
+jsonschema/use_tag_as_union_variant_name_edges.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_title_as_name_inline_types.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/use_total_false_for_typed_dict.json	../payloads/native_numeric_empty_errors.txt
 jsonschema/valid_field_names.json	../payloads/native_numeric_empty_errors.txt
@@ -2702,6 +2732,8 @@ openapi/fixed_length_array_tuples.yaml::components.schemas.RefValue	../payloads/
 openapi/http_openapi_with_custom_port.yaml::components.schemas.User	../payloads/native_numeric_empty_errors.txt
 openapi/include_path_parameters.yaml::components.schemas.Post	../payloads/native_numeric_empty_errors.txt
 openapi/inheritance.yaml::components.schemas.Base	../payloads/native_numeric_empty_errors.txt
+openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	../payloads/native_numeric_empty_errors.txt
+openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	../payloads/native_numeric_empty_errors.txt
 openapi/issue_2953.yaml::components.schemas.Metadata	../payloads/native_numeric_empty_errors.txt
 openapi/item_schema.yaml::components.schemas.Event	../payloads/native_numeric_empty_errors.txt
 openapi/item_schema_31.yaml::components.schemas.Event	../payloads/native_numeric_empty_errors.txt
@@ -2865,6 +2897,10 @@ openapi/serialize_as_any.yaml::components.schemas.User	../payloads/native_numeri
 openapi/shadowed_imports.yaml::components.schemas.marketingOptIn	../payloads/native_numeric_empty_errors.txt
 openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	../payloads/native_numeric_empty_errors.txt
 openapi/shadowed_modules/single.json::components.schemas.Pet	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/api.yaml::components.schemas.Status	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/written_as_const/api.yaml::components.schemas.Status	../payloads/native_numeric_empty_errors.txt
+openapi/single_value_enum_as_const/written_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	../payloads/native_numeric_empty_errors.txt
 openapi/special_yaml_keywords.yaml::components.schemas.None	../payloads/native_numeric_empty_errors.txt
 openapi/special_yaml_keywords.yaml::components.schemas.True	../payloads/native_numeric_empty_errors.txt
 openapi/special_yaml_keywords.yaml::components.schemas.false	../payloads/native_numeric_empty_errors.txt

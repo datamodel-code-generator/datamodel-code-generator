@@ -488,6 +488,9 @@ json-unchanged	main/generation_platform/fastapi/cli/input-diff/unchanged.json
 text-changed	main/generation_platform/fastapi/cli/input-diff/changed.txt
 text-form-baseline	main/generation_platform/fastapi/cli/input-diff/form-baseline.txt
 text-unchanged	main/generation_platform/fastapi/cli/input-diff/unchanged.txt
+[test_fastapi_cli_input_diff_model_name_map_warnings]
+	main/generation_platform/fastapi/cli/input-diff/changed.txt
+	main/generation_platform/fastapi/cli/input-diff/model-name-map-warnings.txt
 [test_fastapi_cli_job]
 	main/generation_platform/fastapi/cli/check-model-readme.txt
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py

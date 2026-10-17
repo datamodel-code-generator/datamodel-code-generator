@@ -515,6 +515,12 @@ root_union_named.avsc-False	main/avro/py311/schema_declaration_forms/root_union_
 root_union_named.avsc-False	main/avro/py312/schema_declaration_forms/root_union_named.py	?
 root_union_named.avsc-False	main/avro/py313/schema_declaration_forms/root_union_named.py	?
 root_union_named.avsc-False	main/avro/py314/schema_declaration_forms/root_union_named.py	?
+[test_main_avro_single_value_enum_as_const_keeps_converted_enums]
+	main/avro/py310/spec_matrix.py	?
+	main/avro/py311/spec_matrix.py	?
+	main/avro/py312/spec_matrix.py	?
+	main/avro/py313/spec_matrix.py	?
+	main/avro/py314/spec_matrix.py	?
 [test_main_avro_spec_matrix]
 	main/avro/default_values.txt
 	main/avro/py310/spec_matrix.py	?
