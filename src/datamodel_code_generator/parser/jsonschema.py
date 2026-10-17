@@ -11930,7 +11930,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._get_type_with_mappings(obj.type, obj.format) if isinstance(obj.type, str) else None
 
     def _enum_class_has_value_base(self, obj: JsonSchemaObject) -> bool:
-        """Return whether the enum class of the schema subclasses a value type, whose members cannot be None."""
+        """Return whether the enum class of the schema subclasses a value type, whose members cannot be None.
+
+        Such a class needs one ``type`` other than ``string``, which rejects null unless ``nullable`` allows it, so the
+        enum drops the null it lists and is not nullable, except that an enum of only null stays that None.
+        """
         enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), obj.enum)
         return enum_cls is not Enum or (self.use_subclass_enum and type_ in SUBCLASS_BASE_CLASSES)
 
@@ -11972,15 +11976,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         enum_fields: list[DataModelFieldBase] = []
 
         named_values = obj.enum
+        msgspec_null_alias = self.use_msgspec_nullable_enum_alias and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
         if None in obj.enum and (obj.type == "string" or obj.nullable):
             nullable: bool = True
             enum_times = named_values = [e for e in obj.enum if e is not None]
-        elif None in obj.enum and (
-            (self.use_msgspec_nullable_enum_alias and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER)
-            or self._enum_class_has_value_base(obj)
-        ):
-            nullable = True
+        elif None in obj.enum and (msgspec_null_alias or self._enum_class_has_value_base(obj)):
             enum_times = [e for e in obj.enum if e is not None]
+            nullable = msgspec_null_alias or not enum_times
         else:
             enum_times = obj.enum
             nullable = False
@@ -12015,7 +12017,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 cast("str", field_name), excludes=exclude_field_names, model_type=ModelType.ENUM
             )
             exclude_field_names.add(field_name)
-            if enum_part is None and nullable:
+            if enum_part is None and None not in enum_times:
                 continue
             field_extras: dict[str, Any] = {}
             if enum_descriptions and i < len(enum_descriptions) and enum_descriptions[i]:

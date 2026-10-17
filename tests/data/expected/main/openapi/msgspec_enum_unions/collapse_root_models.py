@@ -41,6 +41,11 @@ class Color(Enum):
     green = 'green'
 
 
+class Rank(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+
+
 class Mixed(Enum):
     a = 'a'
     int_1 = 1
@@ -74,6 +79,7 @@ class Kind1(IntEnum):
 class Item(Struct):
     level: Level1 | Level2
     levelOrCount: int | Level1 | Level2 | UnsetType = UNSET
+    levelOrRank: Rank | int | Level1 | Level2 | UnsetType = UNSET
     size: Size1 | Size2 | UnsetType = UNSET
     code: Code1 | Code2 | UnsetType = UNSET
     color: Color | str | UnsetType = UNSET

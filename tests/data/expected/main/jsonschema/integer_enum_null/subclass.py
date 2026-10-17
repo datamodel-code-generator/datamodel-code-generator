@@ -8,13 +8,9 @@ from enum import Enum, IntEnum
 from pydantic import BaseModel, Field, RootModel
 
 
-class LevelEnum(IntEnum):
+class Level(IntEnum):
     integer_1 = 1
     integer_2 = 2
-
-
-class Level(RootModel[LevelEnum | None]):
-    root: LevelEnum | None = None
 
 
 class ColorEnum(str, Enum):
@@ -26,22 +22,14 @@ class Color(RootModel[ColorEnum | None]):
     root: ColorEnum | None = None
 
 
-class WeightEnum(float, Enum):
+class Weight(float, Enum):
     number_1_5 = 1.5
     number_2_5 = 2.5
 
 
-class Weight(RootModel[WeightEnum | None]):
-    root: WeightEnum | None = None
-
-
-class RankEnum(IntEnum):
+class Rank(IntEnum):
     One = 1
     Two = 2
-
-
-class Rank(RootModel[RankEnum | None]):
-    root: RankEnum | None = 2
 
 
 class Nothing(RootModel[None]):
@@ -53,10 +41,25 @@ class Untyped(Enum):
     NoneType_None = None
 
 
+class NullableLevelEnum(IntEnum):
+    integer_1 = 1
+
+
+class NullableLevel(RootModel[NullableLevelEnum | None]):
+    root: NullableLevelEnum | None = None
+
+
+class LevelOrNull(Enum):
+    int_1 = 1
+    NoneType_None = None
+
+
 class Pet(BaseModel):
     level: Level | None = None
     color: Color | None = None
     weight: Weight | None = None
-    rank: Rank | None = Field(2, validate_default=True)
+    rank: Rank | None = 2
     nothing: Nothing | None = None
     untyped: Untyped | None = None
+    nullableLevel: NullableLevel | None = None
+    levelOrNull: LevelOrNull | None = None

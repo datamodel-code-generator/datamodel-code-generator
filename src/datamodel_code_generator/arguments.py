@@ -535,8 +535,8 @@ model_options.add_argument(
     "--use-msgspec-nullable-enum-alias",
     help="msgspec.Struct output only: write an enum that lists null as an Enum without the None member plus an "
     "Enum | None type alias, so that msgspec can decode it. Without it a plain Enum keeps the 0.83.0 None member, "
-    "which msgspec cannot decode; an IntEnum or --use-subclass-enum enum, which cannot hold it, always takes the alias "
-    "form.",
+    "which msgspec cannot decode; an IntEnum or --use-subclass-enum enum, which cannot hold it, is written without it "
+    "and, as its one type rejects null, without the alias.",
     action="store_true",
     default=None,
 )

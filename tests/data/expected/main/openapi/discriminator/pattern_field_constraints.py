@@ -25,7 +25,11 @@ class Cash(BaseModel):
     type: Literal['cash'] = Field(..., max_length=10)
 
 
+class Voucher(BaseModel):
+    type: Literal['voucher']
+
+
 class PaymentRequest(BaseModel):
-    paymentMethod: Card | Wallet | Bank | Cash | None = Field(
+    paymentMethod: Card | Wallet | Bank | Cash | Voucher | None = Field(
         None, discriminator='type'
     )

@@ -18,6 +18,9 @@ components:
     Color:
       type: string
       enum: [red, green]
+    Rank:
+      type: integer
+      enum: [1, 2]
     Mixed:
       enum: [a, 1]
     Name:
@@ -34,6 +37,11 @@ components:
         levelOrCount:
           anyOf:
             - {$ref: '#/components/schemas/Level'}
+            - {type: integer}
+        levelOrRank:
+          anyOf:
+            - {$ref: '#/components/schemas/Level'}
+            - {$ref: '#/components/schemas/Rank'}
             - {type: integer}
         size: {$ref: '#/components/schemas/Size'}
         code: {$ref: '#/components/schemas/Code'}

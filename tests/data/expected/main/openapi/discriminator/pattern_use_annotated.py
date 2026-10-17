@@ -25,7 +25,11 @@ class Cash(BaseModel):
     type: Annotated[Literal['cash'], Field(max_length=10)]
 
 
+class Voucher(BaseModel):
+    type: Literal['voucher']
+
+
 class PaymentRequest(BaseModel):
     paymentMethod: Annotated[
-        Card | Wallet | Bank | Cash | None, Field(discriminator='type')
+        Card | Wallet | Bank | Cash | Voucher | None, Field(discriminator='type')
     ] = None

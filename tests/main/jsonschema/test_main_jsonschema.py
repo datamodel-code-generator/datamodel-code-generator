@@ -13507,9 +13507,10 @@ def test_main_msgspec_nullable_enum(output_file: Path, extra_args: list[str], ex
     ],
 )
 def test_main_jsonschema_value_base_enum_null(output_file: Path, extra_args: list[str], expected_file: str) -> None:
-    """Write null in an enum whose class has a value type base as nullability, as for a type: string enum.
+    """Write an enum whose class has a value type base without the null it lists, and nullable only where null is valid.
 
-    An IntEnum or an (int, Enum) or (float, Enum) class cannot hold a None member; a plain Enum keeps it.
+    An IntEnum or an (int, Enum) or (float, Enum) class cannot hold a None member, and its one `type` rejects null
+    unless `nullable` allows it; a plain Enum, as for a `type` list or an untyped enum, keeps the member.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "integer_enum_null.json",

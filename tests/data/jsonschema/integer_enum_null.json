@@ -7,6 +7,8 @@
     "weight": {"type": "number", "enum": [1.5, null, 2.5]},
     "rank": {"type": "integer", "enum": [1, null, 2], "x-enum-varnames": ["One", "Nothing", "Two"], "default": 2},
     "nothing": {"type": "integer", "enum": [null]},
-    "untyped": {"enum": [1, null]}
+    "untyped": {"enum": [1, null]},
+    "nullableLevel": {"type": "integer", "nullable": true, "enum": [1, null]},
+    "levelOrNull": {"type": ["integer", "null"], "enum": [1, null]}
   }
 }

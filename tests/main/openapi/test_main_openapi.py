@@ -76,6 +76,7 @@ from tests.main.conftest import (
     assert_generated_model_json_invalid,
     assert_generated_model_json_validation,
     installed_pydantic_runs_target,
+    run_generate_and_assert,
     run_generate_file_and_assert,
     run_main_and_assert,
     run_main_url_and_assert,
@@ -986,7 +987,8 @@ Without the flag the output keeps the 0.83.0 form of an enum that lists `null` w
 `nullable: true`, such as `type: [integer, "null"]` with `enum: [1, 2, null]`: an Enum class with a `None` member
 such as `NoneType_None = None`. msgspec cannot decode such an Enum, because its members must be all `str` or all
 `int` values. An enum whose class has a value type base, the `IntEnum` of `type: integer` or a `--use-subclass-enum`
-class such as `(int, Enum)`, cannot hold a `None` member and is written as with the flag in any case.
+class such as `(int, Enum)`, cannot hold a `None` member, so without the flag it is written without it, and without
+`None` as its one `type` rejects `null`.
 
 With the flag the enum is written as a `type: string` or `nullable` enum is: an Enum class with an `Enum` suffix and
 without the `None` member, and the schema name becomes a type alias of that class or `None`, so that msgspec decodes
@@ -1056,9 +1058,9 @@ def test_main_openapi_msgspec_nullable_enum(
 ) -> None:
     """Keep the 0.83.0 msgspec Enum with a None member by default, and write an Enum | None alias with the option.
 
-    The `IntEnum` of `type: integer`, which cannot hold a `None` member, gets the alias also without the option. An
-    allOf of enums still merges into the class of its first enum, an `IntEnum` with a `None` member that fails at
-    import, so only its source is compared.
+    The `IntEnum` of `type: integer`, which cannot hold a `None` member, is written without it also without the
+    option, and without the alias, as its `type` rejects null. An allOf of enums still merges into the class of its
+    first enum, an `IntEnum` with a `None` member that fails at import, so only its source is compared.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
@@ -1118,6 +1120,54 @@ def test_main_openapi_msgspec_enum_unions(stem: str, output_file: Path) -> None:
             for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
         ),
         EXPECTED_OPENAPI_PATH / "msgspec_enum_unions" / f"{stem}_warnings.txt",
+    )
+
+
+class _IntValue(int):
+    """An int subclass that a schema passed to generate() may hold as a value."""
+
+    __slots__ = ()
+
+
+class _StrValue(str):  # noqa: FURB189 - a schema passed to generate() may hold str subclasses
+    """A str subclass that a schema passed to generate() may hold as a value."""
+
+    __slots__ = ()
+
+
+def test_main_openapi_msgspec_enum_unions_subclass_values() -> None:
+    """Report msgspec unions of enum and const values that subclass int or str as of the int or str written for them."""
+    schemas = {
+        "Code": {"type": "integer", "enum": [_IntValue(1), _IntValue(2)]},
+        "Color": {"type": "string", "enum": [_StrValue("red"), _StrValue("green")]},
+        "Item": {
+            "type": "object",
+            "properties": {
+                "code": {"anyOf": [{"$ref": "#/components/schemas/Code"}, {"type": "integer"}]},
+                "color": {"anyOf": [{"$ref": "#/components/schemas/Color"}, {"const": _StrValue("blue")}]},
+            },
+        },
+    }
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_generate_and_assert(
+            input_={
+                "openapi": "3.1.0",
+                "info": {"title": "levels", "version": "1"},
+                "components": {"schemas": schemas},
+            },
+            input_file_type=InputFileType.OpenAPI,
+            output_model_type=DataModelType.MsgspecStruct,
+            target_python_version=PythonVersionMin,
+            disable_timestamp=True,
+            expected_file=EXPECTED_OPENAPI_PATH / "msgspec_enum_unions" / "subclass_values.py",
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        EXPECTED_OPENAPI_PATH / "msgspec_enum_unions" / "subclass_values_warnings.txt",
     )
 
 
@@ -1407,6 +1457,31 @@ def test_main_openapi_discriminator_pattern(option: str, expected_file: str, out
             option,
         ],
         force_exec_validation=True,
+    )
+
+
+def test_main_openapi_discriminator_pattern_mismatch(output_file: Path) -> None:
+    """Keep the patterns of a union whose tag is outside its pattern, as the schema rejects that variant.
+
+    The `const` tag `cat` and the mapped tags `parrot` and `shark` do not match their patterns, so each union keeps the
+    patterns that hide its tags from Pydantic, as before, and only its source is compared.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_pattern_mismatch.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_mismatch.py",
+        extra_args=[
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--use-annotated",
+        ],
+        skip_code_validation=True,
     )
 
 

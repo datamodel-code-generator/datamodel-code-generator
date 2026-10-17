@@ -23,6 +23,11 @@ components:
       properties:
         type: {type: string, maxLength: 10}
       required: [type]
+    Voucher:
+      type: object
+      properties:
+        type: {type: string, pattern: '^\p{Ll}+$'}
+      required: [type]
     PaymentRequest:
       type: object
       properties:
@@ -32,6 +37,7 @@ components:
             - $ref: '#/components/schemas/Wallet'
             - $ref: '#/components/schemas/Bank'
             - $ref: '#/components/schemas/Cash'
+            - $ref: '#/components/schemas/Voucher'
           discriminator:
             propertyName: type
             mapping:
@@ -39,3 +45,4 @@ components:
               wallet: '#/components/schemas/Wallet'
               bank: '#/components/schemas/Bank'
               cash: '#/components/schemas/Cash'
+              voucher: '#/components/schemas/Voucher'

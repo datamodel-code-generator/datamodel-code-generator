@@ -140,6 +140,10 @@ ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
 )
 EXCLUDED_CASES: dict[str, str] = {
+    "openapi/discriminator_pattern_mismatch.yaml::components.schemas.Cat": (
+        "its const tag is outside its pattern, so the schema accepts no payload; "
+        "test_main_openapi_discriminator_pattern_mismatch pins its source"
+    ),
     "jsonschema/number_constraints_on_mapped_formats.json": (
         "the boolean numeric format needs --type-mappings; "
         "test_main_number_constraints_on_mapped_formats checks the mapped number bound"
