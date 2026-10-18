@@ -15,6 +15,7 @@ from tests.conftest import assert_output
 
 ROOT = Path(__file__).parents[1]
 DATA_PATH = Path(__file__).parent / "data" / "resolve_release_draft_pr"
+EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "resolve_release_draft_pr"
 
 
 @pytest.fixture(scope="module")
@@ -117,7 +118,7 @@ def test_resolve_release_draft_pr_cli(
             sort_keys=True,
         )
         + "\n",
-        DATA_PATH / case["expected"],
+        EXPECTED_PATH / case["expected"],
     )
 
 
@@ -133,5 +134,5 @@ def test_import_does_not_resolve_a_pr() -> None:
     assert_output(
         json.dumps({"returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}, sort_keys=True)
         + "\n",
-        DATA_PATH / "import.txt",
+        EXPECTED_PATH / "import.txt",
     )

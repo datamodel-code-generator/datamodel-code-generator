@@ -304,7 +304,7 @@ def test_generated_formatter_mode_only_enabled_for_builtin() -> None:
 
     assert_output(
         "\n".join(formatted_cases),
-        DATA_PATH / "generated_formatter_modes.snapshot",
+        EXPECTED_PARSER_PATH / "generated_formatter_modes.snapshot",
     )
 
 
@@ -338,7 +338,7 @@ def test_builtin_formatter_falls_back_for_custom_class_name_generator(monkeypatc
         lambda *_args, **_kwargs: pytest.fail("custom class-name hook reached generated formatter fast path"),
     )
     output = parser.parse()
-    assert_output(output, DATA_PATH / "builtin_formatter_custom_class_name.snapshot")
+    assert_output(output, EXPECTED_PARSER_PATH / "builtin_formatter_custom_class_name.snapshot")
 
 
 def test_builtin_formatter_falls_back_for_custom_resolve_reference_action(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -370,7 +370,7 @@ def test_builtin_formatter_falls_back_for_custom_resolve_reference_action(monkey
         lambda *_args, **_kwargs: pytest.fail("custom resolve hook reached generated formatter fast path"),
     )
     output = parser.parse()
-    assert_output(output, DATA_PATH / "builtin_formatter_custom_resolve_action.snapshot")
+    assert_output(output, EXPECTED_PARSER_PATH / "builtin_formatter_custom_resolve_action.snapshot")
 
 
 @pytest.fixture(autouse=True)
@@ -790,7 +790,7 @@ def test_schema_runtime_validation_copy_replans_unique_items_paths() -> None:
     runtime_validation = parser.extra_template_data[target_path]["schema_runtime_validation"]
     assert_output(
         "\n".join(repr(rule.path) for rule in runtime_validation.unique_items) + "\n",
-        DATA_PATH / "schema_runtime_unique_items_variant.snapshot",
+        EXPECTED_PARSER_PATH / "schema_runtime_unique_items_variant.snapshot",
     )
 
 
@@ -1034,7 +1034,7 @@ def test_schema_validator_unique_items_paths_cover_composed_input_shapes() -> No
         + f"\n#/SkippedRules: {skipped_rule_paths!r}"
         + "".join(f"\n{reference_path}: {paths!r}" for reference_path, paths in union_paths)
         + "\n",
-        DATA_PATH / "schema_runtime_unique_items_paths.snapshot",
+        EXPECTED_PARSER_PATH / "schema_runtime_unique_items_paths.snapshot",
     )
 
 
@@ -1093,7 +1093,7 @@ def test_schema_validator_unique_items_array_capability_branches() -> None:
             f"non-array-union={non_array_union_paths!r}",
         ))
         + "\n",
-        DATA_PATH / "schema_runtime_unique_items_array_capability.snapshot",
+        EXPECTED_PARSER_PATH / "schema_runtime_unique_items_array_capability.snapshot",
     )
 
 
@@ -1149,7 +1149,7 @@ def test_schema_validator_unique_items_branch_coverage() -> None:
             f"conditional-required-count={len(runtime_validation.conditional_required)}",
         ))
         + "\n",
-        DATA_PATH / "schema_runtime_unique_items_branch_coverage.snapshot",
+        EXPECTED_PARSER_PATH / "schema_runtime_unique_items_branch_coverage.snapshot",
     )
 
 
@@ -1281,7 +1281,7 @@ def test_schema_validator_unique_items_executable_paths_cover_all_data_type_bran
             f"selector-unowned={bool(parser.extra_template_data['#/UnownedParent']['schema_runtime_validation'].unique_items)}",
         ))
         + "\n",
-        DATA_PATH / "schema_runtime_unique_items_executable_paths.snapshot",
+        EXPECTED_PARSER_PATH / "schema_runtime_unique_items_executable_paths.snapshot",
     )
 
 
@@ -1301,7 +1301,7 @@ def test_schema_validator_adds_all_of_missing_required_field() -> None:
     model = next(result for result in parser.results if result.class_name == "MissingRequired")
     assert_output(
         "\n".join(f"{field.original_name}={field.required}" for field in model.fields) + "\n",
-        DATA_PATH / "schema_runtime_missing_required.snapshot",
+        EXPECTED_PARSER_PATH / "schema_runtime_missing_required.snapshot",
     )
 
 
@@ -1429,7 +1429,7 @@ def test_traverse_schema_objects_preserves_builtin_callback_order() -> None:
 
     assert_output(
         "\n".join(visited) + "\n",
-        DATA_PATH / "schema_traversal_all_child_fields.snapshot",
+        EXPECTED_PARSER_PATH / "schema_traversal_all_child_fields.snapshot",
     )
 
 
@@ -1459,7 +1459,7 @@ def test_traverse_schema_objects_handles_conditional_schemas_without_child_field
         + "\n[without-schema-validators]\n"
         + "\n".join(no_validators_visited)
         + "\n",
-        DATA_PATH / "schema_traversal_conditional_fields.snapshot",
+        EXPECTED_PARSER_PATH / "schema_traversal_conditional_fields.snapshot",
     )
 
 
@@ -1485,7 +1485,7 @@ def test_traverse_schema_objects_keeps_explicit_empty_child_fields_on_regular_pa
 
     assert_output(
         "\n".join(visited) + "\n",
-        DATA_PATH / "schema_traversal_explicit_empty_child_fields.snapshot",
+        EXPECTED_PARSER_PATH / "schema_traversal_explicit_empty_child_fields.snapshot",
     )
 
 
@@ -1502,7 +1502,7 @@ def test_traverse_schema_objects_skips_builtin_leaf_children() -> None:
 
     assert_output(
         "\n".join(visited) + "\n",
-        DATA_PATH / "schema_traversal_explicit_empty_child_fields.snapshot",
+        EXPECTED_PARSER_PATH / "schema_traversal_explicit_empty_child_fields.snapshot",
     )
 
 
@@ -1552,7 +1552,7 @@ def test_traverse_schema_objects_falls_back_for_parser_subclass_children() -> No
         + "\n[exact-parser-schema-subclass]\n"
         + "\n".join(builtin_parser_visited)
         + "\n",
-        DATA_PATH / "schema_traversal_parser_subclass_child.snapshot",
+        EXPECTED_PARSER_PATH / "schema_traversal_parser_subclass_child.snapshot",
     )
 
 
@@ -2885,7 +2885,7 @@ def test_parse_nested_array(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
         data_model_field_type=DataModelFieldBase,
     )
     parser.parse()
-    assert_output(dump_templates(list(parser.results)), DATA_PATH / "nested_array.json.snapshot")
+    assert_output(dump_templates(list(parser.results)), EXPECTED_PARSER_PATH / "nested_array.json.snapshot")
 
 
 @pytest.mark.parametrize(

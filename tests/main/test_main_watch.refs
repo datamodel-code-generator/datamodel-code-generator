@@ -9,7 +9,7 @@
 [test_batch_watch_implicit_lock_verification_recovers_after_deletion]
 	http/remote_lock_nested.py
 [test_batch_watch_nested_dependency_reruns_full_batch_without_output_loop]
-	../watch/batch_no_cycle.txt
+	main/watch_batch_no_cycle.txt
 	main/watch_nested_ref_change.py
 	main_kr/jobs/stale.py
 [test_regular_generation_does_not_load_watch_dependency_collector]
@@ -78,8 +78,8 @@ True-sibling	main/watch_file_change.py
 	main/watch_reference_change.py
 	main/watch_reference_initial.py
 [test_watch_cli_update_lock_does_not_trigger_its_own_regeneration]
-	../watch/batch_no_cycle.txt
 	http/remote_lock_nested.py
+	main/watch_batch_no_cycle.txt
 [test_watch_dependencies_accepts_polling_parent_events_for_changed_inputs]
 	main/watch_reference_change.py
 [test_watch_exception_after_initial_remote_lock_commit_preserves_real_artifacts]

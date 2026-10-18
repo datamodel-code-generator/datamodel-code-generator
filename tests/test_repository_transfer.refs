@@ -3,6 +3,6 @@
 [test_release_notification_references]
 	repository_transfer/release_notify.txt
 [test_update_docs_version_preserves_other_references]
-	../repository_transfer/actions.txt
 	repository_transfer/action_results.txt
 	repository_transfer/actions.txt
+	repository_transfer/actions_check.txt

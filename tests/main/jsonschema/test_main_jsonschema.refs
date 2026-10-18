@@ -6977,7 +6977,7 @@ use_annotated.py-extra_args2	main/jsonschema/type_mappings_byte_to_binary/use_an
 --use-root-model-type-alias	main/jsonschema/main_jsonschema/unique_items_root_alias_preserves_validation[--use-root-model-type-alias].py
 --use-type-alias	main/jsonschema/main_jsonschema/unique_items_root_alias_preserves_validation[--use-type-alias].py
 [test_main_jsonschema_unique_items_schema_validators]
-	../jsonschema/unique_items_python_values.snapshot
+	main/jsonschema/unique_items_python_values.snapshot
 	main/jsonschema/unique_items_schema_validators.py
 [test_main_jsonschema_use_missing_sentinel]
 	main/jsonschema/missing_sentinel.py

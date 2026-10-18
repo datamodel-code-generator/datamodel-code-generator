@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 
 assert_file_content = create_assert_file_content(EXPECTED_JSON_SCHEMA_PATH)
-_GC_TUNING_DATA_PATH = DATA_PATH / "gc_tuning"
+_GC_TUNING_DATA_PATH = DATA_PATH / "expected" / "main" / "gc_tuning"
 
 
 class _ThresholdRecordingMapping(Mapping[str, Any]):

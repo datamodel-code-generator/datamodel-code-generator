@@ -3136,7 +3136,7 @@ def test_watch_cli_update_lock_does_not_trigger_its_own_regeneration(
         )
         time.sleep(WATCH_CLI_CHANGE_RETRY_SECONDS * 2)
         done_count = sum(line.strip() == "Done." for line in stdout_lines)
-        assert_output(f"done={done_count}\n", WATCH_DATA_PATH / "batch_no_cycle.txt")
+        assert_output(f"done={done_count}\n", EXPECTED_MAIN_PATH / "watch_batch_no_cycle.txt")
     finally:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
@@ -3734,7 +3734,7 @@ def test_batch_watch_nested_dependency_reruns_full_batch_without_output_loop(tmp
         second_metadata.write_text("stale\n", encoding="utf-8")
         time.sleep(WATCH_CLI_CHANGE_RETRY_SECONDS * 2)
         done_count = sum(line.strip() == "Done." for line in stdout_lines)
-        assert_output(f"done={done_count}\n", WATCH_DATA_PATH / "batch_no_cycle.txt")
+        assert_output(f"done={done_count}\n", EXPECTED_MAIN_PATH / "watch_batch_no_cycle.txt")
         assert_output(
             second_output.read_text(encoding="utf-8"), PROJECT_ROOT / "tests/data/expected/main_kr/jobs/stale.py"
         )
@@ -3761,7 +3761,7 @@ def test_batch_watch_nested_dependency_reruns_full_batch_without_output_loop(tmp
         done_count = sum(line.strip() == "Done." for line in stdout_lines)
         time.sleep(WATCH_CLI_CHANGE_RETRY_SECONDS * 2)
         done_count = sum(line.strip() == "Done." for line in stdout_lines) - done_count
-        assert_output(f"done={done_count}\n", WATCH_DATA_PATH / "batch_no_cycle.txt")
+        assert_output(f"done={done_count}\n", EXPECTED_MAIN_PATH / "watch_batch_no_cycle.txt")
     finally:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 

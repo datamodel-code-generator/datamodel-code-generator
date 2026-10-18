@@ -21423,7 +21423,7 @@ def test_main_jsonschema_unique_items_schema_validators(output_file: Path) -> No
                 f"raising={[type(item).__name__ for item in validated_python_values[5]]!r}",
             ))
             + "\n",
-            JSON_SCHEMA_DATA_PATH / "unique_items_python_values.snapshot",
+            EXPECTED_JSON_SCHEMA_PATH / "unique_items_python_values.snapshot",
         )
         for values in (
             [Decimal(1), Decimal(1)],

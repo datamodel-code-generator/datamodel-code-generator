@@ -21,7 +21,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 _DATA_PATH = Path(__file__).parent / "data" / "yaml_fast_constructor"
-_PARITY_OUTPUT = _DATA_PATH / "parity.txt"
+_EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "yaml_fast_constructor"
+_PARITY_OUTPUT = _EXPECTED_PATH / "parity.txt"
 _CASES: dict[str, str] = json.loads((_DATA_PATH / "cases.json").read_text(encoding="utf-8"))
 _SCHEMA_PATHS = tuple(sorted((Path(__file__).parent / "data" / "openapi").rglob("*.yaml"))) + tuple(
     sorted((Path(__file__).parent / "data" / "asyncapi").rglob("*.yaml"))
@@ -161,7 +162,7 @@ def test_strict_equal_handles_non_equivalent_values() -> None:
             f"nan_equal={_strict_equal(float('nan'), float('nan'))}",
             "",
         )),
-        _DATA_PATH / "strict_equal.txt",
+        _EXPECTED_PATH / "strict_equal.txt",
     )
 
 
@@ -189,7 +190,7 @@ def test_yaml_loader_rejects_unknown_implementation() -> None:
     with pytest.raises(AssertionError) as exception_info:
         _select_yaml_loader("unknown")
 
-    assert_output(f"{type(exception_info.value).__name__}\n", _DATA_PATH / "invalid_loader.txt")
+    assert_output(f"{type(exception_info.value).__name__}\n", _EXPECTED_PATH / "invalid_loader.txt")
 
 
 @pytest.mark.parametrize("text", _CASES.values(), ids=_CASES)
@@ -210,7 +211,7 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "return",
             ("map",),
             _DATA_PATH / "custom_return.yaml",
-            _DATA_PATH / "custom_return_map.txt",
+            _EXPECTED_PATH / "custom_return_map.txt",
             _DATA_PATH / "custom_error.yaml",
             id="return-map",
         ),
@@ -218,7 +219,7 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "return",
             ("seq",),
             _DATA_PATH / "custom_return.yaml",
-            _DATA_PATH / "custom_return_seq.txt",
+            _EXPECTED_PATH / "custom_return_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="return-seq",
         ),
@@ -226,7 +227,7 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "return",
             ("map", "seq"),
             _DATA_PATH / "custom_return.yaml",
-            _DATA_PATH / "custom_return_map_seq.txt",
+            _EXPECTED_PATH / "custom_return_map_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="return-map-seq",
         ),
@@ -234,7 +235,7 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "generator",
             ("map",),
             _DATA_PATH / "custom_generator.yaml",
-            _DATA_PATH / "custom_generator_map.txt",
+            _EXPECTED_PATH / "custom_generator_map.txt",
             _DATA_PATH / "custom_error.yaml",
             id="generator-map",
         ),
@@ -242,7 +243,7 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "generator",
             ("seq",),
             _DATA_PATH / "custom_generator.yaml",
-            _DATA_PATH / "custom_generator_seq.txt",
+            _EXPECTED_PATH / "custom_generator_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="generator-seq",
         ),
@@ -250,7 +251,7 @@ def test_fast_constructor_drains_nested_deferred_generators() -> None:
             "generator",
             ("map", "seq"),
             _DATA_PATH / "custom_generator.yaml",
-            _DATA_PATH / "custom_generator_map_seq.txt",
+            _EXPECTED_PATH / "custom_generator_map_seq.txt",
             _DATA_PATH / "custom_error.yaml",
             id="generator-map-seq",
         ),
@@ -514,7 +515,7 @@ def test_fast_constructor_fuzz_parity(tmp_path: Path) -> None:
     """Exercise generated scalars, aliases, cycles, and explicit tags with a fixed seed."""
     expected = tmp_path / "parity.txt"
     documents = tuple(_fuzz_documents())
-    expected.write_text(_PARITY_OUTPUT.read_text(encoding="utf-8") * len(documents), encoding="utf-8")
+    expected.write_text((_DATA_PATH / "parity.txt").read_text(encoding="utf-8") * len(documents), encoding="utf-8")
     result = "".join(
         _parity_report(
             _construct(text, get_safe_loader(), standard=True),

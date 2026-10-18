@@ -13,6 +13,7 @@ from scripts import prepare_release_draft_analysis as preparer
 from tests.conftest import assert_output
 
 DATA_PATH = Path(__file__).parent / "data" / "prepare_release_draft_analysis"
+EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "prepare_release_draft_analysis"
 REPOSITORY_ROOT = Path(__file__).parents[1]
 ROUTING_CASES = (
     ("blank_record", 1, "requires_claude"),
@@ -104,7 +105,7 @@ def test_script_routes_release_analysis(
             sort_keys=True,
         )
         + "\n",
-        DATA_PATH / f"{expected_name}.txt",
+        EXPECTED_PATH / f"{expected_name}.txt",
     )
 
 
@@ -142,7 +143,7 @@ def test_main_routes_files_without_mocks(
             sort_keys=True,
         )
         + "\n",
-        DATA_PATH / f"{expected_name}.txt",
+        EXPECTED_PATH / f"{expected_name}.txt",
     )
 
 
@@ -171,7 +172,7 @@ def test_missing_changed_files_fail_closed(tmp_path: Path) -> None:
     )
 
     result.check_returncode()
-    assert_output(github_output_path.read_text(encoding="utf-8"), DATA_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
 
 
 def test_main_missing_changed_files_fail_closed(tmp_path: Path) -> None:
@@ -190,7 +191,7 @@ def test_main_missing_changed_files_fail_closed(tmp_path: Path) -> None:
         str(github_output_path),
     ])
 
-    assert_output(github_output_path.read_text(encoding="utf-8"), DATA_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
 
 
 def test_main_unreadable_changed_files_fail_closed(tmp_path: Path) -> None:
@@ -211,7 +212,7 @@ def test_main_unreadable_changed_files_fail_closed(tmp_path: Path) -> None:
         str(github_output_path),
     ])
 
-    assert_output(github_output_path.read_text(encoding="utf-8"), DATA_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
 
 
 def test_main_invalid_utf8_changed_files_fail_closed(tmp_path: Path) -> None:
@@ -232,4 +233,4 @@ def test_main_invalid_utf8_changed_files_fail_closed(tmp_path: Path) -> None:
         str(github_output_path),
     ])
 
-    assert_output(github_output_path.read_text(encoding="utf-8"), DATA_PATH / "missing.txt")
+    assert_output(github_output_path.read_text(encoding="utf-8"), EXPECTED_PATH / "missing.txt")
