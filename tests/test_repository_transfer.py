@@ -42,7 +42,7 @@ def test_update_docs_version_preserves_other_references(tmp_path: Path) -> None:
     target = tmp_path / "actions.md"
     target.write_text((DATA / "actions.txt").read_text())
     results = {"stale": update_docs_version.update_file(target, "9.8.7", check=True)}
-    assert_output(target.read_text(), DATA / "actions.txt")
+    assert_output(target.read_text(), EXPECTED / "actions_check.txt")
     results["updated"] = update_docs_version.update_file(target, "9.8.7")
     results["current"] = update_docs_version.update_file(target, "9.8.7", check=True)
     results["unchanged"] = update_docs_version.update_file(target, "9.8.7")

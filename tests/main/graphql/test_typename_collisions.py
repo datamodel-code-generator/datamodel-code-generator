@@ -174,6 +174,6 @@ def test_graphql_typename_collisions(
         actual["import_error"] = str(error_info.value)
     assert_output(
         f"{all(base == child for base, child in inherited_type_roles)}\n",
-        DATA_PATH / "payloads/typename_inherited_type_compatible.txt",
+        DATA_PATH / "expected/payloads/typename_inherited_type_compatible.txt",
     )
     assert_output(f"{json.dumps(actual, indent=2)}\n", EXPECTED_GRAPHQL_PATH / f"{expected_name}.txt")

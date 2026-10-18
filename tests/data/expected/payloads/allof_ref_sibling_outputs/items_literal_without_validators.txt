@@ -1,0 +1,21 @@
+[
+  {
+    "accepted": true,
+    "value": []
+  },
+  {
+    "accepted": true,
+    "value": [
+      "bb"
+    ]
+  },
+  {
+    "accepted": true,
+    "value": [
+      "a"
+    ]
+  },
+  {
+    "accepted": false
+  }
+]

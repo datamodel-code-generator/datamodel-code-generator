@@ -115,7 +115,7 @@ def test_allof_ref_siblings(
                     actual.append({"accepted": False})
             assert_output(
                 json.dumps(actual, indent=2) + "\n",
-                expected,
+                DATA_PATH / "expected" / expected.relative_to(DATA_PATH),
             )
             code = output_file.read_text(encoding="utf-8")
             assert_output(
@@ -130,7 +130,7 @@ def test_allof_ref_siblings(
                     )
                 })
                 + "\n",
-                DATA_PATH / "payloads/allof_ref_sibling_outputs/without_validators.txt",
+                DATA_PATH / "expected/payloads/allof_ref_sibling_outputs/without_validators.txt",
             )
             return
         actual = []
@@ -140,7 +140,7 @@ def test_allof_ref_siblings(
             actual.append(json.loads(adapter.dump_json(adapter.validate_json(json.dumps(value)))))
         assert_output(
             json.dumps(actual, indent=2) + "\n",
-            DATA_PATH / "payloads" / "allof_ref_sibling_outputs" / f"{case['name']}.txt",
+            DATA_PATH / "expected" / "payloads" / "allof_ref_sibling_outputs" / f"{case['name']}.txt",
         )
         if case["name"].startswith(("enum_", "const_")):
             base = vars(sys.modules[model.__module__])["Base"]
@@ -150,7 +150,7 @@ def test_allof_ref_siblings(
                 parsed_inputs.append(json.loads(adapter.dump_json(adapter.validate_python(base_value))))
             assert_output(
                 json.dumps(parsed_inputs, indent=2) + "\n",
-                DATA_PATH / "payloads" / "allof_ref_sibling_outputs" / f"{case['name']}.txt",
+                DATA_PATH / "expected" / "payloads" / "allof_ref_sibling_outputs" / f"{case['name']}.txt",
             )
         for value in case["invalid"]:
             with pytest.raises(JsonSchemaValidationError):
@@ -219,7 +219,7 @@ def test_allof_literal_custom_template(output_file: Path, entrypoint: str) -> No
             actual.append(model.model_validate_json(json.dumps(value)).root)
         assert_output(
             json.dumps(actual, indent=2) + "\n",
-            DATA_PATH / "payloads/allof_ref_sibling_outputs/enum_length.txt",
+            DATA_PATH / "expected/payloads/allof_ref_sibling_outputs/enum_length.txt",
         )
         for value in case["invalid"]:
             with pytest.raises(JsonSchemaValidationError):
@@ -314,7 +314,7 @@ def test_allof_literal_validated_model_items(output_file: Path, entrypoint: str)
         actual.append(["own-root-identity", model.model_validate(instance) is instance])
     assert_output(
         json.dumps(actual, indent=2) + "\n",
-        DATA_PATH / "payloads/allof_ref_sibling_outputs/validated_model_items.txt",
+        DATA_PATH / "expected/payloads/allof_ref_sibling_outputs/validated_model_items.txt",
     )
 
 

@@ -13,6 +13,7 @@ from scripts import report_release_analysis_failure as reporter
 from tests.conftest import assert_output
 
 DATA_PATH = Path(__file__).parent / "data" / "report_release_analysis_failure"
+EXPECTED_PATH = Path(__file__).parent / "data" / "expected" / "report_release_analysis_failure"
 CASES = json.loads((DATA_PATH / "cases.json").read_text(encoding="utf-8"))
 
 
@@ -43,5 +44,5 @@ def test_failure_diagnostics(
         reporter.main(args)
         captured = capsys.readouterr()
         stdout, stderr = captured.out, captured.err
-    assert_output(stdout, DATA_PATH / f"{case['expected']}.txt")
-    assert_output(stderr, DATA_PATH / "empty.txt")
+    assert_output(stdout, EXPECTED_PATH / f"{case['expected']}.txt")
+    assert_output(stderr, EXPECTED_PATH / "empty.txt")

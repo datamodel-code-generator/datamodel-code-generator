@@ -85,7 +85,9 @@ from .payload_validation.native_numeric import (
 from .payload_validation.schema import _schema_for_payload_generation
 from .payload_validation.strategy import _bound_float_multiples
 
-NATIVE_NUMERIC_EMPTY_ERRORS = Path(__file__).parents[1] / "data" / "payloads" / "native_numeric_empty_errors.txt"
+NATIVE_NUMERIC_EMPTY_ERRORS = (
+    Path(__file__).parents[1] / "data" / "expected" / "payloads" / "native_numeric_empty_errors.txt"
+)
 
 NUMERIC_SAMPLING_PATH = Path(__file__).parents[1] / "data" / "payloads" / "numeric_sampling.json"
 NUMERIC_SAMPLING_SCHEMAS = json.loads(NUMERIC_SAMPLING_PATH.read_text())

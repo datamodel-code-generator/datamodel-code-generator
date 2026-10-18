@@ -644,7 +644,7 @@ def test_parser_simple_field_matches_public_constructor_for_schema_states(
     fast_parser = JsonSchemaParser(data_model_field_type=DataModelField, **parser_kwargs)
     public_parser = JsonSchemaParser(data_model_field_type=PublicDataModelField, **parser_kwargs)
 
-    expected_path = JSON_SCHEMA_DATA_PATH / expected_file
+    expected_path = EXPECTED_PYDANTIC_V2_MODEL_PATH / expected_file
     assert_output(fast_parser.parse(), expected_path)
     assert_output(public_parser.parse(), expected_path)
 

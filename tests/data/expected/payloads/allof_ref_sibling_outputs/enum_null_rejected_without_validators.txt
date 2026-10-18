@@ -1,0 +1,19 @@
+[
+  {
+    "accepted": true,
+    "value": null
+  },
+  {
+    "accepted": true,
+    "value": "bb"
+  },
+  {
+    "accepted": false
+  },
+  {
+    "accepted": false
+  },
+  {
+    "accepted": false
+  }
+]
