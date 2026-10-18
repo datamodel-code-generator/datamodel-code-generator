@@ -1,8 +1,0 @@
-{
-  "root_type": "set",
-  "sequence": false,
-  "values": [
-    1,
-    2
-  ]
-}

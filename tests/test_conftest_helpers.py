@@ -2675,140 +2675,6 @@ def test_fix_expected_deduplicates_stored_units(
     ledger.run("suite", env=GITHUB).assert_outcomes(passed=16)
 
 
-LISTING = """
-import ast
-from os import listdir
-from pathlib import Path
-
-from tests.conftest import assert_output
-
-EXPECTED = Path(__file__).parent / "data" / "expected"
-OUTPUT = {"a.py": "same\\n", "b.py": "B = 1\\n"}
-
-
-def test_listed():
-    for name in sorted(path.name for path in (EXPECTED / "pkg").glob("*.py")):
-        assert_output(OUTPUT[name], EXPECTED / "pkg" / name)
-
-
-class TestMore:
-    def test_listed(self):
-        assert listdir() is not None
-        for name in sorted(listdir(path=EXPECTED / "more")):
-            assert_output(OUTPUT[name], EXPECTED / "more" / name)
-
-
-def test_copy():
-    assert_output("same\\n", EXPECTED / "c" / "a.py")
-
-
-def test_walk():
-    list(ast.walk(ast.parse("x = 1")))
-    assert_output("B = 1\\n", EXPECTED / "w" / "b.py")
-"""
-
-
-LISTING_SHARED = """
-from pathlib import Path
-
-from tests.conftest import assert_output, stored_expected
-
-EXPECTED = Path(__file__).parent.parent / "data" / "expected"
-
-
-def test_through_helper():
-    for path in sorted(stored_expected(EXPECTED / "via").glob("*.py")):
-        assert_output(path.read_text(), EXPECTED / "via" / path.name)
-
-
-def test_plain():
-    assert_output("same\\n", EXPECTED / "plain" / "a.py")
-"""
-LISTING_MODULE = """
-from pathlib import Path
-
-from tests.conftest import assert_output
-
-EXPECTED = Path(__file__).parent.parent / "data" / "expected"
-CASES = sorted((EXPECTED / "mod").glob("*.py"))
-
-
-def test_module():
-    assert_output("same\\n", EXPECTED / "mod" / "a.py")
-"""
-
-
-def test_fix_expected_deduplicate_keeps_files_a_test_lists(
-    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Units at the labels of a test that lists a directory below the expected root stay, and other copies use them.
-
-    Such a test may compare what it finds there: ``test_listed`` globs ``pkg``, ``TestMore`` lists ``more`` with
-    ``os.listdir(path=...)``, ``test_through_helper`` lists ``via`` through ``stored_expected``, ``test_helper`` lists
-    ``help`` through a module helper, and ``test_module`` lives in a module that lists ``mod`` at import.
-    ``ast.walk`` walks no directory, so ``w/b.py`` is an ordinary copy, as is ``plain``.
-    """
-    ledger.write("test_l.py", LISTING)
-    ledger.write("sub/test_s.py", LISTING_SHARED)
-    ledger.write("sub/test_t.py", LISTING_MODULE)
-    ledger.write("sub/test_h.py", LISTING_HELPER)
-    for label in ("pkg/a.py", "more/a.py", "c/a.py", "via/a.py", "plain/a.py", "mod/a.py", "help/a.py"):
-        ledger.store(label, "same\n")
-    for label in ("pkg/b.py", "w/b.py"):
-        ledger.store(label, "B = 1\n")
-    line = units.RefLine
-    for module, lines in {
-        "test_l": [
-            line("TestMore::test_listed", "", "more/a.py"),
-            line("test_copy", "", "c/a.py"),
-            line("test_listed", "", "pkg/a.py"),
-            line("test_listed", "", "pkg/b.py"),
-            line("test_walk", "", "w/b.py"),
-        ],
-        "sub/test_s": [line("test_through_helper", "", "via/a.py"), line("test_plain", "", "plain/a.py")],
-        "sub/test_t": [line("test_module", "", "mod/a.py")],
-        "sub/test_h": [line("test_helper", "", "help/a.py")],
-    }.items():
-        (ledger.suite / f"{module}.refs").write_text(units.format_refs(lines), encoding="utf-8")
-    ledger.run("suite", env=GITHUB).assert_outcomes(passed=8)
-    capsys.readouterr()
-    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 0
-    assert capsys.readouterr().out == (
-        "Deduplicated: 3 references in 2 sidecars now use 2 stored units; deleted 3 stored files. "
-        "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 4 files, 0 trees.\n"
-        "Kept in all sidecars, because a test lists their directory or their label's references differ:\n"
-        "  help/a.py\n  mod/a.py\n  more/a.py\n  pkg/a.py\n  via/a.py\n"
-    )
-    assert ledger.refs("test_l") == HEADER + (
-        "[TestMore::test_listed]\n\tmore/a.py\n[test_copy]\n\tc/a.py\t= mod/a.py\n"
-        "[test_listed]\n\tpkg/a.py\n\tpkg/b.py\n[test_walk]\n\tw/b.py\t= pkg/b.py\n"
-    )
-    assert (
-        ledger.refs("sub/test_s")
-        == HEADER + "[test_plain]\n\tplain/a.py\t= mod/a.py\n[test_through_helper]\n\tvia/a.py\n"
-    )
-    assert sorted(ledger.files()) == ["help/a.py", "mod/a.py", "more/a.py", "pkg/a.py", "pkg/b.py", "via/a.py"]
-    ledger.run("suite", env=GITHUB).assert_outcomes(passed=8)
-
-
-LISTING_HELPER = """
-from pathlib import Path
-
-from tests.conftest import assert_output
-
-EXPECTED = Path(__file__).parent.parent / "data" / "expected"
-
-
-def _names():
-    return sorted(path.name for path in (EXPECTED / "help").glob("*.py"))
-
-
-def test_helper():
-    for name in _names():
-        assert_output("same\\n", EXPECTED / "help" / name)
-"""
-
-
 STORED_READS = """
 from pathlib import Path
 
@@ -2929,6 +2795,21 @@ def test_q2():
 def test_q3():
     assert_output("x\\n", EXPECTED / "c.txt")
 """
+READ_BY_NAME_TOO = """
+from pathlib import Path
+
+from tests.conftest import assert_output
+
+EXPECTED = Path(__file__).parent / "data" / "expected"
+
+
+def test_r1():
+    assert_output("x\\n", EXPECTED / "r" / "l.txt")
+
+
+def test_r2():
+    assert_output("y\\n", EXPECTED / "r" / "l.txt")
+"""
 
 
 def test_fix_expected_deduplicate_keeps_what_labels_read_by_name_return(
@@ -2938,16 +2819,23 @@ def test_fix_expected_deduplicate_keeps_what_labels_read_by_name_return(
 
     ``q/l.txt`` reads as its own copy (``x``); the shorter ``c.txt`` would survive otherwise, and ``q/l.txt`` would
     then read as ``b/q2.txt`` (``y``). A plan that does that anyway is refused although every line compares the same.
+    ``r/l.txt`` and ``b/r2.txt`` repeat ``q/l.txt`` and ``b/q2.txt`` but stay for the same reason, and are reported.
     """
     from scripts import fix_expected
 
     ledger.write("test_q.py", READ_BY_NAME)
-    for label, text in {"q/l.txt": "x\n", "b/q2.txt": "y\n", "c.txt": "x\n"}.items():
+    ledger.write("test_r.py", READ_BY_NAME_TOO)
+    stored = {"q/l.txt": "x\n", "b/q2.txt": "y\n", "c.txt": "x\n", "r/l.txt": "x\n", "b/r2.txt": "y\n"}
+    for label, text in stored.items():
         ledger.store(label, text)
     line = units.RefLine
     lines = [line("test_q1", "", "q/l.txt"), line("test_q2", "", "q/l.txt", storage="b/q2.txt")]
     (ledger.suite / "test_q.refs").write_text(
         units.format_refs([*lines, line("test_q3", "", "c.txt")]), encoding="utf-8"
+    )
+    (ledger.suite / "test_r.refs").write_text(
+        units.format_refs([line("test_r1", "", "r/l.txt"), line("test_r2", "", "r/l.txt", storage="b/r2.txt")]),
+        encoding="utf-8",
     )
     capsys.readouterr()
     refs = (ledger.suite / "test_q.refs").read_text(encoding="utf-8")
@@ -2969,11 +2857,17 @@ def test_fix_expected_deduplicate_keeps_what_labels_read_by_name_return(
     )
     assert ledger.refs("test_q") == refs
     assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 0
+    assert capsys.readouterr().out == (
+        "Deduplicated: 1 references in 1 sidecars now use 1 stored units; deleted 1 stored files. "
+        "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 2 files, 0 trees.\n"
+        "Kept in all sidecars, because their label's references differ:\n"
+        "  b/q2.txt\n  b/r2.txt\n  q/l.txt\n  r/l.txt\n"
+    )
     assert ledger.refs("test_q") == HEADER + (
         "[test_q1]\n\tq/l.txt\n[test_q2]\n\tq/l.txt\t= b/q2.txt\n[test_q3]\n\tc.txt\t= q/l.txt\n"
     )
-    assert sorted(ledger.files()) == ["b/q2.txt", "q/l.txt"]
-    ledger.run("suite", env=GITHUB).assert_outcomes(passed=3)
+    assert sorted(ledger.files()) == ["b/q2.txt", "b/r2.txt", "q/l.txt", "r/l.txt"]
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=5)
 
 
 def test_fix_expected_deduplicate_refuses(

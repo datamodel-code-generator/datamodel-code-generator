@@ -2,9 +2,8 @@
 
 Tests with equal output share one stored file, and fix runs split, merge and move stored files, so a path below
 ``tests/data/expected`` names whatever happens to be stored there. Test code reads or copies such a file through
-``tests.conftest.stored_expected``. A test that lists a directory there, directly or through that helper, may decide
-what it compares from the files it finds, so ``scripts/fix_expected.py --deduplicate`` keeps every unit such a test
-compares, and the files a listing finds are read like any other path.
+``tests.conftest.stored_expected``, and lists no directory there, directly or through that helper: what a listing
+finds is no test's output, so a test compares a generated tree as a whole instead.
 
 Paths are followed symbolically, the way tests build them: through module constants, imports between test modules,
 local names, loops and unpacking. Parameters are not followed. This module uses the standard library only.
@@ -20,10 +19,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
     from pathlib import Path
 
-__all__ = ["LEDGER", "LIST", "READ", "Access", "expected_accesses", "listing_tests"]
+__all__ = ["LEDGER", "Access", "expected_accesses"]
 
-READ = "read"
-LIST = "list"
 LEDGER = ("conftest.py", "expected_access.py", "units.py")
 """The modules at the tests root that read stored expected output for every test: the ledger and this module."""
 _READS = frozenset({"copy", "copy_into", "open", "read_bytes", "read_text"})
@@ -39,6 +36,7 @@ _SANITIZER = "stored_expected"
 _ROOT = "/"
 _INDEXED = "="
 _ROOTS = frozenset({_ROOT, _INDEXED})
+_PLAIN = frozenset({_ROOT})
 _ANY = "*"
 _MODULE = "<module>"
 
@@ -49,12 +47,11 @@ segments; ``*`` is an unknown segment."""
 
 @dataclass(frozen=True)
 class Access:
-    """A read or a listing of a path below the expected root, and the function (or ``<module>``) it happens in."""
+    """A read, copy or listing of a path below the expected root, and the function (or ``<module>``) it happens in."""
 
     module: Path
     owner: str
     lineno: int
-    kind: str
     text: str
 
 
@@ -71,12 +68,11 @@ class _Scope:
 
 @dataclass(eq=False)
 class _Module:
-    """A test module: its path, dotted name, imports, top-level functions and calls."""
+    """A test module: its path, dotted name, imports and calls."""
 
     path: Path
     name: str
     imports: dict[str, tuple[str, str]] = field(default_factory=dict)
-    functions: set[str] = field(default_factory=set)
     calls: list[tuple[ast.Call, _Scope]] = field(default_factory=list)
     scope: _Scope = field(init=False)
 
@@ -168,8 +164,6 @@ class _Collector(ast.NodeVisitor):
         scope = _Scope(self.module, self.scope, owner)
         arguments = (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs, node.args.vararg, node.args.kwarg)
         scope.params = {argument.arg for argument in arguments if argument is not None}
-        if top:
-            self.module.functions.add(owner)
         outer, self.scope = self.scope, scope
         for child in node.body if isinstance(node.body, list) else [node.body]:
             self.visit(child)
@@ -349,34 +343,16 @@ class _Program:
                 continue
             for call, scope in module.calls:
                 name = _name(call.func)
-                candidates: list[tuple[ast.expr, str]] = []
+                candidates: list[tuple[ast.expr, frozenset[str]]] = []
                 if name in _READS | _LISTINGS and isinstance(call.func, ast.Attribute):
-                    candidates.append((call.func.value, READ if name in _READS else LIST))
+                    candidates.append((call.func.value, _PLAIN if name in _READS else _ROOTS))
                 if name in _READ_FUNCTIONS | _LISTING_FUNCTIONS and (target := _path_argument(call)) is not None:
-                    candidates.append((target, READ if name in _READ_FUNCTIONS else LIST))
-                candidates += [(source, READ) for source in _copied(call)]
-                roots = {READ: frozenset({_ROOT}), LIST: _ROOTS}
-                if kind := next((kind for target, kind in candidates if self.opens(target, scope, roots[kind])), None):
-                    yield Access(module.path, scope.owner, call.lineno, kind, ast.unparse(call))
+                    candidates.append((target, _PLAIN if name in _READ_FUNCTIONS else _ROOTS))
+                candidates += [(source, _PLAIN) for source in _copied(call)]
+                if any(self.opens(target, scope, roots) for target, roots in candidates):
+                    yield Access(module.path, scope.owner, call.lineno, ast.unparse(call))
 
 
 def expected_accesses(root: Path, tests_root: Path) -> list[Access]:
     """Return every read, copy and listing of a path below ``<tests root>/data/expected`` in the modules below it."""
     return sorted(_Program(root, tests_root).accesses(), key=lambda access: (access.module, access.lineno, access.text))
-
-
-def listing_tests(root: Path, tests_root: Path) -> dict[Path, set[str]]:
-    """Return, by module, the functions that list a directory below the expected root.
-
-    A listing at module level (``CASES = sorted(EXPECTED.glob("*.py"))``, or in a decorator) or in a helper that is not
-    a test (``_cases()`` feeding a ``parametrize``) counts for every function of its module.
-    """
-    program = _Program(root, tests_root)
-    modules = {module.path: module for module in program.modules.values()}
-    result: dict[Path, set[str]] = {}
-    for access in program.accesses():
-        if access.kind == LIST:
-            shared = access.owner == _MODULE or not access.owner.rpartition("::")[2].startswith("test")
-            owners = modules[access.module].functions if shared else {access.owner}
-            result.setdefault(access.module, set()).update(owners)
-    return result

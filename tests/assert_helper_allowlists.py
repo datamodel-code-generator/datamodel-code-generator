@@ -1172,8 +1172,8 @@ ALLOWLIST_GROUP_REASONS = {
         "the runtime directly."
     ),
     "stored-file-audits": (
-        "Audits of every stored file below tests/data/expected (formatter parity) read each file where it is stored, "
-        "whichever tests share it."
+        "Audits of every stored file below tests/data/expected (formatter parity) list and read each file where it is "
+        "stored, whichever tests share it."
     ),
     "unobservable-cleanup": (
         "Files the multipart parser allocates for a request it then refuses never reach a handler, so a spy on their "

@@ -7419,77 +7419,57 @@ external-api-builtin-template	main/jsonschema/root_sequence_final/external//*.py
 external-api-custom-template	main/jsonschema/root_sequence_final/external.runtime.txt
 external-api-custom-template	main/jsonschema/root_sequence_final/external//*.py
 external-cli-builtin-template	main/jsonschema/root_sequence_final/external.runtime.txt
-external-cli-builtin-template	main/jsonschema/root_sequence_final/external/__init__.py
-external-cli-builtin-template	main/jsonschema/root_sequence_final/external/items.py
-external-cli-builtin-template	main/jsonschema/root_sequence_final/external/root.py
+external-cli-builtin-template	main/jsonschema/root_sequence_final/external//*.py
 external-cli-custom-template	main/jsonschema/root_sequence_final/external.runtime.txt
-external-cli-custom-template	main/jsonschema/root_sequence_final/external/__init__.py
-external-cli-custom-template	main/jsonschema/root_sequence_final/external/items.py
-external-cli-custom-template	main/jsonschema/root_sequence_final/external/root.py
-external_exact-api-builtin-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt
+external-cli-custom-template	main/jsonschema/root_sequence_final/external//*.py
+external_exact-api-builtin-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
 external_exact-api-builtin-template	main/jsonschema/root_sequence_final/external_exact//*.py
-external_exact-api-custom-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt
+external_exact-api-custom-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
 external_exact-api-custom-template	main/jsonschema/root_sequence_final/external_exact//*.py
-external_exact-cli-builtin-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt
-external_exact-cli-builtin-template	main/jsonschema/root_sequence_final/external_exact/__init__.py
-external_exact-cli-builtin-template	main/jsonschema/root_sequence_final/external_exact/items.py
-external_exact-cli-builtin-template	main/jsonschema/root_sequence_final/external_exact/root.py
-external_exact-cli-custom-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt
-external_exact-cli-custom-template	main/jsonschema/root_sequence_final/external_exact/__init__.py
-external_exact-cli-custom-template	main/jsonschema/root_sequence_final/external_exact/items.py
-external_exact-cli-custom-template	main/jsonschema/root_sequence_final/external_exact/root.py
-external_generic-api-builtin-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt
+external_exact-cli-builtin-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
+external_exact-cli-builtin-template	main/jsonschema/root_sequence_final/external_exact//*.py
+external_exact-cli-custom-template	main/jsonschema/root_sequence_final/external_exact.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
+external_exact-cli-custom-template	main/jsonschema/root_sequence_final/external_exact//*.py
+external_generic-api-builtin-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
 external_generic-api-builtin-template	main/jsonschema/root_sequence_final/external_generic//*.py
-external_generic-api-custom-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt
+external_generic-api-custom-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
 external_generic-api-custom-template	main/jsonschema/root_sequence_final/external_generic//*.py
-external_generic-cli-builtin-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt
-external_generic-cli-builtin-template	main/jsonschema/root_sequence_final/external_generic/__init__.py
-external_generic-cli-builtin-template	main/jsonschema/root_sequence_final/external_generic/items.py
-external_generic-cli-builtin-template	main/jsonschema/root_sequence_final/external_generic/root.py
-external_generic-cli-custom-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt
-external_generic-cli-custom-template	main/jsonschema/root_sequence_final/external_generic/__init__.py
-external_generic-cli-custom-template	main/jsonschema/root_sequence_final/external_generic/items.py
-external_generic-cli-custom-template	main/jsonschema/root_sequence_final/external_generic/root.py
-external_legacy-api-builtin-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt
+external_generic-cli-builtin-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
+external_generic-cli-builtin-template	main/jsonschema/root_sequence_final/external_generic//*.py
+external_generic-cli-custom-template	main/jsonschema/root_sequence_final/external_generic.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
+external_generic-cli-custom-template	main/jsonschema/root_sequence_final/external_generic//*.py
+external_legacy-api-builtin-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
 external_legacy-api-builtin-template	main/jsonschema/root_sequence_final/external_legacy//*.py
-external_legacy-api-custom-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt
+external_legacy-api-custom-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
 external_legacy-api-custom-template	main/jsonschema/root_sequence_final/external_legacy//*.py
-external_legacy-cli-builtin-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt
-external_legacy-cli-builtin-template	main/jsonschema/root_sequence_final/external_legacy/__init__.py
-external_legacy-cli-builtin-template	main/jsonschema/root_sequence_final/external_legacy/items.py
-external_legacy-cli-builtin-template	main/jsonschema/root_sequence_final/external_legacy/root.py
-external_legacy-cli-custom-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt
-external_legacy-cli-custom-template	main/jsonschema/root_sequence_final/external_legacy/__init__.py
-external_legacy-cli-custom-template	main/jsonschema/root_sequence_final/external_legacy/items.py
-external_legacy-cli-custom-template	main/jsonschema/root_sequence_final/external_legacy/root.py
+external_legacy-cli-builtin-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
+external_legacy-cli-builtin-template	main/jsonschema/root_sequence_final/external_legacy//*.py
+external_legacy-cli-custom-template	main/jsonschema/root_sequence_final/external_legacy.runtime.txt	= main/jsonschema/root_sequence_final/external.runtime.txt
+external_legacy-cli-custom-template	main/jsonschema/root_sequence_final/external_legacy//*.py
 external_no_sequence-api-builtin-template	main/jsonschema/root_sequence_final/external_no_sequence.runtime.txt
 external_no_sequence-api-builtin-template	main/jsonschema/root_sequence_final/external_no_sequence//*.py
 external_no_sequence-api-custom-template	main/jsonschema/root_sequence_final/external_no_sequence.runtime.txt
 external_no_sequence-api-custom-template	main/jsonschema/root_sequence_final/external_no_sequence//*.py
 external_no_sequence-cli-builtin-template	main/jsonschema/root_sequence_final/external_no_sequence.runtime.txt
-external_no_sequence-cli-builtin-template	main/jsonschema/root_sequence_final/external_no_sequence/__init__.py
-external_no_sequence-cli-builtin-template	main/jsonschema/root_sequence_final/external_no_sequence/items.py
-external_no_sequence-cli-builtin-template	main/jsonschema/root_sequence_final/external_no_sequence/root.py
+external_no_sequence-cli-builtin-template	main/jsonschema/root_sequence_final/external_no_sequence//*.py
 external_no_sequence-cli-custom-template	main/jsonschema/root_sequence_final/external_no_sequence.runtime.txt
-external_no_sequence-cli-custom-template	main/jsonschema/root_sequence_final/external_no_sequence/__init__.py
-external_no_sequence-cli-custom-template	main/jsonschema/root_sequence_final/external_no_sequence/items.py
-external_no_sequence-cli-custom-template	main/jsonschema/root_sequence_final/external_no_sequence/root.py
+external_no_sequence-cli-custom-template	main/jsonschema/root_sequence_final/external_no_sequence//*.py
 integers-api-builtin-template	main/jsonschema/root_sequence_final/integers.py
-integers-api-builtin-template	main/jsonschema/root_sequence_final/integers.runtime.txt
+integers-api-builtin-template	main/jsonschema/root_sequence_final/integers.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 integers-api-custom-template	main/jsonschema/root_sequence_final/integers.py
-integers-api-custom-template	main/jsonschema/root_sequence_final/integers.runtime.txt
+integers-api-custom-template	main/jsonschema/root_sequence_final/integers.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 integers-cli-builtin-template	main/jsonschema/root_sequence_final/integers.py
-integers-cli-builtin-template	main/jsonschema/root_sequence_final/integers.runtime.txt
+integers-cli-builtin-template	main/jsonschema/root_sequence_final/integers.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 integers-cli-custom-template	main/jsonschema/root_sequence_final/integers.py
-integers-cli-custom-template	main/jsonschema/root_sequence_final/integers.runtime.txt
+integers-cli-custom-template	main/jsonschema/root_sequence_final/integers.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 integers_set-api-builtin-template	main/jsonschema/root_sequence_final/integers_set.py
-integers_set-api-builtin-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt
+integers_set-api-builtin-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 integers_set-api-custom-template	main/jsonschema/root_sequence_final/integers_set.py
-integers_set-api-custom-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt
+integers_set-api-custom-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 integers_set-cli-builtin-template	main/jsonschema/root_sequence_final/integers_set.py
-integers_set-cli-builtin-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt
+integers_set-cli-builtin-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 integers_set-cli-custom-template	main/jsonschema/root_sequence_final/integers_set.py
-integers_set-cli-custom-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt
+integers_set-cli-custom-template	main/jsonschema/root_sequence_final/integers_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 nested-api-builtin-template	main/jsonschema/root_sequence_final/nested.py
 nested-api-builtin-template	main/jsonschema/root_sequence_final/nested.runtime.txt
 nested-api-custom-template	main/jsonschema/root_sequence_final/nested.py
@@ -7523,21 +7503,21 @@ reuse_validators-cli-builtin-template	main/jsonschema/root_sequence_final/reuse_
 reuse_validators-cli-custom-template	main/jsonschema/root_sequence_final/nested.runtime.txt
 reuse_validators-cli-custom-template	main/jsonschema/root_sequence_final/reuse_validators.py
 union-api-builtin-template	main/jsonschema/root_sequence_final/union.py
-union-api-builtin-template	main/jsonschema/root_sequence_final/union.runtime.txt
+union-api-builtin-template	main/jsonschema/root_sequence_final/union.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 union-api-custom-template	main/jsonschema/root_sequence_final/union.py
-union-api-custom-template	main/jsonschema/root_sequence_final/union.runtime.txt
+union-api-custom-template	main/jsonschema/root_sequence_final/union.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 union-cli-builtin-template	main/jsonschema/root_sequence_final/union.py
-union-cli-builtin-template	main/jsonschema/root_sequence_final/union.runtime.txt
+union-cli-builtin-template	main/jsonschema/root_sequence_final/union.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 union-cli-custom-template	main/jsonschema/root_sequence_final/union.py
-union-cli-custom-template	main/jsonschema/root_sequence_final/union.runtime.txt
+union-cli-custom-template	main/jsonschema/root_sequence_final/union.runtime.txt	= main/jsonschema/root_sequence_final/any.runtime.txt
 union_set-api-builtin-template	main/jsonschema/root_sequence_final/union_set.py
-union_set-api-builtin-template	main/jsonschema/root_sequence_final/union_set.runtime.txt
+union_set-api-builtin-template	main/jsonschema/root_sequence_final/union_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 union_set-api-custom-template	main/jsonschema/root_sequence_final/union_set.py
-union_set-api-custom-template	main/jsonschema/root_sequence_final/union_set.runtime.txt
+union_set-api-custom-template	main/jsonschema/root_sequence_final/union_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 union_set-cli-builtin-template	main/jsonschema/root_sequence_final/union_set.py
-union_set-cli-builtin-template	main/jsonschema/root_sequence_final/union_set.runtime.txt
+union_set-cli-builtin-template	main/jsonschema/root_sequence_final/union_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 union_set-cli-custom-template	main/jsonschema/root_sequence_final/union_set.py
-union_set-cli-custom-template	main/jsonschema/root_sequence_final/union_set.runtime.txt
+union_set-cli-custom-template	main/jsonschema/root_sequence_final/union_set.runtime.txt	= main/jsonschema/root_sequence_final/any_set.runtime.txt
 [test_main_rust_only_syntax]
 	main/jsonschema/rust_only_syntax_pydantic_v2.py
 [test_main_rust_unsupported_pattern]

@@ -28450,9 +28450,9 @@ def test_main_root_sequence_final_types(
             output_path=output,
             input_file_type="jsonschema",
             extra_args=arguments,
-            assert_func=assert_file_content,
-            expected_file=expected if not package else None,
-            output_to_expected=tuple((path.name, path) for path in sorted(expected.glob("*.py"))) if package else None,
+            assert_func=None if package else assert_file_content,
+            expected_file=None if package else expected,
+            expected_directory=expected if package else None,
             force_exec_validation=True,
         )
     else:
