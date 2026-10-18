@@ -7,4 +7,4 @@ golden	docs_formatting/golden.txt
 quick_start	docs_formatting/quick_start.txt
 readme	docs_formatting/readme.txt
 stdout	docs_formatting/stdout.txt
-stdout_file	docs_formatting/stdout_file.txt
+stdout_file	docs_formatting/stdout_file.txt	= docs_formatting/stdout.txt

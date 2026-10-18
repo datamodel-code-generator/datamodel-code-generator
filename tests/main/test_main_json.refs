@@ -11,7 +11,7 @@
 [test_main_json_reuse_model]
 	main/json/json_reuse_model.py
 [test_main_json_reuse_model_pydantic2]
-	main/json/json_reuse_model_pydantic2.py
+	main/json/json_reuse_model_pydantic2.py	= main/json/json_reuse_model.py
 [test_main_json_snake_case_field]
 	main/json/json_snake_case_field.py
 [test_main_typed_dict_space_and_special_characters]

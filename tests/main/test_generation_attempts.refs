@@ -16,15 +16,15 @@ dispose_failed	main/generation_platform/no-retained-graph.txt
 emit_failed	main/generation_platform/attempt_emit_failed.txt	?
 emit_failed	main/generation_platform/no-retained-graph.txt
 emit_failed	main/generation_platform/windows/attempt_emit_failed.txt	?
-freeze_and_dispose_failed	main/generation_platform/attempt_freeze_and_dispose_failed.txt
+freeze_and_dispose_failed	main/generation_platform/attempt_freeze_and_dispose_failed.txt	= main/generation_platform/attempt_freeze_failed.txt
 freeze_and_dispose_failed	main/generation_platform/no-retained-graph.txt
 freeze_failed	main/generation_platform/attempt_freeze_failed.txt
 freeze_failed	main/generation_platform/no-retained-graph.txt
 initial	main/generation_platform/attempt_initial.txt
 initial	main/generation_platform/no-retained-graph.txt
-parse_and_close_failed	main/generation_platform/attempt_parse_and_close_failed.txt
+parse_and_close_failed	main/generation_platform/attempt_parse_and_close_failed.txt	= main/generation_platform/attempt_parse_failed.txt
 parse_and_close_failed	main/generation_platform/no-retained-graph.txt
-parse_and_dispose_failed	main/generation_platform/attempt_parse_and_dispose_failed.txt
+parse_and_dispose_failed	main/generation_platform/attempt_parse_and_dispose_failed.txt	= main/generation_platform/attempt_parse_failed.txt
 parse_and_dispose_failed	main/generation_platform/no-retained-graph.txt
 parse_failed	main/generation_platform/attempt_parse_failed.txt
 parse_failed	main/generation_platform/no-retained-graph.txt

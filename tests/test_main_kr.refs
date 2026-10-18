@@ -23,7 +23,7 @@
 [test_fail_on_multi_module_stdout_single_file]
 	main/person.py
 [test_formatters_option]
-	main_kr/formatters/output.py
+	main_kr/formatters/output.py	= main_kr/input_output/output.py
 [test_generate_cli_command_basic]
 	main_kr/generate_cli_command/basic.txt
 [test_generate_cli_command_excludes_excluded_options]
@@ -38,7 +38,7 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 [test_generate_cli_command_reconstructs_mapping_options]
 	main_kr/generate_cli_command/mapping_round_trip.py
 [test_generate_cli_command_skips_empty_external_ref_mapping]
-	main_kr/generate_cli_command/empty_external_ref_mapping.txt
+	main_kr/generate_cli_command/empty_external_ref_mapping.txt	= main_kr/generate_cli_command/excluded_options.txt
 [test_generate_cli_command_with_boolean_options]
 	main_kr/generate_cli_command/boolean_options.txt
 [test_generate_cli_command_with_false_boolean]
@@ -52,7 +52,7 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 [test_generate_cli_command_with_multiple_options]
 	main_kr/generate_cli_command/multiple_options.txt
 [test_generate_cli_command_with_no_use_specialized_enum]
-	main_kr/generate_cli_command/no_use_specialized_enum.txt
+	main_kr/generate_cli_command/no_use_specialized_enum.txt	= main/generate_cli_command/no_use_specialized_enum.txt
 [test_generate_cli_command_with_profile]
 	main_kr/generate_cli_command/with_profile.txt
 [test_generate_cli_command_with_spaces_in_values]
@@ -76,8 +76,8 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 [test_generate_pyproject_config_float_round_trip]
 	main/person.py
 	main_kr/generate_pyproject_config/float_option_helper.txt
-	main_kr/generate_pyproject_config_float_round_trip.2.py	= main/formatter_policy/disabled-cli.py
-	main_kr/generate_pyproject_config_float_round_trip.py	= main/formatter_policy/disabled-cli.py
+	main_kr/generate_pyproject_config_float_round_trip.2.py	= main/person.py
+	main_kr/generate_pyproject_config_float_round_trip.py	= main/person.py
 [test_generate_pyproject_config_helper_uses_default_formatter]
 	main_kr/generate_pyproject_config/helper_default_formatter.txt
 [test_generate_pyproject_config_with_boolean_options]
@@ -91,7 +91,7 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 [test_generate_pyproject_config_with_multiple_options]
 	main_kr/generate_pyproject_config/multiple_options.txt
 [test_help_shows_new_options]
-	main_kr/help_shows_new_options.txt
+	main_kr/help_shows_new_options.txt	= main/help/color.txt
 [test_http_ignore_tls]
 	main_kr/url_with_headers/output.py
 [test_http_local_ref_path_cli_doc]
@@ -103,9 +103,9 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 [test_ignore_pyproject_cli_doc]
 	main_kr/ignore_pyproject/output.py
 [test_ignore_pyproject_option]
-	main_kr/pyproject_profile/ignore_pyproject.py
+	main_kr/pyproject_profile/ignore_pyproject.py	= main_kr/ignore_pyproject/output.py
 [test_ignore_pyproject_with_profile]
-	main_kr/pyproject_profile/ignore_pyproject_with_profile.py
+	main_kr/pyproject_profile/ignore_pyproject_with_profile.py	= main_kr/pyproject_profile/cli_override.py
 [test_include_path_parameters]
 	main_kr/include_path_parameters/output.py
 [test_input_option]
@@ -115,18 +115,18 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 [test_lockfile_remote_lock_cli_doc]
 	main_kr/url_with_headers/output.py
 [test_main]
-	main_kr/main/output.py
+	main_kr/main/output.py	= main/openapi/custom_file_header_empty.py
 [test_main_base_class]
-	main_kr/main_base_class/output.py
+	main_kr/main_base_class/output.py	= main/openapi/base_class.py
 [test_main_custom_template_dir]
-	main_kr/main_custom_template_dir/output.py
+	main_kr/main_custom_template_dir/output.py	= main/openapi/extra_template_data_config_pydantic_v2.py
 [test_main_docstring_special_chars]
 	main_kr/main_docstring_special_chars/output.py
 [test_main_fail_on_multi_module_stdout]
 invalid-dotted-repair	__init__.py
 modular	__init__.py
 [test_main_modular]
-	main_kr/main_modular//*.py
+	main_kr/main_modular//*.py	= main/openapi/modular//*.py
 [test_main_modular_json_no_file]
 	main_kr/output_format_json/generation_modular_stdout.txt
 [test_main_modular_no_file]
@@ -167,7 +167,7 @@ modular	__init__.py
 	__init__.py
 	main_kr/output_format_json/check_output_file_difference_json.txt
 [test_output_format_json_check_success]
-	main_kr/output_format_json/check_success.txt
+	main_kr/output_format_json/check_success.txt	= main/openapi/api_scope_without_models/check_success_json.txt
 [test_output_format_json_check_text_reports_output_directory_differences]
 	main_kr/output_format_json/check_output_directory_differences_text.txt
 [test_output_format_json_check_text_reports_output_file_difference]
@@ -183,7 +183,7 @@ modular	__init__.py
 	main_kr/output_format_json/generation_mapping_payload.txt
 [test_output_format_json_generation_output_directory]
 	__init__.py
-	main_kr/main_modular//*.py
+	main_kr/main_modular//*.py	= main/openapi/modular//*.py
 	main_kr/output_format_json/generation_output_directory.txt
 [test_output_format_json_generation_output_file]
 	__init__.py
@@ -220,11 +220,11 @@ modular	__init__.py
 [test_profile_extends_chain]
 	main_kr/pyproject_profile/extends_chain.py
 [test_profile_extends_child_overrides_parent]
-	main_kr/pyproject_profile/extends_override.py
+	main_kr/pyproject_profile/extends_override.py	= main_kr/pyproject_profile/cli_override.py
 [test_profile_extends_multiple_parents]
-	main_kr/pyproject_profile/extends_multiple.py
+	main_kr/pyproject_profile/extends_multiple.py	= main_kr/pyproject_profile/extends_chain.py
 [test_profile_extends_single_parent]
-	main_kr/pyproject_profile/extends_single.py
+	main_kr/pyproject_profile/extends_single.py	= main_kr/pyproject_profile/inherits_base.py
 [test_profile_overrides_base_config_shallow_merge]
 	main_kr/pyproject_profile/shallow_merge.py
 [test_pyproject]
@@ -272,16 +272,16 @@ not JSON-returned invalid JSON batch output	__init__.py
 [test_pyproject_jobs_post_publish_check_does_not_recreate_missing_parent]
 	main_kr/jobs/stale.py
 [test_pyproject_jobs_preflight_protects_other_job_inputs]
-output = "$PROTECTED_INPUT"	main_kr/jobs/protected_schema.txt
-output = "$PROTECTED_PARENT"	main_kr/jobs/protected_schema.txt
-output = "$WRITER_OUTPUT"\nemit-model-metadata = "$PROTECTED_INPUT"	main_kr/jobs/protected_schema.txt
+output = "$PROTECTED_INPUT"	main_kr/jobs/protected_schema.txt	= main/malformed/path_conflict_input.txt
+output = "$PROTECTED_PARENT"	main_kr/jobs/protected_schema.txt	= main/malformed/path_conflict_input.txt
+output = "$WRITER_OUTPUT"\nemit-model-metadata = "$PROTECTED_INPUT"	main_kr/jobs/protected_schema.txt	= main/malformed/path_conflict_input.txt
 [test_pyproject_jobs_preflight_rejects_hardlinked_other_job_input]
-	main_kr/jobs/protected_schema.txt
+	main_kr/jobs/protected_schema.txt	= main/malformed/path_conflict_input.txt
 [test_pyproject_jobs_publish_first_replacement_failure_removes_backup]
 	main_kr/jobs/stale.py
 [test_pyproject_jobs_publish_model_metadata]
 	main/person.py
-	main_kr/jobs/metadata_version.txt
+	main_kr/jobs/metadata_version.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_pyproject_jobs_publish_nested_output_and_preserve_mode]
 	main/person.py
 [test_pyproject_jobs_reject_input_diff_from_every_configuration_layer_without_publication]
@@ -290,7 +290,7 @@ cli	__init__.py
 job	__init__.py
 profile	__init__.py
 [test_pyproject_jobs_reject_nested_output_symlink_escape]
-	main_kr/jobs/protected_schema.txt
+	main_kr/jobs/protected_schema.txt	= main/malformed/path_conflict_input.txt
 [test_pyproject_jobs_rejects_output_ancestor_swap_between_validation_and_publication]
 	main_kr/jobs/stale.py
 [test_pyproject_jobs_report_batch_watch_startup_error]
@@ -316,9 +316,9 @@ profile	__init__.py
 [test_target_pydantic_version]
 	main_kr/target_pydantic_version/v2_11.py
 [test_target_python_version]
-	main_kr/target_python_version/output.py
+	main_kr/target_python_version/output.py	= main/openapi/custom_file_header_empty.py
 [test_target_python_version_outputs]
-	main_kr/target_python_version/py310.py
+	main_kr/target_python_version/py310.py	= main/jsonschema/autodetect.py
 [test_update_remote_lock_cli_doc]
 	main_kr/url_with_headers/output.py
 [test_url_with_http_headers]

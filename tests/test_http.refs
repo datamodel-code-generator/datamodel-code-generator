@@ -27,9 +27,9 @@
 	http/backend.py
 [test_cli_header_names_the_url_without_credentials_or_query]
 url-argument	http/url_header_redacted.py
-url-argument	http/url_header_redacted_metadata.txt
+url-argument	http/url_header_redacted_metadata.txt	= http/remote_lock_stdout_metadata.txt
 url-equals	http/url_header_redacted_equals.py
-url-equals	http/url_header_redacted_metadata.txt
+url-equals	http/url_header_redacted_metadata.txt	= http/remote_lock_stdout_metadata.txt
 [test_cli_lock_flags_override_selected_profile_lock_mode]
 	http/backend.py
 [test_cli_locks_final_real_redirect_response_under_the_original_request]

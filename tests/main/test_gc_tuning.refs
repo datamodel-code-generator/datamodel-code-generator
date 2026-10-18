@@ -4,10 +4,10 @@
 	main/gc_tuning/exception.txt
 [test_generate_scopes_tuned_gc_for_e2e_mapping_input]
 	main/gc_tuning/generate.txt
-	main/jsonschema/general.py
+	main/jsonschema/general.py	= main/jsonschema/autodetect.py
 [test_generate_without_gc_threshold_api]
 	main/gc_tuning/no_threshold_api.txt
-	main/jsonschema/general.py
+	main/jsonschema/general.py	= main/jsonschema/autodetect.py
 [test_tuned_gc_keeps_concurrent_scope_tuned_until_all_workers_exit]
 	main/gc_tuning/concurrent.txt
 [test_tuned_gc_keeps_nested_scope_tuned_until_outer_exit]

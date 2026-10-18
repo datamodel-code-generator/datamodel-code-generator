@@ -6,10 +6,10 @@
 3.12	ci_shards/new-tests-3.12.txt
 3.13	ci_shards/new-tests-3.13.txt
 3.14	ci_shards/new-tests-3.14.txt
-3.15	ci_shards/new-tests-3.15.txt
+3.15	ci_shards/new-tests-3.15.txt	= ci_shards/new-tests-3.14.txt
 e2e	ci_shards/new-tests-e2e.txt
-macos	ci_shards/new-tests-macos.txt
-windows	ci_shards/new-tests-windows.txt
+macos	ci_shards/new-tests-macos.txt	= ci_shards/new-tests-e2e.txt
+windows	ci_shards/new-tests-windows.txt	= ci_shards/new-tests-e2e.txt
 [test_recipe_cli_validates_external_cases]
 balanced	ci_shards/balanced.txt
 blank-nodeid	ci_shards/blank-nodeid.txt
@@ -20,17 +20,17 @@ empty	ci_shards/empty.txt
 empty-nodeid	ci_shards/empty-nodeid.txt
 empty-shard	ci_shards/empty-shard.txt
 invalid-item	ci_shards/invalid-item.txt
-large-index	ci_shards/large-index.txt
+large-index	ci_shards/large-index.txt	= ci_shards/zero-count.txt
 missing-index	ci_shards/missing-index.txt
-negative-index	ci_shards/negative-index.txt
+negative-index	ci_shards/negative-index.txt	= ci_shards/zero-count.txt
 negative-weight	ci_shards/negative-weight.txt
 newline-nodeid	ci_shards/newline-nodeid.txt
-not-list	ci_shards/not-list.txt
+not-list	ci_shards/not-list.txt	= ci_shards/empty.txt
 ordered	ci_shards/ordered.txt
 second	ci_shards/second.txt
 unsupported	ci_shards/unsupported.txt
 zero-count	ci_shards/zero-count.txt
-zero-index	ci_shards/zero-index.txt
+zero-index	ci_shards/zero-index.txt	= ci_shards/zero-count.txt
 zero-weight	ci_shards/zero-weight.txt
 [test_recipe_discovers_split_nodeids]
 	ci_shards/discovery.txt
@@ -39,14 +39,14 @@ zero-weight	ci_shards/zero-weight.txt
 3	ci_shards/round-trip.txt
 [test_test_shard_option_partitions_collection]
 all	ci_shards/test-shard-all.txt
-keyword	ci_shards/test-shard-keyword.txt
+keyword	ci_shards/test-shard-keyword.txt	= ci_shards/test-shard-all.txt
 [test_weights_cli_validates_external_cases]
 empty-maps	ci_shards/weights-empty-maps.txt
 exclude	ci_shards/weights-exclude.txt
-invalid-profile	ci_shards/weights-invalid-profile.txt
-invalid-version	ci_shards/weights-invalid-version.txt
-missing-profile	ci_shards/weights-missing-profile.txt
+invalid-profile	ci_shards/weights-invalid-profile.txt	= ci_shards/weights-empty-maps.txt
+invalid-version	ci_shards/weights-invalid-version.txt	= ci_shards/weights-empty-maps.txt
+missing-profile	ci_shards/weights-missing-profile.txt	= ci_shards/weights-empty-maps.txt
 record	ci_shards/weights-record.txt
 record-empty	ci_shards/weights-record-empty.txt
-record-missing-provenance	ci_shards/weights-record-missing-provenance.txt
+record-missing-provenance	ci_shards/weights-record-missing-provenance.txt	= ci_shards/missing-index.txt
 record-no-split	ci_shards/weights-record-no-split.txt

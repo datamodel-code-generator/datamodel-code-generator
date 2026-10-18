@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "format": "json",
-  "kind": "input-diff",
-  "success": true,
-  "content": "",
-  "differences": []
-}
