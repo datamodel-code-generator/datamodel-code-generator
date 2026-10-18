@@ -4061,6 +4061,40 @@ def test_main_openapi_single_value_enum_as_const_null_branch(
 
 
 @pytest.mark.parametrize(
+    ("input_name", "output_model", "extra_args"),
+    [
+        pytest.param("nullable", "pydantic_v2.BaseModel", [], id="pydantic-v2"),
+        pytest.param("nullable", "pydantic_v2.BaseModel", ["--strict-nullable"], id="strict-nullable"),
+        pytest.param(
+            "nullable",
+            "pydantic_v2.BaseModel",
+            ["--use-missing-sentinel"],
+            id="missing-sentinel",
+            marks=EXPERIMENTAL_MISSING_IMPORT_WARNING,
+        ),
+        pytest.param("nullable", "msgspec.Struct", ["--strict-nullable"], id="msgspec-strict-nullable"),
+        pytest.param("nullable_branches", "pydantic_v2.BaseModel", [], id="branches"),
+    ],
+)
+@pytest.mark.parametrize("option_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_openapi_single_value_enum_as_const_nullable(
+    input_name: str, output_model: str, extra_args: list[str], option_args: list[str], output_file: Path
+) -> None:
+    """Read a one-value enum with nullable true as written under --use-single-value-enum-as-const.
+
+    Such a schema gets the models it gets without the option, also as a $ref target, an array item or a branch
+    beside a null branch. Beside such a oneOf/anyOf branch, the branches the option reads as const are typed as
+    written instead of merging, while an enum of null with nullable true is read as const and merges.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "single_value_enum_as_const" / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args, *option_args],
+    )
+
+
+@pytest.mark.parametrize(
     ("input_path", "output_model", "extra_args"),
     [
         pytest.param(

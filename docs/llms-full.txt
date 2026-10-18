@@ -39083,13 +39083,14 @@ oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented
 become one Enum with branch titles as member names when there are two or more and all hold values
 of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
 value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
-schema with one enum value is typed `Literal[...]` instead of a one-member Enum. The option reads
-`const` branches the same way, which without it merge into one Enum in those cases too. Instance
-data such as `default` and `examples`, extension values (`x-...` except `x-propertyNames`), links
-and servers stay as written, so a schema kept under an extension key, such as one referenced as
-`headers.yaml#/x-rate`, is read as written too. A document parsed with draft-04 schema features,
-which have no `const`, is kept, and Avro, Protocol Buffers, XML Schema and GraphQL inputs are not
-changed.
+schema with one enum value is typed `Literal[...]` instead of a one-member Enum, except one with
+`nullable: true` and a value other than `null`, which keeps its enum and is read as written. The
+option reads `const` branches the same way, which without it merge into one Enum in those cases
+too. Instance data such as `default` and `examples`, extension values (`x-...` except
+`x-propertyNames`), links and servers stay as written, so a schema kept under an extension
+key, such as one referenced as `headers.yaml#/x-rate`, is read as written too. A document parsed
+with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol Buffers, XML
+Schema and GraphQL inputs are not changed.
 
 !!! tip "Usage"
 
@@ -60551,8 +60552,9 @@ names that class-keyed options name, untyped nullable maps, invalid dotted stdou
 the whole pipeline, not passes inside it.
 
 **L0.** `_load_source_dict` calls `_read_document`, which keeps the document as written and, under
-`--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write (`_single_value_enum_as_const`,
-which skips instance-data keywords and extension keys other than `x-propertyNames` through `_document_child_entries`).
+`--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write, except beside `nullable: true`
+when the value is not null (`_single_value_enum_as_const`, which skips instance-data keywords and extension keys other
+than `x-propertyNames` through `_document_child_entries`).
 `_parse_file` then calls `_prepare_schema_resources`, which indexes `$id` and anchors and rewrites `$ref`s that resolve
 through an embedded `$id`. Referenced documents go through the same two steps when `resolve_ref` loads them. OpenAPI
 parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of operations in
@@ -60775,7 +60777,10 @@ sibling keywords, `$ref` targets inside extension keys and properties whose name
 that a path-based test misreads. The mark has to survive every step that builds a new object from a marked one:
 copy-on-write rewrites (`_single_value_enum_as_const`, `_rewrite_schema_resource_refs`), `_validate_schema_object`,
 `_merge_ref_with_schema`, synthetic enums, allOf and combined-schema merges, OpenAPI operation copies, and
-`_resolve_unparsed_json_pointer`, which loads the source again as a fresh dict. No such marker exists today.
+`_resolve_unparsed_json_pointer`, which loads the source again as a fresh dict. `--use-single-value-enum-as-const` has
+such a mark: its L0 walk marks every schema object that holds a `const` after the rewrite, written or rewritten, with
+`x-datamodel-code-generator-read-as-const`, and L1 `_extract_const_enum_from_combined` reads it as `read_as_const`. That
+it survives each of these steps is not verified.
 
 ### Case Notes
 
@@ -60792,9 +60797,27 @@ copy-on-write rewrites (`_single_value_enum_as_const`, `_rewrite_schema_resource
   one L6 pass after `__apply_generic_base_class` that skips `unused_models`; constructor ordering then has to run again
   for the models whose defaults it drops, as `__fix_tag_opt_out_field_ordering` does for msgspec.
 - **[#4874](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4874)** (scope of
-  `--use-single-value-enum-as-const`): the L0 rewrite defines the scope, and the L1 decision in `_parse_schema_obj`
-  (`_extract_const_enum_from_combined` turning a oneOf/anyOf of rewritten consts into a synthetic enum) needs it. The
-  correct point is a mark on schema objects set by the L0 walk, not a test of the parse path.
+  `--use-single-value-enum-as-const`): the L0 rewrite defined the scope, and the L1 decision in `_parse_schema_obj`
+  (`_extract_const_enum_from_combined` turning a oneOf/anyOf of rewritten consts into a synthetic enum) needed it. The
+  fix (#4926, #4927) put a mark on schema objects set by the L0 walk instead of testing the parse path.
+- **[#4873](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4873)** (nullable one-value
+  enums under `--use-single-value-enum-as-const`): the L1 const path does not carry `nullable`. `_get_data_type` returns
+  `_get_const_data_type` before the `strict_nullable and obj.nullable` step, and `process_const` in
+  `DataModelFieldBase.__init__` decides nullability while the field is built. Until one pass after the L5 loop decides
+  the nullability of const fields from where null comes from (`nullable`, type list, enum member, merging site), the L0
+  rewrite keeps a schema with `nullable: true` and a value other than null as an enum. Known limits until then:
+  - `_merge_ref_with_schema` types a `$ref` with sibling keywords as a const when the site or the target was rewritten,
+    and drops `nullable` from the other side: `{$ref: P, nullable: true, maxLength: 5}` and
+    `{$ref: P, nullable: true, enum: [p]}` with `P` an enum of one value, and `{$ref: N, enum: [n]}` with `N` nullable,
+    are typed `Literal[...]` without `None`, as a written `const` beside `nullable` is.
+  - A nullable discriminator tag is typed as without the option (`Literal['dog'] | None` under `--strict-nullable`):
+    pydantic models and pydantic dataclasses fail at import under `--strict-nullable` or `--use-missing-sentinel`, and
+    msgspec leaves that variant untagged, so the union cannot decode it.
+  - The rewrite reads only `nullable: true`; other values that `JsonSchemaObject` reads as true, such as `"true"`, are
+    rewritten and lose null.
+  - `_extract_const_enum_from_combined` merges no branch of a oneOf/anyOf in which one branch keeps its enum, so the
+    other one-value branches stay `Literal[...]` beside it (`A | Literal['b']`); msgspec cannot decode that union, nor
+    the `A | A1` it gets without the option.
 - **[#4822](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4822)** (missing `Any` import
   after collapse): same-module collapse shares the root type's `data_types` list between the root model and every site
   that inlined it. A later collapse that replaces a member calls `set_nested_data_types` on the member's `parent` (the
