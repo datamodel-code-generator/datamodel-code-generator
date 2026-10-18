@@ -1,0 +1,1 @@
+TypeError: ATTRIBUTE_FACTS row AttributeFact('DataType', 'type') misses kind, facts, final_after, frozen_at

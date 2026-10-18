@@ -17,6 +17,7 @@ SOURCE_ROOT = ROOT / "src" / "datamodel_code_generator"
 Layer: TypeAlias = Literal[
     "entrypoint",
     "parser",
+    "facts",
     "config",
     "input-model",
     "reference",
@@ -71,6 +72,7 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
 })
+_FACTS_ALLOWED_ROOTS: Final = frozenset({*sys.stdlib_module_names, "typing_extensions"})
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
     "enum.py",
@@ -249,6 +251,7 @@ def _module_name(path: Path, layer: Layer) -> str:
         return {
             "entrypoint": "datamodel_code_generator.entrypoint_fixture",
             "parser": "datamodel_code_generator.parser.fixture",
+            "facts": "datamodel_code_generator.parser.facts_fixture",
             "config": "datamodel_code_generator.config_fixture",
             "input-model": "datamodel_code_generator.input_model_fixture",
             "reference": "datamodel_code_generator.reference_fixture",
@@ -543,7 +546,9 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         dynamic_target = None
         if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
             dynamic_target = self._resolved_dynamic_target(node, self._resolved_string(argument))
-        if (
+        if dynamic_target and self.layer == "facts":
+            self._check_import(node, dynamic_target)
+        elif (
             dynamic_target
             and not self._check_target_boundary(node, dynamic_target)
             and self.layer in {"parser", "config", "reference", "shared-model"}
@@ -984,6 +989,16 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         return False
 
     def _check_import(self, node: ast.AST, target: str) -> None:
+        if self.layer == "facts":
+            if target.partition(".")[0] not in _FACTS_ALLOWED_ROOTS:
+                self._add(
+                    node,
+                    "facts-import",
+                    target,
+                    "the attribute-to-fact table is read by checkers without the package: import only the standard "
+                    "library and typing_extensions",
+                )
+            return
         if self.layer == "reference" and _is_reference_backend_import(target):
             self._add(
                 node,
@@ -1067,6 +1082,8 @@ def _classify_source_path(path: Path) -> Layer:
     match relative.parts:
         case ("__init__.py",):
             layer = "entrypoint"
+        case ("parser", "_facts.py"):
+            layer = "facts"
         case ("parser", *_):
             layer = "parser"
         case ("config.py" | "input_model.py" as filename,):

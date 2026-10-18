@@ -1,0 +1,1 @@
+TypeError: ATTRIBUTE_FACTS field 'owner' must be a string or an enum member

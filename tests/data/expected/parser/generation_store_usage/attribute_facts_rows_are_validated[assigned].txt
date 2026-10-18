@@ -1,0 +1,1 @@
+(FactRow(owner='DataType', attribute='type', kind='FACT', facts=('Fact.FIELD_TYPES',), final_after='PARSE', frozen_at='B1', store_ops=(), access='ATTRIBUTE'),)
