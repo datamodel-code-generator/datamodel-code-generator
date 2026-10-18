@@ -1,6 +1,7 @@
 [
   {
     "name": "string_2020-12",
+    "oracle": "string_2019-09",
     "valid": [
       "ab",
       "abc"
@@ -101,6 +102,7 @@
   },
   {
     "name": "const_intersection",
+    "oracle": "const_sibling",
     "valid": [
       "b"
     ],
@@ -131,6 +133,7 @@
   },
   {
     "name": "items_external",
+    "oracle": "array_external",
     "valid": [
       [
         2
@@ -388,6 +391,7 @@
   },
   {
     "name": "items_required_closed",
+    "oracle": "items_disjoint_type",
     "valid": [
       []
     ],

@@ -1,0 +1,13 @@
+{
+  "A": {
+    "base_class_kwargs": {
+      "omit_defaults": true
+    }
+  },
+  "B": {
+    "base_class_kwargs": {
+      "omit_defaults": false,
+      "rename": "camel"
+    }
+  }
+}

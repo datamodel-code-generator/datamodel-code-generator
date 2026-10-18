@@ -17,13 +17,13 @@ boolean-external-api	main/jsonschema/pattern_string_adapters/boolean.py
 boolean-external-api	main/jsonschema/pattern_string_adapters/boolean.runtime.txt
 boolean-external-cli	main/jsonschema/pattern_string_adapters/boolean.py
 boolean-external-cli	main/jsonschema/pattern_string_adapters/boolean.runtime.txt
-constraints_off-builtin-api	main/jsonschema/pattern_string_adapters/constraints_off.py
+constraints_off-builtin-api	main/jsonschema/pattern_string_adapters/constraints_off.py	= main/jsonschema/pattern_string_adapters/direct.py
 constraints_off-builtin-api	main/jsonschema/pattern_string_adapters/constraints_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-constraints_off-builtin-cli	main/jsonschema/pattern_string_adapters/constraints_off.py
+constraints_off-builtin-cli	main/jsonschema/pattern_string_adapters/constraints_off.py	= main/jsonschema/pattern_string_adapters/direct.py
 constraints_off-builtin-cli	main/jsonschema/pattern_string_adapters/constraints_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-constraints_off-external-api	main/jsonschema/pattern_string_adapters/constraints_off.py
+constraints_off-external-api	main/jsonschema/pattern_string_adapters/constraints_off.py	= main/jsonschema/pattern_string_adapters/direct.py
 constraints_off-external-api	main/jsonschema/pattern_string_adapters/constraints_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-constraints_off-external-cli	main/jsonschema/pattern_string_adapters/constraints_off.py
+constraints_off-external-cli	main/jsonschema/pattern_string_adapters/constraints_off.py	= main/jsonschema/pattern_string_adapters/direct.py
 constraints_off-external-cli	main/jsonschema/pattern_string_adapters/constraints_off.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 custom-builtin-api	main/jsonschema/pattern_string_adapters/custom.py
 custom-builtin-api	main/jsonschema/pattern_string_adapters/custom.runtime.txt
@@ -57,13 +57,13 @@ empty_only-external-api	main/jsonschema/pattern_string_adapters/empty_only.py
 empty_only-external-api	main/jsonschema/pattern_string_adapters/empty_only.runtime.txt	= main/jsonschema/pattern_string_adapters/ordinary.runtime.txt
 empty_only-external-cli	main/jsonschema/pattern_string_adapters/empty_only.py
 empty_only-external-cli	main/jsonschema/pattern_string_adapters/empty_only.runtime.txt	= main/jsonschema/pattern_string_adapters/ordinary.runtime.txt
-force_defaults-builtin-api	main/jsonschema/pattern_string_adapters/force_defaults.py
+force_defaults-builtin-api	main/jsonschema/pattern_string_adapters/force_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 force_defaults-builtin-api	main/jsonschema/pattern_string_adapters/force_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-force_defaults-builtin-cli	main/jsonschema/pattern_string_adapters/force_defaults.py
+force_defaults-builtin-cli	main/jsonschema/pattern_string_adapters/force_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 force_defaults-builtin-cli	main/jsonschema/pattern_string_adapters/force_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-force_defaults-external-api	main/jsonschema/pattern_string_adapters/force_defaults.py
+force_defaults-external-api	main/jsonschema/pattern_string_adapters/force_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 force_defaults-external-api	main/jsonschema/pattern_string_adapters/force_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-force_defaults-external-cli	main/jsonschema/pattern_string_adapters/force_defaults.py
+force_defaults-external-cli	main/jsonschema/pattern_string_adapters/force_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 force_defaults-external-cli	main/jsonschema/pattern_string_adapters/force_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 force_optional-builtin-api	main/jsonschema/pattern_string_adapters/force_optional.py
 force_optional-builtin-api	main/jsonschema/pattern_string_adapters/force_optional.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
@@ -133,13 +133,13 @@ strict-external-api	main/jsonschema/pattern_string_adapters/strict.py
 strict-external-api	main/jsonschema/pattern_string_adapters/strict.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 strict-external-cli	main/jsonschema/pattern_string_adapters/strict.py
 strict-external-cli	main/jsonschema/pattern_string_adapters/strict.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-strip_defaults-builtin-api	main/jsonschema/pattern_string_adapters/strip_defaults.py
+strip_defaults-builtin-api	main/jsonschema/pattern_string_adapters/strip_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 strip_defaults-builtin-api	main/jsonschema/pattern_string_adapters/strip_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-strip_defaults-builtin-cli	main/jsonschema/pattern_string_adapters/strip_defaults.py
+strip_defaults-builtin-cli	main/jsonschema/pattern_string_adapters/strip_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 strip_defaults-builtin-cli	main/jsonschema/pattern_string_adapters/strip_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-strip_defaults-external-api	main/jsonschema/pattern_string_adapters/strip_defaults.py
+strip_defaults-external-api	main/jsonschema/pattern_string_adapters/strip_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 strip_defaults-external-api	main/jsonschema/pattern_string_adapters/strip_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
-strip_defaults-external-cli	main/jsonschema/pattern_string_adapters/strip_defaults.py
+strip_defaults-external-cli	main/jsonschema/pattern_string_adapters/strip_defaults.py	= main/jsonschema/pattern_string_adapters/direct.py
 strip_defaults-external-cli	main/jsonschema/pattern_string_adapters/strip_defaults.runtime.txt	= main/jsonschema/pattern_string_adapters/direct.runtime.txt
 suffix-builtin-api	main/jsonschema/pattern_string_adapters/suffix.py
 suffix-builtin-api	main/jsonschema/pattern_string_adapters/suffix.runtime.txt	= main/jsonschema/pattern_string_adapters/custom.runtime.txt

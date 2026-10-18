@@ -3071,7 +3071,7 @@ def test_python_root_model_inputs(
     from datamodel_code_generator.format import Formatter
 
     (output_file.parent / "pyproject.toml").write_bytes(
-        (DATA_PATH / "python/input_model/root_models_format/pyproject.toml").read_bytes()
+        (DATA_PATH / "python/validator_formatters/pyproject.toml").read_bytes()
     )
     formatters = [Formatter.BLACK, Formatter.ISORT] if _uses_external_test_default_formatter() else [Formatter.BUILTIN]
     name = case["name"]

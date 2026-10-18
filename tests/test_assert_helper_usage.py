@@ -30,7 +30,7 @@ from tests.conftest import (
     assert_httpx_get_kwargs,
     create_httpx_get_mock,
 )
-from tests.expected_access import READ, expected_accesses
+from tests.expected_access import expected_accesses
 from tests.main.conftest import (
     _assert_generated_package_model_validation,
     assert_generated_model_json_invalid,
@@ -202,7 +202,12 @@ RULE_FAILURE_MESSAGES = {
         "Tests with equal output share one stored file, and fix runs split, merge, and move stored files, so a path "
         "below tests/data/expected names whatever is stored there now. Test code that reads an expected file itself, "
         "as input or to check another test's output, reads it through tests.conftest.stored_expected(path), which "
-        "follows the .refs index; only the ledger in tests/conftest.py and tests/units.py opens stored files by path. "
+        "follows the .refs index; only the ledger in tests/conftest.py and tests/units.py opens stored files by path.\n"
+        "Test code lists no directory there either (glob, rglob, iterdir, walk, listdir, scandir), not even one "
+        "stored_expected returned: the files it finds are whatever is stored now, not what the test generated. Compare "
+        "a generated directory as one tree instead: pass it as expected_directory= to run_main_and_assert or "
+        "run_generate_file_and_assert, or call assert_directory_content(output_dir, expected_dir); pytest records "
+        "the whole tree under one label, and creates or fixes all of its files.\n"
         "Audits of every stored file below a directory are justified entries in JUSTIFIED_VIOLATIONS."
     ),
     EMBEDDED_SOURCE: (
@@ -1125,7 +1130,10 @@ def _collect_findings(tests_root: Path, exempt_files: Iterable[Path]) -> list[Fi
 
 
 def _expected_read_findings(tests_root: Path) -> list[Finding]:
-    """Return the reads of stored expected files by path, outside the ledger and ``stored_expected``."""
+    """Return the reads, copies and listings of stored expected files by path, outside the ledger.
+
+    A path ``stored_expected`` returned may be read or copied, but not listed.
+    """
     return [
         Finding(
             EXPECTED_READ,
@@ -1135,7 +1143,6 @@ def _expected_read_findings(tests_root: Path) -> list[Finding]:
             access.text,
         )
         for access in expected_accesses(tests_root.parent, tests_root)
-        if access.kind == READ
     ]
 
 
@@ -2549,6 +2556,17 @@ def copies(tmp_path, *args, **kwargs):
         found.read_text()
     stored_expected(EXPECTED / "x.txt").read_text()
     stored_expected().read_text()
+
+
+CASES = sorted((EXPECTED / "mod").glob("*.py"))
+
+
+def listings():
+    os.listdir()
+    os.listdir(path=EXPECTED / "more")
+    list(ast.walk(ast.parse("x = 1")))
+    for top, _, names in os.walk(EXPECTED):
+        pass
 """
 
 
@@ -2557,7 +2575,8 @@ def test_collect_findings_reports_expected_reads(tmp_path: Path) -> None:
 
     Paths follow module constants imported from helper modules, loops, unpacking, conditionals, and the arguments
     callers pass to helpers; tmp paths, inputs beside the expected root, and ``stored_expected`` results are not
-    reads of stored files, and listings are left to ``--deduplicate``.
+    reads of stored files. Listings are reported too, also of a directory ``stored_expected`` returned, but walking
+    an AST lists nothing.
     """
     package = tmp_path.name
     findings = _probe_findings(
@@ -2592,7 +2611,11 @@ def test_collect_findings_reports_expected_reads(tmp_path: Path) -> None:
             "expected-read test_more.py:26 copies: "
             "run(copy_files=[(EXPECTED / 'w.txt', tmp_path), (tmp_path, tmp_path), ()])"
         ),
+        "expected-read test_more.py:28 copies: stored_expected(EXPECTED / 'dir').glob('*.py')",
         "expected-read test_more.py:29 copies: found.read_text()",
+        "expected-read test_more.py:34 <module>: (EXPECTED / 'mod').glob('*.py')",
+        "expected-read test_more.py:39 listings: os.listdir(path=EXPECTED / 'more')",
+        "expected-read test_more.py:41 listings: os.walk(EXPECTED)",
         "expected-read test_reads.py:10 <module>: (ROOT / 'module.txt').read_text()",
         "expected-read test_reads.py:14 test_reads: ROOT.joinpath('sub', 'x.txt').read_bytes()",
         "expected-read test_reads.py:15 test_reads: (ROOT / f'{flag}.txt').with_suffix('.json').open()",
@@ -2607,11 +2630,13 @@ def test_collect_findings_reports_expected_reads(tmp_path: Path) -> None:
         "expected-read test_reads.py:41 test_reads: item.read_text()",
         "expected-read test_reads.py:42 test_reads: [ROOT / 'q.txt'][0].read_text()",
         "expected-read test_reads.py:43 test_reads: open(str(Path(ROOT, 'r.txt')))",
+        "expected-read test_reads.py:44 test_reads: ROOT.glob('*.txt')",
         "expected-read test_reads.py:44 test_reads: entry.read_text()",
         (
             "expected-read test_reads.py:53 TestReads.test_method: "
             "(Path(__file__).parent / 'data' / 'expected' / 'n.txt').read_text()"
         ),
+        "expected-read test_reads.py:57 test_async: ROOT.iterdir()",
         "expected-read test_reads.py:59 test_async: ROOT.open()",
     ]
 

@@ -181,6 +181,17 @@ def test_main_xmlschema_edge_cases(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_xmlschema_single_value_enum_as_const_keeps_converted(extra_args: list[str], output_file: Path) -> None:
+    """Keep the fixed values of nillable elements as written, as XML Schema is converted rather than read as JSON."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "single_value_enum_as_const.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
 def test_main_xmlschema_fixed_decimal(output_file: Path) -> None:
     """Generate Decimal defaults for fixed XML Schema decimal values."""
     run_main_and_assert(
@@ -1207,6 +1218,11 @@ XSD_PROPERTY_CONTROLS = (
     "default_namespace_alias_reuse",
     "empty_namespace_reuse",
 )
+XSD_PROPERTY_SHARED_INSTANCES = {
+    "empty_namespace_reuse.xml": "group_reuse.xml",
+    "simple_content_collision.xml": "namespaced_attributes.xml",
+    "simple_content_collision.invalid.xml": "namespaced_attributes.invalid.xml",
+}
 XSD_PROPERTY_BACKENDS = (
     DataModelType.PydanticV2BaseModel,
     DataModelType.PydanticV2Dataclass,
@@ -1220,10 +1236,14 @@ XSD_PROPERTY_BACKENDS = (
 def test_native_xsd_property_names(name: str) -> None:
     """Confirm collision and reuse fixtures are legal XSD with valid XML instances."""
     source = XML_SCHEMA_DATA_PATH / "field_name_collisions" / name
+    valid, invalid = (
+        source.with_name(XSD_PROPERTY_SHARED_INSTANCES.get(instance, instance))
+        for instance in (f"{name}.xml", f"{name}.invalid.xml")
+    )
     schema = etree.XMLSchema(etree.parse(str(source.with_suffix(".xsd"))))
-    schema.assertValid(etree.parse(str(source.with_suffix(".xml"))))
+    schema.assertValid(etree.parse(str(valid)))
     with pytest.raises(etree.DocumentInvalid):
-        schema.assertValid(etree.parse(str(source.with_suffix(".invalid.xml"))))
+        schema.assertValid(etree.parse(str(invalid)))
 
 
 @pytest.mark.parametrize("name", [*XSD_PROPERTY_CONTROLS, "unused"])

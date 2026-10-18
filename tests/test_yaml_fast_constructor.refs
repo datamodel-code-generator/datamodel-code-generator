@@ -20,6 +20,7 @@ asyncapi/single_value_enum_as_const/v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/v3.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/written_as_const/v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/written_as_const/v3.yaml	yaml_fast_constructor/parity.txt
+asyncapi/single_value_enum_as_const/xml_schema.yaml	yaml_fast_constructor/parity.txt
 asyncapi/stable-surface.yaml	yaml_fast_constructor/parity.txt
 asyncapi/unknown-version.yaml	yaml_fast_constructor/parity.txt
 asyncapi/user-events.yaml	yaml_fast_constructor/parity.txt
@@ -171,6 +172,8 @@ openapi/discriminator_msgspec_tagged_unions_modules_variants_first.yaml	yaml_fas
 openapi/discriminator_no_mapping.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_no_mapping_no_subtypes.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_oneof_short_mapping.yaml	yaml_fast_constructor/parity.txt
+openapi/discriminator_optional_literal.yaml	yaml_fast_constructor/parity.txt
+openapi/discriminator_optional_literal_nested.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_partial_mapping.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_pattern.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_pattern_mismatch.yaml	yaml_fast_constructor/parity.txt
@@ -244,7 +247,6 @@ openapi/invalid_dotted_mixed_module.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_name_priority.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_relative_import.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_schema_name.yaml	yaml_fast_constructor/parity.txt
-openapi/issue_2953.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema_31.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer.yaml	yaml_fast_constructor/parity.txt
@@ -358,12 +360,18 @@ openapi/shadowed_imports.yaml	yaml_fast_constructor/parity.txt
 openapi/shadowed_imports_base_and_fields.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/api.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/common.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/extension_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/headers.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/mixed_types.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/null_branch.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/paths_scope.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/region.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/schemas.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/api.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/common.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/headers.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/mixed_types.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/null_branch.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/region.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/schemas.yaml	yaml_fast_constructor/parity.txt
 openapi/special_yaml_keywords.yaml	yaml_fast_constructor/parity.txt

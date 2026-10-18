@@ -1,4 +1,4 @@
 {
   "title": "MalformedExternal",
-  "$ref": "truncated_external.json#/definitions/Target"
+  "$ref": "truncated_jsonschema.json#/definitions/Target"
 }

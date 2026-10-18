@@ -4,7 +4,11 @@
   "type": "object",
   "properties": {
     "kind": {"type": "string", "enum": ["legacy"]},
-    "level": {"$ref": "#/definitions/Level"}
+    "level": {"$ref": "#/definitions/Level"},
+    "state": {"oneOf": [{"type": "string", "const": "x"}, {"type": "null"}]},
+    "code": {"oneOf": [{"const": "x"}, {"type": "integer", "const": 1}]},
+    "mode": {"oneOf": [{"enum": ["x"]}, {"type": "null"}]},
+    "only": {"oneOf": [{"const": "x"}]}
   },
   "definitions": {
     "Level": {"oneOf": [{"type": "string", "enum": ["low"]}, {"type": "string", "enum": ["high"]}]}

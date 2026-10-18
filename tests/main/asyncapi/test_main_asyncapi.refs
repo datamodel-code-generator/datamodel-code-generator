@@ -40,6 +40,9 @@ enum-v2	main/asyncapi/single_value_enum_as_const_v2.py
 enum-v3	main/asyncapi/single_value_enum_as_const_v3.py
 written-as-const-v2	main/asyncapi/single_value_enum_as_const_v2.py
 written-as-const-v3	main/asyncapi/single_value_enum_as_const_v3.py
+[test_main_asyncapi_single_value_enum_as_const_keeps_xml_schema]
+option	main/asyncapi/main_asyncapi/single_value_enum_as_const_keeps_xml_schema[option].py
+without-option	main/asyncapi/main_asyncapi/single_value_enum_as_const_keeps_xml_schema[without-option].py	= main/asyncapi/main_asyncapi/single_value_enum_as_const_keeps_xml_schema[option].py
 [test_main_asyncapi_stable_surface]
 	main/asyncapi/stable_surface.py
 [test_main_asyncapi_unknown_version_falls_back_to_v3]

@@ -66,6 +66,7 @@ from tests.main.conftest import (
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPERIMENTAL_MISSING_IMPORT_WARNING,
+    JSON_SCHEMA_DATA_PATH,
     LEGACY_BLACK_SKIP,
     MSGSPEC_LEGACY_BLACK_SKIP,
     OPEN_API_DATA_PATH,
@@ -2831,7 +2832,7 @@ def test_main_custom_template_dir_old_style(
             input_file_type=None,
             extra_args=[
                 "--custom-template-dir",
-                str(DATA_PATH / "templates_old_style"),
+                str(DATA_PATH / "templates" / "pydantic"),
                 "--extra-template-data",
                 str(OPEN_API_DATA_PATH / "extra_data.json"),
             ],
@@ -3016,17 +3017,15 @@ def test_pyproject(tmp_path: Path) -> None:
             return str(path)
 
     output_file: Path = tmp_path / "output.py"
+    (empty := tmp_path / "empty.json").write_text("{}\n", encoding="utf-8")
     pyproject_toml_path = Path(DATA_PATH) / "project" / "pyproject.toml"
     pyproject_toml = (
         pyproject_toml_path
         .read_text()
         .replace("INPUT_PATH", get_path(OPEN_API_DATA_PATH / "api.yaml"))
         .replace("OUTPUT_PATH", get_path(output_file))
-        .replace("ALIASES_PATH", get_path(OPEN_API_DATA_PATH / "empty_aliases.json"))
-        .replace(
-            "EXTRA_TEMPLATE_DATA_PATH",
-            get_path(OPEN_API_DATA_PATH / "empty_data.json"),
-        )
+        .replace("ALIASES_PATH", get_path(empty))
+        .replace("EXTRA_TEMPLATE_DATA_PATH", get_path(empty))
         .replace("CUSTOM_TEMPLATE_DIR_PATH", get_path(tmp_path))
     )
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
@@ -3970,6 +3969,145 @@ def test_main_openapi_single_value_enum_as_const(
             *scopes,
             *extra_args,
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "output_model", "extra_args"),
+    [
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="enum",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const", "--enum-field-as-literal", "one"],
+            id="enum-literal-one",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="written-as-const",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--enum-field-as-literal", "one"],
+            id="without-option-literal-one",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            id="written-as-const-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const"],
+            id="msgspec",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/extension_keys.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="extension-keys",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/extension_keys.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            id="extension-keys-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/paths_scope.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const", "--openapi-scopes", "schemas", "paths"],
+            id="paths-scope",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/paths_scope.yaml",
+            "pydantic_v2.BaseModel",
+            ["--openapi-scopes", "schemas", "paths"],
+            id="paths-scope-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/paths_scope.yaml",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const", "--openapi-scopes", "schemas", "paths"],
+            id="paths-scope-msgspec",
+        ),
+    ],
+)
+def test_main_openapi_single_value_enum_as_const_null_branch(
+    input_path: str, output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Type one value beside a null branch as Literal[...] | None under --use-single-value-enum-as-const.
+
+    Without the option, const branches beside a null branch still merge into an Enum and a root model, as they do
+    under an extension key, which the option reads as written, while a property, path or parameter named like a
+    keyword or an extension is read.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "output_model", "extra_args"),
+    [
+        pytest.param(
+            "single_value_enum_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="enum",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const", "--enum-field-as-literal", "one"],
+            id="enum-literal-one",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="written-as-const",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            id="written-as-const-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/mixed_types.yaml",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const"],
+            id="msgspec",
+        ),
+    ],
+)
+def test_main_openapi_single_value_enum_as_const_mixed_types(
+    input_path: str, output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Keep one-value branches of different JSON types apart under --use-single-value-enum-as-const.
+
+    One Enum of str and int values cannot be decoded by msgspec, so each branch is typed as its const, while branches
+    of one JSON type still merge. Without the option, const branches of different JSON types still merge.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
     )
 
 
@@ -9080,6 +9218,69 @@ def test_main_openapi_discriminator_optional_pydantic_v2(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_name", "output_model", "optional_args"),
+    [
+        (
+            "discriminator_optional_literal",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one"),
+        ),
+        (
+            "discriminator_optional_literal",
+            "pydantic_v2.dataclass",
+            ("--enum-field-as-literal", "one"),
+        ),
+        (
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one"),
+        ),
+        (
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one", "--strict-nullable"),
+        ),
+        pytest.param(
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one", "--use-missing-sentinel"),
+            marks=EXPERIMENTAL_MISSING_IMPORT_WARNING,
+        ),
+        (
+            "discriminator_optional_literal_nested",
+            "dataclasses.dataclass",
+            (),
+        ),
+    ],
+)
+def test_main_openapi_discriminator_optional_literal(
+    input_name: str, output_model: str, optional_args: tuple[str, ...], output_file: Path
+) -> None:
+    """Give optional one-value Literal discriminator tags their value as default so Pydantic accepts the union.
+
+    Variants that nested choices give the union follow the same rule. A tag the schema declares not nullable keeps
+    its ``None`` default unless the ``MISSING`` sentinel would replace it, and a nested tag that is not a ``Literal``
+    keeps its type.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            output_model,
+            *optional_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
@@ -9218,7 +9419,7 @@ def test_main_openapi_keyword_only_msgspec_with_extra_data(min_version: str, out
             "--target-python-version",
             min_version,
             "--extra-template-data",
-            str(OPEN_API_DATA_PATH / "extra_data_msgspec.json"),
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_msgspec.json"),
         ],
     )
 
@@ -9229,7 +9430,7 @@ def test_main_openapi_keyword_only_msgspec_with_extra_data(min_version: str, out
 )
 def test_main_generate_openapi_keyword_only_msgspec_with_extra_data(tmp_path: Path) -> None:
     """Test OpenAPI generation with keyword-only msgspec using generate function."""
-    extra_data = json.loads((OPEN_API_DATA_PATH / "extra_data_msgspec.json").read_text())
+    extra_data = json.loads((JSON_SCHEMA_DATA_PATH / "extra_data_msgspec.json").read_text())
     output_file: Path = tmp_path / "output.py"
     generate(
         input_=OPEN_API_DATA_PATH / "inheritance.yaml",
@@ -12231,6 +12432,8 @@ def test_discriminator_final_field_aliases(
     """Resolve variant fields without globalizing scoped aliases or changing tag input."""
     fixture_dir = OPEN_API_DATA_PATH / "discriminator_field_aliases"
     aliases_path = fixture_dir / f"{alias_file}_aliases.json"
+    if alias_file == "none":
+        (aliases_path := output_file.parent / "none_aliases.json").write_text("{}\n", encoding="utf-8")
     expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / f"{case}.py"
     if entrypoint == "cli":
         args = ["--aliases", str(aliases_path), "--disable-timestamp"]

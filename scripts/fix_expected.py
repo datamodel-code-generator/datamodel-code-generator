@@ -19,12 +19,15 @@ Maintainers regenerate the index in every environment the CI lanes use (slow; ne
     python scripts/fix_expected.py --all-environments [--environment NAME ...] [-- PYTEST SELECTION]
     python scripts/fix_expected.py --all-environments --observe-only --output DIR [--environment NAME ...]
     python scripts/fix_expected.py --observations DIR [DIR ...]
+    python scripts/fix_expected.py --drop-uncollected DIR [DIR ...]
+A run over every environment also drops the lines of tests no environment collects any more, conditional lines
+included; ``--drop-uncollected`` does only that, from observations of every environment that collects their modules.
 
 Maintainers store each content once, for every sidecar or only those of some test directories, modules or sidecars:
     python scripts/fix_expected.py --deduplicate [PATH[::TEST] ...]
 It points the references of equal stored units at one of them and deletes the copies left unused, after checking that
-every line compares the same bytes as before; it only rewrites sidecars and deletes stored files. Files a test may
-have found by listing their directory (glob, iterdir, walk...) stay, since deleting one would shrink its comparisons.
+every line compares the same bytes as before; it only rewrites sidecars and deletes stored files. The units of a label
+whose references compare different bytes stay, so reading that label by name returns what it did.
 """
 
 from __future__ import annotations
@@ -48,7 +51,6 @@ if TYPE_CHECKING:
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT)]
 
-from tests.expected_access import listing_tests  # noqa: E402
 from tests.units import (  # noqa: E402
     BROKEN,
     REFS_SUFFIX,
@@ -310,22 +312,6 @@ def disagreeing_storages(lines: Mapping[Path, list[RefLine]], compared: Mapping[
     return {split_label(line.stored)[0] for found in lines.values() for line in found if len(contents[line.label]) > 1}
 
 
-def listed_labels(index: RefsIndex, lines: Mapping[Path, list[RefLine]]) -> set[str]:
-    """Return the label paths of tests that list a directory below the expected root; units stored there stay.
-
-    Such a test may decide what it compares from the files it finds, so deleting one could silently shrink its
-    comparisons (``tests/expected_access.py`` finds them).
-    """
-    base = index.tests_root.parent
-    listing = listing_tests(base, index.tests_root)
-    return {
-        split_label(line.label)[0]
-        for sidecar, found in lines.items()
-        for line in found
-        if line.function in listing.get(sidecar.with_suffix(".py").relative_to(base), ())
-    }
-
-
 def _selects(sidecar: Path, line: RefLine, target: Path, test: str) -> bool:
     """Return whether a selection (a directory, module or sidecar, and an optional test or item) takes in a line."""
     inside = sidecar.is_relative_to(target) if target.is_dir() else sidecar == target.with_suffix(REFS_SUFFIX)
@@ -361,7 +347,7 @@ def deduplicate_expected(paths: Sequence[str], root: Path = ROOT) -> int:
         print(f"{unmatched[0]} names no test that compares recorded expected output.")
         return 2
     before = compared_bytes(lines, index.expected_root)
-    keep = listed_labels(index, lines) | disagreeing_storages(lines, before)
+    keep = disagreeing_storages(lines, before)
     plan = deduplicate(
         lines,
         index.expected_root,
@@ -400,7 +386,7 @@ def deduplicate_expected(paths: Sequence[str], root: Path = ROOT) -> int:
         f"Remaining duplicates in all sidecars: {files} files, {trees} trees."
     )
     if kept := [storage for group in remaining for storage in group if split_label(storage)[0] in keep]:
-        print("Kept in all sidecars, because a test lists their directory or their label's references differ:")
+        print("Kept in all sidecars, because their label's references differ:")
         print("\n".join(f"  {storage}" for storage in kept))
     return 0
 
@@ -528,6 +514,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     group.add_argument("--repair", metavar="REFS", help="drop unreadable lines of a sidecar and re-record their tests")
     group.add_argument("--all-environments", action="store_true", help="maintainers: rebuild in every environment")
     group.add_argument("--observations", nargs="+", type=Path, metavar="DIR", help="maintainers: apply observations")
+    group.add_argument(
+        "--drop-uncollected",
+        nargs="+",
+        type=Path,
+        metavar="DIR",
+        help="maintainers: drop the lines of tests no observed environment collects",
+    )
     group.add_argument("--deduplicate", nargs="*", metavar="PATH", help="maintainers: store each content once")
     parser.add_argument("--environment", action="append", choices=sorted(ENVIRONMENTS), help="limit the environments")
     parser.add_argument("--observe-only", action="store_true", help="record observations without applying them")
@@ -549,6 +542,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "where": lambda nodeid: where(nodeid, root),
         "repair": lambda sidecar: repair(sidecar, root),
         "observations": lambda paths: run_apply({"observations": [str(path.resolve()) for path in paths]}, (), root),
+        "drop_uncollected": lambda paths: run_apply(
+            {"observations": [str(path.resolve()) for path in paths], "merge": False, "drop_uncollected": True},
+            (),
+            root,
+        ),
         "deduplicate": lambda paths: deduplicate_expected([*paths, *arguments.selection], root),
     }
     if chosen := next((name for name in commands if getattr(arguments, name) is not None), None):
@@ -563,7 +561,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.observe_only:
         print(f"[fix_expected] observations in {output}")
         return 0
-    return run_apply({"observations": [str(path) for path in directories]}, (), root)
+    complete = not arguments.environment and len(directories) == len(names)
+    return run_apply({"observations": [str(path) for path in directories], "drop_uncollected": complete}, (), root)
 
 
 if __name__ == "__main__":

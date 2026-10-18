@@ -67,6 +67,8 @@ only when there are no property conflicts between parent schemas. Otherwise, pro
 which is then decoupled from the parent classes and no longer inherits from them.
 `--allof-class-hierarchy always` keeps class hierarchy for allOf schemas,
 even in multiple inheritance scenarios where two parent schemas define the same property.
+msgspec.Struct output declares the fields of parent classes whose layouts msgspec cannot combine instead of
+inheriting from them.
 
 !!! tip "Usage"
 
@@ -4233,12 +4235,16 @@ JSON Schema defines `{"enum": ["low"]}` as equal to `{"const": "low"}`. With
 whose `enum` lists one value is read as that `const`, so the output is the same as for the documents
 written with `const`, while the enums that allOf intersections leave stay enums:
 oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented unit variants,
-become one Enum with branch titles as member names, and a schema with one enum value is typed
-`Literal[...]` instead of a one-member Enum. Instance data such as `default` and `examples`,
-extension values (`x-...` except `x-propertyNames`), links and servers stay as written, so a schema
-kept under an extension key, such as one referenced as `headers.yaml#/x-rate`, is read as written too.
-A document parsed with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol
-Buffers, XML Schema and GraphQL inputs are not changed.
+become one Enum with branch titles as member names when there are two or more and all hold values
+of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
+value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
+schema with one enum value is typed `Literal[...]` instead of a one-member Enum. The option reads
+`const` branches the same way, which without it merge into one Enum in those cases too. Instance
+data such as `default` and `examples`, extension values (`x-...` except `x-propertyNames`), links
+and servers stay as written, so a schema kept under an extension key, such as one referenced as
+`headers.yaml#/x-rate`, is read as written too. A document parsed with draft-04 schema features,
+which have no `const`, is kept, and Avro, Protocol Buffers, XML Schema and GraphQL inputs are not
+changed.
 
 !!! tip "Usage"
 

@@ -433,11 +433,6 @@ recursive_record	main/avro/py311/official_schema_pass/recursive_record.py	?	= ma
 recursive_record	main/avro/py312/official_schema_pass/recursive_record.py	?	= main/avro/py310/official_schema_pass/recursive_record.py
 recursive_record	main/avro/py313/official_schema_pass/recursive_record.py	?	= main/avro/py310/official_schema_pass/recursive_record.py
 recursive_record	main/avro/py314/official_schema_pass/recursive_record.py	?
-string_extra_attributes	main/avro/py310/official_schema_pass/string_extra_attributes.py	?
-string_extra_attributes	main/avro/py311/official_schema_pass/string_extra_attributes.py	?	= main/avro/py310/official_schema_pass/string_extra_attributes.py
-string_extra_attributes	main/avro/py312/official_schema_pass/string_extra_attributes.py	?	= main/avro/py310/official_schema_pass/string_extra_attributes.py
-string_extra_attributes	main/avro/py313/official_schema_pass/string_extra_attributes.py	?	= main/avro/py310/official_schema_pass/string_extra_attributes.py
-string_extra_attributes	main/avro/py314/official_schema_pass/string_extra_attributes.py	?
 string_full	main/avro/py310/official_schema_pass/string_full.py	?
 string_full	main/avro/py311/official_schema_pass/string_full.py	?	= main/avro/py310/official_schema_pass/string_full.py
 string_full	main/avro/py312/official_schema_pass/string_full.py	?	= main/avro/py310/official_schema_pass/string_full.py

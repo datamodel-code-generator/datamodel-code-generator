@@ -1,0 +1,28 @@
+{
+  "convert": {
+    "kind": "cat",
+    "name": "n",
+    "purr": "p"
+  },
+  "decode": {
+    "kind": "cat",
+    "name": "n",
+    "purr": "p"
+  },
+  "fields": [
+    "name",
+    "purr"
+  ],
+  "bases": [
+    "Cat",
+    "Named"
+  ],
+  "mro": [
+    "Payload",
+    "Cat",
+    "Named",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

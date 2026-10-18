@@ -98,6 +98,8 @@ missing-package	dynamic_models/module_name_missing-package.txt
 	dynamic_models/numeric_constraints.json
 [test_openapi_auto_detection]
 	dynamic_models/openapi_auto_detection.json
+[test_optional_literal_discriminator_tags]
+	dynamic_models/optional_literal_discriminator_tags.json
 [test_ordinary_type_alias_extraction_is_unchanged]
 	dynamic_models/root_model_aliases/type_alias.txt
 	dynamic_models/root_model_aliases/type_alias_code.py

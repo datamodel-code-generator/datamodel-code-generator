@@ -92,6 +92,7 @@ from datamodel_code_generator.model.base import (
     GENERIC_BASE_CLASS_PATH,
     UNDEFINED,
     BaseClassDataType,
+    BaseLayoutView,
     ConstraintsBase,
     DataModel,
     DataModelFieldBase,
@@ -2191,6 +2192,32 @@ def _get_schema_path(model: DataModel | Reference) -> str:
     source = model if isinstance(model, DataModel) else model.source
     reused = source.reused_reference if isinstance(source, DataModel) else None
     return _source_path((reused or model).path)
+
+
+def _mapping_path_keys(path: str) -> tuple[tuple[str, str], ...]:
+    """Return the keys a discriminator mapping path matches the path of a model by, or more of them.
+
+    ``_check_discriminator_mapping_paths`` matches a schema name, the part after ``#/``, a file name, or a path
+    relative to the document.
+    """
+    return (
+        ("name", path),
+        ("schema", path.rsplit("#/", maxsplit=1)[-1]),
+        ("file", path.rsplit("/", maxsplit=1)[-1]),
+        ("relative", path[path.find("/") + 1 :]),
+    )
+
+
+def _schema_path_keys(model_path: str) -> tuple[tuple[str, str], ...]:
+    """Return the keys the path of a model matches a discriminator mapping path by."""
+    relative = model_path[: model_path.find("#")].lstrip("../")  # noqa: B005
+    return (
+        ("name", model_path.rsplit("/", 1)[-1]),
+        ("schema", model_path.rsplit("#/", maxsplit=1)[-1]),
+        ("file", model_path[:-1]),
+        ("relative", relative),
+        ("relative", "/".join(relative.split("/")[1:])),
+    )
 
 
 def _check_discriminator_mapping_paths(
@@ -4507,14 +4534,46 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         can_retain_cache: bool,
     ) -> None:
-        """Keep Pydantic v2 single-literal discriminator fields valid when forced optional."""
-        if not self.force_optional_for_required_fields or not discriminator_field.SUPPORTS_DISCRIMINATOR:
+        """Keep Pydantic v2 single-literal discriminator fields valid when optional or forced optional.
+
+        An optional tag would add ``None`` or the ``MISSING`` sentinel to its type, which Pydantic rejects as a
+        discriminator, so the tag takes its literal as default instead. A tag the schema declares nullable keeps its
+        type, and one it declares not nullable keeps its ``None`` default unless the sentinel would replace it.
+        """
+        if not discriminator_field.SUPPORTS_DISCRIMINATOR or not (
+            self.force_optional_for_required_fields
+            or (
+                not discriminator_field.required
+                and not discriminator_field.type_has_null
+                and (
+                    discriminator_field.nullable is None
+                    or (
+                        discriminator_field.nullable is False
+                        and discriminator_field.use_missing_sentinel
+                        and not discriminator_field.has_default
+                    )
+                )
+            )
+        ):
             return
 
         discriminator_field.default = literal
         discriminator_field.required = False
         discriminator_field.nullable = False
         _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
+    def __set_nested_discriminator_literal_defaults(
+        self,
+        tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
+        *,
+        can_retain_cache: bool,
+    ) -> None:
+        """Keep the single-literal tags of variants that nested choices give a union valid like the direct ones."""
+        for tag_field, values in tag_fields:
+            if tag_field.data_type.literals == [*values]:
+                self.__set_force_optional_discriminator_literal_default(
+                    cast("DataModel", tag_field.parent), tag_field, values[0], can_retain_cache=can_retain_cache
+                )
 
     def _get_discriminator_field_name(
         self, data_types: Iterable[DataType], property_name: str, default_name: str
@@ -4587,6 +4646,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         field_name_mode="original" if field.SUPPORTS_DISCRIMINATOR else "either",
                     )
                 ]
+                self.__set_nested_discriminator_literal_defaults(tag_fields, can_retain_cache=can_retain_cache)
 
                 if field.SUPPORTS_DISCRIMINATOR:
                     field_name = self._get_discriminator_field_name(
@@ -9043,6 +9103,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._deferred_tagged_unions.clear()
         self._removed_reuse_users.clear()
         self._renamed_types.clear()
+        self.__flatten_conflicting_base_layouts(module_models)
 
         if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
             for _, models in module_models:
@@ -9116,6 +9177,157 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             forwarder_map=forwarder_map,
             require_update_action_models=require_update_action_models,
         )
+
+    def __flatten_conflicting_base_layouts(self, module_models: ModuleModels) -> None:
+        """Make the models whose generated bases the output cannot combine declare every field without them.
+
+        Bases are handled before the models inheriting from them, as their own fields then give the layout. The
+        layouts are seen as the processing of each module may leave them: a discriminator field may become a msgspec
+        tag, which takes no slot, and reuse may make a duplicate an empty subclass of the model it duplicates, whose
+        layout it then has. A model that this processing leaves conflicting keeps failing the final check of the
+        output. A model that a type override replaces has a layout the generator does not know, as a configured base
+        class has.
+        """
+        if not self.data_model_type.FLATTENS_CONFLICTING_BASE_LAYOUTS:
+            return
+        models = [model for _, models in module_models for model in models]
+        if not (joins := [model for model in models if len(model.base_classes) > 1]):
+            return
+        duplicates = self.__find_possible_reuse_duplicates(module_models)
+        layout_models: dict[int, DataModel] = {}
+        pending = joins.copy()
+        while pending:
+            if id(model := pending.pop()) in layout_models:
+                continue
+            layout_models[id(model)] = model
+            pending.extend(_find_base_classes(model))
+            if (duplicated := duplicates.get(id(model))) is not None:
+                pending.append(duplicated)
+        tag_names = self.__find_possible_tag_names(models, list(layout_models.values()))
+        overrides = self._model_type_override_imports
+
+        def is_slot(field: DataModelFieldBase) -> bool:
+            names = tag_names.get(id(field.parent), frozenset())
+            return not field.is_class_var and field.name not in names and field.original_name not in names
+
+        view = BaseLayoutView(
+            is_slot,
+            lambda model: duplicates.get(id(model), model),
+            lambda model: model.reference.name in overrides,
+        )
+        visits = [(model, False) for model in reversed(joins)]
+        visited: set[int] = set()
+        while visits:
+            model, complete = visits.pop()
+            if complete and len(model.base_classes) > 1:
+                model.flatten_conflicting_base_layouts(view, self.__flatten_base_layouts)
+            elif not complete and id(model) not in visited:
+                visited.add(id(model))
+                visits.append((model, True))
+                visits.extend((base, False) for base in reversed(_find_base_classes(model)))
+
+    def __flatten_base_layouts(self, model: DataModel) -> None:
+        """Make a model declare the fields of its generated bases and drop them.
+
+        The required names the model and its bases take from their own bases are resolved first, as only the bases
+        give their fields. A field becomes required as a required name makes it.
+        """
+        self.__override_required_field(linearize_data_models([model])[::-1])
+        own_fields = {id(field) for field in model.fields}
+
+        def adopt(field: DataModelFieldBase, required: bool) -> DataModelFieldBase:  # noqa: FBT001
+            if id(field) not in own_fields:
+                field = self._copy_model_field(field)
+            if required and not field.required:
+                field.required = True
+                if self.apply_default_values_for_required_fields and field.has_default:
+                    field.use_default_with_required = True
+            return field
+
+        fields = model.flatten_base_layouts(adopt)
+        with self.generation_store.defer_refresh():
+            for base_class in model.base_classes:
+                self.generation_store.detach_data_type_ref(base_class)
+            self.generation_store.set_fields(model, fields)
+            self.generation_store.reset_base_classes(model)
+
+    def __find_possible_tag_names(
+        self, models: list[DataModel], layout_models: list[DataModel]
+    ) -> dict[int, frozenset[str]]:
+        """Return, by model whose layout counts, the names of the fields that the discriminator step may make tags.
+
+        It tags the variants that discriminated unions list, however nested or aliased, or that their mappings name,
+        including those of the unions collapsed reuse removed, by the property name or the field name it resolves to.
+        A struct inheriting from a tagged struct takes its tag field as a tag too. The mapped paths are indexed once
+        by every key a model path can match them by.
+        """
+        listed: defaultdict[int, set[str]] = defaultdict(set)
+        mapped: defaultdict[tuple[str, str], set[str]] = defaultdict(set)
+        for model in chain(models, chain.from_iterable(self._collapsed_reuse_models.values())):
+            for field in model.fields:
+                if not (
+                    isinstance(discriminator := field.extras.get("discriminator"), dict)
+                    and isinstance(property_name := discriminator.get("propertyName"), str)
+                    and property_name
+                ):
+                    continue
+                for reference in (
+                    data_type.reference
+                    for data_type, _, _ in _iter_discriminator_data_types(field.data_type.all_data_types)
+                    if data_type.reference
+                ):
+                    listed[id(reference.source)].add(property_name)
+                if isinstance(mapping := discriminator.get("mapping"), dict):
+                    for path in mapping.values():
+                        for key in _mapping_path_keys(str(path)):
+                            mapped[key].add(property_name)
+        variant_names: dict[int, set[str]] = {}
+        for model in layout_models:
+            property_names = set(listed.get(id(model), ()))
+            for reference in (model.reference, *(base.reference for base in model.base_classes if base.reference)):
+                for key in _schema_path_keys(_get_schema_path(reference)):
+                    property_names.update(mapped.get(key, ()))
+            variant_names[id(model)] = {
+                name
+                for property_name in property_names
+                for class_name in (None, model.class_name)
+                for name in (
+                    property_name,
+                    self.model_resolver.get_valid_field_name_and_alias(
+                        field_name=property_name, model_type=self.field_name_model_type, class_name=class_name
+                    )[0],
+                )
+            }
+        return {
+            id(model): frozenset(
+                chain.from_iterable(variant_names.get(id(ancestor), ()) for ancestor in linearize_data_models([model]))
+            )
+            for model in layout_models
+        }
+
+    def __find_possible_reuse_duplicates(self, module_models: ModuleModels) -> dict[int, DataModel]:
+        """Return, by model, the earlier model of its module that reuse may find it a duplicate of.
+
+        Reuse compares rendered models, so a duplicate has the type, the bases and the field names of the model it
+        duplicates.
+        """
+        duplicates: dict[int, DataModel] = {}
+        if not self.reuse_model or self.reuse_scope == ReuseScope.Tree:
+            return duplicates
+        for _, models in module_models:
+            firsts: dict[tuple[object, ...], DataModel] = {}
+            for model in models:
+                first = firsts.setdefault(
+                    (
+                        type(model),
+                        tuple(base.reference.path if base.reference else base.type_hint for base in model.base_classes),
+                        tuple(field.name for field in model.fields),
+                    ),
+                    model,
+                )
+                if first is not model:
+                    duplicates[id(model)] = first
+        return duplicates
 
     def __record_model_placement(
         self,

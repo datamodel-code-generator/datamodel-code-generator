@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 )
 def test_pattern_string_adapters(tmp_path: Path, entrypoint: str, formatter: str, case: dict) -> None:
     """Exercise native validation and exact output through both public entrypoints."""
-    source = JSON_SCHEMA_DATA_PATH / "pattern_string_adapters" / f"{case['name']}.json"
+    source = JSON_SCHEMA_DATA_PATH / "pattern_string_adapters" / f"{case.get('source', case['name'])}.json"
     output = tmp_path / "model.py"
     options = {"field_constraints": True, "generate_schema_validators": True, **case["options"]}
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]

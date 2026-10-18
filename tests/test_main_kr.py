@@ -3889,7 +3889,7 @@ headers, or other metadata to generated files.""",
     input_schema="jsonschema/no_alias.json",
     cli_args=["--custom-file-header", "# Copyright 2024 MyCompany"],
     golden_output="main_kr/custom_file_header/with_option.py",
-    comparison_output="main_kr/custom_file_header/without_option.py",
+    comparison_output="main_kr/no_alias/without_option.py",
 )
 @freeze_time("2019-07-26")
 def test_custom_file_header(output_file: Path) -> None:
@@ -4177,13 +4177,14 @@ def test_custom_formatters_kwargs_option(output_file: Path) -> None:
     configuration to user-defined formatter modules.
     """
     # Simple test - the option is accepted. Full usage requires custom formatter module.
+    (kwargs := output_file.parent / "formatter_kwargs.json").write_text("{}", encoding="utf-8")
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
-        extra_args=["--custom-formatters-kwargs", str(DATA_PATH / "config" / "formatter_kwargs.json")],
+        extra_args=["--custom-formatters-kwargs", str(kwargs)],
     )
 
 
@@ -4196,10 +4197,7 @@ def test_custom_formatters_kwargs_inline_json_option(output_file: Path) -> None:
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
-        extra_args=[
-            "--custom-formatters-kwargs",
-            (DATA_PATH / "config" / "formatter_kwargs.json").read_text(encoding="utf-8"),
-        ],
+        extra_args=["--custom-formatters-kwargs", "{}"],
     )
 
 
@@ -4482,7 +4480,7 @@ testing without project configuration.""",
     input_schema="jsonschema/ignore_pyproject_example.json",
     cli_args=["--ignore-pyproject"],
     golden_output="main_kr/ignore_pyproject/output.py",
-    comparison_output="main_kr/ignore_pyproject/without_option.py",
+    comparison_output="main_kr/pyproject_profile/with_profile.py",
 )
 @freeze_time("2019-07-26")
 def test_ignore_pyproject_cli_doc(output_file: Path, tmp_path: Path) -> None:

@@ -1,0 +1,53 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Named"
+    },
+    {
+      "$ref": "#/$defs/Timestamped"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "nickname",
+        "id"
+      ]
+    }
+  ],
+  "$defs": {
+    "Named": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "nickname": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Timestamped": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "created_at"
+      ]
+    }
+  }
+}

@@ -91,7 +91,10 @@ def test_client_install(
     dependency_kind = (
         "pydantic" if backend.startswith("pydantic") else "msgspec" if backend.startswith("msgspec") else "stdlib"
     )
-    notice = stored_expected(EXPECTED / f"{profile}-{dependency_kind}-dependencies.txt").read_text(encoding="utf-8")
+    notice_profile = "all" if profile == "all" else "api-key"
+    notice = stored_expected(EXPECTED / f"{notice_profile}-{dependency_kind}-dependencies.txt").read_text(
+        encoding="utf-8"
+    )
     run_main_and_assert(
         input_path=source,
         output_path=Path("publication_client_models.py"),

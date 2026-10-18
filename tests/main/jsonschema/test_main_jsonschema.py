@@ -9296,12 +9296,16 @@ JSON Schema defines `{"enum": ["low"]}` as equal to `{"const": "low"}`. With
 whose `enum` lists one value is read as that `const`, so the output is the same as for the documents
 written with `const`, while the enums that allOf intersections leave stay enums:
 oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented unit variants,
-become one Enum with branch titles as member names, and a schema with one enum value is typed
-`Literal[...]` instead of a one-member Enum. Instance data such as `default` and `examples`,
-extension values (`x-...` except `x-propertyNames`), links and servers stay as written, so a schema
-kept under an extension key, such as one referenced as `headers.yaml#/x-rate`, is read as written too.
-A document parsed with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol
-Buffers, XML Schema and GraphQL inputs are not changed.""",
+become one Enum with branch titles as member names when there are two or more and all hold values
+of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
+value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
+schema with one enum value is typed `Literal[...]` instead of a one-member Enum. The option reads
+`const` branches the same way, which without it merge into one Enum in those cases too. Instance
+data such as `default` and `examples`, extension values (`x-...` except `x-propertyNames`), links
+and servers stay as written, so a schema kept under an extension key, such as one referenced as
+`headers.yaml#/x-rate`, is read as written too. A document parsed with draft-04 schema features,
+which have no `const`, is kept, and Avro, Protocol Buffers, XML Schema and GraphQL inputs are not
+changed.""",
     input_schema="jsonschema/single_value_enum_as_const/schema.json",
     cli_args=["--use-single-value-enum-as-const"],
     model_outputs={
@@ -9317,12 +9321,16 @@ def test_main_jsonschema_single_value_enum_as_const(output_file: Path) -> None:
     whose `enum` lists one value is read as that `const`, so the output is the same as for the documents
     written with `const`, while the enums that allOf intersections leave stay enums:
     oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented unit variants,
-    become one Enum with branch titles as member names, and a schema with one enum value is typed
-    `Literal[...]` instead of a one-member Enum. Instance data such as `default` and `examples`,
-    extension values (`x-...` except `x-propertyNames`), links and servers stay as written, so a schema
-    kept under an extension key, such as one referenced as `headers.yaml#/x-rate`, is read as written too.
-    A document parsed with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol
-    Buffers, XML Schema and GraphQL inputs are not changed.
+    become one Enum with branch titles as member names when there are two or more and all hold values
+    of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
+    value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
+    schema with one enum value is typed `Literal[...]` instead of a one-member Enum. The option reads
+    `const` branches the same way, which without it merge into one Enum in those cases too. Instance
+    data such as `default` and `examples`, extension values (`x-...` except `x-propertyNames`), links
+    and servers stay as written, so a schema kept under an extension key, such as one referenced as
+    `headers.yaml#/x-rate`, is read as written too. A document parsed with draft-04 schema features,
+    which have no `const`, is kept, and Avro, Protocol Buffers, XML Schema and GraphQL inputs are not
+    changed.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "schema.json",
@@ -9403,6 +9411,17 @@ def test_main_jsonschema_single_value_enum_as_const_keeps_draft_04(extra_args: l
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file="single_value_enum_as_const/draft_04.py",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_jsonschema_single_value_enum_as_const_extension_defs(extra_args: list[str], output_file: Path) -> None:
+    """Merge the branches of a schema under an extension key that a $ref with siblings names, as written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "extension_defs.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
     )
 
@@ -14994,7 +15013,7 @@ def test_main_jsonschema_type_alias_inline_union_default_object_type_override_re
 ) -> None:
     """Validate TypeAdapter targets after late type overrides change field types."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object_type_override.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
@@ -15892,7 +15911,7 @@ def test_main_jsonschema_reuse_scope_tree_branch(output_dir: Path) -> None:
 def test_main_jsonschema_reuse_scope_tree_dataclass(output_dir: Path) -> None:
     """Test --reuse-scope=tree with dataclasses output type (supports inheritance)."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_dataclass",
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
         expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_dataclass",
         input_file_type="jsonschema",
@@ -15903,7 +15922,7 @@ def test_main_jsonschema_reuse_scope_tree_dataclass(output_dir: Path) -> None:
 def test_main_jsonschema_reuse_scope_tree_dataclass_frozen(output_dir: Path) -> None:
     """Test --reuse-scope=tree preserves dataclass arguments in inherited models."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_dataclass",
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
         output_to_expected=[
             ("__init__.py", "reuse_scope_tree_dataclass_frozen/__init__.py"),
@@ -15928,7 +15947,7 @@ def test_main_jsonschema_reuse_scope_tree_dataclass_frozen(output_dir: Path) -> 
 def test_main_jsonschema_reuse_scope_tree_typeddict(output_dir: Path) -> None:
     """Test --reuse-scope=tree with TypedDict output type (no inheritance, direct reference)."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_typeddict",
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
         expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_typeddict",
         input_file_type="jsonschema",
@@ -16991,17 +17010,37 @@ def test_main_jsonschema_collapse_root_models_property_names_reference(output_fi
 
 
 @pytest.mark.parametrize(
-    ("schema_name", "model_name", "extra_args"),
+    ("schema_name", "model_name", "extra_args", "invalid"),
     [
-        pytest.param("collapse_root_models_lookaround", "Holder", [], id="fields"),
-        pytest.param("collapse_root_models_lookaround", "Holder", ["--use-type-alias"], id="fields-type-alias"),
-        pytest.param("collapse_root_models_lookaround_root", "Holder", [], id="root-model"),
-        pytest.param("collapse_root_models_lookaround_inheritance", "Child", [], id="inheritance"),
-        pytest.param("collapse_root_models_lookaround_discriminator", "Root", [], id="discriminator"),
+        pytest.param("collapse_root_models_lookaround", "Holder", [], "collapse_root_models_lookaround", id="fields"),
+        pytest.param(
+            "collapse_root_models_lookaround",
+            "Holder",
+            ["--use-type-alias"],
+            "collapse_root_models_lookaround",
+            id="fields-type-alias",
+        ),
+        pytest.param(
+            "collapse_root_models_lookaround_root", "Holder", [], "collapse_root_models_lookaround", id="root-model"
+        ),
+        pytest.param(
+            "collapse_root_models_lookaround_inheritance",
+            "Child",
+            [],
+            "collapse_root_models_lookaround_inheritance",
+            id="inheritance",
+        ),
+        pytest.param(
+            "collapse_root_models_lookaround_discriminator",
+            "Root",
+            [],
+            "collapse_root_models_lookaround_discriminator",
+            id="discriminator",
+        ),
     ],
 )
 def test_main_jsonschema_collapse_root_models_lookaround(
-    output_file: Path, schema_name: str, model_name: str, extra_args: list[str]
+    output_file: Path, schema_name: str, model_name: str, extra_args: list[str], invalid: str
 ) -> None:
     """Select Python's regex engine for lookaround patterns that collapsed root models leave in final field types.
 
@@ -17030,7 +17069,7 @@ def test_main_jsonschema_collapse_root_models_lookaround(
         module_name=f"output_{schema_name}_{len(extra_args)}",
         model_name=model_name,
         valid_json=(DATA_PATH / f"payloads/{schema_name}_valid.json").read_text(),
-        invalid_json=(DATA_PATH / f"payloads/{schema_name}_invalid.json").read_text(),
+        invalid_json=(DATA_PATH / f"payloads/{invalid}_invalid.json").read_text(),
         expected_error_type="string_pattern_mismatch",
     )
 
@@ -17218,7 +17257,7 @@ def test_main_jsonschema_collapse_root_models_name_strategy_child(output_file: P
 def test_main_jsonschema_collapse_root_models_name_strategy_parent(output_file: Path) -> None:
     """Test collapse-root-models with parent name strategy uses wrapper's name for inner model."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_parent.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_child.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
@@ -17231,7 +17270,7 @@ def test_main_jsonschema_collapse_root_models_name_strategy_requires_collapse_ro
 ) -> None:
     """Test that --collapse-root-models-name-strategy requires --collapse-root-models."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_parent.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_child.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--collapse-root-models-name-strategy", "parent"],
@@ -18141,7 +18180,9 @@ def test_main_allof_root_model_constraints_merge(output_file: Path) -> None:
 only when there are no property conflicts between parent schemas. Otherwise, properties are merged into the child class
 which is then decoupled from the parent classes and no longer inherits from them.
 `--allof-class-hierarchy always` keeps class hierarchy for allOf schemas,
-even in multiple inheritance scenarios where two parent schemas define the same property.""",
+even in multiple inheritance scenarios where two parent schemas define the same property.
+msgspec.Struct output declares the fields of parent classes whose layouts msgspec cannot combine instead of
+inheriting from them.""",
     input_schema="jsonschema/allof_root_model_constraints.json",
     cli_args=["--allof-class-hierarchy", "always"],
     golden_output="main/jsonschema/allof_class_hierarchy.py",
@@ -19745,7 +19786,7 @@ def test_generate_refreshes_mutable_custom_templates_between_calls(tmp_path: Pat
     custom_template_path.parent.mkdir(parents=True)
     template_data_path = DATA_PATH / "templates_refresh_mutable"
     shutil.copyfile(template_data_path / "root_include.jinja2", custom_template_path)
-    shutil.copyfile(template_data_path / "body_first.jinja2", included_template_path)
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "body_first.jinja2", included_template_path)
     generate_kwargs = {
         "custom_template_dir": custom_template_dir,
         "disable_timestamp": True,
@@ -19872,7 +19913,8 @@ def test_generate_refreshes_custom_template_directory_symlink(tmp_path: Path) ->
     source_template_dir = tmp_path / "source" / "pydantic_v2"
     source_template_dir.mkdir(parents=True)
     (source_template_dir / "cycle").symlink_to(source_template_dir, target_is_directory=True)
-    (source_template_dir / "linked_template.jinja2").symlink_to(template_data_path / "root_first.jinja2")
+    standalone_template = DATA_PATH / "templates_dependencies" / "standalone.jinja2"
+    (source_template_dir / "linked_template.jinja2").symlink_to(standalone_template)
     os.mkfifo(source_template_dir / "non_template")
     custom_template_dir = tmp_path / "templates"
     custom_template_dir.mkdir()
@@ -19885,7 +19927,7 @@ def test_generate_refreshes_custom_template_directory_symlink(tmp_path: Path) ->
         "formatters": [Formatter.BUILTIN],
     }
 
-    shutil.copyfile(template_data_path / "root_first.jinja2", custom_template_path)
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "standalone.jinja2", custom_template_path)
     run_generate_file_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
@@ -19925,7 +19967,7 @@ def test_generate_refreshes_retargeted_custom_template_directory_symlink(tmp_pat
         if name.startswith("a-target-")
     ]
     first_target, second_target = candidates[:2]
-    shutil.copyfile(template_data_path / "root_first.jinja2", first_target / "BaseModel.jinja2")
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "standalone.jinja2", first_target / "BaseModel.jinja2")
     shutil.copyfile(template_data_path / "root_second.jinja2", second_target / "BaseModel.jinja2")
     custom_template_alias.unlink()
     custom_template_alias.symlink_to(first_target, target_is_directory=True)
@@ -19970,7 +20012,7 @@ def test_main_refreshes_modified_custom_template_between_calls(tmp_path: Path) -
     ]
     template_data_path = DATA_PATH / "templates_refresh_mutable"
 
-    shutil.copyfile(template_data_path / "root_first.jinja2", custom_template_path)
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "standalone.jinja2", custom_template_path)
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
@@ -23125,7 +23167,6 @@ def test_main_allof_inheritance_late_local_base_custom_typed_dict_class_template
         ("pydantic_v2.BaseModel", ALLOF_INHERITANCE_MRO_ERROR),
         ("pydantic_v2.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
         ("dataclasses.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
-        ("msgspec.Struct", "msgspec.Struct model 'C' has incompatible layouts from generated bases 'A' and 'B'.\n"),
     ],
 )
 def test_main_allof_inheritance_mro_conflict(
@@ -23141,6 +23182,18 @@ def test_main_allof_inheritance_mro_conflict(
         capsys=capsys,
         expected_stderr=expected_stderr,
         output_should_not_exist=True,
+    )
+
+
+def test_main_allof_inheritance_mro_conflict_msgspec(output_file: Path) -> None:
+    """Flatten the msgspec Structs whose generated bases have neither compatible layouts nor a resolution order."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "mro_conflict.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct"],
+        assert_func=assert_file_content,
+        force_exec_validation=True,
     )
 
 
@@ -25335,15 +25388,16 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
     if not can_execute:
         return
     results = []
+    payloads = case.get("payloads", case["schema"])
     with _generated_model(output_file, "generated_msgspec_enum_controls", "Payload") as model:
         for payload in json.loads(
-            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{case['schema']}_valid.json").read_text()
+            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{payloads}_valid.json").read_text()
         ):
             converted = msgspec.convert(payload, type=model)
             decoded = msgspec.json.decode(json.dumps(payload).encode(), type=model)
             results.append({"convert": msgspec.to_builtins(converted), "decode": msgspec.to_builtins(decoded)})
         for payload in json.loads(
-            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{case['schema']}_invalid.json").read_text()
+            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{payloads}_invalid.json").read_text()
         ):
             with pytest.raises(msgspec.ValidationError):
                 msgspec.convert(payload, type=model)
@@ -25570,7 +25624,7 @@ def test_msgspec_inheritance_preserve_compatible_layouts(output_file: Path, entr
 
     options = case["options"].copy()
     if "custom_template_dir" in options:
-        options["custom_template_dir"] = MSGSPEC_INHERITANCE_DATA / "templates"
+        options["custom_template_dir"] = MSGSPEC_INHERITANCE_DATA / Path(options["custom_template_dir"]).name
 
     if entrypoint == "cli":
         run_main_and_assert(
@@ -25612,10 +25666,11 @@ def test_msgspec_inheritance_preserve_compatible_layouts(output_file: Path, entr
             "bases": [base.__name__ for base in model.__bases__],
             "mro": [base.__name__ for base in model.__mro__],
         }
+        invalid = case.get("invalid", {})
         with pytest.raises(msgspec.ValidationError):
-            msgspec.convert({}, type=model)
+            msgspec.convert(invalid, type=model)
         with pytest.raises(msgspec.ValidationError):
-            msgspec.json.decode(b"{}", type=model)
+            msgspec.json.decode(json.dumps(invalid), type=model)
     assert_output(json.dumps(result, indent=2) + "\n", MSGSPEC_INHERITANCE_EXPECTED / f"{case['name']}.txt")
 
 
@@ -26420,7 +26475,7 @@ def test_explicit_alias_names_external_namespace_precedence(
         str(
             JSON_SCHEMA_DATA_PATH.parent
             / "payloads/explicit_alias_namespace_inheritance"
-            / f"{case['name']}_config.json"
+            / case.get("config_file", f"{case['name']}_config.json")
         ),
         "--base-class",
         base_class,
@@ -27550,6 +27605,9 @@ def test_conditional_json_equality(
                 model(**value)
 
 
+INLINE_ALLOF_SHARED_PAYLOADS = dict.fromkeys(("conditional", "count", "nested", "referenced"), "core")
+
+
 @pytest.mark.parametrize("formatter", ["builtin", "external"])
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 @pytest.mark.parametrize(
@@ -27573,7 +27631,7 @@ def test_inline_allof_validators(
     """Validate native-schema and generated runtime behavior through both entrypoints."""
     source = JSON_SCHEMA_DATA_PATH / "inline_allof_validators" / f"{case}.json"
     payloads = DATA_PATH / "payloads/inline_allof_validators"
-    values = json.loads((payloads / f"{case}.json").read_text())
+    values = json.loads((payloads / f"{INLINE_ALLOF_SHARED_PAYLOADS.get(case, case)}.json").read_text())
     native_type = Draft7Validator if case == "ref_siblings_draft7" else Draft202012Validator
     native = native_type(json.loads(source.read_text()))
     error_type = values.get("error_type", "value_error")
@@ -27585,7 +27643,9 @@ def test_inline_allof_validators(
     if case in {"anyof", "core"}:
         monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
-    (output_file.parent / "pyproject.toml").write_text((source.parent / "pyproject.toml").read_text())
+    (output_file.parent / "pyproject.toml").write_text(
+        (DATA_PATH / "templates/builtin_boolean_wrapping/88.toml").read_text()
+    )
     suffix = "_builtin" if case in {"anyof", "core"} and formatter == "builtin" else ""
     expected = f"inline_allof_validators/{case}{suffix}.py"
     if entrypoint == "cli":
@@ -27646,6 +27706,22 @@ def test_inline_allof_validators(
             _assert_model_json_invalid(model.model_validate_json, json.dumps(payload), sibling["error_type"])
 
 
+MAPPING_INPUT_CASES = (
+    "AdditionalUnique",
+    "Any",
+    "ConditionalElse",
+    "Conditional",
+    "CountMinimum",
+    "Count",
+    "Nested",
+    "One",
+    "PatternUnique",
+    "Pattern",
+    "Unique",
+)
+MAPPING_SHARED_INPUTS = {"Count_valid": "Any_valid", "One_valid": "Any_valid", "CountMinimum_invalid": "Any_invalid"}
+
+
 @pytest.mark.parametrize("formatter", ["builtin", "external"])
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_schema_validator_mapping_inputs(
@@ -27684,9 +27760,12 @@ def test_schema_validator_mapping_inputs(
             generate_schema_validators=True,
             disable_timestamp=True,
         )
-    for valid_path in sorted(payloads.glob("*_valid.txt")):
-        case = valid_path.stem.removesuffix("_valid")
-        invalid_path = payloads / f"{case}_invalid.txt"
+    for case in MAPPING_INPUT_CASES:
+        valid_name, invalid_name = f"{case}_valid", f"{case}_invalid"
+        valid_path, invalid_path = (
+            payloads / f"{MAPPING_SHARED_INPUTS.get(name, name)}.txt" for name in (valid_name, invalid_name)
+        )
+        expected = DATA_PATH / "expected/payloads/mapping_schema_validators"
         schema_case = {"CountMinimum": "Count", "ConditionalElse": "Conditional"}.get(case, case)
         schema = json.loads(source.read_text(encoding="utf-8"))["$defs"][schema_case]
         native = Draft202012Validator(schema)
@@ -27708,19 +27787,13 @@ def test_schema_validator_mapping_inputs(
                 value = model.model_validate(valid)
                 assert_output(
                     json.dumps(value.model_dump(exclude_unset=True), default=dict, indent=2) + "\n",
-                    DATA_PATH / "expected" / valid_path.relative_to(DATA_PATH),
+                    expected / f"{valid_name}.txt",
                 )
                 _assert_model_json_invalid(
                     model.model_validate, invalid, "int_parsing" if case == "Pattern" else "value_error"
                 )
-            assert_output(
-                json.dumps(valid, default=dict, indent=2) + "\n",
-                DATA_PATH / "expected" / valid_path.relative_to(DATA_PATH),
-            )
-            assert_output(
-                json.dumps(invalid, default=dict, indent=2) + "\n",
-                DATA_PATH / "expected" / invalid_path.relative_to(DATA_PATH),
-            )
+            assert_output(json.dumps(valid, default=dict, indent=2) + "\n", expected / f"{valid_name}.txt")
+            assert_output(json.dumps(invalid, default=dict, indent=2) + "\n", expected / f"{invalid_name}.txt")
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
@@ -27772,9 +27845,10 @@ def test_schema_validator_legacy_custom_helper(
 
 
 RESOURCES_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "nested_resources"
+RESOURCES_PAYLOADS = DATA_PATH / "payloads/nested_resources"
 
 
-RESOURCES_CASES = json.loads(stored_expected(RESOURCES_EXPECTED / "cases.json").read_text(encoding="utf-8"))
+RESOURCES_CASES = json.loads((RESOURCES_PAYLOADS / "cases.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
@@ -27910,7 +27984,7 @@ def test_nested_schema_resources(tmp_path: Path, case: str, entrypoint: str, for
 @pytest.mark.parametrize("strict_refs", [False, True])
 @pytest.mark.parametrize(
     "case",
-    json.loads(stored_expected(RESOURCES_EXPECTED / "identifier_cases.json").read_text(encoding="utf-8")),
+    json.loads((RESOURCES_PAYLOADS / "identifier_cases.json").read_text(encoding="utf-8")),
     ids=lambda case: f"{case['source']}-{case['version']}-{case.get('mode', 'lenient')}",
 )
 def test_schema_resource_identifier_versions(
@@ -27982,9 +28056,7 @@ def test_missing_embedded_anchor(
     validator_class = validator_for(schema)
     validator_class.check_schema(schema)
     validator = validator_class(schema, registry=Registry().with_resource("root.json", Resource.from_contents(schema)))
-    payload = json.loads(
-        stored_expected(RESOURCES_EXPECTED / "missing_anchor_payload.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((RESOURCES_PAYLOADS / "missing_anchor_payload.json").read_text(encoding="utf-8"))
     with pytest.raises(Unresolvable) as native_error:
         validator.is_valid(payload)
     assert_output(str(native_error.value), RESOURCES_EXPECTED / "missing_anchor_native_error.txt")
@@ -28213,7 +28285,11 @@ def test_explicit_frozen_set_hashes(
     if entrypoint == "cli":
         args = [
             "--input",
-            str(JSON_SCHEMA_DATA_PATH / "explicit_frozen_sets" / f"{case.get('source', case['name'])}.json"),
+            str(
+                JSON_SCHEMA_DATA_PATH
+                / "explicit_frozen_sets"
+                / f"{case.get('input', case.get('source', case['name']))}.json"
+            ),
             "--input-file-type",
             "jsonschema",
             "--output",
@@ -28243,7 +28319,9 @@ def test_explicit_frozen_set_hashes(
                 dict, json.loads((DATA_PATH / "payloads/explicit_frozen_sets" / f"{extra_data}.json").read_text())
             )
         run_generate_and_assert(
-            input_=JSON_SCHEMA_DATA_PATH / "explicit_frozen_sets" / f"{case.get('source', case['name'])}.json",
+            input_=JSON_SCHEMA_DATA_PATH
+            / "explicit_frozen_sets"
+            / f"{case.get('input', case.get('source', case['name']))}.json",
             expected_file=expected_file,
             config=GenerateConfig(
                 input_file_type=InputFileType.JsonSchema,
@@ -28480,9 +28558,9 @@ def test_main_root_sequence_final_types(
             output_path=output,
             input_file_type="jsonschema",
             extra_args=arguments,
-            assert_func=assert_file_content,
-            expected_file=expected if not package else None,
-            output_to_expected=tuple((path.name, path) for path in sorted(expected.glob("*.py"))) if package else None,
+            assert_func=None if package else assert_file_content,
+            expected_file=None if package else expected,
+            expected_directory=expected if package else None,
             force_exec_validation=True,
         )
     else:
@@ -29166,7 +29244,7 @@ def test_type_union_constraints(name: str, constraints: bool, entry: str, output
     schema = json.loads(input_path.read_text())
     Draft202012Validator.check_schema(schema)
     validator = Draft202012Validator(schema)
-    payloads = json.loads((TYPE_UNION_PAYLOADS / f"{name}.json").read_text())
+    payloads = json.loads((TYPE_UNION_PAYLOADS / TYPE_UNION_CASES[name].get("payload", f"{name}.json")).read_text())
     assert_output(
         json.dumps([validator.is_valid(value) for value in payloads], indent=2) + "\n",
         TYPE_UNION_EXPECTED / TYPE_UNION_CASES[name].get(f"{name}_native.txt", f"{name}_native.txt"),
@@ -29246,7 +29324,7 @@ def test_type_union_constraint_options(name: str, mode: str, entry: str, output_
             expected_file=expected_file,
             **options,
         )
-    payloads = json.loads((TYPE_UNION_PAYLOADS / f"{name}.json").read_text())
+    payloads = json.loads((TYPE_UNION_PAYLOADS / TYPE_UNION_CASES[name].get("payload", f"{name}.json")).read_text())
     runtime_name = f"{name}_{mode}_runtime.txt" if mode == "msgspec_plain" else f"{name}_native.txt"
     expected_runtime = TYPE_UNION_EXPECTED / TYPE_UNION_CASES[name].get(runtime_name, runtime_name)
     actual = []
@@ -29313,7 +29391,7 @@ def test_type_union_pattern_properties(output_file: Path, entrypoint: str, *, sc
 PATTERN_INTERSECTION_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "pattern_intersections"
 
 
-PATTERN_INTERSECTION_CASES = json.loads(stored_expected(PATTERN_INTERSECTION_EXPECTED / "cases.json").read_text())
+PATTERN_INTERSECTION_CASES = json.loads((DATA_PATH / "payloads/pattern_intersections.json").read_text())
 
 
 @pytest.mark.parametrize("case", PATTERN_INTERSECTION_CASES)
@@ -29327,7 +29405,8 @@ def test_pattern_property_intersections(
     # Each formatter has its own golden for intentionally different formatting.
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     source_case = PATTERN_INTERSECTION_CASES[case].get("source", case)
-    source = JSON_SCHEMA_DATA_PATH / "pattern_intersections" / f"{source_case}.json"
+    input_name = PATTERN_INTERSECTION_CASES[source_case].get("input", source_case)
+    source = JSON_SCHEMA_DATA_PATH / "pattern_intersections" / f"{input_name}.json"
     custom_template_dir = (
         JSON_SCHEMA_DATA_PATH.parent / "templates" / template
         if (template := PATTERN_INTERSECTION_CASES[case].get("custom_template"))
@@ -29463,8 +29542,8 @@ def test_additional_pattern_intersections(
     """Check complete generated code, native validation, dumps and input mutation."""
     # Each formatter has its own golden for intentionally different formatting.
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
-    source = ADDITIONAL_PATTERN_FIXTURES / f"{case}.json"
     record = ADDITIONAL_PATTERN_CASES[case]
+    source = ADDITIONAL_PATTERN_FIXTURES / f"{record.get('input', case)}.json"
     template = JSON_SCHEMA_DATA_PATH.parent / "templates" / record["custom"] if record["custom"] else None
     output = tmp_path / "output.py"
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
@@ -29530,14 +29609,9 @@ def test_additional_pattern_intersections(
                 except ValidationError:
                     result["python"] = "rejected"
             records.append(result)
-    runtime_expected = (
-        ADDITIONAL_PATTERN_EXPECTED / "pydantic20"
-        if case in {"minimum_number", "minimum_shared"} and PYDANTIC_VERSION.split(".")[:2] == ["2", "0"]
-        else ADDITIONAL_PATTERN_EXPECTED
-    )
     assert_output(
         json.dumps(records, indent=2),
-        runtime_expected
+        ADDITIONAL_PATTERN_EXPECTED
         / record.get("runtime_names", {}).get(
             f"{enabled}_{field_constraints}", f"{case}_{enabled}_{field_constraints}_runtime.txt"
         ),
@@ -29563,8 +29637,8 @@ def test_undeclared_required(
     """Compare native validity, Python/JSON validation, full output and model field order."""
     # Each formatter has its own golden for intentionally different formatting.
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
-    source = UNDECLARED_REQUIRED_FIXTURES / f"{case}.json"
     record = UNDECLARED_REQUIRED_CASES[case]
+    source = UNDECLARED_REQUIRED_FIXTURES / f"{record.get('source', case)}.json"
     options = dict(record["options"])
     if record["custom"]:
         options["custom_template_dir"] = JSON_SCHEMA_DATA_PATH.parent / "templates" / "additional_pattern_context"
@@ -29644,14 +29718,10 @@ def test_undeclared_required(
                 except ValidationError:
                     result["json"] = "rejected"
             results.append(result)
-    runtime_expected = (
-        UNDECLARED_REQUIRED_EXPECTED / "pydantic20"
-        if not enabled and "objects" in case and (PYDANTIC_VERSION.split(".")[:2] == ["2", "0"])
-        else UNDECLARED_REQUIRED_EXPECTED
-    )
     assert_output(
         json.dumps(results, indent=2),
-        runtime_expected / record.get("runtime_names", {}).get(str(enabled), f"{case}_{enabled}_runtime.txt"),
+        UNDECLARED_REQUIRED_EXPECTED
+        / record.get("runtime_names", {}).get(str(enabled), f"{case}_{enabled}_runtime.txt"),
     )
 
 

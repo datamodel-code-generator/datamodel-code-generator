@@ -91,7 +91,7 @@ ERROR_CASES: tuple[tuple[str, InputFileTypeLiteral, str], ...] = (
     ("required_as_string.json", "jsonschema", "Error at schema path 'required_as_string.json'"),
     ("enum_as_dict.json", "jsonschema", "Error at schema path 'enum_as_dict.json'"),
     ("missing_external_ref.json", "jsonschema", "$ref file not found:"),
-    ("malformed_external_ref.json", "jsonschema", "truncated_external.json"),
+    ("malformed_external_ref.json", "jsonschema", "truncated_jsonschema.json"),
     ("empty_jsonschema.json", "jsonschema", "Models not found in the input data"),
 )
 
@@ -953,9 +953,12 @@ def test_malformed_input_error_messages(
     output_file: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Known malformed inputs emit concise diagnostics and a non-zero exit code."""
+    """Known malformed inputs emit concise diagnostics and a non-zero exit code; an empty input needs no fixture."""
+    input_path = MALFORMED_DATA_PATH / fixture_name
+    if fixture_name == "empty_jsonschema.json":
+        (input_path := output_file.parent / fixture_name).write_text("", encoding="utf-8")
     run_main_and_assert(
-        input_path=MALFORMED_DATA_PATH / fixture_name,
+        input_path=input_path,
         output_path=output_file,
         input_file_type=input_file_type,
         expected_exit=Exit.ERROR,
@@ -1456,7 +1459,7 @@ def test_external_ref_parse_error_has_format_and_source_context() -> None:
     """External JSON/YAML decoding failures are translated at the reference-load boundary."""
     with pytest.raises(
         InvalidFileFormatError,
-        match=r"Invalid file format for jsonschema at .+truncated_external\.json",
+        match=r"Invalid file format for jsonschema at .+truncated_jsonschema\.json",
     ):
         generate(
             MALFORMED_DATA_PATH / "malformed_external_ref.json",

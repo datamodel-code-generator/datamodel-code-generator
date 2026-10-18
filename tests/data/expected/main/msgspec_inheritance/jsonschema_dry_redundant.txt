@@ -1,0 +1,29 @@
+{
+  "convert": {
+    "left1": 1,
+    "left2": 2,
+    "right1": 3,
+    "right2": 4
+  },
+  "decode": {
+    "left1": 1,
+    "left2": 2,
+    "right1": 3,
+    "right2": 4
+  },
+  "fields": [
+    "left1",
+    "left2",
+    "right1",
+    "right2"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

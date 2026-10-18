@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Extension keys
+  version: 1.0.0
+paths: {}
+x-shared:
+  Rate:
+    oneOf:
+      - {type: string, const: low}
+      - {type: 'null'}
+  Kind:
+    oneOf:
+      - {type: string, const: a}
+      - {type: integer, const: 1}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        rate: {$ref: '#/x-shared/Rate'}
+        kind: {$ref: '#/x-shared/Kind'}
+        default:
+          oneOf:
+            - {type: string, enum: [standard]}
+            - {type: 'null'}

@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info:
+  title: Item references
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    ItemReference:
+      type: object
+      properties:
+        id: {type: string}
+        type:
+          anyOf:
+            - {type: string, const: item_reference}
+            - {type: 'null'}
+        kind:
+          oneOf:
+            - {type: string, const: reference}
+            - {type: 'null'}
+        version:
+          default: 2
+          oneOf:
+            - {type: integer, const: 2}
+            - {type: 'null'}
+        source:
+          type: [string, 'null']
+          oneOf:
+            - {const: user}
+            - {type: 'null'}
+      required: [id, kind]
+    Marker:
+      anyOf:
+        - {type: string, const: marker}
+        - {type: 'null'}

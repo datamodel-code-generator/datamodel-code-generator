@@ -1,9 +1,0 @@
-{
-  "First": {
-    "config": {
-      "protected_namespaces": [
-        "model_"
-      ]
-    }
-  }
-}

@@ -413,6 +413,7 @@ def test_main_protobuf_empty_directory_error(
 
 
 REFERENCED_STANDARD_CASES = ["nullvalue", "standard_enum", "standard_message", "unused_standard", "user_namespace"]
+REFERENCED_STANDARD_INVALID = {"unused_standard": "user_namespace"}
 REFERENCED_STANDARD_BACKENDS = [
     DataModelType.PydanticV2BaseModel,
     DataModelType.PydanticV2Dataclass,
@@ -450,7 +451,9 @@ def test_native_referenced_standard_types(name: str) -> None:
     payloads = DATA_PATH / "payloads/protobuf_referenced_standard"
     value = json_format.Parse((payloads / f"{name}_valid.json").read_text(), model())
     with pytest.raises(json_format.ParseError):
-        json_format.Parse((payloads / f"{name}_invalid.json").read_text(), model())
+        json_format.Parse(
+            (payloads / f"{REFERENCED_STANDARD_INVALID.get(name, name)}_invalid.json").read_text(), model()
+        )
     if name == "nullvalue":
         json_format.Parse((payloads / "nullvalue_null.json").read_text(), model())
         assert_output(
@@ -506,7 +509,7 @@ def test_referenced_standard_generation(
         validate = _model_json_validator(model)
         validate((payloads / f"{name}_valid.json").read_text())
         with pytest.raises(ValidationError):
-            validate((payloads / f"{name}_invalid.json").read_text())
+            validate((payloads / f"{REFERENCED_STANDARD_INVALID.get(name, name)}_invalid.json").read_text())
 
 
 @pytest.mark.parametrize("backend", REFERENCED_STANDARD_BACKENDS)

@@ -30,7 +30,7 @@ def test_diff_against_identical_inputs_share_the_default_timestamp_across_genera
         input_file_type="jsonschema",
         extra_args=[
             "--diff-against",
-            str(DATA_PATH / "jsonschema" / "input_diff" / "same_old.json"),
+            str(DATA_PATH / "jsonschema" / "input_diff" / "same_new.json"),
             "--custom-formatters",
             "tests.data.python.custom_formatters.advance_time_before_second_generation",
             "--formatters",

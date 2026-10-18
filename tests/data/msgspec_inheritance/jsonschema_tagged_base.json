@@ -1,0 +1,80 @@
+{
+  "title": "Payload",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Cat"
+    },
+    {
+      "$ref": "#/$defs/Named"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "purr": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "Cat": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "cat"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "Named": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Dog": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "dog"
+        },
+        "bark": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "bark"
+      ]
+    },
+    "Owner": {
+      "type": "object",
+      "properties": {
+        "pet": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ],
+          "discriminator": {
+            "propertyName": "kind",
+            "mapping": {
+              "cat": "#/$defs/Cat",
+              "dog": "#/$defs/Dog"
+            }
+          }
+        }
+      }
+    }
+  }
+}

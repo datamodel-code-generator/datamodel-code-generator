@@ -93,6 +93,7 @@
   {
     "name": "reference",
     "schema": "reference",
+    "payloads": "collision",
     "options": {
       "use_annotated": true,
       "collapse_root_models": true
@@ -101,6 +102,7 @@
   {
     "name": "extra_union",
     "schema": "extra_union",
+    "payloads": "extra",
     "options": {
       "use_annotated": true
     },

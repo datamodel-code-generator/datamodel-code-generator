@@ -17,15 +17,21 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
 SOURCE = Path(__file__).parents[2] / "data" / "generation_platform" / "fastapi"
+CLIENT_SOURCE = SOURCE.parent / "client"
 PACKAGE = "server"
 RUNTIME = Path(_runtime.__file__).parent
 BUILTIN_TEMPLATES = RUNTIME.parent / "_fastapi" / "templates"
 Modules: TypeAlias = dict[tuple[str, ...], str]
 
 
+def fixture_path(name: str) -> Path:
+    """Return a FastAPI fixture, or the client fixture of that name: documents both targets read are stored once."""
+    return source if (source := SOURCE / name).exists() else CLIENT_SOURCE / name
+
+
 def _copied(name: str, root: Path) -> Path:
     """Copy a fixture file or directory under the target root, so persistent paths stay relative on every drive."""
-    source, target = SOURCE / name, root / name
+    source, target = fixture_path(name), root / name
     if source.is_dir():
         shutil.copytree(source, target, dirs_exist_ok=True)
     elif source.is_file():
@@ -75,9 +81,9 @@ def _render(
     if builtin_sources:
         shutil.copytree(BUILTIN_TEMPLATES, root / "builtin-sources" / "fastapi")
         model["custom_template_dir"] = root / "builtin-sources"
-    source = shutil.copy2(SOURCE / case["input"], root / case["input"])
+    source = shutil.copy2(fixture_path(case["input"]), root / case["input"])
     for name in case.get("files", ()):
-        shutil.copy2(SOURCE / name, root / name)
+        shutil.copy2(fixture_path(name), root / name)
     try:
         with in_directory(root):
             files = generate(source, **model, **server_options(case))

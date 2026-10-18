@@ -86,7 +86,7 @@ def test_annotated_string_keys(
             )
     if not runs:
         return
-    payloads = json.loads((PAYLOADS / f"{case['schema']}.json").read_text())
+    payloads = json.loads((PAYLOADS / f"{case.get('payloads', case['schema'])}.json").read_text())
     for invalid in payloads["invalid"]:
         assert_generated_model_json_validation(
             output_file,
