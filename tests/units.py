@@ -86,6 +86,7 @@ __all__ = [
     "tree_member",
     "uncollected_items",
     "unit_digest",
+    "unrecorded_files",
     "write_files",
 ]
 
@@ -1247,13 +1248,14 @@ class _Resolution:
         self.collect_garbage()
         return self.write_sidecars()
 
-    def duplicates(self) -> list[list[str]]:
+    def duplicates(self, extra: Iterable[str] = ()) -> list[list[str]]:
         """Return the stored units whose bytes another unit of their kind also stores, grouped.
 
         Files group with files of the same suffix, trees with trees; missing files and empty trees store nothing.
+        ``extra`` names more file units to compare, such as files no line stores.
         """
         groups: dict[tuple[str, str], list[str]] = {}
-        for storage in sorted(self.before):
+        for storage in sorted(self.before | set(extra)):
             name, pattern = split_label(storage)
             if self.value(storage) not in (None, {}):
                 kind = PurePosixPath(name).suffix if pattern is None else "/"
@@ -1311,20 +1313,58 @@ def resolve(
     return _Resolution(lines, updates, expected_root).run()
 
 
-def duplicates(lines: Mapping[Path, list[RefLine]], expected_root: Path) -> list[list[str]]:
-    """Return the storages of every content that more than one stored unit holds, one sorted group per content."""
-    return _Resolution(lines, {}, expected_root).duplicates()
+def duplicates(lines: Mapping[Path, list[RefLine]], expected_root: Path, extra: Iterable[str] = ()) -> list[list[str]]:
+    """Return the storages of every content that more than one stored unit holds, one sorted group per content.
+
+    ``extra`` names more file units below the expected root, such as the files ``unrecorded_files`` returns.
+    """
+    return _Resolution(lines, {}, expected_root).duplicates(extra)
 
 
-def duplicate_storages_message(groups: Sequence[Sequence[str]]) -> str:
-    """Explain stored expected units that hold the same content, with the command that stores each content once."""
-    return "\n".join([
-        *(
-            f"{' and '.join(f'tests/data/expected/{storage}' for storage in group)} store the same content."
-            for group in groups
-        ),
-        "Fix: python scripts/fix_expected.py --deduplicate && git add -A tests",
-    ])
+def unrecorded_files(lines: Mapping[Path, list[RefLine]], expected_root: Path) -> list[str]:
+    """Return the files below the expected root that no line stores and no stored tree holds: units of their own."""
+    stored: set[PurePosixPath] = set()
+    trees: dict[PurePosixPath, set[str]] = {}
+    for found in lines.values():
+        for line in found:
+            name, pattern = split_label(line.stored)
+            if pattern is None:
+                stored.add(PurePosixPath(name))
+            else:
+                trees.setdefault(PurePosixPath(name), set()).add(pattern)
+    result = []
+    for directory, folders, names in os.walk(expected_root):
+        folders[:] = sorted(folder for folder in folders if folder != "__pycache__" and not folder.startswith("."))
+        base = PurePosixPath(Path(directory).relative_to(expected_root).as_posix())
+        for name in sorted(names):
+            relative = base / name
+            held = any(
+                relative.relative_to(root).match(pattern)
+                for root in relative.parents
+                for pattern in trees.get(root, ())
+            )
+            if relative.suffix != ".pyc" and relative not in stored and not held:
+                result.append(relative.as_posix())
+    return result
+
+
+def duplicate_storages_message(groups: Sequence[Sequence[str]], unrecorded: Collection[str] = ()) -> str:
+    """Explain expected units that hold the same content: a copy no test records is deleted, the rest stored once."""
+    lines = [
+        f"{' and '.join(f'tests/data/expected/{storage}' for storage in group)} store the same content."
+        for group in groups
+    ]
+    for group in groups:
+        keep = split_label(next((name for name in group if name not in unrecorded), group[0]))[0]
+        lines += [
+            f"Fix: no test records tests/data/expected/{name}; read tests/data/expected/{keep} where it is read, "
+            f"then git rm tests/data/expected/{name}"
+            for name in group
+            if name in unrecorded and name != keep
+        ]
+    if any(sum(name not in unrecorded for name in group) > 1 for group in groups):
+        lines.append("Fix: python scripts/fix_expected.py --deduplicate && git add -A tests")
+    return "\n".join(lines)
 
 
 INPUT_TREES = (

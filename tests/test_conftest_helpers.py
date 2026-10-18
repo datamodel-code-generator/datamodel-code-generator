@@ -3008,10 +3008,15 @@ def test_fix_expected_deduplicate_refuses(
 
 
 def test_stored_expected_outputs_are_unique() -> None:
-    """Every content below tests/data/expected is stored once: tests with equal output share one stored unit."""
+    """Every content below tests/data/expected is stored once: tests with equal output share one stored unit.
+
+    A file no test records, outside the stored trees, counts as a unit of its own.
+    """
     index = units.RefsIndex(Path(__file__).parent)
-    if groups := units.duplicates(index.all_lines(), index.expected_root):
-        pytest.fail(units.duplicate_storages_message(groups), pytrace=False)  # pragma: no cover
+    lines = index.all_lines()
+    unrecorded = units.unrecorded_files(lines, index.expected_root)
+    if groups := units.duplicates(lines, index.expected_root, unrecorded):
+        pytest.fail(units.duplicate_storages_message(groups, unrecorded), pytrace=False)  # pragma: no cover
 
 
 def test_test_inputs_are_unique() -> None:
@@ -3069,6 +3074,51 @@ def test_duplicate_messages_name_the_fix() -> None:
         "tests/data/expected/main/a.py and tests/data/expected/main/b.py store the same content.\n"
         "Fix: python scripts/fix_expected.py --deduplicate && git add -A tests"
     )
+    assert units.duplicate_storages_message([["c.txt", "d.txt"], ["e.txt", "f.txt", "g.txt"]], {"c.txt", "f.txt"}) == (
+        "tests/data/expected/c.txt and tests/data/expected/d.txt store the same content.\n"
+        "tests/data/expected/e.txt and tests/data/expected/f.txt and tests/data/expected/g.txt "
+        "store the same content.\n"
+        "Fix: no test records tests/data/expected/c.txt; read tests/data/expected/d.txt where it is read, "
+        "then git rm tests/data/expected/c.txt\n"
+        "Fix: no test records tests/data/expected/f.txt; read tests/data/expected/e.txt where it is read, "
+        "then git rm tests/data/expected/f.txt\n"
+        "Fix: python scripts/fix_expected.py --deduplicate && git add -A tests"
+    )
+    assert units.duplicate_storages_message([["h.txt", "i.txt"]], {"h.txt", "i.txt"}) == (
+        "tests/data/expected/h.txt and tests/data/expected/i.txt store the same content.\n"
+        "Fix: no test records tests/data/expected/i.txt; read tests/data/expected/h.txt where it is read, "
+        "then git rm tests/data/expected/i.txt"
+    )
+
+
+def test_unrecorded_expected_files_are_units(tmp_path: Path) -> None:
+    """A file no line stores and no stored tree holds is a unit of its own, compared with the stored units.
+
+    Files a stored tree's pattern selects belong to that tree, and caches and bytecode are not output.
+    """
+    expected = tmp_path / "expected"
+    for name, text in {
+        "m/a.txt": "same\n",
+        "m/copy.txt": "same\n",
+        "tree/x.py": "X = 1\n",
+        "tree/sub/y.py": "same\n",
+        "tree/notes.txt": "same\n",
+        "lone.py": "X = 1\n",
+        "m/__pycache__/c.txt": "same\n",
+        "m/.cache/d.txt": "same\n",
+        "m/e.pyc": "",
+    }.items():
+        (path := expected / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    lines = {
+        tmp_path / "test_m.refs": [
+            units.RefLine("test_a", "", "m/a.txt"),
+            units.RefLine("test_tree", "", "tree//*.py"),
+        ]
+    }
+    unrecorded = units.unrecorded_files(lines, expected)
+    assert unrecorded == ["lone.py", "m/copy.txt", "tree/notes.txt"]
+    assert units.duplicates(lines, expected, unrecorded) == [["m/a.txt", "m/copy.txt", "tree/notes.txt"]]
 
 
 @pytest.mark.parametrize("option", ["--apply", "--from-ci", "--repair", "--deduplicate"])
