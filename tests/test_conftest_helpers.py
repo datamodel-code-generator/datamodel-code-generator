@@ -2911,6 +2911,70 @@ def test_fix_expected_deduplicate_refuses(
     )
 
 
+def test_stored_expected_outputs_are_unique() -> None:
+    """Every content below tests/data/expected is stored once: tests with equal output share one stored unit."""
+    index = units.RefsIndex(Path(__file__).parent)
+    if groups := units.duplicates(index.all_lines(), index.expected_root):
+        pytest.fail(units.duplicate_storages_message(groups), pytrace=False)  # pragma: no cover
+
+
+def test_test_inputs_are_unique() -> None:
+    """Every input below tests/data is stored once: a file, or a tree that tests read as a whole."""
+    if groups := units.input_duplicates(Path(__file__).parent / "data"):
+        pytest.fail(units.duplicate_inputs_message(groups), pytrace=False)  # pragma: no cover
+
+
+def test_input_duplicates_compare_files_and_trees(tmp_path: Path) -> None:
+    """Files compare by suffix and content with CRLF read as LF, and trees compare as a whole.
+
+    A registered directory or a Python package below ``python/`` is one unit from its outermost root, so its files may
+    repeat files elsewhere; expected output, caches, hidden directories, bytecode and the root ``__init__.py`` are not
+    inputs.
+    """
+    for name, data in {
+        "a/x.json": b"{}\r\n",
+        "b/y.json": b"{}\n",
+        "c/x.yaml": b"{}\n",
+        "t1/s.json": b"{}\n",
+        "t1/inner/u.json": b"1",
+        "t2/s.json": b"{}\n",
+        "t2/inner/u.json": b"1",
+        "python/pkg/__init__.py": b"",
+        "python/pkg/sub/__init__.py": b"",
+        "python/pkg2/__init__.py": b"",
+        "python/pkg2/sub/__init__.py": b"",
+        "python/loose.py": b"",
+        "expected/z.json": b"{}\n",
+        "d/__pycache__/m.json": b"{}\n",
+        "d/.hidden/h.json": b"{}\n",
+        "e/m.pyc": b"",
+        "__init__.py": b"",
+    }.items():
+        (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    groups = units.input_duplicates(tmp_path, ("t1", "t2", "t1/inner"))
+    assert sorted(groups) == [["a/x.json", "b/y.json"], ["python/pkg/", "python/pkg2/"], ["t1/", "t2/"]]
+    assert units.input_duplicates(tmp_path / "t1", ()) == []
+
+
+def test_duplicate_messages_name_the_fix() -> None:
+    """Failures name every copy with the command that removes it, and the command that stores expected output once."""
+    assert units.duplicate_inputs_message([["jsonschema/b.json", "jsonschema/a.json", "c.json"], ["t2/", "t1/"]]) == (
+        "tests/data/jsonschema/a.json has the same content as tests/data/c.json.\n"
+        "Fix: use tests/data/c.json in your test, then git rm tests/data/jsonschema/a.json\n"
+        "tests/data/jsonschema/b.json has the same content as tests/data/c.json.\n"
+        "Fix: use tests/data/c.json in your test, then git rm tests/data/jsonschema/b.json\n"
+        "tests/data/t2/ has the same content as tests/data/t1/.\n"
+        "Fix: use tests/data/t1 in your test, then git rm -r tests/data/t2\n"
+        "If a directory is read as a whole (a multi-file schema, an input directory, a copied project or templates), "
+        "add it to INPUT_TREES in tests/units.py: its files then form one unit."
+    )
+    assert units.duplicate_storages_message([["main/a.py", "main/b.py"]]) == (
+        "tests/data/expected/main/a.py and tests/data/expected/main/b.py store the same content.\n"
+        "Fix: python scripts/fix_expected.py --deduplicate && git add -A tests"
+    )
+
+
 @pytest.mark.parametrize("option", ["--apply", "--from-ci", "--repair", "--deduplicate"])
 def test_fix_expected_refuses_to_write_in_ci(
     ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], option: str

@@ -37,6 +37,7 @@ __all__ = [
     "BROKEN",
     "CONFLICT",
     "FACTS",
+    "INPUT_TREES",
     "KEEP",
     "ORDER",
     "PAYLOAD_DECODED_LIMIT",
@@ -56,11 +57,14 @@ __all__ = [
     "decode_payload",
     "deduplicate",
     "derived_name",
+    "duplicate_inputs_message",
+    "duplicate_storages_message",
     "duplicates",
     "encode_payload",
     "encode_value",
     "facts_fit",
     "format_refs",
+    "input_duplicates",
     "item_problem",
     "label_path",
     "label_problem",
@@ -1309,6 +1313,125 @@ def resolve(
 def duplicates(lines: Mapping[Path, list[RefLine]], expected_root: Path) -> list[list[str]]:
     """Return the storages of every content that more than one stored unit holds, one sorted group per content."""
     return _Resolution(lines, {}, expected_root).duplicates()
+
+
+def duplicate_storages_message(groups: Sequence[Sequence[str]]) -> str:
+    """Explain stored expected units that hold the same content, with the command that stores each content once."""
+    return "\n".join([
+        *(
+            f"{' and '.join(f'tests/data/expected/{storage}' for storage in group)} store the same content."
+            for group in groups
+        ),
+        "Fix: python scripts/fix_expected.py --deduplicate && git add -A tests",
+    ])
+
+
+INPUT_TREES = (
+    "ci_shards/tree",
+    "config/external_ref_mapping_round_trip",
+    "generation_platform/client/cli/json-files",
+    "generation_platform/targets/spec",
+    "jsonschema/dotted_module_exports_reuse",
+    "jsonschema/dynamic_ref_merged_generic",
+    "jsonschema/dynamic_ref_partial_binding",
+    "jsonschema/external_reference",
+    "jsonschema/field_type_collision_inherited_modules",
+    "jsonschema/field_type_collision_inherited_modules_child_first",
+    "jsonschema/field_type_collision_inherited_modules_package",
+    "jsonschema/nested_resources/embedded",
+    "jsonschema/nested_resources/external_control",
+    "jsonschema/nested_resources/physical_collision",
+    "jsonschema/nested_resources/relative_base",
+    "jsonschema/non_dict_files",
+    "jsonschema/path_absolute_root_id_refs",
+    "jsonschema/path_absolute_root_id_refs_parent_traversal",
+    "jsonschema/ref_to_json_list",
+    "jsonschema/reuse_model_same_name_references",
+    "jsonschema/reuse_scope_tree",
+    "jsonschema/reuse_scope_tree_branch",
+    "jsonschema/reuse_scope_tree_conflict",
+    "jsonschema/reuse_scope_tree_conflict_dir",
+    "jsonschema/reuse_scope_tree_cross_module_users",
+    "jsonschema/reuse_scope_tree_multi",
+    "jsonschema/reuse_scope_tree_same_name_references",
+    "jsonschema/same_name_reference_fields",
+    "jsonschema/same_name_reference_literals",
+    "openapi/dynamic_ref_component_anchors",
+    "openapi/dynamic_ref_external_generic",
+    "openapi/external_discriminator_base",
+    "openapi/external_ref_mapping",
+    "openapi/single_value_enum_as_const",
+    "templates/additional_pattern_context",
+    "templates/pattern_intersection_context",
+    "templates_dependencies/default_templates",
+)
+"""Directories below ``tests/data`` that tests read as a whole, each one input unit: a multi-file schema whose files
+refer to each other, a directory passed as the input, a copied project, or a template directory. Python packages below
+``tests/data/python`` are input trees as well."""
+
+
+def _input_member(relative: PurePosixPath) -> bool:
+    """Return whether a file below the data root is test input: not expected output, a cache, or bytecode."""
+    return (
+        relative.parts[0] != "expected"
+        and relative.suffix != ".pyc"
+        and relative != PurePosixPath("__init__.py")
+        and not any(part == "__pycache__" or part.startswith(".") for part in relative.parts[:-1])
+    )
+
+
+def input_duplicates(data_root: Path, trees: Collection[str] = INPUT_TREES) -> list[list[str]]:
+    """Return the input units below a data root that hold the same content, one sorted group per content.
+
+    A unit is a file, or a tree hashed as a whole: an outermost directory in ``trees`` or an outermost Python package
+    below ``python/``, so the files of a tree may repeat files elsewhere. Files compare by suffix and content, trees by
+    their files' paths and contents, both with CRLF read as LF; a tree's name ends with ``/``.
+    """
+    files: dict[PurePosixPath, bytes] = {}
+    for directory, folders, names in os.walk(data_root):
+        folders.sort()
+        base = PurePosixPath(Path(directory).relative_to(data_root).as_posix())
+        files |= {
+            base / name: (Path(directory) / name).read_bytes().replace(b"\r\n", b"\n")
+            for name in names
+            if _input_member(base / name)
+        }
+    roots = {PurePosixPath(tree) for tree in trees}
+    roots |= {path.parent for path in files if path.name == "__init__.py" and path.parts[0] == "python"}
+    units: dict[str, dict[str, bytes]] = {}
+    for path, data in files.items():
+        root = next((parent for parent in reversed(path.parents) if parent in roots), None)
+        name, member = (
+            (path.as_posix(), "") if root is None else (f"{root.as_posix()}/", path.relative_to(root).as_posix())
+        )
+        units.setdefault(name, {})[member] = data
+    groups: dict[tuple[str, str], list[str]] = {}
+    for name, members in sorted(units.items()):
+        digest = hashlib.sha256()
+        for member, data in sorted(members.items()):
+            digest.update(b"%d:%s:%d:%s" % (len(member.encode()), member.encode(), len(data), data))
+        kind = "/" if name.endswith("/") else PurePosixPath(name).suffix
+        groups.setdefault((kind, digest.hexdigest()), []).append(name)
+    return [members for _, members in sorted(groups.items()) if len(members) > 1]
+
+
+def duplicate_inputs_message(groups: Sequence[Sequence[str]]) -> str:
+    """Explain input units that hold the same content: keep the shortest name and delete the others."""
+    lines = []
+    for group in groups:
+        keep, *copies = sorted(group, key=lambda name: (len(name), name))
+        survivor = f"tests/data/{keep.rstrip('/')}"
+        for copy in copies:
+            remove = f"git rm {'-r ' if copy.endswith('/') else ''}tests/data/{copy.rstrip('/')}"
+            lines += [
+                f"tests/data/{copy} has the same content as tests/data/{keep}.",
+                f"Fix: use {survivor} in your test, then {remove}",
+            ]
+    lines.append(
+        "If a directory is read as a whole (a multi-file schema, an input directory, a copied project or templates), "
+        "add it to INPUT_TREES in tests/units.py: its files then form one unit."
+    )
+    return "\n".join(lines)
 
 
 def deduplicate(
