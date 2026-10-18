@@ -35,7 +35,9 @@ def test_fastapi_install(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     if not os.environ.get("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E"):
         pytest.skip("DATAMODEL_CODE_GENERATOR_FASTAPI_INSTALL_E2E enables installing generated servers")
     monkeypatch.chdir(tmp_path)
-    notice = stored_expected(EXPECTED / "dependencies.txt").read_text(encoding="utf-8")
+    notice = stored_expected(EXPECTED.parent / "cli" / "pydantic-dependency" / "target-2.14.txt").read_text(
+        encoding="utf-8"
+    )
     run_main_and_assert(
         input_path=Path("contacts.yaml"),
         output_path=Path("models.py"),

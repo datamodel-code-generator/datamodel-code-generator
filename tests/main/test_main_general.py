@@ -4404,7 +4404,7 @@ require manual `model_rebuild()` calls for cross-module runtime references.""",
         "--no-use-type-checking-imports",
         "--disable-timestamp",
     ],
-    golden_output="openapi/no_use_type_checking_imports_internal.py",
+    golden_output="openapi/no_use_type_checking_imports/_internal.py",
     related_options=["--use-type-checking-imports", "--formatters", "--use-exact-imports"],
 )
 def test_no_use_type_checking_imports(output_dir: Path) -> None:

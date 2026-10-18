@@ -82,6 +82,7 @@ JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
 LAYOUT_ERRORS = json.loads((CLI / "layout-errors.json").read_text(encoding="utf-8"))
 MODEL_DEPENDENCIES = json.loads((CLI / "model-dependencies.json").read_text(encoding="utf-8"))
+MODEL_DEPENDENCY_NOTICES = dict.fromkeys(("type-aliases", "additional-imports", "additional-modules"), "formats")
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -211,7 +212,9 @@ def test_fastapi_cli_model_dependencies(
         extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
         copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
         capsys=capsys,
-        expected_stderr=stored_expected(expected / f"{case_name}.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(
+            expected / f"{MODEL_DEPENDENCY_NOTICES.get(case_name, case_name)}.txt"
+        ).read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=expected / f"{case_name}.py",
         skip_code_validation=True,
@@ -1505,7 +1508,9 @@ def test_fastapi_cli_nested_models_example(
     run_main_with_args(
         arguments,
         capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-app-server.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / "run-commands" / "app-server.txt").read_text(
+            encoding="utf-8"
+        ),
         use_builtin_default_formatter=False,
     )
     run_main_with_args(
