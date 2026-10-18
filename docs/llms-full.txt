@@ -61398,8 +61398,8 @@ Every option needs a decision in the [option recommender](recommend-options.md).
 (the snake_case name, such as `my_new_option` for `--my-new-option`) to the `options` table of
 `src/datamodel_code_generator/resources/recommender_rules.json`, in alphabetical order.
 
-If a recommender rule decides the option, list the rule ids. Each rule's `set` must include the field (see
-[Writing a recommender rule](#writing-a-recommender-rule)):
+If a recommender rule decides the option, list the rule ids. Each rule must supply the field through `set` or
+`value_from` (see [Writing a recommender rule](#writing-a-recommender-rule)):
 
 ```json
 "my_new_option": {"rules": ["naming.my-rule"]}
