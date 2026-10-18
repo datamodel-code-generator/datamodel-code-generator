@@ -1,9 +1,11 @@
 """Trial naming: generate candidate configurations up to their model metadata and compare the class names.
 
 A candidate is a complete generation config. It runs generate()'s own pipeline without formatting or output, so its
-class names are the names a user gets. ``rank`` orders candidates like the tuned naming benchmark: rejected candidates
-last, then fewer problem names, fewer renamed locations against a previous version of the input, a shorter median
-name, fewer added options, and the option spelling; ``_score`` holds that key.
+class names are the names a user gets. ``rank`` orders candidates by the tuned naming benchmark's problem names, with
+names that carry no meaning first: rejected candidates last, then fewer numbered or doubled names, fewer other
+problem names (such as names over 40 characters), fewer renamed locations against a previous version of the input,
+and a shorter median name. Only candidates that generate exactly the same class names are then ordered by fewer added
+options and the option spelling; other ties keep the given order.
 """
 
 from __future__ import annotations
@@ -59,24 +61,38 @@ class CandidateOutcome:
     error: str | None
 
 
-def _score(outcome: CandidateOutcome) -> tuple[int, int, int, int, int, str]:
-    """Return the ranking key of a candidate; lower is better."""
-    if outcome.metrics is None:
-        return 1, 0, 0, 0, 0, ""
-    options = outcome.candidate.options
+def _score(outcome: CandidateOutcome) -> tuple[int, int, int, int, int]:
+    """Return the ranking key of a candidate's class names; lower is better."""
+    if (metrics := outcome.metrics) is None:
+        return 1, 0, 0, 0, 0
     return (
         0,
-        outcome.metrics.problems,
+        metrics.numbered + metrics.doubled,
+        metrics.other_problems,
         0 if outcome.stability is None else outcome.stability.locations.renamed,
-        outcome.metrics.median_length,
-        len(options),
-        " ".join(f"{name}={value}" for name, value in sorted(options.items())),
+        metrics.median_length,
     )
 
 
 def rank(outcomes: Sequence[CandidateOutcome]) -> tuple[CandidateOutcome, ...]:
-    """Return the candidates best first; equal keys keep the given order."""
-    return tuple(sorted(outcomes, key=_score))
+    """Return the candidates best first.
+
+    Candidates with equal scores keep the given order, except that among candidates that generate exactly the same
+    class names at the same locations, fewer added options and then the option spelling come first.
+    """
+    first_seen: dict[tuple[tuple[str, str], ...], int] = {}
+    names = [tuple(sorted((record.path, record.name) for record in outcome.records)) for outcome in outcomes]
+    for index, generated in enumerate(names):
+        first_seen.setdefault(generated, index)
+    order = {
+        id(outcome): (
+            first_seen[generated],
+            len(options := outcome.candidate.options),
+            " ".join(f"{name}={value}" for name, value in sorted(options.items())),
+        )
+        for outcome, generated in zip(outcomes, names, strict=True)
+    }
+    return tuple(sorted(outcomes, key=lambda outcome: (_score(outcome), order[id(outcome)])))
 
 
 def _rejection(error: Exception) -> str:

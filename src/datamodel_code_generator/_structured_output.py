@@ -345,6 +345,7 @@ class RecommendNameMetricsPayload(BaseModel):
     long: int = Field(description="Names longer than 40 characters that are not a component key.")
     doubled: int = Field(description="Names repeating a word the schema does not repeat.")
     doubled_from_spec: int
+    other_problems: int = Field(description="Problem names that are neither numbered nor doubled.")
     displaced: int = Field(description="Components whose name another class took.")
     inline_like_component: int
     union_variants: int

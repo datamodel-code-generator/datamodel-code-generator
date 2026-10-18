@@ -269,7 +269,10 @@ def _doubled_segment(name: str) -> str | None:
 
 @dataclass(frozen=True, slots=True)
 class NameMetrics:
-    """Counts over the generated class names of one configuration; ``problems`` counts each class once."""
+    """Counts over the generated class names of one configuration.
+
+    ``problems`` counts each class once, and ``other_problems`` the problem names that are neither numbered nor doubled.
+    """
 
     types: int
     component: int
@@ -282,6 +285,7 @@ class NameMetrics:
     long: int
     doubled: int
     doubled_from_spec: int
+    other_problems: int
     displaced: int
     inline_like_component: int
     union_variants: int
@@ -304,14 +308,15 @@ def name_metrics(records: Sequence[NameRecord], vocabulary: SchemaVocabulary) ->
     counts = Counter(classes)
     origins = Counter(_origin(record.path) for record in records)
     problems = {index for index, kind in enumerate(classes) if kind in _PROBLEM_CLASSES}
-    doubled = doubled_from_spec = 0
+    doubled: list[int] = []
+    doubled_from_spec = 0
     for index, record in enumerate(records):
         if (segment := _doubled_segment(record.name)) is None:
             continue
         if vocabulary.contains_doubled(segment):
             doubled_from_spec += 1
         else:
-            doubled += 1
+            doubled.append(index)
             problems.add(index)
     component_names: dict[str, str] = {}
     for record in records:
@@ -351,8 +356,9 @@ def name_metrics(records: Sequence[NameRecord], vocabulary: SchemaVocabulary) ->
         statuscode=counts["statuscode"],
         generic=counts["generic"],
         long=counts["long"],
-        doubled=doubled,
+        doubled=len(doubled),
         doubled_from_spec=doubled_from_spec,
+        other_problems=len(problems - {*doubled, *(index for index, kind in enumerate(classes) if kind == "numbered")}),
         displaced=len(displaced),
         inline_like_component=len(inline_like),
         union_variants=len(variants),

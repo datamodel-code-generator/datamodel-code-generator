@@ -1281,6 +1281,11 @@
           "title": "Doubled From Spec",
           "type": "integer"
         },
+        "other_problems": {
+          "description": "Problem names that are neither numbered nor doubled.",
+          "title": "Other Problems",
+          "type": "integer"
+        },
         "displaced": {
           "description": "Components whose name another class took.",
           "title": "Displaced",
@@ -1331,6 +1336,7 @@
         "long",
         "doubled",
         "doubled_from_spec",
+        "other_problems",
         "displaced",
         "inline_like_component",
         "union_variants",

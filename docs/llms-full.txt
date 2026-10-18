@@ -4420,10 +4420,12 @@ first, and the notes say so.
 Each candidate's class names are measured like the naming benchmark the rules come from. A name is a problem when it
 is numbered (`Status1`), contains a status code, is a generic word (`Item`, `Data`), is longer than 40 characters,
 repeats a word the schema does not repeat (`ShapeShape`), takes a component's name from the component, or names an
-inline model like an unrelated component. Candidates are ranked by, in order: fewer problem names; with
-`--diff-against`, fewer classes renamed between the previous and the current schema; a shorter median name; fewer
-added options. The best candidate other than `current` is selected, and the command and `pyproject.toml` block carry
-its options.
+inline model like an unrelated component. Candidates are ranked by, in order: fewer numbered or doubled names; fewer
+other problem names, such as names over 40 characters; with `--diff-against`, fewer classes renamed between the
+previous and the current schema; a shorter median name. Numbered names count as worse than long descriptive names:
+`Event2` says nothing about the class, while a long name still describes it. Only when two candidates generate exactly
+the same class names does the one with fewer added options rank first; other ties keep the order above. The best
+candidate other than `current` is selected, and the command and `pyproject.toml` block carry its options.
 
 The `trial:` line of each option compares the candidates without and with it on the selected configuration, so it
 shows what that one option changes in the recommended command. When the selected candidate is not the rules'

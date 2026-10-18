@@ -15,7 +15,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
 
 Start from  --preset standard-py314-20261017
 
-Add (1 option)
+Add (2 options)
   --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
       Most enums are inline value sets of one property (inline enums: 5 of 5). As Enum classes they
       add one class name each, the longest and most numbered names; Literal types keep the values
@@ -23,10 +23,8 @@ Add (1 option)
       measured: GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227
       measured: Stripe API description: problem names 348 -> 158
       measured: SchemaStore workflow schema: Type1 to Type19 disappear
-      trial: preset -> recommended - root-name: classes 11 -> 6, problem names 3 -> 2; 0 of 6
+      trial: recommended - enum-shape -> recommended: classes 11 -> 6, problem names 3 -> 2; 0 of 6
       classes matched by schema location renamed (0 only renumbered), 5 removed, 0 added
-
-Left out after the trial (the rules recommend these)
   --class-name ServiceConfig   [root.class-name-for-root-object]
       The root schema is an object model. Without --class-name its class is Model (with
       --use-title-as-name, its title: Service configuration file schema), and full-path prefixes
@@ -57,34 +55,32 @@ Consider (the schema also has signals against these)
       charge component (ChargeModel)
       measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
       lost
-      trial: recommended - root-name -> recommended - root-name + naming-strategy: classes 6 -> 7,
-      problem names 2 -> 4; 3 of 6 classes matched by schema location renamed (0 only renumbered), 0
-      removed, 1 added, e.g.
+      trial: recommended -> recommended + naming-strategy: classes 6 -> 7, problem names 2 -> 4; 3
+      of 6 classes matched by schema location renamed (0 only renumbered), 0 removed, 1 added, e.g.
         Step1 -> StepStep   at definitions/step > oneOf 0
         Step2 -> StepStep1   at definitions/step > oneOf 1
         With -> StepStepWith   at definitions/step > oneOf 0 > with_
 
-Trial  7 candidates generated in memory without formatting; nothing written
-  candidate                                  classes   problems  numbered  long  doubled  displaced  median
-  current                                         12  3 (25.0%)         3     0        0          0       5
-  preset                                          11  3 (27.3%)         3     0        0          0       5
-  recommended                                      6  2 (33.3%)         2     0        0          0       5
-  recommended + naming-strategy                    7  4 (57.1%)         1     0        4          0       9
-  recommended - enum-shape                        11  3 (27.3%)         3     0        0          0       5
-  recommended - root-name                          6  2 (33.3%)         2     0        0          0       5   selected
-  recommended - root-name + naming-strategy        7  4 (57.1%)         1     0        4          0       9
+Trial  6 candidates generated in memory without formatting; nothing written
+  candidate                      classes   problems  numbered  long  doubled  displaced  median
+  current                             12  3 (25.0%)         3     0        0          0       5
+  preset                              11  3 (27.3%)         3     0        0          0       5
+  recommended                          6  2 (33.3%)         2     0        0          0       5   selected
+  recommended + naming-strategy        7  4 (57.1%)         1     0        4          0       9
+  recommended - enum-shape            11  3 (27.3%)         3     0        0          0       5
+  recommended - root-name              6  2 (33.3%)         2     0        0          0       5
   current: the configuration as set, without the preset; never selected
-  the last 1 row: the selected configuration without or with one option, to measure each option on
-  it; never selected
 
-Changes from the current configuration (current -> recommended - root-name)
-  0 of 6 classes matched by schema location renamed (0 only renumbered), 6 removed, 0 added
+Changes from the current configuration (current -> recommended)
+  1 of 6 classes matched by schema location renamed (0 only renumbered), 6 removed, 0 added, e.g.
+    ServiceConfigurationFileSchema -> ServiceConfig   at (root)
 
 Command
-  datamodel-codegen --enum-field-as-literal all --input service-config.json --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --preset standard-py314-20261017 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
+  class-name = "ServiceConfig"
   enum-field-as-literal = "all"
   input = "service-config.json"
   preset = "standard-py314-20261017"
