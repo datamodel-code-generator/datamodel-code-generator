@@ -967,6 +967,47 @@ def test_watch_cli_announces_implied_settings_once(tmp_path: Path) -> None:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
+@pytest.mark.parametrize(
+    ("options", "pyproject"),
+    [
+        pytest.param([], "[tool.datamodel-codegen]\nwatch = true\nwatch-delay = 0.1\n", id="pyproject-watch"),
+        pytest.param(["--watch", "--watch-delay", "0.1"], "", id="watch-option"),
+    ],
+)
+def test_watch_cli_naming_hint(options: list[str], pyproject: str, tmp_path: Path) -> None:
+    """Point to --recommend-options once when pyproject.toml sets watch, and never with --watch, which it refuses.
+
+    A regeneration whose class names still call for the hint does not repeat it.
+    """
+    source = (PROJECT_ROOT / "tests/data/recommend_options/naming_hint.yaml").read_text(encoding="utf-8")
+    input_file = tmp_path / "naming_hint.yaml"
+    input_file.write_text(source, encoding="utf-8")
+    if pyproject:
+        (tmp_path / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+    output = _WatchedOutput(tmp_path / "models.py")
+    arguments = ["--input", str(input_file), "--output", str(output.path), "--input-file-type", "openapi"]
+    process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _wait_for_watch_cli_ready(
+        *_start_watch_process(
+            [*_watch_cli_prefix(), *arguments, "--formatters", "builtin", "--disable-timestamp", *options], tmp_path
+        )
+    )
+    ledger = "    Ledger:\n      type: object\n      properties:\n        metadata:\n          type: object\n"
+    try:
+        _write_watch_cli_input_and_wait(
+            process,
+            stdout_lines,
+            stderr_lines,
+            input_file,
+            f"{source}{ledger}          properties:\n            ledger_source:\n              type: string\n",
+            output.contains("class Ledger("),
+            "the models to be regenerated",
+        )
+        hints = [line.partition("NamingHintWarning: ")[2] for line in stderr_lines if "NamingHintWarning: " in line]
+        assert_output(f"hints {len(hints)}\n{''.join(hints)}")
+    finally:
+        _stop_watch_cli(process, stdout_thread, stderr_thread)
+
+
 @pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_client_job_on_change(tmp_path: Path) -> None:
     """Regenerate a client job of a watched batch whenever its input changes, as a model job is.

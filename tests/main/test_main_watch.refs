@@ -30,6 +30,9 @@ unchanged-roots	main/watch_file_initial.py
 	main/watch_file_initial.py
 [test_watch_cli_locked_lock_recovery_after_external_deletion]
 	http/remote_lock_nested.py
+[test_watch_cli_naming_hint]
+pyproject-watch	main/main_watch/watch_cli_naming_hint[pyproject-watch].txt
+watch-option	main/main_watch/watch_cli_naming_hint[watch-option].txt
 [test_watch_cli_recovers_when_an_existing_protobuf_import_adds_a_missing_nested_import]
 	main/watch_protobuf_missing_nested_recovery.py
 [test_watch_cli_recovers_when_missing_alias_configuration_is_created]

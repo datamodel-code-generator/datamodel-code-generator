@@ -596,6 +596,10 @@ class LeftoverFilesWarning(UserWarning):
     """Warn that a generated package holds Python files that the generation left in place and does not generate."""
 
 
+class NamingHintWarning(UserWarning):
+    """Point a command line run whose class names are mostly numbered collisions to ``--recommend-options``."""
+
+
 class InvalidClassNameError(Error):
     """Raised when a schema title cannot be converted to a valid Python class name."""
 
@@ -2732,6 +2736,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 discarded_parser = parser
                 parser, results, data_model_types, defer_formatting, extra_template_data = untyped_parse
         model_metadata = parser.model_metadata
+        class_names = parser.generated_class_names
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
             legacy_inventory = parser.generated_model_inventory
             legacy_source_fingerprint = parser.source_data_fingerprint
@@ -2811,6 +2816,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                         retry_accepted = True
                         results = retry_results
                         model_metadata = retry_parser.model_metadata
+                        class_names = retry_parser.generated_class_names
                         data_model_types = retry_data_model_types
                         defer_formatting = retry_defer_formatting
                 finally:
@@ -2826,6 +2832,9 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     if capture is not None:
         capture.raise_if_failed()
         capture.accept_attempt(candidate_attempt)
+    from datamodel_code_generator._naming_hint import record_class_names  # noqa: PLC0415
+
+    record_class_names(class_names)
     return results, model_metadata, data_model_types, defer_formatting
 
 
@@ -3249,6 +3258,7 @@ __all__ = [
     "LeftoverFilesWarning",
     "LiteralType",
     "ModuleSplitMode",
+    "NamingHintWarning",
     "NamingStrategy",
     "OpenAPIScope",
     "OpenAPIVersion",

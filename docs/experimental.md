@@ -6,6 +6,7 @@ This page lists features that are available but still experimental.
 
 | ID | Kind | Target | Since | Tracking |
 |----|------|--------|-------|----------|
+| `behavior.naming-hint` | behavior | `NamingHintWarning` | 0.86.0 | - |
 | `behavior.batch-generation-jobs` | behavior | `[tool.datamodel-codegen.jobs], --job, --all-jobs` | 0.72.3 | - |
 | `behavior.remote-reference-lock` | behavior | `datamodel-codegen.lock, --lockfile, --update-lock, and --locked` | 0.72.3 | - |
 | `cli-option.generate-client` | cli-option | `--generate-client httpx2 and the --client-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
@@ -26,6 +27,16 @@ This page lists features that are available but still experimental.
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
 
 ## Details
+
+### `behavior.naming-hint`
+
+- **Kind:** behavior
+- **Target:** `NamingHintWarning`
+- **Since:** 0.86.0
+
+The hint at --recommend-options that a command line generation shows when many class names are numbered collisions is experimental; when it is shown and its text may change.
+
+A command line generation warns with datamodel_code_generator.NamingHintWarning when at least 10 class names, and at least one in five, are numbered collisions: names the model resolver numbered because the name without the number was taken, such as Pet1 beside Pet. It is shown at most once per command and never by generate(). An explicit --naming-strategy, --model-name-map, or deprecated --parent-scoped-naming, on the command line or in pyproject.toml, --check, --diff-against, --output-format json, --disable-warnings, and the options --recommend-options refuses (--watch, --all-jobs, and more than one --job) leave it out; a filter that turns warnings into errors drops it. It never changes the generated files, the result of --check, or the exit code.
 
 ### `behavior.batch-generation-jobs`
 

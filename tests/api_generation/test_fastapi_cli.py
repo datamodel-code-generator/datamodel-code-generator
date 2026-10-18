@@ -14,6 +14,7 @@ from datamodel_code_generator import (
     Error,
     InputFileType,
     LeftoverFilesWarning,
+    NamingHintWarning,
     OpenAPIScope,
     PythonVersion,
     ServerBodyMode,
@@ -1570,6 +1571,22 @@ def test_fastapi_cli_leftover_files(
             if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
         )
     assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
+
+
+def test_fastapi_cli_naming_hint(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point to --recommend-options after a server run whose models are mostly numbered collisions, not in a check."""
+    monkeypatch.chdir(tmp_path)
+    shutil.copy2(DATA / "recommend_options" / "naming_hint.yaml", tmp_path / "naming_hint.yaml")
+    lines = []
+    for run, options in (("generate", []), ("check", ["--check"])):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", NamingHintWarning)
+            run_main_with_args(["--input", "naming_hint.yaml", *DOC_OPTIONS, *options])
+        lines.append(f"# {run} run")
+        lines.extend(
+            f"{item.category.__name__}: {item.message}" for item in recorded if item.category is NamingHintWarning
+        )
+    assert_output("\n".join(lines) + "\n")
 
 
 def test_fastapi_cli_mixed_jobs(

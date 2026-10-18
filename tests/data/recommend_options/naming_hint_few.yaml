@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: Small shop
+  version: "1"
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            order_source:
+              type: string
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            invoice_source:
+              type: string

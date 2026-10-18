@@ -1,5 +1,14 @@
 [
   {
+    "id": "behavior.naming-hint",
+    "kind": "behavior",
+    "message": "The hint at --recommend-options that a command line generation shows when many class names are numbered collisions is experimental; when it is shown and its text may change.",
+    "note": "A command line generation warns with datamodel_code_generator.NamingHintWarning when at least 10 class names, and at least one in five, are numbered collisions: names the model resolver numbered because the name without the number was taken, such as Pet1 beside Pet. It is shown at most once per command and never by generate(). An explicit --naming-strategy, --model-name-map, or deprecated --parent-scoped-naming, on the command line or in pyproject.toml, --check, --diff-against, --output-format json, --disable-warnings, and the options --recommend-options refuses (--watch, --all-jobs, and more than one --job) leave it out; a filter that turns warnings into errors drops it. It never changes the generated files, the result of --check, or the exit code.",
+    "since_version": "0.86.0",
+    "target": "NamingHintWarning",
+    "tracking_issue": null
+  },
+  {
     "id": "behavior.batch-generation-jobs",
     "kind": "behavior",
     "message": "Named batch jobs are experimental; their configuration schema, batch output, and transactional/watch execution contracts may change.",
