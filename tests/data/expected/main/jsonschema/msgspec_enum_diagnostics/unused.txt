@@ -1,8 +1,0 @@
-{
-  "convert": {
-    "value": 1
-  },
-  "decode": {
-    "value": 1
-  }
-}
