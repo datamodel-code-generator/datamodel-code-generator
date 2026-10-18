@@ -1,0 +1,2 @@
+msgspec.Meta does not take ge on Decimal; Model.xpt_a is generated without this constraint.
+msgspec.Meta does not take ge, le on Decimal; Model.xpt_b is generated without these constraints.

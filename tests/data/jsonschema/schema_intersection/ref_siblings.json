@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pick": {
+      "$ref": "#/$defs/Pick"
+    },
+    "pick_prop": {
+      "$ref": "#/$defs/AB",
+      "enum": [
+        "b"
+      ]
+    },
+    "pick_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AB",
+        "enum": [
+          "b"
+        ]
+      }
+    },
+    "pick_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/AB",
+        "enum": [
+          "b"
+        ]
+      }
+    },
+    "w1": {
+      "$ref": "#/$defs/W1"
+    },
+    "w1_prop": {
+      "$ref": "#/$defs/AB",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "w1_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AB",
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "w1_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/AB",
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "q_sib": {
+      "$ref": "#/$defs/Sib"
+    },
+    "q_sib_prop": {
+      "$ref": "#/$defs/Quantity",
+      "maximum": 10
+    },
+    "q_sib_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Quantity",
+        "maximum": 10
+      }
+    },
+    "q_sib_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/Quantity",
+        "maximum": 10
+      }
+    },
+    "looser": {
+      "$ref": "#/$defs/Looser"
+    },
+    "looser_prop": {
+      "$ref": "#/$defs/Quantity",
+      "minimum": 0
+    },
+    "looser_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Quantity",
+        "minimum": 0
+      }
+    },
+    "looser_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/Quantity",
+        "minimum": 0
+      }
+    },
+    "w3": {
+      "$ref": "#/$defs/W3"
+    },
+    "redundant_type": {
+      "$ref": "#/$defs/Quantity",
+      "type": "integer"
+    },
+    "redundant_allof": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        }
+      ],
+      "type": "integer"
+    },
+    "code_type": {
+      "$ref": "#/$defs/Code",
+      "type": "string"
+    },
+    "q_desc": {
+      "$ref": "#/$defs/Quantity",
+      "description": "d"
+    },
+    "examples_max": {
+      "$ref": "#/$defs/Q",
+      "examples": [
+        5
+      ],
+      "maximum": 9
+    },
+    "examples_only": {
+      "$ref": "#/$defs/Q",
+      "examples": [
+        5
+      ]
+    },
+    "titled": {
+      "$ref": "#/$defs/Base",
+      "minLength": 2
+    }
+  },
+  "$defs": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Code": {
+      "type": "string",
+      "pattern": "^[A-Z]+$"
+    },
+    "Q": {
+      "type": "integer",
+      "minimum": 1,
+      "examples": [
+        1,
+        2
+      ]
+    },
+    "Base": {
+      "type": "string",
+      "title": "BaseT",
+      "default": "base",
+      "examples": [
+        "bb"
+      ]
+    },
+    "P1": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    },
+    "P2": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "b",
+            "a"
+          ],
+          "description": "d"
+        }
+      }
+    },
+    "W3": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/P1"
+        },
+        {
+          "$ref": "#/$defs/P2"
+        }
+      ]
+    },
+    "Pick": {
+      "$ref": "#/$defs/AB",
+      "enum": [
+        "b"
+      ]
+    },
+    "W1": {
+      "$ref": "#/$defs/AB",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Sib": {
+      "$ref": "#/$defs/Quantity",
+      "maximum": 10
+    },
+    "Looser": {
+      "$ref": "#/$defs/Quantity",
+      "minimum": 0
+    }
+  }
+}

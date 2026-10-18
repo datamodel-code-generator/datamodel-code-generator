@@ -227,6 +227,10 @@ EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/non_finite_container_defaults.json": (
         "non-finite defaults cannot be represented in the JSON payloads hypothesis-jsonschema generates"
     ),
+    "jsonschema/non_finite_enum_members.yaml": (
+        "non-finite enum members cannot be represented in the JSON payloads hypothesis-jsonschema generates; "
+        "test_main_jsonschema_non_finite_enum_members imports the output of every backend"
+    ),
     "jsonschema/non_finite_number_values.json": (
         "non-finite bounds cannot be satisfied by any JSON payload hypothesis-jsonschema generates"
     ),
@@ -250,6 +254,14 @@ EXCLUDED_CASES: dict[str, str] = {
     ),
     "openapi/allof_scalar_roots.yaml::components.schemas.TwoPatterns": (
         "an allOf with more than one pattern member stays an empty model until pattern intersection is fixed"
+    ),
+    "jsonschema/schema_intersection/allof_values.json": (
+        "pins the 0.85.0 output G01 PR 3 fixes: the root allOf of untyped members is an empty model that "
+        "rejects valid values; test_schema_intersection_shape_payloads records it"
+    ),
+    "jsonschema/schema_intersection/enum_refs.json": (
+        "pins the 0.85.0 output G01 PR 5 fixes: an allOf of two enum references warns about duplicated members; "
+        "test_schema_intersection_shape_output records it"
     ),
     "openapi/allof_with_required_inherited_complex_allof.yaml::components.schemas.ProjectedItem": (
         "hypothesis-jsonschema generates this nested allOf schema inconsistently"

@@ -1,0 +1,1 @@
+msgspec cannot decode the discriminated union Holder.pet: its Struct types Cat, Dog are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

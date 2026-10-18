@@ -1,0 +1,4 @@
+Field name `b` is duplicated on V
+Field name `b` is duplicated on VProp
+Field name `b` is duplicated on VItem
+Field name `b` is duplicated on VMap

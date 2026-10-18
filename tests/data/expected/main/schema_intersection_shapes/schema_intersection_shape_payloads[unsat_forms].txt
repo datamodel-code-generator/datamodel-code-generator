@@ -1,0 +1,56 @@
+pydantic_v2.BaseModel default f 1 accepted
+pydantic_v2.BaseModel default f "x" accepted
+pydantic_v2.BaseModel default f null accepted
+pydantic_v2.BaseModel default v "a" accepted
+pydantic_v2.BaseModel default v "c" accepted
+pydantic_v2.BaseModel default merged {} accepted
+pydantic_v2.BaseModel default merged {"w": "a"} accepted
+pydantic_v2.BaseModel default merged {"w": "b"} accepted
+pydantic_v2.dataclass default f 1 accepted
+pydantic_v2.dataclass default f "x" accepted
+pydantic_v2.dataclass default f null accepted
+pydantic_v2.dataclass default v "a" accepted
+pydantic_v2.dataclass default v "c" accepted
+pydantic_v2.dataclass default merged {} accepted
+pydantic_v2.dataclass default merged {"w": "a"} accepted
+pydantic_v2.dataclass default merged {"w": "b"} accepted
+msgspec.Struct default f 1 accepted
+msgspec.Struct default f "x" accepted
+msgspec.Struct default f null accepted
+msgspec.Struct default v "a" accepted
+msgspec.Struct default v "c" accepted
+msgspec.Struct default merged {} accepted
+msgspec.Struct default merged {"w": "a"} accepted
+msgspec.Struct default merged {"w": "b"} accepted
+pydantic_v2.BaseModel --field-constraints f 1 accepted
+pydantic_v2.BaseModel --field-constraints f "x" accepted
+pydantic_v2.BaseModel --field-constraints f null accepted
+pydantic_v2.BaseModel --field-constraints v "a" accepted
+pydantic_v2.BaseModel --field-constraints v "c" accepted
+pydantic_v2.BaseModel --field-constraints merged {} accepted
+pydantic_v2.BaseModel --field-constraints merged {"w": "a"} accepted
+pydantic_v2.BaseModel --field-constraints merged {"w": "b"} accepted
+pydantic_v2.BaseModel --use-annotated f 1 accepted
+pydantic_v2.BaseModel --use-annotated f "x" accepted
+pydantic_v2.BaseModel --use-annotated f null accepted
+pydantic_v2.BaseModel --use-annotated v "a" accepted
+pydantic_v2.BaseModel --use-annotated v "c" accepted
+pydantic_v2.BaseModel --use-annotated merged {} accepted
+pydantic_v2.BaseModel --use-annotated merged {"w": "a"} accepted
+pydantic_v2.BaseModel --use-annotated merged {"w": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models f 1 accepted
+pydantic_v2.BaseModel --collapse-root-models f "x" accepted
+pydantic_v2.BaseModel --collapse-root-models f null accepted
+pydantic_v2.BaseModel --collapse-root-models v "a" accepted
+pydantic_v2.BaseModel --collapse-root-models v "c" accepted
+pydantic_v2.BaseModel --collapse-root-models merged {} accepted
+pydantic_v2.BaseModel --collapse-root-models merged {"w": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models merged {"w": "b"} accepted
+msgspec.Struct --collapse-root-models f 1 accepted
+msgspec.Struct --collapse-root-models f "x" accepted
+msgspec.Struct --collapse-root-models f null accepted
+msgspec.Struct --collapse-root-models v "a" accepted
+msgspec.Struct --collapse-root-models v "c" accepted
+msgspec.Struct --collapse-root-models merged {} accepted
+msgspec.Struct --collapse-root-models merged {"w": "a"} accepted
+msgspec.Struct --collapse-root-models merged {"w": "b"} accepted

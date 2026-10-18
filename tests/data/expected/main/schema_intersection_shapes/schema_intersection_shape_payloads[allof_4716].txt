@@ -1,0 +1,392 @@
+pydantic_v2.BaseModel default count 5 accepted
+pydantic_v2.BaseModel default count 4 accepted
+pydantic_v2.BaseModel default code "A" accepted
+pydantic_v2.BaseModel default code "ABCD" accepted
+pydantic_v2.BaseModel default code "a" rejected
+pydantic_v2.BaseModel default tags ["a"] accepted
+pydantic_v2.BaseModel default tags [] accepted
+pydantic_v2.BaseModel default tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel default tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel default score 100 accepted
+pydantic_v2.BaseModel default score 101 accepted
+pydantic_v2.BaseModel default counts [5] accepted
+pydantic_v2.BaseModel default counts [4] accepted
+pydantic_v2.BaseModel default limits {"k": 10} accepted
+pydantic_v2.BaseModel default limits {"k": 11} accepted
+pydantic_v2.BaseModel default point {"x": 1} accepted
+pydantic_v2.BaseModel default point {"x": "a"} rejected
+pydantic_v2.BaseModel default label 123 accepted
+pydantic_v2.BaseModel default label "a" rejected
+pydantic_v2.BaseModel default status "open" accepted
+pydantic_v2.BaseModel default status "closed" accepted
+pydantic_v2.BaseModel default status "other" rejected
+pydantic_v2.BaseModel default pair ["a"] accepted
+pydantic_v2.BaseModel default pair [] rejected
+pydantic_v2.BaseModel default pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel default single ["a"] accepted
+pydantic_v2.BaseModel default single [] rejected
+pydantic_v2.BaseModel default single ["a", "b"] accepted
+pydantic_v2.BaseModel default ref_pair ["b"] accepted
+pydantic_v2.BaseModel default ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel default ref_pair [] rejected
+pydantic_v2.BaseModel default pp {"a": 1} accepted
+pydantic_v2.BaseModel default pp {"b": 9} accepted
+pydantic_v2.BaseModel default pp {"a": 0} accepted
+pydantic_v2.BaseModel default pp {"b": 10} accepted
+pydantic_v2.BaseModel default ap {"k": 1} accepted
+pydantic_v2.BaseModel default ap {"k": 0} accepted
+pydantic_v2.BaseModel default q_allof 1 accepted
+pydantic_v2.BaseModel default q_allof 10 accepted
+pydantic_v2.BaseModel default q_allof 0 rejected
+pydantic_v2.BaseModel default q_allof 11 accepted
+pydantic_v2.BaseModel default q_items [1] accepted
+pydantic_v2.BaseModel default q_items [10] accepted
+pydantic_v2.BaseModel default q_items [0] rejected
+pydantic_v2.BaseModel default q_items [11] accepted
+pydantic_v2.BaseModel default q_map {"k": 1} accepted
+pydantic_v2.BaseModel default q_map {"k": 10} accepted
+pydantic_v2.BaseModel default q_map {"k": 0} rejected
+pydantic_v2.BaseModel default q_map {"k": 11} accepted
+pydantic_v2.dataclass default count 5 accepted
+pydantic_v2.dataclass default count 4 accepted
+pydantic_v2.dataclass default code "A" accepted
+pydantic_v2.dataclass default code "ABCD" accepted
+pydantic_v2.dataclass default code "a" rejected
+pydantic_v2.dataclass default tags ["a"] accepted
+pydantic_v2.dataclass default tags [] accepted
+pydantic_v2.dataclass default tags ["a", "b", "c", "d"] rejected
+pydantic_v2.dataclass default tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.dataclass default score 100 accepted
+pydantic_v2.dataclass default score 101 accepted
+pydantic_v2.dataclass default counts [5] accepted
+pydantic_v2.dataclass default counts [4] accepted
+pydantic_v2.dataclass default limits {"k": 10} accepted
+pydantic_v2.dataclass default limits {"k": 11} accepted
+pydantic_v2.dataclass default point {"x": 1} accepted
+pydantic_v2.dataclass default point {"x": "a"} rejected
+pydantic_v2.dataclass default label 123 accepted
+pydantic_v2.dataclass default label "a" rejected
+pydantic_v2.dataclass default status "open" accepted
+pydantic_v2.dataclass default status "closed" accepted
+pydantic_v2.dataclass default status "other" rejected
+pydantic_v2.dataclass default pair ["a"] accepted
+pydantic_v2.dataclass default pair [] rejected
+pydantic_v2.dataclass default pair ["a", "b", "c"] accepted
+pydantic_v2.dataclass default single ["a"] accepted
+pydantic_v2.dataclass default single [] rejected
+pydantic_v2.dataclass default single ["a", "b"] accepted
+pydantic_v2.dataclass default ref_pair ["b"] accepted
+pydantic_v2.dataclass default ref_pair ["a", "b", "c"] rejected
+pydantic_v2.dataclass default ref_pair [] rejected
+pydantic_v2.dataclass default pp {"a": 1} accepted
+pydantic_v2.dataclass default pp {"b": 9} accepted
+pydantic_v2.dataclass default pp {"a": 0} accepted
+pydantic_v2.dataclass default pp {"b": 10} accepted
+pydantic_v2.dataclass default ap {"k": 1} accepted
+pydantic_v2.dataclass default ap {"k": 0} accepted
+pydantic_v2.dataclass default q_allof 1 accepted
+pydantic_v2.dataclass default q_allof 10 accepted
+pydantic_v2.dataclass default q_allof 0 rejected
+pydantic_v2.dataclass default q_allof 11 accepted
+pydantic_v2.dataclass default q_items [1] accepted
+pydantic_v2.dataclass default q_items [10] accepted
+pydantic_v2.dataclass default q_items [0] rejected
+pydantic_v2.dataclass default q_items [11] accepted
+pydantic_v2.dataclass default q_map {"k": 1} accepted
+pydantic_v2.dataclass default q_map {"k": 10} accepted
+pydantic_v2.dataclass default q_map {"k": 0} rejected
+pydantic_v2.dataclass default q_map {"k": 11} accepted
+msgspec.Struct default count 5 accepted
+msgspec.Struct default count 4 accepted
+msgspec.Struct default code "A" accepted
+msgspec.Struct default code "ABCD" accepted
+msgspec.Struct default code "a" rejected
+msgspec.Struct default tags ["a"] accepted
+msgspec.Struct default tags [] accepted
+msgspec.Struct default tags ["a", "b", "c", "d"] rejected
+msgspec.Struct default tags ["a", "b", "c", "d", "e", "f"] rejected
+msgspec.Struct default score 100 accepted
+msgspec.Struct default score 101 rejected
+msgspec.Struct default counts [5] accepted
+msgspec.Struct default counts [4] rejected
+msgspec.Struct default limits {"k": 10} accepted
+msgspec.Struct default limits {"k": 11} rejected
+msgspec.Struct default point {"x": 1} accepted
+msgspec.Struct default point {"x": "a"} rejected
+msgspec.Struct default label 123 accepted
+msgspec.Struct default label "a" rejected
+msgspec.Struct default status "open" accepted
+msgspec.Struct default status "closed" accepted
+msgspec.Struct default status "other" rejected
+msgspec.Struct default pair ["a"] accepted
+msgspec.Struct default pair [] rejected
+msgspec.Struct default pair ["a", "b", "c"] accepted
+msgspec.Struct default single ["a"] accepted
+msgspec.Struct default single [] rejected
+msgspec.Struct default single ["a", "b"] accepted
+msgspec.Struct default ref_pair ["b"] accepted
+msgspec.Struct default ref_pair ["a", "b", "c"] rejected
+msgspec.Struct default ref_pair [] rejected
+msgspec.Struct default pp {"a": 1} accepted
+msgspec.Struct default pp {"b": 9} accepted
+msgspec.Struct default pp {"a": 0} accepted
+msgspec.Struct default pp {"b": 10} accepted
+msgspec.Struct default ap {"k": 1} accepted
+msgspec.Struct default ap {"k": 0} rejected
+msgspec.Struct default q_allof 1 accepted
+msgspec.Struct default q_allof 10 accepted
+msgspec.Struct default q_allof 0 rejected
+msgspec.Struct default q_allof 11 accepted
+msgspec.Struct default q_items [1] accepted
+msgspec.Struct default q_items [10] accepted
+msgspec.Struct default q_items [0] rejected
+msgspec.Struct default q_items [11] rejected
+msgspec.Struct default q_map {"k": 1} accepted
+msgspec.Struct default q_map {"k": 10} accepted
+msgspec.Struct default q_map {"k": 0} rejected
+msgspec.Struct default q_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints count 5 accepted
+pydantic_v2.BaseModel --field-constraints count 4 accepted
+pydantic_v2.BaseModel --field-constraints code "A" accepted
+pydantic_v2.BaseModel --field-constraints code "ABCD" accepted
+pydantic_v2.BaseModel --field-constraints code "a" rejected
+pydantic_v2.BaseModel --field-constraints tags ["a"] accepted
+pydantic_v2.BaseModel --field-constraints tags [] accepted
+pydantic_v2.BaseModel --field-constraints tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --field-constraints tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --field-constraints score 100 raised TypeError
+pydantic_v2.BaseModel --field-constraints score 101 raised TypeError
+pydantic_v2.BaseModel --field-constraints counts [5] raised TypeError
+pydantic_v2.BaseModel --field-constraints counts [4] raised TypeError
+pydantic_v2.BaseModel --field-constraints limits {"k": 10} raised TypeError
+pydantic_v2.BaseModel --field-constraints limits {"k": 11} raised TypeError
+pydantic_v2.BaseModel --field-constraints point {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints point {"x": "a"} rejected
+pydantic_v2.BaseModel --field-constraints label 123 accepted
+pydantic_v2.BaseModel --field-constraints label "a" rejected
+pydantic_v2.BaseModel --field-constraints status "open" accepted
+pydantic_v2.BaseModel --field-constraints status "closed" accepted
+pydantic_v2.BaseModel --field-constraints status "other" rejected
+pydantic_v2.BaseModel --field-constraints pair ["a"] accepted
+pydantic_v2.BaseModel --field-constraints pair [] rejected
+pydantic_v2.BaseModel --field-constraints pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --field-constraints single ["a"] accepted
+pydantic_v2.BaseModel --field-constraints single [] rejected
+pydantic_v2.BaseModel --field-constraints single ["a", "b"] accepted
+pydantic_v2.BaseModel --field-constraints ref_pair ["b"] accepted
+pydantic_v2.BaseModel --field-constraints ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --field-constraints ref_pair [] rejected
+pydantic_v2.BaseModel --field-constraints pp {"a": 1} accepted
+pydantic_v2.BaseModel --field-constraints pp {"b": 9} accepted
+pydantic_v2.BaseModel --field-constraints pp {"a": 0} accepted
+pydantic_v2.BaseModel --field-constraints pp {"b": 10} accepted
+pydantic_v2.BaseModel --field-constraints ap {"k": 1} raised TypeError
+pydantic_v2.BaseModel --field-constraints ap {"k": 0} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof 1 accepted
+pydantic_v2.BaseModel --field-constraints q_allof 10 accepted
+pydantic_v2.BaseModel --field-constraints q_allof 0 rejected
+pydantic_v2.BaseModel --field-constraints q_allof 11 accepted
+pydantic_v2.BaseModel --field-constraints q_items [1] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_items [10] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_items [0] rejected
+pydantic_v2.BaseModel --field-constraints q_items [11] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_map {"k": 1} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_map {"k": 10} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints q_map {"k": 11} raised TypeError
+pydantic_v2.BaseModel --use-annotated count 5 accepted
+pydantic_v2.BaseModel --use-annotated count 4 accepted
+pydantic_v2.BaseModel --use-annotated code "A" accepted
+pydantic_v2.BaseModel --use-annotated code "ABCD" accepted
+pydantic_v2.BaseModel --use-annotated code "a" rejected
+pydantic_v2.BaseModel --use-annotated tags ["a"] accepted
+pydantic_v2.BaseModel --use-annotated tags [] accepted
+pydantic_v2.BaseModel --use-annotated tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --use-annotated tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --use-annotated score 100 raised TypeError
+pydantic_v2.BaseModel --use-annotated score 101 raised TypeError
+pydantic_v2.BaseModel --use-annotated counts [5] raised TypeError
+pydantic_v2.BaseModel --use-annotated counts [4] raised TypeError
+pydantic_v2.BaseModel --use-annotated limits {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated limits {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated point {"x": 1} accepted
+pydantic_v2.BaseModel --use-annotated point {"x": "a"} rejected
+pydantic_v2.BaseModel --use-annotated label 123 accepted
+pydantic_v2.BaseModel --use-annotated label "a" rejected
+pydantic_v2.BaseModel --use-annotated status "open" accepted
+pydantic_v2.BaseModel --use-annotated status "closed" accepted
+pydantic_v2.BaseModel --use-annotated status "other" rejected
+pydantic_v2.BaseModel --use-annotated pair ["a"] accepted
+pydantic_v2.BaseModel --use-annotated pair [] rejected
+pydantic_v2.BaseModel --use-annotated pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --use-annotated single ["a"] accepted
+pydantic_v2.BaseModel --use-annotated single [] rejected
+pydantic_v2.BaseModel --use-annotated single ["a", "b"] accepted
+pydantic_v2.BaseModel --use-annotated ref_pair ["b"] accepted
+pydantic_v2.BaseModel --use-annotated ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --use-annotated ref_pair [] rejected
+pydantic_v2.BaseModel --use-annotated pp {"a": 1} accepted
+pydantic_v2.BaseModel --use-annotated pp {"b": 9} accepted
+pydantic_v2.BaseModel --use-annotated pp {"a": 0} accepted
+pydantic_v2.BaseModel --use-annotated pp {"b": 10} accepted
+pydantic_v2.BaseModel --use-annotated ap {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated ap {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated q_allof 1 accepted
+pydantic_v2.BaseModel --use-annotated q_allof 10 accepted
+pydantic_v2.BaseModel --use-annotated q_allof 0 rejected
+pydantic_v2.BaseModel --use-annotated q_allof 11 accepted
+pydantic_v2.BaseModel --use-annotated q_items [1] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_items [10] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_items [0] rejected
+pydantic_v2.BaseModel --use-annotated q_items [11] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated q_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated q_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated q_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models count 5 accepted
+pydantic_v2.BaseModel --collapse-root-models count 4 accepted
+pydantic_v2.BaseModel --collapse-root-models code "A" accepted
+pydantic_v2.BaseModel --collapse-root-models code "ABCD" accepted
+pydantic_v2.BaseModel --collapse-root-models code "a" rejected
+pydantic_v2.BaseModel --collapse-root-models tags ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models tags [] accepted
+pydantic_v2.BaseModel --collapse-root-models tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --collapse-root-models tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --collapse-root-models score 100 accepted
+pydantic_v2.BaseModel --collapse-root-models score 101 accepted
+pydantic_v2.BaseModel --collapse-root-models counts [5] accepted
+pydantic_v2.BaseModel --collapse-root-models counts [4] accepted
+pydantic_v2.BaseModel --collapse-root-models limits {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models limits {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models point {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models point {"x": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models label 123 accepted
+pydantic_v2.BaseModel --collapse-root-models label "a" rejected
+pydantic_v2.BaseModel --collapse-root-models status "open" accepted
+pydantic_v2.BaseModel --collapse-root-models status "closed" accepted
+pydantic_v2.BaseModel --collapse-root-models status "other" rejected
+pydantic_v2.BaseModel --collapse-root-models pair ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models pair [] rejected
+pydantic_v2.BaseModel --collapse-root-models pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --collapse-root-models single ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models single [] rejected
+pydantic_v2.BaseModel --collapse-root-models single ["a", "b"] accepted
+pydantic_v2.BaseModel --collapse-root-models ref_pair ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --collapse-root-models ref_pair [] rejected
+pydantic_v2.BaseModel --collapse-root-models pp {"a": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models pp {"b": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models pp {"a": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models pp {"b": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models ap {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models ap {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof 10 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models q_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models q_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models q_items [11] accepted
+pydantic_v2.BaseModel --collapse-root-models q_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models q_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models q_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models q_map {"k": 11} accepted
+msgspec.Struct --collapse-root-models count 5 accepted
+msgspec.Struct --collapse-root-models count 4 accepted
+msgspec.Struct --collapse-root-models code "A" accepted
+msgspec.Struct --collapse-root-models code "ABCD" accepted
+msgspec.Struct --collapse-root-models code "a" rejected
+msgspec.Struct --collapse-root-models tags ["a"] accepted
+msgspec.Struct --collapse-root-models tags [] accepted
+msgspec.Struct --collapse-root-models tags ["a", "b", "c", "d"] rejected
+msgspec.Struct --collapse-root-models tags ["a", "b", "c", "d", "e", "f"] rejected
+msgspec.Struct --collapse-root-models score 100 accepted
+msgspec.Struct --collapse-root-models score 101 rejected
+msgspec.Struct --collapse-root-models counts [5] accepted
+msgspec.Struct --collapse-root-models counts [4] rejected
+msgspec.Struct --collapse-root-models limits {"k": 10} accepted
+msgspec.Struct --collapse-root-models limits {"k": 11} rejected
+msgspec.Struct --collapse-root-models point {"x": 1} accepted
+msgspec.Struct --collapse-root-models point {"x": "a"} rejected
+msgspec.Struct --collapse-root-models label 123 accepted
+msgspec.Struct --collapse-root-models label "a" rejected
+msgspec.Struct --collapse-root-models status "open" accepted
+msgspec.Struct --collapse-root-models status "closed" accepted
+msgspec.Struct --collapse-root-models status "other" rejected
+msgspec.Struct --collapse-root-models pair ["a"] accepted
+msgspec.Struct --collapse-root-models pair [] rejected
+msgspec.Struct --collapse-root-models pair ["a", "b", "c"] accepted
+msgspec.Struct --collapse-root-models single ["a"] accepted
+msgspec.Struct --collapse-root-models single [] rejected
+msgspec.Struct --collapse-root-models single ["a", "b"] accepted
+msgspec.Struct --collapse-root-models ref_pair ["b"] accepted
+msgspec.Struct --collapse-root-models ref_pair ["a", "b", "c"] rejected
+msgspec.Struct --collapse-root-models ref_pair [] rejected
+msgspec.Struct --collapse-root-models pp {"a": 1} accepted
+msgspec.Struct --collapse-root-models pp {"b": 9} accepted
+msgspec.Struct --collapse-root-models pp {"a": 0} accepted
+msgspec.Struct --collapse-root-models pp {"b": 10} accepted
+msgspec.Struct --collapse-root-models ap {"k": 1} accepted
+msgspec.Struct --collapse-root-models ap {"k": 0} rejected
+msgspec.Struct --collapse-root-models q_allof 1 accepted
+msgspec.Struct --collapse-root-models q_allof 10 accepted
+msgspec.Struct --collapse-root-models q_allof 0 rejected
+msgspec.Struct --collapse-root-models q_allof 11 accepted
+msgspec.Struct --collapse-root-models q_items [1] accepted
+msgspec.Struct --collapse-root-models q_items [10] accepted
+msgspec.Struct --collapse-root-models q_items [0] rejected
+msgspec.Struct --collapse-root-models q_items [11] rejected
+msgspec.Struct --collapse-root-models q_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models q_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models q_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models q_map {"k": 11} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} count 5 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} count 4 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} code "A" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} code "ABCD" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} code "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags [] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} tags ["a", "b", "c", "d", "e", "f"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} score 100 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} score 101 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} counts [5] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} counts [4] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} limits {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} limits {"k": 11} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} point {"x": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} point {"x": "a"} rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} label 123 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} label "a" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} status "open" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} status "closed" accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} status "other" rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pair ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pair ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} single ["a"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} single [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} single ["a", "b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ref_pair ["b"] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ref_pair ["a", "b", "c"] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ref_pair [] rejected
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"a": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"b": 9} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"a": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} pp {"b": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ap {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} ap {"k": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 1 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 10 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 0 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_allof 11 accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [1] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [10] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [0] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_items [11] accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 1} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 10} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 0} accepted
+pydantic_v2.BaseModel --type-overrides {"Quantity": "decimal.Decimal"} q_map {"k": 11} accepted

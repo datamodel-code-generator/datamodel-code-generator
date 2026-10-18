@@ -1,0 +1,768 @@
+pydantic_v2.BaseModel default wa "a" accepted
+pydantic_v2.BaseModel default wa "b" accepted
+pydantic_v2.BaseModel default wa "c" rejected
+pydantic_v2.BaseModel default wa_prop "a" accepted
+pydantic_v2.BaseModel default wa_prop "b" accepted
+pydantic_v2.BaseModel default wa_prop "c" rejected
+pydantic_v2.BaseModel default wa_items ["a"] accepted
+pydantic_v2.BaseModel default wa_items ["b"] accepted
+pydantic_v2.BaseModel default wa_items ["c"] rejected
+pydantic_v2.BaseModel default wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wb "b" accepted
+pydantic_v2.BaseModel default wb "a" rejected
+pydantic_v2.BaseModel default wb "c" rejected
+pydantic_v2.BaseModel default wb_prop "b" accepted
+pydantic_v2.BaseModel default wb_prop "a" accepted
+pydantic_v2.BaseModel default wb_prop "c" rejected
+pydantic_v2.BaseModel default wb_items ["b"] accepted
+pydantic_v2.BaseModel default wb_items ["a"] accepted
+pydantic_v2.BaseModel default wb_items ["c"] rejected
+pydantic_v2.BaseModel default wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wc "a" accepted
+pydantic_v2.BaseModel default wc "b" accepted
+pydantic_v2.BaseModel default wc "c" rejected
+pydantic_v2.BaseModel default wc_prop "a" accepted
+pydantic_v2.BaseModel default wc_prop "b" accepted
+pydantic_v2.BaseModel default wc_prop "c" rejected
+pydantic_v2.BaseModel default wc_items ["a"] accepted
+pydantic_v2.BaseModel default wc_items ["b"] accepted
+pydantic_v2.BaseModel default wc_items ["c"] rejected
+pydantic_v2.BaseModel default wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wd 1 accepted
+pydantic_v2.BaseModel default wd 10 accepted
+pydantic_v2.BaseModel default wd 0 rejected
+pydantic_v2.BaseModel default wd 11 rejected
+pydantic_v2.BaseModel default wd_prop 1 accepted
+pydantic_v2.BaseModel default wd_prop 10 accepted
+pydantic_v2.BaseModel default wd_prop 0 rejected
+pydantic_v2.BaseModel default wd_prop 11 accepted
+pydantic_v2.BaseModel default wd_items [1] accepted
+pydantic_v2.BaseModel default wd_items [10] accepted
+pydantic_v2.BaseModel default wd_items [0] rejected
+pydantic_v2.BaseModel default wd_items [11] accepted
+pydantic_v2.BaseModel default wd_map {"k": 1} accepted
+pydantic_v2.BaseModel default wd_map {"k": 10} accepted
+pydantic_v2.BaseModel default wd_map {"k": 0} rejected
+pydantic_v2.BaseModel default wd_map {"k": 11} accepted
+pydantic_v2.BaseModel default we 1 accepted
+pydantic_v2.BaseModel default we 0 rejected
+pydantic_v2.BaseModel default we_prop 1 accepted
+pydantic_v2.BaseModel default we_prop 0 rejected
+pydantic_v2.BaseModel default we_items [1] accepted
+pydantic_v2.BaseModel default we_items [0] rejected
+pydantic_v2.BaseModel default we_map {"k": 1} accepted
+pydantic_v2.BaseModel default we_map {"k": 0} rejected
+pydantic_v2.BaseModel default wf 1 accepted
+pydantic_v2.BaseModel default wf 0 rejected
+pydantic_v2.BaseModel default wf 1.5 rejected
+pydantic_v2.BaseModel default wf_prop 1 accepted
+pydantic_v2.BaseModel default wf_prop 0 rejected
+pydantic_v2.BaseModel default wf_prop 1.5 rejected
+pydantic_v2.BaseModel default wf_items [1] accepted
+pydantic_v2.BaseModel default wf_items [0] rejected
+pydantic_v2.BaseModel default wf_items [1.5] rejected
+pydantic_v2.BaseModel default wf_map {"k": 1} accepted
+pydantic_v2.BaseModel default wf_map {"k": 0} rejected
+pydantic_v2.BaseModel default wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel default wg "a" accepted
+pydantic_v2.BaseModel default wg "b" accepted
+pydantic_v2.BaseModel default wg "c" rejected
+pydantic_v2.BaseModel default wg_prop "a" accepted
+pydantic_v2.BaseModel default wg_prop "b" accepted
+pydantic_v2.BaseModel default wg_prop "c" rejected
+pydantic_v2.BaseModel default wg_items ["a"] accepted
+pydantic_v2.BaseModel default wg_items ["b"] accepted
+pydantic_v2.BaseModel default wg_items ["c"] rejected
+pydantic_v2.BaseModel default wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel default wh "a" accepted
+pydantic_v2.BaseModel default wh "b" accepted
+pydantic_v2.BaseModel default wh "c" rejected
+pydantic_v2.BaseModel default wh_prop "a" accepted
+pydantic_v2.BaseModel default wh_prop "b" accepted
+pydantic_v2.BaseModel default wh_prop "c" rejected
+pydantic_v2.BaseModel default wh_items ["a"] accepted
+pydantic_v2.BaseModel default wh_items ["b"] accepted
+pydantic_v2.BaseModel default wh_items ["c"] rejected
+pydantic_v2.BaseModel default wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel default wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel default wh_map {"k": "c"} rejected
+pydantic_v2.dataclass default wa "a" accepted
+pydantic_v2.dataclass default wa "b" accepted
+pydantic_v2.dataclass default wa "c" rejected
+pydantic_v2.dataclass default wa_prop "a" accepted
+pydantic_v2.dataclass default wa_prop "b" accepted
+pydantic_v2.dataclass default wa_prop "c" rejected
+pydantic_v2.dataclass default wa_items ["a"] accepted
+pydantic_v2.dataclass default wa_items ["b"] accepted
+pydantic_v2.dataclass default wa_items ["c"] rejected
+pydantic_v2.dataclass default wa_map {"k": "a"} accepted
+pydantic_v2.dataclass default wa_map {"k": "b"} accepted
+pydantic_v2.dataclass default wa_map {"k": "c"} rejected
+pydantic_v2.dataclass default wb "b" accepted
+pydantic_v2.dataclass default wb "a" accepted
+pydantic_v2.dataclass default wb "c" rejected
+pydantic_v2.dataclass default wb_prop "b" accepted
+pydantic_v2.dataclass default wb_prop "a" accepted
+pydantic_v2.dataclass default wb_prop "c" rejected
+pydantic_v2.dataclass default wb_items ["b"] accepted
+pydantic_v2.dataclass default wb_items ["a"] accepted
+pydantic_v2.dataclass default wb_items ["c"] rejected
+pydantic_v2.dataclass default wb_map {"k": "b"} accepted
+pydantic_v2.dataclass default wb_map {"k": "a"} accepted
+pydantic_v2.dataclass default wb_map {"k": "c"} rejected
+pydantic_v2.dataclass default wc "a" accepted
+pydantic_v2.dataclass default wc "b" accepted
+pydantic_v2.dataclass default wc "c" rejected
+pydantic_v2.dataclass default wc_prop "a" accepted
+pydantic_v2.dataclass default wc_prop "b" accepted
+pydantic_v2.dataclass default wc_prop "c" rejected
+pydantic_v2.dataclass default wc_items ["a"] accepted
+pydantic_v2.dataclass default wc_items ["b"] accepted
+pydantic_v2.dataclass default wc_items ["c"] rejected
+pydantic_v2.dataclass default wc_map {"k": "a"} accepted
+pydantic_v2.dataclass default wc_map {"k": "b"} accepted
+pydantic_v2.dataclass default wc_map {"k": "c"} rejected
+pydantic_v2.dataclass default wd 1 accepted
+pydantic_v2.dataclass default wd 10 accepted
+pydantic_v2.dataclass default wd 0 rejected
+pydantic_v2.dataclass default wd 11 rejected
+pydantic_v2.dataclass default wd_prop 1 accepted
+pydantic_v2.dataclass default wd_prop 10 accepted
+pydantic_v2.dataclass default wd_prop 0 rejected
+pydantic_v2.dataclass default wd_prop 11 accepted
+pydantic_v2.dataclass default wd_items [1] accepted
+pydantic_v2.dataclass default wd_items [10] accepted
+pydantic_v2.dataclass default wd_items [0] rejected
+pydantic_v2.dataclass default wd_items [11] accepted
+pydantic_v2.dataclass default wd_map {"k": 1} accepted
+pydantic_v2.dataclass default wd_map {"k": 10} accepted
+pydantic_v2.dataclass default wd_map {"k": 0} rejected
+pydantic_v2.dataclass default wd_map {"k": 11} accepted
+pydantic_v2.dataclass default we 1 accepted
+pydantic_v2.dataclass default we 0 rejected
+pydantic_v2.dataclass default we_prop 1 accepted
+pydantic_v2.dataclass default we_prop 0 rejected
+pydantic_v2.dataclass default we_items [1] accepted
+pydantic_v2.dataclass default we_items [0] rejected
+pydantic_v2.dataclass default we_map {"k": 1} accepted
+pydantic_v2.dataclass default we_map {"k": 0} rejected
+pydantic_v2.dataclass default wf 1 accepted
+pydantic_v2.dataclass default wf 0 rejected
+pydantic_v2.dataclass default wf 1.5 rejected
+pydantic_v2.dataclass default wf_prop 1 accepted
+pydantic_v2.dataclass default wf_prop 0 rejected
+pydantic_v2.dataclass default wf_prop 1.5 rejected
+pydantic_v2.dataclass default wf_items [1] accepted
+pydantic_v2.dataclass default wf_items [0] rejected
+pydantic_v2.dataclass default wf_items [1.5] rejected
+pydantic_v2.dataclass default wf_map {"k": 1} accepted
+pydantic_v2.dataclass default wf_map {"k": 0} rejected
+pydantic_v2.dataclass default wf_map {"k": 1.5} rejected
+pydantic_v2.dataclass default wg "a" accepted
+pydantic_v2.dataclass default wg "b" accepted
+pydantic_v2.dataclass default wg "c" rejected
+pydantic_v2.dataclass default wg_prop "a" accepted
+pydantic_v2.dataclass default wg_prop "b" accepted
+pydantic_v2.dataclass default wg_prop "c" rejected
+pydantic_v2.dataclass default wg_items ["a"] accepted
+pydantic_v2.dataclass default wg_items ["b"] accepted
+pydantic_v2.dataclass default wg_items ["c"] rejected
+pydantic_v2.dataclass default wg_map {"k": "a"} accepted
+pydantic_v2.dataclass default wg_map {"k": "b"} accepted
+pydantic_v2.dataclass default wg_map {"k": "c"} rejected
+pydantic_v2.dataclass default wh "a" accepted
+pydantic_v2.dataclass default wh "b" accepted
+pydantic_v2.dataclass default wh "c" rejected
+pydantic_v2.dataclass default wh_prop "a" accepted
+pydantic_v2.dataclass default wh_prop "b" accepted
+pydantic_v2.dataclass default wh_prop "c" rejected
+pydantic_v2.dataclass default wh_items ["a"] accepted
+pydantic_v2.dataclass default wh_items ["b"] accepted
+pydantic_v2.dataclass default wh_items ["c"] rejected
+pydantic_v2.dataclass default wh_map {"k": "a"} accepted
+pydantic_v2.dataclass default wh_map {"k": "b"} accepted
+pydantic_v2.dataclass default wh_map {"k": "c"} rejected
+msgspec.Struct default wa "a" accepted
+msgspec.Struct default wa "b" accepted
+msgspec.Struct default wa "c" rejected
+msgspec.Struct default wa_prop "a" accepted
+msgspec.Struct default wa_prop "b" accepted
+msgspec.Struct default wa_prop "c" rejected
+msgspec.Struct default wa_items ["a"] accepted
+msgspec.Struct default wa_items ["b"] accepted
+msgspec.Struct default wa_items ["c"] rejected
+msgspec.Struct default wa_map {"k": "a"} accepted
+msgspec.Struct default wa_map {"k": "b"} accepted
+msgspec.Struct default wa_map {"k": "c"} rejected
+msgspec.Struct default wb "b" accepted
+msgspec.Struct default wb "a" accepted
+msgspec.Struct default wb "c" rejected
+msgspec.Struct default wb_prop "b" accepted
+msgspec.Struct default wb_prop "a" accepted
+msgspec.Struct default wb_prop "c" rejected
+msgspec.Struct default wb_items ["b"] accepted
+msgspec.Struct default wb_items ["a"] accepted
+msgspec.Struct default wb_items ["c"] rejected
+msgspec.Struct default wb_map {"k": "b"} accepted
+msgspec.Struct default wb_map {"k": "a"} accepted
+msgspec.Struct default wb_map {"k": "c"} rejected
+msgspec.Struct default wc "a" accepted
+msgspec.Struct default wc "b" accepted
+msgspec.Struct default wc "c" rejected
+msgspec.Struct default wc_prop "a" accepted
+msgspec.Struct default wc_prop "b" accepted
+msgspec.Struct default wc_prop "c" rejected
+msgspec.Struct default wc_items ["a"] accepted
+msgspec.Struct default wc_items ["b"] accepted
+msgspec.Struct default wc_items ["c"] rejected
+msgspec.Struct default wc_map {"k": "a"} accepted
+msgspec.Struct default wc_map {"k": "b"} accepted
+msgspec.Struct default wc_map {"k": "c"} rejected
+msgspec.Struct default wd 1 accepted
+msgspec.Struct default wd 10 accepted
+msgspec.Struct default wd 0 rejected
+msgspec.Struct default wd 11 rejected
+msgspec.Struct default wd_prop 1 accepted
+msgspec.Struct default wd_prop 10 accepted
+msgspec.Struct default wd_prop 0 rejected
+msgspec.Struct default wd_prop 11 accepted
+msgspec.Struct default wd_items [1] accepted
+msgspec.Struct default wd_items [10] accepted
+msgspec.Struct default wd_items [0] rejected
+msgspec.Struct default wd_items [11] accepted
+msgspec.Struct default wd_map {"k": 1} accepted
+msgspec.Struct default wd_map {"k": 10} accepted
+msgspec.Struct default wd_map {"k": 0} rejected
+msgspec.Struct default wd_map {"k": 11} rejected
+msgspec.Struct default we 1 accepted
+msgspec.Struct default we 0 rejected
+msgspec.Struct default we_prop 1 accepted
+msgspec.Struct default we_prop 0 rejected
+msgspec.Struct default we_items [1] accepted
+msgspec.Struct default we_items [0] rejected
+msgspec.Struct default we_map {"k": 1} accepted
+msgspec.Struct default we_map {"k": 0} rejected
+msgspec.Struct default wf 1 accepted
+msgspec.Struct default wf 0 rejected
+msgspec.Struct default wf 1.5 rejected
+msgspec.Struct default wf_prop 1 accepted
+msgspec.Struct default wf_prop 0 rejected
+msgspec.Struct default wf_prop 1.5 rejected
+msgspec.Struct default wf_items [1] accepted
+msgspec.Struct default wf_items [0] rejected
+msgspec.Struct default wf_items [1.5] rejected
+msgspec.Struct default wf_map {"k": 1} accepted
+msgspec.Struct default wf_map {"k": 0} rejected
+msgspec.Struct default wf_map {"k": 1.5} rejected
+msgspec.Struct default wg "a" accepted
+msgspec.Struct default wg "b" accepted
+msgspec.Struct default wg "c" rejected
+msgspec.Struct default wg_prop "a" accepted
+msgspec.Struct default wg_prop "b" accepted
+msgspec.Struct default wg_prop "c" rejected
+msgspec.Struct default wg_items ["a"] accepted
+msgspec.Struct default wg_items ["b"] accepted
+msgspec.Struct default wg_items ["c"] rejected
+msgspec.Struct default wg_map {"k": "a"} accepted
+msgspec.Struct default wg_map {"k": "b"} accepted
+msgspec.Struct default wg_map {"k": "c"} rejected
+msgspec.Struct default wh "a" accepted
+msgspec.Struct default wh "b" accepted
+msgspec.Struct default wh "c" rejected
+msgspec.Struct default wh_prop "a" accepted
+msgspec.Struct default wh_prop "b" accepted
+msgspec.Struct default wh_prop "c" rejected
+msgspec.Struct default wh_items ["a"] accepted
+msgspec.Struct default wh_items ["b"] accepted
+msgspec.Struct default wh_items ["c"] rejected
+msgspec.Struct default wh_map {"k": "a"} accepted
+msgspec.Struct default wh_map {"k": "b"} accepted
+msgspec.Struct default wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wa "a" accepted
+pydantic_v2.BaseModel --field-constraints wa "b" accepted
+pydantic_v2.BaseModel --field-constraints wa "c" rejected
+pydantic_v2.BaseModel --field-constraints wa_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wa_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wa_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wa_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wa_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wa_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wb "b" accepted
+pydantic_v2.BaseModel --field-constraints wb "a" rejected
+pydantic_v2.BaseModel --field-constraints wb "c" rejected
+pydantic_v2.BaseModel --field-constraints wb_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wb_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wb_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wb_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wb_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wb_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wc "a" accepted
+pydantic_v2.BaseModel --field-constraints wc "b" accepted
+pydantic_v2.BaseModel --field-constraints wc "c" rejected
+pydantic_v2.BaseModel --field-constraints wc_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wc_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wc_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wc_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wc_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wc_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wd 1 accepted
+pydantic_v2.BaseModel --field-constraints wd 10 accepted
+pydantic_v2.BaseModel --field-constraints wd 0 rejected
+pydantic_v2.BaseModel --field-constraints wd 11 rejected
+pydantic_v2.BaseModel --field-constraints wd_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints wd_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints wd_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints wd_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints wd_items [1] accepted
+pydantic_v2.BaseModel --field-constraints wd_items [10] accepted
+pydantic_v2.BaseModel --field-constraints wd_items [0] rejected
+pydantic_v2.BaseModel --field-constraints wd_items [11] accepted
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints we 1 accepted
+pydantic_v2.BaseModel --field-constraints we 0 rejected
+pydantic_v2.BaseModel --field-constraints we_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints we_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints we_items [1] accepted
+pydantic_v2.BaseModel --field-constraints we_items [0] rejected
+pydantic_v2.BaseModel --field-constraints we_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints we_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints wf 1 accepted
+pydantic_v2.BaseModel --field-constraints wf 0 rejected
+pydantic_v2.BaseModel --field-constraints wf 1.5 rejected
+pydantic_v2.BaseModel --field-constraints wf_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints wf_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints wf_prop 1.5 rejected
+pydantic_v2.BaseModel --field-constraints wf_items [1] accepted
+pydantic_v2.BaseModel --field-constraints wf_items [0] rejected
+pydantic_v2.BaseModel --field-constraints wf_items [1.5] rejected
+pydantic_v2.BaseModel --field-constraints wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --field-constraints wg "a" accepted
+pydantic_v2.BaseModel --field-constraints wg "b" accepted
+pydantic_v2.BaseModel --field-constraints wg "c" rejected
+pydantic_v2.BaseModel --field-constraints wg_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wg_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wg_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wg_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wg_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wg_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints wh "a" accepted
+pydantic_v2.BaseModel --field-constraints wh "b" accepted
+pydantic_v2.BaseModel --field-constraints wh "c" rejected
+pydantic_v2.BaseModel --field-constraints wh_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints wh_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints wh_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints wh_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints wh_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints wh_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wa "a" accepted
+pydantic_v2.BaseModel --use-annotated wa "b" accepted
+pydantic_v2.BaseModel --use-annotated wa "c" rejected
+pydantic_v2.BaseModel --use-annotated wa_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wa_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wa_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wa_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wa_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wa_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wb "b" accepted
+pydantic_v2.BaseModel --use-annotated wb "a" rejected
+pydantic_v2.BaseModel --use-annotated wb "c" rejected
+pydantic_v2.BaseModel --use-annotated wb_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wb_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wb_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wb_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wb_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wb_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wc "a" accepted
+pydantic_v2.BaseModel --use-annotated wc "b" accepted
+pydantic_v2.BaseModel --use-annotated wc "c" rejected
+pydantic_v2.BaseModel --use-annotated wc_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wc_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wc_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wc_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wc_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wc_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wd 1 accepted
+pydantic_v2.BaseModel --use-annotated wd 10 accepted
+pydantic_v2.BaseModel --use-annotated wd 0 rejected
+pydantic_v2.BaseModel --use-annotated wd 11 rejected
+pydantic_v2.BaseModel --use-annotated wd_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated wd_prop 10 accepted
+pydantic_v2.BaseModel --use-annotated wd_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated wd_prop 11 accepted
+pydantic_v2.BaseModel --use-annotated wd_items [1] accepted
+pydantic_v2.BaseModel --use-annotated wd_items [10] accepted
+pydantic_v2.BaseModel --use-annotated wd_items [0] rejected
+pydantic_v2.BaseModel --use-annotated wd_items [11] accepted
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated wd_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated we 1 accepted
+pydantic_v2.BaseModel --use-annotated we 0 rejected
+pydantic_v2.BaseModel --use-annotated we_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated we_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated we_items [1] accepted
+pydantic_v2.BaseModel --use-annotated we_items [0] rejected
+pydantic_v2.BaseModel --use-annotated we_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated we_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated wf 1 accepted
+pydantic_v2.BaseModel --use-annotated wf 0 rejected
+pydantic_v2.BaseModel --use-annotated wf 1.5 rejected
+pydantic_v2.BaseModel --use-annotated wf_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated wf_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated wf_prop 1.5 rejected
+pydantic_v2.BaseModel --use-annotated wf_items [1] accepted
+pydantic_v2.BaseModel --use-annotated wf_items [0] rejected
+pydantic_v2.BaseModel --use-annotated wf_items [1.5] rejected
+pydantic_v2.BaseModel --use-annotated wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --use-annotated wg "a" accepted
+pydantic_v2.BaseModel --use-annotated wg "b" accepted
+pydantic_v2.BaseModel --use-annotated wg "c" rejected
+pydantic_v2.BaseModel --use-annotated wg_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wg_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wg_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wg_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wg_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wg_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated wh "a" accepted
+pydantic_v2.BaseModel --use-annotated wh "b" accepted
+pydantic_v2.BaseModel --use-annotated wh "c" rejected
+pydantic_v2.BaseModel --use-annotated wh_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated wh_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated wh_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated wh_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated wh_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated wh_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wa "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wa "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wa "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wa_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wa_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wa_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wa_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wa_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wa_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wb "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wb "a" rejected
+pydantic_v2.BaseModel --collapse-root-models wb "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wb_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wb_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wb_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wb_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wb_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wb_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wc "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wc "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wc "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wc_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wc_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wc_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wc_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wc_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wc_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wd 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wd 10 accepted
+pydantic_v2.BaseModel --collapse-root-models wd 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wd 11 rejected
+pydantic_v2.BaseModel --collapse-root-models wd_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wd_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models wd_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models wd_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models wd_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models wd_items [11] accepted
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models we 1 accepted
+pydantic_v2.BaseModel --collapse-root-models we 0 rejected
+pydantic_v2.BaseModel --collapse-root-models we_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models we_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models we_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models we_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models we_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models we_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models wf 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wf 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wf 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models wf_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models wf_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models wf_prop 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models wf_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models wf_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models wf_items [1.5] rejected
+pydantic_v2.BaseModel --collapse-root-models wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --collapse-root-models wg "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wg "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wg "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wg_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wg_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wg_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wg_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wg_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wg_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models wh "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wh "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wh "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wh_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models wh_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models wh_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models wh_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models wh_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models wh_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wa "a" accepted
+msgspec.Struct --collapse-root-models wa "b" accepted
+msgspec.Struct --collapse-root-models wa "c" rejected
+msgspec.Struct --collapse-root-models wa_prop "a" accepted
+msgspec.Struct --collapse-root-models wa_prop "b" accepted
+msgspec.Struct --collapse-root-models wa_prop "c" rejected
+msgspec.Struct --collapse-root-models wa_items ["a"] accepted
+msgspec.Struct --collapse-root-models wa_items ["b"] accepted
+msgspec.Struct --collapse-root-models wa_items ["c"] rejected
+msgspec.Struct --collapse-root-models wa_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wa_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wa_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wb "b" accepted
+msgspec.Struct --collapse-root-models wb "a" accepted
+msgspec.Struct --collapse-root-models wb "c" rejected
+msgspec.Struct --collapse-root-models wb_prop "b" accepted
+msgspec.Struct --collapse-root-models wb_prop "a" accepted
+msgspec.Struct --collapse-root-models wb_prop "c" rejected
+msgspec.Struct --collapse-root-models wb_items ["b"] accepted
+msgspec.Struct --collapse-root-models wb_items ["a"] accepted
+msgspec.Struct --collapse-root-models wb_items ["c"] rejected
+msgspec.Struct --collapse-root-models wb_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wb_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wb_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wc "a" accepted
+msgspec.Struct --collapse-root-models wc "b" accepted
+msgspec.Struct --collapse-root-models wc "c" rejected
+msgspec.Struct --collapse-root-models wc_prop "a" accepted
+msgspec.Struct --collapse-root-models wc_prop "b" accepted
+msgspec.Struct --collapse-root-models wc_prop "c" rejected
+msgspec.Struct --collapse-root-models wc_items ["a"] accepted
+msgspec.Struct --collapse-root-models wc_items ["b"] accepted
+msgspec.Struct --collapse-root-models wc_items ["c"] rejected
+msgspec.Struct --collapse-root-models wc_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wc_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wc_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wd 1 accepted
+msgspec.Struct --collapse-root-models wd 10 accepted
+msgspec.Struct --collapse-root-models wd 0 rejected
+msgspec.Struct --collapse-root-models wd 11 rejected
+msgspec.Struct --collapse-root-models wd_prop 1 accepted
+msgspec.Struct --collapse-root-models wd_prop 10 accepted
+msgspec.Struct --collapse-root-models wd_prop 0 rejected
+msgspec.Struct --collapse-root-models wd_prop 11 accepted
+msgspec.Struct --collapse-root-models wd_items [1] accepted
+msgspec.Struct --collapse-root-models wd_items [10] accepted
+msgspec.Struct --collapse-root-models wd_items [0] rejected
+msgspec.Struct --collapse-root-models wd_items [11] accepted
+msgspec.Struct --collapse-root-models wd_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models wd_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models wd_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models wd_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models we 1 accepted
+msgspec.Struct --collapse-root-models we 0 rejected
+msgspec.Struct --collapse-root-models we_prop 1 accepted
+msgspec.Struct --collapse-root-models we_prop 0 rejected
+msgspec.Struct --collapse-root-models we_items [1] accepted
+msgspec.Struct --collapse-root-models we_items [0] rejected
+msgspec.Struct --collapse-root-models we_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models we_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models wf 1 accepted
+msgspec.Struct --collapse-root-models wf 0 rejected
+msgspec.Struct --collapse-root-models wf 1.5 rejected
+msgspec.Struct --collapse-root-models wf_prop 1 accepted
+msgspec.Struct --collapse-root-models wf_prop 0 rejected
+msgspec.Struct --collapse-root-models wf_prop 1.5 rejected
+msgspec.Struct --collapse-root-models wf_items [1] accepted
+msgspec.Struct --collapse-root-models wf_items [0] rejected
+msgspec.Struct --collapse-root-models wf_items [1.5] rejected
+msgspec.Struct --collapse-root-models wf_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models wf_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models wf_map {"k": 1.5} rejected
+msgspec.Struct --collapse-root-models wg "a" accepted
+msgspec.Struct --collapse-root-models wg "b" accepted
+msgspec.Struct --collapse-root-models wg "c" rejected
+msgspec.Struct --collapse-root-models wg_prop "a" accepted
+msgspec.Struct --collapse-root-models wg_prop "b" accepted
+msgspec.Struct --collapse-root-models wg_prop "c" rejected
+msgspec.Struct --collapse-root-models wg_items ["a"] accepted
+msgspec.Struct --collapse-root-models wg_items ["b"] accepted
+msgspec.Struct --collapse-root-models wg_items ["c"] rejected
+msgspec.Struct --collapse-root-models wg_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wg_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wg_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models wh "a" accepted
+msgspec.Struct --collapse-root-models wh "b" accepted
+msgspec.Struct --collapse-root-models wh "c" rejected
+msgspec.Struct --collapse-root-models wh_prop "a" accepted
+msgspec.Struct --collapse-root-models wh_prop "b" accepted
+msgspec.Struct --collapse-root-models wh_prop "c" rejected
+msgspec.Struct --collapse-root-models wh_items ["a"] accepted
+msgspec.Struct --collapse-root-models wh_items ["b"] accepted
+msgspec.Struct --collapse-root-models wh_items ["c"] rejected
+msgspec.Struct --collapse-root-models wh_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models wh_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models wh_map {"k": "c"} rejected
+pydantic_v2.BaseModel --generate-schema-validators wa "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wa "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wa "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wa_prop "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wa_prop "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wa_prop "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wa_items ["a"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wa_items ["b"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wa_items ["c"] rejected
+pydantic_v2.BaseModel --generate-schema-validators wa_map {"k": "a"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wa_map {"k": "b"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wa_map {"k": "c"} rejected
+pydantic_v2.BaseModel --generate-schema-validators wb "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wb "a" rejected
+pydantic_v2.BaseModel --generate-schema-validators wb "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wb_prop "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wb_prop "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wb_prop "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wb_items ["b"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wb_items ["a"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wb_items ["c"] rejected
+pydantic_v2.BaseModel --generate-schema-validators wb_map {"k": "b"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wb_map {"k": "a"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wb_map {"k": "c"} rejected
+pydantic_v2.BaseModel --generate-schema-validators wc "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wc "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wc "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wc_prop "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wc_prop "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wc_prop "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wc_items ["a"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wc_items ["b"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wc_items ["c"] rejected
+pydantic_v2.BaseModel --generate-schema-validators wc_map {"k": "a"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wc_map {"k": "b"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wc_map {"k": "c"} rejected
+pydantic_v2.BaseModel --generate-schema-validators wd 1 accepted
+pydantic_v2.BaseModel --generate-schema-validators wd 10 accepted
+pydantic_v2.BaseModel --generate-schema-validators wd 0 rejected
+pydantic_v2.BaseModel --generate-schema-validators wd 11 rejected
+pydantic_v2.BaseModel --generate-schema-validators wd_prop 1 accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_prop 10 accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_prop 0 rejected
+pydantic_v2.BaseModel --generate-schema-validators wd_prop 11 accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_items [1] accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_items [10] accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_items [0] rejected
+pydantic_v2.BaseModel --generate-schema-validators wd_items [11] accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_map {"k": 1} accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_map {"k": 10} accepted
+pydantic_v2.BaseModel --generate-schema-validators wd_map {"k": 0} rejected
+pydantic_v2.BaseModel --generate-schema-validators wd_map {"k": 11} accepted
+pydantic_v2.BaseModel --generate-schema-validators we 1 accepted
+pydantic_v2.BaseModel --generate-schema-validators we 0 rejected
+pydantic_v2.BaseModel --generate-schema-validators we_prop 1 accepted
+pydantic_v2.BaseModel --generate-schema-validators we_prop 0 rejected
+pydantic_v2.BaseModel --generate-schema-validators we_items [1] accepted
+pydantic_v2.BaseModel --generate-schema-validators we_items [0] rejected
+pydantic_v2.BaseModel --generate-schema-validators we_map {"k": 1} accepted
+pydantic_v2.BaseModel --generate-schema-validators we_map {"k": 0} rejected
+pydantic_v2.BaseModel --generate-schema-validators wf 1 accepted
+pydantic_v2.BaseModel --generate-schema-validators wf 0 rejected
+pydantic_v2.BaseModel --generate-schema-validators wf 1.5 rejected
+pydantic_v2.BaseModel --generate-schema-validators wf_prop 1 accepted
+pydantic_v2.BaseModel --generate-schema-validators wf_prop 0 rejected
+pydantic_v2.BaseModel --generate-schema-validators wf_prop 1.5 rejected
+pydantic_v2.BaseModel --generate-schema-validators wf_items [1] accepted
+pydantic_v2.BaseModel --generate-schema-validators wf_items [0] rejected
+pydantic_v2.BaseModel --generate-schema-validators wf_items [1.5] rejected
+pydantic_v2.BaseModel --generate-schema-validators wf_map {"k": 1} accepted
+pydantic_v2.BaseModel --generate-schema-validators wf_map {"k": 0} rejected
+pydantic_v2.BaseModel --generate-schema-validators wf_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --generate-schema-validators wg "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wg "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wg "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wg_prop "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wg_prop "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wg_prop "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wg_items ["a"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wg_items ["b"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wg_items ["c"] rejected
+pydantic_v2.BaseModel --generate-schema-validators wg_map {"k": "a"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wg_map {"k": "b"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wg_map {"k": "c"} rejected
+pydantic_v2.BaseModel --generate-schema-validators wh "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wh "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wh "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wh_prop "a" accepted
+pydantic_v2.BaseModel --generate-schema-validators wh_prop "b" accepted
+pydantic_v2.BaseModel --generate-schema-validators wh_prop "c" rejected
+pydantic_v2.BaseModel --generate-schema-validators wh_items ["a"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wh_items ["b"] accepted
+pydantic_v2.BaseModel --generate-schema-validators wh_items ["c"] rejected
+pydantic_v2.BaseModel --generate-schema-validators wh_map {"k": "a"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wh_map {"k": "b"} accepted
+pydantic_v2.BaseModel --generate-schema-validators wh_map {"k": "c"} rejected

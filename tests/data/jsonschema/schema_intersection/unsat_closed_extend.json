@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "sib": {
+      "$ref": "#/$defs/Base",
+      "properties": {
+        "b": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "b"
+      ]
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "b"
+          ]
+        }
+      ]
+    }
+  }
+}

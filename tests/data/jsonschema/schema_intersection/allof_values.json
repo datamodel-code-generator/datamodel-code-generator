@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "level": {
+      "$ref": "#/$defs/Level"
+    },
+    "level_prop": {
+      "allOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "maximum": 10
+        }
+      ]
+    },
+    "level_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "level_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "mode": {
+      "$ref": "#/$defs/Mode"
+    },
+    "mode_prop": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "enum": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    "mode_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "enum": [
+              1,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    "mode_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "enum": [
+              1,
+              2
+            ]
+          }
+        ]
+      }
+    },
+    "pat": {
+      "$ref": "#/$defs/Pat"
+    },
+    "pat_prop": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "^a"
+        },
+        {
+          "pattern": "b$"
+        }
+      ]
+    },
+    "pat_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "string",
+            "pattern": "^a"
+          },
+          {
+            "pattern": "b$"
+          }
+        ]
+      }
+    },
+    "pat_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "type": "string",
+            "pattern": "^a"
+          },
+          {
+            "pattern": "b$"
+          }
+        ]
+      }
+    },
+    "untyped": {
+      "$ref": "#/$defs/Untyped"
+    },
+    "untyped_prop": {
+      "allOf": [
+        {
+          "minLength": 1
+        },
+        {
+          "maxLength": 5
+        }
+      ]
+    },
+    "untyped_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "minLength": 1
+          },
+          {
+            "maxLength": 5
+          }
+        ]
+      }
+    },
+    "untyped_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "minLength": 1
+          },
+          {
+            "maxLength": 5
+          }
+        ]
+      }
+    },
+    "p": {
+      "allOf": [
+        {
+          "type": "string",
+          "examples": [
+            "m1"
+          ],
+          "description": "MD"
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Level": {
+      "allOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "maximum": 10
+        }
+      ]
+    },
+    "Mode": {
+      "allOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "enum": [
+            1,
+            2
+          ]
+        }
+      ]
+    },
+    "Pat": {
+      "allOf": [
+        {
+          "type": "string",
+          "pattern": "^a"
+        },
+        {
+          "pattern": "b$"
+        }
+      ]
+    },
+    "Untyped": {
+      "allOf": [
+        {
+          "minLength": 1
+        },
+        {
+          "maxLength": 5
+        }
+      ]
+    }
+  }
+}

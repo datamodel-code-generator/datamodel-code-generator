@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "status": {
+      "$ref": "#/$defs/ExtStatus"
+    }
+  },
+  "$defs": {
+    "BaseStatus": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ]
+    },
+    "ExtStatus": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseStatus"
+        },
+        {
+          "type": "string",
+          "enum": [
+            "pending"
+          ]
+        }
+      ]
+    }
+  }
+}

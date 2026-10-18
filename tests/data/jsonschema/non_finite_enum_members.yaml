@@ -1,0 +1,27 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Model
+type: object
+properties:
+  flat:
+    $ref: '#/$defs/NonFinite'
+  positive:
+    type: number
+    enum: [.inf, 1.5]
+    default: .inf
+  negative:
+    type: number
+    enum: [-.inf, 1.5]
+    default: -.inf
+  notNumber:
+    type: number
+    enum: [.nan, 1.5]
+    default: .nan
+  nested:
+    enum:
+    - {limit: .inf}
+    - [1.5, -.inf]
+    - 1.5
+$defs:
+  NonFinite:
+    type: number
+    enum: [.inf, -.inf, .nan, 1.5]

@@ -1,0 +1,357 @@
+openapi: 3.0.3
+info:
+  title: Schema intersection shapes
+  version: '1'
+paths: {}
+components:
+  schemas:
+    AB:
+      type: string
+      enum:
+      - a
+      - b
+    Q:
+      type: integer
+      minimum: 1
+      examples:
+      - 1
+      - 2
+    Wa:
+      allOf:
+      - $ref: '#/components/schemas/AB'
+        enum:
+        - a
+        - b
+    Wb:
+      allOf:
+      - $ref: '#/components/schemas/AB'
+        enum:
+        - b
+    Wc:
+      allOf:
+      - $ref: '#/components/schemas/AB'
+        description: x
+    Wd:
+      allOf:
+      - $ref: '#/components/schemas/Q'
+        maximum: 10
+    We:
+      allOf:
+      - $ref: '#/components/schemas/Q'
+        minimum: 1
+    Wf:
+      allOf:
+      - $ref: '#/components/schemas/Q'
+        type: integer
+    Wg:
+      allOf:
+      - $ref: '#/components/schemas/AB'
+        enum:
+        - b
+        - a
+    Wh:
+      allOf:
+      - $ref: '#/components/schemas/AB'
+    Quantity:
+      type: integer
+      minimum: 1
+    Code:
+      type: string
+      pattern: ^[A-Z]+$
+    Base:
+      type: string
+      title: BaseT
+      default: base
+      examples:
+      - bb
+    P1:
+      type: object
+      properties:
+        k:
+          type: string
+          enum:
+          - a
+          - b
+    P2:
+      type: object
+      properties:
+        k:
+          type: string
+          enum:
+          - b
+          - a
+          description: d
+    W3:
+      allOf:
+      - $ref: '#/components/schemas/P1'
+      - $ref: '#/components/schemas/P2'
+    Pick:
+      $ref: '#/components/schemas/AB'
+      enum:
+      - b
+    W1:
+      $ref: '#/components/schemas/AB'
+      enum:
+      - a
+      - b
+    Sib:
+      $ref: '#/components/schemas/Quantity'
+      maximum: 10
+    Looser:
+      $ref: '#/components/schemas/Quantity'
+      minimum: 0
+    Model:
+      type: object
+      properties:
+        pick:
+          $ref: '#/components/schemas/Pick'
+        pick_prop:
+          $ref: '#/components/schemas/AB'
+          enum:
+          - b
+        pick_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AB'
+            enum:
+            - b
+        pick_map:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AB'
+            enum:
+            - b
+        w1:
+          $ref: '#/components/schemas/W1'
+        w1_prop:
+          $ref: '#/components/schemas/AB'
+          enum:
+          - a
+          - b
+        w1_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AB'
+            enum:
+            - a
+            - b
+        w1_map:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AB'
+            enum:
+            - a
+            - b
+        q_sib:
+          $ref: '#/components/schemas/Sib'
+        q_sib_prop:
+          $ref: '#/components/schemas/Quantity'
+          maximum: 10
+        q_sib_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Quantity'
+            maximum: 10
+        q_sib_map:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Quantity'
+            maximum: 10
+        looser:
+          $ref: '#/components/schemas/Looser'
+        looser_prop:
+          $ref: '#/components/schemas/Quantity'
+          minimum: 0
+        looser_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Quantity'
+            minimum: 0
+        looser_map:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Quantity'
+            minimum: 0
+        w3:
+          $ref: '#/components/schemas/W3'
+        redundant_type:
+          $ref: '#/components/schemas/Quantity'
+          type: integer
+        redundant_allof:
+          allOf:
+          - $ref: '#/components/schemas/Quantity'
+          type: integer
+        code_type:
+          $ref: '#/components/schemas/Code'
+          type: string
+        q_desc:
+          $ref: '#/components/schemas/Quantity'
+          description: d
+        examples_max:
+          $ref: '#/components/schemas/Q'
+          examples:
+          - 5
+          maximum: 9
+        examples_only:
+          $ref: '#/components/schemas/Q'
+          examples:
+          - 5
+        titled:
+          $ref: '#/components/schemas/Base'
+          minLength: 2
+        wa:
+          $ref: '#/components/schemas/Wa'
+        wa_prop:
+          allOf:
+          - $ref: '#/components/schemas/AB'
+            enum:
+            - a
+            - b
+        wa_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              enum:
+              - a
+              - b
+        wa_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              enum:
+              - a
+              - b
+        wb:
+          $ref: '#/components/schemas/Wb'
+        wb_prop:
+          allOf:
+          - $ref: '#/components/schemas/AB'
+            enum:
+            - b
+        wb_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              enum:
+              - b
+        wb_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              enum:
+              - b
+        wc:
+          $ref: '#/components/schemas/Wc'
+        wc_prop:
+          allOf:
+          - $ref: '#/components/schemas/AB'
+            description: x
+        wc_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              description: x
+        wc_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              description: x
+        wd:
+          $ref: '#/components/schemas/Wd'
+        wd_prop:
+          allOf:
+          - $ref: '#/components/schemas/Q'
+            maximum: 10
+        wd_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/Q'
+              maximum: 10
+        wd_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/Q'
+              maximum: 10
+        we:
+          $ref: '#/components/schemas/We'
+        we_prop:
+          allOf:
+          - $ref: '#/components/schemas/Q'
+            minimum: 1
+        we_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/Q'
+              minimum: 1
+        we_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/Q'
+              minimum: 1
+        wf:
+          $ref: '#/components/schemas/Wf'
+        wf_prop:
+          allOf:
+          - $ref: '#/components/schemas/Q'
+            type: integer
+        wf_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/Q'
+              type: integer
+        wf_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/Q'
+              type: integer
+        wg:
+          $ref: '#/components/schemas/Wg'
+        wg_prop:
+          allOf:
+          - $ref: '#/components/schemas/AB'
+            enum:
+            - b
+            - a
+        wg_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              enum:
+              - b
+              - a
+        wg_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+              enum:
+              - b
+              - a
+        wh:
+          $ref: '#/components/schemas/Wh'
+        wh_prop:
+          allOf:
+          - $ref: '#/components/schemas/AB'
+        wh_items:
+          type: array
+          items:
+            allOf:
+            - $ref: '#/components/schemas/AB'
+        wh_map:
+          type: object
+          additionalProperties:
+            allOf:
+            - $ref: '#/components/schemas/AB'
