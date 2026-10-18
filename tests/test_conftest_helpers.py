@@ -861,8 +861,8 @@ def test_ledger_tree_compares_only_the_files_its_pattern_selects(ledger: LedgerP
 
 def test_format_refs_writes_each_line_once() -> None:
     """A test comparing one label several times records one line for it."""
-    line = units.RefLine("test_p", "case", "../shared.txt")
-    assert units.format_refs([line, line, line]) == HEADER + "[test_p]\ncase\t../shared.txt\n"
+    line = units.RefLine("test_p", "case", "m/shared.txt")
+    assert units.format_refs([line, line, line]) == HEADER + "[test_p]\ncase\tm/shared.txt\n"
 
 
 @pytest.mark.parametrize(
@@ -893,6 +893,7 @@ def test_format_refs_writes_each_line_once() -> None:
             "line 2: '../a.txt' is not a relative path below tests/data/expected",
             units.BROKEN,
         ),
+        ("[test_a]\n\t../a.txt\n", "line 2: '../a.txt' is not a relative path below tests/data/expected", units.BROKEN),
         ("[test_a]\n\tm//\n", "line 2: 'm//' is not a relative path below tests/data/expected", units.BROKEN),
         pytest.param(
             HEADER + "[test_a]\n\tm/a.txt\n\tm/a.txt\t= m/b.txt\n",
@@ -2041,7 +2042,7 @@ BOMB = base64.b64encode(zlib.compress(b'{"value": "' + b"a" * (5 * 1024 * 1024) 
 @pytest.mark.parametrize(
     ("text", "reason"),
     [
-        pytest.param(_encoded(_payload(label="../../outside.txt")), "is outside tests/data/expected, and", id="up"),
+        pytest.param(_encoded(_payload(label="../../outside.txt")), "is not a relative path below", id="up"),
         pytest.param(_encoded(_payload(label="/etc/a.txt")), "is not a relative path below", id="absolute-label"),
         pytest.param(_encoded(_payload(item="suite/../suite/test_m.py::test_a")), "is not an item", id="up-item"),
         pytest.param(_encoded(_payload(item="/suite/test_m.py::test_a")), "is not an item", id="absolute-item"),
@@ -2115,9 +2116,10 @@ def test_ledger_apply_session_checks_its_input(ledger: LedgerProject, tmp_path: 
     apply_file.write_text(json.dumps({"payloads": [_payload(label="../x.txt")]}), encoding="utf-8")
     rejected = ledger.run(f"--expected-apply={apply_file}", "suite")
     assert rejected.ret == pytest.ExitCode.USAGE_ERROR
-    assert "--expected-apply rejected its input; nothing was written:\npayload 1: ../x.txt is outside" in (
-        rejected.stderr.str()
-    )
+    assert (
+        "--expected-apply rejected its input; nothing was written:\n"
+        "payload 1: '../x.txt' is not a relative path below tests/data/expected"
+    ) in rejected.stderr.str()
     observed = tmp_path / "observed"
     observed.mkdir()
     entry = {"item": "../test_x.py::test_a", "outcome": "passed", "compared": []}
@@ -2622,50 +2624,26 @@ def test_ledger_moves_units_to_free_labels_only(ledger: LedgerProject) -> None:
     )
 
 
-def test_ledger_outside_labels_stay_put(ledger: LedgerProject) -> None:
-    """New labels outside the expected root fail; recorded legacy ones keep working and are fixed inside it."""
+def test_ledger_outside_labels_fail(ledger: LedgerProject) -> None:
+    """Labels outside the expected root fail when compared, and a sidecar line naming one is a hand edit."""
     outside = ledger.suite / "data" / "outside.txt"
     outside.write_text("in\n", encoding="utf-8")
-    source = (
-        "from pathlib import Path\n\nfrom tests.conftest import assert_output\n\nOUT = 'in\\n'\n\n\n"
-        "def test_new():\n    assert_output(OUT, Path(__file__).parent / 'data' / 'outside.txt')\n"
+    ledger.write(
+        "test_m.py",
+        "from pathlib import Path\n\nfrom tests.conftest import assert_output\n\n\n"
+        "def test_new():\n    assert_output('in\\n', Path(__file__).parent / 'data' / 'outside.txt')\n",
     )
-    ledger.write("test_m.py", source)
     result = ledger.run("suite")
     result.assert_outcomes(failed=1)
     assert "Expected outputs live under tests/data/expected. Fix: remove the path argument" in result.stdout.str()
     (ledger.suite / "test_m.refs").write_text(HEADER + "[test_new]\n\t../outside.txt\n", encoding="utf-8")
-    ledger.run("suite").assert_outcomes(passed=1)
-    ledger.write("test_m.py", source.replace("OUT = 'in\\n'", "OUT = 'changed\\n'"))
-    fixed = ledger.run("suite", "--inline-snapshot=fix")
-    fixed.assert_outcomes(passed=1)
-    assert ledger.refs() == HEADER + "[test_new]\n\t../outside.txt\t= outside~new.txt\n"
-    assert ledger.files() == {"outside~new.txt": "changed\n"}
-    ledger.write("test_m.py", "def test_new():\n    pass\n")
-    ledger.run("suite/test_m.py::test_new", "--inline-snapshot=fix").assert_outcomes(passed=1)
-    assert (ledger.refs(), ledger.files(), outside.read_text(encoding="utf-8")) == ("", {}, "in\n")
-
-
-def test_ledger_new_items_reuse_recorded_outside_labels(ledger: LedgerProject) -> None:
-    """A new item may record an outside label the sidecar already compares, only when its output is equal."""
-    outside = ledger.suite / "data" / "shared.txt"
-    outside.write_text("same\n", encoding="utf-8")
-    source = (
-        "from pathlib import Path\n\nimport pytest\n\nfrom tests.conftest import assert_output\n\n\n"
-        "@pytest.mark.parametrize('out', ['same', 'same2'])\n"
-        "def test_p(out):\n"
-        "    assert_output(out.rstrip('2') + '\\n', Path(__file__).parent / 'data' / 'shared.txt')\n"
-    )
-    ledger.write("test_m.py", source)
-    (ledger.suite / "test_m.refs").write_text(HEADER + "[test_p]\nsame\t../shared.txt\n", encoding="utf-8")
-    ledger.run("suite").assert_outcomes(passed=2)
-    assert ledger.refs() == HEADER + "[test_p]\nsame\t../shared.txt\nsame2\t../shared.txt\n"
-    ledger.write("test_m.py", source.replace("out.rstrip('2')", "out"))
-    (ledger.suite / "test_m.refs").write_text(HEADER + "[test_p]\nsame\t../shared.txt\n", encoding="utf-8")
-    result = ledger.run("suite")
-    result.assert_outcomes(passed=1, failed=1)
-    assert "Expected outputs live under tests/data/expected" in result.stdout.str()
-    assert outside.read_text(encoding="utf-8") == "same\n"
+    edited = ledger.run("suite")
+    edited.assert_outcomes(failed=2)
+    assert (
+        "suite/test_m.refs was edited by hand (line 4: '../outside.txt' is not a relative path below "
+        "tests/data/expected); pytest writes this file."
+    ) in edited.stdout.str()
+    assert (ledger.files(), outside.read_text(encoding="utf-8")) == ({}, "in\n")
 
 
 def test_ledger_missing_file_names_git_add(ledger: LedgerProject) -> None:

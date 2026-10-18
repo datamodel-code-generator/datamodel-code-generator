@@ -9,10 +9,9 @@ Usage:
 A failing CI lane prints a ``dcg-expected-fix:`` payload: what that environment compared and its output. ``--apply``
 writes it into ``tests/data/expected`` and the ``.refs`` sidecars through an apply-only pytest session, so no other
 interpreter or formatter is needed locally. ``--from-ci`` collects every payload of a CI run with ``gh``. Payloads
-are untrusted input: one that names anything but an existing test item and a label below ``tests/data/expected``
-(or one the item already records), whose digest does not match its value, or that comes from this environment
-(run its test here instead) is rejected. ``--apply`` then writes nothing; ``--from-ci`` reports the rejected
-payloads and applies the rest.
+are untrusted input: one that names anything but an existing test item and a label below ``tests/data/expected``,
+whose digest does not match its value, or that comes from this environment (run its test here instead) is rejected.
+``--apply`` then writes nothing; ``--from-ci`` reports the rejected payloads and applies the rest.
 ``--repair`` drops the lines of a hand-edited sidecar that pytest cannot read and re-records the tests they were in.
 These three write files only inside ``tests/data/expected`` and the sidecars, and refuse to run in CI.
 

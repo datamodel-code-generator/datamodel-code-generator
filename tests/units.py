@@ -59,7 +59,6 @@ __all__ = [
     "encode_value",
     "facts_fit",
     "format_refs",
-    "inside_label",
     "item_problem",
     "label_path",
     "label_problem",
@@ -109,7 +108,6 @@ ORDER = "order"
 _WINDOWS_INVALID = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 _CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
 """Control characters, including every line separator ``str.splitlines`` knows; no label, item or test holds one."""
-_LEADING = re.compile(r"(?:\.\./)*")
 _DRIVE = re.compile(r"[A-Za-z]:")
 _BAD_PARTS = frozenset({"", ".", ".."})
 _MAX_NAME = 120
@@ -138,33 +136,16 @@ def tree_label(path: str, pattern: str) -> str:
 
 def label_path(label: str, expected_root: Path) -> Path:
     """Return the file or directory a label or storage names below the expected root."""
-    name = split_label(label)[0]
-    return Path(os.path.normpath(expected_root / name)) if ".." in name else expected_root / name
+    return expected_root / split_label(label)[0]
 
 
-def _outside(label: str) -> bool:
-    return label.startswith("../")
-
-
-def inside_label(label: str) -> str:
-    """Return a label below the expected root: legacy labels outside it (``../payloads/x.txt``) lose their ``../``."""
+def label_problem(label: str) -> str | None:
+    """Return why a label or storage is not a relative POSIX path below ``tests/data/expected``, or None."""
     path, pattern = split_label(label)
-    path = "/".join(part for part in path.split("/") if part != "..")
-    return path if pattern is None else tree_label(path, pattern)
-
-
-def label_problem(label: str, *, storage: bool = False) -> str | None:
-    """Return why a label is not a relative POSIX path below the tests' data directory, or None.
-
-    Legacy labels may start with ``../`` (they name files next to ``tests/data/expected``); storage never does.
-    """
-    path, pattern = split_label(label)
-    rest = _LEADING.sub("", path, count=1)
-    leading = path[: len(path) - len(rest)]
     invalid = (
-        not rest or "\\" in label or _CONTROL.search(label) is not None or _too_long(label.split("/")),
-        path.startswith("/") or _DRIVE.match(path) is not None or bool(storage and leading),
-        not _BAD_PARTS.isdisjoint(rest.split("/")),
+        "\\" in label or _CONTROL.search(label) is not None or _too_long(label.split("/")),
+        path.startswith("/") or _DRIVE.match(path) is not None,
+        not _BAD_PARTS.isdisjoint(path.split("/")),
         pattern is not None and (not pattern or ".." in pattern.split("/") or pattern.startswith("/")),
     )
     return f"{label!r} is not a relative path below tests/data/expected" if any(invalid) else None
@@ -409,7 +390,7 @@ def _parse_columns(function: str, columns: list[str]) -> RefLine:
         else:
             msg = f"unexpected column {flag!r}"
             raise ValueError(msg)
-    if problem := label_problem(label) or (storage is not None and label_problem(storage, storage=True)):
+    if problem := label_problem(label) or (storage is not None and label_problem(storage)):
         raise ValueError(problem)
     if storage == label:
         msg = "the storage repeats the label"
@@ -647,16 +628,11 @@ def _payload_shape(payload: dict[str, Any]) -> str | None:
     return "its environment, item or flags are malformed" if any(malformed) else None
 
 
-def _payload_label_problem(payload: dict[str, Any], rootpath: Path, index: RefsIndex) -> str | None:
-    """Return why a payload's label must not be written: not a path below the expected root, unless already recorded."""
+def _payload_label_problem(payload: dict[str, Any]) -> str | None:
+    """Return why a payload's label must not be written: not a path below the expected root."""
     if not isinstance(label := payload["label"], str):
         return "it names no label"
-    if problem := label_problem(label):
-        return problem
-    sidecar, function, param = nodeid_key(rootpath, payload["item"])
-    if _outside(label) and label not in {line.label for line in index.item_lines(sidecar).get((function, param), [])}:
-        return f"{label} is outside tests/data/expected, and {payload['item']} does not record it"
-    return None
+    return label_problem(label)
 
 
 def _payload_value_problem(payload: dict[str, Any]) -> str | None:
@@ -669,8 +645,7 @@ def _payload_value_problem(payload: dict[str, Any]) -> str | None:
             fits = isinstance(value, str)
         case _:
             fits = isinstance(value, dict) and all(
-                isinstance(text, str) and label_problem(relative, storage=True) is None
-                for relative, text in value.items()
+                isinstance(text, str) and label_problem(relative) is None for relative, text in value.items()
             )
     if not fits:
         return "its value does not fit its label"
@@ -681,8 +656,8 @@ def payload_problem(payload: object, rootpath: Path, index: RefsIndex) -> str | 
     """Return why a decoded payload must not be applied, or None.
 
     Payloads are untrusted (``--from-ci`` reads them from logs of any pull request): the item must belong to an
-    existing test module below the tests root, the label must stay below the expected root unless the item already
-    records it, and the digest must match the value.
+    existing test module below the tests root, the label must stay below the expected root, and the digest must
+    match the value.
     """
     if not isinstance(payload, dict):
         return "it is not a dcg-expected-fix payload"
@@ -690,7 +665,7 @@ def payload_problem(payload: object, rootpath: Path, index: RefsIndex) -> str | 
         return problem
     if "stale" in payload:
         return None
-    if problem := _payload_label_problem(payload, rootpath, index):
+    if problem := _payload_label_problem(payload):
         return problem
     return None if "missing" in payload else _payload_value_problem(payload)
 
@@ -920,13 +895,12 @@ class _Resolution:
     def location(self, sidecar: Path, line: RefLine, *, home: bool) -> str:
         """Return the label path when it is free, else a derived name beside it outside every other stored tree.
 
-        Item splits are named ``<stem>~<item><ext>`` and environment overrides ``<stem>@<env><ext>``. Legacy labels
-        outside the expected root are stored below it, never at their label.
+        Item splits are named ``<stem>~<item><ext>`` and environment overrides ``<stem>@<env><ext>``.
         """
-        label = inside_label(line.label)
+        label = line.label
         pattern = split_label(label)[1]
         target = self.path(label)
-        if home and not _outside(line.label) and self.free(target, tree=pattern is not None):
+        if home and self.free(target, tree=pattern is not None):
             return label
         mark = f"@{_environment_slug(line.predicate)}" if line.predicate else f"~{_slug(sidecar, line)}"
         stored = Path(os.path.relpath(self.beside(target, mark, tree=pattern is not None), self.expected_root))
@@ -1046,8 +1020,7 @@ class _Resolution:
             return
         keeper = (
             groups[0]
-            if not _outside(old)
-            and (self.value(old) is None or (not remaining and self.exclusive(old, groups[0][0].value)))
+            if self.value(old) is None or (not remaining and self.exclusive(old, groups[0][0].value))
             else None
         )
         if keeper is not None:
@@ -1154,7 +1127,7 @@ class _Resolution:
         by_storage = self.users()
         for storage, users in sorted(by_storage.items()):
             labels = {line.label for _, line in users}
-            if len(labels) != 1 or (label := next(iter(labels))) == storage or _outside(label):
+            if len(labels) != 1 or (label := next(iter(labels))) == storage:
                 continue
             if (value := self.value(storage)) is None or (split_label(storage)[1] is not None and not _files(value)):
                 continue
@@ -1198,8 +1171,6 @@ class _Resolution:
         after = {line.stored for lines in self.kept.values() for line in lines}
         remaining = _Coverage(self.expected_root, after)
         for storage in sorted((self.before | self.adopted | self.discarded) - after - self.rehomed):
-            if _outside(storage):
-                continue
             uncovered = [path for path in self.unit_paths(storage) if not remaining.covers_file(path)]
             for path in uncovered:
                 self.plan.writes.pop(path, None)

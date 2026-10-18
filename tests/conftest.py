@@ -1278,7 +1278,7 @@ class _Ledger:
             self.fail_mismatch(observation, stored)
         if self.observing:
             return "home" if equal else "new"
-        if observation.label.startswith("../") and not (equal and self.recorded_outside(observation)):
+        if observation.label.startswith("../"):
             pytest.fail(
                 "Expected outputs live under tests/data/expected. "
                 "Fix: remove the path argument (pytest names the file)",
@@ -1291,14 +1291,6 @@ class _Ledger:
         if present and not self.can_fix:
             self.fail_mismatch(observation, stored)
         return "new"
-
-    def recorded_outside(self, observation: _Observation) -> bool:
-        """Whether another line of the sidecar already compares this label outside the expected directory."""
-        return any(
-            line.label == observation.label
-            for lines in self.index.item_lines(observation.sidecar).values()
-            for line in lines
-        )
 
     def encode(self, payload: dict[str, object]) -> str | None:
         """Encode what this lane compared, or None when the payload would be too large to print."""
