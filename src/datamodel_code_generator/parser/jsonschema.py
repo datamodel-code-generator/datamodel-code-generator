@@ -1728,7 +1728,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._rw_model_variant_requirement_cache: dict[tuple[str, str], bool] = {}
         self._rw_model_variant_references: dict[tuple[str, str], Reference] = {}
         self._local_ref_path_cache: dict[Path, Path] = {}
-        self._tag_key_variant_paths: dict[str, str] = {}
+        self._tag_key_variant_paths: dict[str, tuple[str, str]] = {}
         if self.generate_schema_validators:
             self._property_count_rule_cache: dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]] = {}
         self.field_keys: set[str] = {
@@ -4473,12 +4473,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         variant_names: Sequence[str | None] | None,
         variant_keys: Mapping[int, str],
     ) -> list[DataType]:
-        """Parse the branches of a union, recording each branch named after its key, not its title, by its path."""
+        """Parse the branches of a union, recording the key and name of each branch named after its key by its path."""
         if variant_names:
             for index, key in variant_keys.items():
-                variant_name = variant_names[index] or name
-                if self._apply_title_as_name(variant_name, combined_schemas[index]) == variant_name:
-                    self._tag_key_variant_paths[self.model_resolver.join_path((*path, str(index)))] = key
+                self._tag_key_variant_paths[self.model_resolver.join_path((*path, str(index)))] = (
+                    key,
+                    variant_names[index] or name,
+                )
             return [
                 self.parse_item(
                     variant_names[index] or name,
@@ -10217,6 +10218,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return self.data_type(reference=reference)
 
+    def _get_tag_key_variant_key(self, path: list[str]) -> str | None:
+        """Return the key of the union branch modeled at `path` when its class name still comes from that key.
+
+        A branch its title names (`--use-title-as-name`) or `--model-name-map` renames does not repeat the key.
+        """
+        model_path = self.model_resolver.join_path(tuple(path))
+        if (variant := self._tag_key_variant_paths.get(_strip_special_path_suffix(model_path))) is None:
+            return None
+        key, variant_name = variant
+        return key if self.model_resolver.named_after(model_path, variant_name) else None
+
     def parse_object_fields(
         self,
         obj: JsonSchemaObject,
@@ -10230,11 +10242,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase] = []
 
         exclude_field_names: set[str] = set()
-        variant_key = (
-            self._tag_key_variant_paths.get(_strip_special_path_suffix(self.model_resolver.join_path(tuple(path))))
-            if self._tag_key_variant_paths
-            else None
-        )
+        variant_key = self._get_tag_key_variant_key(path) if self._tag_key_variant_paths else None
         for original_field_name, field in properties.items():
             field_name, alias = self.model_resolver.get_valid_field_name_and_alias(
                 original_field_name,

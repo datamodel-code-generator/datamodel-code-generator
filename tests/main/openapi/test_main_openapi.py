@@ -9470,6 +9470,26 @@ def test_duplicate_models(output_file: Path) -> None:
             ["--use-tag-as-union-variant-name", "--naming-strategy", "full-path", "--use-title-as-name"],
             id="use-title-as-name",
         ),
+        pytest.param(
+            [
+                "--use-tag-as-union-variant-name",
+                "--naming-strategy",
+                "full-path",
+                "--model-name-map",
+                '{"ItemEditedChangesFieldValue": "FieldValueChange"}',
+            ],
+            id="model-name-map",
+        ),
+        pytest.param(
+            [
+                "--use-tag-as-union-variant-name",
+                "--naming-strategy",
+                "full-path",
+                "--model-name-map",
+                '{"ItemEditedChangesFieldValue": "ItemEditedChangesFieldValue"}',
+            ],
+            id="model-name-map-identity",
+        ),
         pytest.param(["--use-tag-as-union-variant-name"], id="numbered"),
         pytest.param(["--naming-strategy", "full-path"], id="without-tags"),
     ],
@@ -9477,8 +9497,8 @@ def test_duplicate_models(output_file: Path) -> None:
 def test_main_openapi_use_tag_as_union_variant_name_parent_prefix(output_file: Path, extra_args: list[str]) -> None:
     """Name the value of a branch named after its key as if the branch were not in its path under prefixed naming.
 
-    The branch keeps its key name; a branch its title names, and the branches the option leaves numbered, keep
-    prefixing the models in them with their own names.
+    The branch keeps its key name; a branch its title names or `--model-name-map` renames, and the branches the option
+    leaves numbered, keep prefixing the models in them with their own names.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "use_tag_as_union_variant_name_parent_prefix.yaml",

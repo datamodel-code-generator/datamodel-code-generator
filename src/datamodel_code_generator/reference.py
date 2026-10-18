@@ -931,6 +931,7 @@ class ModelResolver:  # noqa: PLR0904
         self.yielding_name_changes: set[str] = set()
         self._new_references_yield = False
         self._paths_named_past_parent: set[tuple[str, ...]] = set()
+        self._model_name_map_paths: set[str] = set()
 
         # Default value overrides from external JSON file
         self.default_value_overrides: Mapping[str, Any] = (
@@ -996,6 +997,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("yielding_name_changes", set())
         self.__dict__.setdefault("_new_references_yield", False)
         self.__dict__.setdefault("_paths_named_past_parent", set())
+        self.__dict__.setdefault("_model_name_map_paths", set())
         for name, value in slot_state.items():
             setattr(self, name, value)
 
@@ -1089,6 +1091,8 @@ class ModelResolver:  # noqa: PLR0904
             return class_name
 
         self._ensure_model_name_map_value(path, class_name.name, mapped_name, reserved_name)
+        if mapped_name != class_name.name:
+            self._model_name_map_paths.add(path)
         return ClassName(name=mapped_name, duplicate_name=None)
 
     def _reset_for_reuse(self, exclude_names: set[str]) -> None:
@@ -1499,6 +1503,14 @@ class ModelResolver:  # noqa: PLR0904
         self.references[path] = reference
         self._update_reference_name(None, reference.name, unique=use_unique)
         return reference
+
+    def named_after(self, path: str, original_name: str) -> bool:
+        """Return whether the reference at ``path`` is named from ``original_name`` and not by ``--model-name-map``."""
+        return (
+            (reference := self.references.get(path)) is not None
+            and reference.original_name == original_name
+            and path not in self._model_name_map_paths
+        )
 
     def name_past_parent(self, path: Sequence[str]) -> None:
         """Prefix the models under ``path`` as if the model that holds ``path`` were not in their path."""
