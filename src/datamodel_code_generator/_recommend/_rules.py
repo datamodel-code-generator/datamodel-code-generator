@@ -43,6 +43,7 @@ OutputModelTypeName: TypeAlias = Literal[
     "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"
 ]
 RuleId: TypeAlias = Annotated[str, StringConstraints(pattern=r"^[a-z0-9-]+\.[a-z0-9-]+$")]
+OptionalSection: TypeAlias = Literal["validation", "policy"]
 
 _OPERATORS: dict[str, Callable[[float, float], bool]] = {
     ">=": operator.ge,
@@ -107,10 +108,15 @@ class AppliesTo(_Data):
 
 
 class Rule(_Data):
-    """One recommendation: config values to use when a schema condition holds."""
+    """One recommendation: config values to use when a schema condition holds.
+
+    An ``optional`` rule lists its values in that section of the report for the user to decide; they never join the
+    command, the configuration, or the compared candidates.
+    """
 
     id: RuleId
     decision: Annotated[str, StringConstraints(pattern=r"^[a-z0-9-]+$")]
+    optional: OptionalSection | None = None
     applies_to: AppliesTo = AppliesTo()
     when: Condition
     contested_when: Condition | None = None
@@ -198,18 +204,28 @@ def option_arguments(field: str, value: OptionValue) -> list[str] | None:
     return [option, *value] if isinstance(value, list) else [option, value]
 
 
+def _rule_values(rule: Rule) -> dict[str, OptionValue]:
+    """Return a rule's values as pyproject.toml spells them, validated through the model of where they go.
+
+    Values the command applies on top of a preset are validated like preset values; an optional rule's values are
+    only shown, so any generation option may be one.
+    """
+    if rule.optional is None:
+        from datamodel_code_generator.preset import PresetConfig  # noqa: PLC0415
+
+        return {item.field_name: item.pyproject_value for item in PresetConfig(**rule.set).items()}
+    from datamodel_code_generator.config import GenerateConfig  # noqa: PLC0415
+
+    validated = GenerateConfig.model_validate(rule.set)
+    return {name: toml_value(getattr(validated, name)) for name in rule.set}
+
+
 @cache
 def load_rules() -> LoadedRules:
-    """Load the shipped rule file, validating each rule's values through the preset config model."""
-    from datamodel_code_generator.preset import PresetConfig  # noqa: PLC0415
-
+    """Load the shipped rule file, validating each rule's values through the preset or generation config model."""
     resource = files("datamodel_code_generator.resources").joinpath(RULES_RESOURCE)
     data = RulesData.model_validate_json(resource.read_text(encoding="utf-8"))
-    values = {
-        rule.id: {item.field_name: item.pyproject_value for item in PresetConfig(**rule.set).items()}
-        for rule in data.rules
-    }
-    return LoadedRules(data, values)
+    return LoadedRules(data, {rule.id: _rule_values(rule) for rule in data.rules})
 
 
 def matches(condition: Condition, counts: Mapping[str, int]) -> bool:

@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-17)
+Option recommendations (experimental; quick mode; rules 2026-10-18)
 
 Schema  not analysed (directory input)
 

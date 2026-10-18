@@ -36,6 +36,10 @@ _TABLE_COLUMNS: tuple[tuple[str, str], ...] = (
     ("displaced", "displaced"),
     ("median", "median_length"),
 )
+_OPTIONAL_SECTIONS: tuple[tuple[str, str], ...] = (
+    ("validation", "Optional (validation; not in the command)"),
+    ("policy", "Optional (policy; not in the command)"),
+)
 _SIGNAL_LINES: tuple[tuple[str, str], ...] = (
     ("components", "{components}, {operations} operations"),
     ("inline objects / enums", "{inline_objects} / {inline_enums}, nesting depth {max_inline_depth}"),
@@ -71,6 +75,21 @@ _SIGNAL_LINES: tuple[tuple[str, str], ...] = (
         ),
     ),
     ("component keys", "{key_style}; {dotted_keys} dotted in {dotted_key_namespaces} namespaces"),
+    (
+        "constraint keywords",
+        (
+            "uniqueItems {unique_items}, patternProperties {pattern_properties}, multipleOf {multiple_of}, "
+            "nullable {nullable_keywords}, boolean exclusive bounds {boolean_exclusive_bounds}"
+        ),
+    ),
+    (
+        "formats",
+        (
+            "{formats} ({format_examples}), decimal {decimal_formats}; int32/int64 {integer_range_formats}, "
+            "ranges not enforced"
+        ),
+    ),
+    ("integer/number/boolean schemas", "{coercible_scalars}"),
 )
 _ROOT_LINE = ("root schema", "object model {root_is_object}, title words {root_title_words}")
 _NO_SIGNALS = Signals(counts={}, facts={})
@@ -122,12 +141,12 @@ def _option_lines(option: Option, signals: Signals, *, against: bool = False) ->
     return lines
 
 
-def _metric_cells(metrics: NameMetrics, stability: NameStability | None) -> list[str]:
+def _metric_cells(metrics: NameMetrics, stability: NameStability | None, dropped: int | None) -> list[str]:
     cells = [
         f"{metrics.problems} ({metrics.problems_percent}%)" if name == "problems" else str(getattr(metrics, name))
         for _, name in _TABLE_COLUMNS
     ]
-    return [*cells, *(() if stability is None else (str(stability.locations.renamed),))]
+    return [*cells, str(dropped), *(() if stability is None else (str(stability.locations.renamed),))]
 
 
 def _table_row(cells: Sequence[str], widths: Sequence[int]) -> str:
@@ -148,6 +167,7 @@ def _trial_footnotes(trial: Trial, *, stability: bool) -> list[str]:
             f"the last {_count(trial.remeasured, 'row')}: the selected configuration without or with one option, "
             "to measure each option on it; never selected"
         )
+    notes.append("dropped: fields that dcg warns it generates without some of their constraints")
     if stability:
         notes.append("renamed: classes a candidate renames between --diff-against and the input")
     return [line for note in notes for line in _wrap(note, "  ")]
@@ -156,11 +176,20 @@ def _trial_footnotes(trial: Trial, *, stability: bool) -> list[str]:
 def _trial_lines(trial: Trial) -> list[str]:
     """Render the candidates' table and the changes from the current configuration."""
     stability = any(outcome.stability is not None for outcome in trial.outcomes)
-    headers = ["candidate", *(header for header, _ in _TABLE_COLUMNS), *(("renamed",) if stability else ())]
+    headers = [
+        "candidate",
+        *(header for header, _ in _TABLE_COLUMNS),
+        "dropped",
+        *(("renamed",) if stability else ()),
+    ]
     rows = [
         [
             outcome.candidate.label,
-            *(() if outcome.metrics is None else _metric_cells(outcome.metrics, outcome.stability)),
+            *(
+                ()
+                if outcome.metrics is None
+                else _metric_cells(outcome.metrics, outcome.stability, outcome.dropped_constraints)
+            ),
         ]
         for outcome in trial.outcomes
     ]
@@ -234,6 +263,11 @@ def _start_lines(recommendation: Recommendation, signals: Signals) -> list[str]:
     ]
 
 
+def _optional(recommendation: Recommendation, section: str) -> list[Option]:
+    """Return the optional rule outcomes of one section of the report."""
+    return [option for option in recommendation.optional if option.decision.rule.optional == section]
+
+
 def render_text(recommendation: Recommendation, *, command: str | None, pyproject: str | None) -> str:
     """Render a recommendation as the text report; with nothing to run, it shows the schema and the notes only."""
     signals = recommendation.signals or _NO_SIGNALS
@@ -250,6 +284,7 @@ def render_text(recommendation: Recommendation, *, command: str | None, pyprojec
     for title, options, against in (
         ("Left out after the trial (the rules recommend these)", recommendation.left_out, False),
         ("Consider (the schema also has signals against these)", recommendation.consider, True),
+        *((title, _optional(recommendation, section), False) for section, title in _OPTIONAL_SECTIONS),
         ("Not recommended", recommendation.not_recommended, False),
     ):
         if options:
@@ -301,6 +336,7 @@ def _candidate_payload(outcome: CandidateOutcome) -> RecommendCandidatePayload:
         ],
         selectable=candidate.selectable,
         error=outcome.error,
+        dropped_constraint_warnings=outcome.dropped_constraints,
         metrics=None
         if metrics is None
         else RecommendNameMetricsPayload(**asdict(metrics), problems_percent=metrics.problems_percent),
@@ -411,6 +447,8 @@ def render_json(recommendation: Recommendation, *, content: str, arguments: list
         recommendations=[_option_payload(option, signals) for option in recommendation.recommendations],
         left_out=[_option_payload(option, signals) for option in recommendation.left_out],
         consider=[_option_payload(option, signals) for option in recommendation.consider],
+        validation=[_option_payload(option, signals) for option in _optional(recommendation, "validation")],
+        policy=[_option_payload(option, signals) for option in _optional(recommendation, "policy")],
         not_recommended=[_option_payload(option, signals) for option in recommendation.not_recommended],
         disagreements=[_disagreement_payload(item) for item in recommendation.disagreements],
         trial=_trial_payload(recommendation.trial),

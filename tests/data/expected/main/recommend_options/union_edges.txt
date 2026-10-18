@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-17)
+Option recommendations (experimental; quick mode; rules 2026-10-18)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       6, 1 operations
@@ -11,6 +11,9 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   unions                           3 oneOf/anyOf, 1 with a discriminator, 12 inline variants
   union branch tags                2 tagged, 1 single required key, 1 tagged only through allOf $ref, 1 copy their parent
   component keys                   snake_case (2 of 6); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
 
 Start from  --preset standard-py314-20261017
 

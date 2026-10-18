@@ -1,11 +1,12 @@
 """Trial naming: generate candidate configurations up to their model metadata and compare the class names.
 
 A candidate is a complete generation config. It runs generate()'s own pipeline without formatting or output, so its
-class names are the names a user gets. ``rank`` orders candidates by the tuned naming benchmark's problem names, with
-names that carry no meaning first: rejected candidates last, then fewer numbered or doubled names, fewer other
-problem names (such as names over 40 characters), fewer renamed locations against a previous version of the input,
-and a shorter median name. Only candidates that generate exactly the same class names are then ordered by fewer added
-options and the option spelling; other ties keep the given order.
+class names are the names a user gets, and it counts the fields dcg warns it generates without some of their
+constraints. ``rank`` orders candidates by the tuned naming benchmark's problem names, with names that carry no
+meaning first: rejected candidates last, then fewer numbered or doubled names, fewer other problem names (such as
+names over 40 characters), fewer renamed locations against a previous version of the input, and a shorter median
+name; only then fewer fields without their constraints. Only candidates that generate exactly the same class names are
+then ordered by fewer added options and the option spelling; other ties keep the given order.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator import Error, _collect_model_metadata, enable_parsed_source_cache
 from datamodel_code_generator._recommend._metrics import name_metrics, name_records, name_stability
+from datamodel_code_generator.parser.base import dropped_constraint_warnings_recorded
 from datamodel_code_generator.remote_lock import RemoteLockError
 
 if TYPE_CHECKING:
@@ -52,25 +54,30 @@ class TrialCandidate:
 
 @dataclass(frozen=True, slots=True)
 class CandidateOutcome:
-    """The class names one candidate generates, or the error that rejects it."""
+    """The class names one candidate generates, or the error that rejects it.
+
+    ``dropped_constraints`` counts the fields dcg warns the candidate generates without some of their constraints.
+    """
 
     candidate: TrialCandidate
     records: tuple[NameRecord, ...]
     metrics: NameMetrics | None
     stability: NameStability | None
     error: str | None
+    dropped_constraints: int | None = None
 
 
-def _score(outcome: CandidateOutcome) -> tuple[int, int, int, int, int]:
-    """Return the ranking key of a candidate's class names; lower is better."""
+def _score(outcome: CandidateOutcome) -> tuple[int, int, int, int, int, int]:
+    """Return the ranking key of a candidate, lower is better: its class names, then its fields without constraints."""
     if (metrics := outcome.metrics) is None:
-        return 1, 0, 0, 0, 0
+        return 1, 0, 0, 0, 0, 0
     return (
         0,
         metrics.numbered + metrics.doubled,
         metrics.other_problems,
         0 if outcome.stability is None else outcome.stability.locations.renamed,
         metrics.median_length,
+        outcome.dropped_constraints or 0,
     )
 
 
@@ -115,7 +122,8 @@ def _run_candidate(  # noqa: PLR0913
     try:
         with warnings.catch_warnings(), redirect_stderr(io.StringIO()):
             warnings.simplefilter("ignore")
-            metadata, input_file_type = _collect_model_metadata(input_, config, remote_text_cache=remote_text_cache)
+            with dropped_constraint_warnings_recorded() as dropped:
+                metadata, input_file_type = _collect_model_metadata(input_, config, remote_text_cache=remote_text_cache)
             records = name_records(metadata)
             previous = (
                 None
@@ -138,6 +146,7 @@ def _run_candidate(  # noqa: PLR0913
         name_metrics(records, vocabulary),
         None if previous is None else name_stability(previous, records),
         None,
+        len(dropped),
     )
     return outcome, input_file_type
 

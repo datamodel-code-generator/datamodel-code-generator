@@ -379,6 +379,12 @@ class RecommendCandidatePayload(BaseModel):
     arguments: list[str]
     selectable: bool = Field(description="False for the configuration as set without the recommended preset.")
     error: str | None
+    dropped_constraint_warnings: int | None = Field(
+        description=(
+            "Fields that dcg warns the candidate generates without some of their constraints; ranked after the class "
+            "names. Null when the candidate was rejected."
+        )
+    )
     metrics: RecommendNameMetricsPayload | None
     stability: RecommendNameStabilityPayload | None
 
@@ -489,6 +495,18 @@ class RecommendOptionsPayload(BaseModel):
         description="Options the rules recommend that the candidate full mode selected does not take."
     )
     consider: list[RecommendOptionPayload]
+    validation: list[RecommendOptionPayload] = Field(
+        description=(
+            "Options for checks the schema declares that the models leave out by default; the user decides, and they "
+            "are never in arguments or config."
+        )
+    )
+    policy: list[RecommendOptionPayload] = Field(
+        description=(
+            "Options that depend on what input the project accepts rather than on the schema, such as strict types; "
+            "never in arguments or config."
+        )
+    )
     not_recommended: list[RecommendOptionPayload]
     disagreements: list[RecommendDisagreementPayload]
     trial: RecommendTrialPayload | None = Field(description="The candidates full mode compared; null in quick mode.")

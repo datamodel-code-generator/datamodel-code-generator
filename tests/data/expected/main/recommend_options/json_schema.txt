@@ -100,6 +100,18 @@
           ],
           "title": "Error"
         },
+        "dropped_constraint_warnings": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Fields that dcg warns the candidate generates without some of their constraints; ranked after the class names. Null when the candidate was rejected.",
+          "title": "Dropped Constraint Warnings"
+        },
         "metrics": {
           "anyOf": [
             {
@@ -128,6 +140,7 @@
         "arguments",
         "selectable",
         "error",
+        "dropped_constraint_warnings",
         "metrics",
         "stability"
       ],
@@ -755,6 +768,22 @@
       "title": "Consider",
       "type": "array"
     },
+    "validation": {
+      "description": "Options for checks the schema declares that the models leave out by default; the user decides, and they are never in arguments or config.",
+      "items": {
+        "$ref": "#/$defs/RecommendOptionPayload"
+      },
+      "title": "Validation",
+      "type": "array"
+    },
+    "policy": {
+      "description": "Options that depend on what input the project accepts rather than on the schema, such as strict types; never in arguments or config.",
+      "items": {
+        "$ref": "#/$defs/RecommendOptionPayload"
+      },
+      "title": "Policy",
+      "type": "array"
+    },
     "not_recommended": {
       "items": {
         "$ref": "#/$defs/RecommendOptionPayload"
@@ -833,6 +862,8 @@
     "recommendations",
     "left_out",
     "consider",
+    "validation",
+    "policy",
     "not_recommended",
     "disagreements",
     "trial",

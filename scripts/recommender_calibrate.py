@@ -18,9 +18,9 @@ process. For every subject the script takes its recommendation, then scores each
 decision grid on top of the latest standard preset: the configuration is passed with `--preset` and measured as the
 trial's `current` candidate. A grid value is a table of config fields; an empty table leaves the decision to the
 preset, and a value that no option can express is rejected. Configurations are ranked like the trial ranks its
-candidates (numbered and doubled class names, other problem names, renamed locations, median length; then fewer
-options); regret counts problem names. Rule conditions are evaluated with the recommender's own evaluator on the
-shipped rules data. The script writes to --out (which must be empty):
+candidates (numbered and doubled class names, other problem names, renamed locations, median length, fields generated
+without their constraints; then fewer options); regret counts problem names. Rule conditions are evaluated with the
+recommender's own evaluator on the shipped rules data. The script writes to --out (which must be empty):
 - report.md: regret per schema, rules whose decision disagrees with the grid, threshold proposals, preset
   proposals, import checks, upstream heads (with --check-upstream), failures and changes since the last calibration;
 - scores.json: every number behind the report;
@@ -555,13 +555,17 @@ def _candidate(trial: Mapping[str, Any], label: str) -> dict[str, Any]:
 
 
 def _measurement(candidate: Mapping[str, Any]) -> dict[str, Any]:
-    """Return a trial candidate's class-name metrics and renamed locations, or the error that rejected it."""
+    """Return a trial candidate's class-name metrics, renamed locations and fields without their constraints.
+
+    A rejected candidate gives the error that rejected it.
+    """
     if candidate["error"] is not None:
         return {"error": candidate["error"]}
     stability = candidate["stability"]
     return {
         "metrics": candidate["metrics"],
         "renamed": None if stability is None else stability["locations"]["renamed"],
+        "dropped_constraints": candidate["dropped_constraint_warnings"],
     }
 
 
@@ -770,14 +774,18 @@ def _ok(result: Mapping[str, Any]) -> bool:
     return "metrics" in result
 
 
-def _rank(result: Mapping[str, Any]) -> tuple[int, int, int, int]:
-    """Return the trial's ranking key: numbered and doubled names, other problem names, renamed locations, median."""
+def _rank(result: Mapping[str, Any]) -> tuple[int, int, int, int, int]:
+    """Return the trial's ranking key: numbered and doubled names, other problem names, renamed locations, median.
+
+    Fields generated without their constraints come last, after the class names.
+    """
     metrics = result["metrics"]
     return (
         metrics["numbered"] + metrics["doubled"],
         metrics["other_problems"],
         result.get("renamed") or 0,
         metrics["median_length"],
+        result.get("dropped_constraints") or 0,
     )
 
 

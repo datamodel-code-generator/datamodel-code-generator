@@ -16,6 +16,8 @@ give your schema, and prints:
 - the options to add on top of it, each with the rule that chose it, the reason with counts from your schema, caveats,
   the effect measured on public schemas, and the class names it changes in your schema (before -> after),
 - options worth considering when the schema has signals for and against them,
+- optional validation and policy options, such as `--strict-types`, which stay out of the command because they depend
+  on what your project accepts,
 - the compared candidates and the class names that change from your current configuration,
 - where your existing configuration differs from the rules,
 - a ready command and a `pyproject.toml` block.
@@ -93,7 +95,7 @@ components:
 <!-- fmt: off -->
 
 ```text
-Option recommendations (experimental; full mode; rules 2026-10-17)
+Option recommendations (experimental; full mode; rules 2026-10-18)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       2, 0 operations
@@ -106,6 +108,9 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
   union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
   component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
 
 Start from  --preset standard-py314-20261017
 
@@ -138,13 +143,14 @@ Left out after the trial (the rules recommend these)
       0 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
 
 Trial  5 candidates generated in memory without formatting; nothing written
-  candidate                          classes   problems  numbered  long  doubled  displaced  median
-  current                                  4  1 (25.0%)         1     0        0          0       7
-  preset                                   4  1 (25.0%)         1     0        0          0       7
-  recommended                              4   0 (0.0%)         0     0        0          0       7
-  recommended - title-source               4   0 (0.0%)         0     0        0          0      11
-  recommended - union-variant-names        4   0 (0.0%)         0     0        0          0       7   selected
+  candidate                          classes   problems  numbered  long  doubled  displaced  median  dropped
+  current                                  4  1 (25.0%)         1     0        0          0       7        0
+  preset                                   4  1 (25.0%)         1     0        0          0       7        0
+  recommended                              4   0 (0.0%)         0     0        0          0       7        0
+  recommended - title-source               4   0 (0.0%)         0     0        0          0      11        0
+  recommended - union-variant-names        4   0 (0.0%)         0     0        0          0       7        0   selected
   current: the configuration as set, without the preset; never selected
+  dropped: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended - union-variant-names)
   2 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
@@ -169,13 +175,15 @@ The counts, presets and options come from your schema and the installed version.
 
 | Section | Meaning |
 |---|---|
-| Schema | The signals the rules read: components, inline objects and enums, shared property names, repeated shapes, titles, unions and their tags, key style. |
+| Schema | The signals the rules read: components, inline objects and enums, shared property names, repeated shapes, titles, unions and their tags, key style, constraint keywords (`uniqueItems`, `patternProperties`, `multipleOf`, OpenAPI 3.0 `nullable` and boolean exclusive bounds), the formats generation maps to a type (`int32`/`int64` ranges are not enforced), and the integer, number and boolean schemas. |
 | Start from | The latest dated `standard` preset for your output model type and target Python version, and the rules it already satisfies. It is the `practical` preset only when you configured a practical preset, or when no option can set a value a rule needs on the standard preset (the notes then say which). |
-| Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits (with issue numbers), `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
+| Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits, `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
 | Left out after the trial | Options the rules recommend that the selected candidate does without, because your schema's class names score better without them. |
 | Consider | Options the schema has signals for and against (`against:`). Decide from your schema; they are in the command only when the candidate with them scores best. |
+| Optional (validation) | Options for checks the schema declares that the models leave out by default, such as `--generate-schema-validators` for `uniqueItems` and `patternProperties` with Pydantic v2 models. They are experimental or change runtime behaviour, so they are not in the command; try them on your own documents first. |
+| Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans. They are never in the command. |
 | Not recommended | Options a rule argues against for this schema. |
-| Trial | The compared candidates with their class counts, problem names, and median name length; `selected` marks the recommended one. |
+| Trial | The compared candidates with their class counts, problem names, median name length, and `dropped`: the fields dcg warns it generates without some of their constraints; `selected` marks the recommended one. |
 | Changes from the current configuration | The class names the recommended configuration changes from the configuration you run now, matched by schema location. |
 | Your configuration | Options you set that differ from the rules, and a newer preset when you set an older one. Your values are kept. |
 | Notes | Assumptions, such as the target Python version used when you did not set one. |
@@ -211,14 +219,17 @@ datamodel-codegen --output-format-json-schema recommend-options
 The payload has `kind: "recommend-options"` and contains the `mode` that ran (`full` when candidates were compared),
 the `signals`, the starting preset under `baseline`, the `recommendations`, `left_out`, `consider`, `not_recommended`
 and `disagreements` entries (each with its `rule`, `set` config values, CLI `arguments`, and the `trial` candidates
-and class-name `changes` that measured it), the compared candidates under `trial` (each with its `metrics`, and
+and class-name `changes` that measured it), the optional `validation` and `policy` entries (never in `arguments` or
+`config`), the compared candidates under `trial` (each with its `metrics`, its `dropped_constraint_warnings`, and
 `stability` with `--diff-against`, plus the `ranking`, the `selected` label, the `migration` from the current
-configuration, and the `dropped` and `remeasured` counts), `notes`, the full command as `arguments`, the `config` table, and the text report as `content`.
+configuration, and the `dropped` and `remeasured` counts), `notes`, the full command as `arguments`, the `config`
+table, and the text report as `content`.
 `rules_revision` identifies the rule data and `trial.metrics_version` the class-name metrics that produced it.
 
 ## What it measures
 
-- It reads the input once and measures the schema signals without generating models.
+- It reads the input once and measures the schema signals without generating models: how the schemas are named and
+  nested, and which constraint keywords and formats they use.
 - For OpenAPI, it measures what your `--openapi-scopes` generate: component schemas with the `schemas` scope
   (otherwise only those the operations reference), and request, response, parameter, webhook, and request body
   schemas with those scopes, filtered by `--openapi-include-paths`; parameter schemas follow every walked operation.
@@ -260,7 +271,8 @@ is numbered (`Status1`), contains a status code, is a generic word (`Item`, `Dat
 repeats a word the schema does not repeat (`ShapeShape`), takes a component's name from the component, or names an
 inline model like an unrelated component. Candidates are ranked by, in order: fewer numbered or doubled names; fewer
 other problem names, such as names over 40 characters; with `--diff-against`, fewer classes renamed between the
-previous and the current schema; a shorter median name. Numbered names count as worse than long descriptive names:
+previous and the current schema; a shorter median name; then fewer fields that dcg warns it generates without some
+of their constraints. Numbered names count as worse than long descriptive names:
 `Event2` says nothing about the class, while a long name still describes it. Only when two candidates generate exactly
 the same class names does the one with fewer added options rank first; other ties keep the order above. The best
 candidate other than `current` is selected, and the command and `pyproject.toml` block carry its options.
@@ -329,6 +341,7 @@ revision is released.
 
 **Why is an option I expected missing?**
 Either the preset already sets it (listed under "Start from"), the schema does not show the signal its rule needs,
-the candidate without it scored better on your schema (listed under "Left out after the trial"), or the option is a
-project decision the recommender never makes. Check [Presets](presets.md) and the
+the candidate without it scored better on your schema (listed under "Left out after the trial"), it is an optional
+validation or policy option that stays out of the command (listed under "Optional"), or the option is a project
+decision the recommender never makes. Check [Presets](presets.md) and the
 [CLI Reference](cli-reference/index.md) for the full list of options.

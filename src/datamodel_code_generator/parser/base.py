@@ -14,6 +14,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 from collections import Counter, OrderedDict, defaultdict
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache, partial
@@ -195,6 +196,21 @@ _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
 _SOURCE_REFERENCE_PATH_KEY: Final = "_source_reference_path"
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
 _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM: Final = "2.10"
+_DROPPED_CONSTRAINT_WARNINGS: ContextVar[set[str] | None] = ContextVar("dropped_constraint_warnings", default=None)
+
+
+@contextlib.contextmanager
+def dropped_constraint_warnings_recorded() -> Iterator[set[str]]:
+    """Record the warnings about constraints a field is generated without, of the parses run inside.
+
+    The yielded set holds each distinct message, so a parse that runs twice, such as a retried one, counts a field once.
+    """
+    messages: set[str] = set()
+    token = _DROPPED_CONSTRAINT_WARNINGS.set(messages)
+    try:
+        yield messages
+    finally:
+        _DROPPED_CONSTRAINT_WARNINGS.reset(token)
 
 
 @dataclass(frozen=True, slots=True)
@@ -5768,12 +5784,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             recorded.others.pop(union_name, None)
 
     def __warn_about_dropped_constraints(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR6301
-        """Warn once per field whose constraints the output model leaves out on its type."""
+        """Warn once per field whose constraints the output model leaves out on its type, and record the warning."""
+        recorded = _DROPPED_CONSTRAINT_WARNINGS.get()
         for ctx in contexts:
             for model in ctx.models:
                 for field in model.fields:
                     if (message := field.dropped_constraints_warning) is not None:
                         warn(message, stacklevel=2)
+                        if recorded is not None:
+                            recorded.add(message)
 
     def __warn_about_variant_discriminator_tags(self) -> None:
         """Warn once per variant whose generated tag differs from a tag a union maps it to."""

@@ -1,0 +1,56 @@
+Option recommendations (experimental; quick mode; rules 2026-10-18)
+
+Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
+  components                       0, 0 operations
+  inline objects / enums           1 / 0, nesting depth 1
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   none; 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 2, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+  root schema                      object model 1, title words 1
+
+Start from  --preset standard-py314-20261017
+
+Add (1 option)
+  --class-name Deployment   [root.class-name-for-root-object]
+      The root schema is an object model. Without --class-name its class is Model (with
+      --use-title-as-name, its title: Deployment), and full-path prefixes that name onto root-level
+      models. The suggested name comes from the input file name; replace it with the name the
+      project wants.
+      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
+      became TsConfig, names over 40 characters 6 -> 0
+      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
+      Workflow, Compose and PackageJson
+
+Optional (validation; not in the command)
+  --generate-schema-validators   [validation.check-unique-items-and-pattern-properties]
+      The models leave out checks the schema declares (uniqueItems: 0; patternProperties: 2):
+      duplicate items pass, and patternProperties is checked on plain maps only, not next to
+      declared properties. The experimental schema validators check both when a model validates.
+      caveat: The option is experimental: on some measured schemas the validators rejected valid
+      documents or the models failed to import, and class names can change; generate with it and
+      validate your own documents before adopting it.
+      measured: SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked
+      against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with
+      x- extension keys rejected), 0 with the validators
+      measured: SchemaStore github-workflow schema: every workflow with a job is rejected;
+      package.json schema: the models fail to import
+      measured: GitHub REST API description (1 uniqueItems): 28 classes removed and 18 added;
+      CycloneDX schema: 32 removed and 8 added
+
+Command
+  datamodel-codegen --class-name Deployment --input deployment.json --preset standard-py314-20261017 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  class-name = "Deployment"
+  input = "deployment.json"
+  preset = "standard-py314-20261017"
+  target-python-version = "3.14"

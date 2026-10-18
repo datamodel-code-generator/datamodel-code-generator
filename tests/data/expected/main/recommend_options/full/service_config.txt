@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-17)
+Option recommendations (experimental; full mode; rules 2026-10-18)
 
 Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   components                       3, 0 operations
@@ -11,6 +11,9 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   unions                           7 oneOf/anyOf, 0 with a discriminator, 14 inline variants
   union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 2 copy their parent
   component keys                   lowercase (3 of 3); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   6
   root schema                      object model 1, title words 4
 
 Start from  --preset standard-py314-20261017
@@ -59,15 +62,28 @@ Consider (the schema also has signals against these)
         Step2 -> StepStep1   at definitions/step > oneOf 1
         With -> StepStepWith   at definitions/step > oneOf 0 > with_
 
+Optional (policy; not in the command)
+  --strict-types int float bool   [policy.strict-scalar-types]
+      Pydantic validates in lax mode, which coerces input into the 6 integer, number and boolean
+      schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
+      booleans. Strict types reject such input. Whether to accept it depends on the project's
+      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
+      integer, so leave int out to accept it.
+      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
+      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
+      rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
+      rejected
+
 Trial  6 candidates generated in memory without formatting; nothing written
-  candidate                      classes   problems  numbered  long  doubled  displaced  median
-  current                             12  3 (25.0%)         3     0        0          0       5
-  preset                              11  3 (27.3%)         3     0        0          0       5
-  recommended                          6  2 (33.3%)         2     0        0          0       5   selected
-  recommended + naming-strategy        7  4 (57.1%)         1     0        4          0       9
-  recommended - enum-shape            11  3 (27.3%)         3     0        0          0       5
-  recommended - root-name              6  2 (33.3%)         2     0        0          0       5
+  candidate                      classes   problems  numbered  long  doubled  displaced  median  dropped
+  current                             12  3 (25.0%)         3     0        0          0       5        0
+  preset                              11  3 (27.3%)         3     0        0          0       5        0
+  recommended                          6  2 (33.3%)         2     0        0          0       5        0   selected
+  recommended + naming-strategy        7  4 (57.1%)         1     0        4          0       9        0
+  recommended - enum-shape            11  3 (27.3%)         3     0        0          0       5        0
+  recommended - root-name              6  2 (33.3%)         2     0        0          0       5        0
   current: the configuration as set, without the preset; never selected
+  dropped: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended)
   1 of 6 classes matched by schema location renamed (0 only renumbered), 6 removed, 0 added, e.g.

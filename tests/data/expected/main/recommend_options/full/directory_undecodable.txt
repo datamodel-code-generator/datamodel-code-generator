@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-17)
+Option recommendations (experimental; full mode; rules 2026-10-18)
 
 Schema  not analysed (directory input)
 
@@ -7,10 +7,11 @@ Start from  --preset standard-py310-20261017
 Add  nothing on top of the preset
 
 Trial  2 candidates generated in memory without formatting; nothing written
-  candidate  classes  problems  numbered  long  doubled  displaced  median
+  candidate  classes  problems  numbered  long  doubled  displaced  median  dropped
   current    rejected: UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 14: ordinal not in range(128)
   preset     rejected: UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in position 14: ordinal not in range(128)
   current: the configuration as set, without the preset; never selected
+  dropped: fields that dcg warns it generates without some of their constraints
 
 Notes
   - Target Python is not set: the recommendation assumes 3.10, the default. Set

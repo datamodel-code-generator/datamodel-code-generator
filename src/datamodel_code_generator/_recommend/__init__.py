@@ -143,6 +143,7 @@ class Recommendation:
     covers: list[Option] = field(default_factory=list)
     recommendations: list[Option] = field(default_factory=list)
     consider: list[Option] = field(default_factory=list)
+    optional: list[Option] = field(default_factory=list)
     not_recommended: list[Option] = field(default_factory=list)
     disagreements: list[Disagreement] = field(default_factory=list)
     left_out: list[Option] = field(default_factory=list)
@@ -166,6 +167,7 @@ class _Plan:
     delta: list[Option] = field(default_factory=list)
     covers: list[Option] = field(default_factory=list)
     consider: list[Option] = field(default_factory=list)
+    optional: list[Option] = field(default_factory=list)
     not_recommended: list[Option] = field(default_factory=list)
     blocked: list[tuple[Decision, str, OptionValue]] = field(default_factory=list)
 
@@ -316,7 +318,10 @@ def _plan(
     *,
     configured: bool,
 ) -> _Plan:
-    """Compare the decisions with what a preset already gives the configuration."""
+    """Compare the decisions with what a preset already gives the configuration.
+
+    An optional rule lists the values the user did not set and the preset does not give, for the user to decide.
+    """
     config = request.config
     preset_values = {} if configured else _preset_values(preset, request)
     baseline = {
@@ -331,6 +336,10 @@ def _plan(
             for name, value in decision.values.items()
             if name not in request.explicit_fields and baseline[name] != value
         }
+        if decision.rule.optional is not None:
+            if changes:
+                plan.optional.append(_option(decision, changes))
+            continue
         if decision.contested:
             if changes:
                 plan.consider.append(_option(decision, changes))
@@ -385,7 +394,7 @@ def _disagreements(decisions: Sequence[Decision], request: RecommendRequest) -> 
     return [
         Disagreement(name, configured, value, decision, "explicit")
         for decision in decisions
-        if not decision.contested
+        if not decision.contested and decision.rule.optional is None
         for name, value in decision.values.items()
         if name in request.explicit_fields and (configured := toml_value(getattr(config, name))) != value
     ]
@@ -800,6 +809,7 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     recommendation.recommendations = plan.delta
     recommendation.not_recommended = plan.not_recommended
     recommendation.consider = plan.consider
+    recommendation.optional = plan.optional
     recommendation.disagreements = [
         *recommendation.disagreements,
         *_disagreements(decisions, request),

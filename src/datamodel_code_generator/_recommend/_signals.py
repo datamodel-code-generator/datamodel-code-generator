@@ -55,6 +55,15 @@ SignalName: TypeAlias = Literal[
     "root_is_object",
     "root_title_words",
     "estimated_models",
+    "unique_items",
+    "pattern_properties",
+    "multiple_of",
+    "nullable_keywords",
+    "boolean_exclusive_bounds",
+    "coercible_scalars",
+    "formats",
+    "integer_range_formats",
+    "decimal_formats",
 ]
 FactName: TypeAlias = Literal[
     "schema",
@@ -64,6 +73,7 @@ FactName: TypeAlias = Literal[
     "key_style",
     "root_title",
     "scopes",
+    "format_examples",
 ]
 SchemaKind: TypeAlias = Literal["openapi", "jsonschema", "asyncapi"]
 SIGNAL_NAMES: frozenset[str] = frozenset(get_args(SignalName))
@@ -89,6 +99,8 @@ _SUBSCHEMA_KEYWORDS = (
 )
 _SHAPE_IGNORED_KEYWORDS = frozenset({"description", "title", "example", "examples", "$comment"})
 _CONSTRAINT_ONLY_KEYWORDS = frozenset({"type", "properties", "required", "description", "title", "$comment"})
+_COERCIBLE_TYPES = frozenset({"integer", "number", "boolean"})
+_INTEGER_RANGE_FORMATS = ("int32", "int64")
 _NORMALIZE = re.compile(r"[^a-z0-9]")
 _EXAMPLE_LIMIT = 4
 _TAG_REFERENCE_DEPTH = 5
@@ -133,6 +145,14 @@ def _single_literal(node: object) -> tuple[str, object] | None:
     if isinstance(values := node.get("enum"), list) and len(values) == 1:
         return "enum", values[0]
     return None
+
+
+def _types(node: Mapping[str, Any]) -> frozenset[str]:
+    """Return the JSON types a schema declares, from a type name or a list of them."""
+    declared = node.get("type")
+    return frozenset(
+        name for name in (declared if isinstance(declared, list) else (declared,)) if isinstance(name, str)
+    )
 
 
 def _subschemas(node: Mapping[str, Any]) -> Iterator[object]:
@@ -303,10 +323,14 @@ def _schema_label(document: Mapping[str, Any], kind: SchemaKind) -> str:
 class _Walker:
     """Collect the counts of one document in a single pass over its named schemas."""
 
-    def __init__(self, document: Mapping[str, Any], refs: Mapping[str, str]) -> None:
+    def __init__(
+        self, document: Mapping[str, Any], refs: Mapping[str, str], data_formats: Mapping[str, Mapping[str, Any]]
+    ) -> None:
         self.document = document
         self.refs = refs
+        self.data_formats = data_formats
         self.counts: Counter[str] = Counter()
+        self.formats: Counter[str] = Counter()
         self.name_parents: defaultdict[str, set[str]] = defaultdict(set)
         self.object_name_parents: defaultdict[str, set[str]] = defaultdict(set)
         self.enum_name_parents: defaultdict[str, set[str]] = defaultdict(set)
@@ -330,10 +354,28 @@ class _Walker:
             key = ("l", *(self.shape(value) for value in node))
         return self.shape_ids.setdefault(key, len(self.shape_ids))
 
-    def count_single_value_enum(self, node: Mapping[str, Any]) -> None:
-        """Count a schema whose enum has exactly one value and that declares no const."""
+    def count_keywords(self, node: Mapping[str, Any]) -> None:
+        """Count a one-value enum without const, the validation keywords of a schema, and a format generation maps.
+
+        A format counts when generation maps it to a type for one of the types the schema declares.
+        """
+        counts = self.counts
         values = node.get("enum")
-        self.counts["single_value_enums"] += isinstance(values, list) and len(values) == 1 and "const" not in node
+        counts["single_value_enums"] += isinstance(values, list) and len(values) == 1 and "const" not in node
+        counts["unique_items"] += node.get("uniqueItems") is True
+        counts["pattern_properties"] += isinstance(patterns := node.get("patternProperties"), dict) and bool(patterns)
+        divisor = node.get("multipleOf")
+        counts["multiple_of"] += isinstance(divisor, int | float) and not isinstance(divisor, bool)
+        counts["nullable_keywords"] += node.get("nullable") is True
+        counts["boolean_exclusive_bounds"] += (
+            node.get("exclusiveMinimum") is True or node.get("exclusiveMaximum") is True
+        )
+        types = _types(node)
+        counts["coercible_scalars"] += not types.isdisjoint(_COERCIBLE_TYPES)
+        if isinstance(format_ := node.get("format"), str) and any(
+            format_ in self.data_formats.get(name, ()) for name in types
+        ):
+            self.formats[format_] += 1
 
     def record_reference(self, node: Mapping[str, Any], component: str) -> bool:
         """Record a reference to a named schema; return whether the node is a reference."""
@@ -350,7 +392,7 @@ class _Walker:
         schema itself, so they get an empty name and do not count as names shared with other parents.
         """
         if isinstance(node, dict) and not self.record_reference(node, key):
-            self.count_single_value_enum(node)
+            self.count_keywords(node)
             self.walk_children(node, parent=key, name="", depth=0, component=key)
 
     def record_name(self, name: str, parent: str, parents: defaultdict[str, set[str]]) -> None:
@@ -363,7 +405,7 @@ class _Walker:
         """Walk one inline schema reached under a parent model through a property or keyword."""
         if not isinstance(node, dict) or _is_null(node) or self.record_reference(node, component):
             return
-        self.count_single_value_enum(node)
+        self.count_keywords(node)
         if _is_enum(node):
             self.counts["inline_enums"] += 1
             self.record_name(name, parent, self.enum_name_parents)
@@ -567,8 +609,10 @@ def measure_signals(
     scope (otherwise only those the operations reference), and request, response, and parameter schemas with the
     path scopes.
     """
+    from datamodel_code_generator.parser.schema_version import get_data_formats  # noqa: PLC0415
+
     all_components = _components(document, kind)
-    walker = _Walker(document, _component_refs(kind, all_components))
+    walker = _Walker(document, _component_refs(kind, all_components), get_data_formats(is_openapi=True))
     counts = walker.counts
     extra: list[tuple[str, object]] = []
     if kind == "openapi":
@@ -589,6 +633,7 @@ def measure_signals(
     root_title = ""
     if kind == "jsonschema":
         root = {key: value for key, value in document.items() if key not in {"definitions", "$defs"}}
+        walker.count_keywords(root)
         walker.walk_children(root, parent="#", name="", depth=0, component="")
         counts["root_is_object"] = _is_object(root) or root.get("type") == "object"
         root_title = title.strip() if isinstance(title := root.get("title"), str) else ""
@@ -604,6 +649,9 @@ def measure_signals(
     counts["dotted_keys"] = len(dotted)
     counts["dotted_key_namespaces"] = len({_module(key) for key in dotted})
     counts["dotted_namespace_reference_cycles"] = _reference_cycles(walker.references) if dotted else 0
+    counts["formats"] = walker.formats.total()
+    counts["integer_range_formats"] = sum(walker.formats[name] for name in _INTEGER_RANGE_FORMATS)
+    counts["decimal_formats"] = walker.formats["decimal"]
     counts["estimated_models"] = (
         counts["components"] + counts["inline_objects"] + counts["inline_enums"] + counts["inline_union_variants"]
     )
@@ -618,6 +666,7 @@ def measure_signals(
             "duplicate_title_examples": _example_text(shared_titles),
             "key_style": "".join(f"{style} ({count} of {len(components)})" for style, count in styles),
             "root_title": root_title,
+            "format_examples": _example_text(walker.formats),
         },
         component_names=frozenset(normalize_name(key) for key in all_components),
     )

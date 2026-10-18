@@ -1,0 +1,44 @@
+openapi: 3.0.3
+info:
+  title: Inventory API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Item:
+      type: object
+      required:
+        - sku
+        - price
+      properties:
+        sku:
+          type: string
+          format: uuid
+        price:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          minimum: 0
+          exclusiveMinimum: true
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
+        warehouse_id:
+          type: integer
+          format: int64
+        tags:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        opens_at:
+          type: number
+          format: time
+          multipleOf: 60
+        active:
+          type: boolean

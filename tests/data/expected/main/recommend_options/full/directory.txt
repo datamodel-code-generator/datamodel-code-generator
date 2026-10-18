@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-17)
+Option recommendations (experimental; full mode; rules 2026-10-18)
 
 Schema  not analysed (directory input)
 
@@ -7,10 +7,11 @@ Start from  --preset standard-py310-20261017
 Add  nothing on top of the preset
 
 Trial  2 candidates generated in memory without formatting; nothing written
-  candidate  classes   problems  numbered  long  doubled  displaced  median
-  current          6  3 (50.0%)         1     0        0          0       7
-  preset           6  3 (50.0%)         1     0        0          0       7   selected
+  candidate  classes   problems  numbered  long  doubled  displaced  median  dropped
+  current          6  3 (50.0%)         1     0        0          0       7        0
+  preset           6  3 (50.0%)         1     0        0          0       7        0   selected
   current: the configuration as set, without the preset; never selected
+  dropped: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> preset)
   0 of 6 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added

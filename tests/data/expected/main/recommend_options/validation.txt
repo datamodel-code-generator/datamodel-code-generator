@@ -1,0 +1,57 @@
+Option recommendations (experimental; quick mode; rules 2026-10-18)
+
+Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
+  components                       1, 0 operations
+  inline objects / enums           0 / 0, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 1, patternProperties 0, multipleOf 2, nullable 1, boolean exclusive bounds 1
+  formats                          6 (uuid x1, decimal x1, int32 x1, int64 x1), decimal 1; int32/int64 2, ranges not enforced
+  integer/number/boolean schemas   5
+
+Start from  --preset standard-py314-20261017
+
+Add  nothing on top of the preset
+
+Optional (validation; not in the command)
+  --generate-schema-validators   [validation.check-unique-items-and-pattern-properties]
+      The models leave out checks the schema declares (uniqueItems: 1; patternProperties: 0):
+      duplicate items pass, and patternProperties is checked on plain maps only, not next to
+      declared properties. The experimental schema validators check both when a model validates.
+      caveat: The option is experimental: on some measured schemas the validators rejected valid
+      documents or the models failed to import, and class names can change; generate with it and
+      validate your own documents before adopting it.
+      measured: SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked
+      against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with
+      x- extension keys rejected), 0 with the validators
+      measured: SchemaStore github-workflow schema: every workflow with a job is rejected;
+      package.json schema: the models fail to import
+      measured: GitHub REST API description (1 uniqueItems): 28 classes removed and 18 added;
+      CycloneDX schema: 32 removed and 8 added
+
+Optional (policy; not in the command)
+  --strict-types int float bool   [policy.strict-scalar-types]
+      Pydantic validates in lax mode, which coerces input into the 5 integer, number and boolean
+      schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
+      booleans. Strict types reject such input. Whether to accept it depends on the project's
+      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
+      integer, so leave int out to accept it.
+      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
+      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
+      rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
+      rejected
+
+Command
+  datamodel-codegen --input validation.yaml --preset standard-py314-20261017 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "validation.yaml"
+  preset = "standard-py314-20261017"
+  target-python-version = "3.14"

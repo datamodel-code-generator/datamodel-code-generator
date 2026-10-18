@@ -20,7 +20,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
       "title-source"
     ]
   },
-  "rules_revision": "2026-10-17",
+  "rules_revision": "2026-10-18",
   "schemas": {
     "config": {
       "best": {
@@ -87,7 +87,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
 --- report.md
 # Recommender calibration
 
-- Rules: revision 2026-10-17, calibrated on 20261017 presets
+- Rules: revision 2026-10-18, calibrated on 20261017 presets
 - Settings: pydantic_v2.BaseModel, target Python 3.10
 - Grid: 12 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261017
 - Schemas: 2 (1 calibration, 1 holdout)
@@ -116,6 +116,8 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
 - Not covered: unions.name-variants-after-tags (decision union-variant-names has no grid axis)
+- Not covered: validation.check-unique-items-and-pattern-properties (decision schema-validators has no grid axis)
+- Not covered: policy.strict-scalar-types (decision strict-types has no grid axis)
 
 Rules that disagree on 2 or more schemas:
 
@@ -200,7 +202,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "title-source"
       ]
     },
-    "rules_revision": "2026-10-17",
+    "rules_revision": "2026-10-18",
     "schemas": {
       "config": {
         "best": {
@@ -498,6 +500,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         {
           "arguments": [],
           "delta": {},
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -531,6 +534,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -578,6 +582,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "enum_field_as_literal": "all"
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -614,6 +619,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "enum_field_as_literal": "all",
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -661,6 +667,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "naming_strategy": "full-path"
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -697,6 +704,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -750,6 +758,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "enum_field_as_literal": "all",
             "naming_strategy": "full-path"
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -789,6 +798,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 1,
             "displaced": 0,
@@ -844,6 +854,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "disagreements": [],
         "facts": {
           "duplicate_title_examples": "",
+          "format_examples": "",
           "inline_title_examples": "",
           "key_style": "",
           "root_title": "Tool Settings",
@@ -910,6 +921,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "mode": "full",
         "not_recommended": [],
         "notes": [],
+        "policy": [],
         "recommendations": [
           {
             "arguments": [
@@ -960,15 +972,18 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             }
           }
         ],
-        "rules_revision": "2026-10-17",
+        "rules_revision": "2026-10-18",
         "signals": {
           "all_enums": 2,
+          "boolean_exclusive_bounds": 0,
+          "coercible_scalars": 0,
           "component_enums": 0,
           "component_title_duplicate_groups": 0,
           "component_titles_equal_other_key": 0,
           "component_titles_equal_own_key": 0,
           "component_titles_in_duplicate_groups": 0,
           "components": 0,
+          "decimal_formats": 0,
           "discriminated_unions": 0,
           "dotted_key_namespaces": 0,
           "dotted_keys": 0,
@@ -978,6 +993,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "duplicate_inline_objects": 0,
           "duplicate_inline_shapes": 0,
           "estimated_models": 3,
+          "formats": 0,
           "inline_enums": 2,
           "inline_names_equal_component": 0,
           "inline_object_union_variants": 0,
@@ -988,9 +1004,13 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "inline_titled_objects": 0,
           "inline_titled_union_variants": 0,
           "inline_union_variants": 0,
+          "integer_range_formats": 0,
           "max_inline_depth": 1,
+          "multiple_of": 0,
+          "nullable_keywords": 0,
           "operations": 0,
           "parent_copy_union_branches": 0,
+          "pattern_properties": 0,
           "root_is_object": 1,
           "root_title_words": 2,
           "shared_inline_enum_names": 1,
@@ -1002,12 +1022,14 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "single_value_enums": 0,
           "tagged_behind_ref": 0,
           "titled_components": 0,
-          "unions": 0
+          "unions": 0,
+          "unique_items": 0
         },
         "trial": {
           "candidates": [
             {
               "arguments": [],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "current",
               "metrics": {
@@ -1040,6 +1062,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             },
             {
               "arguments": [],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "preset",
               "metrics": {
@@ -1077,6 +1100,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "--class-name",
                 "Config"
               ],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "recommended",
               "metrics": {
@@ -1115,6 +1139,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "--class-name",
                 "Config"
               ],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "recommended - naming-strategy",
               "metrics": {
@@ -1152,6 +1177,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "--naming-strategy",
                 "full-path"
               ],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "recommended - root-name",
               "metrics": {
@@ -1222,6 +1248,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "remeasured": 0,
           "selected": "recommended - root-name"
         },
+        "validation": [],
         "version": 1
       }
     },
@@ -1240,6 +1267,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         {
           "arguments": [],
           "delta": {},
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1273,6 +1301,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1320,6 +1349,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "enum_field_as_literal": "all"
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1356,6 +1386,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "enum_field_as_literal": "all",
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1403,6 +1434,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "delta": {
             "naming_strategy": "full-path"
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1439,6 +1471,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1492,6 +1525,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "enum_field_as_literal": "all",
             "naming_strategy": "full-path"
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1531,6 +1565,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
+          "dropped_constraints": 0,
           "metrics": {
             "component": 2,
             "displaced": 0,
@@ -1586,6 +1621,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "disagreements": [],
         "facts": {
           "duplicate_title_examples": "Item x2",
+          "format_examples": "",
           "inline_title_examples": "Line x2",
           "key_style": "PascalCase (2 of 2)",
           "root_title": "",
@@ -1605,6 +1641,32 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "mode": "full",
         "not_recommended": [],
         "notes": [],
+        "policy": [
+          {
+            "arguments": [
+              "--strict-types",
+              "int",
+              "float",
+              "bool"
+            ],
+            "caveats": [],
+            "contested_reason": null,
+            "decision": "strict-types",
+            "evidence": [
+              "11 JSON documents for integer, number, boolean and string properties, 6 of them invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one rejected (5.0 as an integer); with float bool, 2 accepted (\"5\" and true as integers) and none rejected"
+            ],
+            "reason": "Pydantic validates in lax mode, which coerces input into the 1 integer, number and boolean schemas: it accepts the string \"5\" and true as integers, \"1.5\" as a number, and \"true\" or 1 as booleans. Strict types reject such input. Whether to accept it depends on the project's clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an integer, so leave int out to accept it.",
+            "rule": "policy.strict-scalar-types",
+            "set": {
+              "strict_types": [
+                "int",
+                "float",
+                "bool"
+              ]
+            },
+            "trial": null
+          }
+        ],
         "recommendations": [
           {
             "arguments": [
@@ -1655,15 +1717,18 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             }
           }
         ],
-        "rules_revision": "2026-10-17",
+        "rules_revision": "2026-10-18",
         "signals": {
           "all_enums": 2,
+          "boolean_exclusive_bounds": 0,
+          "coercible_scalars": 1,
           "component_enums": 0,
           "component_title_duplicate_groups": 1,
           "component_titles_equal_other_key": 0,
           "component_titles_equal_own_key": 0,
           "component_titles_in_duplicate_groups": 2,
           "components": 2,
+          "decimal_formats": 0,
           "discriminated_unions": 0,
           "dotted_key_namespaces": 0,
           "dotted_keys": 0,
@@ -1673,6 +1738,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "duplicate_inline_objects": 0,
           "duplicate_inline_shapes": 0,
           "estimated_models": 6,
+          "formats": 0,
           "inline_enums": 2,
           "inline_names_equal_component": 0,
           "inline_object_union_variants": 0,
@@ -1683,9 +1749,13 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "inline_titled_objects": 2,
           "inline_titled_union_variants": 0,
           "inline_union_variants": 0,
+          "integer_range_formats": 0,
           "max_inline_depth": 1,
+          "multiple_of": 0,
+          "nullable_keywords": 0,
           "operations": 0,
           "parent_copy_union_branches": 0,
+          "pattern_properties": 0,
           "root_is_object": 0,
           "root_title_words": 0,
           "shared_inline_enum_names": 1,
@@ -1697,12 +1767,14 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "single_value_enums": 0,
           "tagged_behind_ref": 0,
           "titled_components": 2,
-          "unions": 0
+          "unions": 0,
+          "unique_items": 0
         },
         "trial": {
           "candidates": [
             {
               "arguments": [],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "current",
               "metrics": {
@@ -1735,6 +1807,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             },
             {
               "arguments": [],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "preset",
               "metrics": {
@@ -1770,6 +1843,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "--naming-strategy",
                 "full-path"
               ],
+              "dropped_constraint_warnings": 0,
               "error": null,
               "label": "recommended",
               "metrics": {
@@ -1838,6 +1912,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "remeasured": 0,
           "selected": "recommended"
         },
+        "validation": [],
         "version": 1
       }
     }
@@ -1923,6 +1998,16 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "covered": "decision union-variant-names has no grid axis",
       "decision": "union-variant-names",
       "rule": "unions.name-variants-after-tags"
+    },
+    {
+      "covered": "decision schema-validators has no grid axis",
+      "decision": "schema-validators",
+      "rule": "validation.check-unique-items-and-pattern-properties"
+    },
+    {
+      "covered": "decision strict-types has no grid axis",
+      "decision": "strict-types",
+      "rule": "policy.strict-scalar-types"
     }
   ],
   "schemas": [
