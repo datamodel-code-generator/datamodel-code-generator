@@ -20,8 +20,6 @@ Add (5 options)
       x3, state x2, total x2; inline names equal to a component name: 0). Numbered names (Status,
       Status1) depend on parse order and shift when the schema grows; full-path names each inline
       model after its parent.
-      caveat: full-path repeats the parent name where a union branch or array item already carries
-      it (#4826).
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus
@@ -49,8 +47,6 @@ Add (5 options)
       Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
       sibling shares: 2; objects with one required key: 0); otherwise they are named after their
       parent and a number.
-      caveat: Tags that only a referenced schema declares through allOf are not used (branches: 0;
-      #4839).
       caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
       the key (FieldValueFieldValue).
       measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names

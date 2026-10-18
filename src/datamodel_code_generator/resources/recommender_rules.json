@@ -128,9 +128,6 @@
         "naming_strategy": "full-path"
       },
       "reason": "Inline schemas under different parents share property names (names: {shared_inline_names}, e.g. {shared_inline_name_examples}; inline names equal to a component name: {inline_names_equal_component}). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
-      "caveats": [
-        "full-path repeats the parent name where a union branch or array item already carries it (#4826)."
-      ],
       "evidence": [
         "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
         "Petstore: Status and Status1 became OrderStatus and PetStatus",
@@ -272,7 +269,6 @@
       },
       "reason": "Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no sibling shares: {inline_tagged_union_branches}; objects with one required key: {single_key_required_open}); otherwise they are named after their parent and a number.",
       "caveats": [
-        "Tags that only a referenced schema declares through allOf are not used (branches: {tagged_behind_ref}; #4839).",
         "With --naming-strategy full-path, a single-key branch whose value is an object repeats the key (FieldValueFieldValue)."
       ],
       "evidence": [

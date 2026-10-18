@@ -126,8 +126,6 @@ Left out after the trial (the rules recommend these)
       Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
       sibling shares: 2; objects with one required key: 0); otherwise they are named after their
       parent and a number.
-      caveat: Tags that only a referenced schema declares through allOf are not used (branches: 0;
-      #4839).
       caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
       the key (FieldValueFieldValue).
       measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names

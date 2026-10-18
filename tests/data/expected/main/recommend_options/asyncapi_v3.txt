@@ -19,8 +19,6 @@ Add (1 option)
       Inline schemas under different parents share property names (names: 1, e.g. order x2; inline
       names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order
       and shift when the schema grows; full-path names each inline model after its parent.
-      caveat: full-path repeats the parent name where a union branch or array item already carries
-      it (#4826).
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus

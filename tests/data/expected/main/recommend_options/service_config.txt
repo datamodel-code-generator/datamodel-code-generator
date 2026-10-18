@@ -41,8 +41,6 @@ Consider (the schema also has signals against these)
       against: Inline union variants are named after their parent property (14 variants), and
       full-path prefixes the parent again on those (doubled names such as EnvFileEnvFile), so
       whether it helps depends on the schema.
-      caveat: full-path repeats the parent name where a union branch or array item already carries
-      it (#4826).
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus
