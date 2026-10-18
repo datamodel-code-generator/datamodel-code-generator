@@ -1276,14 +1276,14 @@ class _Ledger:
             if self.observing or (self.can_fix if present else self.can_create):
                 return "changed"
             self.fail_mismatch(observation, stored)
-        if self.observing:
-            return "home" if equal else "new"
         if observation.label.startswith("../"):
             pytest.fail(
                 "Expected outputs live under tests/data/expected. "
                 "Fix: remove the path argument (pytest names the file)",
                 pytrace=False,
             )
+        if self.observing:
+            return "home" if equal else "new"
         if not self.can_create:
             self.fail_missing(observation, present)
         if equal:
