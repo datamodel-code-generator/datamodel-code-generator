@@ -8,7 +8,6 @@
 candidate-limit	main/recommend_options/full/many_options.txt
 contested-option	main/recommend_options/full/service_config.txt
 diff-against	main/recommend_options/full/store_diff_against.txt
-dropped-constraints	main/recommend_options/full/validation.txt
 graphql	main/recommend_options/full/graphql.txt
 input-model	main/recommend_options/full/input_model.txt
 json	main/recommend_options/full/api_json.txt
@@ -18,6 +17,9 @@ preset-argument	main/recommend_options/full/api_preset_argument.txt
 rejected-candidates	main/recommend_options/full/numeric_title.txt
 server-target	main/recommend_options/full/server_target.txt
 small-schema-default	main/recommend_options/titled_variants.txt
+unconstrained-fields	main/recommend_options/full/validation.txt
+unconstrained-fields-of-the-kept-parse	main/recommend_options/full/schedules.txt
+unconstrained-fields-per-module	main/recommend_options/full/schedules_package.txt
 [test_recommend_options_compares_candidates_for_directories]
 	main/recommend_options/full/directory.txt
 [test_recommend_options_compares_candidates_for_projects]
@@ -45,6 +47,7 @@ unicode-profile	main/recommend_options/project_profile_unicode.txt
 [test_recommend_options_for_schemas]
 asyncapi	main/recommend_options/asyncapi.txt
 asyncapi-v3	main/recommend_options/asyncapi_v3.txt
+draft-07-pattern-map	main/recommend_options/settings.txt
 explicit-options	main/recommend_options/api_explicit_options.txt
 json	main/recommend_options/api_json.txt
 jsonschema	main/recommend_options/service_config.txt

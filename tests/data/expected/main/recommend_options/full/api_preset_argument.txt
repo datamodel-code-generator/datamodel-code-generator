@@ -11,7 +11,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
   union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
   component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces
-  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
@@ -114,21 +114,21 @@ Not recommended
       from keys renamed 0.0% of locations
 
 Trial  11 candidates generated in memory without formatting; nothing written
-  candidate                                            classes   problems  numbered  long  doubled  displaced  median  dropped
-  current                                                   22  5 (22.7%)         5     0        0          0       6        0
-  recommended                                                9  2 (22.2%)         0     0        2          0      10        0
-  recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5        0   selected
-  recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11        0
-  recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14        0
-  recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7        0
-  recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10        0
-  recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6        0
-  recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5        0
-  recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5        0
-  recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5        0
+  candidate                                            classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                                                   22  5 (22.7%)         5     0        0          0       6              0
+  recommended                                                9  2 (22.2%)         0     0        2          0      10              0
+  recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5              0   selected
+  recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11              0
+  recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14              0
+  recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7              0
+  recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10              0
+  recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6              0
+  recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5              0
+  recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5              0
+  recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5              0
   the last 4 rows: the selected configuration without or with one option, to measure each option on
   it; never selected
-  dropped: fields that dcg warns it generates without some of their constraints
+  unconstrained: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended - naming-strategy)
   4 of 9 classes matched by schema location renamed (0 only renumbered), 13 removed, 0 added, e.g.

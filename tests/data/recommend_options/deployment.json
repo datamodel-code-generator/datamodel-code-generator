@@ -27,6 +27,18 @@
         }
       },
       "additionalProperties": false
+    },
+    "ports": {
+      "$ref": "#/$defs/PortList",
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "PortList": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
     }
   }
 }

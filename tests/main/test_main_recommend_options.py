@@ -187,6 +187,7 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             id="validation-options-set",
         ),
         pytest.param("deployment.json", [], "deployment.txt", id="pattern-properties"),
+        pytest.param("settings.json", [], "settings.txt", id="draft-07-pattern-map"),
     ],
 )
 def test_recommend_options_for_schemas(
@@ -195,6 +196,8 @@ def test_recommend_options_for_schemas(
     """Recommend options for each supported schema format, keeping the options the command sets.
 
     Optional validation and policy options are listed apart from the command, unless the command sets them.
+    Keywords beside a ``$ref`` count where the document's version applies them (not in draft-07), and a
+    patternProperties map with one pattern and no other keys needs no validators.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], expected, inputs=_inputs(INPUT_PATH / source))
@@ -680,7 +683,21 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
             ["--input", "validation.yaml", "--target-python-version", "3.14"],
             ("full",),
             "full/validation.txt",
-            id="dropped-constraints",
+            id="unconstrained-fields",
+        ),
+        pytest.param(
+            [INPUT_PATH / "schedules.yaml"],
+            ["--input", "schedules.yaml", "--output", "models", "--target-python-version", "3.14"],
+            ("full",),
+            "full/schedules_package.txt",
+            id="unconstrained-fields-per-module",
+        ),
+        pytest.param(
+            [INPUT_PATH / "schedules.yaml"],
+            ["--input", "schedules.yaml", "--target-python-version", "3.14"],
+            ("full",),
+            "full/schedules.txt",
+            id="unconstrained-fields-of-the-kept-parse",
         ),
     ],
 )
@@ -696,7 +713,9 @@ def test_recommend_options_compares_candidates(
 
     Without a mode, a schema of up to 3000 estimated models is compared. Each option shows the candidates without and
     with it and the class names it changes; the report ends with the changes from the current configuration. Each
-    candidate also counts the fields dcg warns it generates without some of their constraints.
+    candidate also counts the fields dcg warns it generates without some of their constraints: per module, so
+    same-named classes of different modules count apart, and only in the parse whose models the generation keeps,
+    such as the repaired single module of dotted keys written to stdout.
     """
     _recommend(tmp_path, capsys, args, expected, inputs=_inputs(*inputs), mode=mode)
 

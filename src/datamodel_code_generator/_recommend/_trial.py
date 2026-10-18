@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator import Error, _collect_model_metadata, enable_parsed_source_cache
 from datamodel_code_generator._recommend._metrics import name_metrics, name_records, name_stability
-from datamodel_code_generator.parser.base import dropped_constraint_warnings_recorded
+from datamodel_code_generator.parser.base import dropped_constraints_recorded
 from datamodel_code_generator.remote_lock import RemoteLockError
 
 if TYPE_CHECKING:
@@ -122,7 +122,7 @@ def _run_candidate(  # noqa: PLR0913
     try:
         with warnings.catch_warnings(), redirect_stderr(io.StringIO()):
             warnings.simplefilter("ignore")
-            with dropped_constraint_warnings_recorded() as dropped:
+            with dropped_constraints_recorded() as dropped:
                 metadata, input_file_type = _collect_model_metadata(input_, config, remote_text_cache=remote_text_cache)
             records = name_records(metadata)
             previous = (
@@ -146,7 +146,7 @@ def _run_candidate(  # noqa: PLR0913
         name_metrics(records, vocabulary),
         None if previous is None else name_stability(previous, records),
         None,
-        len(dropped),
+        len(dropped.warnings),
     )
     return outcome, input_file_type
 

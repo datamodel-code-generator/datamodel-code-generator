@@ -11,7 +11,7 @@ Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
   unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
   union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
   component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces
-  constraint keywords              uniqueItems 1, patternProperties 0, multipleOf 2, nullable 1, boolean exclusive bounds 1
+  constraint keywords              uniqueItems 1, patternProperties 0 (0 beyond a typed map), multipleOf 2, OpenAPI 3.0 nullable 1, boolean exclusive bounds 1
   formats                          6 (uuid x1, decimal x1, int32 x1, int64 x1), decimal 1; int32/int64 2, ranges not enforced
   integer/number/boolean schemas   5
 

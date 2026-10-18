@@ -292,7 +292,7 @@
             "value": 1
           },
           {
-            "signal": "pattern_properties",
+            "signal": "unmodeled_pattern_properties",
             "op": ">=",
             "value": 1
           }
@@ -301,14 +301,13 @@
       "set": {
         "generate_schema_validators": true
       },
-      "reason": "The models leave out checks the schema declares (uniqueItems: {unique_items}; patternProperties: {pattern_properties}): duplicate items pass, and patternProperties is checked on plain maps only, not next to declared properties. The experimental schema validators check both when a model validates.",
+      "reason": "The models leave out checks the schema declares (uniqueItems: {unique_items}; patternProperties that a typed map cannot express, beside declared properties, with several patterns, or with other keys allowed: {unmodeled_pattern_properties} of {pattern_properties}): duplicate items pass, and those properties are checked wrongly or not at all. The experimental schema validators check both when a model validates.",
       "caveats": [
-        "The option is experimental: on some measured schemas the validators rejected valid documents or the models failed to import, and class names can change; generate with it and validate your own documents before adopting it."
+        "Experimental: on some schemas the generated validators reject valid data or fail to import; validate sample data with the generated models before adopting it."
       ],
       "evidence": [
         "SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with x- extension keys rejected), 0 with the validators",
-        "SchemaStore github-workflow schema: every workflow with a job is rejected; package.json schema: the models fail to import",
-        "GitHub REST API description (1 uniqueItems): 28 classes removed and 18 added; CycloneDX schema: 32 removed and 8 added"
+        "Six patternProperties shapes a typed map cannot express (other keys allowed, several patterns, declared properties beside them), 22 documents: 7 judged wrongly by the preset, 0 with the validators; one pattern on a closed object without declared properties is exact without them"
       ]
     },
     {

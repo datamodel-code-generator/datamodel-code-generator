@@ -80,6 +80,7 @@ RULES_PACKAGE = "datamodel_code_generator.resources"
 RULES_FILE = "recommender_rules.json"
 RULES_SOURCE = f"src/{RULES_PACKAGE.replace('.', '/')}/{RULES_FILE}"
 PRESET_FAMILY = "standard"
+OPTIONAL_RULE = "optional, not calibrated"
 MANIFEST_FORMAT = 1
 CALIBRATION_FORMAT = 1
 KINDS = ("asyncapi", "jsonschema", "openapi")
@@ -997,7 +998,10 @@ def _rule_rows(
     grid: Mapping[str, tuple[dict[str, Any], ...]],
     settings: Settings,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Judge every rule against the grid and search one threshold change per disagreeing rule."""
+    """Judge every rule against the grid and search one threshold change per disagreeing rule.
+
+    Optional rules list options for the user to decide and never enter the command, so they are labelled, not judged.
+    """
     points = _grid_points(grid)
     rows: list[dict[str, Any]] = []
     proposals: list[dict[str, Any]] = []
@@ -1005,6 +1009,9 @@ def _rule_rows(
         decision = rule.get("decision", "")
         row: dict[str, Any] = {"rule": rule.get("id"), "decision": decision}
         rows.append(row)
+        if rule.get("optional"):
+            row["covered"] = OPTIONAL_RULE
+            continue
         if decision not in grid:
             row["covered"] = f"decision {decision} has no grid axis"
             continue
@@ -1391,7 +1398,16 @@ def _rules_section(rules: list[dict[str, Any]]) -> list[str]:
         ),
         "",
     ]
-    lines.extend(f"- Not covered: {row['rule']} ({row['covered']})" for row in rules if row["covered"] != "yes")
+    lines.extend(
+        f"- Not covered: {row['rule']} ({row['covered']})"
+        for row in rules
+        if row["covered"] not in {"yes", OPTIONAL_RULE}
+    )
+    lines.extend(
+        f"- Optional, not calibrated: {row['rule']} (listed for the user to decide, never in the command)"
+        for row in rules
+        if row["covered"] == OPTIONAL_RULE
+    )
     if lost := [row for row in covered if sum(map(len, row["disagrees"].values())) >= DISAGREEMENT_LIMIT]:
         lines += ["", f"Rules that disagree on {DISAGREEMENT_LIMIT} or more schemas:", ""]
         lines.extend(

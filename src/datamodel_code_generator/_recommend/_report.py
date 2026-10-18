@@ -78,8 +78,9 @@ _SIGNAL_LINES: tuple[tuple[str, str], ...] = (
     (
         "constraint keywords",
         (
-            "uniqueItems {unique_items}, patternProperties {pattern_properties}, multipleOf {multiple_of}, "
-            "nullable {nullable_keywords}, boolean exclusive bounds {boolean_exclusive_bounds}"
+            "uniqueItems {unique_items}, patternProperties {pattern_properties} ({unmodeled_pattern_properties} beyond "
+            "a typed map), multipleOf {multiple_of}, OpenAPI 3.0 nullable {nullable_keywords}, boolean exclusive "
+            "bounds {boolean_exclusive_bounds}"
         ),
     ),
     (
@@ -141,12 +142,12 @@ def _option_lines(option: Option, signals: Signals, *, against: bool = False) ->
     return lines
 
 
-def _metric_cells(metrics: NameMetrics, stability: NameStability | None, dropped: int | None) -> list[str]:
+def _metric_cells(metrics: NameMetrics, stability: NameStability | None, unconstrained: int | None) -> list[str]:
     cells = [
         f"{metrics.problems} ({metrics.problems_percent}%)" if name == "problems" else str(getattr(metrics, name))
         for _, name in _TABLE_COLUMNS
     ]
-    return [*cells, str(dropped), *(() if stability is None else (str(stability.locations.renamed),))]
+    return [*cells, str(unconstrained), *(() if stability is None else (str(stability.locations.renamed),))]
 
 
 def _table_row(cells: Sequence[str], widths: Sequence[int]) -> str:
@@ -167,7 +168,7 @@ def _trial_footnotes(trial: Trial, *, stability: bool) -> list[str]:
             f"the last {_count(trial.remeasured, 'row')}: the selected configuration without or with one option, "
             "to measure each option on it; never selected"
         )
-    notes.append("dropped: fields that dcg warns it generates without some of their constraints")
+    notes.append("unconstrained: fields that dcg warns it generates without some of their constraints")
     if stability:
         notes.append("renamed: classes a candidate renames between --diff-against and the input")
     return [line for note in notes for line in _wrap(note, "  ")]
@@ -179,7 +180,7 @@ def _trial_lines(trial: Trial) -> list[str]:
     headers = [
         "candidate",
         *(header for header, _ in _TABLE_COLUMNS),
-        "dropped",
+        "unconstrained",
         *(("renamed",) if stability else ()),
     ]
     rows = [

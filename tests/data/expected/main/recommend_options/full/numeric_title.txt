@@ -11,7 +11,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
   union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
   component keys                   none; 0 dotted in 0 namespaces
-  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 1
@@ -30,12 +30,12 @@ Add (1 option)
       Workflow, Compose and PackageJson
 
 Trial  3 candidates generated in memory without formatting; nothing written
-  candidate    classes  problems  numbered  long  doubled  displaced  median  dropped
+  candidate    classes  problems  numbered  long  doubled  displaced  median  unconstrained
   current      rejected: title='2024' is invalid class name.
   preset       rejected: title='2024' is invalid class name.
-  recommended        2  0 (0.0%)         0     0        0          0      12        0   selected
+  recommended        2  0 (0.0%)         0     0        0          0      12              0   selected
   current: the configuration as set, without the preset; never selected
-  dropped: fields that dcg warns it generates without some of their constraints
+  unconstrained: fields that dcg warns it generates without some of their constraints
 
 Command
   datamodel-codegen --class-name NumericTitle --input numeric_title.json --preset standard-py314-20261017 --target-python-version 3.14

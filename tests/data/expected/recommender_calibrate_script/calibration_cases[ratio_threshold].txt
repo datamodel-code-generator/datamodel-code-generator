@@ -87,8 +87,8 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
 - Not covered: unions.name-variants-after-tags (decision union-variant-names has no grid axis)
-- Not covered: validation.check-unique-items-and-pattern-properties (decision schema-validators has no grid axis)
-- Not covered: policy.strict-scalar-types (decision strict-types has no grid axis)
+- Optional, not calibrated: validation.check-unique-items-and-pattern-properties (listed for the user to decide, never in the command)
+- Optional, not calibrated: policy.strict-scalar-types (listed for the user to decide, never in the command)
 
 ## Threshold proposals
 
@@ -712,7 +712,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "tagged_behind_ref": 0,
           "titled_components": 0,
           "unions": 0,
-          "unique_items": 0
+          "unique_items": 0,
+          "unmodeled_pattern_properties": 0
         },
         "trial": {
           "candidates": [
@@ -927,12 +928,12 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "rule": "unions.name-variants-after-tags"
     },
     {
-      "covered": "decision schema-validators has no grid axis",
+      "covered": "optional, not calibrated",
       "decision": "schema-validators",
       "rule": "validation.check-unique-items-and-pattern-properties"
     },
     {
-      "covered": "decision strict-types has no grid axis",
+      "covered": "optional, not calibrated",
       "decision": "strict-types",
       "rule": "policy.strict-scalar-types"
     }

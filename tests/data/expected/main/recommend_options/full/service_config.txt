@@ -11,7 +11,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   unions                           7 oneOf/anyOf, 0 with a discriminator, 14 inline variants
   union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 2 copy their parent
   component keys                   lowercase (3 of 3); 0 dotted in 0 namespaces
-  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   6
   root schema                      object model 1, title words 4
@@ -75,15 +75,15 @@ Optional (policy; not in the command)
       rejected
 
 Trial  6 candidates generated in memory without formatting; nothing written
-  candidate                      classes   problems  numbered  long  doubled  displaced  median  dropped
-  current                             12  3 (25.0%)         3     0        0          0       5        0
-  preset                              11  3 (27.3%)         3     0        0          0       5        0
-  recommended                          6  2 (33.3%)         2     0        0          0       5        0   selected
-  recommended + naming-strategy        7  4 (57.1%)         1     0        4          0       9        0
-  recommended - enum-shape            11  3 (27.3%)         3     0        0          0       5        0
-  recommended - root-name              6  2 (33.3%)         2     0        0          0       5        0
+  candidate                      classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                             12  3 (25.0%)         3     0        0          0       5              0
+  preset                              11  3 (27.3%)         3     0        0          0       5              0
+  recommended                          6  2 (33.3%)         2     0        0          0       5              0   selected
+  recommended + naming-strategy        7  4 (57.1%)         1     0        4          0       9              0
+  recommended - enum-shape            11  3 (27.3%)         3     0        0          0       5              0
+  recommended - root-name              6  2 (33.3%)         2     0        0          0       5              0
   current: the configuration as set, without the preset; never selected
-  dropped: fields that dcg warns it generates without some of their constraints
+  unconstrained: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended)
   1 of 6 classes matched by schema location renamed (0 only renumbered), 6 removed, 0 added, e.g.

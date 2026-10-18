@@ -4266,7 +4266,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
   union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
   component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces
-  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
@@ -4301,14 +4301,14 @@ Left out after the trial (the rules recommend these)
       0 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
 
 Trial  5 candidates generated in memory without formatting; nothing written
-  candidate                          classes   problems  numbered  long  doubled  displaced  median  dropped
-  current                                  4  1 (25.0%)         1     0        0          0       7        0
-  preset                                   4  1 (25.0%)         1     0        0          0       7        0
-  recommended                              4   0 (0.0%)         0     0        0          0       7        0
-  recommended - title-source               4   0 (0.0%)         0     0        0          0      11        0
-  recommended - union-variant-names        4   0 (0.0%)         0     0        0          0       7        0   selected
+  candidate                          classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                                  4  1 (25.0%)         1     0        0          0       7              0
+  preset                                   4  1 (25.0%)         1     0        0          0       7              0
+  recommended                              4   0 (0.0%)         0     0        0          0       7              0
+  recommended - title-source               4   0 (0.0%)         0     0        0          0      11              0
+  recommended - union-variant-names        4   0 (0.0%)         0     0        0          0       7              0   selected
   current: the configuration as set, without the preset; never selected
-  dropped: fields that dcg warns it generates without some of their constraints
+  unconstrained: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended - union-variant-names)
   2 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
@@ -4333,15 +4333,15 @@ The counts, presets and options come from your schema and the installed version.
 
 | Section | Meaning |
 |---|---|
-| Schema | The signals the rules read: components, inline objects and enums, shared property names, repeated shapes, titles, unions and their tags, key style, constraint keywords (`uniqueItems`, `patternProperties`, `multipleOf`, OpenAPI 3.0 `nullable` and boolean exclusive bounds), the formats generation maps to a type (`int32`/`int64` ranges are not enforced), and the integer, number and boolean schemas. |
+| Schema | The signals the rules read: components, inline objects and enums, shared property names, repeated shapes, titles, unions and their tags, key style, constraint keywords (`uniqueItems`; `patternProperties`, with how many a typed map cannot express; `multipleOf`; `nullable` in OpenAPI 3.0 and AsyncAPI 2 documents; boolean exclusive bounds), the formats generation maps to a type (`int32`/`int64` ranges are not enforced), and the integer, number and boolean schemas. |
 | Start from | The latest dated `standard` preset for your output model type and target Python version, and the rules it already satisfies. It is the `practical` preset only when you configured a practical preset, or when no option can set a value a rule needs on the standard preset (the notes then say which). |
 | Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits, `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
 | Left out after the trial | Options the rules recommend that the selected candidate does without, because your schema's class names score better without them. |
 | Consider | Options the schema has signals for and against (`against:`). Decide from your schema; they are in the command only when the candidate with them scores best. |
-| Optional (validation) | Options for checks the schema declares that the models leave out by default, such as `--generate-schema-validators` for `uniqueItems` and `patternProperties` with Pydantic v2 models. They are experimental or change runtime behaviour, so they are not in the command; try them on your own documents first. |
+| Optional (validation) | Options for checks the schema declares that the models leave out by default, such as `--generate-schema-validators` for `uniqueItems` and for `patternProperties` a typed map cannot express (beside declared properties, with several patterns, or with other keys allowed) with Pydantic v2 models. They are experimental or change runtime behaviour, so they are not in the command; validate sample data with the generated models first. |
 | Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans. They are never in the command. |
 | Not recommended | Options a rule argues against for this schema. |
-| Trial | The compared candidates with their class counts, problem names, median name length, and `dropped`: the fields dcg warns it generates without some of their constraints; `selected` marks the recommended one. |
+| Trial | The compared candidates with their class counts, problem names, median name length, and `unconstrained`: the fields dcg warns it generates without some of their constraints, counted per module in the generation each candidate keeps; `selected` marks the recommended one. |
 | Changes from the current configuration | The class names the recommended configuration changes from the configuration you run now, matched by schema location. |
 | Your configuration | Options you set that differ from the rules, and a newer preset when you set an older one. Your values are kept. |
 | Notes | Assumptions, such as the target Python version used when you did not set one. |
@@ -4380,14 +4380,15 @@ and `disagreements` entries (each with its `rule`, `set` config values, CLI `arg
 and class-name `changes` that measured it), the optional `validation` and `policy` entries (never in `arguments` or
 `config`), the compared candidates under `trial` (each with its `metrics`, its `dropped_constraint_warnings`, and
 `stability` with `--diff-against`, plus the `ranking`, the `selected` label, the `migration` from the current
-configuration, and the `dropped` and `remeasured` counts), `notes`, the full command as `arguments`, the `config`
-table, and the text report as `content`.
+configuration, and the `dropped` (candidates beyond the limit) and `remeasured` counts), `notes`, the full command as
+`arguments`, the `config` table, and the text report as `content`.
 `rules_revision` identifies the rule data and `trial.metrics_version` the class-name metrics that produced it.
 
 ## What it measures
 
 - It reads the input once and measures the schema signals without generating models: how the schemas are named and
-  nested, and which constraint keywords and formats they use.
+  nested, and which constraint keywords and formats they use. Keywords beside a `$ref` count where the document's
+  version applies them (JSON Schema 2019-09 and later, OpenAPI 3.1 and later, AsyncAPI 3).
 - For OpenAPI, it measures what your `--openapi-scopes` generate: component schemas with the `schemas` scope
   (otherwise only those the operations reference), and request, response, parameter, webhook, and request body
   schemas with those scopes, filtered by `--openapi-include-paths`; parameter schemas follow every walked operation.
@@ -51251,7 +51252,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
       union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
       component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces
-      constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+      constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
       formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
       integer/number/boolean schemas   5
 
@@ -51354,23 +51355,23 @@ reported when the rules suggest another value. Add `--output-format json` for a 
           from keys renamed 0.0% of locations
 
     Trial  12 candidates generated in memory without formatting; nothing written
-      candidate                                            classes   problems  numbered  long  doubled  displaced  median  dropped
-      current                                                   22  5 (22.7%)         5     0        0          0       6        0
-      preset                                                    22  5 (22.7%)         5     0        0          0       6        0
-      recommended                                                9  2 (22.2%)         0     0        2          0      10        0
-      recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5        0   selected
-      recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11        0
-      recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14        0
-      recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7        0
-      recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10        0
-      recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6        0
-      recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5        0
-      recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5        0
-      recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5        0
+      candidate                                            classes   problems  numbered  long  doubled  displaced  median  unconstrained
+      current                                                   22  5 (22.7%)         5     0        0          0       6              0
+      preset                                                    22  5 (22.7%)         5     0        0          0       6              0
+      recommended                                                9  2 (22.2%)         0     0        2          0      10              0
+      recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5              0   selected
+      recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11              0
+      recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14              0
+      recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7              0
+      recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10              0
+      recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6              0
+      recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5              0
+      recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5              0
+      recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5              0
       current: the configuration as set, without the preset; never selected
       the last 4 rows: the selected configuration without or with one option, to measure each option on
       it; never selected
-      dropped: fields that dcg warns it generates without some of their constraints
+      unconstrained: fields that dcg warns it generates without some of their constraints
 
     Changes from the current configuration (current -> recommended - naming-strategy)
       4 of 9 classes matched by schema location renamed (0 only renumbered), 13 removed, 0 added, e.g.

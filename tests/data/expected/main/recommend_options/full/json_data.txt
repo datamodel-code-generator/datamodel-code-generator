@@ -7,11 +7,11 @@ Start from  --preset standard-py310-20261017
 Add  nothing on top of the preset
 
 Trial  2 candidates generated in memory without formatting; nothing written
-  candidate  classes   problems  numbered  long  doubled  displaced  median  dropped
-  current          6  2 (33.3%)         0     0        0          0       7        0
-  preset           6  2 (33.3%)         0     0        0          0       7        0   selected
+  candidate  classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current          6  2 (33.3%)         0     0        0          0       7              0
+  preset           6  2 (33.3%)         0     0        0          0       7              0   selected
   current: the configuration as set, without the preset; never selected
-  dropped: fields that dcg warns it generates without some of their constraints
+  unconstrained: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> preset)
   0 of 6 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added

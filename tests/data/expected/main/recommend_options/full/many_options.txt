@@ -11,7 +11,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
   union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
   component keys                   PascalCase (2 of 4); 2 dotted in 2 namespaces
-  constraint keywords              uniqueItems 0, patternProperties 0, multipleOf 0, nullable 0, boolean exclusive bounds 0
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 0
@@ -119,24 +119,24 @@ Not recommended
       from keys renamed 0.0% of locations
 
 Trial  13 candidates generated in memory without formatting; nothing written
-  candidate                                        classes   problems  numbered  long  doubled  displaced  median  dropped
-  current                                               25  4 (16.0%)         3     0        0          0       7        0
-  preset                                                25  4 (16.0%)         3     0        0          0       7        0
-  recommended                                           10   0 (0.0%)         0     0        0          0      19        0
-  recommended - naming-strategy                         10  1 (10.0%)         1     0        0          0      11        0
-  recommended - enum-shape                              15   0 (0.0%)         0     0        0          0      20        0
-  recommended - reuse                                   20   0 (0.0%)         0     0        0          0      23        0
-  recommended - root-name                               10  1 (10.0%)         0     0        0          0      16        0
-  recommended - dotted-keys                             12   0 (0.0%)         0     0        0          0      14        0   selected
-  recommended - dotted-keys - naming-strategy           11   1 (9.1%)         1     0        0          0       8        0
-  recommended - dotted-keys - enum-shape                17   0 (0.0%)         0     0        0          0      14        0
-  recommended - dotted-keys - reuse                     20   0 (0.0%)         0     0        0          0      22        0
-  recommended - dotted-keys - root-name                 12   1 (8.3%)         0     0        0          0      10        0
-  recommended - dotted-keys - union-variant-names       12   1 (8.3%)         1     0        0          0      14        0
+  candidate                                        classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                                               25  4 (16.0%)         3     0        0          0       7              0
+  preset                                                25  4 (16.0%)         3     0        0          0       7              0
+  recommended                                           10   0 (0.0%)         0     0        0          0      19              0
+  recommended - naming-strategy                         10  1 (10.0%)         1     0        0          0      11              0
+  recommended - enum-shape                              15   0 (0.0%)         0     0        0          0      20              0
+  recommended - reuse                                   20   0 (0.0%)         0     0        0          0      23              0
+  recommended - root-name                               10  1 (10.0%)         0     0        0          0      16              0
+  recommended - dotted-keys                             12   0 (0.0%)         0     0        0          0      14              0   selected
+  recommended - dotted-keys - naming-strategy           11   1 (9.1%)         1     0        0          0       8              0
+  recommended - dotted-keys - enum-shape                17   0 (0.0%)         0     0        0          0      14              0
+  recommended - dotted-keys - reuse                     20   0 (0.0%)         0     0        0          0      22              0
+  recommended - dotted-keys - root-name                 12   1 (8.3%)         0     0        0          0      10              0
+  recommended - dotted-keys - union-variant-names       12   1 (8.3%)         1     0        0          0      14              0
   current: the configuration as set, without the preset; never selected
   the last 5 rows: the selected configuration without or with one option, to measure each option on
   it; never selected
-  dropped: fields that dcg warns it generates without some of their constraints
+  unconstrained: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended - dotted-keys)
   7 of 11 classes matched by schema location renamed (0 only renumbered), 14 removed, 1 added, e.g.
