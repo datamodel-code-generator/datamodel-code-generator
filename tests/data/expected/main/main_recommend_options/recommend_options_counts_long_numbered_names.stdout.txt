@@ -1,0 +1,80 @@
+Option recommendations (experimental; full mode; rules 2026-10-18)
+
+Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
+  components                       1, 0 operations
+  inline objects / enums           3 / 0, nesting depth 1
+  shared property names            1 (output x2)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   lowercase (1 of 1); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+  root schema                      object model 1, title words 9
+
+Start from  --preset standard-py314-20261017
+
+Add (2 options)
+  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+      Inline schemas under different parents share property names (names: 1, e.g. output x2; inline
+      names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order
+      and shift when the schema grows; full-path names each inline model after its parent.
+      measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
+      versions 17% -> 0.0%
+      measured: Petstore: Status and Status1 became OrderStatus and PetStatus
+      measured: Stripe API description: the expandable ID string of charge no longer displaces the
+      charge component (ChargeModel)
+      measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
+      lost
+      trial: recommended - naming-strategy -> recommended: classes 5 -> 5, problem names 2 -> 1; 3
+      of 5 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+        Output -> BuildSettingsOutput   at (root) > output > anyOf 0
+        Output1 -> BuildSettingsOutput1   at (root) > output > anyOf 1
+        Output2 -> TargetOutput   at definitions/target > output
+  --class-name BuildSettings   [root.class-name-for-root-object]
+      The root schema is an object model. Without --class-name its class is Model (with
+      --use-title-as-name, its title: Settings file of the example build tool for projects), and
+      full-path prefixes that name onto root-level models. The suggested name comes from the input
+      file name; replace it with the name the project wants.
+      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
+      became TsConfig, names over 40 characters 6 -> 0
+      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
+      Workflow, Compose and PackageJson
+      trial: recommended - root-name -> recommended: classes 5 -> 5, problem names 3 -> 1; 3 of 5
+      classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+        SettingsFileOfTheExampleBuildToolForProjectsOutput -> BuildSettingsOutput   at (root) > output > anyOf 0
+        SettingsFileOfTheExampleBuildToolForProjectsOutput1 -> BuildSettingsOutput1   at (root) > output > anyOf 1
+        SettingsFileOfTheExampleBuildToolForProjects -> BuildSettings   at (root)
+
+Trial  5 candidates generated in memory without formatting; nothing written
+  candidate                      classes   problems  numbered  long  doubled  displaced  median  unconstrained
+  current                              5  3 (60.0%)         2     1        0          0       7              0
+  preset                               5  3 (60.0%)         2     1        0          0       7              0
+  recommended                          5  1 (20.0%)         1     0        0          0      13              0   selected
+  recommended - naming-strategy        5  2 (40.0%)         2     0        0          0       7              0
+  recommended - root-name              5  3 (60.0%)         1     3        0          0      44              0
+  current: the configuration as set, without the preset; never selected
+  unconstrained: fields that dcg warns it generates without some of their constraints
+
+Changes from the current configuration (current -> recommended)
+  4 of 5 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
+    Output -> BuildSettingsOutput   at (root) > output > anyOf 0
+    Output1 -> BuildSettingsOutput1   at (root) > output > anyOf 1
+    Output2 -> TargetOutput   at definitions/target > output
+
+Command
+  datamodel-codegen --class-name BuildSettings --formatters builtin --input build-settings.json --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261017 --target-python-version 3.14
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  class-name = "BuildSettings"
+  formatters = ["builtin"]
+  input = "build-settings.json"
+  input-file-type = "jsonschema"
+  naming-strategy = "full-path"
+  preset = "standard-py314-20261017"
+  target-python-version = "3.14"

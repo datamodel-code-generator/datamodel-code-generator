@@ -1371,7 +1371,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           ],
           "current": "current",
           "dropped": 0,
-          "metrics_version": 1,
+          "metrics_version": 2,
           "migration": {
             "added": 0,
             "examples": [
@@ -1997,7 +1997,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           ],
           "current": "current",
           "dropped": 0,
-          "metrics_version": 1,
+          "metrics_version": 2,
           "migration": {
             "added": 0,
             "examples": [
@@ -2610,7 +2610,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           ],
           "current": "current",
           "dropped": 0,
-          "metrics_version": 1,
+          "metrics_version": 2,
           "migration": {
             "added": 0,
             "examples": [

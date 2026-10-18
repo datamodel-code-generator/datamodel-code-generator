@@ -311,7 +311,8 @@ first, and the notes say so.
 Each candidate's class names are measured like the naming benchmark the rules come from. A name is a problem when it
 is numbered (`Status1`), contains a status code, is a generic word (`Item`, `Data`), is longer than 40 characters,
 repeats a word the schema does not repeat (`ShapeShape`), takes a component's name from the component, or names an
-inline model like an unrelated component. Candidates are ranked by, in order: fewer numbered or doubled names; fewer
+inline model like an unrelated component. A name can have several of these problems: a numbered name over 40
+characters is both numbered and long. Candidates are ranked by, in order: fewer numbered or doubled names; fewer
 other problem names, such as names over 40 characters; with `--diff-against`, fewer classes renamed between the
 previous and the current schema; a shorter median name; then fewer fields that dcg warns it generates without some
 of their constraints. Numbered names count as worse than long descriptive names:

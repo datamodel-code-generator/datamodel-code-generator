@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Settings file of the example build tool for projects",
+  "type": "object",
+  "properties": {
+    "output": {
+      "anyOf": [
+        {"type": "object", "properties": {"path": {"type": "string"}}},
+        {"type": "object", "properties": {"url": {"type": "string"}}}
+      ]
+    },
+    "target": {"$ref": "#/definitions/target"}
+  },
+  "definitions": {
+    "target": {
+      "type": "object",
+      "properties": {
+        "output": {"type": "object", "properties": {"format": {"type": "string"}}}
+      }
+    }
+  }
+}

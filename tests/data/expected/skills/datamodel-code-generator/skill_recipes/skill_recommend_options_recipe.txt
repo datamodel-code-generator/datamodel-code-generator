@@ -117,7 +117,7 @@
   "not_recommended": [],
   "disagreements": [],
   "trial": {
-    "metrics_version": 1,
+    "metrics_version": 2,
     "candidates": [
       {
         "label": "current",

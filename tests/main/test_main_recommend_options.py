@@ -810,6 +810,23 @@ def test_recommend_options_rejects_candidates_that_fail(tmp_path: Path, capsys: 
     )
 
 
+def test_recommend_options_counts_long_numbered_names(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Count a numbered class name over 40 characters as numbered, not only as long.
+
+    Without the short root class name, the long root title makes the numbered names long; that candidate no longer
+    beats the recommendation.
+    """
+    shutil.copy(INPUT_PATH / "build-settings.json", tmp_path / "build-settings.json")
+    with chdir(tmp_path):
+        run_main_and_assert(
+            input_path=Path("build-settings.json"),
+            input_file_type="jsonschema",
+            extra_args=["--formatters", "builtin", "--target-python-version", "3.14", "--recommend-options", "full"],
+            capsys=capsys,
+            assert_no_stderr=True,
+        )
+
+
 @pytest.mark.parametrize(
     ("inputs", "args", "expected"),
     [

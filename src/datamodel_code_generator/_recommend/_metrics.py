@@ -1,9 +1,10 @@
 """Class-name metrics for comparing generator configurations on one schema.
 
 The definitions are those of the tuned naming benchmark (multilang research, ``bench-data/tuned/lib.py``), restricted
-to datamodel-code-generator's own model metadata, so a trial reports the benchmark's numbers. A name is a problem when
-it is numbered, a status code, generic, longer than 40 characters, repeats a word the schema does not repeat, takes
-the place of a component's name, or names an inline model like an unrelated component.
+to datamodel-code-generator's own model metadata, so a trial reports the benchmark's problem names. A name is a problem
+when it is numbered, a status code, generic, longer than 40 characters, repeats a word the schema does not repeat,
+takes the place of a component's name, or names an inline model like an unrelated component. Unlike the benchmark,
+length does not hide the other tests: a numbered name over 40 characters is both numbered and long.
 """
 
 from __future__ import annotations
@@ -35,9 +36,8 @@ __all__ = [
     "schema_vocabulary",
 ]
 
-METRICS_VERSION: Final = 1
+METRICS_VERSION: Final = 2
 LONG_NAME_LENGTH: Final = 40
-_PROBLEM_CLASSES: Final = frozenset({"numbered", "statuscode", "generic", "long"})
 _OPERATION_PREFIXES: Final = (
     "paths/",
     "components/parameters",
@@ -220,14 +220,18 @@ def name_records(metadata: ModelMetadata | None) -> tuple[NameRecord, ...]:
     return tuple(records)
 
 
-def _classify(name: str, vocabulary: SchemaVocabulary, all_names: frozenset[str]) -> str:  # noqa: PLR0911
+def _classify(name: str, vocabulary: SchemaVocabulary, all_names: frozenset[str]) -> frozenset[str]:
+    """Return the problem classes of a name: long, and at most one of numbered, statuscode and generic."""
     normalized = _norm(name)
     if normalized in vocabulary.components:
-        return "readable"
-    if len(name) > LONG_NAME_LENGTH:
-        return "long"
-    if normalized in vocabulary.words:
-        return "readable"
+        return frozenset()
+    kinds = {"long"} if len(name) > LONG_NAME_LENGTH else set()
+    if normalized not in vocabulary.words and (kind := _number_class(name, normalized, vocabulary, all_names)):
+        kinds.add(kind)
+    return frozenset(kinds)
+
+
+def _number_class(name: str, normalized: str, vocabulary: SchemaVocabulary, all_names: frozenset[str]) -> str | None:
     if _GENERIC_NUMBER.search(name) or _NUMBER_WORD.search(name):
         return "numbered"
     if _STATUS_CODE.search(name):
@@ -237,9 +241,7 @@ def _classify(name: str, vocabulary: SchemaVocabulary, all_names: frozenset[str]
         stem in vocabulary.words or stem in vocabulary.components or stem in all_names or stem in _GENERIC
     ):
         return "numbered"
-    if stem in _GENERIC:
-        return "generic"
-    return "readable"
+    return "generic" if stem in _GENERIC else None
 
 
 def _is_component_location(parts: list[str]) -> bool:
@@ -272,6 +274,7 @@ class NameMetrics:
     """Counts over the generated class names of one configuration.
 
     ``problems`` counts each class once, and ``other_problems`` the problem names that are neither numbered nor doubled.
+    A name over 40 characters counts in ``long`` and also in ``numbered``, ``statuscode`` or ``generic`` when it is one.
     """
 
     types: int
@@ -305,9 +308,10 @@ def name_metrics(records: Sequence[NameRecord], vocabulary: SchemaVocabulary) ->
     """Measure the class names of one configuration against the vocabulary of its input."""
     all_names = frozenset(_norm(record.name) for record in records)
     classes = [_classify(record.name, vocabulary, all_names) for record in records]
-    counts = Counter(classes)
+    counts = Counter(kind for kinds in classes for kind in kinds)
     origins = Counter(_origin(record.path) for record in records)
-    problems = {index for index, kind in enumerate(classes) if kind in _PROBLEM_CLASSES}
+    problems = {index for index, kinds in enumerate(classes) if kinds}
+    numbered = {index for index, kinds in enumerate(classes) if "numbered" in kinds}
     doubled: list[int] = []
     doubled_from_spec = 0
     for index, record in enumerate(records):
@@ -351,19 +355,19 @@ def name_metrics(records: Sequence[NameRecord], vocabulary: SchemaVocabulary) ->
         component=origins["component"],
         inline=origins["inline"],
         operation=origins["operation"],
-        readable=counts["readable"],
+        readable=sum(1 for kinds in classes if not kinds),
         numbered=counts["numbered"],
         statuscode=counts["statuscode"],
         generic=counts["generic"],
         long=counts["long"],
         doubled=len(doubled),
         doubled_from_spec=doubled_from_spec,
-        other_problems=len(problems - {*doubled, *(index for index, kind in enumerate(classes) if kind == "numbered")}),
+        other_problems=len(problems - {*doubled, *numbered}),
         displaced=len(displaced),
         inline_like_component=len(inline_like),
         union_variants=len(variants),
         union_variants_parent_numbered=parent_numbered,
-        union_variants_numbered=sum(1 for index in variants if classes[index] == "numbered"),
+        union_variants_numbered=sum(1 for index in variants if index in numbered),
         median_length=lengths[len(lengths) // 2] if lengths else 0,
         max_length=lengths[-1] if lengths else 0,
         problems=len(problems),

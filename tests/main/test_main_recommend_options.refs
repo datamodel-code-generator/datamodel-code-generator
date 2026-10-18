@@ -55,6 +55,8 @@ schema	main/recommend_options/full/stdin.txt
 [test_recommend_options_compares_candidates_while_updating_the_lock]
 	main/recommend_options/full/url_update_lock.txt
 	main/recommend_options/full/url_update_lock_file.txt
+[test_recommend_options_counts_long_numbered_names]
+	main/main_recommend_options/recommend_options_counts_long_numbered_names.stdout.txt
 [test_recommend_options_default_skips_large_comparisons]
 large-schema	main/recommend_options/full/large_default.txt
 large-schema-and-previous	main/recommend_options/full/large_default_diff_against.txt
