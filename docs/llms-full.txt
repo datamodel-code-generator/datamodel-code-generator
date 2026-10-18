@@ -60861,10 +60861,12 @@ it survives each of these steps is not verified.
   `--type-overrides` to the field types of the models it keeps before `__fix_constructor_field_ordering`
   ([#4949](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4949),
   [#4955](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4955)). A base in a module
-  processed later is still read before its own field-type overrides. That can only add a redundant `kw_only` to a
+  processed later is still read before its own field-type overrides. That can add a redundant `kw_only` to a
   subclass field, for example `n: Decimal | None = Field(kw_only=True)` where the base's override already removed the
-  inherited default it reacts to; constructor ordering after the module loop (refactor P1,
-  [#4914](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4914) step 3) removes it. A base
+  inherited default it reacts to, or, when the base's override gains a `Field()` argument, leave out a `kw_only` the
+  subclass needs, so the module fails at import as it does in 0.84.0–0.86.0; constructor ordering after the module loop
+  (refactor P1, [#4914](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4914) step 3)
+  removes both. A base
   class that an override replaces stays the generated model for ordering, as the generator cannot see the replacing
   class's fields, so base-class overrides are applied after ordering.
 
