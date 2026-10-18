@@ -37,7 +37,7 @@ from urllib.parse import ParseResult
 from warnings import warn
 
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import Unpack
+from typing_extensions import Unpack, final
 
 from datamodel_code_generator import (
     AllExportsCollisionStrategy,
@@ -2098,6 +2098,7 @@ def _union_tags(model: DataModel) -> tuple[HashableComparable, ...]:
     )
 
 
+@final
 @dataclass(slots=True)
 class _ModelShapes:
     """The shapes of models memoized for one comparison pass, and the union tags the pass compares as well.

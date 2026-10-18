@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
 from datamodel_code_generator.python_literal import represent_python_value
 
@@ -19,17 +21,20 @@ class AnnotatedStringDataType(PydanticV2DataType):
     annotated_string: ClassVar[bool] = True
 
     @property
+    @override
     def type_hint(self) -> str:
         """Render string constraints inside an Annotated subscript."""
         return f"{self.runtime_expression_imports[0].binding_name}[str, {super().type_hint}]"
 
     @property
+    @override
     def imports(self) -> Iterator[Import]:
         """Include the annotation's independently aliasable import."""
         yield from super().imports
         yield self.runtime_expression_imports[0]
 
     @property
+    @override
     def base_type_hint(self) -> str:
         """Keep RootModel bases independent of their string constraints."""
         return "str"
@@ -73,6 +78,7 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
         )
 
     @property
+    @override
     def type_hint(self) -> str:
         """Render the ``con*`` keywords as constraints inside an Annotated subscript."""
         field_keywords, multiple_of = annotated_constraint_metadata(self.constrained_base, self.kwargs or {})
@@ -87,6 +93,7 @@ class AnnotatedConstraintDataType(PydanticV2DataType):
         return f"{self._binding('Annotated')}[{self.annotated_base_type}, {', '.join(metadata)}]"
 
     @property
+    @override
     def imports(self) -> Iterator[Import]:
         """Replace the ``con*`` import with the annotation imports."""
         yield from (import_ for import_ in super().imports if import_ != self.import_)

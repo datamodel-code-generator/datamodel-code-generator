@@ -10,6 +10,8 @@ from functools import cached_property, lru_cache
 from math import isnan
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
+from typing_extensions import override
+
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import UNDEFINED, BaseClassDataType
@@ -54,10 +56,12 @@ class EnumMemberValue(_StructuredEnumMemberValue):
 
     value: str
 
+    @override
     def __str__(self) -> str:
         """Render the value using the historical single-quoted source form."""
         return f"'{self.value.translate(escape_characters)}'"
 
+    @override
     def __repr__(self) -> str:
         """Render the value as Python source when used by generic literal renderers."""
         return str(self)
@@ -69,10 +73,12 @@ class _NullEnumMemberValue(_StructuredEnumMemberValue):
     __slots__ = ()
     value: None = None
 
+    @override
     def __str__(self) -> str:
         """Render JSON null as its Python source equivalent."""
         return "None"
 
+    @override
     def __repr__(self) -> str:
         """Render the marker as Python source in generic literal renderers."""
         return "None"
@@ -230,6 +236,7 @@ class Enum(DataModel):
                 return self.get_member(field)
         return None
 
+    @override
     def invalidate_render_caches(self) -> None:
         """Clear rendering state and the member index after field mutations."""
         super().invalidate_render_caches()
@@ -237,6 +244,7 @@ class Enum(DataModel):
         self.__dict__.pop("_coerced_member_index", None)
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get imports excluding Any."""
         return tuple(i for i in super().imports if i != IMPORT_ANY)
@@ -276,6 +284,7 @@ class Member:
         self.field: DataModelFieldBase = field
         self.alias: Optional[str] = None  # noqa: UP045
 
+    @override
     def __repr__(self) -> str:
         """Return string representation of enum member."""
         return f"{self.alias or self.enum.class_name}.{self.field.name}"

@@ -13,6 +13,8 @@ from math import ceil, floor, isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
+from typing_extensions import override
+
 from datamodel_code_generator import Error
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
@@ -58,6 +60,7 @@ from datamodel_code_generator.types import (
 
 
 class _UNSET:
+    @override
     def __str__(self) -> str:
         return "UNSET"
 
@@ -304,6 +307,7 @@ class Struct(DataModel):
             self.add_base_class_kwarg("kw_only", "True")
 
     @classmethod
+    @override
     def render_module_code(cls, models: list[DataModel]) -> str:
         """Reject incompatible generated Struct layouts before rendering a module."""
         for model in models:
@@ -425,11 +429,13 @@ class Struct(DataModel):
             if base.reference and isinstance(base.reference.source, Struct)
         ]
 
+    @override
     def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None:
         """Flatten the struct where msgspec cannot combine the layouts of its generated bases, as the view sees them."""
         if not self._uses_custom_root_template and self._find_layout_conflict(self._generated_layout_bases(), view):
             flatten(self)
 
+    @override
     def flatten_base_layouts(
         self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
     ) -> list[DataModelFieldBase]:
@@ -463,6 +469,7 @@ class Struct(DataModel):
             base_class_kwargs[name] = value
         self._internal_template_data["base_class_kwargs"][name] = value
 
+    @override
     def _builtin_template_data(self) -> dict[str, Any]:
         """Serialize user msgspec options while retaining generator-owned syntax."""
         template_data = super()._builtin_template_data()
@@ -479,6 +486,7 @@ class Struct(DataModel):
         base_class_kwargs.update(self._internal_template_data["base_class_kwargs"])
         return {**template_data, "base_class_kwargs": base_class_kwargs}
 
+    @override
     def _custom_template_data(self) -> dict[str, Any]:
         """Preserve legacy raw msgspec options for trusted custom templates."""
         template_data = super()._custom_template_data()
@@ -491,12 +499,14 @@ class Struct(DataModel):
             "base_class_kwargs": {**raw_base_class_kwargs, **internal_base_class_kwargs},
         }
 
+    @override
     def apply_discriminator_tag(self, field: DataModelFieldBase, field_name: str, value: Any) -> None:
         """Configure msgspec's tag and exclude the discriminator from instance fields."""
         self.add_base_class_kwarg("tag_field", repr(field_name))
         self.add_base_class_kwarg("tag", repr(value))
         field.extras["is_classvar"] = True
 
+    @override
     def opt_out_of_inherited_tag(self) -> None:
         """Clear the tag and tag_field that msgspec makes the struct inherit."""
         self.add_base_class_kwarg("tag", "False")
@@ -526,6 +536,7 @@ class Struct(DataModel):
         return tag, tag_field if (own_tag_field := options.get("tag_field")) is None else own_tag_field
 
     @property
+    @override
     def discriminator_tag(self) -> tuple[Any, Any] | None:  # ty: ignore[invalid-property-type-override]
         """Return the tag field and the tag msgspec tells the struct apart by in a union, or None if it is untagged."""
         tag, tag_field = self._tag_options()
@@ -533,6 +544,7 @@ class Struct(DataModel):
             return None
         return "type" if tag_field is None else tag_field, self.class_name if tag is None or tag is True else tag
 
+    @override
     def has_keyword_only_definition(self) -> bool:
         """Return whether msgspec's class declaration already enables keyword-only fields."""
         if self._internal_template_data["base_class_kwargs"].get("kw_only") == "True":
@@ -540,18 +552,20 @@ class Struct(DataModel):
         base_class_kwargs = self.extra_template_data.get("base_class_kwargs")
         return isinstance(base_class_kwargs, dict) and base_class_kwargs.get("kw_only") in {True, "True"}
 
+    @override
     def enable_model_keyword_only(self) -> None:
         """Enable msgspec's class-level keyword-only option."""
         self.add_base_class_kwarg("kw_only", "True")
 
     @classmethod
+    @override
     def create_base_class_model(
         cls,
         config: dict[str, Any],
         reference: Reference,
         custom_template_dir: Path | None = None,
-        keyword_only: bool = False,  # noqa: FBT001, FBT002
-        treat_dot_as_module: bool | None = None,  # noqa: FBT001
+        keyword_only: bool = False,
+        treat_dot_as_module: bool | None = None,
     ) -> Struct | None:
         """Create a shared base class model for DRY configuration.
 
@@ -619,6 +633,7 @@ class DataModelField(DataModelFieldBase):
     _COMPARE_EXPRESSIONS: ClassVar[set[str]] = {"gt", "ge", "lt", "le", "multiple_of"}
     constraints: Optional[Constraints] = None  # noqa: UP045
 
+    @override
     def process_const(self) -> None:
         """Process const field constraint."""
         if "const" not in self.extras:
@@ -839,6 +854,7 @@ class DataModelField(DataModelFieldBase):
         return constraint, value
 
     @property
+    @override
     def field(self) -> str | None:
         """For backwards compatibility."""
         return self._get_field_render_plan().rendered or None
@@ -899,10 +915,12 @@ class DataModelField(DataModelFieldBase):
         """Return structured field() arguments before rendering."""
         return self._get_field_data_and_import_requirements()[0]
 
+    @override
     def _has_default_for_nested_model_factory(self) -> bool:
         """Preserve the UNSET default emitted for optional Struct fields."""
         return not self.required or super()._has_default_for_nested_model_factory()
 
+    @override
     def _get_constructor_default_info(self) -> tuple[bool, bool]:
         """Return constructor-default semantics from structured field data."""
         if not has_field_assignment(self) or (self.required and not self.use_default_with_required):
@@ -942,11 +960,13 @@ class DataModelField(DataModelFieldBase):
             needs_unset_import=needs_unset_import,
         )
 
+    @override
     def __str__(self) -> str:
         """Generate field() call or default value representation."""
         return self._get_field_render_plan().rendered
 
     @property
+    @override
     def type_hint(self) -> str:
         """Return the type hint, using UnsetType for non-required non-nullable fields."""
         if (simple_unset_type_hint := self._get_simple_unset_type_hint()) is not None:
@@ -956,6 +976,7 @@ class DataModelField(DataModelFieldBase):
         return super().type_hint
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get imports from the structurally rendered msgspec annotation."""
         if self._get_simple_unset_base_type() is not None:
@@ -976,6 +997,7 @@ class DataModelField(DataModelFieldBase):
         return not self.required and isinstance(self.parent, Struct)
 
     @property
+    @override
     def fall_back_to_nullable(self) -> bool:
         """Return whether to fall back to nullable type instead of UnsetType."""
         return not self._not_required
@@ -1156,6 +1178,7 @@ class DataModelField(DataModelFieldBase):
         dropped.update((id(leaf.member), leaf) for leaf in integers)
         return dropped, {id(leaf.member) for leaf in integers}
 
+    @override
     def unconstrain_union_members(self) -> None:
         """Write the members of a union that msgspec decodes as one type without their Meta constraints.
 
@@ -1190,6 +1213,7 @@ class DataModelField(DataModelFieldBase):
                         unconstrained.parent = owner
         self._record_unconstrained_union_members(kinds, keywords, integer_keywords)
 
+    @override
     def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:
         """Take over the union members written without constraints from a field whose type this field inlines.
 
@@ -1215,6 +1239,7 @@ class DataModelField(DataModelFieldBase):
         self.invalidate_semantic_caches()
 
     @property
+    @override
     def dropped_constraints_warning(self) -> str | None:
         """Return a warning naming the constraints left out because msgspec.Meta does not take or check them exactly."""
         untaken: frozenset[str] = frozenset()
@@ -1292,6 +1317,7 @@ class DataModelField(DataModelFieldBase):
         return data
 
     @property
+    @override
     def annotated(self) -> str | None:  # noqa: PLR0911
         """Get Annotated type hint with Meta constraints.
 
@@ -1319,6 +1345,7 @@ class DataModelField(DataModelFieldBase):
         return self._annotated_unset_union_data_type(meta).type_hint
 
     @property
+    @override
     def needs_annotated_import(self) -> bool:
         """Check if this field requires the Annotated import.
 
@@ -1328,6 +1355,7 @@ class DataModelField(DataModelFieldBase):
         return self.use_annotated and self._get_meta_string() is not None
 
     @property
+    @override
     def needs_meta_import(self) -> bool:
         """Check if this field requires the Meta import."""
         return self.use_annotated and self._get_meta_string() is not None

@@ -6,6 +6,8 @@ from functools import cached_property
 from pathlib import Path
 from typing import ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator import cached_path_exists
 from datamodel_code_generator.imports import IMPORT_TYPE_ALIAS, IMPORT_TYPE_ALIAS_TYPE, Import
 from datamodel_code_generator.model.base import _remember_custom_template_dependency
@@ -18,6 +20,7 @@ class TypeAlias(TypeAliasTypeBackport):
     TEMPLATE_FILE_PATH: ClassVar[str] = "PydanticV2TypeAlias.jinja2"
 
     @cached_property
+    @override
     def template_file_path(self) -> Path:
         """Keep the existing custom alias template ahead of the builtin fallback."""
         template_path = super().template_file_path
@@ -30,6 +33,7 @@ class TypeAlias(TypeAliasTypeBackport):
         return template_path
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Import the alias syntax selected by the compatibility template."""
         imports = super().imports

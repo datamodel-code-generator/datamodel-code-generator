@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 from warnings import warn
 
 from pydantic import Field, ValidationError, field_validator, model_validator
+from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
@@ -144,6 +145,7 @@ class _RawRepr:
     def __init__(self, value: str) -> None:
         self.value = value
 
+    @override
     def __repr__(self) -> str:
         return self.value
 
@@ -659,6 +661,7 @@ class DataModelField(_PydanticBaseDataModelField):
     _PYDANTIC_EXTRA_PLAIN_ANNOTATION_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
 
     @property
+    @override
     def dropped_constraints_warning(self) -> str | None:
         """Return the warning of the base field, and one naming base64 lengths that the explicit target does not check.
 
@@ -692,6 +695,7 @@ class DataModelField(_PydanticBaseDataModelField):
             values["examples"] = [values.pop("example")]
         return values
 
+    @override
     def process_const(self) -> None:
         """Process const field constraint using literal type."""
         self._process_const_as_literal()
@@ -706,12 +710,14 @@ class DataModelField(_PydanticBaseDataModelField):
         return self.default is None or self.default is UNDEFINED
 
     @property
+    @override
     def represented_default(self) -> str:
         """Get the rendered default value for the field."""
         if self.use_missing_sentinel_default:
             return _MISSING_SENTINEL
         return super().represented_default
 
+    @override
     def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
         """Return whether an actual None default should be omitted."""
         if self.use_missing_sentinel_default:
@@ -719,6 +725,7 @@ class DataModelField(_PydanticBaseDataModelField):
         return super().should_strip_default_none(keep_optional=keep_optional)
 
     @property
+    @override
     def fall_back_to_nullable(self) -> bool:
         """Return whether optional fields should fall back to nullable type hints."""
         if not self.use_missing_sentinel_default:
@@ -732,6 +739,7 @@ class DataModelField(_PydanticBaseDataModelField):
             return False
         return self.data_type.type == "None"
 
+    @override
     def _has_field_statement(self) -> bool:
         if self._requires_null_default_field():
             return True
@@ -745,6 +753,7 @@ class DataModelField(_PydanticBaseDataModelField):
         """Return whether the processed render plan contains a Field() call."""
         return bool(self._get_field_render_plan().rendered)
 
+    @override
     def _get_field_render_plan(self) -> _PydanticFieldRenderPlan:
         """Include the explicit null default required by Pydantic v2."""
         can_use_empty_plan = (
@@ -768,6 +777,7 @@ class DataModelField(_PydanticBaseDataModelField):
         )
 
     @property
+    @override
     def type_hint(self) -> str:
         """Get the type hint including MISSING when this field uses the sentinel default."""
         type_hint = super().type_hint
@@ -791,6 +801,7 @@ class DataModelField(_PydanticBaseDataModelField):
         return self.name == self._PYDANTIC_EXTRA_FIELD_NAME
 
     @property
+    @override
     def requires_immediate_forward_reference_resolution(self) -> bool:
         """Keep typed-extra class-body annotations quoted until their targets exist."""
         return self.name == self._PYDANTIC_EXTRA_FIELD_NAME
@@ -822,6 +833,7 @@ class DataModelField(_PydanticBaseDataModelField):
             return self.type_hint
         return self._type_hint_from_data_type(data_type.model_copy(update={"use_standard_collections": False}))
 
+    @override
     def _get_normalized_constraint_data(self) -> dict[str, Any]:
         """Use prepared patterns after the shared constraint filtering and normalization."""
         data = super()._get_normalized_constraint_data()
@@ -831,6 +843,7 @@ class DataModelField(_PydanticBaseDataModelField):
             data["pattern"] = pattern
         return data
 
+    @override
     def _process_data_in_str(self, data: dict[str, Any]) -> None:
         _remove_compiled_pattern_metadata(data)
         if self.const:
@@ -969,6 +982,7 @@ class DataModelField(_PydanticBaseDataModelField):
         return any(dt.discriminator for dt in self.data_type.all_data_types)
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get all required imports including AliasChoices and Field for discriminator."""
         base_imports = super().imports
@@ -1488,6 +1502,7 @@ class BaseModel(BaseModelBase):
         return cls is BaseModel
 
     @classmethod
+    @override
     def get_native_hash_model_paths(cls, models: list[DataModel]) -> set[str]:  # noqa: PLR0912
         """Preserve native hashes only for proven builtin frozen value models."""
         native_paths: set[str] = set()
@@ -1538,9 +1553,10 @@ class BaseModel(BaseModelBase):
         return native_paths
 
     @classmethod
+    @override
     def resolve_nested_constrained_model_type(
         cls,
-        configured_root_model_type: type[DataModel],  # noqa: ARG003
+        configured_root_model_type: type[DataModel],
     ) -> type[DataModel]:
         """Use a runtime-compatible alias for nested constrained values."""
         from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport  # noqa: PLC0415
@@ -1548,6 +1564,7 @@ class BaseModel(BaseModelBase):
         return TypeAliasTypeBackport
 
     @classmethod
+    @override
     def resolve_type_alias_model_type(
         cls,
         configured_root_model_type: type[DataModel],
@@ -1564,11 +1581,13 @@ class BaseModel(BaseModelBase):
         ).root_model
 
     @classmethod
+    @override
     def prepare_module_code(cls, models: list[DataModel]) -> None:
         """Plan shared schema validation helpers before imports are collected."""
         cls._get_schema_runtime_validation_module_plan(models, scan_later_models=True)
 
     @classmethod
+    @override
     def render_module_code(cls, models: list[DataModel]) -> str:
         """Render shared schema runtime validation helpers for the module once."""
         if (module_plan := cls._get_schema_runtime_validation_module_plan(models)) is None:
@@ -1740,15 +1759,18 @@ class BaseModel(BaseModelBase):
         )
 
     @classmethod
+    @override
     def get_module_code_insertion_index(cls, models: list[DataModel]) -> int:
         """Emit a generated generic base before helpers that inherit from it."""
         return 1 if cls._has_local_generated_generic_base_class(models) else 0
 
+    @override
     def invalidate_render_caches(self) -> None:
         """Clear the compact module plan with the model's other render caches."""
         super().invalidate_render_caches()
         self.__dict__.pop(self._SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY, None)
 
+    @override
     def refresh_field_config(self) -> None:
         """Select Python's regex engine for lookaround patterns that fields gained after ``__init__``.
 
@@ -1758,6 +1780,7 @@ class BaseModel(BaseModelBase):
             self._select_python_regex_engine()
 
     @classmethod
+    @override
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
         """Select Python's regex engine in every model that reaches a string pattern type alias.
 
@@ -1797,6 +1820,7 @@ class BaseModel(BaseModelBase):
             self._additional_imports.append(IMPORT_CONFIG_DICT)
 
     @classmethod
+    @override
     def invalidate_module_code_cache(cls, models: list[DataModel]) -> None:
         """Discard the one module plan after parser-side import collision renames."""
         if models:
@@ -2200,6 +2224,7 @@ class BaseModel(BaseModelBase):
         return False
 
     @classmethod
+    @override
     def create_typed_extra_field(
         cls,
         *,
@@ -2303,6 +2328,7 @@ class BaseModel(BaseModelBase):
             return runtime_validation
         return None
 
+    @override
     def assigns_forward_reference_field(
         self, field: DataModelFieldBase, positions: Mapping[str, int], index: int
     ) -> bool:
@@ -2431,6 +2457,7 @@ class BaseModel(BaseModelBase):
         return reserved_names
 
     @classmethod
+    @override
     def resolve_module_import_conflicts(
         cls,
         models: Iterable[DataModel],
@@ -2477,13 +2504,14 @@ class BaseModel(BaseModelBase):
                 model.invalidate_render_caches()
 
     @classmethod
+    @override
     def create_base_class_model(
         cls,
         config: dict[str, Any],
         reference: Reference,
         custom_template_dir: Path | None = None,
-        keyword_only: bool = False,  # noqa: FBT001, FBT002
-        treat_dot_as_module: bool | None = None,  # noqa: FBT001
+        keyword_only: bool = False,
+        treat_dot_as_module: bool | None = None,
     ) -> BaseModel | None:
         """Create a shared base class model for DRY configuration.
 

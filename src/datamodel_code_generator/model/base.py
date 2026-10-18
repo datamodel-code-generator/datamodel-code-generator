@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, 
 from warnings import warn
 
 from pydantic import ConfigDict, Field
-from typing_extensions import Self
+from typing_extensions import Self, override
 
 from datamodel_code_generator import Error, cached_path_exists
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
@@ -1899,6 +1899,7 @@ class TemplateBase(ABC):
         """Render the template with the given arguments."""
         return self.template.render(*args, **kwargs)
 
+    @override
     def __str__(self) -> str:
         """Return the rendered template as a string."""
         return self.render()
@@ -1907,6 +1908,7 @@ class TemplateBase(ABC):
 class BaseClassDataType(DataType):
     """DataType subclass for base class references."""
 
+    @override
     def _apply_nullable_from_reference(self) -> None:
         """Keep nullable model references out of class inheritance clauses."""
 
@@ -2563,6 +2565,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.invalidate_render_caches()
 
     @cached_property
+    @override
     def template_file_path(self) -> Path:
         """Get the path to the template file, checking custom directory first."""
         template_file_path = Path(self.TEMPLATE_FILE_PATH)
@@ -2584,6 +2587,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             self._custom_template_dir / canonical_template_path
         )
 
+    @override
     def _render(self, *args: Any, **kwargs: Any) -> str:
         """Render project-owned built-ins without loading Jinja."""
         if (
@@ -2600,6 +2604,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return super()._render(**kwargs)
 
     @cached_property
+    @override
     def template(self) -> Template:
         """Get the Jinja2 template with custom directory support for includes."""
         resolved_path = self.template_file_path
@@ -2873,6 +2878,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return self._custom_template_dir
 
     @property
+    @override
     def nullable(self) -> bool:
         """Check if this model is nullable."""
         return self._nullable
@@ -2913,6 +2919,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             return self.extra_template_data
         return {**self.extra_template_data, **self._internal_template_data}
 
+    @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render the model to a string using the template."""
         use_custom_template = self._uses_custom_root_template

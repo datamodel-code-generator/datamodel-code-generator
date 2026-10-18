@@ -8,6 +8,8 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+from typing_extensions import override
+
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
 from datamodel_code_generator.imports import (
     IMPORT_ANY,
@@ -163,11 +165,12 @@ class DataTypeManager(_DataTypeManager):
             **standard_primitive_map,
         }
 
+    @override
     def get_data_type(
         self,
         types: Types,
         *,
-        field_constraints: bool = False,  # noqa: ARG002
+        field_constraints: bool = False,
         **_: Any,
     ) -> DataType:
         """Get data type for schema type."""

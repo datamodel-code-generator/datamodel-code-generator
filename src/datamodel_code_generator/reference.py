@@ -35,7 +35,7 @@ from typing import (
 from urllib.parse import ParseResult, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, override
 
 from datamodel_code_generator import Error, NamingStrategy
 from datamodel_code_generator._format_types import PythonVersion
@@ -577,18 +577,20 @@ class EnumFieldNameResolver(FieldNameResolver):
             _get_builtin_type_attributes_for_target(target) if target is not None else _BUILTIN_TYPE_ATTRIBUTES
         )
 
+    @override
     def _validate_field_name(self, field_name: str) -> bool:
         """Check field name doesn't conflict with subclass enum base type attributes."""
         if not self.use_subclass_enum:
             return True
         return field_name not in self._builtin_type_attributes
 
+    @override
     def get_valid_name(
         self,
         name: str,
         excludes: set[str] | None = None,
-        ignore_snake_case_field: bool = False,  # noqa: FBT001, FBT002
-        upper_camel: bool = False,  # noqa: FBT001, FBT002
+        ignore_snake_case_field: bool = False,
+        upper_camel: bool = False,
     ) -> str:
         """Convert name to valid enum member, handling reserved names."""
         return super().get_valid_name(
@@ -938,6 +940,7 @@ class ModelResolver:  # noqa: PLR0904
             {} if default_value_overrides is None else {**default_value_overrides}
         )
 
+    @override
     def __reduce_ex__(self, protocol: SupportsIndex, /) -> str | tuple[Any, ...]:
         """Serialize resolver state in the public layout used by earlier releases."""
         reduced = super().__reduce_ex__(protocol)

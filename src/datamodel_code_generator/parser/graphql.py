@@ -14,7 +14,7 @@ from typing import (
     cast,
 )
 
-from typing_extensions import Unpack
+from typing_extensions import Unpack, override
 
 from datamodel_code_generator import (
     InputFileType,
@@ -88,6 +88,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
     raw_obj: graphql.GraphQLSchema
 
     @cached_property
+    @override
     def schema_features(self) -> JsonSchemaFeatures:
         """Get schema features for GraphQL (uses default JSON Schema features)."""
         from datamodel_code_generator.enums import JsonSchemaVersion  # noqa: PLC0415
@@ -510,6 +511,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
         self.generation_store.register_model(data_model_type)
 
+    @override
     def parse_raw(self) -> None:
         """Parse the raw GraphQL schema and generate all data models."""
         self.all_graphql_objects = {}

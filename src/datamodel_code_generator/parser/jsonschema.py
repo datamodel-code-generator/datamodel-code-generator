@@ -30,7 +30,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import Unpack
+from typing_extensions import Unpack, override
 
 from datamodel_code_generator import (
     AllOfClassHierarchy,
@@ -1879,6 +1879,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ]
 
     @cached_property
+    @override
     def schema_features(self) -> JsonSchemaFeatures:
         """Get schema features based on config or detected version."""
         return self._schema_features_for(self.raw_obj)
@@ -13289,6 +13290,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             case list() as paths:
                 yield from ((self.base_path / path) for path in paths)
 
+    @override
     def _source_from_path(self, path: Path, *, data: bytes | None = None) -> Source:
         """Load one source path and contextualize cached JSON/YAML parse failures."""
         try:
@@ -13365,6 +13367,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._clear_inherited_field_caches()
             self._reset_local_source_cache()
 
+    @override
     def parse_raw(self) -> None:
         """Parse all raw input sources into data models."""
         try:
@@ -13446,6 +13449,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._dangling_refs.add((source, f"#{fragment}"))
         return {}
 
+    @override
     def _report_parse_diagnostics(self) -> None:
         """Report each unique dangling local reference and compatibility resolution after schema parsing completes."""
         for message in sorted(self._resource_ref_warnings):
