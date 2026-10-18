@@ -30,6 +30,7 @@ _READS = frozenset({"copy", "copy_into", "open", "read_bytes", "read_text"})
 _READ_FUNCTIONS = frozenset({"copy", "copy2", "copyfile", "copytree", "open"})
 _LISTINGS = frozenset({"glob", "iterdir", "rglob", "walk"})
 _LISTING_FUNCTIONS = frozenset({"glob", "iglob", "listdir", "scandir", "walk"})
+_PATH_KEYWORDS = frozenset({"file", "path", "pathname", "src", "top"})
 _PATH_TYPES = frozenset({"Path", "PurePath", "PurePosixPath", "PureWindowsPath"})
 _PASS_THROUGH = frozenset({"fspath", "list", "reversed", "sorted", "str", "tuple"})
 _SAME_PATH = frozenset({"absolute", "expanduser", "resolve"})
@@ -100,6 +101,13 @@ def _rooted(value: Value) -> bool:
     return value[:1] in {(_ROOT,), (_INDEXED,)}
 
 
+def _path_argument(call: ast.Call) -> ast.expr | None:
+    """Return the path a read, copy or listing function receives first, positionally or by its keyword."""
+    if call.args:
+        return call.args[0]
+    return next((keyword.value for keyword in call.keywords if keyword.arg in _PATH_KEYWORDS), None)
+
+
 def _alternatives(node: ast.IfExp | ast.BoolOp | ast.List | ast.Tuple | ast.Set) -> list[ast.expr]:
     """Return the expressions a conditional, a boolean operation or a collection may evaluate to."""
     match node:
@@ -108,7 +116,8 @@ def _alternatives(node: ast.IfExp | ast.BoolOp | ast.List | ast.Tuple | ast.Set)
         case ast.BoolOp():
             return node.values
         case _:
-            return node.elts
+            pass
+    return node.elts
 
 
 class _Collector(ast.NodeVisitor):
@@ -267,7 +276,8 @@ class _Program:
             case ast.Call():
                 return self.call(node, scope)
             case _:
-                return None
+                pass
+        return None
 
     def ancestor(self, node: ast.Attribute | ast.Subscript, scope: _Scope) -> Value | None:
         """Return the directory ``.parent`` or ``.parents[n]`` names, for a path from the repository root."""
@@ -342,8 +352,8 @@ class _Program:
                 candidates: list[tuple[ast.expr, str]] = []
                 if name in _READS | _LISTINGS and isinstance(call.func, ast.Attribute):
                     candidates.append((call.func.value, READ if name in _READS else LIST))
-                if name in _READ_FUNCTIONS | _LISTING_FUNCTIONS and call.args:
-                    candidates.append((call.args[0], READ if name in _READ_FUNCTIONS else LIST))
+                if name in _READ_FUNCTIONS | _LISTING_FUNCTIONS and (target := _path_argument(call)) is not None:
+                    candidates.append((target, READ if name in _READ_FUNCTIONS else LIST))
                 candidates += [(source, READ) for source in _copied(call)]
                 roots = {READ: frozenset({_ROOT}), LIST: _ROOTS}
                 if kind := next((kind for target, kind in candidates if self.opens(target, scope, roots[kind])), None):
@@ -358,14 +368,15 @@ def expected_accesses(root: Path, tests_root: Path) -> list[Access]:
 def listing_tests(root: Path, tests_root: Path) -> dict[Path, set[str]]:
     """Return, by module, the functions that list a directory below the expected root.
 
-    A listing at module level (``CASES = sorted(EXPECTED.glob("*.py"))``, or in a decorator) counts for every function
-    of its module.
+    A listing at module level (``CASES = sorted(EXPECTED.glob("*.py"))``, or in a decorator) or in a helper that is not
+    a test (``_cases()`` feeding a ``parametrize``) counts for every function of its module.
     """
     program = _Program(root, tests_root)
     modules = {module.path: module for module in program.modules.values()}
     result: dict[Path, set[str]] = {}
     for access in program.accesses():
         if access.kind == LIST:
-            owners = modules[access.module].functions if access.owner == _MODULE else {access.owner}
+            shared = access.owner == _MODULE or not access.owner.rpartition("::")[2].startswith("test")
+            owners = modules[access.module].functions if shared else {access.owner}
             result.setdefault(access.module, set()).update(owners)
     return result

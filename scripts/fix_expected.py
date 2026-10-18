@@ -67,6 +67,7 @@ from tests.units import (  # noqa: E402
     refs_sections,
     split_label,
     stored_digest,
+    too_long,
     tree_label,
     write_files,
 )
@@ -193,9 +194,9 @@ def run_apply(data: dict[str, object], modules: Iterable[str], root: Path = ROOT
 def index_for(module: str, root: Path = ROOT) -> RefsIndex:
     """Return the index of the tests root a path is or lies in: the nearest directory with ``data/expected``."""
     path = root / module
-    return RefsIndex(
-        next((parent for parent in (path, *path.parents) if (parent / "data" / "expected").is_dir()), root / "tests")
-    )
+    # A name longer than the file system allows cannot hold tests; probing it raises on Python before 3.14.
+    candidates = (parent for parent in (path, *path.parents) if not too_long(parent.parts))
+    return RefsIndex(next((parent for parent in candidates if (parent / "data" / "expected").is_dir()), root / "tests"))
 
 
 def apply_payloads(texts: Sequence[str], root: Path = ROOT, *, skip: bool = False) -> int:

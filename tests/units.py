@@ -147,7 +147,7 @@ def label_problem(label: str) -> str | None:
     """Return why a label or storage is not a relative POSIX path below ``tests/data/expected``, or None."""
     path, pattern = split_label(label)
     invalid = (
-        "\\" in label or _CONTROL.search(label) is not None or _too_long(label.split("/")),
+        "\\" in label or _CONTROL.search(label) is not None or too_long(label.split("/")),
         path.startswith("/") or _DRIVE.match(path) is not None,
         not _BAD_PARTS.isdisjoint(path.split("/")),
         pattern is not None and (not pattern or ".." in pattern.split("/") or pattern.startswith("/")),
@@ -155,7 +155,7 @@ def label_problem(label: str) -> str | None:
     return f"{label!r} is not a relative path below tests/data/expected" if any(invalid) else None
 
 
-def _too_long(parts: Iterable[str]) -> bool:
+def too_long(parts: Iterable[str]) -> bool:
     """Return whether a path part is longer than a file name may be."""
     return any(len(part.encode()) > _NAME_BYTES for part in parts)
 
@@ -251,7 +251,7 @@ def write_files(tests_root: Path, writes: Mapping[Path, str], deletes: Iterable[
     problems = [
         f"{path}: a name in it is longer than {_NAME_BYTES} bytes"
         for path in (*removed, *writes)
-        if _too_long(path.parts)
+        if too_long(path.parts)
     ]
     targets = {} if problems else {path: path.resolve() for path in (*removed, *writes)}
     gone = {real for path, real in targets.items() if path in removed}
@@ -627,7 +627,7 @@ def item_problem(
     module, separator, rest = nodeid.partition("::")
     parts = module.split("/")
     malformed = (
-        not separator or not rest or bool(_CONTROL.search(nodeid)) or _too_long(parts),
+        not separator or not rest or bool(_CONTROL.search(nodeid)) or too_long(parts),
         "\\" in module or bool(PureWindowsPath(module).drive) or not _BAD_PARTS.isdisjoint(parts),
         module != posixpath.normpath(module),
         not parts[-1].startswith("test") or not parts[-1].endswith(".py"),

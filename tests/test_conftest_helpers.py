@@ -554,7 +554,7 @@ class LedgerProject:
         """Write a stored expected file by hand."""
         path = self.expected / label
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        path.write_bytes(text.encode())
         return path
 
     def refs(self, module: str = "test_m") -> str:
@@ -2693,7 +2693,8 @@ def test_listed():
 
 class TestMore:
     def test_listed(self):
-        for name in sorted(listdir(EXPECTED / "more")):
+        assert listdir() is not None
+        for name in sorted(listdir(path=EXPECTED / "more")):
             assert_output(OUTPUT[name], EXPECTED / "more" / name)
 
 
@@ -2743,14 +2744,15 @@ def test_fix_expected_deduplicate_keeps_files_a_test_lists(
     """Units at the labels of a test that lists a directory below the expected root stay, and other copies use them.
 
     Such a test may compare what it finds there: ``test_listed`` globs ``pkg``, ``TestMore`` lists ``more`` with
-    ``os.listdir``, ``test_through_helper`` lists ``via`` through ``stored_expected``, and ``test_module`` lives in a
-    module that lists ``mod`` at import. ``ast.walk`` walks no directory, so ``w/b.py`` is an ordinary copy, as is
-    ``plain``.
+    ``os.listdir(path=...)``, ``test_through_helper`` lists ``via`` through ``stored_expected``, ``test_helper`` lists
+    ``help`` through a module helper, and ``test_module`` lives in a module that lists ``mod`` at import.
+    ``ast.walk`` walks no directory, so ``w/b.py`` is an ordinary copy, as is ``plain``.
     """
     ledger.write("test_l.py", LISTING)
     ledger.write("sub/test_s.py", LISTING_SHARED)
     ledger.write("sub/test_t.py", LISTING_MODULE)
-    for label in ("pkg/a.py", "more/a.py", "c/a.py", "via/a.py", "plain/a.py", "mod/a.py"):
+    ledger.write("sub/test_h.py", LISTING_HELPER)
+    for label in ("pkg/a.py", "more/a.py", "c/a.py", "via/a.py", "plain/a.py", "mod/a.py", "help/a.py"):
         ledger.store(label, "same\n")
     for label in ("pkg/b.py", "w/b.py"):
         ledger.store(label, "B = 1\n")
@@ -2765,16 +2767,17 @@ def test_fix_expected_deduplicate_keeps_files_a_test_lists(
         ],
         "sub/test_s": [line("test_through_helper", "", "via/a.py"), line("test_plain", "", "plain/a.py")],
         "sub/test_t": [line("test_module", "", "mod/a.py")],
+        "sub/test_h": [line("test_helper", "", "help/a.py")],
     }.items():
         (ledger.suite / f"{module}.refs").write_text(units.format_refs(lines), encoding="utf-8")
-    ledger.run("suite", env=GITHUB).assert_outcomes(passed=7)
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=8)
     capsys.readouterr()
     assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 0
     assert capsys.readouterr().out == (
         "Deduplicated: 3 references in 2 sidecars now use 2 stored units; deleted 3 stored files. "
-        "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 3 files, 0 trees.\n"
+        "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 4 files, 0 trees.\n"
         "Kept in all sidecars, because a test lists their directory or their label's references differ:\n"
-        "  mod/a.py\n  more/a.py\n  pkg/a.py\n  via/a.py\n"
+        "  help/a.py\n  mod/a.py\n  more/a.py\n  pkg/a.py\n  via/a.py\n"
     )
     assert ledger.refs("test_l") == HEADER + (
         "[TestMore::test_listed]\n\tmore/a.py\n[test_copy]\n\tc/a.py\t= mod/a.py\n"
@@ -2784,8 +2787,26 @@ def test_fix_expected_deduplicate_keeps_files_a_test_lists(
         ledger.refs("sub/test_s")
         == HEADER + "[test_plain]\n\tplain/a.py\t= mod/a.py\n[test_through_helper]\n\tvia/a.py\n"
     )
-    assert sorted(ledger.files()) == ["mod/a.py", "more/a.py", "pkg/a.py", "pkg/b.py", "via/a.py"]
-    ledger.run("suite", env=GITHUB).assert_outcomes(passed=7)
+    assert sorted(ledger.files()) == ["help/a.py", "mod/a.py", "more/a.py", "pkg/a.py", "pkg/b.py", "via/a.py"]
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=8)
+
+
+LISTING_HELPER = """
+from pathlib import Path
+
+from tests.conftest import assert_output
+
+EXPECTED = Path(__file__).parent.parent / "data" / "expected"
+
+
+def _names():
+    return sorted(path.name for path in (EXPECTED / "help").glob("*.py"))
+
+
+def test_helper():
+    for name in _names():
+        assert_output("same\\n", EXPECTED / "help" / name)
+"""
 
 
 STORED_READS = """
