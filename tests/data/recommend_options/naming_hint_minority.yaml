@@ -1,0 +1,358 @@
+openapi: 3.0.3
+info:
+  title: Large shop
+  version: "1"
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            order_source:
+              type: string
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            invoice_source:
+              type: string
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            shipment_source:
+              type: string
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            customer_source:
+              type: string
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            product_source:
+              type: string
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            payment_source:
+              type: string
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            refund_source:
+              type: string
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            review_source:
+              type: string
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            coupon_source:
+              type: string
+    Store:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            store_source:
+              type: string
+    Warehouse:
+      type: object
+      properties:
+        id:
+          type: string
+        metadata:
+          type: object
+          properties:
+            warehouse_source:
+              type: string
+    Account:
+      type: object
+      properties:
+        name:
+          type: string
+    Address:
+      type: object
+      properties:
+        name:
+          type: string
+    Agent:
+      type: object
+      properties:
+        name:
+          type: string
+    Album:
+      type: object
+      properties:
+        name:
+          type: string
+    Answer:
+      type: object
+      properties:
+        name:
+          type: string
+    Article:
+      type: object
+      properties:
+        name:
+          type: string
+    Asset:
+      type: object
+      properties:
+        name:
+          type: string
+    Badge:
+      type: object
+      properties:
+        name:
+          type: string
+    Banner:
+      type: object
+      properties:
+        name:
+          type: string
+    Basket:
+      type: object
+      properties:
+        name:
+          type: string
+    Batch:
+      type: object
+      properties:
+        name:
+          type: string
+    Bill:
+      type: object
+      properties:
+        name:
+          type: string
+    Booking:
+      type: object
+      properties:
+        name:
+          type: string
+    Branch:
+      type: object
+      properties:
+        name:
+          type: string
+    Brand:
+      type: object
+      properties:
+        name:
+          type: string
+    Budget:
+      type: object
+      properties:
+        name:
+          type: string
+    Bundle:
+      type: object
+      properties:
+        name:
+          type: string
+    Campaign:
+      type: object
+      properties:
+        name:
+          type: string
+    Card:
+      type: object
+      properties:
+        name:
+          type: string
+    Carrier:
+      type: object
+      properties:
+        name:
+          type: string
+    Cart:
+      type: object
+      properties:
+        name:
+          type: string
+    Catalog:
+      type: object
+      properties:
+        name:
+          type: string
+    Category:
+      type: object
+      properties:
+        name:
+          type: string
+    Channel:
+      type: object
+      properties:
+        name:
+          type: string
+    Charge:
+      type: object
+      properties:
+        name:
+          type: string
+    Claim:
+      type: object
+      properties:
+        name:
+          type: string
+    Client:
+      type: object
+      properties:
+        name:
+          type: string
+    Comment:
+      type: object
+      properties:
+        name:
+          type: string
+    Contract:
+      type: object
+      properties:
+        name:
+          type: string
+    Country:
+      type: object
+      properties:
+        name:
+          type: string
+    Course:
+      type: object
+      properties:
+        name:
+          type: string
+    Credit:
+      type: object
+      properties:
+        name:
+          type: string
+    Currency:
+      type: object
+      properties:
+        name:
+          type: string
+    Deal:
+      type: object
+      properties:
+        name:
+          type: string
+    Device:
+      type: object
+      properties:
+        name:
+          type: string
+    Discount:
+      type: object
+      properties:
+        name:
+          type: string
+    Document:
+      type: object
+      properties:
+        name:
+          type: string
+    Domain:
+      type: object
+      properties:
+        name:
+          type: string
+    Driver:
+      type: object
+      properties:
+        name:
+          type: string
+    Employee:
+      type: object
+      properties:
+        name:
+          type: string
+    Event:
+      type: object
+      properties:
+        name:
+          type: string
+    Feature:
+      type: object
+      properties:
+        name:
+          type: string
+    Feedback:
+      type: object
+      properties:
+        name:
+          type: string
+    Folder:
+      type: object
+      properties:
+        name:
+          type: string
+    Game:
+      type: object
+      properties:
+        name:
+          type: string

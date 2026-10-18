@@ -1,0 +1,3 @@
+# generate run
+NamingHintWarning: 11 of 25 class names are numbered collisions (Metadata1...Metadata11). Add --recommend-options to this command to see naming options for this schema (experimental).
+# check run

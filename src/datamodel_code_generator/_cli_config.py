@@ -138,6 +138,7 @@ def _get_config_class() -> type[Config]:
         )
 
         _json_sources: dict[str, Any] = PrivateAttr(default_factory=dict)
+        _naming_chosen: bool = PrivateAttr(default=False)
 
         def get(self, item: str) -> Any:  # pragma: no cover
             """Get attribute value by name."""

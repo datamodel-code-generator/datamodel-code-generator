@@ -5,15 +5,16 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import warnings
 from importlib.resources import files
 from pathlib import Path
 from string import Formatter
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import pytest
 from packaging.version import Version
 
-from datamodel_code_generator import chdir
+from datamodel_code_generator import NamingHintWarning, chdir, generate
 from datamodel_code_generator.__main__ import Config, Exit
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
@@ -857,3 +858,112 @@ def test_recommend_options_full_reports_generation_errors(
             expected_stderr_contains=expected_stderr,
             use_builtin_default_formatter=False,
         )
+
+
+NAMING_HINT_INPUTS = ("naming_hint.yaml", "naming_hint_few.yaml", "naming_hint_minority.yaml", "order.json")
+
+
+def _naming_hints(recorded: Iterable[warnings.WarningMessage]) -> str:
+    """Return the naming hints among recorded warnings, one a line, with their category as the command line shows."""
+    return "".join(
+        f"{item.category.__name__}: {item.message}\n" for item in recorded if item.category is NamingHintWarning
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "options", "pyproject", "action", "expected_exit", "expected"),
+    [
+        pytest.param("naming_hint.yaml", [], "", "always", Exit.OK, "naming_hint.txt", id="numbered"),
+        pytest.param("naming_hint_few.yaml", [], "", "always", Exit.OK, None, id="below-count"),
+        pytest.param("naming_hint_minority.yaml", [], "", "always", Exit.OK, None, id="below-share"),
+        pytest.param(
+            "naming_hint.yaml", ["--naming-strategy", "numbered"], "", "always", Exit.OK, None, id="naming-strategy"
+        ),
+        pytest.param(
+            "naming_hint.yaml", [], 'naming-strategy = "numbered"', "always", Exit.OK, None, id="pyproject-naming"
+        ),
+        pytest.param(
+            "naming_hint.yaml",
+            ["--model-name-map", '{"Order": "Purchase"}'],
+            "",
+            "always",
+            Exit.OK,
+            None,
+            id="model-name-map",
+        ),
+        pytest.param(
+            "naming_hint.yaml", [], 'model-name-map = {Order = "Purchase"}', "always", Exit.OK, None, id="pyproject-map"
+        ),
+        pytest.param("naming_hint.yaml", ["--check"], "", "always", Exit.DIFF, None, id="check"),
+        pytest.param(
+            "naming_hint.yaml", ["--diff-against", "naming_hint_few.yaml"], "", "always", Exit.DIFF, None, id="diff"
+        ),
+        pytest.param("naming_hint.yaml", ["--output-format", "json"], "", "always", Exit.OK, None, id="json"),
+        pytest.param("naming_hint.yaml", ["--disable-warnings"], "", "always", Exit.OK, None, id="disable-warnings"),
+        pytest.param("naming_hint.yaml", [], "", "ignore", Exit.OK, None, id="warning-filter"),
+        pytest.param("naming_hint.yaml", ["--recommend-options"], "", "always", Exit.OK, None, id="recommend-options"),
+    ],
+)
+def test_naming_hint(
+    input_name: str,
+    options: list[str],
+    pyproject: str,
+    action: Literal["always", "ignore"],
+    expected_exit: Exit,
+    expected: str | None,
+    tmp_path: Path,
+) -> None:
+    """Point to --recommend-options after a generation whose class names are mostly numbered collisions.
+
+    The hint needs at least 10 numbered collisions that make one in five classes or more. An explicit naming strategy
+    or model name map, on the command line or in pyproject.toml, a check, an input diff, JSON output, disabled
+    warnings, a warning filter, and the candidate runs of --recommend-options leave it out; exit codes stay the same.
+    """
+    for name in NAMING_HINT_INPUTS:
+        shutil.copy(INPUT_PATH / name, tmp_path / name)
+    if pyproject:
+        (tmp_path / "pyproject.toml").write_text(f"[tool.datamodel-codegen]\n{pyproject}\n", encoding="utf-8")
+    with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter(action, NamingHintWarning)
+        run_main_with_args(
+            ["--input", input_name, "--input-file-type", "openapi", "--output", "models.py", *options],
+            expected_exit=expected_exit,
+        )
+    assert_output(_naming_hints(recorded), None if expected is None else EXPECTED_PATH / expected)
+
+
+@pytest.mark.parametrize(
+    ("selection", "expected"),
+    [
+        pytest.param(["--job", "big shop"], "naming_hint.txt", id="one-job"),
+        pytest.param(["--job", "plain", "--job", "big shop"], None, id="jobs"),
+        pytest.param(["--all-jobs"], None, id="all-jobs"),
+    ],
+)
+def test_naming_hint_batch_jobs(selection: list[str], expected: str | None, tmp_path: Path) -> None:
+    """Show the hint for a single job, which --recommend-options takes, and not for several jobs, which it refuses."""
+    for name in NAMING_HINT_INPUTS:
+        shutil.copy(INPUT_PATH / name, tmp_path / name)
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\n"
+        'input-file-type = "openapi"\n'
+        'jobs.plain = {input = "order.json", input-file-type = "jsonschema", output = "plain.py"}\n'
+        'jobs."big shop" = {input = "naming_hint.yaml", output = "big_shop.py"}\n'
+        'jobs.shop = {input = "naming_hint.yaml", output = "shop.py"}\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", NamingHintWarning)
+        run_main_with_args(selection)
+    assert_output(_naming_hints(recorded), None if expected is None else EXPECTED_PATH / expected)
+
+
+def test_naming_hint_not_shown_by_generate(tmp_path: Path) -> None:
+    """Leave the hint to the command line: generate() never shows it, however numbered its class names are."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", NamingHintWarning)
+        generate(
+            INPUT_PATH / "naming_hint.yaml",
+            config=GenerateConfig(input_file_type="openapi", output=tmp_path / "models.py", formatters=["builtin"]),
+        )
+    assert_output(_naming_hints(recorded))

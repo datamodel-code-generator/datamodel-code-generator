@@ -563,6 +563,8 @@ no-timestamp-models	main/generation_platform/fastapi/packages/pets/pydantic_v2_B
 no-timestamp-server	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 timestamp-models	main/generation_platform/fastapi/cli/timestamp-models.py
 timestamp-server	main/generation_platform/fastapi/cli/timestamp-models.py
+[test_fastapi_cli_naming_hint]
+	api_generation/fastapi_cli/naming_hint.txt
 [test_fastapi_cli_nested_job]
 	main/generation_platform/fastapi/cli/check/extra-python.txt
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py

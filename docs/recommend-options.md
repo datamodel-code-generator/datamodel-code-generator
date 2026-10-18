@@ -39,6 +39,34 @@ module, a directory a package. Nothing is written there. Generating every candid
 your models once per candidate, so a schema estimated above 3000 models gets the rules only, and the notes give the
 command that compares the candidates anyway (see [How candidates are compared](#how-candidates-are-compared)).
 
+## When generation suggests it
+
+When many generated classes are numbered collisions, a command line generation ends with a `NamingHintWarning`
+(experimental) that points here:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: recommend-options.naming-hint -->
+<!-- fmt: off -->
+
+```text
+NamingHintWarning: 11 of 24 class names are numbered collisions (Metadata1...Metadata11). Add --recommend-options to this command to see naming options for this schema (experimental).
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: recommend-options.naming-hint -->
+
+A class name is a numbered collision when it ends in digits and the same name without them is another class, such as
+`Metadata1` beside `Metadata`; names whose digits come from the schema, such as `Level1` and `Level2` without a
+`Level`, do not count. The hint needs at least 10 numbered collisions that make at least one in five classes, and the
+example is the largest family of them. A command shows it at most once, also when `watch = true` in `pyproject.toml`
+regenerates the models, and only when `--recommend-options` accepts the command: not with `--watch`, `--all-jobs`, or
+more than one `--job`.
+
+It is left out when you already chose how classes are named, with `--naming-strategy` or `--model-name-map` on the
+command line or in `pyproject.toml` (`naming-strategy = "numbered"` keeps the numbered names without the hint), and
+with `--check`, `--diff-against`, `--output-format json`, and `--disable-warnings`. In tests that run the command
+line in-process, `ignore::datamodel_code_generator.NamingHintWarning` in pytest's `filterwarnings` hides it.
+`generate()` never shows it. The hint never changes the generated files, the result of `--check`, or the exit code.
+
 ## Read the report
 
 For example, for this schema (`titled_variants.yaml`):

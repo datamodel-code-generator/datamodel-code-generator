@@ -300,6 +300,7 @@ ini_options.filterwarnings = [
   "ignore:^.* has a required field after a field with a default.*:UserWarning",
   "ignore:^.*format of 'unknown-type' not understood for 'string' - using default.*",
   "ignore:^.*is empty or not a dict. Skipping this file.*:UserWarning",
+  "ignore::datamodel_code_generator.NamingHintWarning",
   """\
   ignore:^.*jsonschema.exceptions.RefResolutionError is deprecated as of version 4.18.0. If you wish to catch \
   potential reference resolution errors, directly catch referencing.exceptions.Unresolvable..*\
