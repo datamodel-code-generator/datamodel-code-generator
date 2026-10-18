@@ -24,7 +24,8 @@ shipped rules data. The script writes to --out (which must be empty):
 - report.md: regret per schema, rules whose decision disagrees with the grid, threshold proposals, preset
   proposals, import checks, upstream heads (with --check-upstream), failures and changes since the last calibration;
 - scores.json: every number behind the report;
-- calibration.json: the proposed contents of scripts/recommender_calibration.json;
+- calibration.json: the proposed contents of scripts/recommender_calibration.json (with --only, the manifest's other
+  schemas keep their entries from --calibration);
 - rules.diff: threshold proposals as a diff of the rules data, when there are any.
 It never edits the rules, the calibration file or the manifest.
 
@@ -1065,17 +1066,7 @@ def _preset_candidates(
             losses: dict[str, float] = {}
             import_arguments: dict[str, tuple[str, ...] | None] = {}
             for run in runs:
-                inside, outside = _best(run, inside_indexes), _best(run, outside_indexes)
-                if inside is None or outside is None:
-                    continue
                 schema = run.subject.schema
-                with_value, without_value = run.grid[inside], run.grid[outside]
-                wins[schema.role][1] += 1
-                if _rank(with_value) < _rank(without_value):
-                    wins[schema.role][0] += 1
-                elif _rank(with_value) > _rank(without_value):
-                    extra = with_value["metrics"]["problems"] - without_value["metrics"]["problems"]
-                    losses[schema.schema_id] = max(extra, 0)
                 preset_index = _preset_point(run, points, grid, decision, value)
                 preset_result = None if preset_index is None else run.grid[preset_index]
                 import_arguments[schema.schema_id] = (
@@ -1083,6 +1074,16 @@ def _preset_candidates(
                     if preset_result is not None and _ok(preset_result)
                     else None
                 )
+                inside, outside = _best(run, inside_indexes), _best(run, outside_indexes)
+                if inside is None or outside is None:
+                    continue
+                with_value, without_value = run.grid[inside], run.grid[outside]
+                wins[schema.role][1] += 1
+                if _rank(with_value) < _rank(without_value):
+                    wins[schema.role][0] += 1
+                elif _rank(with_value) > _rank(without_value):
+                    extra = with_value["metrics"]["problems"] - without_value["metrics"]["problems"]
+                    losses[schema.schema_id] = max(extra, 0)
             eligible = all(total and won / total >= PRESET_WIN_RATIO for won, total in wins.values()) and (
                 max(losses.values(), default=0) <= PRESET_MAX_LOSS
             )
@@ -1199,8 +1200,13 @@ def _recorded(entry: Mapping[str, Any] | None) -> dict[str, Any] | None:
 
 
 def _calibration(
-    summaries: list[dict[str, Any]], rules_document: Mapping[str, Any], settings: Settings, grid: Mapping[str, Any]
+    summaries: list[dict[str, Any]],
+    rules_document: Mapping[str, Any],
+    settings: Settings,
+    grid: Mapping[str, Any],
+    kept: Mapping[str, Any],
 ) -> dict[str, Any]:
+    """Return the proposed calibration file: this run's schemas, and the kept entries of schemas it did not select."""
     return {
         "format_version": CALIBRATION_FORMAT,
         "rules_revision": rules_document.get("rules_revision"),
@@ -1212,16 +1218,19 @@ def _calibration(
         },
         "grid": {"decisions": list(grid), "configurations": len(_grid_points(grid))},
         "schemas": {
-            summary["schema"]: {
-                "ref": summary["ref"],
-                "diff_against": summary["diff_against"],
-                "rules": summary["recommended"]["rules"],
-                "recommended": _recorded(summary["recommended"]),
-                "best": _recorded(summary["best"]),
-                "regret": summary["regret"],
-            }
-            for summary in summaries
-            if "error" not in summary
+            **kept,
+            **{
+                summary["schema"]: {
+                    "ref": summary["ref"],
+                    "diff_against": summary["diff_against"],
+                    "rules": summary["recommended"]["rules"],
+                    "recommended": _recorded(summary["recommended"]),
+                    "best": _recorded(summary["best"]),
+                    "regret": summary["regret"],
+                }
+                for summary in summaries
+                if "error" not in summary
+            },
         },
     }
 
@@ -1416,7 +1425,8 @@ def _proposals_section(proposals: list[dict[str, Any]], candidates: list[dict[st
         (
             f"A value is proposed for a new dated preset when it wins on at least {PRESET_WIN_RATIO:.0%} of the "
             f"calibration and of the holdout schemas, loses none by more than {PRESET_MAX_LOSS} problem names and "
-            "imports everywhere as the latest preset with only that value changed. Wins compare the best grid "
+            "generates and imports on every schema of the run as the latest preset with only that value changed. "
+            "Wins compare the best grid "
             "configuration with the value against the best one without it by the trial's ranking; losses show the "
             "extra problem names (+0: lost on another ranking metric)."
         ),
@@ -1541,19 +1551,25 @@ def _select(manifest: Manifest, only: Sequence[str] | None) -> list[Schema]:
 def _settle_candidates(
     candidates: list[dict[str, Any]], results: Mapping[tuple[str, tuple[str, ...]], str] | None
 ) -> None:
+    """Set each candidate's status; a proposal needs the preset with its value imported on every schema of the run."""
     for candidate in candidates:
         import_arguments = candidate.pop("import_arguments")
+        unchecked = sorted(schema_id for schema_id, arguments in import_arguments.items() if arguments is None)
         failing = sorted(
             schema_id
             for schema_id, arguments in import_arguments.items()
-            if arguments is None or (results or {}).get((schema_id, arguments)) != "ok"
+            if arguments is not None and (results or {}).get((schema_id, arguments)) != "ok"
         )
+        reasons = [
+            *([f"imports fail on {', '.join(failing)}"] if failing else []),
+            *([f"not import-checked on {', '.join(unchecked)}"] if unchecked else []),
+        ]
         if not candidate["eligible"]:
             candidate["status"] = "not proposed"
         elif results is None:
             candidate["status"] = "needs --import-check"
         else:
-            candidate["status"] = f"not proposed: imports fail on {', '.join(failing)}" if failing else "proposed"
+            candidate["status"] = f"not proposed: {'; '.join(reasons)}" if reasons else "proposed"
 
 
 def _out_settings(ns: argparse.Namespace) -> Settings:
@@ -1624,8 +1640,14 @@ def _calibrate(ns: argparse.Namespace, settings: Settings, manifest: Manifest, s
         None if imports is None else {(item["schema"], tuple(item["arguments"])): item["result"] for item in imports},
     )
     upstream = _upstream(subject.schema for subject in subjects) if ns.check_upstream else None
-    calibration = _calibration(summaries, rules_document, settings, manifest.grid)
     previous = json.loads(ns.calibration.read_text(encoding="utf-8")) if ns.calibration.is_file() else None
+    unselected = {schema.schema_id for schema in manifest.schemas} - {subject.schema.schema_id for subject in subjects}
+    kept = {
+        schema_id: entry
+        for schema_id, entry in ((previous or {}).get("schemas") or {}).items()
+        if schema_id in unselected
+    }
+    calibration = _calibration(summaries, rules_document, settings, manifest.grid, kept)
     scores = {
         "calibration": calibration,
         "schemas": summaries,

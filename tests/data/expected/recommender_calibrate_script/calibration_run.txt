@@ -1,9 +1,12 @@
-exit=0
+exit=1
 --- stdout
-fetch shop@v1: fetched
+fetch pets@v1: fetched
+fetch pets@v2: fetched
+fetch shop@<upstream head:12>: fetched
 fetch config@v1: fetched, 1 external $ref stubbed
-run 2 schemas x (recommendation + 12 grid configurations)
-regret: shop 0, config 0; threshold proposals: 3; preset proposals: 0
+fetch broken@v1: fetched
+run 4 schemas x (recommendation + 8 grid configurations)
+regret: pets 0, shop 0, config 0, broken None; threshold proposals: 3; preset proposals: 0; upstream heads to rotate: 3 of 4; failed: broken
 wrote report.md, scores.json, calibration.json, rules.diff
 
 --- stderr
@@ -13,7 +16,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
   "calibrated_presets": "20261017",
   "format_version": 1,
   "grid": {
-    "configurations": 12,
+    "configurations": 8,
     "decisions": [
       "naming-strategy",
       "enum-shape",
@@ -29,7 +32,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 12,
-        "preset": "standard-py314-20261017",
+        "preset": "standard-py310-20261017",
         "problems": 0
       },
       "diff_against": null,
@@ -38,12 +41,41 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py314-20261017"
+          "standard-py310-20261017"
         ],
         "median_length": 17,
         "problems": 0
       },
       "ref": "v1",
+      "regret": 0,
+      "rules": [
+        "naming.qualify-shared-inline-names"
+      ]
+    },
+    "pets": {
+      "best": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--enum-field-as-literal",
+          "all"
+        ],
+        "median_length": 5,
+        "preset": "standard-py310-20261017",
+        "problems": 0
+      },
+      "diff_against": "v1",
+      "recommended": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--preset",
+          "standard-py310-20261017"
+        ],
+        "median_length": 9,
+        "problems": 0
+      },
+      "ref": "v2",
       "regret": 0,
       "rules": [
         "naming.qualify-shared-inline-names"
@@ -56,7 +88,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 4,
-        "preset": "standard-py314-20261017",
+        "preset": "standard-py310-20261017",
         "problems": 0
       },
       "diff_against": null,
@@ -65,12 +97,12 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py314-20261017"
+          "standard-py310-20261017"
         ],
         "median_length": 11,
         "problems": 0
       },
-      "ref": "v1",
+      "ref": "<upstream head>",
       "regret": 0,
       "rules": [
         "naming.qualify-shared-inline-names"
@@ -79,8 +111,8 @@ wrote report.md, scores.json, calibration.json, rules.diff
   },
   "settings": {
     "output_model_type": "pydantic_v2.BaseModel",
-    "preset": "standard-py314-20261017",
-    "target_python_version": "3.14"
+    "preset": "standard-py310-20261017",
+    "target_python_version": "3.10"
   }
 }
 
@@ -88,9 +120,9 @@ wrote report.md, scores.json, calibration.json, rules.diff
 # Recommender calibration
 
 - Rules: revision 2026-10-17, calibrated on 20261017 presets
-- Settings: pydantic_v2.BaseModel, target Python 3.14
-- Grid: 12 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py314-20261017
-- Schemas: 2 (1 calibration, 1 holdout)
+- Settings: pydantic_v2.BaseModel, target Python 3.10
+- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261017
+- Schemas: 4 (2 calibration, 2 holdout)
 
 ## Schemas
 
@@ -98,8 +130,10 @@ Problems and median: problem names and median class-name length of the configura
 
 | Schema | Role | Version | Rules fired | Problems | Median | Grid best | Problems | Median | Regret |
 |---|---|---|---|---|---|---|---|---|---|
-| shop | calibration | v1 | naming.qualify-shared-inline-names | 0 | 11 | `--enum-field-as-literal all` | 0 | 4 | 0 |
+| pets | calibration | v2 (diff against v1) | naming.qualify-shared-inline-names | 0 | 9 | `--naming-strategy full-path --enum-field-as-literal all` | 0 | 5 | 0 |
+| shop | calibration | <upstream head:12> | naming.qualify-shared-inline-names | 0 | 11 | `--enum-field-as-literal all` | 0 | 4 | 0 |
 | config | holdout | v1 | naming.qualify-shared-inline-names | 0 | 17 | `--enum-field-as-literal all` | 0 | 12 | 0 |
+| broken | holdout | v1 | failed | - | - | - | - | - | - |
 
 ## Rules against the grid
 
@@ -107,10 +141,10 @@ A rule should fire on a schema when the grid's best configuration with its value
 
 | Rule | Decision | Fires on | Disagrees (calibration) | Disagrees (holdout) | Neutral |
 |---|---|---|---|---|---|
-| titles.keys-when-titles-collide | title-source | - | shop | - | config |
-| titles.names-from-unique-titles | title-source | - | - | - | config |
-| naming.qualify-shared-inline-names | naming-strategy | shop, config | shop | config | - |
-| enums.inline-value-sets-as-literal | enum-shape | - | shop | config | - |
+| titles.keys-when-titles-collide | title-source | - | shop | - | pets, config |
+| titles.names-from-unique-titles | title-source | - | - | - | pets, config |
+| naming.qualify-shared-inline-names | naming-strategy | pets, shop, config | shop | config | - |
+| enums.inline-value-sets-as-literal | enum-shape | - | pets, shop | config | - |
 
 - Not covered: reuse.identical-inline-shapes (decision reuse has no grid axis)
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
@@ -120,7 +154,7 @@ A rule should fire on a schema when the grid's best configuration with its value
 Rules that disagree on 2 or more schemas:
 
 - naming.qualify-shared-inline-names: config, shop
-- enums.inline-value-sets-as-literal: config, shop
+- enums.inline-value-sets-as-literal: config, pets, shop
 
 ## Threshold proposals
 
@@ -130,22 +164,54 @@ One leaf per rule: the observed signal value that removes most calibration disag
 |---|---|---|---|---|
 | titles.keys-when-titles-collide | `component_title_duplicate_groups >= 3` | 1 | 1 -> 0 | 0 -> 0 |
 | naming.qualify-shared-inline-names | `shared_inline_names >= 1` | 2 | 1 -> 0 | 1 -> 0 |
-| enums.inline-value-sets-as-literal | `inline_enums >= 5` | 2 | 1 -> 0 | 1 -> 0 |
+| enums.inline-value-sets-as-literal | `inline_enums >= 5` | 2 | 2 -> 0 | 1 -> 0 |
 
 ## Preset proposals
 
-A value is proposed for a new dated preset when it wins on at least 70% of the calibration and of the holdout schemas, loses none by more than 2 problem names and imports everywhere as the latest preset with only that value changed. Wins compare the best grid configuration with the value against the best one without it by the trial's ranking; losses show the extra problem names (+0: lost on another ranking metric).
+A value is proposed for a new dated preset when it wins on at least 70% of the calibration and of the holdout schemas, loses none by more than 2 problem names and generates and imports on every schema of the run as the latest preset with only that value changed. Wins compare the best grid configuration with the value against the best one without it by the trial's ranking; losses show the extra problem names (+0: lost on another ranking metric).
 
 | Value | Calibration wins | Holdout wins | Losses | Status |
 |---|---|---|---|---|
-| `naming_strategy="full-path"` | 0/1 | 0/1 | config +0, shop +0 | not proposed |
-| `enum_field_as_literal="all"` | 1/1 | 1/1 | - | needs --import-check |
-| `use_subclass_enum=false` | 0/0 | 0/0 | - | not proposed |
-| `use_title_as_name=true` | 0/1 | 0/1 | shop +2 | not proposed |
+| `naming_strategy="full-path"` | 1/2 | 0/1 | config +0, shop +0 | not proposed |
+| `enum_field_as_literal="all"` | 2/2 | 1/1 | - | not proposed: not import-checked on broken |
+| `use_title_as_name=true` | 0/2 | 0/1 | shop +2 | not proposed |
+
+## Import check
+
+| Schema | Configurations | Arguments | Result |
+|---|---|---|---|
+| pets | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261017 --target-python-version 3.10` | ok |
+| pets | grid best | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --naming-strategy full-path --enum-field-as-literal all` | ok |
+| pets | preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --enum-field-as-literal all` | ok |
+| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261017 --target-python-version 3.10` | ok |
+| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --enum-field-as-literal all` | ok |
+| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261017 --target-python-version 3.10` | ok |
+| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --enum-field-as-literal all` | ok |
+
+## Proposed rotation
+
+Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned ref. Rotating pins the head with its date and sha256 as the newest version, and the version pinned before becomes the baseline; nothing was downloaded.
+
+| Schema | Newest pinned | Upstream head |
+|---|---|---|
+| pets | v2 (2026-02-01) | <upstream head:12> |
+| config | v1 (2026-01-20) | <upstream head:12> |
+| broken | v1 (2026-01-25) | not checked: no HEAD reported |
+
+## Failures
+
+- broken: Unable to read the input as a JSON Schema document: Expected dict, got list
 
 ## Changes since the last calibration
 
-- No previous calibration file; every result is new.
+- calibrated_presets 20261015 -> 20261017
+- rules_revision 2026-10-15 -> 2026-10-17
+- settings.preset None -> standard-py310-20261017
+- settings.target_python_version 3.14 -> 3.10
+- config: new
+- legacy: not in this run
+- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py310-20261017; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy full-path --preset standard-py310-20261017]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
+- shop: best.preset None -> standard-py310-20261017; recommended.arguments [--naming-strategy full-path] -> [--naming-strategy full-path --preset standard-py310-20261017]; ref v1 -> <upstream head>
 
 --- rules.diff
 --- a/src/datamodel_code_generator/resources/recommender_rules.json
@@ -184,7 +250,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     "calibrated_presets": "20261017",
     "format_version": 1,
     "grid": {
-      "configurations": 12,
+      "configurations": 8,
       "decisions": [
         "naming-strategy",
         "enum-shape",
@@ -200,7 +266,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "all"
           ],
           "median_length": 12,
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "problems": 0
         },
         "diff_against": null,
@@ -209,12 +275,41 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "--naming-strategy",
             "full-path",
             "--preset",
-            "standard-py314-20261017"
+            "standard-py310-20261017"
           ],
           "median_length": 17,
           "problems": 0
         },
         "ref": "v1",
+        "regret": 0,
+        "rules": [
+          "naming.qualify-shared-inline-names"
+        ]
+      },
+      "pets": {
+        "best": {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "median_length": 5,
+          "preset": "standard-py310-20261017",
+          "problems": 0
+        },
+        "diff_against": "v1",
+        "recommended": {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--preset",
+            "standard-py310-20261017"
+          ],
+          "median_length": 9,
+          "problems": 0
+        },
+        "ref": "v2",
         "regret": 0,
         "rules": [
           "naming.qualify-shared-inline-names"
@@ -227,7 +322,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "all"
           ],
           "median_length": 4,
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "problems": 0
         },
         "diff_against": null,
@@ -236,12 +331,12 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "--naming-strategy",
             "full-path",
             "--preset",
-            "standard-py314-20261017"
+            "standard-py310-20261017"
           ],
           "median_length": 11,
           "problems": 0
         },
-        "ref": "v1",
+        "ref": "<upstream head>",
         "regret": 0,
         "rules": [
           "naming.qualify-shared-inline-names"
@@ -250,26 +345,18 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     },
     "settings": {
       "output_model_type": "pydantic_v2.BaseModel",
-      "preset": "standard-py314-20261017",
-      "target_python_version": "3.14"
+      "preset": "standard-py310-20261017",
+      "target_python_version": "3.10"
     }
   },
   "grid": [
     {
       "enum_field_as_literal": "one",
-      "use_subclass_enum": false
-    },
-    {
-      "enum_field_as_literal": "one",
       "use_title_as_name": false
     },
     {
       "enum_field_as_literal": "one",
       "use_title_as_name": true
-    },
-    {
-      "enum_field_as_literal": "all",
-      "use_subclass_enum": false
     },
     {
       "enum_field_as_literal": "all",
@@ -282,22 +369,12 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     {
       "enum_field_as_literal": "one",
       "naming_strategy": "full-path",
-      "use_subclass_enum": false
-    },
-    {
-      "enum_field_as_literal": "one",
-      "naming_strategy": "full-path",
       "use_title_as_name": false
     },
     {
       "enum_field_as_literal": "one",
       "naming_strategy": "full-path",
       "use_title_as_name": true
-    },
-    {
-      "enum_field_as_literal": "all",
-      "naming_strategy": "full-path",
-      "use_subclass_enum": false
     },
     {
       "enum_field_as_literal": "all",
@@ -310,7 +387,145 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "use_title_as_name": true
     }
   ],
-  "import_check": null,
+  "import_check": [
+    {
+      "arguments": [
+        "--input-file-type",
+        "openapi",
+        "--naming-strategy",
+        "full-path",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--preset",
+        "standard-py310-20261017",
+        "--target-python-version",
+        "3.10"
+      ],
+      "labels": [
+        "recommended"
+      ],
+      "result": "ok",
+      "schema": "pets"
+    },
+    {
+      "arguments": [
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--target-python-version",
+        "3.10",
+        "--preset",
+        "standard-py310-20261017",
+        "--naming-strategy",
+        "full-path",
+        "--enum-field-as-literal",
+        "all"
+      ],
+      "labels": [
+        "grid best"
+      ],
+      "result": "ok",
+      "schema": "pets"
+    },
+    {
+      "arguments": [
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--target-python-version",
+        "3.10",
+        "--preset",
+        "standard-py310-20261017",
+        "--enum-field-as-literal",
+        "all"
+      ],
+      "labels": [
+        "preset + enum_field_as_literal=\"all\""
+      ],
+      "result": "ok",
+      "schema": "pets"
+    },
+    {
+      "arguments": [
+        "--input-file-type",
+        "openapi",
+        "--naming-strategy",
+        "full-path",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--preset",
+        "standard-py310-20261017",
+        "--target-python-version",
+        "3.10"
+      ],
+      "labels": [
+        "recommended"
+      ],
+      "result": "ok",
+      "schema": "shop"
+    },
+    {
+      "arguments": [
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--target-python-version",
+        "3.10",
+        "--preset",
+        "standard-py310-20261017",
+        "--enum-field-as-literal",
+        "all"
+      ],
+      "labels": [
+        "grid best",
+        "preset + enum_field_as_literal=\"all\""
+      ],
+      "result": "ok",
+      "schema": "shop"
+    },
+    {
+      "arguments": [
+        "--input-file-type",
+        "jsonschema",
+        "--naming-strategy",
+        "full-path",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--preset",
+        "standard-py310-20261017",
+        "--target-python-version",
+        "3.10"
+      ],
+      "labels": [
+        "recommended"
+      ],
+      "result": "ok",
+      "schema": "config"
+    },
+    {
+      "arguments": [
+        "--input-file-type",
+        "jsonschema",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--target-python-version",
+        "3.10",
+        "--preset",
+        "standard-py310-20261017",
+        "--enum-field-as-literal",
+        "all"
+      ],
+      "labels": [
+        "grid best",
+        "preset + enum_field_as_literal=\"all\""
+      ],
+      "result": "ok",
+      "schema": "config"
+    }
+  ],
   "preset_candidates": [
     {
       "decision": "naming-strategy",
@@ -325,8 +540,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       },
       "wins": {
         "calibration": [
-          0,
-          1
+          1,
+          2
         ],
         "holdout": [
           0,
@@ -338,37 +553,18 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "decision": "enum-shape",
       "eligible": true,
       "losses": {},
-      "status": "needs --import-check",
+      "status": "not proposed: not import-checked on broken",
       "values": {
         "enum_field_as_literal": "all"
       },
       "wins": {
         "calibration": [
-          1,
-          1
+          2,
+          2
         ],
         "holdout": [
           1,
           1
-        ]
-      }
-    },
-    {
-      "decision": "title-source",
-      "eligible": false,
-      "losses": {},
-      "status": "not proposed",
-      "values": {
-        "use_subclass_enum": false
-      },
-      "wins": {
-        "calibration": [
-          0,
-          0
-        ],
-        "holdout": [
-          0,
-          0
         ]
       }
     },
@@ -385,7 +581,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "wins": {
         "calibration": [
           0,
-          1
+          2
         ],
         "holdout": [
           0,
@@ -395,18 +591,109 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     }
   ],
   "results": {
-    "config": {
+    "broken": {
       "grid": [
         {
+          "arguments": [],
+          "delta": {},
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+        },
+        {
           "arguments": [
-            "--no-use-subclass-enum"
+            "--use-title-as-name"
           ],
           "delta": {
-            "use_subclass_enum": false
+            "use_title_as_name": true
           },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all"
+          },
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+        },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "use_title_as_name": true
+          },
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path"
+          ],
+          "delta": {
+            "naming_strategy": "full-path"
+          },
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path"
+          },
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "preset": "standard-py310-20261017",
+          "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+        }
+      ],
+      "recommendation": {
+        "error": "Unable to read the input as a JSON Schema document: Expected dict, got list"
+      }
+    },
+    "config": {
+      "grid": [
         {
           "arguments": [],
           "delta": {},
@@ -433,7 +720,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -466,21 +753,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
-        },
-        {
-          "arguments": [
-            "--enum-field-as-literal",
-            "all",
-            "--no-use-subclass-enum"
-          ],
-          "delta": {
-            "enum_field_as_literal": "all",
-            "use_subclass_enum": false
-          },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
         },
         {
           "arguments": [
@@ -513,7 +787,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -549,21 +823,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
-        },
-        {
-          "arguments": [
-            "--naming-strategy",
-            "full-path",
-            "--no-use-subclass-enum"
-          ],
-          "delta": {
-            "naming_strategy": "full-path",
-            "use_subclass_enum": false
-          },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
         },
         {
           "arguments": [
@@ -596,7 +857,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -632,24 +893,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
-        },
-        {
-          "arguments": [
-            "--naming-strategy",
-            "full-path",
-            "--enum-field-as-literal",
-            "all",
-            "--no-use-subclass-enum"
-          ],
-          "delta": {
-            "enum_field_as_literal": "all",
-            "naming_strategy": "full-path",
-            "use_subclass_enum": false
-          },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
         },
         {
           "arguments": [
@@ -685,7 +930,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -724,7 +969,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         }
       ],
@@ -737,21 +982,21 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py314-20261017",
+          "standard-py310-20261017",
           "--target-python-version",
-          "3.14"
+          "3.10"
         ],
         "baseline": {
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py314-20261017"
+          "preset": "standard-py310-20261017"
         },
         "calibrated_presets": "20261017",
         "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
-          "target_python_version": "3.14"
+          "target_python_version": "3.10"
         },
         "disagreements": [],
         "facts": {
@@ -977,7 +1222,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261017",
+              "preset": "standard-py310-20261017",
               "selectable": true,
               "set": {},
               "stability": null
@@ -1014,7 +1259,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261017",
+              "preset": "standard-py310-20261017",
               "selectable": true,
               "set": {
                 "class_name": "Config",
@@ -1052,7 +1297,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261017",
+              "preset": "standard-py310-20261017",
               "selectable": true,
               "set": {
                 "class_name": "Config"
@@ -1089,7 +1334,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261017",
+              "preset": "standard-py310-20261017",
               "selectable": true,
               "set": {
                 "naming_strategy": "full-path"
@@ -1137,18 +1382,608 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "version": 1
       }
     },
-    "shop": {
+    "pets": {
       "grid": [
         {
+          "arguments": [],
+          "delta": {},
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 7,
+            "median_length": 5,
+            "numbered": 3,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 3,
+            "problems_percent": 33.3,
+            "readable": 6,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
+        },
+        {
           "arguments": [
-            "--no-use-subclass-enum"
+            "--use-title-as-name"
           ],
           "delta": {
-            "use_subclass_enum": false
+            "use_title_as_name": true
           },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 7,
+            "median_length": 5,
+            "numbered": 3,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 3,
+            "problems_percent": 33.3,
+            "readable": 6,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
         },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all"
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 6,
+            "median_length": 5,
+            "numbered": 1,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 1,
+            "problems_percent": 20.0,
+            "readable": 4,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 6,
+            "median_length": 5,
+            "numbered": 1,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 1,
+            "problems_percent": 20.0,
+            "readable": 4,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path"
+          ],
+          "delta": {
+            "naming_strategy": "full-path"
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 11,
+            "median_length": 9,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 9,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 11,
+            "median_length": 9,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 9,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path"
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 10,
+            "median_length": 5,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 5,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 10,
+            "median_length": 5,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 5,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py310-20261017",
+          "renamed": 0
+        }
+      ],
+      "recommendation": {
+        "arguments": [
+          "--input-file-type",
+          "openapi",
+          "--naming-strategy",
+          "full-path",
+          "--output-model-type",
+          "pydantic_v2.BaseModel",
+          "--preset",
+          "standard-py310-20261017",
+          "--target-python-version",
+          "3.10"
+        ],
+        "baseline": {
+          "configured": false,
+          "covers": [],
+          "family": "standard",
+          "preset": "standard-py310-20261017"
+        },
+        "calibrated_presets": "20261017",
+        "consider": [],
+        "context": {
+          "output_model_type": "pydantic_v2.BaseModel",
+          "target_python_version": "3.10"
+        },
+        "disagreements": [],
+        "facts": {
+          "duplicate_title_examples": "",
+          "inline_title_examples": "",
+          "key_style": "PascalCase (3 of 3)",
+          "root_title": "",
+          "schema": "OpenAPI 3.0.3",
+          "scopes": "schemas",
+          "shared_inline_name_examples": "status x3, owner x2"
+        },
+        "format": "json",
+        "input": {
+          "analysed": true,
+          "document": "OpenAPI 3.0.3",
+          "input_file_type": "openapi",
+          "source": "file"
+        },
+        "kind": "recommend-options",
+        "left_out": [],
+        "mode": "full",
+        "not_recommended": [],
+        "notes": [],
+        "recommendations": [
+          {
+            "arguments": [
+              "--naming-strategy",
+              "full-path"
+            ],
+            "caveats": [],
+            "contested_reason": null,
+            "decision": "naming-strategy",
+            "evidence": [
+              "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
+              "Petstore: Status and Status1 became OrderStatus and PetStatus",
+              "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
+              "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
+            ],
+            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "rule": "naming.qualify-shared-inline-names",
+            "set": {
+              "naming_strategy": "full-path"
+            },
+            "trial": {
+              "after": "recommended",
+              "before": "preset",
+              "changes": {
+                "added": 0,
+                "examples": [
+                  {
+                    "after": "OrderStatus",
+                    "before": "Status1",
+                    "location": "components/schemas/Order > status"
+                  },
+                  {
+                    "after": "PetStatus",
+                    "before": "Status",
+                    "location": "components/schemas/Pet > status"
+                  },
+                  {
+                    "after": "StoreStatus",
+                    "before": "Status2",
+                    "location": "components/schemas/Store > status"
+                  }
+                ],
+                "matched": 9,
+                "removed": 0,
+                "renamed": 6,
+                "renumbered": 0
+              }
+            }
+          }
+        ],
+        "rules_revision": "2026-10-17",
+        "signals": {
+          "all_enums": 4,
+          "component_enums": 0,
+          "component_title_duplicate_groups": 0,
+          "component_titles_equal_other_key": 0,
+          "component_titles_equal_own_key": 0,
+          "component_titles_in_duplicate_groups": 0,
+          "components": 3,
+          "discriminated_unions": 0,
+          "dotted_key_namespaces": 0,
+          "dotted_keys": 0,
+          "dotted_namespace_reference_cycles": 0,
+          "duplicate_inline_enum_shapes": 0,
+          "duplicate_inline_enums": 0,
+          "duplicate_inline_objects": 0,
+          "duplicate_inline_shapes": 0,
+          "estimated_models": 9,
+          "inline_enums": 4,
+          "inline_names_equal_component": 0,
+          "inline_object_union_variants": 0,
+          "inline_objects": 2,
+          "inline_scalar_union_variants": 0,
+          "inline_tagged_union_branches": 0,
+          "inline_title_max_repeat": 0,
+          "inline_titled_objects": 0,
+          "inline_titled_union_variants": 0,
+          "inline_union_variants": 0,
+          "max_inline_depth": 1,
+          "operations": 0,
+          "parent_copy_union_branches": 0,
+          "root_is_object": 0,
+          "root_title_words": 0,
+          "shared_inline_enum_names": 1,
+          "shared_inline_names": 2,
+          "shared_inline_object_names": 1,
+          "single_key_required_open": 0,
+          "single_key_union_branches": 0,
+          "single_value_enum_union_branches": 0,
+          "single_value_enums": 0,
+          "tagged_behind_ref": 0,
+          "titled_components": 0,
+          "unions": 0
+        },
+        "trial": {
+          "candidates": [
+            {
+              "arguments": [],
+              "error": null,
+              "label": "current",
+              "metrics": {
+                "component": 3,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 6,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 7,
+                "median_length": 5,
+                "numbered": 3,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 3,
+                "problems_percent": 33.3,
+                "readable": 6,
+                "statuscode": 0,
+                "types": 9,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": null,
+              "selectable": false,
+              "set": {},
+              "stability": {
+                "fingerprints_matched": 3,
+                "fingerprints_renamed": 0,
+                "fingerprints_renumbered": 0,
+                "locations": {
+                  "added": 3,
+                  "examples": [],
+                  "matched": 6,
+                  "removed": 0,
+                  "renamed": 0,
+                  "renumbered": 0
+                }
+              }
+            },
+            {
+              "arguments": [],
+              "error": null,
+              "label": "preset",
+              "metrics": {
+                "component": 3,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 6,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 7,
+                "median_length": 5,
+                "numbered": 3,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 3,
+                "problems_percent": 33.3,
+                "readable": 6,
+                "statuscode": 0,
+                "types": 9,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py310-20261017",
+              "selectable": true,
+              "set": {},
+              "stability": {
+                "fingerprints_matched": 3,
+                "fingerprints_renamed": 0,
+                "fingerprints_renumbered": 0,
+                "locations": {
+                  "added": 3,
+                  "examples": [],
+                  "matched": 6,
+                  "removed": 0,
+                  "renamed": 0,
+                  "renumbered": 0
+                }
+              }
+            },
+            {
+              "arguments": [
+                "--naming-strategy",
+                "full-path"
+              ],
+              "error": null,
+              "label": "recommended",
+              "metrics": {
+                "component": 3,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 6,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 11,
+                "median_length": 9,
+                "numbered": 0,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 0,
+                "problems_percent": 0.0,
+                "readable": 9,
+                "statuscode": 0,
+                "types": 9,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py310-20261017",
+              "selectable": true,
+              "set": {
+                "naming_strategy": "full-path"
+              },
+              "stability": {
+                "fingerprints_matched": 3,
+                "fingerprints_renamed": 0,
+                "fingerprints_renumbered": 0,
+                "locations": {
+                  "added": 3,
+                  "examples": [],
+                  "matched": 6,
+                  "removed": 0,
+                  "renamed": 0,
+                  "renumbered": 0
+                }
+              }
+            }
+          ],
+          "current": "current",
+          "dropped": 0,
+          "metrics_version": 1,
+          "migration": {
+            "added": 0,
+            "examples": [
+              {
+                "after": "OrderStatus",
+                "before": "Status1",
+                "location": "components/schemas/Order > status"
+              },
+              {
+                "after": "PetStatus",
+                "before": "Status",
+                "location": "components/schemas/Pet > status"
+              },
+              {
+                "after": "StoreStatus",
+                "before": "Status2",
+                "location": "components/schemas/Store > status"
+              }
+            ],
+            "matched": 9,
+            "removed": 0,
+            "renamed": 6,
+            "renumbered": 0
+          },
+          "ranking": [
+            "recommended",
+            "current",
+            "preset"
+          ],
+          "remeasured": 0,
+          "selected": "recommended"
+        },
+        "version": 1
+      }
+    },
+    "shop": {
+      "grid": [
         {
           "arguments": [],
           "delta": {},
@@ -1175,7 +2010,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -1208,21 +2043,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
-        },
-        {
-          "arguments": [
-            "--enum-field-as-literal",
-            "all",
-            "--no-use-subclass-enum"
-          ],
-          "delta": {
-            "enum_field_as_literal": "all",
-            "use_subclass_enum": false
-          },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
         },
         {
           "arguments": [
@@ -1255,7 +2077,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -1291,21 +2113,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
-        },
-        {
-          "arguments": [
-            "--naming-strategy",
-            "full-path",
-            "--no-use-subclass-enum"
-          ],
-          "delta": {
-            "naming_strategy": "full-path",
-            "use_subclass_enum": false
-          },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
         },
         {
           "arguments": [
@@ -1338,7 +2147,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -1374,24 +2183,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
-        },
-        {
-          "arguments": [
-            "--naming-strategy",
-            "full-path",
-            "--enum-field-as-literal",
-            "all",
-            "--no-use-subclass-enum"
-          ],
-          "delta": {
-            "enum_field_as_literal": "all",
-            "naming_strategy": "full-path",
-            "use_subclass_enum": false
-          },
-          "preset": "standard-py314-20261017",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
         },
         {
           "arguments": [
@@ -1427,7 +2220,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         },
         {
@@ -1466,7 +2259,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py314-20261017",
+          "preset": "standard-py310-20261017",
           "renamed": null
         }
       ],
@@ -1479,21 +2272,21 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py314-20261017",
+          "standard-py310-20261017",
           "--target-python-version",
-          "3.14"
+          "3.10"
         ],
         "baseline": {
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py314-20261017"
+          "preset": "standard-py310-20261017"
         },
         "calibrated_presets": "20261017",
         "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
-          "target_python_version": "3.14"
+          "target_python_version": "3.10"
         },
         "disagreements": [],
         "facts": {
@@ -1672,7 +2465,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261017",
+              "preset": "standard-py310-20261017",
               "selectable": true,
               "set": {},
               "stability": null
@@ -1707,7 +2500,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py314-20261017",
+              "preset": "standard-py310-20261017",
               "selectable": true,
               "set": {
                 "naming_strategy": "full-path"
@@ -1766,6 +2559,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       },
       "fires": [],
       "neutral": [
+        "pets",
         "config"
       ],
       "rule": "titles.keys-when-titles-collide"
@@ -1779,6 +2573,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       },
       "fires": [],
       "neutral": [
+        "pets",
         "config"
       ],
       "rule": "titles.names-from-unique-titles"
@@ -1795,6 +2590,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         ]
       },
       "fires": [
+        "pets",
         "shop",
         "config"
       ],
@@ -1806,6 +2602,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "decision": "enum-shape",
       "disagrees": {
         "calibration": [
+          "pets",
           "shop"
         ],
         "holdout": [
@@ -1841,6 +2638,87 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     {
       "best": {
         "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--enum-field-as-literal",
+          "all"
+        ],
+        "metrics": {
+          "component": 3,
+          "displaced": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "generic": 0,
+          "inline": 2,
+          "inline_like_component": 0,
+          "long": 0,
+          "max_length": 10,
+          "median_length": 5,
+          "numbered": 0,
+          "operation": 0,
+          "other_problems": 0,
+          "problems": 0,
+          "problems_percent": 0.0,
+          "readable": 5,
+          "statuscode": 0,
+          "types": 5,
+          "union_variants": 0,
+          "union_variants_numbered": 0,
+          "union_variants_parent_numbered": 0
+        },
+        "preset": "standard-py310-20261017",
+        "renamed": 0,
+        "values": {
+          "enum_field_as_literal": "all",
+          "naming_strategy": "full-path",
+          "use_title_as_name": false
+        }
+      },
+      "diff_against": "v1",
+      "recommended": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--preset",
+          "standard-py310-20261017"
+        ],
+        "metrics": {
+          "component": 3,
+          "displaced": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "generic": 0,
+          "inline": 6,
+          "inline_like_component": 0,
+          "long": 0,
+          "max_length": 11,
+          "median_length": 9,
+          "numbered": 0,
+          "operation": 0,
+          "other_problems": 0,
+          "problems": 0,
+          "problems_percent": 0.0,
+          "readable": 9,
+          "statuscode": 0,
+          "types": 9,
+          "union_variants": 0,
+          "union_variants_numbered": 0,
+          "union_variants_parent_numbered": 0
+        },
+        "renamed": 0,
+        "rules": [
+          "naming.qualify-shared-inline-names"
+        ]
+      },
+      "ref": "v2",
+      "regret": 0,
+      "rejected": 0,
+      "role": "calibration",
+      "schema": "pets"
+    },
+    {
+      "best": {
+        "arguments": [
           "--enum-field-as-literal",
           "all"
         ],
@@ -1867,7 +2745,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py314-20261017",
+        "preset": "standard-py310-20261017",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -1880,7 +2758,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py314-20261017"
+          "standard-py310-20261017"
         ],
         "metrics": {
           "component": 2,
@@ -1910,9 +2788,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "naming.qualify-shared-inline-names"
         ]
       },
-      "ref": "v1",
+      "ref": "<upstream head>",
       "regret": 0,
-      "rejected": 4,
+      "rejected": 0,
       "role": "calibration",
       "schema": "shop"
     },
@@ -1945,7 +2823,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py314-20261017",
+        "preset": "standard-py310-20261017",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -1958,7 +2836,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py314-20261017"
+          "standard-py310-20261017"
         ],
         "metrics": {
           "component": 1,
@@ -1990,9 +2868,18 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       },
       "ref": "v1",
       "regret": 0,
-      "rejected": 4,
+      "rejected": 0,
       "role": "holdout",
       "schema": "config"
+    },
+    {
+      "best": null,
+      "diff_against": null,
+      "error": "Unable to read the input as a JSON Schema document: Expected dict, got list",
+      "ref": "v1",
+      "rejected": 8,
+      "role": "holdout",
+      "schema": "broken"
     }
   ],
   "threshold_proposals": [
@@ -2028,7 +2915,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     },
     {
       "calibration": [
-        1,
+        2,
         0
       ],
       "current": 5,
@@ -2042,5 +2929,42 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "rule": "enums.inline-value-sets-as-literal"
     }
   ],
-  "upstream": null
+  "upstream": [
+    {
+      "date": "2026-02-01",
+      "head": "<upstream head>",
+      "pinned": "v2",
+      "schema": "pets"
+    },
+    {
+      "date": "2026-01-15",
+      "head": "<upstream head>",
+      "pinned": "<upstream head>",
+      "schema": "shop"
+    },
+    {
+      "date": "2026-01-20",
+      "head": "<upstream head>",
+      "pinned": "v1",
+      "schema": "config"
+    },
+    {
+      "date": "2026-01-25",
+      "error": "no HEAD reported",
+      "pinned": "v1",
+      "schema": "broken"
+    }
+  ]
 }
+
+=== second run
+exit=0
+--- stdout
+fetch pets@v1: cached
+fetch pets@v2: cached
+fetch shop@<upstream head:12>: cached
+fetch config@v1: cached, 1 external $ref stubbed
+fetch broken@v1: cached
+verified 5 files
+
+--- stderr

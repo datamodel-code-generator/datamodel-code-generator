@@ -98,7 +98,7 @@ One leaf per rule: the observed signal value that removes most calibration disag
 
 ## Preset proposals
 
-A value is proposed for a new dated preset when it wins on at least 70% of the calibration and of the holdout schemas, loses none by more than 2 problem names and imports everywhere as the latest preset with only that value changed. Wins compare the best grid configuration with the value against the best one without it by the trial's ranking; losses show the extra problem names (+0: lost on another ranking metric).
+A value is proposed for a new dated preset when it wins on at least 70% of the calibration and of the holdout schemas, loses none by more than 2 problem names and generates and imports on every schema of the run as the latest preset with only that value changed. Wins compare the best grid configuration with the value against the best one without it by the trial's ranking; losses show the extra problem names (+0: lost on another ranking metric).
 
 | Value | Calibration wins | Holdout wins | Losses | Status |
 |---|---|---|---|---|

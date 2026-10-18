@@ -1,0 +1,1945 @@
+exit=0
+--- stdout
+fetch pets@v1: fetched
+fetch pets@v2: fetched
+fetch config@v1: fetched, 1 external $ref stubbed
+run 2 schemas x (recommendation + 8 grid configurations)
+regret: pets 0, config 0; threshold proposals: 1; preset proposals: 0
+wrote report.md, scores.json, calibration.json, rules.diff
+
+--- stderr
+
+--- calibration.json
+{
+  "calibrated_presets": "20261017",
+  "format_version": 1,
+  "grid": {
+    "configurations": 8,
+    "decisions": [
+      "naming-strategy",
+      "enum-shape",
+      "title-source"
+    ]
+  },
+  "rules_revision": "2026-10-17",
+  "schemas": {
+    "config": {
+      "best": {
+        "arguments": [
+          "--enum-field-as-literal",
+          "all"
+        ],
+        "median_length": 12,
+        "preset": "standard-py314-20261017",
+        "problems": 0
+      },
+      "diff_against": null,
+      "recommended": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--preset",
+          "standard-py314-20261017"
+        ],
+        "median_length": 17,
+        "problems": 0
+      },
+      "ref": "v1",
+      "regret": 0,
+      "rules": [
+        "naming.qualify-shared-inline-names"
+      ]
+    },
+    "pets": {
+      "best": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--enum-field-as-literal",
+          "all"
+        ],
+        "median_length": 5,
+        "preset": "standard-py314-20261017",
+        "problems": 0
+      },
+      "diff_against": "v1",
+      "recommended": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--preset",
+          "standard-py314-20261017"
+        ],
+        "median_length": 9,
+        "problems": 0
+      },
+      "ref": "v2",
+      "regret": 0,
+      "rules": [
+        "naming.qualify-shared-inline-names"
+      ]
+    },
+    "shop": {
+      "best": {
+        "arguments": [
+          "--enum-field-as-literal",
+          "all"
+        ],
+        "median_length": 4,
+        "problems": 0
+      },
+      "diff_against": null,
+      "recommended": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path"
+        ],
+        "median_length": 11,
+        "problems": 0
+      },
+      "ref": "v1",
+      "regret": 0,
+      "rules": [
+        "naming.qualify-shared-inline-names"
+      ]
+    }
+  },
+  "settings": {
+    "output_model_type": "pydantic_v2.BaseModel",
+    "preset": "standard-py314-20261017",
+    "target_python_version": "3.14"
+  }
+}
+
+--- report.md
+# Recommender calibration
+
+- Rules: revision 2026-10-17, calibrated on 20261017 presets
+- Settings: pydantic_v2.BaseModel, target Python 3.14
+- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py314-20261017
+- Schemas: 2 (1 calibration, 1 holdout)
+
+## Schemas
+
+Problems and median: problem names and median class-name length of the configuration the --recommend-options trial selects and of the grid's best one. Grid configurations are ranked like the trial ranks candidates: numbered and doubled names, other problem names, renamed locations, median length, then fewer options. Regret: the recommendation's problem names minus the best grid configuration's.
+
+| Schema | Role | Version | Rules fired | Problems | Median | Grid best | Problems | Median | Regret |
+|---|---|---|---|---|---|---|---|---|---|
+| pets | calibration | v2 (diff against v1) | naming.qualify-shared-inline-names | 0 | 9 | `--naming-strategy full-path --enum-field-as-literal all` | 0 | 5 | 0 |
+| config | holdout | v1 | naming.qualify-shared-inline-names | 0 | 17 | `--enum-field-as-literal all` | 0 | 12 | 0 |
+
+## Rules against the grid
+
+A rule should fire on a schema when the grid's best configuration with its values beats the best one without them. Neutral: a tie, or one side has no valid configuration.
+
+| Rule | Decision | Fires on | Disagrees (calibration) | Disagrees (holdout) | Neutral |
+|---|---|---|---|---|---|
+| titles.keys-when-titles-collide | title-source | - | - | - | pets, config |
+| titles.names-from-unique-titles | title-source | - | - | - | pets, config |
+| naming.qualify-shared-inline-names | naming-strategy | pets, config | - | config | - |
+| enums.inline-value-sets-as-literal | enum-shape | - | pets | config | - |
+
+- Not covered: reuse.identical-inline-shapes (decision reuse has no grid axis)
+- Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
+- Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
+- Not covered: unions.name-variants-after-tags (decision union-variant-names has no grid axis)
+
+Rules that disagree on 2 or more schemas:
+
+- enums.inline-value-sets-as-literal: config, pets
+
+## Threshold proposals
+
+One leaf per rule: the observed signal value that removes most calibration disagreements without adding holdout ones. See rules.diff.
+
+| Rule | Leaf | Proposed | Calibration disagreements | Holdout disagreements |
+|---|---|---|---|---|
+| enums.inline-value-sets-as-literal | `inline_enums >= 5` | 2 | 1 -> 0 | 1 -> 0 |
+
+## Preset proposals
+
+A value is proposed for a new dated preset when it wins on at least 70% of the calibration and of the holdout schemas, loses none by more than 2 problem names and generates and imports on every schema of the run as the latest preset with only that value changed. Wins compare the best grid configuration with the value against the best one without it by the trial's ranking; losses show the extra problem names (+0: lost on another ranking metric).
+
+| Value | Calibration wins | Holdout wins | Losses | Status |
+|---|---|---|---|---|
+| `naming_strategy="full-path"` | 1/1 | 0/1 | config +0 | not proposed |
+| `enum_field_as_literal="all"` | 1/1 | 1/1 | - | needs --import-check |
+| `use_title_as_name=true` | 0/1 | 0/1 | - | not proposed |
+
+## Changes since the last calibration
+
+- calibrated_presets 20261015 -> 20261017
+- rules_revision 2026-10-15 -> 2026-10-17
+- settings.preset None -> standard-py314-20261017
+- config: new
+- legacy: not in this run
+- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py314-20261017; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy full-path --preset standard-py314-20261017]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
+
+--- rules.diff
+--- a/src/datamodel_code_generator/resources/recommender_rules.json
++++ b/src/datamodel_code_generator/resources/recommender_rules.json
+@@ -143,7 +143,7 @@
+           {
+             "signal": "inline_enums",
+             "op": ">=",
+-            "value": 5
++            "value": 2
+           },
+           {
+             "ratio": [
+
+--- scores.json
+{
+  "calibration": {
+    "calibrated_presets": "20261017",
+    "format_version": 1,
+    "grid": {
+      "configurations": 8,
+      "decisions": [
+        "naming-strategy",
+        "enum-shape",
+        "title-source"
+      ]
+    },
+    "rules_revision": "2026-10-17",
+    "schemas": {
+      "config": {
+        "best": {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "median_length": 12,
+          "preset": "standard-py314-20261017",
+          "problems": 0
+        },
+        "diff_against": null,
+        "recommended": {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--preset",
+            "standard-py314-20261017"
+          ],
+          "median_length": 17,
+          "problems": 0
+        },
+        "ref": "v1",
+        "regret": 0,
+        "rules": [
+          "naming.qualify-shared-inline-names"
+        ]
+      },
+      "pets": {
+        "best": {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "median_length": 5,
+          "preset": "standard-py314-20261017",
+          "problems": 0
+        },
+        "diff_against": "v1",
+        "recommended": {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--preset",
+            "standard-py314-20261017"
+          ],
+          "median_length": 9,
+          "problems": 0
+        },
+        "ref": "v2",
+        "regret": 0,
+        "rules": [
+          "naming.qualify-shared-inline-names"
+        ]
+      },
+      "shop": {
+        "best": {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "median_length": 4,
+          "problems": 0
+        },
+        "diff_against": null,
+        "recommended": {
+          "arguments": [
+            "--naming-strategy",
+            "full-path"
+          ],
+          "median_length": 11,
+          "problems": 0
+        },
+        "ref": "v1",
+        "regret": 0,
+        "rules": [
+          "naming.qualify-shared-inline-names"
+        ]
+      }
+    },
+    "settings": {
+      "output_model_type": "pydantic_v2.BaseModel",
+      "preset": "standard-py314-20261017",
+      "target_python_version": "3.14"
+    }
+  },
+  "grid": [
+    {
+      "enum_field_as_literal": "one",
+      "use_title_as_name": false
+    },
+    {
+      "enum_field_as_literal": "one",
+      "use_title_as_name": true
+    },
+    {
+      "enum_field_as_literal": "all",
+      "use_title_as_name": false
+    },
+    {
+      "enum_field_as_literal": "all",
+      "use_title_as_name": true
+    },
+    {
+      "enum_field_as_literal": "one",
+      "naming_strategy": "full-path",
+      "use_title_as_name": false
+    },
+    {
+      "enum_field_as_literal": "one",
+      "naming_strategy": "full-path",
+      "use_title_as_name": true
+    },
+    {
+      "enum_field_as_literal": "all",
+      "naming_strategy": "full-path",
+      "use_title_as_name": false
+    },
+    {
+      "enum_field_as_literal": "all",
+      "naming_strategy": "full-path",
+      "use_title_as_name": true
+    }
+  ],
+  "import_check": null,
+  "preset_candidates": [
+    {
+      "decision": "naming-strategy",
+      "eligible": false,
+      "losses": {
+        "config": 0
+      },
+      "status": "not proposed",
+      "values": {
+        "naming_strategy": "full-path"
+      },
+      "wins": {
+        "calibration": [
+          1,
+          1
+        ],
+        "holdout": [
+          0,
+          1
+        ]
+      }
+    },
+    {
+      "decision": "enum-shape",
+      "eligible": true,
+      "losses": {},
+      "status": "needs --import-check",
+      "values": {
+        "enum_field_as_literal": "all"
+      },
+      "wins": {
+        "calibration": [
+          1,
+          1
+        ],
+        "holdout": [
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "decision": "title-source",
+      "eligible": false,
+      "losses": {},
+      "status": "not proposed",
+      "values": {
+        "use_title_as_name": true
+      },
+      "wins": {
+        "calibration": [
+          0,
+          1
+        ],
+        "holdout": [
+          0,
+          1
+        ]
+      }
+    }
+  ],
+  "results": {
+    "config": {
+      "grid": [
+        {
+          "arguments": [],
+          "delta": {},
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 3,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 12,
+            "median_length": 5,
+            "numbered": 1,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 1,
+            "problems_percent": 25.0,
+            "readable": 3,
+            "statuscode": 0,
+            "types": 4,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        },
+        {
+          "arguments": [
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 3,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 12,
+            "median_length": 5,
+            "numbered": 1,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 1,
+            "problems_percent": 25.0,
+            "readable": 3,
+            "statuscode": 0,
+            "types": 4,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all"
+          },
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 1,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 12,
+            "median_length": 12,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 2,
+            "statuscode": 0,
+            "types": 2,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 1,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 12,
+            "median_length": 12,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 2,
+            "statuscode": 0,
+            "types": 2,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path"
+          ],
+          "delta": {
+            "naming_strategy": "full-path"
+          },
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 3,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 21,
+            "median_length": 17,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 4,
+            "statuscode": 0,
+            "types": 4,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 3,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 21,
+            "median_length": 17,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 4,
+            "statuscode": 0,
+            "types": 4,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path"
+          },
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 1,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 17,
+            "median_length": 17,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 2,
+            "statuscode": 0,
+            "types": 2,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 1,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 1,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 17,
+            "median_length": 17,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 2,
+            "statuscode": 0,
+            "types": 2,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": null
+        }
+      ],
+      "recommendation": {
+        "arguments": [
+          "--input-file-type",
+          "jsonschema",
+          "--naming-strategy",
+          "full-path",
+          "--output-model-type",
+          "pydantic_v2.BaseModel",
+          "--preset",
+          "standard-py314-20261017",
+          "--target-python-version",
+          "3.14"
+        ],
+        "baseline": {
+          "configured": false,
+          "covers": [],
+          "family": "standard",
+          "preset": "standard-py314-20261017"
+        },
+        "calibrated_presets": "20261017",
+        "consider": [],
+        "context": {
+          "output_model_type": "pydantic_v2.BaseModel",
+          "target_python_version": "3.14"
+        },
+        "disagreements": [],
+        "facts": {
+          "duplicate_title_examples": "",
+          "inline_title_examples": "",
+          "key_style": "",
+          "root_title": "Tool Settings",
+          "schema": "JSON Schema (http://json-schema.org/draft-07/schema#)",
+          "scopes": "",
+          "shared_inline_name_examples": "mode x2"
+        },
+        "format": "json",
+        "input": {
+          "analysed": true,
+          "document": "JSON Schema (http://json-schema.org/draft-07/schema#)",
+          "input_file_type": "jsonschema",
+          "source": "file"
+        },
+        "kind": "recommend-options",
+        "left_out": [
+          {
+            "arguments": [
+              "--class-name",
+              "Config"
+            ],
+            "caveats": [],
+            "contested_reason": null,
+            "decision": "root-name",
+            "evidence": [
+              "SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile became TsConfig, names over 40 characters 6 -> 0",
+              "SchemaStore workflow, docker-compose and package.json schemas: Model became Workflow, Compose and PackageJson"
+            ],
+            "reason": "The root schema is an object model. Without --class-name its class is Model (with --use-title-as-name, its title: Tool Settings), and full-path prefixes that name onto root-level models. The suggested name comes from the input file name; replace it with the name the project wants.",
+            "rule": "root.class-name-for-root-object",
+            "set": {
+              "class_name": "Config"
+            },
+            "trial": {
+              "after": "recommended",
+              "before": "recommended - root-name",
+              "changes": {
+                "added": 0,
+                "examples": [
+                  {
+                    "after": "Config",
+                    "before": "ToolSettings",
+                    "location": "(root)"
+                  },
+                  {
+                    "after": "ConfigCache",
+                    "before": "ToolSettingsCache",
+                    "location": "(root) > cache"
+                  },
+                  {
+                    "after": "ConfigCacheMode",
+                    "before": "ToolSettingsCacheMode",
+                    "location": "(root) > cache > mode"
+                  }
+                ],
+                "matched": 4,
+                "removed": 0,
+                "renamed": 4,
+                "renumbered": 0
+              }
+            }
+          }
+        ],
+        "mode": "full",
+        "not_recommended": [],
+        "notes": [],
+        "recommendations": [
+          {
+            "arguments": [
+              "--naming-strategy",
+              "full-path"
+            ],
+            "caveats": [],
+            "contested_reason": null,
+            "decision": "naming-strategy",
+            "evidence": [
+              "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
+              "Petstore: Status and Status1 became OrderStatus and PetStatus",
+              "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
+              "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
+            ],
+            "reason": "Inline schemas under different parents share property names (names: 1, e.g. mode x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "rule": "naming.qualify-shared-inline-names",
+            "set": {
+              "naming_strategy": "full-path"
+            },
+            "trial": {
+              "after": "recommended - root-name",
+              "before": "preset",
+              "changes": {
+                "added": 0,
+                "examples": [
+                  {
+                    "after": "ToolSettingsCacheMode",
+                    "before": "Mode1",
+                    "location": "(root) > cache > mode"
+                  },
+                  {
+                    "after": "ToolSettingsMode",
+                    "before": "Mode",
+                    "location": "(root) > mode"
+                  },
+                  {
+                    "after": "ToolSettingsCache",
+                    "before": "Cache",
+                    "location": "(root) > cache"
+                  }
+                ],
+                "matched": 4,
+                "removed": 0,
+                "renamed": 3,
+                "renumbered": 0
+              }
+            }
+          }
+        ],
+        "rules_revision": "2026-10-17",
+        "signals": {
+          "all_enums": 2,
+          "component_enums": 0,
+          "component_title_duplicate_groups": 0,
+          "component_titles_equal_other_key": 0,
+          "component_titles_equal_own_key": 0,
+          "component_titles_in_duplicate_groups": 0,
+          "components": 0,
+          "discriminated_unions": 0,
+          "dotted_key_namespaces": 0,
+          "dotted_keys": 0,
+          "dotted_namespace_reference_cycles": 0,
+          "duplicate_inline_enum_shapes": 0,
+          "duplicate_inline_enums": 0,
+          "duplicate_inline_objects": 0,
+          "duplicate_inline_shapes": 0,
+          "estimated_models": 3,
+          "inline_enums": 2,
+          "inline_names_equal_component": 0,
+          "inline_object_union_variants": 0,
+          "inline_objects": 1,
+          "inline_scalar_union_variants": 0,
+          "inline_tagged_union_branches": 0,
+          "inline_title_max_repeat": 0,
+          "inline_titled_objects": 0,
+          "inline_titled_union_variants": 0,
+          "inline_union_variants": 0,
+          "max_inline_depth": 1,
+          "operations": 0,
+          "parent_copy_union_branches": 0,
+          "root_is_object": 1,
+          "root_title_words": 2,
+          "shared_inline_enum_names": 1,
+          "shared_inline_names": 1,
+          "shared_inline_object_names": 0,
+          "single_key_required_open": 0,
+          "single_key_union_branches": 0,
+          "single_value_enum_union_branches": 0,
+          "single_value_enums": 0,
+          "tagged_behind_ref": 0,
+          "titled_components": 0,
+          "unions": 0
+        },
+        "trial": {
+          "candidates": [
+            {
+              "arguments": [],
+              "error": null,
+              "label": "current",
+              "metrics": {
+                "component": 1,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 3,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 12,
+                "median_length": 5,
+                "numbered": 1,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 1,
+                "problems_percent": 25.0,
+                "readable": 3,
+                "statuscode": 0,
+                "types": 4,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": null,
+              "selectable": false,
+              "set": {},
+              "stability": null
+            },
+            {
+              "arguments": [],
+              "error": null,
+              "label": "preset",
+              "metrics": {
+                "component": 1,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 3,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 12,
+                "median_length": 5,
+                "numbered": 1,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 1,
+                "problems_percent": 25.0,
+                "readable": 3,
+                "statuscode": 0,
+                "types": 4,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py314-20261017",
+              "selectable": true,
+              "set": {},
+              "stability": null
+            },
+            {
+              "arguments": [
+                "--naming-strategy",
+                "full-path",
+                "--class-name",
+                "Config"
+              ],
+              "error": null,
+              "label": "recommended",
+              "metrics": {
+                "component": 1,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 1,
+                "inline": 3,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 15,
+                "median_length": 11,
+                "numbered": 0,
+                "operation": 0,
+                "other_problems": 1,
+                "problems": 1,
+                "problems_percent": 25.0,
+                "readable": 3,
+                "statuscode": 0,
+                "types": 4,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py314-20261017",
+              "selectable": true,
+              "set": {
+                "class_name": "Config",
+                "naming_strategy": "full-path"
+              },
+              "stability": null
+            },
+            {
+              "arguments": [
+                "--class-name",
+                "Config"
+              ],
+              "error": null,
+              "label": "recommended - naming-strategy",
+              "metrics": {
+                "component": 1,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 1,
+                "inline": 3,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 6,
+                "median_length": 5,
+                "numbered": 1,
+                "operation": 0,
+                "other_problems": 1,
+                "problems": 2,
+                "problems_percent": 50.0,
+                "readable": 2,
+                "statuscode": 0,
+                "types": 4,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py314-20261017",
+              "selectable": true,
+              "set": {
+                "class_name": "Config"
+              },
+              "stability": null
+            },
+            {
+              "arguments": [
+                "--naming-strategy",
+                "full-path"
+              ],
+              "error": null,
+              "label": "recommended - root-name",
+              "metrics": {
+                "component": 1,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 3,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 21,
+                "median_length": 17,
+                "numbered": 0,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 0,
+                "problems_percent": 0.0,
+                "readable": 4,
+                "statuscode": 0,
+                "types": 4,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py314-20261017",
+              "selectable": true,
+              "set": {
+                "naming_strategy": "full-path"
+              },
+              "stability": null
+            }
+          ],
+          "current": "current",
+          "dropped": 0,
+          "metrics_version": 1,
+          "migration": {
+            "added": 0,
+            "examples": [
+              {
+                "after": "ToolSettingsCacheMode",
+                "before": "Mode1",
+                "location": "(root) > cache > mode"
+              },
+              {
+                "after": "ToolSettingsMode",
+                "before": "Mode",
+                "location": "(root) > mode"
+              },
+              {
+                "after": "ToolSettingsCache",
+                "before": "Cache",
+                "location": "(root) > cache"
+              }
+            ],
+            "matched": 4,
+            "removed": 0,
+            "renamed": 3,
+            "renumbered": 0
+          },
+          "ranking": [
+            "recommended - root-name",
+            "recommended",
+            "current",
+            "preset",
+            "recommended - naming-strategy"
+          ],
+          "remeasured": 0,
+          "selected": "recommended - root-name"
+        },
+        "version": 1
+      }
+    },
+    "pets": {
+      "grid": [
+        {
+          "arguments": [],
+          "delta": {},
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 7,
+            "median_length": 5,
+            "numbered": 3,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 3,
+            "problems_percent": 33.3,
+            "readable": 6,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 7,
+            "median_length": 5,
+            "numbered": 3,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 3,
+            "problems_percent": 33.3,
+            "readable": 6,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all"
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 6,
+            "median_length": 5,
+            "numbered": 1,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 1,
+            "problems_percent": 20.0,
+            "readable": 4,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 6,
+            "median_length": 5,
+            "numbered": 1,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 1,
+            "problems_percent": 20.0,
+            "readable": 4,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path"
+          ],
+          "delta": {
+            "naming_strategy": "full-path"
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 11,
+            "median_length": 9,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 9,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 6,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 11,
+            "median_length": 9,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 9,
+            "statuscode": 0,
+            "types": 9,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path"
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 10,
+            "median_length": 5,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 5,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        },
+        {
+          "arguments": [
+            "--naming-strategy",
+            "full-path",
+            "--enum-field-as-literal",
+            "all",
+            "--use-title-as-name"
+          ],
+          "delta": {
+            "enum_field_as_literal": "all",
+            "naming_strategy": "full-path",
+            "use_title_as_name": true
+          },
+          "metrics": {
+            "component": 3,
+            "displaced": 0,
+            "doubled": 0,
+            "doubled_from_spec": 0,
+            "generic": 0,
+            "inline": 2,
+            "inline_like_component": 0,
+            "long": 0,
+            "max_length": 10,
+            "median_length": 5,
+            "numbered": 0,
+            "operation": 0,
+            "other_problems": 0,
+            "problems": 0,
+            "problems_percent": 0.0,
+            "readable": 5,
+            "statuscode": 0,
+            "types": 5,
+            "union_variants": 0,
+            "union_variants_numbered": 0,
+            "union_variants_parent_numbered": 0
+          },
+          "preset": "standard-py314-20261017",
+          "renamed": 0
+        }
+      ],
+      "recommendation": {
+        "arguments": [
+          "--input-file-type",
+          "openapi",
+          "--naming-strategy",
+          "full-path",
+          "--output-model-type",
+          "pydantic_v2.BaseModel",
+          "--preset",
+          "standard-py314-20261017",
+          "--target-python-version",
+          "3.14"
+        ],
+        "baseline": {
+          "configured": false,
+          "covers": [],
+          "family": "standard",
+          "preset": "standard-py314-20261017"
+        },
+        "calibrated_presets": "20261017",
+        "consider": [],
+        "context": {
+          "output_model_type": "pydantic_v2.BaseModel",
+          "target_python_version": "3.14"
+        },
+        "disagreements": [],
+        "facts": {
+          "duplicate_title_examples": "",
+          "inline_title_examples": "",
+          "key_style": "PascalCase (3 of 3)",
+          "root_title": "",
+          "schema": "OpenAPI 3.0.3",
+          "scopes": "schemas",
+          "shared_inline_name_examples": "status x3, owner x2"
+        },
+        "format": "json",
+        "input": {
+          "analysed": true,
+          "document": "OpenAPI 3.0.3",
+          "input_file_type": "openapi",
+          "source": "file"
+        },
+        "kind": "recommend-options",
+        "left_out": [],
+        "mode": "full",
+        "not_recommended": [],
+        "notes": [],
+        "recommendations": [
+          {
+            "arguments": [
+              "--naming-strategy",
+              "full-path"
+            ],
+            "caveats": [],
+            "contested_reason": null,
+            "decision": "naming-strategy",
+            "evidence": [
+              "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
+              "Petstore: Status and Status1 became OrderStatus and PetStatus",
+              "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
+              "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
+            ],
+            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "rule": "naming.qualify-shared-inline-names",
+            "set": {
+              "naming_strategy": "full-path"
+            },
+            "trial": {
+              "after": "recommended",
+              "before": "preset",
+              "changes": {
+                "added": 0,
+                "examples": [
+                  {
+                    "after": "OrderStatus",
+                    "before": "Status1",
+                    "location": "components/schemas/Order > status"
+                  },
+                  {
+                    "after": "PetStatus",
+                    "before": "Status",
+                    "location": "components/schemas/Pet > status"
+                  },
+                  {
+                    "after": "StoreStatus",
+                    "before": "Status2",
+                    "location": "components/schemas/Store > status"
+                  }
+                ],
+                "matched": 9,
+                "removed": 0,
+                "renamed": 6,
+                "renumbered": 0
+              }
+            }
+          }
+        ],
+        "rules_revision": "2026-10-17",
+        "signals": {
+          "all_enums": 4,
+          "component_enums": 0,
+          "component_title_duplicate_groups": 0,
+          "component_titles_equal_other_key": 0,
+          "component_titles_equal_own_key": 0,
+          "component_titles_in_duplicate_groups": 0,
+          "components": 3,
+          "discriminated_unions": 0,
+          "dotted_key_namespaces": 0,
+          "dotted_keys": 0,
+          "dotted_namespace_reference_cycles": 0,
+          "duplicate_inline_enum_shapes": 0,
+          "duplicate_inline_enums": 0,
+          "duplicate_inline_objects": 0,
+          "duplicate_inline_shapes": 0,
+          "estimated_models": 9,
+          "inline_enums": 4,
+          "inline_names_equal_component": 0,
+          "inline_object_union_variants": 0,
+          "inline_objects": 2,
+          "inline_scalar_union_variants": 0,
+          "inline_tagged_union_branches": 0,
+          "inline_title_max_repeat": 0,
+          "inline_titled_objects": 0,
+          "inline_titled_union_variants": 0,
+          "inline_union_variants": 0,
+          "max_inline_depth": 1,
+          "operations": 0,
+          "parent_copy_union_branches": 0,
+          "root_is_object": 0,
+          "root_title_words": 0,
+          "shared_inline_enum_names": 1,
+          "shared_inline_names": 2,
+          "shared_inline_object_names": 1,
+          "single_key_required_open": 0,
+          "single_key_union_branches": 0,
+          "single_value_enum_union_branches": 0,
+          "single_value_enums": 0,
+          "tagged_behind_ref": 0,
+          "titled_components": 0,
+          "unions": 0
+        },
+        "trial": {
+          "candidates": [
+            {
+              "arguments": [],
+              "error": null,
+              "label": "current",
+              "metrics": {
+                "component": 3,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 6,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 7,
+                "median_length": 5,
+                "numbered": 3,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 3,
+                "problems_percent": 33.3,
+                "readable": 6,
+                "statuscode": 0,
+                "types": 9,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": null,
+              "selectable": false,
+              "set": {},
+              "stability": {
+                "fingerprints_matched": 3,
+                "fingerprints_renamed": 0,
+                "fingerprints_renumbered": 0,
+                "locations": {
+                  "added": 3,
+                  "examples": [],
+                  "matched": 6,
+                  "removed": 0,
+                  "renamed": 0,
+                  "renumbered": 0
+                }
+              }
+            },
+            {
+              "arguments": [],
+              "error": null,
+              "label": "preset",
+              "metrics": {
+                "component": 3,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 6,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 7,
+                "median_length": 5,
+                "numbered": 3,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 3,
+                "problems_percent": 33.3,
+                "readable": 6,
+                "statuscode": 0,
+                "types": 9,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py314-20261017",
+              "selectable": true,
+              "set": {},
+              "stability": {
+                "fingerprints_matched": 3,
+                "fingerprints_renamed": 0,
+                "fingerprints_renumbered": 0,
+                "locations": {
+                  "added": 3,
+                  "examples": [],
+                  "matched": 6,
+                  "removed": 0,
+                  "renamed": 0,
+                  "renumbered": 0
+                }
+              }
+            },
+            {
+              "arguments": [
+                "--naming-strategy",
+                "full-path"
+              ],
+              "error": null,
+              "label": "recommended",
+              "metrics": {
+                "component": 3,
+                "displaced": 0,
+                "doubled": 0,
+                "doubled_from_spec": 0,
+                "generic": 0,
+                "inline": 6,
+                "inline_like_component": 0,
+                "long": 0,
+                "max_length": 11,
+                "median_length": 9,
+                "numbered": 0,
+                "operation": 0,
+                "other_problems": 0,
+                "problems": 0,
+                "problems_percent": 0.0,
+                "readable": 9,
+                "statuscode": 0,
+                "types": 9,
+                "union_variants": 0,
+                "union_variants_numbered": 0,
+                "union_variants_parent_numbered": 0
+              },
+              "preset": "standard-py314-20261017",
+              "selectable": true,
+              "set": {
+                "naming_strategy": "full-path"
+              },
+              "stability": {
+                "fingerprints_matched": 3,
+                "fingerprints_renamed": 0,
+                "fingerprints_renumbered": 0,
+                "locations": {
+                  "added": 3,
+                  "examples": [],
+                  "matched": 6,
+                  "removed": 0,
+                  "renamed": 0,
+                  "renumbered": 0
+                }
+              }
+            }
+          ],
+          "current": "current",
+          "dropped": 0,
+          "metrics_version": 1,
+          "migration": {
+            "added": 0,
+            "examples": [
+              {
+                "after": "OrderStatus",
+                "before": "Status1",
+                "location": "components/schemas/Order > status"
+              },
+              {
+                "after": "PetStatus",
+                "before": "Status",
+                "location": "components/schemas/Pet > status"
+              },
+              {
+                "after": "StoreStatus",
+                "before": "Status2",
+                "location": "components/schemas/Store > status"
+              }
+            ],
+            "matched": 9,
+            "removed": 0,
+            "renamed": 6,
+            "renumbered": 0
+          },
+          "ranking": [
+            "recommended",
+            "current",
+            "preset"
+          ],
+          "remeasured": 0,
+          "selected": "recommended"
+        },
+        "version": 1
+      }
+    }
+  },
+  "rules": [
+    {
+      "covered": "yes",
+      "decision": "title-source",
+      "disagrees": {
+        "calibration": [],
+        "holdout": []
+      },
+      "fires": [],
+      "neutral": [
+        "pets",
+        "config"
+      ],
+      "rule": "titles.keys-when-titles-collide"
+    },
+    {
+      "covered": "yes",
+      "decision": "title-source",
+      "disagrees": {
+        "calibration": [],
+        "holdout": []
+      },
+      "fires": [],
+      "neutral": [
+        "pets",
+        "config"
+      ],
+      "rule": "titles.names-from-unique-titles"
+    },
+    {
+      "covered": "yes",
+      "decision": "naming-strategy",
+      "disagrees": {
+        "calibration": [],
+        "holdout": [
+          "config"
+        ]
+      },
+      "fires": [
+        "pets",
+        "config"
+      ],
+      "neutral": [],
+      "rule": "naming.qualify-shared-inline-names"
+    },
+    {
+      "covered": "yes",
+      "decision": "enum-shape",
+      "disagrees": {
+        "calibration": [
+          "pets"
+        ],
+        "holdout": [
+          "config"
+        ]
+      },
+      "fires": [],
+      "neutral": [],
+      "rule": "enums.inline-value-sets-as-literal"
+    },
+    {
+      "covered": "decision reuse has no grid axis",
+      "decision": "reuse",
+      "rule": "reuse.identical-inline-shapes"
+    },
+    {
+      "covered": "decision root-name has no grid axis",
+      "decision": "root-name",
+      "rule": "root.class-name-for-root-object"
+    },
+    {
+      "covered": "decision dotted-keys has no grid axis",
+      "decision": "dotted-keys",
+      "rule": "dotted-keys.flat-when-namespaces-cycle"
+    },
+    {
+      "covered": "decision union-variant-names has no grid axis",
+      "decision": "union-variant-names",
+      "rule": "unions.name-variants-after-tags"
+    }
+  ],
+  "schemas": [
+    {
+      "best": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--enum-field-as-literal",
+          "all"
+        ],
+        "metrics": {
+          "component": 3,
+          "displaced": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "generic": 0,
+          "inline": 2,
+          "inline_like_component": 0,
+          "long": 0,
+          "max_length": 10,
+          "median_length": 5,
+          "numbered": 0,
+          "operation": 0,
+          "other_problems": 0,
+          "problems": 0,
+          "problems_percent": 0.0,
+          "readable": 5,
+          "statuscode": 0,
+          "types": 5,
+          "union_variants": 0,
+          "union_variants_numbered": 0,
+          "union_variants_parent_numbered": 0
+        },
+        "preset": "standard-py314-20261017",
+        "renamed": 0,
+        "values": {
+          "enum_field_as_literal": "all",
+          "naming_strategy": "full-path",
+          "use_title_as_name": false
+        }
+      },
+      "diff_against": "v1",
+      "recommended": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--preset",
+          "standard-py314-20261017"
+        ],
+        "metrics": {
+          "component": 3,
+          "displaced": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "generic": 0,
+          "inline": 6,
+          "inline_like_component": 0,
+          "long": 0,
+          "max_length": 11,
+          "median_length": 9,
+          "numbered": 0,
+          "operation": 0,
+          "other_problems": 0,
+          "problems": 0,
+          "problems_percent": 0.0,
+          "readable": 9,
+          "statuscode": 0,
+          "types": 9,
+          "union_variants": 0,
+          "union_variants_numbered": 0,
+          "union_variants_parent_numbered": 0
+        },
+        "renamed": 0,
+        "rules": [
+          "naming.qualify-shared-inline-names"
+        ]
+      },
+      "ref": "v2",
+      "regret": 0,
+      "rejected": 0,
+      "role": "calibration",
+      "schema": "pets"
+    },
+    {
+      "best": {
+        "arguments": [
+          "--enum-field-as-literal",
+          "all"
+        ],
+        "metrics": {
+          "component": 1,
+          "displaced": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "generic": 0,
+          "inline": 1,
+          "inline_like_component": 0,
+          "long": 0,
+          "max_length": 12,
+          "median_length": 12,
+          "numbered": 0,
+          "operation": 0,
+          "other_problems": 0,
+          "problems": 0,
+          "problems_percent": 0.0,
+          "readable": 2,
+          "statuscode": 0,
+          "types": 2,
+          "union_variants": 0,
+          "union_variants_numbered": 0,
+          "union_variants_parent_numbered": 0
+        },
+        "preset": "standard-py314-20261017",
+        "renamed": null,
+        "values": {
+          "enum_field_as_literal": "all",
+          "use_title_as_name": false
+        }
+      },
+      "diff_against": null,
+      "recommended": {
+        "arguments": [
+          "--naming-strategy",
+          "full-path",
+          "--preset",
+          "standard-py314-20261017"
+        ],
+        "metrics": {
+          "component": 1,
+          "displaced": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "generic": 0,
+          "inline": 3,
+          "inline_like_component": 0,
+          "long": 0,
+          "max_length": 21,
+          "median_length": 17,
+          "numbered": 0,
+          "operation": 0,
+          "other_problems": 0,
+          "problems": 0,
+          "problems_percent": 0.0,
+          "readable": 4,
+          "statuscode": 0,
+          "types": 4,
+          "union_variants": 0,
+          "union_variants_numbered": 0,
+          "union_variants_parent_numbered": 0
+        },
+        "renamed": null,
+        "rules": [
+          "naming.qualify-shared-inline-names"
+        ]
+      },
+      "ref": "v1",
+      "regret": 0,
+      "rejected": 0,
+      "role": "holdout",
+      "schema": "config"
+    }
+  ],
+  "threshold_proposals": [
+    {
+      "calibration": [
+        1,
+        0
+      ],
+      "current": 5,
+      "holdout": [
+        1,
+        0
+      ],
+      "leaf": "inline_enums >= 5",
+      "pointer": "/rules/3/when/all/0/value",
+      "proposed": 2,
+      "rule": "enums.inline-value-sets-as-literal"
+    }
+  ],
+  "upstream": null
+}

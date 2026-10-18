@@ -22,7 +22,6 @@ from tests.conftest import assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests/data/recommender_calibrate"
-EXPECTED = ROOT / "tests/data/expected/recommender_calibrate"
 SHA256_PLACEHOLDER = re.compile(r"@SHA256:([^@]+)@")
 GIT_IDENTITY = {
     f"GIT_{role}_{key}": value
@@ -85,7 +84,7 @@ def test_corpus_manifest() -> None:
     stdout = StringIO()
     with redirect_stdout(stdout):
         code = recommender_calibrate.main(["--check-manifest"])
-    assert_output(f"exit={code}\n{stdout.getvalue()}", EXPECTED / "manifest.txt")
+    assert_output(f"exit={code}\n{stdout.getvalue()}")
 
 
 def test_calibration_run(tmp_path: Path) -> None:
@@ -132,16 +131,19 @@ def test_calibration_run(tmp_path: Path) -> None:
         placeholders,
     )
     second = _run([*common, "--fetch-only"], tmp_path, placeholders=placeholders)
-    assert_output(f"{first}\n=== second run\n{second}", EXPECTED / "run.txt")
+    assert_output(f"{first}\n=== second run\n{second}")
 
 
 @pytest.mark.parametrize(
-    ("case", "replacements", "args", "writes"),
+    ("replacements", "args", "writes"),
     [
-        ("sha256_mismatch", (("@SHA256:v2/pets.json@", "0" * 64),), ["--fetch-only", "--only", "pets"], False),
-        ("external_ref", (("stub_external_refs = true", "stub_external_refs = false"),), ["--fetch-only"], False),
-        (
-            "invalid_manifest",
+        pytest.param(
+            (("@SHA256:v2/pets.json@", "0" * 64),), ["--fetch-only", "--only", "pets"], False, id="sha256_mismatch"
+        ),
+        pytest.param(
+            (("stub_external_refs = true", "stub_external_refs = false"),), ["--fetch-only"], False, id="external_ref"
+        ),
+        pytest.param(
             (
                 ('kind = "jsonschema"', 'kind = "graphql"'),
                 ('"https://example.com/shop"', '"http://example.com/shop"'),
@@ -151,17 +153,20 @@ def test_calibration_run(tmp_path: Path) -> None:
             ),
             ["--fetch-only"],
             False,
+            id="invalid_manifest",
         ),
-        ("unknown_id", (), ["--fetch-only", "--only", "pets", "nope"], False),
-        ("upstream_without_out", (), ["--check-manifest", "--check-upstream"], False),
-        (
-            "inexpressible",
+        pytest.param((), ["--fetch-only", "--only", "pets", "nope"], False, id="unknown_id"),
+        pytest.param((), ["--check-manifest", "--check-upstream"], False, id="upstream_without_out"),
+        pytest.param(
             (("title-source = [", "title-source = [{ use_subclass_enum = false }, "),),
-            ["--only", "shop", "config", "--calibration", str(FIXTURES / "none.json")],
+            [
+                *("--only", "shop", "config", "--import-check", "--target-python-version", "3.10"),
+                *("--calibration", str(FIXTURES / "none.json")),
+            ],
             True,
+            id="inexpressible",
         ),
-        (
-            "ratio_threshold",
+        pytest.param(
             (
                 (
                     'naming-strategy = [{}, { naming_strategy = "full-path" }]',
@@ -170,23 +175,25 @@ def test_calibration_run(tmp_path: Path) -> None:
             ),
             ["--only", "enums", "--calibration", str(FIXTURES / "none.json")],
             True,
+            id="ratio_threshold",
         ),
-        (
-            "parallel",
+        pytest.param(
             (),
-            ["--only", "pets", "--jobs", "2", "--calibration", str(FIXTURES / "none.json")],
+            ["--only", "pets", "config", "--jobs", "2", "--calibration", str(FIXTURES / "calibration.json")],
             True,
+            id="partial_parallel",
         ),
     ],
 )
 def test_calibration_cases(
-    case: str, replacements: tuple[tuple[str, str], ...], args: list[str], writes: bool, tmp_path: Path
+    replacements: tuple[tuple[str, str], ...], args: list[str], writes: bool, tmp_path: Path
 ) -> None:
     """Pinned digests, the $ref guard and manifest validation fail closed; other modes and grid values.
 
-    --check-upstream needs --out; a grid value no option expresses is rejected, and a preset proposal waits for
-    --import-check; a ratio threshold of 3/7 is proposed rounded down so that the schema still fires; recommender
-    processes give the same scores.
+    --check-upstream needs --out. A grid value no option expresses is rejected, and a preset proposal that generates
+    and imports on every schema is proposed. A ratio threshold of 3/7 is proposed rounded down so that the schema
+    still fires. Recommender processes give the same scores, a proposal waits for --import-check, and a run of some
+    schemas keeps the other schemas' entries of the last calibration.
     """
     out = tmp_path / "out"
     output = _run(
@@ -194,4 +201,4 @@ def test_calibration_cases(
         tmp_path,
         out,
     )
-    assert_output(output, EXPECTED / f"{case}.txt")
+    assert_output(output)
