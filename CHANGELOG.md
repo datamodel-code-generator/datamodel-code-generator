@@ -5,6 +5,83 @@ This changelog is automatically generated from GitHub Releases.
 
 ---
 
+## [0.86.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.86.0) - 2026-10-18
+
+## Breaking Changes
+
+### Code Generation Changes
+* Base64 bytes with length constraints now use `EncodedBytes` - With `--type-mappings string+byte=binary`, a `format: byte` string with `minLength` or `maxLength` used to generate `conbytes(...)`, which did not decode base64. With `--field-constraints` it used to generate `Base64Bytes` with a `Field(max_length=...)`. It now generates `Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]`, which decodes the base64 text and checks the lengths on the encoded text, as JSON Schema counts them. Field values are now the decoded bytes instead of the raw text. Under `--field-constraints`, inputs whose base64 text is longer than the limit are now rejected, even when the decoded bytes fit. Generated modules now import `Annotated`, `Field`, `EncodedBytes` and `Base64Encoder`. Pydantic checks these lengths on the text only from 2.10 on, and an explicit `--target-pydantic-version 2` now warns about each such field (#4798)
+* Strict bytes no longer skip base64 decoding for mapped byte strings - With `--type-mappings string+byte=binary` and `--strict-types bytes`, `format: byte` fields used to generate `StrictBytes`, or `conbytes(..., strict=True)` when they had lengths, and held the raw text. They now generate `Base64Bytes`, or the `EncodedBytes` form when they have lengths, and decode the base64 text, so validated values change. FastAPI path, query, header and cookie parameters with this combination no longer stop generation with an error (#4798)
+* Mapped byte formats now decode base64 when mapped without constraints - With `--type-mappings string+byte=binary`, code paths that map a type and format without constraints now pass base64 decoding through. For example, a `format: byte` string member of a multi-type `type` list now generates `Base64Bytes`, as in `Base64Bytes | list[int]`, instead of plain `bytes`. Its runtime value becomes the decoded bytes (#4798)
+
+## Other Output Changes
+
+These change generated output compared with 0.85.0, but only where 0.85.0 output failed or for options that are new in this release.
+
+* Integer and subclass enums that list null no longer get a `None` member - An enum with a value type base (the `IntEnum` written for `type: integer`, or a `--use-subclass-enum` class such as `(int, Enum)`) that lists `null` used to get a member such as `integer_None = None`, which made the generated module raise `TypeError` at import. That member is no longer generated, and an enum whose only value is `null` becomes a `RootModel[None]`. Class names and field defaults are unchanged (#4884, #4889)
+* Discriminator tags keep no pattern their values already satisfy - Pydantic discriminator tag fields written with `Field()` constraints no longer carry a `pattern` that every tag value satisfies. Such output failed at import in 0.85.0 because the tag was no longer a usable discriminator. Tags whose values contradict their own pattern are unchanged (#4888)
+* Optional one-value Literal discriminator tags default to their value - A tag such as `kind: Literal['card'] | None = None` is now written as `kind: Literal['card'] = 'card'`. The discriminated union failed at import before; a standalone model using such a tag now defaults to and dumps `'card'` instead of `None` (#4895)
+* The builtin formatter wraps long `Annotated[...] = None` assignments like black - Where 0.85.0 put the `None` default in parentheses on its own lines, the line is now split inside the annotation, as black does. The code is equivalent, but `--check` runs with a dated preset (which uses the builtin formatter) report the reformatting (#4794)
+* Refinements of options new in this release - `--use-tag-as-union-variant-name` no longer repeats the key in prefixed names of models inside key-named branches (#4903), and `--use-single-value-enum-as-const` types nullable single-value unions as `Literal[...] | None` keeps mixed-type single-value branches apart instead of merging them into one Enum (#4926, #4927), and leaves `nullable: true` single-value enums as enums so they still accept null (#4944). Both options were added after 0.85.0, so output without them is unchanged
+
+<!-- Release notes generated using configuration in .github/release.yml at main -->
+
+## What's Changed
+* Bump ty to 0.0.89 by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4817
+* Add 20261017 presets rendering TypedDict and dataclass enums as Literal by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4815
+* Add a script that compares generated output with a release by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4861
+* Refresh the generation index incrementally by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4862
+* Split Annotated and Union annotations whose value opening exceeds the line length by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4794
+* Release the stale name of a renamed type re-imported in a package __init__ by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4795
+* Keep number constraints off fields whose generated type does not take them by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4797
+* Keep bytes mapped from base64 text decoded under strict types and constraints by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4798
+* Import what holds the enum members of x-python-type Literals by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4799
+* Add --use-tag-as-union-variant-name by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4793
+* Add --use-single-value-enum-as-const by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4857
+* Warn when --model-name-map keys match no generated model by @wanjinhao1 in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4856
+* Decide msgspec tagged unions over every module by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4806
+* Print msgspec 0.22 as the client's msgspec floor by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4808
+* Keep generation index model facts current and recover from failed refreshes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4866
+* Make the model name map baseline scope public and note GraphQL input by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4867
+* Record the expected output each test compares by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4870
+* Compare expected output through per-module .refs indexes by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4871
+* Write null in an IntEnum or subclass enum as nullability instead of a None member by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4884
+* Warn about msgspec unions that hold an Enum beside another member of its JSON type by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4885
+* Keep an aliased import only when its alias is used by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4887
+* Keep patterns off Pydantic discriminator tags by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4888
+* Define the models a patternProperties rule names before the class that holds it by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4889
+* Drop support for recorded expected labels outside tests/data/expected by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4898
+* Explain --from-ci failures for runs whose logs gh cannot read yet by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4899
+* Add --recommend-options with schema analysis and rule-based recommendations by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4883
+* Compare candidate configurations by trial naming by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4890
+* Add a maintainer command that stores each expected output once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4902
+* Store the remaining expected outputs once by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4908
+* Name the value of a tag-named variant without the variant under parent-prefixed naming by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4903
+* Add the recommender calibration script and corpus manifest by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4911
+* Compare generated packages as trees instead of listing expected directories by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4912
+* Default optional one-value Literal discriminator tags to their value by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4895
+* Flatten msgspec Structs whose generated bases have conflicting layouts by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4913
+* Fail when stored expected outputs or test inputs hold the same content twice by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4921
+* Document the model processing passes and when each fact becomes final by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4923
+* Add parser change rules to AGENTS.md by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4924
+* Type a null branch beside one-value enum branches as None under --use-single-value-enum-as-const by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4926
+* Keep one-value branches of different JSON types apart under --use-single-value-enum-as-const by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4927
+* Hint at --recommend-options after generation when names are numbered by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4929
+* Point to the recommender from help, docs, prompt and the agent skill by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4922
+* Recommend validation options by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4930
+* Fail when an expected file is recorded by no .refs line by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4934
+* Document how to write recommender rules by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4935
+* Delete the API scope oracle inputs no test reads by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4940
+* Count numbered class names over 40 characters as numbered in recommender trials by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4943
+* Read nullable one-value enums as written under --use-single-value-enum-as-const by @koxudaxi in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4944
+
+## New Contributors
+* @wanjinhao1 made their first contribution in https://github.com/datamodel-code-generator/datamodel-code-generator/pull/4856
+
+**Full Changelog**: https://github.com/datamodel-code-generator/datamodel-code-generator/compare/0.85.0...0.86.0
+
+---
+
 ## [0.85.0](https://github.com/datamodel-code-generator/datamodel-code-generator/releases/tag/0.85.0) - 2026-10-16
 
 ## Breaking Changes
