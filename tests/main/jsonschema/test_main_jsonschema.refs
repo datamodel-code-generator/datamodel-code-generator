@@ -6781,6 +6781,11 @@ default	main/jsonschema/same_name_reference_models.py
 	main/jsonschema/schema_validators.py
 [test_main_jsonschema_schema_validators_pattern_properties_own_typed_extras]
 	main/jsonschema/schema_validators_pattern_additional_properties.py
+[test_main_jsonschema_schema_validators_pattern_ref_defined_first]
+definitions	main/jsonschema/schema_validators_pattern_ref_definition_order.py
+field-cycle	main/jsonschema/schema_validators_pattern_ref_field_cycle.py
+inline-object	main/jsonschema/schema_validators_pattern_ref_order.py
+keep-model-order	main/jsonschema/schema_validators_pattern_ref_definition_order_keep_model_order.py
 [test_main_jsonschema_serialization_alias_same_name_pydantic_v2]
 	main/jsonschema/serialization_alias_same_name.py
 [test_main_jsonschema_serialization_aliases_alias_generator]
@@ -7011,6 +7016,10 @@ to_snake-snake_case_field	main/jsonschema/alias_generator_serialization_alias/to
 	main/jsonschema/alias_generator_serialization_alias/template_data_dataclass.py
 [test_main_jsonschema_uuid_format_versions]
 	main/jsonschema/uuid_format_versions.py
+[test_main_jsonschema_value_base_enum_null]
+default	main/jsonschema/integer_enum_null/default.py
+subclass	main/jsonschema/integer_enum_null/subclass.py
+subclass-no-specialized	main/jsonschema/integer_enum_null/subclass_no_specialized.py
 [test_main_jsonschema_warns_local_ref_outside_base_path]
 ../secret/leak.json	main/jsonschema/main_jsonschema/warns_local_ref_outside_base_path[.._secret_leak.json].py
 {file_uri}	main/jsonschema/main_jsonschema/warns_local_ref_outside_base_path[{file_uri}].py	= main/jsonschema/main_jsonschema/warns_local_ref_outside_base_path[.._secret_leak.json].py
