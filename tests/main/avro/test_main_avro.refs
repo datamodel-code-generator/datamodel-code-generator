@@ -36,22 +36,22 @@ False-decimal_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	
 False-decimal_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_pydantic_dataclass.txt
 False-decimal_defaults-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/decimal_defaults_typed_dict.py
 False-decimal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.py
-False-decimal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt
+False-decimal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.py
 False-decimal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.py
-False-decimal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt
+False-decimal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.py
-False-decimal_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt
+False-decimal_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-api-DataModelType.TypingTypedDict-typed_dict	main/avro/decimal_defaults_simple_typed_dict.py
 False-decimal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.py
-False-decimal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt
+False-decimal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.py
 False-decimal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.py
-False-decimal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt
+False-decimal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.py
-False-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt
+False-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 False-decimal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/decimal_defaults_simple_typed_dict.py
 True-decimal_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_dataclass.py
 True-decimal_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_dataclass.txt
@@ -72,22 +72,22 @@ True-decimal_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	m
 True-decimal_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_pydantic_dataclass.txt
 True-decimal_defaults-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/decimal_defaults_typed_dict.py
 True-decimal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.py
-True-decimal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt
+True-decimal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.py
 True-decimal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.py
-True-decimal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt
+True-decimal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.py
-True-decimal_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt
+True-decimal_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-api-DataModelType.TypingTypedDict-typed_dict	main/avro/decimal_defaults_simple_typed_dict.py
 True-decimal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.py
-True-decimal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt
+True-decimal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/decimal_defaults_simple_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.py
 True-decimal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.py
-True-decimal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt
+True-decimal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/decimal_defaults_simple_pydantic_v2.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.py
-True-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt
+True-decimal_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/decimal_defaults_simple_pydantic_dataclass.txt	= main/avro/decimal_defaults_simple_msgspec.txt
 True-decimal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/decimal_defaults_simple_typed_dict.py
 [test_avro_decimal_defaults_preserve_raw_input]
 decimal_defaults.avsc	main/avro/decimal_defaults_converted.txt
@@ -114,22 +114,22 @@ False-duration_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass
 False-duration_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_pydantic_dataclass.txt
 False-duration_defaults-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/duration_defaults_typed_dict.py
 False-duration_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.py
-False-duration_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt
+False-duration_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 False-duration_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.py
 False-duration_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.txt
 False-duration_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.py
 False-duration_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.txt
 False-duration_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.py
-False-duration_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt
+False-duration_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 False-duration_defaults_simple-api-DataModelType.TypingTypedDict-typed_dict	main/avro/duration_defaults_simple_typed_dict.py
 False-duration_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.py
-False-duration_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt
+False-duration_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 False-duration_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.py
 False-duration_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.txt
 False-duration_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.py
 False-duration_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.txt
 False-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.py
-False-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt
+False-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 False-duration_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/duration_defaults_simple_typed_dict.py
 True-duration_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_dataclass.py
 True-duration_defaults-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_dataclass.txt
@@ -150,22 +150,22 @@ True-duration_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	
 True-duration_defaults-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_pydantic_dataclass.txt
 True-duration_defaults-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/duration_defaults_typed_dict.py
 True-duration_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.py
-True-duration_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt
+True-duration_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 True-duration_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.py
 True-duration_defaults_simple-api-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.txt
 True-duration_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.py
 True-duration_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.txt
 True-duration_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.py
-True-duration_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt
+True-duration_defaults_simple-api-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 True-duration_defaults_simple-api-DataModelType.TypingTypedDict-typed_dict	main/avro/duration_defaults_simple_typed_dict.py
 True-duration_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.py
-True-duration_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt
+True-duration_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass	main/avro/duration_defaults_simple_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 True-duration_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.py
 True-duration_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec	main/avro/duration_defaults_simple_msgspec.txt
 True-duration_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.py
 True-duration_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2	main/avro/duration_defaults_simple_pydantic_v2.txt
 True-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.py
-True-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt
+True-duration_defaults_simple-cli-DataModelType.PydanticV2Dataclass-pydantic_dataclass	main/avro/duration_defaults_simple_pydantic_dataclass.txt	= main/avro/duration_defaults_simple_msgspec.txt
 True-duration_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict	main/avro/duration_defaults_simple_typed_dict.py
 [test_avro_duration_defaults_preserve_raw_input]
 duration_defaults.avsc	main/avro/duration_defaults_converted.txt
@@ -192,7 +192,7 @@ decimal	main/avro/overridden_logical_defaults_decimal.py
 decimal	main/avro/overridden_logical_defaults_decimal.txt
 decimal	main/avro/overridden_logical_defaults_decimal_DecimalDefaults1.txt
 decimal_default_override	main/avro/overridden_logical_defaults_decimal_default_override.py
-decimal_default_override	main/avro/overridden_logical_defaults_decimal_default_override.txt
+decimal_default_override	main/avro/overridden_logical_defaults_decimal_default_override.txt	= main/avro/overridden_logical_defaults_decimal.txt
 decimal_default_override	main/avro/overridden_logical_defaults_decimal_default_override_DecimalDefaults1.txt
 decimal_mapped	main/avro/overridden_logical_defaults_decimal_mapped.py
 decimal_mapped	main/avro/overridden_logical_defaults_decimal_mapped.txt
@@ -217,7 +217,7 @@ representable	main/avro/overridden_logical_defaults_representable.py
 representable	main/avro/overridden_logical_defaults_representable.txt
 representable	main/avro/overridden_logical_defaults_representable_MappedDefaults1.txt
 representable_default_override	main/avro/overridden_logical_defaults_representable_default_override.py
-representable_default_override	main/avro/overridden_logical_defaults_representable_default_override.txt
+representable_default_override	main/avro/overridden_logical_defaults_representable_default_override.txt	= main/avro/overridden_logical_defaults_representable.txt
 [test_avro_temporal_defaults]
 temporal_defaults-api-DataModelType.DataclassesDataclass-dataclass-None	main/avro/temporal_defaults_dataclass.py
 temporal_defaults-api-DataModelType.DataclassesDataclass-dataclass-None	main/avro/temporal_defaults_dataclass.txt
@@ -246,11 +246,11 @@ temporal_defaults-cli-DataModelType.TypingTypedDict-typed_dict_datetime-Datetime
 temporal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass-None	main/avro/temporal_defaults_simple_dataclass.py
 temporal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass-None	main/avro/temporal_defaults_simple_dataclass.txt
 temporal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_dataclass_datetime.py
-temporal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_dataclass_datetime.txt
+temporal_defaults_simple-api-DataModelType.DataclassesDataclass-dataclass_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_dataclass_datetime.txt	= main/avro/temporal_defaults_simple_pydantic_v2.txt
 temporal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec-None	main/avro/temporal_defaults_simple_msgspec.py
-temporal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec-None	main/avro/temporal_defaults_simple_msgspec.txt
+temporal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec-None	main/avro/temporal_defaults_simple_msgspec.txt	= main/avro/temporal_defaults_simple_dataclass.txt
 temporal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_msgspec_datetime.py
-temporal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_msgspec_datetime.txt
+temporal_defaults_simple-api-DataModelType.MsgspecStruct-msgspec_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_msgspec_datetime.txt	= main/avro/temporal_defaults_simple_pydantic_v2.txt
 temporal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2-None	main/avro/temporal_defaults_simple_pydantic_v2.py
 temporal_defaults_simple-api-DataModelType.PydanticV2BaseModel-pydantic_v2-None	main/avro/temporal_defaults_simple_pydantic_v2.txt
 temporal_defaults_simple-api-DataModelType.TypingTypedDict-typed_dict-None	main/avro/temporal_defaults_simple_typed_dict.py
@@ -258,11 +258,11 @@ temporal_defaults_simple-api-DataModelType.TypingTypedDict-typed_dict_datetime-D
 temporal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass-None	main/avro/temporal_defaults_simple_dataclass.py
 temporal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass-None	main/avro/temporal_defaults_simple_dataclass.txt
 temporal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_dataclass_datetime.py
-temporal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_dataclass_datetime.txt
+temporal_defaults_simple-cli-DataModelType.DataclassesDataclass-dataclass_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_dataclass_datetime.txt	= main/avro/temporal_defaults_simple_pydantic_v2.txt
 temporal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec-None	main/avro/temporal_defaults_simple_msgspec.py
-temporal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec-None	main/avro/temporal_defaults_simple_msgspec.txt
+temporal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec-None	main/avro/temporal_defaults_simple_msgspec.txt	= main/avro/temporal_defaults_simple_dataclass.txt
 temporal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_msgspec_datetime.py
-temporal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_msgspec_datetime.txt
+temporal_defaults_simple-cli-DataModelType.MsgspecStruct-msgspec_datetime-DatetimeClassType.Datetime	main/avro/temporal_defaults_simple_msgspec_datetime.txt	= main/avro/temporal_defaults_simple_pydantic_v2.txt
 temporal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2-None	main/avro/temporal_defaults_simple_pydantic_v2.py
 temporal_defaults_simple-cli-DataModelType.PydanticV2BaseModel-pydantic_v2-None	main/avro/temporal_defaults_simple_pydantic_v2.txt
 temporal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict-None	main/avro/temporal_defaults_simple_typed_dict.py
@@ -280,8 +280,8 @@ temporal_defaults_simple-cli-DataModelType.TypingTypedDict-typed_dict_datetime-D
 [test_main_avro_constructs]
 	main/avro/py310/constructs.py	?
 	main/avro/py311/constructs.py	?
-	main/avro/py312/constructs.py	?
-	main/avro/py313/constructs.py	?
+	main/avro/py312/constructs.py	?	= main/avro/py311/constructs.py
+	main/avro/py313/constructs.py	?	= main/avro/py311/constructs.py
 	main/avro/py314/constructs.py	?
 [test_main_avro_decimal_default_controls]
 decimal_default_controls-decimal_default_controls.py-extra_args0-10 Decimal default values were emitted as serialized data	main/avro/decimal_default_controls.py
@@ -298,235 +298,235 @@ decimal_defaults_simple-decimal_defaults_logical_override_mapping.py-extra_args2
 [test_main_avro_infer_input_file_type]
 	main/avro/py310/constructs.py	?
 	main/avro/py311/constructs.py	?
-	main/avro/py312/constructs.py	?
-	main/avro/py313/constructs.py	?
+	main/avro/py312/constructs.py	?	= main/avro/py311/constructs.py
+	main/avro/py313/constructs.py	?	= main/avro/py311/constructs.py
 	main/avro/py314/constructs.py	?
 [test_main_avro_namespace_collisions]
 	main/avro/py310/namespace_collisions.py	?
-	main/avro/py311/namespace_collisions.py	?
-	main/avro/py312/namespace_collisions.py	?
-	main/avro/py313/namespace_collisions.py	?
+	main/avro/py311/namespace_collisions.py	?	= main/avro/py310/namespace_collisions.py
+	main/avro/py312/namespace_collisions.py	?	= main/avro/py310/namespace_collisions.py
+	main/avro/py313/namespace_collisions.py	?	= main/avro/py310/namespace_collisions.py
 	main/avro/py314/namespace_collisions.py	?
 [test_main_avro_official_c_schema_pass_corpus]
 array	main/avro/py310/official_schema_pass/array.py	?
-array	main/avro/py311/official_schema_pass/array.py	?
-array	main/avro/py312/official_schema_pass/array.py	?
-array	main/avro/py313/official_schema_pass/array.py	?
+array	main/avro/py311/official_schema_pass/array.py	?	= main/avro/py310/official_schema_pass/array.py
+array	main/avro/py312/official_schema_pass/array.py	?	= main/avro/py310/official_schema_pass/array.py
+array	main/avro/py313/official_schema_pass/array.py	?	= main/avro/py310/official_schema_pass/array.py
 array	main/avro/py314/official_schema_pass/array.py	?
 boolean_full	main/avro/py310/official_schema_pass/boolean_full.py	?
-boolean_full	main/avro/py311/official_schema_pass/boolean_full.py	?
-boolean_full	main/avro/py312/official_schema_pass/boolean_full.py	?
-boolean_full	main/avro/py313/official_schema_pass/boolean_full.py	?
+boolean_full	main/avro/py311/official_schema_pass/boolean_full.py	?	= main/avro/py310/official_schema_pass/boolean_full.py
+boolean_full	main/avro/py312/official_schema_pass/boolean_full.py	?	= main/avro/py310/official_schema_pass/boolean_full.py
+boolean_full	main/avro/py313/official_schema_pass/boolean_full.py	?	= main/avro/py310/official_schema_pass/boolean_full.py
 boolean_full	main/avro/py314/official_schema_pass/boolean_full.py	?
 bytes_full	main/avro/py310/official_schema_pass/bytes_full.py	?
-bytes_full	main/avro/py311/official_schema_pass/bytes_full.py	?
-bytes_full	main/avro/py312/official_schema_pass/bytes_full.py	?
-bytes_full	main/avro/py313/official_schema_pass/bytes_full.py	?
+bytes_full	main/avro/py311/official_schema_pass/bytes_full.py	?	= main/avro/py310/official_schema_pass/bytes_full.py
+bytes_full	main/avro/py312/official_schema_pass/bytes_full.py	?	= main/avro/py310/official_schema_pass/bytes_full.py
+bytes_full	main/avro/py313/official_schema_pass/bytes_full.py	?	= main/avro/py310/official_schema_pass/bytes_full.py
 bytes_full	main/avro/py314/official_schema_pass/bytes_full.py	?
 double_full	main/avro/py310/official_schema_pass/double_full.py	?
-double_full	main/avro/py311/official_schema_pass/double_full.py	?
-double_full	main/avro/py312/official_schema_pass/double_full.py	?
-double_full	main/avro/py313/official_schema_pass/double_full.py	?
+double_full	main/avro/py311/official_schema_pass/double_full.py	?	= main/avro/py310/official_schema_pass/double_full.py
+double_full	main/avro/py312/official_schema_pass/double_full.py	?	= main/avro/py310/official_schema_pass/double_full.py
+double_full	main/avro/py313/official_schema_pass/double_full.py	?	= main/avro/py310/official_schema_pass/double_full.py
 double_full	main/avro/py314/official_schema_pass/double_full.py	?
 enum	main/avro/py310/official_schema_pass/enum.py	?
 enum	main/avro/py311/official_schema_pass/enum.py	?
-enum	main/avro/py312/official_schema_pass/enum.py	?
-enum	main/avro/py313/official_schema_pass/enum.py	?
+enum	main/avro/py312/official_schema_pass/enum.py	?	= main/avro/py311/official_schema_pass/enum.py
+enum	main/avro/py313/official_schema_pass/enum.py	?	= main/avro/py311/official_schema_pass/enum.py
 enum	main/avro/py314/official_schema_pass/enum.py	?
 extra_attributes	main/avro/py310/official_schema_pass/extra_attributes.py	?
-extra_attributes	main/avro/py311/official_schema_pass/extra_attributes.py	?
-extra_attributes	main/avro/py312/official_schema_pass/extra_attributes.py	?
-extra_attributes	main/avro/py313/official_schema_pass/extra_attributes.py	?
+extra_attributes	main/avro/py311/official_schema_pass/extra_attributes.py	?	= main/avro/py310/official_schema_pass/extra_attributes.py
+extra_attributes	main/avro/py312/official_schema_pass/extra_attributes.py	?	= main/avro/py310/official_schema_pass/extra_attributes.py
+extra_attributes	main/avro/py313/official_schema_pass/extra_attributes.py	?	= main/avro/py310/official_schema_pass/extra_attributes.py
 extra_attributes	main/avro/py314/official_schema_pass/extra_attributes.py	?
 fixed	main/avro/py310/official_schema_pass/fixed.py	?
-fixed	main/avro/py311/official_schema_pass/fixed.py	?
-fixed	main/avro/py312/official_schema_pass/fixed.py	?
-fixed	main/avro/py313/official_schema_pass/fixed.py	?
+fixed	main/avro/py311/official_schema_pass/fixed.py	?	= main/avro/py310/official_schema_pass/fixed.py
+fixed	main/avro/py312/official_schema_pass/fixed.py	?	= main/avro/py310/official_schema_pass/fixed.py
+fixed	main/avro/py313/official_schema_pass/fixed.py	?	= main/avro/py310/official_schema_pass/fixed.py
 fixed	main/avro/py314/official_schema_pass/fixed.py	?
 float_full	main/avro/py310/official_schema_pass/float_full.py	?
-float_full	main/avro/py311/official_schema_pass/float_full.py	?
-float_full	main/avro/py312/official_schema_pass/float_full.py	?
-float_full	main/avro/py313/official_schema_pass/float_full.py	?
+float_full	main/avro/py311/official_schema_pass/float_full.py	?	= main/avro/py310/official_schema_pass/float_full.py
+float_full	main/avro/py312/official_schema_pass/float_full.py	?	= main/avro/py310/official_schema_pass/float_full.py
+float_full	main/avro/py313/official_schema_pass/float_full.py	?	= main/avro/py310/official_schema_pass/float_full.py
 float_full	main/avro/py314/official_schema_pass/float_full.py	?
 int_full	main/avro/py310/official_schema_pass/int_full.py	?
-int_full	main/avro/py311/official_schema_pass/int_full.py	?
-int_full	main/avro/py312/official_schema_pass/int_full.py	?
-int_full	main/avro/py313/official_schema_pass/int_full.py	?
+int_full	main/avro/py311/official_schema_pass/int_full.py	?	= main/avro/py310/official_schema_pass/int_full.py
+int_full	main/avro/py312/official_schema_pass/int_full.py	?	= main/avro/py310/official_schema_pass/int_full.py
+int_full	main/avro/py313/official_schema_pass/int_full.py	?	= main/avro/py310/official_schema_pass/int_full.py
 int_full	main/avro/py314/official_schema_pass/int_full.py	?
 interop	main/avro/py310/official_schema_pass/interop.py	?
 interop	main/avro/py311/official_schema_pass/interop.py	?
-interop	main/avro/py312/official_schema_pass/interop.py	?
-interop	main/avro/py313/official_schema_pass/interop.py	?
+interop	main/avro/py312/official_schema_pass/interop.py	?	= main/avro/py311/official_schema_pass/interop.py
+interop	main/avro/py313/official_schema_pass/interop.py	?	= main/avro/py311/official_schema_pass/interop.py
 interop	main/avro/py314/official_schema_pass/interop.py	?
 long_full	main/avro/py310/official_schema_pass/long_full.py	?
-long_full	main/avro/py311/official_schema_pass/long_full.py	?
-long_full	main/avro/py312/official_schema_pass/long_full.py	?
-long_full	main/avro/py313/official_schema_pass/long_full.py	?
+long_full	main/avro/py311/official_schema_pass/long_full.py	?	= main/avro/py310/official_schema_pass/long_full.py
+long_full	main/avro/py312/official_schema_pass/long_full.py	?	= main/avro/py310/official_schema_pass/long_full.py
+long_full	main/avro/py313/official_schema_pass/long_full.py	?	= main/avro/py310/official_schema_pass/long_full.py
 long_full	main/avro/py314/official_schema_pass/long_full.py	?
 map	main/avro/py310/official_schema_pass/map.py	?
-map	main/avro/py311/official_schema_pass/map.py	?
-map	main/avro/py312/official_schema_pass/map.py	?
-map	main/avro/py313/official_schema_pass/map.py	?
+map	main/avro/py311/official_schema_pass/map.py	?	= main/avro/py310/official_schema_pass/map.py
+map	main/avro/py312/official_schema_pass/map.py	?	= main/avro/py310/official_schema_pass/map.py
+map	main/avro/py313/official_schema_pass/map.py	?	= main/avro/py310/official_schema_pass/map.py
 map	main/avro/py314/official_schema_pass/map.py	?
 namespace_enum	main/avro/py310/official_schema_pass/namespace_enum.py	?
 namespace_enum	main/avro/py311/official_schema_pass/namespace_enum.py	?
-namespace_enum	main/avro/py312/official_schema_pass/namespace_enum.py	?
-namespace_enum	main/avro/py313/official_schema_pass/namespace_enum.py	?
+namespace_enum	main/avro/py312/official_schema_pass/namespace_enum.py	?	= main/avro/py311/official_schema_pass/namespace_enum.py
+namespace_enum	main/avro/py313/official_schema_pass/namespace_enum.py	?	= main/avro/py311/official_schema_pass/namespace_enum.py
 namespace_enum	main/avro/py314/official_schema_pass/namespace_enum.py	?
 namespace_fixed	main/avro/py310/official_schema_pass/namespace_fixed.py	?
-namespace_fixed	main/avro/py311/official_schema_pass/namespace_fixed.py	?
-namespace_fixed	main/avro/py312/official_schema_pass/namespace_fixed.py	?
-namespace_fixed	main/avro/py313/official_schema_pass/namespace_fixed.py	?
+namespace_fixed	main/avro/py311/official_schema_pass/namespace_fixed.py	?	= main/avro/py310/official_schema_pass/namespace_fixed.py
+namespace_fixed	main/avro/py312/official_schema_pass/namespace_fixed.py	?	= main/avro/py310/official_schema_pass/namespace_fixed.py
+namespace_fixed	main/avro/py313/official_schema_pass/namespace_fixed.py	?	= main/avro/py310/official_schema_pass/namespace_fixed.py
 namespace_fixed	main/avro/py314/official_schema_pass/namespace_fixed.py	?
 namespace_fullname	main/avro/py310/official_schema_pass/namespace_fullname.py	?
-namespace_fullname	main/avro/py311/official_schema_pass/namespace_fullname.py	?
-namespace_fullname	main/avro/py312/official_schema_pass/namespace_fullname.py	?
-namespace_fullname	main/avro/py313/official_schema_pass/namespace_fullname.py	?
+namespace_fullname	main/avro/py311/official_schema_pass/namespace_fullname.py	?	= main/avro/py310/official_schema_pass/namespace_fullname.py
+namespace_fullname	main/avro/py312/official_schema_pass/namespace_fullname.py	?	= main/avro/py310/official_schema_pass/namespace_fullname.py
+namespace_fullname	main/avro/py313/official_schema_pass/namespace_fullname.py	?	= main/avro/py310/official_schema_pass/namespace_fullname.py
 namespace_fullname	main/avro/py314/official_schema_pass/namespace_fullname.py	?
 namespace_null_enum	main/avro/py310/official_schema_pass/namespace_null_enum.py	?
 namespace_null_enum	main/avro/py311/official_schema_pass/namespace_null_enum.py	?
-namespace_null_enum	main/avro/py312/official_schema_pass/namespace_null_enum.py	?
-namespace_null_enum	main/avro/py313/official_schema_pass/namespace_null_enum.py	?
+namespace_null_enum	main/avro/py312/official_schema_pass/namespace_null_enum.py	?	= main/avro/py311/official_schema_pass/namespace_null_enum.py
+namespace_null_enum	main/avro/py313/official_schema_pass/namespace_null_enum.py	?	= main/avro/py311/official_schema_pass/namespace_null_enum.py
 namespace_null_enum	main/avro/py314/official_schema_pass/namespace_null_enum.py	?
 namespace_null_fixed	main/avro/py310/official_schema_pass/namespace_null_fixed.py	?
-namespace_null_fixed	main/avro/py311/official_schema_pass/namespace_null_fixed.py	?
-namespace_null_fixed	main/avro/py312/official_schema_pass/namespace_null_fixed.py	?
-namespace_null_fixed	main/avro/py313/official_schema_pass/namespace_null_fixed.py	?
+namespace_null_fixed	main/avro/py311/official_schema_pass/namespace_null_fixed.py	?	= main/avro/py310/official_schema_pass/namespace_null_fixed.py
+namespace_null_fixed	main/avro/py312/official_schema_pass/namespace_null_fixed.py	?	= main/avro/py310/official_schema_pass/namespace_null_fixed.py
+namespace_null_fixed	main/avro/py313/official_schema_pass/namespace_null_fixed.py	?	= main/avro/py310/official_schema_pass/namespace_null_fixed.py
 namespace_null_fixed	main/avro/py314/official_schema_pass/namespace_null_fixed.py	?
 namespace_null_record	main/avro/py310/official_schema_pass/namespace_null_record.py	?
-namespace_null_record	main/avro/py311/official_schema_pass/namespace_null_record.py	?
-namespace_null_record	main/avro/py312/official_schema_pass/namespace_null_record.py	?
-namespace_null_record	main/avro/py313/official_schema_pass/namespace_null_record.py	?
+namespace_null_record	main/avro/py311/official_schema_pass/namespace_null_record.py	?	= main/avro/py310/official_schema_pass/namespace_null_record.py
+namespace_null_record	main/avro/py312/official_schema_pass/namespace_null_record.py	?	= main/avro/py310/official_schema_pass/namespace_null_record.py
+namespace_null_record	main/avro/py313/official_schema_pass/namespace_null_record.py	?	= main/avro/py310/official_schema_pass/namespace_null_record.py
 namespace_null_record	main/avro/py314/official_schema_pass/namespace_null_record.py	?
 namespace_recursive	main/avro/py310/official_schema_pass/namespace_recursive.py	?
-namespace_recursive	main/avro/py311/official_schema_pass/namespace_recursive.py	?
-namespace_recursive	main/avro/py312/official_schema_pass/namespace_recursive.py	?
-namespace_recursive	main/avro/py313/official_schema_pass/namespace_recursive.py	?
+namespace_recursive	main/avro/py311/official_schema_pass/namespace_recursive.py	?	= main/avro/py310/official_schema_pass/namespace_recursive.py
+namespace_recursive	main/avro/py312/official_schema_pass/namespace_recursive.py	?	= main/avro/py310/official_schema_pass/namespace_recursive.py
+namespace_recursive	main/avro/py313/official_schema_pass/namespace_recursive.py	?	= main/avro/py310/official_schema_pass/namespace_recursive.py
 namespace_recursive	main/avro/py314/official_schema_pass/namespace_recursive.py	?
 namespace_simple	main/avro/py310/official_schema_pass/namespace_simple.py	?
-namespace_simple	main/avro/py311/official_schema_pass/namespace_simple.py	?
-namespace_simple	main/avro/py312/official_schema_pass/namespace_simple.py	?
-namespace_simple	main/avro/py313/official_schema_pass/namespace_simple.py	?
+namespace_simple	main/avro/py311/official_schema_pass/namespace_simple.py	?	= main/avro/py310/official_schema_pass/namespace_simple.py
+namespace_simple	main/avro/py312/official_schema_pass/namespace_simple.py	?	= main/avro/py310/official_schema_pass/namespace_simple.py
+namespace_simple	main/avro/py313/official_schema_pass/namespace_simple.py	?	= main/avro/py310/official_schema_pass/namespace_simple.py
 namespace_simple	main/avro/py314/official_schema_pass/namespace_simple.py	?
 null_full	main/avro/py310/official_schema_pass/null_full.py	?
-null_full	main/avro/py311/official_schema_pass/null_full.py	?
-null_full	main/avro/py312/official_schema_pass/null_full.py	?
-null_full	main/avro/py313/official_schema_pass/null_full.py	?
+null_full	main/avro/py311/official_schema_pass/null_full.py	?	= main/avro/py310/official_schema_pass/null_full.py
+null_full	main/avro/py312/official_schema_pass/null_full.py	?	= main/avro/py310/official_schema_pass/null_full.py
+null_full	main/avro/py313/official_schema_pass/null_full.py	?	= main/avro/py310/official_schema_pass/null_full.py
 null_full	main/avro/py314/official_schema_pass/null_full.py	?
 record	main/avro/py310/official_schema_pass/record.py	?
-record	main/avro/py311/official_schema_pass/record.py	?
-record	main/avro/py312/official_schema_pass/record.py	?
-record	main/avro/py313/official_schema_pass/record.py	?
+record	main/avro/py311/official_schema_pass/record.py	?	= main/avro/py310/official_schema_pass/record.py
+record	main/avro/py312/official_schema_pass/record.py	?	= main/avro/py310/official_schema_pass/record.py
+record	main/avro/py313/official_schema_pass/record.py	?	= main/avro/py310/official_schema_pass/record.py
 record	main/avro/py314/official_schema_pass/record.py	?
 record_fields_with_defaults	main/avro/py310/official_schema_pass/record_fields_with_defaults.py	?
-record_fields_with_defaults	main/avro/py311/official_schema_pass/record_fields_with_defaults.py	?
-record_fields_with_defaults	main/avro/py312/official_schema_pass/record_fields_with_defaults.py	?
-record_fields_with_defaults	main/avro/py313/official_schema_pass/record_fields_with_defaults.py	?
+record_fields_with_defaults	main/avro/py311/official_schema_pass/record_fields_with_defaults.py	?	= main/avro/py310/official_schema_pass/record_fields_with_defaults.py
+record_fields_with_defaults	main/avro/py312/official_schema_pass/record_fields_with_defaults.py	?	= main/avro/py310/official_schema_pass/record_fields_with_defaults.py
+record_fields_with_defaults	main/avro/py313/official_schema_pass/record_fields_with_defaults.py	?	= main/avro/py310/official_schema_pass/record_fields_with_defaults.py
 record_fields_with_defaults	main/avro/py314/official_schema_pass/record_fields_with_defaults.py	?
 record_no_fields	main/avro/py310/official_schema_pass/record_no_fields.py	?
-record_no_fields	main/avro/py311/official_schema_pass/record_no_fields.py	?
-record_no_fields	main/avro/py312/official_schema_pass/record_no_fields.py	?
-record_no_fields	main/avro/py313/official_schema_pass/record_no_fields.py	?
+record_no_fields	main/avro/py311/official_schema_pass/record_no_fields.py	?	= main/avro/py310/official_schema_pass/record_no_fields.py
+record_no_fields	main/avro/py312/official_schema_pass/record_no_fields.py	?	= main/avro/py310/official_schema_pass/record_no_fields.py
+record_no_fields	main/avro/py313/official_schema_pass/record_no_fields.py	?	= main/avro/py310/official_schema_pass/record_no_fields.py
 record_no_fields	main/avro/py314/official_schema_pass/record_no_fields.py	?
 recursive_record	main/avro/py310/official_schema_pass/recursive_record.py	?
-recursive_record	main/avro/py311/official_schema_pass/recursive_record.py	?
-recursive_record	main/avro/py312/official_schema_pass/recursive_record.py	?
-recursive_record	main/avro/py313/official_schema_pass/recursive_record.py	?
+recursive_record	main/avro/py311/official_schema_pass/recursive_record.py	?	= main/avro/py310/official_schema_pass/recursive_record.py
+recursive_record	main/avro/py312/official_schema_pass/recursive_record.py	?	= main/avro/py310/official_schema_pass/recursive_record.py
+recursive_record	main/avro/py313/official_schema_pass/recursive_record.py	?	= main/avro/py310/official_schema_pass/recursive_record.py
 recursive_record	main/avro/py314/official_schema_pass/recursive_record.py	?
 string_extra_attributes	main/avro/py310/official_schema_pass/string_extra_attributes.py	?
-string_extra_attributes	main/avro/py311/official_schema_pass/string_extra_attributes.py	?
-string_extra_attributes	main/avro/py312/official_schema_pass/string_extra_attributes.py	?
-string_extra_attributes	main/avro/py313/official_schema_pass/string_extra_attributes.py	?
+string_extra_attributes	main/avro/py311/official_schema_pass/string_extra_attributes.py	?	= main/avro/py310/official_schema_pass/string_extra_attributes.py
+string_extra_attributes	main/avro/py312/official_schema_pass/string_extra_attributes.py	?	= main/avro/py310/official_schema_pass/string_extra_attributes.py
+string_extra_attributes	main/avro/py313/official_schema_pass/string_extra_attributes.py	?	= main/avro/py310/official_schema_pass/string_extra_attributes.py
 string_extra_attributes	main/avro/py314/official_schema_pass/string_extra_attributes.py	?
 string_full	main/avro/py310/official_schema_pass/string_full.py	?
-string_full	main/avro/py311/official_schema_pass/string_full.py	?
-string_full	main/avro/py312/official_schema_pass/string_full.py	?
-string_full	main/avro/py313/official_schema_pass/string_full.py	?
+string_full	main/avro/py311/official_schema_pass/string_full.py	?	= main/avro/py310/official_schema_pass/string_full.py
+string_full	main/avro/py312/official_schema_pass/string_full.py	?	= main/avro/py310/official_schema_pass/string_full.py
+string_full	main/avro/py313/official_schema_pass/string_full.py	?	= main/avro/py310/official_schema_pass/string_full.py
 string_full	main/avro/py314/official_schema_pass/string_full.py	?
 union	main/avro/py310/official_schema_pass/union.py	?
-union	main/avro/py311/official_schema_pass/union.py	?
-union	main/avro/py312/official_schema_pass/union.py	?
-union	main/avro/py313/official_schema_pass/union.py	?
+union	main/avro/py311/official_schema_pass/union.py	?	= main/avro/py310/official_schema_pass/union.py
+union	main/avro/py312/official_schema_pass/union.py	?	= main/avro/py310/official_schema_pass/union.py
+union	main/avro/py313/official_schema_pass/union.py	?	= main/avro/py310/official_schema_pass/union.py
 union	main/avro/py314/official_schema_pass/union.py	?
 [test_main_avro_official_spec_long_list]
 	main/avro/py310/official_long_list.py	?
-	main/avro/py311/official_long_list.py	?
-	main/avro/py312/official_long_list.py	?
-	main/avro/py313/official_long_list.py	?
+	main/avro/py311/official_long_list.py	?	= main/avro/py310/official_long_list.py
+	main/avro/py312/official_long_list.py	?	= main/avro/py310/official_long_list.py
+	main/avro/py313/official_long_list.py	?	= main/avro/py310/official_long_list.py
 	main/avro/py314/official_long_list.py	?
 [test_main_avro_output_model_types]
 dataclass	main/avro/output_model_types/constructs_dataclasses_dataclass.py
 msgspec	main/avro/output_model_types/constructs_msgspec_Struct.py
-pydantic-v2	main/avro/output_model_types/constructs_pydantic_v2_BaseModel.py
+pydantic-v2	main/avro/output_model_types/constructs_pydantic_v2_BaseModel.py	= main/avro/py310/constructs.py
 typed-dict	main/avro/output_model_types/constructs_typing_TypedDict.py
 [test_main_avro_schema_declaration_forms]
 name_suffix_collision.avsc-True	main/avro/py310/schema_declaration_forms/name_suffix_collision.py	?
-name_suffix_collision.avsc-True	main/avro/py311/schema_declaration_forms/name_suffix_collision.py	?
-name_suffix_collision.avsc-True	main/avro/py312/schema_declaration_forms/name_suffix_collision.py	?
-name_suffix_collision.avsc-True	main/avro/py313/schema_declaration_forms/name_suffix_collision.py	?
+name_suffix_collision.avsc-True	main/avro/py311/schema_declaration_forms/name_suffix_collision.py	?	= main/avro/py310/schema_declaration_forms/name_suffix_collision.py
+name_suffix_collision.avsc-True	main/avro/py312/schema_declaration_forms/name_suffix_collision.py	?	= main/avro/py310/schema_declaration_forms/name_suffix_collision.py
+name_suffix_collision.avsc-True	main/avro/py313/schema_declaration_forms/name_suffix_collision.py	?	= main/avro/py310/schema_declaration_forms/name_suffix_collision.py
 name_suffix_collision.avsc-True	main/avro/py314/schema_declaration_forms/name_suffix_collision.py	?
 namespace_null_collision.avsc-True	main/avro/py310/schema_declaration_forms/namespace_null_collision.py	?
-namespace_null_collision.avsc-True	main/avro/py311/schema_declaration_forms/namespace_null_collision.py	?
-namespace_null_collision.avsc-True	main/avro/py312/schema_declaration_forms/namespace_null_collision.py	?
-namespace_null_collision.avsc-True	main/avro/py313/schema_declaration_forms/namespace_null_collision.py	?
+namespace_null_collision.avsc-True	main/avro/py311/schema_declaration_forms/namespace_null_collision.py	?	= main/avro/py310/schema_declaration_forms/namespace_null_collision.py
+namespace_null_collision.avsc-True	main/avro/py312/schema_declaration_forms/namespace_null_collision.py	?	= main/avro/py310/schema_declaration_forms/namespace_null_collision.py
+namespace_null_collision.avsc-True	main/avro/py313/schema_declaration_forms/namespace_null_collision.py	?	= main/avro/py310/schema_declaration_forms/namespace_null_collision.py
 namespace_null_collision.avsc-True	main/avro/py314/schema_declaration_forms/namespace_null_collision.py	?
 root_array.avsc-True	main/avro/py310/schema_declaration_forms/root_array.py	?
-root_array.avsc-True	main/avro/py311/schema_declaration_forms/root_array.py	?
-root_array.avsc-True	main/avro/py312/schema_declaration_forms/root_array.py	?
-root_array.avsc-True	main/avro/py313/schema_declaration_forms/root_array.py	?
+root_array.avsc-True	main/avro/py311/schema_declaration_forms/root_array.py	?	= main/avro/py310/schema_declaration_forms/root_array.py
+root_array.avsc-True	main/avro/py312/schema_declaration_forms/root_array.py	?	= main/avro/py310/schema_declaration_forms/root_array.py
+root_array.avsc-True	main/avro/py313/schema_declaration_forms/root_array.py	?	= main/avro/py310/schema_declaration_forms/root_array.py
 root_array.avsc-True	main/avro/py314/schema_declaration_forms/root_array.py	?
 root_enum.avsc-True	main/avro/py310/schema_declaration_forms/root_enum.py	?
 root_enum.avsc-True	main/avro/py311/schema_declaration_forms/root_enum.py	?
-root_enum.avsc-True	main/avro/py312/schema_declaration_forms/root_enum.py	?
-root_enum.avsc-True	main/avro/py313/schema_declaration_forms/root_enum.py	?
+root_enum.avsc-True	main/avro/py312/schema_declaration_forms/root_enum.py	?	= main/avro/py311/schema_declaration_forms/root_enum.py
+root_enum.avsc-True	main/avro/py313/schema_declaration_forms/root_enum.py	?	= main/avro/py311/schema_declaration_forms/root_enum.py
 root_enum.avsc-True	main/avro/py314/schema_declaration_forms/root_enum.py	?
 root_fixed.avsc-True	main/avro/py310/schema_declaration_forms/root_fixed.py	?
-root_fixed.avsc-True	main/avro/py311/schema_declaration_forms/root_fixed.py	?
-root_fixed.avsc-True	main/avro/py312/schema_declaration_forms/root_fixed.py	?
-root_fixed.avsc-True	main/avro/py313/schema_declaration_forms/root_fixed.py	?
+root_fixed.avsc-True	main/avro/py311/schema_declaration_forms/root_fixed.py	?	= main/avro/py310/schema_declaration_forms/root_fixed.py
+root_fixed.avsc-True	main/avro/py312/schema_declaration_forms/root_fixed.py	?	= main/avro/py310/schema_declaration_forms/root_fixed.py
+root_fixed.avsc-True	main/avro/py313/schema_declaration_forms/root_fixed.py	?	= main/avro/py310/schema_declaration_forms/root_fixed.py
 root_fixed.avsc-True	main/avro/py314/schema_declaration_forms/root_fixed.py	?
 root_fixed_uuid.avsc-True	main/avro/py310/schema_declaration_forms/root_fixed_uuid.py	?
-root_fixed_uuid.avsc-True	main/avro/py311/schema_declaration_forms/root_fixed_uuid.py	?
-root_fixed_uuid.avsc-True	main/avro/py312/schema_declaration_forms/root_fixed_uuid.py	?
-root_fixed_uuid.avsc-True	main/avro/py313/schema_declaration_forms/root_fixed_uuid.py	?
+root_fixed_uuid.avsc-True	main/avro/py311/schema_declaration_forms/root_fixed_uuid.py	?	= main/avro/py310/schema_declaration_forms/root_fixed_uuid.py
+root_fixed_uuid.avsc-True	main/avro/py312/schema_declaration_forms/root_fixed_uuid.py	?	= main/avro/py310/schema_declaration_forms/root_fixed_uuid.py
+root_fixed_uuid.avsc-True	main/avro/py313/schema_declaration_forms/root_fixed_uuid.py	?	= main/avro/py310/schema_declaration_forms/root_fixed_uuid.py
 root_fixed_uuid.avsc-True	main/avro/py314/schema_declaration_forms/root_fixed_uuid.py	?
 root_map.avsc-False	main/avro/py310/schema_declaration_forms/root_map.py	?
-root_map.avsc-False	main/avro/py311/schema_declaration_forms/root_map.py	?
-root_map.avsc-False	main/avro/py312/schema_declaration_forms/root_map.py	?
-root_map.avsc-False	main/avro/py313/schema_declaration_forms/root_map.py	?
+root_map.avsc-False	main/avro/py311/schema_declaration_forms/root_map.py	?	= main/avro/py310/schema_declaration_forms/root_map.py
+root_map.avsc-False	main/avro/py312/schema_declaration_forms/root_map.py	?	= main/avro/py310/schema_declaration_forms/root_map.py
+root_map.avsc-False	main/avro/py313/schema_declaration_forms/root_map.py	?	= main/avro/py310/schema_declaration_forms/root_map.py
 root_map.avsc-False	main/avro/py314/schema_declaration_forms/root_map.py	?
 root_string.avsc-False	main/avro/py310/schema_declaration_forms/root_string.py	?
-root_string.avsc-False	main/avro/py311/schema_declaration_forms/root_string.py	?
-root_string.avsc-False	main/avro/py312/schema_declaration_forms/root_string.py	?
-root_string.avsc-False	main/avro/py313/schema_declaration_forms/root_string.py	?
+root_string.avsc-False	main/avro/py311/schema_declaration_forms/root_string.py	?	= main/avro/py310/schema_declaration_forms/root_string.py
+root_string.avsc-False	main/avro/py312/schema_declaration_forms/root_string.py	?	= main/avro/py310/schema_declaration_forms/root_string.py
+root_string.avsc-False	main/avro/py313/schema_declaration_forms/root_string.py	?	= main/avro/py310/schema_declaration_forms/root_string.py
 root_string.avsc-False	main/avro/py314/schema_declaration_forms/root_string.py	?
 root_type_object.avsc-False	main/avro/py310/schema_declaration_forms/root_type_object.py	?
-root_type_object.avsc-False	main/avro/py311/schema_declaration_forms/root_type_object.py	?
-root_type_object.avsc-False	main/avro/py312/schema_declaration_forms/root_type_object.py	?
-root_type_object.avsc-False	main/avro/py313/schema_declaration_forms/root_type_object.py	?
+root_type_object.avsc-False	main/avro/py311/schema_declaration_forms/root_type_object.py	?	= main/avro/py310/schema_declaration_forms/root_type_object.py
+root_type_object.avsc-False	main/avro/py312/schema_declaration_forms/root_type_object.py	?	= main/avro/py310/schema_declaration_forms/root_type_object.py
+root_type_object.avsc-False	main/avro/py313/schema_declaration_forms/root_type_object.py	?	= main/avro/py310/schema_declaration_forms/root_type_object.py
 root_type_object.avsc-False	main/avro/py314/schema_declaration_forms/root_type_object.py	?
 root_type_union.avsc-True	main/avro/py310/schema_declaration_forms/root_type_union.py	?
-root_type_union.avsc-True	main/avro/py311/schema_declaration_forms/root_type_union.py	?
-root_type_union.avsc-True	main/avro/py312/schema_declaration_forms/root_type_union.py	?
-root_type_union.avsc-True	main/avro/py313/schema_declaration_forms/root_type_union.py	?
+root_type_union.avsc-True	main/avro/py311/schema_declaration_forms/root_type_union.py	?	= main/avro/py310/schema_declaration_forms/root_type_union.py
+root_type_union.avsc-True	main/avro/py312/schema_declaration_forms/root_type_union.py	?	= main/avro/py310/schema_declaration_forms/root_type_union.py
+root_type_union.avsc-True	main/avro/py313/schema_declaration_forms/root_type_union.py	?	= main/avro/py310/schema_declaration_forms/root_type_union.py
 root_type_union.avsc-True	main/avro/py314/schema_declaration_forms/root_type_union.py	?
 root_union_named.avsc-False	main/avro/py310/schema_declaration_forms/root_union_named.py	?
 root_union_named.avsc-False	main/avro/py311/schema_declaration_forms/root_union_named.py	?
-root_union_named.avsc-False	main/avro/py312/schema_declaration_forms/root_union_named.py	?
-root_union_named.avsc-False	main/avro/py313/schema_declaration_forms/root_union_named.py	?
+root_union_named.avsc-False	main/avro/py312/schema_declaration_forms/root_union_named.py	?	= main/avro/py311/schema_declaration_forms/root_union_named.py
+root_union_named.avsc-False	main/avro/py313/schema_declaration_forms/root_union_named.py	?	= main/avro/py311/schema_declaration_forms/root_union_named.py
 root_union_named.avsc-False	main/avro/py314/schema_declaration_forms/root_union_named.py	?
 [test_main_avro_single_value_enum_as_const_keeps_converted_enums]
 	main/avro/py310/spec_matrix.py	?
 	main/avro/py311/spec_matrix.py	?
-	main/avro/py312/spec_matrix.py	?
-	main/avro/py313/spec_matrix.py	?
+	main/avro/py312/spec_matrix.py	?	= main/avro/py311/spec_matrix.py
+	main/avro/py313/spec_matrix.py	?	= main/avro/py311/spec_matrix.py
 	main/avro/py314/spec_matrix.py	?
 [test_main_avro_spec_matrix]
 	main/avro/default_values.txt
 	main/avro/py310/spec_matrix.py	?
 	main/avro/py311/spec_matrix.py	?
-	main/avro/py312/spec_matrix.py	?
-	main/avro/py313/spec_matrix.py	?
+	main/avro/py312/spec_matrix.py	?	= main/avro/py311/spec_matrix.py
+	main/avro/py313/spec_matrix.py	?	= main/avro/py311/spec_matrix.py
 	main/avro/py314/spec_matrix.py	?
 [test_main_avro_temporal_default_controls]
 	main/avro/temporal_default_controls.py
