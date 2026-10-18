@@ -16,75 +16,75 @@ api	payloads/allof_ref_sibling_outputs/validated_model_items.txt
 cli	main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 cli	payloads/allof_ref_sibling_outputs/validated_model_items.txt
 [test_allof_ref_siblings]
-array_external-all-False-api-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py
+array_external-all-False-api-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py	= main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-all-False-api-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-all-False-api-True	main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-all-False-api-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-all-False-cli-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py
+array_external-all-False-cli-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py	= main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-all-False-cli-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-all-False-cli-True	main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-all-False-cli-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-all-True-api-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py
+array_external-all-True-api-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py	= main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-all-True-api-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-all-True-api-True	main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-all-True-api-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-all-True-cli-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py
+array_external-all-True-cli-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py	= main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-all-True-cli-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-all-True-cli-True	main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-all-True-cli-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-constraints-False-api-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py
+array_external-constraints-False-api-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py	= main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-constraints-False-api-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-constraints-False-api-True	main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-constraints-False-api-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py
+array_external-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py	= main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-constraints-True-api-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py
+array_external-constraints-True-api-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py	= main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-constraints-True-api-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-constraints-True-api-True	main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-constraints-True-api-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py
+array_external-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py	= main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-none-False-api-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py
+array_external-none-False-api-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py	= main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-none-False-api-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-none-False-api-True	main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-none-False-api-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-none-False-cli-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py
+array_external-none-False-cli-False	main/jsonschema/allof_ref_siblings/array_external_False_False.py	= main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-none-False-cli-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-none-False-cli-True	main/jsonschema/allof_ref_siblings/array_external_False_True.py
 array_external-none-False-cli-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-none-True-api-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py
+array_external-none-True-api-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py	= main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-none-True-api-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-none-True-api-True	main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-none-True-api-True	payloads/allof_ref_sibling_outputs/array_external.txt
-array_external-none-True-cli-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py
+array_external-none-True-cli-False	main/jsonschema/allof_ref_siblings/array_external_True_False.py	= main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-none-True-cli-False	payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 array_external-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 array_external-none-True-cli-True	main/jsonschema/allof_ref_siblings/array_external_True_True.py
 array_external-none-True-cli-True	payloads/allof_ref_sibling_outputs/array_external.txt
-const_intersection-all-False-api-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py
+const_intersection-all-False-api-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-all-False-api-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_intersection-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_intersection-all-False-api-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py
+const_intersection-all-False-api-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-all-False-api-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_intersection-all-False-cli-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py
+const_intersection-all-False-cli-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-all-False-cli-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_intersection-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_intersection-all-False-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py
+const_intersection-all-False-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-all-False-cli-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
 const_intersection-all-True-api-False	main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-all-True-api-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
@@ -96,15 +96,15 @@ const_intersection-all-True-cli-False	payloads/allof_ref_sibling_outputs/const_i
 const_intersection-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 const_intersection-all-True-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-all-True-cli-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_intersection-constraints-False-api-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py
+const_intersection-constraints-False-api-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-constraints-False-api-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_intersection-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_intersection-constraints-False-api-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py
+const_intersection-constraints-False-api-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-constraints-False-api-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_intersection-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py
+const_intersection-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_intersection-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_intersection-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py
+const_intersection-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
 const_intersection-constraints-True-api-False	main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-constraints-True-api-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
@@ -116,15 +116,15 @@ const_intersection-constraints-True-cli-False	payloads/allof_ref_sibling_outputs
 const_intersection-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 const_intersection-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_intersection-none-False-api-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py
+const_intersection-none-False-api-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-none-False-api-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_intersection-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_intersection-none-False-api-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py
+const_intersection-none-False-api-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-none-False-api-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_intersection-none-False-cli-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py
+const_intersection-none-False-cli-False	main/jsonschema/allof_ref_siblings/const_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-none-False-cli-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_intersection-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_intersection-none-False-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py
+const_intersection-none-False-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-none-False-cli-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
 const_intersection-none-True-api-False	main/jsonschema/allof_ref_siblings/const_intersection_True_False.py
 const_intersection-none-True-api-False	payloads/allof_ref_sibling_outputs/const_intersection_without_validators.txt	= payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
@@ -136,15 +136,15 @@ const_intersection-none-True-cli-False	payloads/allof_ref_sibling_outputs/const_
 const_intersection-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 const_intersection-none-True-cli-True	main/jsonschema/allof_ref_siblings/const_intersection_True_True.py
 const_intersection-none-True-cli-True	payloads/allof_ref_sibling_outputs/const_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_sibling-all-False-api-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py
+const_sibling-all-False-api-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-all-False-api-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_sibling-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_sibling-all-False-api-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py
+const_sibling-all-False-api-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-all-False-api-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_sibling-all-False-cli-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py
+const_sibling-all-False-cli-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-all-False-cli-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_sibling-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_sibling-all-False-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py
+const_sibling-all-False-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-all-False-cli-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
 const_sibling-all-True-api-False	main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-all-True-api-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
@@ -156,15 +156,15 @@ const_sibling-all-True-cli-False	payloads/allof_ref_sibling_outputs/const_siblin
 const_sibling-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 const_sibling-all-True-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-all-True-cli-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_sibling-constraints-False-api-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py
+const_sibling-constraints-False-api-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-constraints-False-api-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_sibling-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_sibling-constraints-False-api-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py
+const_sibling-constraints-False-api-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-constraints-False-api-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_sibling-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py
+const_sibling-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_sibling-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_sibling-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py
+const_sibling-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
 const_sibling-constraints-True-api-False	main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-constraints-True-api-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
@@ -176,15 +176,15 @@ const_sibling-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/cons
 const_sibling-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 const_sibling-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_sibling-none-False-api-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py
+const_sibling-none-False-api-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-none-False-api-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_sibling-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_sibling-none-False-api-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py
+const_sibling-none-False-api-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-none-False-api-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
-const_sibling-none-False-cli-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py
+const_sibling-none-False-cli-False	main/jsonschema/allof_ref_siblings/const_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-none-False-cli-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
 const_sibling-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-const_sibling-none-False-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py
+const_sibling-none-False-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-none-False-cli-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
 const_sibling-none-True-api-False	main/jsonschema/allof_ref_siblings/const_sibling_True_False.py
 const_sibling-none-True-api-False	payloads/allof_ref_sibling_outputs/const_sibling_without_validators.txt
@@ -196,15 +196,15 @@ const_sibling-none-True-cli-False	payloads/allof_ref_sibling_outputs/const_sibli
 const_sibling-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 const_sibling-none-True-cli-True	main/jsonschema/allof_ref_siblings/const_sibling_True_True.py
 const_sibling-none-True-cli-True	payloads/allof_ref_sibling_outputs/const_sibling.txt
-enum_array-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py
+enum_array-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py	= main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-all-False-api-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
 enum_array-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_array-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py
+enum_array-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py	= main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-all-False-api-True	payloads/allof_ref_sibling_outputs/enum_array.txt
-enum_array-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py
+enum_array-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py	= main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-all-False-cli-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
 enum_array-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_array-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py
+enum_array-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py	= main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-all-False-cli-True	payloads/allof_ref_sibling_outputs/enum_array.txt
 enum_array-all-True-api-False	main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-all-True-api-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
@@ -216,15 +216,15 @@ enum_array-all-True-cli-False	payloads/allof_ref_sibling_outputs/enum_array_with
 enum_array-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_array-all-True-cli-True	main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-all-True-cli-True	payloads/allof_ref_sibling_outputs/enum_array.txt
-enum_array-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py
+enum_array-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py	= main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-constraints-False-api-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
 enum_array-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_array-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py
+enum_array-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py	= main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-constraints-False-api-True	payloads/allof_ref_sibling_outputs/enum_array.txt
-enum_array-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py
+enum_array-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py	= main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
 enum_array-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_array-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py
+enum_array-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py	= main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/enum_array.txt
 enum_array-constraints-True-api-False	main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-constraints-True-api-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
@@ -236,15 +236,15 @@ enum_array-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/enum_ar
 enum_array-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_array-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/enum_array.txt
-enum_array-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py
+enum_array-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py	= main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-none-False-api-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
 enum_array-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_array-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py
+enum_array-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py	= main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-none-False-api-True	payloads/allof_ref_sibling_outputs/enum_array.txt
-enum_array-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py
+enum_array-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_array_False_False.py	= main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-none-False-cli-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
 enum_array-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_array-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py
+enum_array-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_array_False_True.py	= main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-none-False-cli-True	payloads/allof_ref_sibling_outputs/enum_array.txt
 enum_array-none-True-api-False	main/jsonschema/allof_ref_siblings/enum_array_True_False.py
 enum_array-none-True-api-False	payloads/allof_ref_sibling_outputs/enum_array_without_validators.txt
@@ -256,15 +256,15 @@ enum_array-none-True-cli-False	payloads/allof_ref_sibling_outputs/enum_array_wit
 enum_array-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_array-none-True-cli-True	main/jsonschema/allof_ref_siblings/enum_array_True_True.py
 enum_array-none-True-cli-True	payloads/allof_ref_sibling_outputs/enum_array.txt
-enum_intersection-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py
+enum_intersection-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-all-False-api-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
 enum_intersection-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_intersection-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py
+enum_intersection-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-all-False-api-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-enum_intersection-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py
+enum_intersection-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-all-False-cli-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
 enum_intersection-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_intersection-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py
+enum_intersection-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-all-False-cli-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
 enum_intersection-all-True-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-all-True-api-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
@@ -276,15 +276,15 @@ enum_intersection-all-True-cli-False	payloads/allof_ref_sibling_outputs/enum_int
 enum_intersection-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_intersection-all-True-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-all-True-cli-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-enum_intersection-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py
+enum_intersection-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-constraints-False-api-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
 enum_intersection-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_intersection-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py
+enum_intersection-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-constraints-False-api-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-enum_intersection-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py
+enum_intersection-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
 enum_intersection-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_intersection-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py
+enum_intersection-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
 enum_intersection-constraints-True-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-constraints-True-api-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
@@ -296,15 +296,15 @@ enum_intersection-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/
 enum_intersection-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_intersection-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-enum_intersection-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py
+enum_intersection-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-none-False-api-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
 enum_intersection-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_intersection-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py
+enum_intersection-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-none-False-api-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
-enum_intersection-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py
+enum_intersection-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_intersection_False_False.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-none-False-cli-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
 enum_intersection-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_intersection-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py
+enum_intersection-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_intersection_False_True.py	= main/jsonschema/allof_ref_siblings/enum_intersection_True_True.py
 enum_intersection-none-False-cli-True	payloads/allof_ref_sibling_outputs/enum_intersection.txt	= payloads/allof_ref_sibling_outputs/const_sibling.txt
 enum_intersection-none-True-api-False	main/jsonschema/allof_ref_siblings/enum_intersection_True_False.py
 enum_intersection-none-True-api-False	payloads/allof_ref_sibling_outputs/enum_intersection_without_validators.txt
@@ -376,12 +376,12 @@ enum_length-none-True-cli-False	payloads/allof_ref_sibling_outputs/enum_length_w
 enum_length-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_length-none-True-cli-True	main/jsonschema/allof_ref_siblings/enum_length_True_True.py
 enum_length-none-True-cli-True	payloads/allof_ref_sibling_outputs/enum_length.txt
-enum_model_items-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py
+enum_model_items-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py	= main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-all-False-api-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_model_items-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-all-False-api-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
-enum_model_items-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py
+enum_model_items-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py	= main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-all-False-cli-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_model_items-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
@@ -389,19 +389,19 @@ enum_model_items-all-False-cli-True	payloads/allof_ref_sibling_outputs/enum_mode
 enum_model_items-all-True-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-all-True-api-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_model_items-all-True-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py
+enum_model_items-all-True-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py	= main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-all-True-api-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
 enum_model_items-all-True-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-all-True-cli-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_model_items-all-True-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py
+enum_model_items-all-True-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py	= main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-all-True-cli-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
-enum_model_items-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py
+enum_model_items-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py	= main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-constraints-False-api-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_model_items-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-constraints-False-api-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
-enum_model_items-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py
+enum_model_items-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py	= main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_model_items-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
@@ -409,19 +409,19 @@ enum_model_items-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/e
 enum_model_items-constraints-True-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-constraints-True-api-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_model_items-constraints-True-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py
+enum_model_items-constraints-True-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py	= main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-constraints-True-api-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
 enum_model_items-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_model_items-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py
+enum_model_items-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py	= main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
-enum_model_items-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py
+enum_model_items-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py	= main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-none-False-api-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_model_items-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-none-False-api-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
-enum_model_items-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py
+enum_model_items-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_False_False.py	= main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-none-False-cli-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_model_items-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
@@ -429,22 +429,22 @@ enum_model_items-none-False-cli-True	payloads/allof_ref_sibling_outputs/enum_mod
 enum_model_items-none-True-api-False	main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-none-True-api-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_model_items-none-True-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py
+enum_model_items-none-True-api-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py	= main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-none-True-api-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
 enum_model_items-none-True-cli-False	main/jsonschema/allof_ref_siblings/enum_model_items_True_False.py
 enum_model_items-none-True-cli-False	payloads/allof_ref_sibling_outputs/enum_model_items_without_validators.txt
 enum_model_items-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_model_items-none-True-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py
+enum_model_items-none-True-cli-True	main/jsonschema/allof_ref_siblings/enum_model_items_True_True.py	= main/jsonschema/allof_ref_siblings/enum_model_items_False_True.py
 enum_model_items-none-True-cli-True	payloads/allof_ref_sibling_outputs/enum_model_items.txt
-enum_null-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py
+enum_null-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py	= main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-all-False-api-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
 enum_null-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_null-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py
+enum_null-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py	= main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-all-False-api-True	payloads/allof_ref_sibling_outputs/enum_null.txt
-enum_null-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py
+enum_null-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py	= main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-all-False-cli-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
 enum_null-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_null-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py
+enum_null-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py	= main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-all-False-cli-True	payloads/allof_ref_sibling_outputs/enum_null.txt
 enum_null-all-True-api-False	main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-all-True-api-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
@@ -456,15 +456,15 @@ enum_null-all-True-cli-False	payloads/allof_ref_sibling_outputs/enum_null_reject
 enum_null-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_null-all-True-cli-True	main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-all-True-cli-True	payloads/allof_ref_sibling_outputs/enum_null.txt
-enum_null-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py
+enum_null-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py	= main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-constraints-False-api-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
 enum_null-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_null-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py
+enum_null-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py	= main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-constraints-False-api-True	payloads/allof_ref_sibling_outputs/enum_null.txt
-enum_null-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py
+enum_null-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py	= main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
 enum_null-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_null-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py
+enum_null-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py	= main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/enum_null.txt
 enum_null-constraints-True-api-False	main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-constraints-True-api-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
@@ -476,15 +476,15 @@ enum_null-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/enum_nul
 enum_null-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_null-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/enum_null.txt
-enum_null-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py
+enum_null-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py	= main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-none-False-api-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
 enum_null-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_null-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py
+enum_null-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py	= main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-none-False-api-True	payloads/allof_ref_sibling_outputs/enum_null.txt
-enum_null-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py
+enum_null-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_null_False_False.py	= main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-none-False-cli-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
 enum_null-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_null-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py
+enum_null-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_null_False_True.py	= main/jsonschema/allof_ref_siblings/enum_null_True_True.py
 enum_null-none-False-cli-True	payloads/allof_ref_sibling_outputs/enum_null.txt
 enum_null-none-True-api-False	main/jsonschema/allof_ref_siblings/enum_null_True_False.py
 enum_null-none-True-api-False	payloads/allof_ref_sibling_outputs/enum_null_rejected_without_validators.txt
@@ -556,15 +556,15 @@ enum_numeric-none-True-cli-False	payloads/allof_ref_sibling_outputs/enum_numeric
 enum_numeric-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_numeric-none-True-cli-True	main/jsonschema/allof_ref_siblings/enum_numeric_True_True.py
 enum_numeric-none-True-cli-True	payloads/allof_ref_sibling_outputs/enum_numeric.txt
-enum_objects-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py
+enum_objects-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-all-False-api-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
 enum_objects-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_objects-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py
+enum_objects-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-all-False-api-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
-enum_objects-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py
+enum_objects-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-all-False-cli-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
 enum_objects-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_objects-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py
+enum_objects-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-all-False-cli-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
 enum_objects-all-True-api-False	main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-all-True-api-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
@@ -576,15 +576,15 @@ enum_objects-all-True-cli-False	payloads/allof_ref_sibling_outputs/enum_objects_
 enum_objects-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_objects-all-True-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-all-True-cli-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
-enum_objects-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py
+enum_objects-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-constraints-False-api-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
 enum_objects-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_objects-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py
+enum_objects-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-constraints-False-api-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
-enum_objects-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py
+enum_objects-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
 enum_objects-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_objects-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py
+enum_objects-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
 enum_objects-constraints-True-api-False	main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-constraints-True-api-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
@@ -596,15 +596,15 @@ enum_objects-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/enum_
 enum_objects-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_objects-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
-enum_objects-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py
+enum_objects-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-none-False-api-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
 enum_objects-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_objects-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py
+enum_objects-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-none-False-api-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
-enum_objects-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py
+enum_objects-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_objects_False_False.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-none-False-cli-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
 enum_objects-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_objects-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py
+enum_objects-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_objects_False_True.py	= main/jsonschema/allof_ref_siblings/enum_objects_True_True.py
 enum_objects-none-False-cli-True	payloads/allof_ref_sibling_outputs/enum_objects.txt
 enum_objects-none-True-api-False	main/jsonschema/allof_ref_siblings/enum_objects_True_False.py
 enum_objects-none-True-api-False	payloads/allof_ref_sibling_outputs/enum_objects_without_validators.txt
@@ -676,15 +676,15 @@ enum_pattern-none-True-cli-False	payloads/allof_ref_sibling_outputs/enum_pattern
 enum_pattern-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_pattern-none-True-cli-True	main/jsonschema/allof_ref_siblings/enum_pattern_True_True.py
 enum_pattern-none-True-cli-True	payloads/allof_ref_sibling_outputs/enum_pattern.txt
-enum_sibling-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py
+enum_sibling-all-False-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-all-False-api-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
 enum_sibling-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_sibling-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py
+enum_sibling-all-False-api-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-all-False-api-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
-enum_sibling-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py
+enum_sibling-all-False-cli-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-all-False-cli-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
 enum_sibling-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_sibling-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py
+enum_sibling-all-False-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-all-False-cli-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
 enum_sibling-all-True-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-all-True-api-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
@@ -696,15 +696,15 @@ enum_sibling-all-True-cli-False	payloads/allof_ref_sibling_outputs/enum_sibling_
 enum_sibling-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_sibling-all-True-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-all-True-cli-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
-enum_sibling-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py
+enum_sibling-constraints-False-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-constraints-False-api-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
 enum_sibling-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_sibling-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py
+enum_sibling-constraints-False-api-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-constraints-False-api-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
-enum_sibling-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py
+enum_sibling-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
 enum_sibling-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_sibling-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py
+enum_sibling-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
 enum_sibling-constraints-True-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-constraints-True-api-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
@@ -716,15 +716,15 @@ enum_sibling-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/enum_
 enum_sibling-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_sibling-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
-enum_sibling-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py
+enum_sibling-none-False-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-none-False-api-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
 enum_sibling-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_sibling-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py
+enum_sibling-none-False-api-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-none-False-api-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
-enum_sibling-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py
+enum_sibling-none-False-cli-False	main/jsonschema/allof_ref_siblings/enum_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-none-False-cli-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
 enum_sibling-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-enum_sibling-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py
+enum_sibling-none-False-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_False_True.py	= main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-none-False-cli-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
 enum_sibling-none-True-api-False	main/jsonschema/allof_ref_siblings/enum_sibling_True_False.py
 enum_sibling-none-True-api-False	payloads/allof_ref_sibling_outputs/enum_sibling_without_validators.txt
@@ -736,302 +736,302 @@ enum_sibling-none-True-cli-False	payloads/allof_ref_sibling_outputs/enum_sibling
 enum_sibling-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 enum_sibling-none-True-cli-True	main/jsonschema/allof_ref_siblings/enum_sibling_True_True.py
 enum_sibling-none-True-cli-True	payloads/allof_ref_sibling_outputs/enum_sibling.txt
-integer-all-False-api-False	main/jsonschema/allof_ref_siblings/integer_False_False.py
+integer-all-False-api-False	main/jsonschema/allof_ref_siblings/integer_False_False.py	= main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-all-False-api-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-all-False-api-True	main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-all-False-api-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-all-False-cli-False	main/jsonschema/allof_ref_siblings/integer_False_False.py
+integer-all-False-cli-False	main/jsonschema/allof_ref_siblings/integer_False_False.py	= main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-all-False-cli-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-all-False-cli-True	main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-all-False-cli-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-all-True-api-False	main/jsonschema/allof_ref_siblings/integer_True_False.py
+integer-all-True-api-False	main/jsonschema/allof_ref_siblings/integer_True_False.py	= main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-all-True-api-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-all-True-api-True	main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-all-True-api-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-all-True-cli-False	main/jsonschema/allof_ref_siblings/integer_True_False.py
+integer-all-True-cli-False	main/jsonschema/allof_ref_siblings/integer_True_False.py	= main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-all-True-cli-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-all-True-cli-True	main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-all-True-cli-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-constraints-False-api-False	main/jsonschema/allof_ref_siblings/integer_False_False.py
+integer-constraints-False-api-False	main/jsonschema/allof_ref_siblings/integer_False_False.py	= main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-constraints-False-api-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-constraints-False-api-True	main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-constraints-False-api-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/integer_False_False.py
+integer-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/integer_False_False.py	= main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-constraints-True-api-False	main/jsonschema/allof_ref_siblings/integer_True_False.py
+integer-constraints-True-api-False	main/jsonschema/allof_ref_siblings/integer_True_False.py	= main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-constraints-True-api-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-constraints-True-api-True	main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-constraints-True-api-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/integer_True_False.py
+integer-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/integer_True_False.py	= main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-none-False-api-False	main/jsonschema/allof_ref_siblings/integer_False_False.py
+integer-none-False-api-False	main/jsonschema/allof_ref_siblings/integer_False_False.py	= main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-none-False-api-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-none-False-api-True	main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-none-False-api-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-none-False-cli-False	main/jsonschema/allof_ref_siblings/integer_False_False.py
+integer-none-False-cli-False	main/jsonschema/allof_ref_siblings/integer_False_False.py	= main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-none-False-cli-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-none-False-cli-True	main/jsonschema/allof_ref_siblings/integer_False_True.py
 integer-none-False-cli-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-none-True-api-False	main/jsonschema/allof_ref_siblings/integer_True_False.py
+integer-none-True-api-False	main/jsonschema/allof_ref_siblings/integer_True_False.py	= main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-none-True-api-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-none-True-api-True	main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-none-True-api-True	payloads/allof_ref_sibling_outputs/integer.txt
-integer-none-True-cli-False	main/jsonschema/allof_ref_siblings/integer_True_False.py
+integer-none-True-cli-False	main/jsonschema/allof_ref_siblings/integer_True_False.py	= main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-none-True-cli-False	payloads/allof_ref_sibling_outputs/integer_without_validators.txt
 integer-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 integer-none-True-cli-True	main/jsonschema/allof_ref_siblings/integer_True_True.py
 integer-none-True-cli-True	payloads/allof_ref_sibling_outputs/integer.txt
-items_closed-all-False-api-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py
+items_closed-all-False-api-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-False-api-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_closed-all-False-api-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py
+items_closed-all-False-api-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-False-api-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py
+items_closed-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_closed-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py
+items_closed-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-all-True-api-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py
+items_closed-all-True-api-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-True-api-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_closed-all-True-api-True	main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-True-api-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py
+items_closed-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_closed-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py
+items_closed-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_closed-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py
+items_closed-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py
+items_closed-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_closed-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py
+items_closed-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py
+items_closed-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_closed-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py
+items_closed-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_closed-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-none-False-api-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py
+items_closed-none-False-api-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-False-api-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_closed-none-False-api-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py
+items_closed-none-False-api-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-False-api-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py
+items_closed-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_closed-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py
+items_closed-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-none-True-api-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py
+items_closed-none-True-api-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-True-api-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_closed-none-True-api-True	main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-True-api-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_closed-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py
+items_closed-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_closed_without_validators.txt
 items_closed-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_closed-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_closed_True_True.py
 items_closed-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_closed.txt
-items_disjoint_type-all-False-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py
+items_disjoint_type-all-False-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-False-api-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_disjoint_type-all-False-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py
+items_disjoint_type-all-False-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-False-api-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py
+items_disjoint_type-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_disjoint_type-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py
+items_disjoint_type-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-all-True-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py
+items_disjoint_type-all-True-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-True-api-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_disjoint_type-all-True-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-True-api-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py
+items_disjoint_type-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_disjoint_type-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py
+items_disjoint_type-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_disjoint_type-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py
+items_disjoint_type-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py
+items_disjoint_type-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_disjoint_type-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py
+items_disjoint_type-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py
+items_disjoint_type-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_disjoint_type-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py
+items_disjoint_type-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_disjoint_type-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-none-False-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py
+items_disjoint_type-none-False-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-False-api-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_disjoint_type-none-False-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py
+items_disjoint_type-none-False-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-False-api-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py
+items_disjoint_type-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_disjoint_type-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py
+items_disjoint_type-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_False_True.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-none-True-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py
+items_disjoint_type-none-True-api-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-True-api-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_disjoint_type-none-True-api-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-True-api-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_disjoint_type-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py
+items_disjoint_type-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_False.py	= main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_disjoint_type-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_disjoint_type-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_disjoint_type_True_True.py
 items_disjoint_type-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_disjoint_type.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_external-all-False-api-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py
+items_external-all-False-api-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py	= main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-all-False-api-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-all-False-api-True	main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-all-False-api-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py
+items_external-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py	= main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-all-True-api-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py
+items_external-all-True-api-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py	= main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-all-True-api-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-all-True-api-True	main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-all-True-api-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py
+items_external-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py	= main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py
+items_external-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py	= main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py
+items_external-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py	= main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py
+items_external-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py	= main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py
+items_external-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py	= main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-none-False-api-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py
+items_external-none-False-api-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py	= main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-none-False-api-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-none-False-api-True	main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-none-False-api-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py
+items_external-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_external_False_False.py	= main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_external_False_True.py
 items_external-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-none-True-api-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py
+items_external-none-True-api-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py	= main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-none-True-api-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-none-True-api-True	main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-none-True-api-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_external-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py
+items_external-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_external_True_False.py	= main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_external_without_validators.txt	= payloads/allof_ref_sibling_outputs/array_external_without_validators.txt
 items_external-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_external-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_external_True_True.py
 items_external-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_external.txt	= payloads/allof_ref_sibling_outputs/array_external.txt
-items_false-all-False-api-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py
+items_false-all-False-api-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-False-api-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_false-all-False-api-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py
+items_false-all-False-api-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-False-api-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py
+items_false-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_false-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py
+items_false-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-all-True-api-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py
+items_false-all-True-api-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-True-api-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_false-all-True-api-True	main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-True-api-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py
+items_false-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_false-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py
+items_false-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_false-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py
+items_false-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py
+items_false-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_false-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py
+items_false-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py
+items_false-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_false-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py
+items_false-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_false-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-none-False-api-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py
+items_false-none-False-api-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-none-False-api-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_false-none-False-api-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py
+items_false-none-False-api-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-none-False-api-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py
+items_false-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_false_False_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_false-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py
+items_false-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_false_False_True.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-none-True-api-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py
+items_false-none-True-api-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-none-True-api-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_false-none-True-api-True	main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-none-True-api-True	payloads/allof_ref_sibling_outputs/items_false.txt
-items_false-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py
+items_false-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_false_True_False.py	= main/jsonschema/allof_ref_siblings/items_false_True_True.py
 items_false-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_false_without_validators.txt
 items_false-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_false-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_false_True_True.py
@@ -1096,602 +1096,602 @@ items_literal-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_liter
 items_literal-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_literal-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_literal_True_True.py
 items_literal-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_literal.txt
-items_nested-all-False-api-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py
+items_nested-all-False-api-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py	= main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-all-False-api-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-all-False-api-True	main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-all-False-api-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py
+items_nested-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py	= main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-all-True-api-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py
+items_nested-all-True-api-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py	= main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-all-True-api-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-all-True-api-True	main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-all-True-api-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py
+items_nested-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py	= main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py
+items_nested-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py	= main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py
+items_nested-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py	= main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py
+items_nested-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py	= main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py
+items_nested-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py	= main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-none-False-api-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py
+items_nested-none-False-api-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py	= main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-none-False-api-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-none-False-api-True	main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-none-False-api-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py
+items_nested-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_nested_False_False.py	= main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_nested_False_True.py
 items_nested-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-none-True-api-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py
+items_nested-none-True-api-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py	= main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-none-True-api-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-none-True-api-True	main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-none-True-api-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_nested-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py
+items_nested-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_nested_True_False.py	= main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_nested_without_validators.txt
 items_nested-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_nested-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_nested_True_True.py
 items_nested-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_nested.txt
-items_number-all-False-api-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py
+items_number-all-False-api-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-False-api-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_number-all-False-api-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py
+items_number-all-False-api-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-False-api-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py
+items_number-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_number-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py
+items_number-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-all-True-api-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py
+items_number-all-True-api-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-True-api-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number-all-True-api-True	main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-True-api-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py
+items_number-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py
+items_number-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_number-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py
+items_number-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py
+items_number-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_number-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py
+items_number-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py
+items_number-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py
+items_number-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-none-False-api-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py
+items_number-none-False-api-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-False-api-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_number-none-False-api-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py
+items_number-none-False-api-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-False-api-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py
+items_number-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_number-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py
+items_number-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_False_True.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-none-True-api-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py
+items_number-none-True-api-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-True-api-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number-none-True-api-True	main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-True-api-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py
+items_number-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_number_without_validators.txt
 items_number-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_number_True_True.py
 items_number-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_number.txt
-items_number_bounds-all-False-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py
+items_number_bounds-all-False-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-all-False-api-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-all-False-api-True	main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-all-False-api-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py
+items_number_bounds-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-all-True-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py
+items_number_bounds-all-True-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-all-True-api-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-all-True-api-True	main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-all-True-api-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py
+items_number_bounds-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py
+items_number_bounds-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py
+items_number_bounds-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py
+items_number_bounds-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py
+items_number_bounds-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-none-False-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py
+items_number_bounds-none-False-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-none-False-api-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-none-False-api-True	main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-none-False-api-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py
+items_number_bounds-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_False_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_number_bounds_False_True.py
 items_number_bounds-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-none-True-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py
+items_number_bounds-none-True-api-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-none-True-api-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-none-True-api-True	main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-none-True-api-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_number_bounds-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py
+items_number_bounds-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_number_bounds_True_False.py	= main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_number_bounds_without_validators.txt
 items_number_bounds-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_number_bounds-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_number_bounds_True_True.py
 items_number_bounds-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_number_bounds.txt
-items_positional-all-False-api-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py
+items_positional-all-False-api-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py	= main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-all-False-api-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-all-False-api-True	main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-all-False-api-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py
+items_positional-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py	= main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-all-True-api-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py
+items_positional-all-True-api-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py	= main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-all-True-api-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-all-True-api-True	main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-all-True-api-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py
+items_positional-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py	= main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py
+items_positional-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py	= main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py
+items_positional-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py	= main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py
+items_positional-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py	= main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py
+items_positional-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py	= main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-none-False-api-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py
+items_positional-none-False-api-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py	= main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-none-False-api-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-none-False-api-True	main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-none-False-api-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py
+items_positional-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_positional_False_False.py	= main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_positional_False_True.py
 items_positional-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-none-True-api-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py
+items_positional-none-True-api-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py	= main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-none-True-api-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-none-True-api-True	main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-none-True-api-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_positional-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py
+items_positional-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_positional_True_False.py	= main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_positional_without_validators.txt
 items_positional-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_positional-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_positional_True_True.py
 items_positional-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_positional.txt
-items_required_closed-all-False-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py
+items_required_closed-all-False-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-False-api-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_required_closed-all-False-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py
+items_required_closed-all-False-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-False-api-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py
+items_required_closed-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_required_closed-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py
+items_required_closed-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-all-True-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py
+items_required_closed-all-True-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-True-api-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_required_closed-all-True-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-True-api-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py
+items_required_closed-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_required_closed-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py
+items_required_closed-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_required_closed-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py
+items_required_closed-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py
+items_required_closed-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_required_closed-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py
+items_required_closed-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py
+items_required_closed-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_required_closed-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py
+items_required_closed-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_required_closed-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-none-False-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py
+items_required_closed-none-False-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-False-api-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_required_closed-none-False-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py
+items_required_closed-none-False-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-False-api-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py
+items_required_closed-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_False_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
-items_required_closed-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py
+items_required_closed-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_False_True.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-none-True-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py
+items_required_closed-none-True-api-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-True-api-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_required_closed-none-True-api-True	main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-True-api-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_required_closed-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py
+items_required_closed-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_required_closed_True_False.py	= main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_required_closed_without_validators.txt	= payloads/allof_ref_sibling_outputs/items_disjoint_type_without_validators.txt
 items_required_closed-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_required_closed-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_required_closed_True_True.py
 items_required_closed-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_required_closed.txt	= payloads/allof_ref_sibling_outputs/items_false.txt
-items_sibling-all-False-api-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py
+items_sibling-all-False-api-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-all-False-api-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-all-False-api-True	main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-all-False-api-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py
+items_sibling-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-all-True-api-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py
+items_sibling-all-True-api-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-all-True-api-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-all-True-api-True	main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-all-True-api-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py
+items_sibling-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py
+items_sibling-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py
+items_sibling-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py
+items_sibling-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py
+items_sibling-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-none-False-api-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py
+items_sibling-none-False-api-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-none-False-api-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-none-False-api-True	main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-none-False-api-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py
+items_sibling-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_False_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_sibling_False_True.py
 items_sibling-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-none-True-api-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py
+items_sibling-none-True-api-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-none-True-api-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-none-True-api-True	main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-none-True-api-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_sibling-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py
+items_sibling-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_sibling_True_False.py	= main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_sibling_without_validators.txt
 items_sibling-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_sibling-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_sibling_True_True.py
 items_sibling-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_sibling.txt
-items_true-all-False-api-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py
+items_true-all-False-api-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py	= main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-all-False-api-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-all-False-api-True	main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-all-False-api-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py
+items_true-all-False-cli-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py	= main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-all-False-cli-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-all-False-cli-True	main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-all-False-cli-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-all-True-api-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py
+items_true-all-True-api-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py	= main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-all-True-api-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-all-True-api-True	main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-all-True-api-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py
+items_true-all-True-cli-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py	= main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-all-True-cli-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-all-True-cli-True	main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-all-True-cli-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py
+items_true-constraints-False-api-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py	= main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-constraints-False-api-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-constraints-False-api-True	main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-constraints-False-api-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py
+items_true-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py	= main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py
+items_true-constraints-True-api-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py	= main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-constraints-True-api-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-constraints-True-api-True	main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-constraints-True-api-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py
+items_true-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py	= main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-none-False-api-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py
+items_true-none-False-api-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py	= main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-none-False-api-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-none-False-api-True	main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-none-False-api-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py
+items_true-none-False-cli-False	main/jsonschema/allof_ref_siblings/items_true_False_False.py	= main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-none-False-cli-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-none-False-cli-True	main/jsonschema/allof_ref_siblings/items_true_False_True.py
 items_true-none-False-cli-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-none-True-api-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py
+items_true-none-True-api-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py	= main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-none-True-api-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-none-True-api-True	main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-none-True-api-True	payloads/allof_ref_sibling_outputs/items_true.txt
-items_true-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py
+items_true-none-True-cli-False	main/jsonschema/allof_ref_siblings/items_true_True_False.py	= main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-none-True-cli-False	payloads/allof_ref_sibling_outputs/items_true_without_validators.txt
 items_true-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 items_true-none-True-cli-True	main/jsonschema/allof_ref_siblings/items_true_True_True.py
 items_true-none-True-cli-True	payloads/allof_ref_sibling_outputs/items_true.txt
-string_2019-09-all-False-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py
+string_2019-09-all-False-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-all-False-api-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-all-False-api-True	main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-all-False-api-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-all-False-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py
+string_2019-09-all-False-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-all-False-cli-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-all-False-cli-True	main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-all-False-cli-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-all-True-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py
+string_2019-09-all-True-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-all-True-api-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-all-True-api-True	main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-all-True-api-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-all-True-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py
+string_2019-09-all-True-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-all-True-cli-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-all-True-cli-True	main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-all-True-cli-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-constraints-False-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py
+string_2019-09-constraints-False-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-constraints-False-api-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-constraints-False-api-True	main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-constraints-False-api-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py
+string_2019-09-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-constraints-True-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py
+string_2019-09-constraints-True-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-constraints-True-api-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-constraints-True-api-True	main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-constraints-True-api-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py
+string_2019-09-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-none-False-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py
+string_2019-09-none-False-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-none-False-api-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-none-False-api-True	main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-none-False-api-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-none-False-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py
+string_2019-09-none-False-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_False_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-none-False-cli-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-none-False-cli-True	main/jsonschema/allof_ref_siblings/string_2019-09_False_True.py
 string_2019-09-none-False-cli-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-none-True-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py
+string_2019-09-none-True-api-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-none-True-api-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-none-True-api-True	main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-none-True-api-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2019-09-none-True-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py
+string_2019-09-none-True-cli-False	main/jsonschema/allof_ref_siblings/string_2019-09_True_False.py	= main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-none-True-cli-False	payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2019-09-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2019-09-none-True-cli-True	main/jsonschema/allof_ref_siblings/string_2019-09_True_True.py
 string_2019-09-none-True-cli-True	payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-all-False-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py
+string_2020-12-all-False-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-all-False-api-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-all-False-api-True	main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-all-False-api-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-all-False-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py
+string_2020-12-all-False-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-all-False-cli-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-all-False-cli-True	main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-all-False-cli-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-all-True-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py
+string_2020-12-all-True-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-all-True-api-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-all-True-api-True	main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-all-True-api-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-all-True-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py
+string_2020-12-all-True-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-all-True-cli-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-all-True-cli-True	main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-all-True-cli-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-constraints-False-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py
+string_2020-12-constraints-False-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-constraints-False-api-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-constraints-False-api-True	main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-constraints-False-api-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py
+string_2020-12-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-constraints-True-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py
+string_2020-12-constraints-True-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-constraints-True-api-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-constraints-True-api-True	main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-constraints-True-api-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py
+string_2020-12-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-none-False-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py
+string_2020-12-none-False-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-none-False-api-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-none-False-api-True	main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-none-False-api-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-none-False-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py
+string_2020-12-none-False-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_False_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-none-False-cli-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-none-False-cli-True	main/jsonschema/allof_ref_siblings/string_2020-12_False_True.py
 string_2020-12-none-False-cli-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-none-True-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py
+string_2020-12-none-True-api-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-none-True-api-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-none-True-api-True	main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-none-True-api-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_2020-12-none-True-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py
+string_2020-12-none-True-cli-False	main/jsonschema/allof_ref_siblings/string_2020-12_True_False.py	= main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-none-True-cli-False	payloads/allof_ref_sibling_outputs/string_2020-12_without_validators.txt	= payloads/allof_ref_sibling_outputs/string_2019-09_without_validators.txt
 string_2020-12-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_2020-12-none-True-cli-True	main/jsonschema/allof_ref_siblings/string_2020-12_True_True.py
 string_2020-12-none-True-cli-True	payloads/allof_ref_sibling_outputs/string_2020-12.txt	= payloads/allof_ref_sibling_outputs/string_2019-09.txt
-string_draft-07-all-False-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py
+string_draft-07-all-False-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-all-False-api-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-all-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-all-False-api-True	main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-all-False-api-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-all-False-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py
+string_draft-07-all-False-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-all-False-cli-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-all-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-all-False-cli-True	main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-all-False-cli-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-all-True-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py
+string_draft-07-all-True-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-all-True-api-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-all-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-all-True-api-True	main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-all-True-api-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-all-True-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py
+string_draft-07-all-True-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-all-True-cli-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-all-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-all-True-cli-True	main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-all-True-cli-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-constraints-False-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py
+string_draft-07-constraints-False-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-constraints-False-api-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-constraints-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-constraints-False-api-True	main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-constraints-False-api-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py
+string_draft-07-constraints-False-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-constraints-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-constraints-False-cli-True	main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-constraints-False-cli-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-constraints-True-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py
+string_draft-07-constraints-True-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-constraints-True-api-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-constraints-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-constraints-True-api-True	main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-constraints-True-api-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py
+string_draft-07-constraints-True-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-constraints-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-constraints-True-cli-True	main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-constraints-True-cli-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-none-False-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py
+string_draft-07-none-False-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-none-False-api-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-none-False-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-none-False-api-True	main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-none-False-api-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-none-False-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py
+string_draft-07-none-False-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_False_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-none-False-cli-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-none-False-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-none-False-cli-True	main/jsonschema/allof_ref_siblings/string_draft-07_False_True.py
 string_draft-07-none-False-cli-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-none-True-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py
+string_draft-07-none-True-api-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-none-True-api-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-none-True-api-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-none-True-api-True	main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-none-True-api-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
-string_draft-07-none-True-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py
+string_draft-07-none-True-cli-False	main/jsonschema/allof_ref_siblings/string_draft-07_True_False.py	= main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-none-True-cli-False	payloads/allof_ref_sibling_outputs/string_draft-07_without_validators.txt
 string_draft-07-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-none-True-cli-True	main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py

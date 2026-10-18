@@ -1,2 +1,0 @@
-floats_on_string
-numbers_on_string
