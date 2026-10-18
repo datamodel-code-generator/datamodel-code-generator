@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "frac": {
+      "$ref": "#/$defs/Frac"
+    },
+    "frac_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Number"
+        }
+      ],
+      "minimum": 0.5,
+      "maximum": 9.5
+    },
+    "frac_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Number"
+          }
+        ],
+        "minimum": 0.5,
+        "maximum": 9.5
+      }
+    },
+    "frac_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Number"
+          }
+        ],
+        "minimum": 0.5,
+        "maximum": 9.5
+      }
+    }
+  },
+  "$defs": {
+    "Number": {
+      "type": "integer"
+    },
+    "Frac": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Number"
+        }
+      ],
+      "minimum": 0.5,
+      "maximum": 9.5
+    }
+  }
+}

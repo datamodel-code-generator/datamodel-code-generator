@@ -1,0 +1,591 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pick": {
+      "$ref": "#/definitions/Pick"
+    },
+    "pick_prop": {
+      "$ref": "#/definitions/AB",
+      "enum": [
+        "b"
+      ]
+    },
+    "pick_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AB",
+        "enum": [
+          "b"
+        ]
+      }
+    },
+    "pick_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/AB",
+        "enum": [
+          "b"
+        ]
+      }
+    },
+    "w1": {
+      "$ref": "#/definitions/W1"
+    },
+    "w1_prop": {
+      "$ref": "#/definitions/AB",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "w1_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AB",
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "w1_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/AB",
+        "enum": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    "q_sib": {
+      "$ref": "#/definitions/Sib"
+    },
+    "q_sib_prop": {
+      "$ref": "#/definitions/Quantity",
+      "maximum": 10
+    },
+    "q_sib_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Quantity",
+        "maximum": 10
+      }
+    },
+    "q_sib_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Quantity",
+        "maximum": 10
+      }
+    },
+    "looser": {
+      "$ref": "#/definitions/Looser"
+    },
+    "looser_prop": {
+      "$ref": "#/definitions/Quantity",
+      "minimum": 0
+    },
+    "looser_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Quantity",
+        "minimum": 0
+      }
+    },
+    "looser_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/Quantity",
+        "minimum": 0
+      }
+    },
+    "w3": {
+      "$ref": "#/definitions/W3"
+    },
+    "redundant_type": {
+      "$ref": "#/definitions/Quantity",
+      "type": "integer"
+    },
+    "redundant_allof": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Quantity"
+        }
+      ],
+      "type": "integer"
+    },
+    "code_type": {
+      "$ref": "#/definitions/Code",
+      "type": "string"
+    },
+    "q_desc": {
+      "$ref": "#/definitions/Quantity",
+      "description": "d"
+    },
+    "examples_max": {
+      "$ref": "#/definitions/Q",
+      "examples": [
+        5
+      ],
+      "maximum": 9
+    },
+    "examples_only": {
+      "$ref": "#/definitions/Q",
+      "examples": [
+        5
+      ]
+    },
+    "titled": {
+      "$ref": "#/definitions/Base",
+      "minLength": 2
+    },
+    "wa": {
+      "$ref": "#/definitions/Wa"
+    },
+    "wa_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      ]
+    },
+    "wa_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "enum": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wa_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "enum": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wb": {
+      "$ref": "#/definitions/Wb"
+    },
+    "wb_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "wb_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "enum": [
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wb_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "enum": [
+              "b"
+            ]
+          }
+        ]
+      }
+    },
+    "wc": {
+      "$ref": "#/definitions/Wc"
+    },
+    "wc_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "description": "x"
+        }
+      ]
+    },
+    "wc_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "description": "x"
+          }
+        ]
+      }
+    },
+    "wc_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "description": "x"
+          }
+        ]
+      }
+    },
+    "wd": {
+      "$ref": "#/definitions/Wd"
+    },
+    "wd_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Q",
+          "maximum": 10
+        }
+      ]
+    },
+    "wd_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Q",
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "wd_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Q",
+            "maximum": 10
+          }
+        ]
+      }
+    },
+    "we": {
+      "$ref": "#/definitions/We"
+    },
+    "we_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Q",
+          "minimum": 1
+        }
+      ]
+    },
+    "we_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Q",
+            "minimum": 1
+          }
+        ]
+      }
+    },
+    "we_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Q",
+            "minimum": 1
+          }
+        ]
+      }
+    },
+    "wf": {
+      "$ref": "#/definitions/Wf"
+    },
+    "wf_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Q",
+          "type": "integer"
+        }
+      ]
+    },
+    "wf_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Q",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "wf_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/Q",
+            "type": "integer"
+          }
+        ]
+      }
+    },
+    "wg": {
+      "$ref": "#/definitions/Wg"
+    },
+    "wg_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "enum": [
+            "b",
+            "a"
+          ]
+        }
+      ]
+    },
+    "wg_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "enum": [
+              "b",
+              "a"
+            ]
+          }
+        ]
+      }
+    },
+    "wg_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB",
+            "enum": [
+              "b",
+              "a"
+            ]
+          }
+        ]
+      }
+    },
+    "wh": {
+      "$ref": "#/definitions/Wh"
+    },
+    "wh_prop": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB"
+        }
+      ]
+    },
+    "wh_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB"
+          }
+        ]
+      }
+    },
+    "wh_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/AB"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Q": {
+      "type": "integer",
+      "minimum": 1,
+      "examples": [
+        1,
+        2
+      ]
+    },
+    "Wa": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      ]
+    },
+    "Wb": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "enum": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "Wc": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "description": "x"
+        }
+      ]
+    },
+    "Wd": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Q",
+          "maximum": 10
+        }
+      ]
+    },
+    "We": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Q",
+          "minimum": 1
+        }
+      ]
+    },
+    "Wf": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Q",
+          "type": "integer"
+        }
+      ]
+    },
+    "Wg": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB",
+          "enum": [
+            "b",
+            "a"
+          ]
+        }
+      ]
+    },
+    "Wh": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AB"
+        }
+      ]
+    },
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Code": {
+      "type": "string",
+      "pattern": "^[A-Z]+$"
+    },
+    "Base": {
+      "type": "string",
+      "title": "BaseT",
+      "default": "base",
+      "examples": [
+        "bb"
+      ]
+    },
+    "P1": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    },
+    "P2": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string",
+          "enum": [
+            "b",
+            "a"
+          ],
+          "description": "d"
+        }
+      }
+    },
+    "W3": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/P1"
+        },
+        {
+          "$ref": "#/definitions/P2"
+        }
+      ]
+    },
+    "Pick": {
+      "$ref": "#/definitions/AB",
+      "enum": [
+        "b"
+      ]
+    },
+    "W1": {
+      "$ref": "#/definitions/AB",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Sib": {
+      "$ref": "#/definitions/Quantity",
+      "maximum": 10
+    },
+    "Looser": {
+      "$ref": "#/definitions/Quantity",
+      "minimum": 0
+    }
+  }
+}

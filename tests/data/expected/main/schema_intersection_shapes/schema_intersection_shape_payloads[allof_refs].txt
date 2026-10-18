@@ -1,0 +1,952 @@
+pydantic_v2.BaseModel default pick2 "b" accepted
+pydantic_v2.BaseModel default pick2 "a" accepted
+pydantic_v2.BaseModel default pick2 "c" rejected
+pydantic_v2.BaseModel default pick2_prop "b" accepted
+pydantic_v2.BaseModel default pick2_prop "a" accepted
+pydantic_v2.BaseModel default pick2_prop "c" rejected
+pydantic_v2.BaseModel default pick2_items ["b"] accepted
+pydantic_v2.BaseModel default pick2_items ["a"] accepted
+pydantic_v2.BaseModel default pick2_items ["c"] rejected
+pydantic_v2.BaseModel default pick2_map {"k": "b"} accepted
+pydantic_v2.BaseModel default pick2_map {"k": "a"} accepted
+pydantic_v2.BaseModel default pick2_map {"k": "c"} rejected
+pydantic_v2.BaseModel default level2 2 accepted
+pydantic_v2.BaseModel default level2 3 accepted
+pydantic_v2.BaseModel default level2 1 accepted
+pydantic_v2.BaseModel default level2 4 rejected
+pydantic_v2.BaseModel default level2_prop 2 accepted
+pydantic_v2.BaseModel default level2_prop 3 accepted
+pydantic_v2.BaseModel default level2_prop 1 accepted
+pydantic_v2.BaseModel default level2_prop 4 rejected
+pydantic_v2.BaseModel default level2_items [2] accepted
+pydantic_v2.BaseModel default level2_items [3] accepted
+pydantic_v2.BaseModel default level2_items [1] accepted
+pydantic_v2.BaseModel default level2_items [4] rejected
+pydantic_v2.BaseModel default level2_map {"k": 2} accepted
+pydantic_v2.BaseModel default level2_map {"k": 3} accepted
+pydantic_v2.BaseModel default level2_map {"k": 1} accepted
+pydantic_v2.BaseModel default level2_map {"k": 4} rejected
+pydantic_v2.BaseModel default number5 5 accepted
+pydantic_v2.BaseModel default number5 6 accepted
+pydantic_v2.BaseModel default number5 4 accepted
+pydantic_v2.BaseModel default number5_prop 5 accepted
+pydantic_v2.BaseModel default number5_prop 6 accepted
+pydantic_v2.BaseModel default number5_prop 4 accepted
+pydantic_v2.BaseModel default number5_items [5] accepted
+pydantic_v2.BaseModel default number5_items [6] accepted
+pydantic_v2.BaseModel default number5_items [4] accepted
+pydantic_v2.BaseModel default number5_map {"k": 5} accepted
+pydantic_v2.BaseModel default number5_map {"k": 6} accepted
+pydantic_v2.BaseModel default number5_map {"k": 4} accepted
+pydantic_v2.BaseModel default non_negative 0 accepted
+pydantic_v2.BaseModel default non_negative 1.5 accepted
+pydantic_v2.BaseModel default non_negative -1 rejected
+pydantic_v2.BaseModel default non_negative -0.5 rejected
+pydantic_v2.BaseModel default non_negative_prop 0 accepted
+pydantic_v2.BaseModel default non_negative_prop 1.5 accepted
+pydantic_v2.BaseModel default non_negative_prop -1 accepted
+pydantic_v2.BaseModel default non_negative_prop -0.5 accepted
+pydantic_v2.BaseModel default non_negative_items [0] accepted
+pydantic_v2.BaseModel default non_negative_items [1.5] accepted
+pydantic_v2.BaseModel default non_negative_items [-1] accepted
+pydantic_v2.BaseModel default non_negative_items [-0.5] accepted
+pydantic_v2.BaseModel default non_negative_map {"k": 0} accepted
+pydantic_v2.BaseModel default non_negative_map {"k": 1.5} accepted
+pydantic_v2.BaseModel default non_negative_map {"k": -1} accepted
+pydantic_v2.BaseModel default non_negative_map {"k": -0.5} accepted
+pydantic_v2.BaseModel default two_refs 3 accepted
+pydantic_v2.BaseModel default two_refs 5 accepted
+pydantic_v2.BaseModel default two_refs 2 rejected
+pydantic_v2.BaseModel default two_refs 6 rejected
+pydantic_v2.BaseModel default two_refs_prop 3 rejected
+pydantic_v2.BaseModel default two_refs_prop 5 rejected
+pydantic_v2.BaseModel default two_refs_prop 2 rejected
+pydantic_v2.BaseModel default two_refs_prop 6 rejected
+pydantic_v2.BaseModel default two_refs_items [3] rejected
+pydantic_v2.BaseModel default two_refs_items [5] rejected
+pydantic_v2.BaseModel default two_refs_items [2] rejected
+pydantic_v2.BaseModel default two_refs_items [6] rejected
+pydantic_v2.BaseModel default two_refs_map {"k": 3} rejected
+pydantic_v2.BaseModel default two_refs_map {"k": 5} rejected
+pydantic_v2.BaseModel default two_refs_map {"k": 2} rejected
+pydantic_v2.BaseModel default two_refs_map {"k": 6} rejected
+pydantic_v2.BaseModel default stamp_len "2020-01-01T00:00:00Z" accepted
+pydantic_v2.BaseModel default stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.BaseModel default stamp_len_prop "2020-01-01T00:00:00Z" accepted
+pydantic_v2.BaseModel default stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.BaseModel default stamp_len_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel default stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel default stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel default stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel default quantity 1 accepted
+pydantic_v2.BaseModel default quantity 0 rejected
+pydantic_v2.BaseModel default q_allof 1 accepted
+pydantic_v2.BaseModel default q_allof 10 accepted
+pydantic_v2.BaseModel default q_allof 0 rejected
+pydantic_v2.BaseModel default q_allof 11 accepted
+pydantic_v2.BaseModel default q_allof_prop 1 accepted
+pydantic_v2.BaseModel default q_allof_prop 10 accepted
+pydantic_v2.BaseModel default q_allof_prop 0 rejected
+pydantic_v2.BaseModel default q_allof_prop 11 accepted
+pydantic_v2.BaseModel default q_allof_items [1] accepted
+pydantic_v2.BaseModel default q_allof_items [10] accepted
+pydantic_v2.BaseModel default q_allof_items [0] rejected
+pydantic_v2.BaseModel default q_allof_items [11] accepted
+pydantic_v2.BaseModel default q_allof_map {"k": 1} accepted
+pydantic_v2.BaseModel default q_allof_map {"k": 10} accepted
+pydantic_v2.BaseModel default q_allof_map {"k": 0} rejected
+pydantic_v2.BaseModel default q_allof_map {"k": 11} accepted
+pydantic_v2.BaseModel default q_allof2 1 accepted
+pydantic_v2.BaseModel default q_allof2 10 accepted
+pydantic_v2.BaseModel default q_allof2 0 rejected
+pydantic_v2.BaseModel default q_allof2 11 rejected
+pydantic_v2.BaseModel default q_allof2_prop 1 accepted
+pydantic_v2.BaseModel default q_allof2_prop 10 accepted
+pydantic_v2.BaseModel default q_allof2_prop 0 rejected
+pydantic_v2.BaseModel default q_allof2_prop 11 accepted
+pydantic_v2.BaseModel default q_allof2_items [1] accepted
+pydantic_v2.BaseModel default q_allof2_items [10] accepted
+pydantic_v2.BaseModel default q_allof2_items [0] rejected
+pydantic_v2.BaseModel default q_allof2_items [11] accepted
+pydantic_v2.BaseModel default q_allof2_map {"k": 1} accepted
+pydantic_v2.BaseModel default q_allof2_map {"k": 10} accepted
+pydantic_v2.BaseModel default q_allof2_map {"k": 0} rejected
+pydantic_v2.BaseModel default q_allof2_map {"k": 11} accepted
+pydantic_v2.BaseModel default xpt_a 1 accepted
+pydantic_v2.BaseModel default xpt_a 10 accepted
+pydantic_v2.BaseModel default xpt_a 0 accepted
+pydantic_v2.BaseModel default xpt_a 11 accepted
+pydantic_v2.BaseModel default xpt_a 1.5 accepted
+pydantic_v2.BaseModel default xpt_b 1 accepted
+pydantic_v2.BaseModel default xpt_b 10 accepted
+pydantic_v2.BaseModel default xpt_b 0 accepted
+pydantic_v2.BaseModel default xpt_b 11 accepted
+pydantic_v2.BaseModel default xpt_b 1.5 accepted
+pydantic_v2.BaseModel default nullsib_a "abc" accepted
+pydantic_v2.BaseModel default nullsib_a "abcd" rejected
+pydantic_v2.BaseModel default nullsib_a null accepted
+pydantic_v2.BaseModel default nullsib_b "abc" accepted
+pydantic_v2.BaseModel default nullsib_b "abcd" rejected
+pydantic_v2.BaseModel default nullsib_b null accepted
+pydantic_v2.BaseModel default nullsib_c {"x": 1} accepted
+pydantic_v2.BaseModel default nullsib_c {"x": "a"} rejected
+pydantic_v2.BaseModel default nullsib_c null accepted
+pydantic_v2.BaseModel default nullsib_d "abc" accepted
+pydantic_v2.BaseModel default nullsib_d "abcd" rejected
+pydantic_v2.BaseModel default nullsib_d null rejected
+pydantic_v2.dataclass default pick2 "b" accepted
+pydantic_v2.dataclass default pick2 "a" accepted
+pydantic_v2.dataclass default pick2 "c" rejected
+pydantic_v2.dataclass default pick2_prop "b" accepted
+pydantic_v2.dataclass default pick2_prop "a" accepted
+pydantic_v2.dataclass default pick2_prop "c" rejected
+pydantic_v2.dataclass default pick2_items ["b"] accepted
+pydantic_v2.dataclass default pick2_items ["a"] accepted
+pydantic_v2.dataclass default pick2_items ["c"] rejected
+pydantic_v2.dataclass default pick2_map {"k": "b"} accepted
+pydantic_v2.dataclass default pick2_map {"k": "a"} accepted
+pydantic_v2.dataclass default pick2_map {"k": "c"} rejected
+pydantic_v2.dataclass default level2 2 accepted
+pydantic_v2.dataclass default level2 3 accepted
+pydantic_v2.dataclass default level2 1 accepted
+pydantic_v2.dataclass default level2 4 rejected
+pydantic_v2.dataclass default level2_prop 2 accepted
+pydantic_v2.dataclass default level2_prop 3 accepted
+pydantic_v2.dataclass default level2_prop 1 accepted
+pydantic_v2.dataclass default level2_prop 4 rejected
+pydantic_v2.dataclass default level2_items [2] accepted
+pydantic_v2.dataclass default level2_items [3] accepted
+pydantic_v2.dataclass default level2_items [1] accepted
+pydantic_v2.dataclass default level2_items [4] rejected
+pydantic_v2.dataclass default level2_map {"k": 2} accepted
+pydantic_v2.dataclass default level2_map {"k": 3} accepted
+pydantic_v2.dataclass default level2_map {"k": 1} accepted
+pydantic_v2.dataclass default level2_map {"k": 4} rejected
+pydantic_v2.dataclass default number5 5 accepted
+pydantic_v2.dataclass default number5 6 accepted
+pydantic_v2.dataclass default number5 4 accepted
+pydantic_v2.dataclass default number5_prop 5 accepted
+pydantic_v2.dataclass default number5_prop 6 accepted
+pydantic_v2.dataclass default number5_prop 4 accepted
+pydantic_v2.dataclass default number5_items [5] accepted
+pydantic_v2.dataclass default number5_items [6] accepted
+pydantic_v2.dataclass default number5_items [4] accepted
+pydantic_v2.dataclass default number5_map {"k": 5} accepted
+pydantic_v2.dataclass default number5_map {"k": 6} accepted
+pydantic_v2.dataclass default number5_map {"k": 4} accepted
+pydantic_v2.dataclass default non_negative 0 accepted
+pydantic_v2.dataclass default non_negative 1.5 accepted
+pydantic_v2.dataclass default non_negative -1 rejected
+pydantic_v2.dataclass default non_negative -0.5 rejected
+pydantic_v2.dataclass default non_negative_prop 0 accepted
+pydantic_v2.dataclass default non_negative_prop 1.5 accepted
+pydantic_v2.dataclass default non_negative_prop -1 accepted
+pydantic_v2.dataclass default non_negative_prop -0.5 accepted
+pydantic_v2.dataclass default non_negative_items [0] accepted
+pydantic_v2.dataclass default non_negative_items [1.5] accepted
+pydantic_v2.dataclass default non_negative_items [-1] accepted
+pydantic_v2.dataclass default non_negative_items [-0.5] accepted
+pydantic_v2.dataclass default non_negative_map {"k": 0} accepted
+pydantic_v2.dataclass default non_negative_map {"k": 1.5} accepted
+pydantic_v2.dataclass default non_negative_map {"k": -1} accepted
+pydantic_v2.dataclass default non_negative_map {"k": -0.5} accepted
+pydantic_v2.dataclass default two_refs 3 accepted
+pydantic_v2.dataclass default two_refs 5 accepted
+pydantic_v2.dataclass default two_refs 2 rejected
+pydantic_v2.dataclass default two_refs 6 rejected
+pydantic_v2.dataclass default two_refs_prop 3 rejected
+pydantic_v2.dataclass default two_refs_prop 5 rejected
+pydantic_v2.dataclass default two_refs_prop 2 rejected
+pydantic_v2.dataclass default two_refs_prop 6 rejected
+pydantic_v2.dataclass default two_refs_items [3] rejected
+pydantic_v2.dataclass default two_refs_items [5] rejected
+pydantic_v2.dataclass default two_refs_items [2] rejected
+pydantic_v2.dataclass default two_refs_items [6] rejected
+pydantic_v2.dataclass default two_refs_map {"k": 3} rejected
+pydantic_v2.dataclass default two_refs_map {"k": 5} rejected
+pydantic_v2.dataclass default two_refs_map {"k": 2} rejected
+pydantic_v2.dataclass default two_refs_map {"k": 6} rejected
+pydantic_v2.dataclass default stamp_len "2020-01-01T00:00:00Z" accepted
+pydantic_v2.dataclass default stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.dataclass default stamp_len_prop "2020-01-01T00:00:00Z" accepted
+pydantic_v2.dataclass default stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.dataclass default stamp_len_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.dataclass default stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.dataclass default stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.dataclass default stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.dataclass default quantity 1 accepted
+pydantic_v2.dataclass default quantity 0 rejected
+pydantic_v2.dataclass default q_allof 1 accepted
+pydantic_v2.dataclass default q_allof 10 accepted
+pydantic_v2.dataclass default q_allof 0 rejected
+pydantic_v2.dataclass default q_allof 11 accepted
+pydantic_v2.dataclass default q_allof_prop 1 accepted
+pydantic_v2.dataclass default q_allof_prop 10 accepted
+pydantic_v2.dataclass default q_allof_prop 0 rejected
+pydantic_v2.dataclass default q_allof_prop 11 accepted
+pydantic_v2.dataclass default q_allof_items [1] accepted
+pydantic_v2.dataclass default q_allof_items [10] accepted
+pydantic_v2.dataclass default q_allof_items [0] rejected
+pydantic_v2.dataclass default q_allof_items [11] accepted
+pydantic_v2.dataclass default q_allof_map {"k": 1} accepted
+pydantic_v2.dataclass default q_allof_map {"k": 10} accepted
+pydantic_v2.dataclass default q_allof_map {"k": 0} rejected
+pydantic_v2.dataclass default q_allof_map {"k": 11} accepted
+pydantic_v2.dataclass default q_allof2 1 accepted
+pydantic_v2.dataclass default q_allof2 10 accepted
+pydantic_v2.dataclass default q_allof2 0 rejected
+pydantic_v2.dataclass default q_allof2 11 rejected
+pydantic_v2.dataclass default q_allof2_prop 1 accepted
+pydantic_v2.dataclass default q_allof2_prop 10 accepted
+pydantic_v2.dataclass default q_allof2_prop 0 rejected
+pydantic_v2.dataclass default q_allof2_prop 11 accepted
+pydantic_v2.dataclass default q_allof2_items [1] accepted
+pydantic_v2.dataclass default q_allof2_items [10] accepted
+pydantic_v2.dataclass default q_allof2_items [0] rejected
+pydantic_v2.dataclass default q_allof2_items [11] accepted
+pydantic_v2.dataclass default q_allof2_map {"k": 1} accepted
+pydantic_v2.dataclass default q_allof2_map {"k": 10} accepted
+pydantic_v2.dataclass default q_allof2_map {"k": 0} rejected
+pydantic_v2.dataclass default q_allof2_map {"k": 11} accepted
+pydantic_v2.dataclass default xpt_a 1 accepted
+pydantic_v2.dataclass default xpt_a 10 accepted
+pydantic_v2.dataclass default xpt_a 0 accepted
+pydantic_v2.dataclass default xpt_a 11 accepted
+pydantic_v2.dataclass default xpt_a 1.5 accepted
+pydantic_v2.dataclass default xpt_b 1 accepted
+pydantic_v2.dataclass default xpt_b 10 accepted
+pydantic_v2.dataclass default xpt_b 0 accepted
+pydantic_v2.dataclass default xpt_b 11 accepted
+pydantic_v2.dataclass default xpt_b 1.5 accepted
+pydantic_v2.dataclass default nullsib_a "abc" accepted
+pydantic_v2.dataclass default nullsib_a "abcd" rejected
+pydantic_v2.dataclass default nullsib_a null accepted
+pydantic_v2.dataclass default nullsib_b "abc" accepted
+pydantic_v2.dataclass default nullsib_b "abcd" rejected
+pydantic_v2.dataclass default nullsib_b null accepted
+pydantic_v2.dataclass default nullsib_c {"x": 1} accepted
+pydantic_v2.dataclass default nullsib_c {"x": "a"} rejected
+pydantic_v2.dataclass default nullsib_c null accepted
+pydantic_v2.dataclass default nullsib_d "abc" accepted
+pydantic_v2.dataclass default nullsib_d "abcd" rejected
+pydantic_v2.dataclass default nullsib_d null rejected
+msgspec.Struct default pick2 "b" accepted
+msgspec.Struct default pick2 "a" accepted
+msgspec.Struct default pick2 "c" rejected
+msgspec.Struct default pick2_prop "b" accepted
+msgspec.Struct default pick2_prop "a" accepted
+msgspec.Struct default pick2_prop "c" rejected
+msgspec.Struct default pick2_items ["b"] accepted
+msgspec.Struct default pick2_items ["a"] accepted
+msgspec.Struct default pick2_items ["c"] rejected
+msgspec.Struct default pick2_map {"k": "b"} accepted
+msgspec.Struct default pick2_map {"k": "a"} accepted
+msgspec.Struct default pick2_map {"k": "c"} rejected
+msgspec.Struct default level2 2 accepted
+msgspec.Struct default level2 3 accepted
+msgspec.Struct default level2 1 accepted
+msgspec.Struct default level2 4 rejected
+msgspec.Struct default level2_prop 2 accepted
+msgspec.Struct default level2_prop 3 accepted
+msgspec.Struct default level2_prop 1 accepted
+msgspec.Struct default level2_prop 4 rejected
+msgspec.Struct default level2_items [2] accepted
+msgspec.Struct default level2_items [3] accepted
+msgspec.Struct default level2_items [1] accepted
+msgspec.Struct default level2_items [4] rejected
+msgspec.Struct default level2_map {"k": 2} accepted
+msgspec.Struct default level2_map {"k": 3} accepted
+msgspec.Struct default level2_map {"k": 1} accepted
+msgspec.Struct default level2_map {"k": 4} rejected
+msgspec.Struct default number5 5 accepted
+msgspec.Struct default number5 6 accepted
+msgspec.Struct default number5 4 rejected
+msgspec.Struct default number5_prop 5 accepted
+msgspec.Struct default number5_prop 6 accepted
+msgspec.Struct default number5_prop 4 accepted
+msgspec.Struct default number5_items [5] accepted
+msgspec.Struct default number5_items [6] accepted
+msgspec.Struct default number5_items [4] rejected
+msgspec.Struct default number5_map {"k": 5} accepted
+msgspec.Struct default number5_map {"k": 6} accepted
+msgspec.Struct default number5_map {"k": 4} rejected
+msgspec.Struct default non_negative 0 accepted
+msgspec.Struct default non_negative 1.5 accepted
+msgspec.Struct default non_negative -1 rejected
+msgspec.Struct default non_negative -0.5 rejected
+msgspec.Struct default non_negative_prop 0 accepted
+msgspec.Struct default non_negative_prop 1.5 accepted
+msgspec.Struct default non_negative_prop -1 accepted
+msgspec.Struct default non_negative_prop -0.5 accepted
+msgspec.Struct default non_negative_items [0] accepted
+msgspec.Struct default non_negative_items [1.5] accepted
+msgspec.Struct default non_negative_items [-1] accepted
+msgspec.Struct default non_negative_items [-0.5] accepted
+msgspec.Struct default non_negative_map {"k": 0} accepted
+msgspec.Struct default non_negative_map {"k": 1.5} accepted
+msgspec.Struct default non_negative_map {"k": -1} rejected
+msgspec.Struct default non_negative_map {"k": -0.5} rejected
+msgspec.Struct default two_refs 3 accepted
+msgspec.Struct default two_refs 5 accepted
+msgspec.Struct default two_refs 2 rejected
+msgspec.Struct default two_refs 6 rejected
+msgspec.Struct default two_refs_prop 3 rejected
+msgspec.Struct default two_refs_prop 5 rejected
+msgspec.Struct default two_refs_prop 2 rejected
+msgspec.Struct default two_refs_prop 6 rejected
+msgspec.Struct default two_refs_items [3] rejected
+msgspec.Struct default two_refs_items [5] rejected
+msgspec.Struct default two_refs_items [2] rejected
+msgspec.Struct default two_refs_items [6] rejected
+msgspec.Struct default two_refs_map {"k": 3} accepted
+msgspec.Struct default two_refs_map {"k": 5} accepted
+msgspec.Struct default two_refs_map {"k": 2} rejected
+msgspec.Struct default two_refs_map {"k": 6} rejected
+msgspec.Struct default stamp_len "2020-01-01T00:00:00Z" accepted
+msgspec.Struct default stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" rejected
+msgspec.Struct default stamp_len_prop "2020-01-01T00:00:00Z" accepted
+msgspec.Struct default stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+msgspec.Struct default stamp_len_items ["2020-01-01T00:00:00Z"] accepted
+msgspec.Struct default stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] rejected
+msgspec.Struct default stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
+msgspec.Struct default stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} rejected
+msgspec.Struct default quantity 1 accepted
+msgspec.Struct default quantity 0 rejected
+msgspec.Struct default q_allof 1 accepted
+msgspec.Struct default q_allof 10 accepted
+msgspec.Struct default q_allof 0 rejected
+msgspec.Struct default q_allof 11 rejected
+msgspec.Struct default q_allof_prop 1 accepted
+msgspec.Struct default q_allof_prop 10 accepted
+msgspec.Struct default q_allof_prop 0 rejected
+msgspec.Struct default q_allof_prop 11 accepted
+msgspec.Struct default q_allof_items [1] accepted
+msgspec.Struct default q_allof_items [10] accepted
+msgspec.Struct default q_allof_items [0] rejected
+msgspec.Struct default q_allof_items [11] rejected
+msgspec.Struct default q_allof_map {"k": 1} accepted
+msgspec.Struct default q_allof_map {"k": 10} accepted
+msgspec.Struct default q_allof_map {"k": 0} rejected
+msgspec.Struct default q_allof_map {"k": 11} rejected
+msgspec.Struct default q_allof2 1 accepted
+msgspec.Struct default q_allof2 10 accepted
+msgspec.Struct default q_allof2 0 rejected
+msgspec.Struct default q_allof2 11 rejected
+msgspec.Struct default q_allof2_prop 1 accepted
+msgspec.Struct default q_allof2_prop 10 accepted
+msgspec.Struct default q_allof2_prop 0 rejected
+msgspec.Struct default q_allof2_prop 11 accepted
+msgspec.Struct default q_allof2_items [1] accepted
+msgspec.Struct default q_allof2_items [10] accepted
+msgspec.Struct default q_allof2_items [0] rejected
+msgspec.Struct default q_allof2_items [11] accepted
+msgspec.Struct default q_allof2_map {"k": 1} accepted
+msgspec.Struct default q_allof2_map {"k": 10} accepted
+msgspec.Struct default q_allof2_map {"k": 0} rejected
+msgspec.Struct default q_allof2_map {"k": 11} rejected
+msgspec.Struct default xpt_a 1 accepted
+msgspec.Struct default xpt_a 10 accepted
+msgspec.Struct default xpt_a 0 accepted
+msgspec.Struct default xpt_a 11 accepted
+msgspec.Struct default xpt_a 1.5 accepted
+msgspec.Struct default xpt_b 1 accepted
+msgspec.Struct default xpt_b 10 accepted
+msgspec.Struct default xpt_b 0 accepted
+msgspec.Struct default xpt_b 11 accepted
+msgspec.Struct default xpt_b 1.5 accepted
+msgspec.Struct default nullsib_a "abc" accepted
+msgspec.Struct default nullsib_a "abcd" rejected
+msgspec.Struct default nullsib_a null accepted
+msgspec.Struct default nullsib_b "abc" accepted
+msgspec.Struct default nullsib_b "abcd" rejected
+msgspec.Struct default nullsib_b null accepted
+msgspec.Struct default nullsib_c {"x": 1} accepted
+msgspec.Struct default nullsib_c {"x": "a"} rejected
+msgspec.Struct default nullsib_c null accepted
+msgspec.Struct default nullsib_d "abc" accepted
+msgspec.Struct default nullsib_d "abcd" rejected
+msgspec.Struct default nullsib_d null rejected
+pydantic_v2.BaseModel --field-constraints pick2 "b" accepted
+pydantic_v2.BaseModel --field-constraints pick2 "a" accepted
+pydantic_v2.BaseModel --field-constraints pick2 "c" rejected
+pydantic_v2.BaseModel --field-constraints pick2_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints pick2_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints pick2_prop "c" rejected
+pydantic_v2.BaseModel --field-constraints pick2_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints pick2_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints pick2_items ["c"] rejected
+pydantic_v2.BaseModel --field-constraints pick2_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints pick2_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints pick2_map {"k": "c"} rejected
+pydantic_v2.BaseModel --field-constraints level2 2 accepted
+pydantic_v2.BaseModel --field-constraints level2 3 accepted
+pydantic_v2.BaseModel --field-constraints level2 1 accepted
+pydantic_v2.BaseModel --field-constraints level2 4 rejected
+pydantic_v2.BaseModel --field-constraints level2_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints level2_prop 3 accepted
+pydantic_v2.BaseModel --field-constraints level2_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints level2_prop 4 rejected
+pydantic_v2.BaseModel --field-constraints level2_items [2] accepted
+pydantic_v2.BaseModel --field-constraints level2_items [3] accepted
+pydantic_v2.BaseModel --field-constraints level2_items [1] accepted
+pydantic_v2.BaseModel --field-constraints level2_items [4] rejected
+pydantic_v2.BaseModel --field-constraints level2_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints level2_map {"k": 3} accepted
+pydantic_v2.BaseModel --field-constraints level2_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints level2_map {"k": 4} rejected
+pydantic_v2.BaseModel --field-constraints number5 5 raised TypeError
+pydantic_v2.BaseModel --field-constraints number5 6 raised TypeError
+pydantic_v2.BaseModel --field-constraints number5 4 raised TypeError
+pydantic_v2.BaseModel --field-constraints number5_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints number5_prop 6 accepted
+pydantic_v2.BaseModel --field-constraints number5_prop 4 accepted
+pydantic_v2.BaseModel --field-constraints number5_items [5] raised TypeError
+pydantic_v2.BaseModel --field-constraints number5_items [6] raised TypeError
+pydantic_v2.BaseModel --field-constraints number5_items [4] raised TypeError
+pydantic_v2.BaseModel --field-constraints number5_map {"k": 5} raised TypeError
+pydantic_v2.BaseModel --field-constraints number5_map {"k": 6} raised TypeError
+pydantic_v2.BaseModel --field-constraints number5_map {"k": 4} raised TypeError
+pydantic_v2.BaseModel --field-constraints non_negative 0 accepted
+pydantic_v2.BaseModel --field-constraints non_negative 1.5 accepted
+pydantic_v2.BaseModel --field-constraints non_negative -1 rejected
+pydantic_v2.BaseModel --field-constraints non_negative -0.5 rejected
+pydantic_v2.BaseModel --field-constraints non_negative_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints non_negative_prop 1.5 accepted
+pydantic_v2.BaseModel --field-constraints non_negative_prop -1 accepted
+pydantic_v2.BaseModel --field-constraints non_negative_prop -0.5 accepted
+pydantic_v2.BaseModel --field-constraints non_negative_items [0] accepted
+pydantic_v2.BaseModel --field-constraints non_negative_items [1.5] accepted
+pydantic_v2.BaseModel --field-constraints non_negative_items [-1] accepted
+pydantic_v2.BaseModel --field-constraints non_negative_items [-0.5] accepted
+pydantic_v2.BaseModel --field-constraints non_negative_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints non_negative_map {"k": 1.5} accepted
+pydantic_v2.BaseModel --field-constraints non_negative_map {"k": -1} accepted
+pydantic_v2.BaseModel --field-constraints non_negative_map {"k": -0.5} accepted
+pydantic_v2.BaseModel --field-constraints two_refs 3 accepted
+pydantic_v2.BaseModel --field-constraints two_refs 5 accepted
+pydantic_v2.BaseModel --field-constraints two_refs 2 rejected
+pydantic_v2.BaseModel --field-constraints two_refs 6 rejected
+pydantic_v2.BaseModel --field-constraints two_refs_prop 3 rejected
+pydantic_v2.BaseModel --field-constraints two_refs_prop 5 rejected
+pydantic_v2.BaseModel --field-constraints two_refs_prop 2 rejected
+pydantic_v2.BaseModel --field-constraints two_refs_prop 6 rejected
+pydantic_v2.BaseModel --field-constraints two_refs_items [3] rejected
+pydantic_v2.BaseModel --field-constraints two_refs_items [5] rejected
+pydantic_v2.BaseModel --field-constraints two_refs_items [2] rejected
+pydantic_v2.BaseModel --field-constraints two_refs_items [6] rejected
+pydantic_v2.BaseModel --field-constraints two_refs_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints two_refs_map {"k": 5} rejected
+pydantic_v2.BaseModel --field-constraints two_refs_map {"k": 2} rejected
+pydantic_v2.BaseModel --field-constraints two_refs_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints stamp_len "2020-01-01T00:00:00Z" raised TypeError
+pydantic_v2.BaseModel --field-constraints stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" raised TypeError
+pydantic_v2.BaseModel --field-constraints stamp_len_prop "2020-01-01T00:00:00Z" accepted
+pydantic_v2.BaseModel --field-constraints stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.BaseModel --field-constraints stamp_len_items ["2020-01-01T00:00:00Z"] raised TypeError
+pydantic_v2.BaseModel --field-constraints stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] raised TypeError
+pydantic_v2.BaseModel --field-constraints stamp_len_map {"k": "2020-01-01T00:00:00Z"} raised TypeError
+pydantic_v2.BaseModel --field-constraints stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} raised TypeError
+pydantic_v2.BaseModel --field-constraints quantity 1 accepted
+pydantic_v2.BaseModel --field-constraints quantity 0 rejected
+pydantic_v2.BaseModel --field-constraints q_allof 1 raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof 10 raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof 0 rejected
+pydantic_v2.BaseModel --field-constraints q_allof 11 raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints q_allof_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints q_allof_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints q_allof_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints q_allof_items [1] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_items [10] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_items [0] rejected
+pydantic_v2.BaseModel --field-constraints q_allof_items [11] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 1} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 10} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 11} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof2 1 accepted
+pydantic_v2.BaseModel --field-constraints q_allof2 10 accepted
+pydantic_v2.BaseModel --field-constraints q_allof2 0 rejected
+pydantic_v2.BaseModel --field-constraints q_allof2 11 rejected
+pydantic_v2.BaseModel --field-constraints q_allof2_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints q_allof2_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_items [1] accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_items [10] accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_items [0] rejected
+pydantic_v2.BaseModel --field-constraints q_allof2_items [11] accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints q_allof2_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints q_allof2_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints xpt_a 1 accepted
+pydantic_v2.BaseModel --field-constraints xpt_a 10 accepted
+pydantic_v2.BaseModel --field-constraints xpt_a 0 rejected
+pydantic_v2.BaseModel --field-constraints xpt_a 11 accepted
+pydantic_v2.BaseModel --field-constraints xpt_a 1.5 accepted
+pydantic_v2.BaseModel --field-constraints xpt_b 1 accepted
+pydantic_v2.BaseModel --field-constraints xpt_b 10 accepted
+pydantic_v2.BaseModel --field-constraints xpt_b 0 rejected
+pydantic_v2.BaseModel --field-constraints xpt_b 11 rejected
+pydantic_v2.BaseModel --field-constraints xpt_b 1.5 accepted
+pydantic_v2.BaseModel --field-constraints nullsib_a "abc" accepted
+pydantic_v2.BaseModel --field-constraints nullsib_a "abcd" rejected
+pydantic_v2.BaseModel --field-constraints nullsib_a null accepted
+pydantic_v2.BaseModel --field-constraints nullsib_b "abc" accepted
+pydantic_v2.BaseModel --field-constraints nullsib_b "abcd" rejected
+pydantic_v2.BaseModel --field-constraints nullsib_b null accepted
+pydantic_v2.BaseModel --field-constraints nullsib_c {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints nullsib_c {"x": "a"} rejected
+pydantic_v2.BaseModel --field-constraints nullsib_c null accepted
+pydantic_v2.BaseModel --field-constraints nullsib_d "abc" accepted
+pydantic_v2.BaseModel --field-constraints nullsib_d "abcd" rejected
+pydantic_v2.BaseModel --field-constraints nullsib_d null rejected
+pydantic_v2.BaseModel --use-annotated pick2 "b" accepted
+pydantic_v2.BaseModel --use-annotated pick2 "a" accepted
+pydantic_v2.BaseModel --use-annotated pick2 "c" rejected
+pydantic_v2.BaseModel --use-annotated pick2_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated pick2_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated pick2_prop "c" rejected
+pydantic_v2.BaseModel --use-annotated pick2_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated pick2_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated pick2_items ["c"] rejected
+pydantic_v2.BaseModel --use-annotated pick2_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated pick2_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated pick2_map {"k": "c"} rejected
+pydantic_v2.BaseModel --use-annotated level2 2 accepted
+pydantic_v2.BaseModel --use-annotated level2 3 accepted
+pydantic_v2.BaseModel --use-annotated level2 1 accepted
+pydantic_v2.BaseModel --use-annotated level2 4 rejected
+pydantic_v2.BaseModel --use-annotated level2_prop 2 accepted
+pydantic_v2.BaseModel --use-annotated level2_prop 3 accepted
+pydantic_v2.BaseModel --use-annotated level2_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated level2_prop 4 rejected
+pydantic_v2.BaseModel --use-annotated level2_items [2] accepted
+pydantic_v2.BaseModel --use-annotated level2_items [3] accepted
+pydantic_v2.BaseModel --use-annotated level2_items [1] accepted
+pydantic_v2.BaseModel --use-annotated level2_items [4] rejected
+pydantic_v2.BaseModel --use-annotated level2_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated level2_map {"k": 3} accepted
+pydantic_v2.BaseModel --use-annotated level2_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated level2_map {"k": 4} rejected
+pydantic_v2.BaseModel --use-annotated number5 5 raised TypeError
+pydantic_v2.BaseModel --use-annotated number5 6 raised TypeError
+pydantic_v2.BaseModel --use-annotated number5 4 raised TypeError
+pydantic_v2.BaseModel --use-annotated number5_prop 5 accepted
+pydantic_v2.BaseModel --use-annotated number5_prop 6 accepted
+pydantic_v2.BaseModel --use-annotated number5_prop 4 accepted
+pydantic_v2.BaseModel --use-annotated number5_items [5] raised TypeError
+pydantic_v2.BaseModel --use-annotated number5_items [6] raised TypeError
+pydantic_v2.BaseModel --use-annotated number5_items [4] raised TypeError
+pydantic_v2.BaseModel --use-annotated number5_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated number5_map {"k": 6} accepted
+pydantic_v2.BaseModel --use-annotated number5_map {"k": 4} rejected
+pydantic_v2.BaseModel --use-annotated non_negative 0 accepted
+pydantic_v2.BaseModel --use-annotated non_negative 1.5 accepted
+pydantic_v2.BaseModel --use-annotated non_negative -1 rejected
+pydantic_v2.BaseModel --use-annotated non_negative -0.5 rejected
+pydantic_v2.BaseModel --use-annotated non_negative_prop 0 accepted
+pydantic_v2.BaseModel --use-annotated non_negative_prop 1.5 accepted
+pydantic_v2.BaseModel --use-annotated non_negative_prop -1 accepted
+pydantic_v2.BaseModel --use-annotated non_negative_prop -0.5 accepted
+pydantic_v2.BaseModel --use-annotated non_negative_items [0] accepted
+pydantic_v2.BaseModel --use-annotated non_negative_items [1.5] accepted
+pydantic_v2.BaseModel --use-annotated non_negative_items [-1] accepted
+pydantic_v2.BaseModel --use-annotated non_negative_items [-0.5] accepted
+pydantic_v2.BaseModel --use-annotated non_negative_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-annotated non_negative_map {"k": 1.5} accepted
+pydantic_v2.BaseModel --use-annotated non_negative_map {"k": -1} rejected
+pydantic_v2.BaseModel --use-annotated non_negative_map {"k": -0.5} rejected
+pydantic_v2.BaseModel --use-annotated two_refs 3 accepted
+pydantic_v2.BaseModel --use-annotated two_refs 5 accepted
+pydantic_v2.BaseModel --use-annotated two_refs 2 rejected
+pydantic_v2.BaseModel --use-annotated two_refs 6 rejected
+pydantic_v2.BaseModel --use-annotated two_refs_prop 3 rejected
+pydantic_v2.BaseModel --use-annotated two_refs_prop 5 rejected
+pydantic_v2.BaseModel --use-annotated two_refs_prop 2 rejected
+pydantic_v2.BaseModel --use-annotated two_refs_prop 6 rejected
+pydantic_v2.BaseModel --use-annotated two_refs_items [3] rejected
+pydantic_v2.BaseModel --use-annotated two_refs_items [5] rejected
+pydantic_v2.BaseModel --use-annotated two_refs_items [2] rejected
+pydantic_v2.BaseModel --use-annotated two_refs_items [6] rejected
+pydantic_v2.BaseModel --use-annotated two_refs_map {"k": 3} accepted
+pydantic_v2.BaseModel --use-annotated two_refs_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated two_refs_map {"k": 2} rejected
+pydantic_v2.BaseModel --use-annotated two_refs_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-annotated stamp_len "2020-01-01T00:00:00Z" raised TypeError
+pydantic_v2.BaseModel --use-annotated stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" raised TypeError
+pydantic_v2.BaseModel --use-annotated stamp_len_prop "2020-01-01T00:00:00Z" accepted
+pydantic_v2.BaseModel --use-annotated stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00Z"] raised TypeError
+pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] raised TypeError
+pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00Z"} raised TypeError
+pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} raised TypeError
+pydantic_v2.BaseModel --use-annotated quantity 1 accepted
+pydantic_v2.BaseModel --use-annotated quantity 0 rejected
+pydantic_v2.BaseModel --use-annotated q_allof 1 raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof 10 raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof 0 rejected
+pydantic_v2.BaseModel --use-annotated q_allof 11 raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated q_allof_prop 10 accepted
+pydantic_v2.BaseModel --use-annotated q_allof_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated q_allof_prop 11 accepted
+pydantic_v2.BaseModel --use-annotated q_allof_items [1] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof_items [10] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof_items [0] rejected
+pydantic_v2.BaseModel --use-annotated q_allof_items [11] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated q_allof_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated q_allof_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated q_allof_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated q_allof2 1 accepted
+pydantic_v2.BaseModel --use-annotated q_allof2 10 accepted
+pydantic_v2.BaseModel --use-annotated q_allof2 0 rejected
+pydantic_v2.BaseModel --use-annotated q_allof2 11 rejected
+pydantic_v2.BaseModel --use-annotated q_allof2_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_prop 10 accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated q_allof2_prop 11 accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_items [1] accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_items [10] accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_items [0] rejected
+pydantic_v2.BaseModel --use-annotated q_allof2_items [11] accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated q_allof2_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated q_allof2_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated xpt_a 1 accepted
+pydantic_v2.BaseModel --use-annotated xpt_a 10 accepted
+pydantic_v2.BaseModel --use-annotated xpt_a 0 rejected
+pydantic_v2.BaseModel --use-annotated xpt_a 11 accepted
+pydantic_v2.BaseModel --use-annotated xpt_a 1.5 accepted
+pydantic_v2.BaseModel --use-annotated xpt_b 1 accepted
+pydantic_v2.BaseModel --use-annotated xpt_b 10 accepted
+pydantic_v2.BaseModel --use-annotated xpt_b 0 rejected
+pydantic_v2.BaseModel --use-annotated xpt_b 11 rejected
+pydantic_v2.BaseModel --use-annotated xpt_b 1.5 accepted
+pydantic_v2.BaseModel --use-annotated nullsib_a "abc" accepted
+pydantic_v2.BaseModel --use-annotated nullsib_a "abcd" rejected
+pydantic_v2.BaseModel --use-annotated nullsib_a null accepted
+pydantic_v2.BaseModel --use-annotated nullsib_b "abc" accepted
+pydantic_v2.BaseModel --use-annotated nullsib_b "abcd" rejected
+pydantic_v2.BaseModel --use-annotated nullsib_b null accepted
+pydantic_v2.BaseModel --use-annotated nullsib_c {"x": 1} accepted
+pydantic_v2.BaseModel --use-annotated nullsib_c {"x": "a"} rejected
+pydantic_v2.BaseModel --use-annotated nullsib_c null accepted
+pydantic_v2.BaseModel --use-annotated nullsib_d "abc" accepted
+pydantic_v2.BaseModel --use-annotated nullsib_d "abcd" rejected
+pydantic_v2.BaseModel --use-annotated nullsib_d null rejected
+pydantic_v2.BaseModel --collapse-root-models pick2 "b" accepted
+pydantic_v2.BaseModel --collapse-root-models pick2 "a" accepted
+pydantic_v2.BaseModel --collapse-root-models pick2 "c" rejected
+pydantic_v2.BaseModel --collapse-root-models pick2_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models pick2_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models pick2_prop "c" rejected
+pydantic_v2.BaseModel --collapse-root-models pick2_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models pick2_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models pick2_items ["c"] rejected
+pydantic_v2.BaseModel --collapse-root-models pick2_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models pick2_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models pick2_map {"k": "c"} rejected
+pydantic_v2.BaseModel --collapse-root-models level2 2 accepted
+pydantic_v2.BaseModel --collapse-root-models level2 3 accepted
+pydantic_v2.BaseModel --collapse-root-models level2 1 accepted
+pydantic_v2.BaseModel --collapse-root-models level2 4 rejected
+pydantic_v2.BaseModel --collapse-root-models level2_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models level2_prop 3 accepted
+pydantic_v2.BaseModel --collapse-root-models level2_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models level2_prop 4 rejected
+pydantic_v2.BaseModel --collapse-root-models level2_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models level2_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models level2_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models level2_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models level2_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models level2_map {"k": 3} accepted
+pydantic_v2.BaseModel --collapse-root-models level2_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models level2_map {"k": 4} rejected
+pydantic_v2.BaseModel --collapse-root-models number5 5 accepted
+pydantic_v2.BaseModel --collapse-root-models number5 6 accepted
+pydantic_v2.BaseModel --collapse-root-models number5 4 accepted
+pydantic_v2.BaseModel --collapse-root-models number5_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models number5_prop 6 accepted
+pydantic_v2.BaseModel --collapse-root-models number5_prop 4 accepted
+pydantic_v2.BaseModel --collapse-root-models number5_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models number5_items [6] accepted
+pydantic_v2.BaseModel --collapse-root-models number5_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models number5_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models number5_map {"k": 6} accepted
+pydantic_v2.BaseModel --collapse-root-models number5_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative 0 accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative 1.5 accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative -1 rejected
+pydantic_v2.BaseModel --collapse-root-models non_negative -0.5 rejected
+pydantic_v2.BaseModel --collapse-root-models non_negative_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_prop 1.5 accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_prop -1 accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_prop -0.5 accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_items [1.5] accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_items [-1] accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_items [-0.5] accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_map {"k": 1.5} accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_map {"k": -1} accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_map {"k": -0.5} accepted
+pydantic_v2.BaseModel --collapse-root-models two_refs 3 accepted
+pydantic_v2.BaseModel --collapse-root-models two_refs 5 accepted
+pydantic_v2.BaseModel --collapse-root-models two_refs 2 rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs 6 rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_prop 3 rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_prop 5 rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_prop 2 rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_prop 6 rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_items [5] rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_map {"k": 5} rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_map {"k": 2} rejected
+pydantic_v2.BaseModel --collapse-root-models two_refs_map {"k": 6} rejected
+pydantic_v2.BaseModel --collapse-root-models stamp_len "2020-01-01T00:00:00Z" accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_len_prop "2020-01-01T00:00:00Z" accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_len_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --collapse-root-models quantity 1 accepted
+pydantic_v2.BaseModel --collapse-root-models quantity 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof 10 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof_items [11] accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2 10 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof2 11 rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof2_items [11] accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models q_allof2_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_a 1 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_a 10 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_a 0 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_a 11 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_a 1.5 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_b 1 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_b 10 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_b 0 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_b 11 accepted
+pydantic_v2.BaseModel --collapse-root-models xpt_b 1.5 accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_a "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_a "abcd" rejected
+pydantic_v2.BaseModel --collapse-root-models nullsib_a null accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_b "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_b "abcd" rejected
+pydantic_v2.BaseModel --collapse-root-models nullsib_b null accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_c {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_c {"x": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models nullsib_c null accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_d "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models nullsib_d "abcd" rejected
+pydantic_v2.BaseModel --collapse-root-models nullsib_d null rejected
+msgspec.Struct --collapse-root-models pick2 "b" accepted
+msgspec.Struct --collapse-root-models pick2 "a" accepted
+msgspec.Struct --collapse-root-models pick2 "c" rejected
+msgspec.Struct --collapse-root-models pick2_prop "b" accepted
+msgspec.Struct --collapse-root-models pick2_prop "a" accepted
+msgspec.Struct --collapse-root-models pick2_prop "c" rejected
+msgspec.Struct --collapse-root-models pick2_items ["b"] accepted
+msgspec.Struct --collapse-root-models pick2_items ["a"] accepted
+msgspec.Struct --collapse-root-models pick2_items ["c"] rejected
+msgspec.Struct --collapse-root-models pick2_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models pick2_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models pick2_map {"k": "c"} rejected
+msgspec.Struct --collapse-root-models level2 2 accepted
+msgspec.Struct --collapse-root-models level2 3 accepted
+msgspec.Struct --collapse-root-models level2 1 accepted
+msgspec.Struct --collapse-root-models level2 4 rejected
+msgspec.Struct --collapse-root-models level2_prop 2 accepted
+msgspec.Struct --collapse-root-models level2_prop 3 accepted
+msgspec.Struct --collapse-root-models level2_prop 1 accepted
+msgspec.Struct --collapse-root-models level2_prop 4 rejected
+msgspec.Struct --collapse-root-models level2_items [2] accepted
+msgspec.Struct --collapse-root-models level2_items [3] accepted
+msgspec.Struct --collapse-root-models level2_items [1] accepted
+msgspec.Struct --collapse-root-models level2_items [4] rejected
+msgspec.Struct --collapse-root-models level2_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models level2_map {"k": 3} accepted
+msgspec.Struct --collapse-root-models level2_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models level2_map {"k": 4} rejected
+msgspec.Struct --collapse-root-models number5 5 accepted
+msgspec.Struct --collapse-root-models number5 6 accepted
+msgspec.Struct --collapse-root-models number5 4 rejected
+msgspec.Struct --collapse-root-models number5_prop 5 accepted
+msgspec.Struct --collapse-root-models number5_prop 6 accepted
+msgspec.Struct --collapse-root-models number5_prop 4 accepted
+msgspec.Struct --collapse-root-models number5_items [5] accepted
+msgspec.Struct --collapse-root-models number5_items [6] accepted
+msgspec.Struct --collapse-root-models number5_items [4] rejected
+msgspec.Struct --collapse-root-models number5_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models number5_map {"k": 6} accepted
+msgspec.Struct --collapse-root-models number5_map {"k": 4} rejected
+msgspec.Struct --collapse-root-models non_negative 0 accepted
+msgspec.Struct --collapse-root-models non_negative 1.5 accepted
+msgspec.Struct --collapse-root-models non_negative -1 rejected
+msgspec.Struct --collapse-root-models non_negative -0.5 rejected
+msgspec.Struct --collapse-root-models non_negative_prop 0 accepted
+msgspec.Struct --collapse-root-models non_negative_prop 1.5 accepted
+msgspec.Struct --collapse-root-models non_negative_prop -1 accepted
+msgspec.Struct --collapse-root-models non_negative_prop -0.5 accepted
+msgspec.Struct --collapse-root-models non_negative_items [0] accepted
+msgspec.Struct --collapse-root-models non_negative_items [1.5] accepted
+msgspec.Struct --collapse-root-models non_negative_items [-1] accepted
+msgspec.Struct --collapse-root-models non_negative_items [-0.5] accepted
+msgspec.Struct --collapse-root-models non_negative_map {"k": 0} accepted
+msgspec.Struct --collapse-root-models non_negative_map {"k": 1.5} accepted
+msgspec.Struct --collapse-root-models non_negative_map {"k": -1} rejected
+msgspec.Struct --collapse-root-models non_negative_map {"k": -0.5} rejected
+msgspec.Struct --collapse-root-models two_refs 3 accepted
+msgspec.Struct --collapse-root-models two_refs 5 accepted
+msgspec.Struct --collapse-root-models two_refs 2 rejected
+msgspec.Struct --collapse-root-models two_refs 6 rejected
+msgspec.Struct --collapse-root-models two_refs_prop 3 rejected
+msgspec.Struct --collapse-root-models two_refs_prop 5 rejected
+msgspec.Struct --collapse-root-models two_refs_prop 2 rejected
+msgspec.Struct --collapse-root-models two_refs_prop 6 rejected
+msgspec.Struct --collapse-root-models two_refs_items [3] rejected
+msgspec.Struct --collapse-root-models two_refs_items [5] rejected
+msgspec.Struct --collapse-root-models two_refs_items [2] rejected
+msgspec.Struct --collapse-root-models two_refs_items [6] rejected
+msgspec.Struct --collapse-root-models two_refs_map {"k": 3} accepted
+msgspec.Struct --collapse-root-models two_refs_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models two_refs_map {"k": 2} rejected
+msgspec.Struct --collapse-root-models two_refs_map {"k": 6} rejected
+msgspec.Struct --collapse-root-models stamp_len "2020-01-01T00:00:00Z" accepted
+msgspec.Struct --collapse-root-models stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" rejected
+msgspec.Struct --collapse-root-models stamp_len_prop "2020-01-01T00:00:00Z" accepted
+msgspec.Struct --collapse-root-models stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+msgspec.Struct --collapse-root-models stamp_len_items ["2020-01-01T00:00:00Z"] accepted
+msgspec.Struct --collapse-root-models stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] rejected
+msgspec.Struct --collapse-root-models stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
+msgspec.Struct --collapse-root-models stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} rejected
+msgspec.Struct --collapse-root-models quantity 1 accepted
+msgspec.Struct --collapse-root-models quantity 0 rejected
+msgspec.Struct --collapse-root-models q_allof 1 accepted
+msgspec.Struct --collapse-root-models q_allof 10 accepted
+msgspec.Struct --collapse-root-models q_allof 0 rejected
+msgspec.Struct --collapse-root-models q_allof 11 rejected
+msgspec.Struct --collapse-root-models q_allof_prop 1 accepted
+msgspec.Struct --collapse-root-models q_allof_prop 10 accepted
+msgspec.Struct --collapse-root-models q_allof_prop 0 rejected
+msgspec.Struct --collapse-root-models q_allof_prop 11 accepted
+msgspec.Struct --collapse-root-models q_allof_items [1] accepted
+msgspec.Struct --collapse-root-models q_allof_items [10] accepted
+msgspec.Struct --collapse-root-models q_allof_items [0] rejected
+msgspec.Struct --collapse-root-models q_allof_items [11] rejected
+msgspec.Struct --collapse-root-models q_allof_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models q_allof_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models q_allof_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models q_allof_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models q_allof2 1 accepted
+msgspec.Struct --collapse-root-models q_allof2 10 accepted
+msgspec.Struct --collapse-root-models q_allof2 0 rejected
+msgspec.Struct --collapse-root-models q_allof2 11 rejected
+msgspec.Struct --collapse-root-models q_allof2_prop 1 accepted
+msgspec.Struct --collapse-root-models q_allof2_prop 10 accepted
+msgspec.Struct --collapse-root-models q_allof2_prop 0 rejected
+msgspec.Struct --collapse-root-models q_allof2_prop 11 accepted
+msgspec.Struct --collapse-root-models q_allof2_items [1] accepted
+msgspec.Struct --collapse-root-models q_allof2_items [10] accepted
+msgspec.Struct --collapse-root-models q_allof2_items [0] rejected
+msgspec.Struct --collapse-root-models q_allof2_items [11] accepted
+msgspec.Struct --collapse-root-models q_allof2_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models q_allof2_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models q_allof2_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models q_allof2_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models xpt_a 1 accepted
+msgspec.Struct --collapse-root-models xpt_a 10 accepted
+msgspec.Struct --collapse-root-models xpt_a 0 accepted
+msgspec.Struct --collapse-root-models xpt_a 11 accepted
+msgspec.Struct --collapse-root-models xpt_a 1.5 accepted
+msgspec.Struct --collapse-root-models xpt_b 1 accepted
+msgspec.Struct --collapse-root-models xpt_b 10 accepted
+msgspec.Struct --collapse-root-models xpt_b 0 accepted
+msgspec.Struct --collapse-root-models xpt_b 11 accepted
+msgspec.Struct --collapse-root-models xpt_b 1.5 accepted
+msgspec.Struct --collapse-root-models nullsib_a "abc" accepted
+msgspec.Struct --collapse-root-models nullsib_a "abcd" rejected
+msgspec.Struct --collapse-root-models nullsib_a null accepted
+msgspec.Struct --collapse-root-models nullsib_b "abc" accepted
+msgspec.Struct --collapse-root-models nullsib_b "abcd" rejected
+msgspec.Struct --collapse-root-models nullsib_b null accepted
+msgspec.Struct --collapse-root-models nullsib_c {"x": 1} accepted
+msgspec.Struct --collapse-root-models nullsib_c {"x": "a"} rejected
+msgspec.Struct --collapse-root-models nullsib_c null accepted
+msgspec.Struct --collapse-root-models nullsib_d "abc" accepted
+msgspec.Struct --collapse-root-models nullsib_d "abcd" rejected
+msgspec.Struct --collapse-root-models nullsib_d null rejected

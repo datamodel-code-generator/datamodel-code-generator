@@ -1,0 +1,140 @@
+pydantic_v2.BaseModel default tags_len ["a"] accepted
+pydantic_v2.BaseModel default tags_len ["a", "b", "c"] accepted
+pydantic_v2.BaseModel default tags_len [] accepted
+pydantic_v2.BaseModel default tags_len ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel default tags_len [1] rejected
+pydantic_v2.BaseModel default tags_len_prop ["a"] accepted
+pydantic_v2.BaseModel default tags_len_prop ["a", "b", "c"] accepted
+pydantic_v2.BaseModel default tags_len_prop [] accepted
+pydantic_v2.BaseModel default tags_len_prop ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel default tags_len_prop [1] rejected
+pydantic_v2.BaseModel default tags_len_items [["a"]] accepted
+pydantic_v2.BaseModel default tags_len_items [["a", "b", "c"]] accepted
+pydantic_v2.BaseModel default tags_len_items [[]] accepted
+pydantic_v2.BaseModel default tags_len_items [["a", "b", "c", "d"]] rejected
+pydantic_v2.BaseModel default tags_len_items [[1]] rejected
+pydantic_v2.BaseModel default tags_len_map {"k": ["a"]} accepted
+pydantic_v2.BaseModel default tags_len_map {"k": ["a", "b", "c"]} accepted
+pydantic_v2.BaseModel default tags_len_map {"k": []} accepted
+pydantic_v2.BaseModel default tags_len_map {"k": ["a", "b", "c", "d"]} rejected
+pydantic_v2.BaseModel default tags_len_map {"k": [1]} rejected
+pydantic_v2.dataclass default tags_len ["a"] accepted
+pydantic_v2.dataclass default tags_len ["a", "b", "c"] accepted
+pydantic_v2.dataclass default tags_len [] accepted
+pydantic_v2.dataclass default tags_len ["a", "b", "c", "d"] rejected
+pydantic_v2.dataclass default tags_len [1] rejected
+pydantic_v2.dataclass default tags_len_prop ["a"] accepted
+pydantic_v2.dataclass default tags_len_prop ["a", "b", "c"] accepted
+pydantic_v2.dataclass default tags_len_prop [] accepted
+pydantic_v2.dataclass default tags_len_prop ["a", "b", "c", "d"] rejected
+pydantic_v2.dataclass default tags_len_prop [1] rejected
+pydantic_v2.dataclass default tags_len_items [["a"]] accepted
+pydantic_v2.dataclass default tags_len_items [["a", "b", "c"]] accepted
+pydantic_v2.dataclass default tags_len_items [[]] accepted
+pydantic_v2.dataclass default tags_len_items [["a", "b", "c", "d"]] rejected
+pydantic_v2.dataclass default tags_len_items [[1]] rejected
+pydantic_v2.dataclass default tags_len_map {"k": ["a"]} accepted
+pydantic_v2.dataclass default tags_len_map {"k": ["a", "b", "c"]} accepted
+pydantic_v2.dataclass default tags_len_map {"k": []} accepted
+pydantic_v2.dataclass default tags_len_map {"k": ["a", "b", "c", "d"]} rejected
+pydantic_v2.dataclass default tags_len_map {"k": [1]} rejected
+msgspec.Struct default tags_len ["a"] import error
+msgspec.Struct default tags_len ["a", "b", "c"] import error
+msgspec.Struct default tags_len [] import error
+msgspec.Struct default tags_len ["a", "b", "c", "d"] import error
+msgspec.Struct default tags_len [1] import error
+msgspec.Struct default tags_len_prop ["a"] import error
+msgspec.Struct default tags_len_prop ["a", "b", "c"] import error
+msgspec.Struct default tags_len_prop [] import error
+msgspec.Struct default tags_len_prop ["a", "b", "c", "d"] import error
+msgspec.Struct default tags_len_prop [1] import error
+msgspec.Struct default tags_len_items [["a"]] import error
+msgspec.Struct default tags_len_items [["a", "b", "c"]] import error
+msgspec.Struct default tags_len_items [[]] import error
+msgspec.Struct default tags_len_items [["a", "b", "c", "d"]] import error
+msgspec.Struct default tags_len_items [[1]] import error
+msgspec.Struct default tags_len_map {"k": ["a"]} import error
+msgspec.Struct default tags_len_map {"k": ["a", "b", "c"]} import error
+msgspec.Struct default tags_len_map {"k": []} import error
+msgspec.Struct default tags_len_map {"k": ["a", "b", "c", "d"]} import error
+msgspec.Struct default tags_len_map {"k": [1]} import error
+pydantic_v2.BaseModel --field-constraints tags_len ["a"] raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len ["a", "b", "c"] raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len [] raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --field-constraints tags_len [1] rejected
+pydantic_v2.BaseModel --field-constraints tags_len_prop ["a"] accepted
+pydantic_v2.BaseModel --field-constraints tags_len_prop ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --field-constraints tags_len_prop [] accepted
+pydantic_v2.BaseModel --field-constraints tags_len_prop ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --field-constraints tags_len_prop [1] rejected
+pydantic_v2.BaseModel --field-constraints tags_len_items [["a"]] raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len_items [["a", "b", "c"]] raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len_items [[]] raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len_items [["a", "b", "c", "d"]] rejected
+pydantic_v2.BaseModel --field-constraints tags_len_items [[1]] rejected
+pydantic_v2.BaseModel --field-constraints tags_len_map {"k": ["a"]} raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len_map {"k": ["a", "b", "c"]} raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len_map {"k": []} raised TypeError
+pydantic_v2.BaseModel --field-constraints tags_len_map {"k": ["a", "b", "c", "d"]} rejected
+pydantic_v2.BaseModel --field-constraints tags_len_map {"k": [1]} rejected
+pydantic_v2.BaseModel --use-annotated tags_len ["a"] raised TypeError
+pydantic_v2.BaseModel --use-annotated tags_len ["a", "b", "c"] raised TypeError
+pydantic_v2.BaseModel --use-annotated tags_len [] raised TypeError
+pydantic_v2.BaseModel --use-annotated tags_len ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --use-annotated tags_len [1] rejected
+pydantic_v2.BaseModel --use-annotated tags_len_prop ["a"] accepted
+pydantic_v2.BaseModel --use-annotated tags_len_prop ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --use-annotated tags_len_prop [] accepted
+pydantic_v2.BaseModel --use-annotated tags_len_prop ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --use-annotated tags_len_prop [1] rejected
+pydantic_v2.BaseModel --use-annotated tags_len_items [["a"]] raised TypeError
+pydantic_v2.BaseModel --use-annotated tags_len_items [["a", "b", "c"]] raised TypeError
+pydantic_v2.BaseModel --use-annotated tags_len_items [[]] raised TypeError
+pydantic_v2.BaseModel --use-annotated tags_len_items [["a", "b", "c", "d"]] rejected
+pydantic_v2.BaseModel --use-annotated tags_len_items [[1]] rejected
+pydantic_v2.BaseModel --use-annotated tags_len_map {"k": ["a"]} accepted
+pydantic_v2.BaseModel --use-annotated tags_len_map {"k": ["a", "b", "c"]} accepted
+pydantic_v2.BaseModel --use-annotated tags_len_map {"k": []} accepted
+pydantic_v2.BaseModel --use-annotated tags_len_map {"k": ["a", "b", "c", "d"]} rejected
+pydantic_v2.BaseModel --use-annotated tags_len_map {"k": [1]} rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len [] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len [1] rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len_prop ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_prop ["a", "b", "c"] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_prop [] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_prop ["a", "b", "c", "d"] rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len_prop [1] rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len_items [["a"]] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_items [["a", "b", "c"]] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_items [[]] accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_items [["a", "b", "c", "d"]] rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len_items [[1]] rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len_map {"k": ["a"]} accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_map {"k": ["a", "b", "c"]} accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_map {"k": []} accepted
+pydantic_v2.BaseModel --collapse-root-models tags_len_map {"k": ["a", "b", "c", "d"]} rejected
+pydantic_v2.BaseModel --collapse-root-models tags_len_map {"k": [1]} rejected
+msgspec.Struct --collapse-root-models tags_len ["a"] accepted
+msgspec.Struct --collapse-root-models tags_len ["a", "b", "c"] accepted
+msgspec.Struct --collapse-root-models tags_len [] rejected
+msgspec.Struct --collapse-root-models tags_len ["a", "b", "c", "d"] accepted
+msgspec.Struct --collapse-root-models tags_len [1] rejected
+msgspec.Struct --collapse-root-models tags_len_prop ["a"] accepted
+msgspec.Struct --collapse-root-models tags_len_prop ["a", "b", "c"] accepted
+msgspec.Struct --collapse-root-models tags_len_prop [] accepted
+msgspec.Struct --collapse-root-models tags_len_prop ["a", "b", "c", "d"] rejected
+msgspec.Struct --collapse-root-models tags_len_prop [1] rejected
+msgspec.Struct --collapse-root-models tags_len_items [["a"]] accepted
+msgspec.Struct --collapse-root-models tags_len_items [["a", "b", "c"]] accepted
+msgspec.Struct --collapse-root-models tags_len_items [[]] rejected
+msgspec.Struct --collapse-root-models tags_len_items [["a", "b", "c", "d"]] accepted
+msgspec.Struct --collapse-root-models tags_len_items [[1]] rejected
+msgspec.Struct --collapse-root-models tags_len_map {"k": ["a"]} accepted
+msgspec.Struct --collapse-root-models tags_len_map {"k": ["a", "b", "c"]} accepted
+msgspec.Struct --collapse-root-models tags_len_map {"k": []} accepted
+msgspec.Struct --collapse-root-models tags_len_map {"k": ["a", "b", "c", "d"]} rejected
+msgspec.Struct --collapse-root-models tags_len_map {"k": [1]} rejected

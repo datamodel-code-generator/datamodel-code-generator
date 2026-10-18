@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: t
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Id:
+      type: string
+      readOnly: true
+    Secret:
+      type: string
+      writeOnly: true
+      minLength: 1
+    Pet:
+      type: object
+      required:
+      - id
+      - name
+      - secret
+      - s2
+      properties:
+        id:
+          allOf:
+          - $ref: '#/components/schemas/Id'
+          maxLength: 5
+        name:
+          type: string
+        secret:
+          $ref: '#/components/schemas/Secret'
+          maxLength: 9
+        s2:
+          allOf:
+          - $ref: '#/components/schemas/Secret'
+          - maxLength: 9

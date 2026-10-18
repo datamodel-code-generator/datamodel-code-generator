@@ -251,6 +251,14 @@ EXCLUDED_CASES: dict[str, str] = {
     "openapi/allof_scalar_roots.yaml::components.schemas.TwoPatterns": (
         "an allOf with more than one pattern member stays an empty model until pattern intersection is fixed"
     ),
+    "jsonschema/schema_intersection/allof_values.json": (
+        "pins the 0.85.0 output G01 PR 3 fixes: the root allOf of untyped members is an empty model that "
+        "rejects valid values; test_schema_intersection_shape_payloads records it"
+    ),
+    "jsonschema/schema_intersection/enum_refs.json": (
+        "pins the 0.85.0 output G01 PR 5 fixes: an allOf of two enum references warns about duplicated members; "
+        "test_schema_intersection_shape_output records it"
+    ),
     "openapi/allof_with_required_inherited_complex_allof.yaml::components.schemas.ProjectedItem": (
         "hypothesis-jsonschema generates this nested allOf schema inconsistently"
     ),

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "tags_len": {
+      "$ref": "#/$defs/TagsLen"
+    },
+    "tags_len_prop": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Tags"
+        }
+      ],
+      "minItems": 1,
+      "maxItems": 5
+    },
+    "tags_len_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Tags"
+          }
+        ],
+        "minItems": 1,
+        "maxItems": 5
+      }
+    },
+    "tags_len_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Tags"
+          }
+        ],
+        "minItems": 1,
+        "maxItems": 5
+      }
+    }
+  },
+  "$defs": {
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3
+    },
+    "TagsLen": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Tags"
+        }
+      ],
+      "minItems": 1,
+      "maxItems": 5
+    }
+  }
+}

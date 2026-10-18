@@ -1,0 +1,56 @@
+pydantic_v2.BaseModel default sib {} rejected
+pydantic_v2.BaseModel default sib {"b": "x"} accepted
+pydantic_v2.BaseModel default sib {"a": "x"} rejected
+pydantic_v2.BaseModel default sib {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel default child {} rejected
+pydantic_v2.BaseModel default child {"b": "x"} accepted
+pydantic_v2.BaseModel default child {"a": "x"} rejected
+pydantic_v2.BaseModel default child {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass default sib {} rejected
+pydantic_v2.dataclass default sib {"b": "x"} accepted
+pydantic_v2.dataclass default sib {"a": "x"} rejected
+pydantic_v2.dataclass default sib {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass default child {} rejected
+pydantic_v2.dataclass default child {"b": "x"} accepted
+pydantic_v2.dataclass default child {"a": "x"} rejected
+pydantic_v2.dataclass default child {"a": "x", "b": "y"} accepted
+msgspec.Struct default sib {} rejected
+msgspec.Struct default sib {"b": "x"} accepted
+msgspec.Struct default sib {"a": "x"} rejected
+msgspec.Struct default sib {"a": "x", "b": "y"} accepted
+msgspec.Struct default child {} rejected
+msgspec.Struct default child {"b": "x"} accepted
+msgspec.Struct default child {"a": "x"} rejected
+msgspec.Struct default child {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints sib {} rejected
+pydantic_v2.BaseModel --field-constraints sib {"b": "x"} accepted
+pydantic_v2.BaseModel --field-constraints sib {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints sib {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints child {} rejected
+pydantic_v2.BaseModel --field-constraints child {"b": "x"} accepted
+pydantic_v2.BaseModel --field-constraints child {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints child {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-annotated sib {} rejected
+pydantic_v2.BaseModel --use-annotated sib {"b": "x"} accepted
+pydantic_v2.BaseModel --use-annotated sib {"a": "x"} rejected
+pydantic_v2.BaseModel --use-annotated sib {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-annotated child {} rejected
+pydantic_v2.BaseModel --use-annotated child {"b": "x"} accepted
+pydantic_v2.BaseModel --use-annotated child {"a": "x"} rejected
+pydantic_v2.BaseModel --use-annotated child {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models sib {} rejected
+pydantic_v2.BaseModel --collapse-root-models sib {"b": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models sib {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models sib {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models child {} rejected
+pydantic_v2.BaseModel --collapse-root-models child {"b": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models child {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models child {"a": "x", "b": "y"} accepted
+msgspec.Struct --collapse-root-models sib {} rejected
+msgspec.Struct --collapse-root-models sib {"b": "x"} accepted
+msgspec.Struct --collapse-root-models sib {"a": "x"} rejected
+msgspec.Struct --collapse-root-models sib {"a": "x", "b": "y"} accepted
+msgspec.Struct --collapse-root-models child {} rejected
+msgspec.Struct --collapse-root-models child {"b": "x"} accepted
+msgspec.Struct --collapse-root-models child {"a": "x"} rejected
+msgspec.Struct --collapse-root-models child {"a": "x", "b": "y"} accepted

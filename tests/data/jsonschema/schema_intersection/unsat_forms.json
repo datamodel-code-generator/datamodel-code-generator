@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M",
+  "type": "object",
+  "properties": {
+    "f": false,
+    "v": {
+      "allOf": [
+        {
+          "enum": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "enum": [
+            "c"
+          ]
+        }
+      ]
+    },
+    "merged": {
+      "$ref": "#/$defs/Merged"
+    }
+  },
+  "$defs": {
+    "Merged": {
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "w": {
+              "enum": [
+                "a"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "w": {
+              "enum": [
+                "b"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

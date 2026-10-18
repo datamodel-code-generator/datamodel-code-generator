@@ -1,0 +1,112 @@
+pydantic_v2.BaseModel default v "b" accepted
+pydantic_v2.BaseModel default v "a" accepted
+pydantic_v2.BaseModel default v "c" accepted
+pydantic_v2.BaseModel default v "d" rejected
+pydantic_v2.BaseModel default v_prop "b" accepted
+pydantic_v2.BaseModel default v_prop "a" accepted
+pydantic_v2.BaseModel default v_prop "c" accepted
+pydantic_v2.BaseModel default v_prop "d" rejected
+pydantic_v2.BaseModel default v_items ["b"] accepted
+pydantic_v2.BaseModel default v_items ["a"] accepted
+pydantic_v2.BaseModel default v_items ["c"] accepted
+pydantic_v2.BaseModel default v_items ["d"] rejected
+pydantic_v2.BaseModel default v_map {"k": "b"} accepted
+pydantic_v2.BaseModel default v_map {"k": "a"} accepted
+pydantic_v2.BaseModel default v_map {"k": "c"} accepted
+pydantic_v2.BaseModel default v_map {"k": "d"} rejected
+pydantic_v2.dataclass default v "b" accepted
+pydantic_v2.dataclass default v "a" accepted
+pydantic_v2.dataclass default v "c" accepted
+pydantic_v2.dataclass default v "d" rejected
+pydantic_v2.dataclass default v_prop "b" accepted
+pydantic_v2.dataclass default v_prop "a" accepted
+pydantic_v2.dataclass default v_prop "c" accepted
+pydantic_v2.dataclass default v_prop "d" rejected
+pydantic_v2.dataclass default v_items ["b"] accepted
+pydantic_v2.dataclass default v_items ["a"] accepted
+pydantic_v2.dataclass default v_items ["c"] accepted
+pydantic_v2.dataclass default v_items ["d"] rejected
+pydantic_v2.dataclass default v_map {"k": "b"} accepted
+pydantic_v2.dataclass default v_map {"k": "a"} accepted
+pydantic_v2.dataclass default v_map {"k": "c"} accepted
+pydantic_v2.dataclass default v_map {"k": "d"} rejected
+msgspec.Struct default v "b" accepted
+msgspec.Struct default v "a" accepted
+msgspec.Struct default v "c" accepted
+msgspec.Struct default v "d" rejected
+msgspec.Struct default v_prop "b" accepted
+msgspec.Struct default v_prop "a" accepted
+msgspec.Struct default v_prop "c" accepted
+msgspec.Struct default v_prop "d" rejected
+msgspec.Struct default v_items ["b"] accepted
+msgspec.Struct default v_items ["a"] accepted
+msgspec.Struct default v_items ["c"] accepted
+msgspec.Struct default v_items ["d"] rejected
+msgspec.Struct default v_map {"k": "b"} accepted
+msgspec.Struct default v_map {"k": "a"} accepted
+msgspec.Struct default v_map {"k": "c"} accepted
+msgspec.Struct default v_map {"k": "d"} rejected
+pydantic_v2.BaseModel --field-constraints v "b" accepted
+pydantic_v2.BaseModel --field-constraints v "a" accepted
+pydantic_v2.BaseModel --field-constraints v "c" accepted
+pydantic_v2.BaseModel --field-constraints v "d" rejected
+pydantic_v2.BaseModel --field-constraints v_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints v_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints v_prop "c" accepted
+pydantic_v2.BaseModel --field-constraints v_prop "d" rejected
+pydantic_v2.BaseModel --field-constraints v_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints v_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints v_items ["c"] accepted
+pydantic_v2.BaseModel --field-constraints v_items ["d"] rejected
+pydantic_v2.BaseModel --field-constraints v_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints v_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints v_map {"k": "c"} accepted
+pydantic_v2.BaseModel --field-constraints v_map {"k": "d"} rejected
+pydantic_v2.BaseModel --use-annotated v "b" accepted
+pydantic_v2.BaseModel --use-annotated v "a" accepted
+pydantic_v2.BaseModel --use-annotated v "c" accepted
+pydantic_v2.BaseModel --use-annotated v "d" rejected
+pydantic_v2.BaseModel --use-annotated v_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated v_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated v_prop "c" accepted
+pydantic_v2.BaseModel --use-annotated v_prop "d" rejected
+pydantic_v2.BaseModel --use-annotated v_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated v_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated v_items ["c"] accepted
+pydantic_v2.BaseModel --use-annotated v_items ["d"] rejected
+pydantic_v2.BaseModel --use-annotated v_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated v_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated v_map {"k": "c"} accepted
+pydantic_v2.BaseModel --use-annotated v_map {"k": "d"} rejected
+pydantic_v2.BaseModel --collapse-root-models v "b" accepted
+pydantic_v2.BaseModel --collapse-root-models v "a" accepted
+pydantic_v2.BaseModel --collapse-root-models v "c" accepted
+pydantic_v2.BaseModel --collapse-root-models v "d" rejected
+pydantic_v2.BaseModel --collapse-root-models v_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models v_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models v_prop "c" accepted
+pydantic_v2.BaseModel --collapse-root-models v_prop "d" rejected
+pydantic_v2.BaseModel --collapse-root-models v_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models v_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models v_items ["c"] accepted
+pydantic_v2.BaseModel --collapse-root-models v_items ["d"] rejected
+pydantic_v2.BaseModel --collapse-root-models v_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models v_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models v_map {"k": "c"} accepted
+pydantic_v2.BaseModel --collapse-root-models v_map {"k": "d"} rejected
+msgspec.Struct --collapse-root-models v "b" accepted
+msgspec.Struct --collapse-root-models v "a" accepted
+msgspec.Struct --collapse-root-models v "c" accepted
+msgspec.Struct --collapse-root-models v "d" rejected
+msgspec.Struct --collapse-root-models v_prop "b" accepted
+msgspec.Struct --collapse-root-models v_prop "a" accepted
+msgspec.Struct --collapse-root-models v_prop "c" accepted
+msgspec.Struct --collapse-root-models v_prop "d" rejected
+msgspec.Struct --collapse-root-models v_items ["b"] accepted
+msgspec.Struct --collapse-root-models v_items ["a"] accepted
+msgspec.Struct --collapse-root-models v_items ["c"] accepted
+msgspec.Struct --collapse-root-models v_items ["d"] rejected
+msgspec.Struct --collapse-root-models v_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models v_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models v_map {"k": "c"} accepted
+msgspec.Struct --collapse-root-models v_map {"k": "d"} rejected
