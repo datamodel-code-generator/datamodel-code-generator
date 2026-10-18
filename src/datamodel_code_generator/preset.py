@@ -890,6 +890,11 @@ def render_presets_markdown() -> str:
         ),
         "",
         (
+            "To choose options on top of a preset for your schema, add `--recommend-options` to the command "
+            "(experimental); see [Option recommendations](recommend-options.md)."
+        ),
+        "",
+        (
             "Presets dated 20260909 or later select builtin to avoid running external formatters. "
             "For project-wide Ruff consistency, use the preset with `--formatters ruff-check ruff-format`. "
             "Keep `--formatters black isort` to preserve existing Black/isort output. "

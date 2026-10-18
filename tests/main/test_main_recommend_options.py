@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import difflib
+import io
 import json
 import re
 import shutil
 import warnings
+from contextlib import redirect_stdout
 from importlib.resources import files
 from pathlib import Path
 from string import Formatter
 from typing import TYPE_CHECKING, Any
 
+import jsonschema
 import pytest
 from packaging.version import Version
 
@@ -96,11 +100,18 @@ the best candidate, with class names before and after each option. It prints the
 start from, the options to add with the reason for each, optional validation and policy options that stay out
 of the command, options it advises against, the compared candidates, and the resulting command and
 pyproject.toml block. Nothing is written. Options set on the command line or in pyproject.toml are kept and
-reported when the rules suggest another value. Add `--output-format json` for a structured payload.""",
+reported when the rules suggest another value. Add `--output-format json` for a structured payload, or
+`--generate-prompt` to include the recommendation in an LLM prompt instead.""",
     input_schema="recommend_options/api.yaml",
     cli_args=["--input", "api.yaml", "--input-file-type", "openapi", "--recommend-options"],
     expected_stdout="main/recommend_options/api.txt",
-    related_options=["--preset", "--output-format", "--naming-strategy", "--enum-field-as-literal"],
+    related_options=[
+        "--preset",
+        "--output-format",
+        "--generate-prompt",
+        "--naming-strategy",
+        "--enum-field-as-literal",
+    ],
 )
 def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Recommend options for the input schema on top of the latest dated preset (experimental).
@@ -114,7 +125,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     start from, the options to add with the reason for each, optional validation and policy options that stay out
     of the command, options it advises against, the compared candidates, and the resulting command and
     pyproject.toml block. Nothing is written. Options set on the command line or in pyproject.toml are kept and
-    reported when the rules suggest another value. Add `--output-format json` for a structured payload.
+    reported when the rules suggest another value. Add `--output-format json` for a structured payload, or
+    `--generate-prompt` to include the recommendation in an LLM prompt instead.
     """
     _recommend(
         tmp_path,
@@ -362,7 +374,6 @@ def test_recommend_options_for_projects(
         pytest.param(["--job", "a", "--job", "b"], "more than one --job", id="jobs"),
         pytest.param(["--generate-pyproject-config"], "--generate-pyproject-config", id="pyproject-config"),
         pytest.param(["--generate-cli-command"], "--generate-cli-command", id="cli-command"),
-        pytest.param(["--generate-prompt"], "--generate-prompt", id="prompt"),
         pytest.param(["--install-skill", "codex"], "--install-skill", id="install-skill"),
         pytest.param(["--list-deprecations"], "--list-deprecations", id="list-deprecations"),
         pytest.param(["--list-experimental"], "--list-experimental", id="list-experimental"),
@@ -422,6 +433,52 @@ def test_recommend_options_reports_invalid_yaml(capsys: pytest.CaptureFixture[st
         expected_stderr_contains="Unable to read the input as an OpenAPI document: ",
         use_builtin_default_formatter=False,
     )
+
+
+def _printed(args: Sequence[str], capsys: pytest.CaptureFixture[str]) -> str:
+    """Run the CLI and return what it printed to stdout; nothing may be printed to stderr."""
+    with redirect_stdout(io.StringIO()) as stdout:
+        run_main_with_args(args, capsys=capsys, assert_no_stderr=True, use_builtin_default_formatter=False)
+    return stdout.getvalue()
+
+
+@pytest.mark.parametrize(
+    ("args", "inputs"),
+    [
+        pytest.param(["--input", "api.yaml", "--input-file-type", "openapi"], ("api.yaml",), id="text"),
+        pytest.param(
+            ["--input", "api.yaml", "--input-file-type", "openapi", "--output-format", "json"], ("api.yaml",), id="json"
+        ),
+        pytest.param(["--job", "api"], ("api.yaml", "project_job/pyproject.toml"), id="job"),
+        pytest.param(["--input", "backtick_titles.json"], ("backtick_titles.json",), id="backtick-titles"),
+    ],
+)
+def test_recommend_options_in_prompt(
+    args: list[str], inputs: tuple[str, ...], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """With --generate-prompt, embed the recommendation in the prompt; the rest of the prompt stays the same.
+
+    The text prompt shows the report before the options, fenced by more backticks than the schema's titles hold, and
+    asks to start from its command; the JSON prompt adds the --recommend-options payload as ``recommendation``, valid
+    against the prompt, structured-output and recommend-options schemas. The stored output is the difference from the
+    prompt without --recommend-options, without line numbers, so that options added to the prompt do not move it.
+    """
+    for name in inputs:
+        shutil.copy(INPUT_PATH / name, tmp_path / Path(name).name)
+    prompt = [*args, "--generate-prompt", "Which options keep the class names stable?"]
+    with chdir(tmp_path):
+        plain = _printed(prompt, capsys)
+        combined = _printed([*prompt, "--recommend-options", "quick"], capsys)
+    if "json" in args:
+        payload = json.loads(combined)
+        for kind in ("generate-prompt", "structured-output"):
+            jsonschema.validate(payload, json.loads(_printed(["--output-format-json-schema", kind], capsys)))
+        schema = json.loads(_printed(["--output-format-json-schema", "recommend-options"], capsys))
+        jsonschema.validate(payload["recommendation"], schema)
+    diff = difflib.unified_diff(
+        plain.splitlines(), combined.splitlines(), "--generate-prompt", "--recommend-options", lineterm=""
+    )
+    assert_output("".join("@@\n" if line.startswith("@@") else f"{line}\n" for line in diff))
 
 
 def test_recommend_options_json_schema(capsys: pytest.CaptureFixture[str]) -> None:

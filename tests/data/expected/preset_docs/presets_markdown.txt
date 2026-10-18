@@ -23,6 +23,8 @@ datamodel-codegen \
 
 Use `standard-py312-20261017` for the project-recommended modern Python 3.12 baseline. Use `practical-py312-20261017` when you also want schema-authored names, model reuse, and schema descriptions embedded in the generated code.
 
+To choose options on top of a preset for your schema, add `--recommend-options` to the command (experimental); see [Option recommendations](recommend-options.md).
+
 Presets dated 20260909 or later select builtin to avoid running external formatters. For project-wide Ruff consistency, use the preset with `--formatters ruff-check ruff-format`. Keep `--formatters black isort` to preserve existing Black/isort output. Earlier dated presets are unchanged. Black and isort remain required installation dependencies.
 
 The 20261015 presets keep the 20260909 options and add Python 3.15 targets.

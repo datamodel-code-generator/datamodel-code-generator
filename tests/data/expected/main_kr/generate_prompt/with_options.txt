@@ -1018,7 +1018,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         as a command and a pyproject.toml block, then exit
                         (experimental). Schemas of up to 3000 estimated models
                         are also compared by generating the candidate
-                        configurations in memory.
+                        configurations in memory. With --generate-prompt, the
+                        prompt includes the recommendation instead.
   --skill-scope {project,user}
                         Installation scope for --install-skill (default:
                         project). Project installs use .agents/skills or
@@ -1138,6 +1139,7 @@ Recommend a final CLI command for the user's schema and target runtime. Include:
 
 ## Decision Checklist
 
+- Schema-specific options: when the input schema is available, add `--recommend-options` to this command (experimental) to include the schema's facts and the options recommended for it on top of the latest dated preset.
 - Input type: auto-detected schema/data, OpenAPI, AsyncAPI, JSON Schema, MCP tools, XML Schema, Protocol Buffers, Avro, GraphQL, CSV, Python input model, or raw JSON/YAML/dict data.
 - Output model type: `pydantic_v2.BaseModel`, `pydantic_v2.dataclass`, `dataclasses.dataclass`, `typing.TypedDict`, or `msgspec.Struct`.
 - Python/Pydantic version: align `--target-python-version`, `--output-model-type`, and `--target-pydantic-version` when generating Pydantic v2 models.
@@ -1162,8 +1164,8 @@ Recommend a final CLI command for the user's schema and target runtime. Include:
 - `--openapi-include-paths` only has an effect when `--openapi-scopes paths` is included.
 - `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, or `bytes`.
 - `--use-specialized-enum` requires `--target-python-version >= 3.11`.
-- `--output-format json` is supported for generation, `--generate-prompt`, `--check`, and `--diff-against`; not for `--watch`.
-- `--output-format-json-schema` accepts `config`, `generate-prompt`, `generation`, `model-metadata`, or `structured-output`; use `config` for JSON configuration schemas.
+- `--output-format json` is supported for generation, `--generate-prompt`, `--recommend-options`, `--check`, and `--diff-against`; not for `--watch`.
+- `--output-format-json-schema` accepts `config`, `generate-prompt`, `generation`, `model-metadata`, `recommend-options`, or `structured-output`; use `config` for JSON configuration schemas.
 - `--validation` is deprecated; use `--field-constraints` for generated Field constraints.
 
 ## Instructions

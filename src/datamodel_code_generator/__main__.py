@@ -56,7 +56,8 @@ match schema_output_name:
         sys.exit(0)
 
 # Fast path for Agent Skill installation (avoid importing generation dependencies); --recommend-options (any
-# abbreviation starts with --rec) rejects --install-skill and --generate-prompt in _main, so these fast paths step aside
+# abbreviation starts with --rec) rejects --install-skill and runs --generate-prompt with its report in _main, so these
+# fast paths step aside
 if not any(arg.startswith("--rec") for arg in sys.argv[1:]) and any(
     arg == "--install-skill" or arg.startswith("--install-skill=") for arg in sys.argv[1:]
 ):  # pragma: no cover
@@ -1560,12 +1561,28 @@ def _recommend_options_conflict(args: Namespace) -> str | None:
         (len(args.job or ()) > 1, "more than one --job"),
         (args.generate_pyproject_config, "--generate-pyproject-config"),
         (args.generate_cli_command, "--generate-cli-command"),
-        (args.generate_prompt is not None, "--generate-prompt"),
         (args.install_skill is not None, "--install-skill"),
         (args.list_deprecations is not None, "--list-deprecations"),
         (args.list_experimental is not None, "--list-experimental"),
     )
     return next((option for conflict, option in conflicts if conflict), None)
+
+
+def _invalid_class_name_message(error: InvalidClassNameError, args: Namespace, class_name: str | None) -> str:
+    """Return the CLI message of an invalid class name with a hint at its fix.
+
+    A name that --class-name sets is fixed there, as the recommender keeps it; a name from the schema gets the
+    --recommend-options hint where the command takes that option.
+    """
+    message = f"{error} You have to set `--class-name` option"
+    if error.class_name == class_name:
+        return f"{message}\nHint: --class-name sets this name; change it to a valid Python class name or remove it."
+    if _recommend_options_conflict(args) is not None:
+        return message
+    return (
+        f"{message}\nHint: add --recommend-options to this command to get a class name and naming options for this "
+        "schema (experimental)."
+    )
 
 
 def _cli_arguments(config: Mapping[str, TomlValue]) -> list[str]:
@@ -1648,10 +1665,14 @@ def _run_recommend_options(  # noqa: PLR0913
     """Print option recommendations for the resolved configuration (experimental).
 
     A server or client target is checked and its implied settings applied as for generation, so the recommendation
-    starts from the preset the target can use.
+    starts from the preset the target can use. With --generate-prompt, the prompt embeds the recommendation instead.
     """
     from datamodel_code_generator._recommend import RecommendRequest, recommend_options  # noqa: PLC0415
-    from datamodel_code_generator._recommend._report import render_json, render_text  # noqa: PLC0415
+    from datamodel_code_generator._recommend._report import (  # noqa: PLC0415
+        recommendation_payload,
+        render_json,
+        render_text,
+    )
     from datamodel_code_generator.base_config import (  # noqa: PLC0415
         _flag,
         _selected_target,
@@ -1704,7 +1725,12 @@ def _run_recommend_options(  # noqa: PLR0913
         )
     )
     content = render_text(recommendation, command=command, pyproject=pyproject)
-    if args.output_format == "json":
+    if args.generate_prompt is not None:
+        from datamodel_code_generator.prompt import generate_prompt  # noqa: PLC0415
+
+        payload = recommendation_payload(recommendation, content=content, arguments=arguments)
+        print(generate_prompt(args, arg_parser.format_help(), arg_parser, recommendation=payload))  # noqa: T201
+    elif args.output_format == "json":
         print(render_json(recommendation, content=content, arguments=arguments))  # noqa: T201
     else:
         print(content, end="")  # noqa: T201
@@ -2813,7 +2839,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             print(config_output)  # noqa: T201
         return Exit.OK
 
-    if namespace.generate_prompt is not None:
+    if namespace.generate_prompt is not None and namespace.recommend_options is None:
         from datamodel_code_generator.prompt import generate_prompt  # noqa: PLC0415
 
         help_text = arg_parser.format_help()
@@ -3282,7 +3308,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                     logical_output=_batch_original_output,
                 )
     except InvalidClassNameError as e:
-        print(f"{e} You have to set `--class-name` option", file=sys.stderr)  # noqa: T201
+        print(_invalid_class_name_message(e, namespace, config.class_name), file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
     except UnicodeDecodeError as e:
         print(f"Unable to decode input using encoding {config.encoding!r}: {e}", file=sys.stderr)  # noqa: T201

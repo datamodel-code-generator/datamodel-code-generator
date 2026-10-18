@@ -129,7 +129,11 @@ DEPRECATIONS: dict[DeprecationId, Deprecation] = {
         id="format.default-formatters",
         kind="behavior",
         target="Default formatters",
-        message="Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.",
+        message=(
+            "Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. "
+            "Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it "
+            "(experimental)."
+        ),
         warning_since="0.52.0",
         removal_version=None,
         replacement="Set formatters explicitly, for example black and isort or builtin.",

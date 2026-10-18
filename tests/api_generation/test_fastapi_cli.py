@@ -2729,14 +2729,18 @@ def test_fastapi_cli_failures(
     )
 
 
-@pytest.mark.parametrize("case", ["class-name", "encoding", "lock", "output-parent", "publication"])
+@pytest.mark.parametrize(
+    "case", ["class-name", "class-name-check", "class-name-option", "encoding", "lock", "output-parent", "publication"]
+)
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_model_error_context(
     case: str, structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files.
 
-    A failed publication is reported as by the model runs that publish through the same journal.
+    A failed publication is reported as by the model runs that publish through the same journal. The class-name hint
+    to add --recommend-options is left out where the command cannot take it, such as with --check, and a name that
+    --class-name sets is pointed back to that option.
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
@@ -2744,14 +2748,23 @@ def test_fastapi_cli_model_error_context(
     output = Path("models.py")
     stderr = "Error: "
     match case:
-        case "class-name":
+        case "class-name" | "class-name-check" | "class-name-option":
             options = [
                 "--custom-formatters",
                 "tests.data.python.custom_formatters.stop",
                 "--custom-formatters-kwargs",
                 '{"class_name": "1Xyz"}',
+                *{"class-name-check": ["--check"], "class-name-option": ["--class-name", "1Xyz"]}.get(case, []),
             ]
-            stderr = "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n"
+            stderr = "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n" + {
+                "class-name": (
+                    "Hint: add --recommend-options to this command to get a class name and naming options for this "
+                    "schema (experimental).\n"
+                ),
+                "class-name-option": (
+                    "Hint: --class-name sets this name; change it to a valid Python class name or remove it.\n"
+                ),
+            }.get(case, "")
         case "encoding":
             (tmp_path / "pets.yaml").write_bytes((CLI / "non-text.dat").read_bytes())
             stderr = "Error: Unable to decode input using encoding 'utf-8': "
@@ -2772,7 +2785,8 @@ def test_fastapi_cli_model_error_context(
         extra_args=_server(*options, *(["--output-format", "json"] if structured else [])),
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=stderr,
+        expected_stderr=stderr if case.startswith("class-name") else None,
+        expected_stderr_contains=None if case.startswith("class-name") else stderr,
         expected_stdout_path=EXPECTED / "cli" / "json" / "error-empty.txt" if structured else None,
         output_should_not_exist=True,
     )

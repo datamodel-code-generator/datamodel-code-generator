@@ -14,9 +14,18 @@ Agents should run `datamodel-codegen` instead of hand-writing generated models w
 
 The CLI handles refs, enums, nested models, unions, `allOf`, `oneOf`, `anyOf`, and model reuse. It also produces output that can be imported and checked after generation.
 
-Agents should also use the CLI for option discovery. `datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents.
+Agents should also use the CLI for option discovery. Before choosing options, run the recommender (experimental) and apply its result:
 
 ```bash
+datamodel-codegen --input SCHEMA [--input-file-type TYPE] [--output-model-type TYPE] --recommend-options --output-format json
+```
+
+Use `arguments` from the payload (or `config` for a project configured in `pyproject.toml`) as the starting command, and do not add options it lists under `not_recommended` without a stated reason. When the goal needs judgment beyond the schema's shape, add `--recommend-options` to a `--generate-prompt` command so the prompt includes the recommendation, and decide from both. See [Option recommendations](recommend-options.md).
+
+`datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents. Add `--recommend-options` when an input schema is available; without an input schema, run `--generate-prompt` alone.
+
+```bash
+datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema." --recommend-options
 datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema."
 datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema." --output-format json
 datamodel-codegen --output-format-json-schema structured-output

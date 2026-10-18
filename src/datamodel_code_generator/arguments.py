@@ -1563,7 +1563,8 @@ general_options.add_argument(
     help=(
         "Analyse the input schema and print the options to add on top of the latest dated preset, with the reasons, "
         "as a command and a pyproject.toml block, then exit (experimental). Schemas of up to 3000 estimated models "
-        "are also compared by generating the candidate configurations in memory."
+        "are also compared by generating the candidate configurations in memory. With --generate-prompt, the prompt "
+        "includes the recommendation instead."
     ),
 )
 general_options.add_argument(

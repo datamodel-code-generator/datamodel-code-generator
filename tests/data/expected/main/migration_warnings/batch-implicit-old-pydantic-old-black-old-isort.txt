@@ -1,4 +1,4 @@
 Support for DCG runtime Pydantic <2.8.2 will end in a future release.
-Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.
+Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).
 Support for Black <24.3.0 will end in a future release.
 Support for isort <6 will end in a future release.

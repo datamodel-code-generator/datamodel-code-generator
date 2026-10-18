@@ -761,7 +761,8 @@ General options:
                         as a command and a pyproject.toml block, then exit
                         (experimental). Schemas of up to 3000 estimated models
                         are also compared by generating the candidate
-                        configurations in memory.
+                        configurations in memory. With --generate-prompt, the
+                        prompt includes the recommendation instead.
   --skill-scope {project,user}
                         Installation scope for --install-skill (default:
                         project). Project installs use .agents/skills or

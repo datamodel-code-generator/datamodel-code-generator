@@ -7317,7 +7317,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         raise Error(
             "Name collision detected with --all-exports-scope:\n"
             + "\n".join(details)
-            + "\n\nUse --all-exports-collision-strategy to specify how to handle collisions."
+            + "\n\nUse --all-exports-collision-strategy minimal-prefix or full-prefix to prefix the colliding names "
+            "with their module names."
         )
 
     @staticmethod

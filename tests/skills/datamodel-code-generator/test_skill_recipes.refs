@@ -8,6 +8,9 @@
 	skills/datamodel-code-generator/input_model.py
 [test_skill_recipe_check_mode_matches_expected_output]
 	skills/datamodel-code-generator/check_mode.py
+[test_skill_recommend_options_recipe]
+	skills/datamodel-code-generator/skill_recipes/skill_recommend_options_recipe.models.txt
+	skills/datamodel-code-generator/skill_recipes/skill_recommend_options_recipe.txt
 [test_skill_single_file_recipes_match_expected_output]
 asyncapi.yaml-asyncapi-single_file/asyncapi.py-extra_args1	skills/datamodel-code-generator/single_file/asyncapi.py
 jsonschema.json-jsonschema-single_file/jsonschema.py-extra_args2	skills/datamodel-code-generator/single_file/jsonschema.py	= skills/datamodel-code-generator/check_mode.py

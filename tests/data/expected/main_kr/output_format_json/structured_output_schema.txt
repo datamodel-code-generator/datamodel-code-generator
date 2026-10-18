@@ -849,6 +849,12 @@
         "help_text": {
           "title": "Help Text",
           "type": "string"
+        },
+        "recommendation": {
+          "additionalProperties": true,
+          "description": "The --recommend-options --output-format json payload for the input schema (experimental; its schema is --output-format-json-schema recommend-options); absent unless the command has --recommend-options.",
+          "title": "Recommendation",
+          "type": "object"
         }
       },
       "required": [

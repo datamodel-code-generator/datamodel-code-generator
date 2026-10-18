@@ -51,7 +51,8 @@ Generate models in your browser without installing anything.
 
 ## 🚀 Start Here
 
-Install the CLI and generate your first model from [Getting Started](getting-started.md).
+Install the CLI and generate your first model from [Getting Started](getting-started.md). Then add
+`--recommend-options` to that command to get [options suited to your schema](recommend-options.md) (experimental).
 
 !!! note "Default output model"
     When `--output-model-type` is omitted, datamodel-code-generator generates Pydantic v2 BaseModel output
@@ -520,7 +521,8 @@ These public examples are grouped by how each project uses datamodel-code-genera
 
 Source: https://datamodel-code-generator.koxudaxi.dev/getting-started/
 
-Install `datamodel-code-generator` and generate your first Pydantic v2 model.
+Install `datamodel-code-generator`, generate your first Pydantic v2 model, and pick options for your schema with
+`--recommend-options` (experimental).
 
 ## Installation
 
@@ -600,6 +602,10 @@ See [CLI Reference](cli-reference/index.md) for all options. See [Presets](prese
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
 documentation, use [`practical-py312-20261017`](presets.md#practical-py312-20261017).
+
+**Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
+analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
+command and `pyproject.toml` block. See [Option recommendations](recommend-options.md).
 
 <details>
 <summary>Input (<code>schema.json</code>)</summary>
@@ -745,6 +751,8 @@ datamodel-codegen \
 ```
 
 Use `standard-py312-20261017` for the project-recommended modern Python 3.12 baseline. Use `practical-py312-20261017` when you also want schema-authored names, model reuse, and schema descriptions embedded in the generated code.
+
+To choose options on top of a preset for your schema, add `--recommend-options` to the command (experimental); see [Option recommendations](recommend-options.md).
 
 Presets dated 20260909 or later select builtin to avoid running external formatters. For project-wide Ruff consistency, use the preset with `--formatters ruff-check ruff-format`. Keep `--formatters black isort` to preserve existing Black/isort output. Earlier dated presets are unchanged. Black and isort remain required installation dependencies.
 
@@ -4174,8 +4182,6 @@ give your schema, and prints:
 - the options to add on top of it, each with the rule that chose it, the reason with counts from your schema, caveats,
   the effect measured on public schemas, and the class names it changes in your schema (before -> after),
 - options worth considering when the schema has signals for and against them,
-- optional validation and policy options, such as `--strict-types`, which stay out of the command because they depend
-  on what your project accepts,
 - the compared candidates and the class names that change from your current configuration,
 - where your existing configuration differs from the rules,
 - a ready command and a `pyproject.toml` block.
@@ -4282,7 +4288,7 @@ components:
 <!-- fmt: off -->
 
 ```text
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-17)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       2, 0 operations
@@ -4295,9 +4301,6 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
   union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
   component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces
-  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
-  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
-  integer/number/boolean schemas   0
 
 Start from  --preset standard-py314-20261017
 
@@ -4330,14 +4333,13 @@ Left out after the trial (the rules recommend these)
       0 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
 
 Trial  5 candidates generated in memory without formatting; nothing written
-  candidate                          classes   problems  numbered  long  doubled  displaced  median  unconstrained
-  current                                  4  1 (25.0%)         1     0        0          0       7              0
-  preset                                   4  1 (25.0%)         1     0        0          0       7              0
-  recommended                              4   0 (0.0%)         0     0        0          0       7              0
-  recommended - title-source               4   0 (0.0%)         0     0        0          0      11              0
-  recommended - union-variant-names        4   0 (0.0%)         0     0        0          0       7              0   selected
+  candidate                          classes   problems  numbered  long  doubled  displaced  median
+  current                                  4  1 (25.0%)         1     0        0          0       7
+  preset                                   4  1 (25.0%)         1     0        0          0       7
+  recommended                              4   0 (0.0%)         0     0        0          0       7
+  recommended - title-source               4   0 (0.0%)         0     0        0          0      11
+  recommended - union-variant-names        4   0 (0.0%)         0     0        0          0       7   selected
   current: the configuration as set, without the preset; never selected
-  unconstrained: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended - union-variant-names)
   2 of 4 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
@@ -4362,15 +4364,13 @@ The counts, presets and options come from your schema and the installed version.
 
 | Section | Meaning |
 |---|---|
-| Schema | The signals the rules read: components, inline objects and enums, shared property names, repeated shapes, titles, unions and their tags, key style, constraint keywords (`uniqueItems`; `patternProperties`, with how many a typed map cannot express; `multipleOf`; `nullable` in OpenAPI 3.0 and AsyncAPI 2 documents; boolean exclusive bounds), the formats generation maps to a type (`int32`/`int64` ranges are not enforced), and the integer, number and boolean schemas. |
+| Schema | The signals the rules read: components, inline objects and enums, shared property names, repeated shapes, titles, unions and their tags, key style. |
 | Start from | The latest dated `standard` preset for your output model type and target Python version, and the rules it already satisfies. It is the `practical` preset only when you configured a practical preset, or when no option can set a value a rule needs on the standard preset (the notes then say which). |
-| Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits, `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
+| Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits (with issue numbers), `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
 | Left out after the trial | Options the rules recommend that the selected candidate does without, because your schema's class names score better without them. |
 | Consider | Options the schema has signals for and against (`against:`). Decide from your schema; they are in the command only when the candidate with them scores best. |
-| Optional (validation) | Options for checks the schema declares that the models leave out by default, such as `--generate-schema-validators` for `uniqueItems` and for `patternProperties` a typed map cannot express (beside declared properties, with several patterns, or with other keys allowed) with Pydantic v2 models. They are experimental or change runtime behaviour, so they are not in the command; validate sample data with the generated models first. |
-| Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans. They are never in the command. |
 | Not recommended | Options a rule argues against for this schema. |
-| Trial | The compared candidates with their class counts, problem names, median name length, and `unconstrained`: the fields dcg warns it generates without some of their constraints, counted per module in the generation each candidate keeps; `selected` marks the recommended one. |
+| Trial | The compared candidates with their class counts, problem names, and median name length; `selected` marks the recommended one. |
 | Changes from the current configuration | The class names the recommended configuration changes from the configuration you run now, matched by schema location. |
 | Your configuration | Options you set that differ from the rules, and a newer preset when you set an older one. Your values are kept. |
 | Notes | Assumptions, such as the target Python version used when you did not set one. |
@@ -4406,18 +4406,26 @@ datamodel-codegen --output-format-json-schema recommend-options
 The payload has `kind: "recommend-options"` and contains the `mode` that ran (`full` when candidates were compared),
 the `signals`, the starting preset under `baseline`, the `recommendations`, `left_out`, `consider`, `not_recommended`
 and `disagreements` entries (each with its `rule`, `set` config values, CLI `arguments`, and the `trial` candidates
-and class-name `changes` that measured it), the optional `validation` and `policy` entries (never in `arguments` or
-`config`), the compared candidates under `trial` (each with its `metrics`, its `dropped_constraint_warnings`, and
+and class-name `changes` that measured it), the compared candidates under `trial` (each with its `metrics`, and
 `stability` with `--diff-against`, plus the `ranking`, the `selected` label, the `migration` from the current
-configuration, and the `dropped` (candidates beyond the limit) and `remeasured` counts), `notes`, the full command as
-`arguments`, the `config` table, and the text report as `content`.
+configuration, and the `dropped` and `remeasured` counts), `notes`, the full command as `arguments`, the `config` table, and the text report as `content`.
 `rules_revision` identifies the rule data and `trial.metrics_version` the class-name metrics that produced it.
+
+## Ask an LLM with the recommendation
+
+Add `--recommend-options` to a [`--generate-prompt`](llm-integration.md) command to include the report in the prompt,
+under "Schema analysis and recommended options", and ask the LLM to start from the recommended command and give a
+reason for every option it changes. With `--output-format json`, the prompt payload has the recommendation payload as
+`recommendation`.
+
+```bash
+datamodel-codegen --input openapi.yaml --input-file-type openapi --recommend-options \
+  --generate-prompt "Which options keep the class names stable across schema versions?"
+```
 
 ## What it measures
 
-- It reads the input once and measures the schema signals without generating models: how the schemas are named and
-  nested, and which constraint keywords and formats they use. Keywords beside a `$ref` count where the document's
-  version applies them (JSON Schema 2019-09 and later, OpenAPI 3.1 and later, AsyncAPI 3).
+- It reads the input once and measures the schema signals without generating models.
 - For OpenAPI, it measures what your `--openapi-scopes` generate: component schemas with the `schemas` scope
   (otherwise only those the operations reference), and request, response, parameter, webhook, and request body
   schemas with those scopes, filtered by `--openapi-include-paths`; parameter schemas follow every walked operation.
@@ -4436,7 +4444,7 @@ configuration, and the `dropped` (candidates beyond the limit) and `remeasured` 
 - When `--target-python-version` is not set, it assumes the default target and says so in the notes.
 
 It cannot be combined with `--check`, `--watch`, `--all-jobs`, more than one `--job`, `--generate-pyproject-config`,
-`--generate-cli-command`, `--generate-prompt`, `--install-skill`, `--list-deprecations`, or `--list-experimental`.
+`--generate-cli-command`, `--install-skill`, `--list-deprecations`, or `--list-experimental`.
 
 ## How candidates are compared
 
@@ -4459,8 +4467,7 @@ is numbered (`Status1`), contains a status code, is a generic word (`Item`, `Dat
 repeats a word the schema does not repeat (`ShapeShape`), takes a component's name from the component, or names an
 inline model like an unrelated component. Candidates are ranked by, in order: fewer numbered or doubled names; fewer
 other problem names, such as names over 40 characters; with `--diff-against`, fewer classes renamed between the
-previous and the current schema; a shorter median name; then fewer fields that dcg warns it generates without some
-of their constraints. Numbered names count as worse than long descriptive names:
+previous and the current schema; a shorter median name. Numbered names count as worse than long descriptive names:
 `Event2` says nothing about the class, while a long name still describes it. Only when two candidates generate exactly
 the same class names does the one with fewer added options rank first; other ties keep the order above. The best
 candidate other than `current` is selected, and the command and `pyproject.toml` block carry its options.
@@ -4529,9 +4536,8 @@ revision is released.
 
 **Why is an option I expected missing?**
 Either the preset already sets it (listed under "Start from"), the schema does not show the signal its rule needs,
-the candidate without it scored better on your schema (listed under "Left out after the trial"), it is an optional
-validation or policy option that stays out of the command (listed under "Optional"), or the option is a project
-decision the recommender never makes. Check [Presets](presets.md) and the
+the candidate without it scored better on your schema (listed under "Left out after the trial"), or the option is a
+project decision the recommender never makes. Check [Presets](presets.md) and the
 [CLI Reference](cli-reference/index.md) for the full list of options.
 
 ---
@@ -13472,7 +13478,9 @@ a final `datamodel-codegen` command.
 
 1. Inspect the user's goal and the input schema when it is available.
 2. Start from any options the user or existing project already selected.
-3. Run `datamodel-codegen [known options] --generate-prompt "<goal>"`.
+3. Run `datamodel-codegen [known options] --generate-prompt "<goal>"`. When the input
+   schema is available, add `--recommend-options` (experimental) so the prompt includes
+   the schema analysis and the recommended command to start from.
 4. Preserve current options unless they conflict with the goal or another option.
 5. Choose the minimal additional options needed for the requested output.
 6. Return the final CLI command, reasons for each non-obvious option, rejected
@@ -13699,9 +13707,18 @@ Agents should run `datamodel-codegen` instead of hand-writing generated models w
 
 The CLI handles refs, enums, nested models, unions, `allOf`, `oneOf`, `anyOf`, and model reuse. It also produces output that can be imported and checked after generation.
 
-Agents should also use the CLI for option discovery. `datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents.
+Agents should also use the CLI for option discovery. Before choosing options, run the recommender (experimental) and apply its result:
 
 ```bash
+datamodel-codegen --input SCHEMA [--input-file-type TYPE] [--output-model-type TYPE] --recommend-options --output-format json
+```
+
+Use `arguments` from the payload (or `config` for a project configured in `pyproject.toml`) as the starting command, and do not add options it lists under `not_recommended` without a stated reason. When the goal needs judgment beyond the schema's shape, add `--recommend-options` to a `--generate-prompt` command so the prompt includes the recommendation, and decide from both. See [Option recommendations](recommend-options.md).
+
+`datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents. Add `--recommend-options` when an input schema is available; without an input schema, run `--generate-prompt` alone.
+
+```bash
+datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema." --recommend-options
 datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema."
 datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema." --output-format json
 datamodel-codegen --output-format-json-schema structured-output
@@ -51082,17 +51099,17 @@ create an __init__.py that re-exports all models for convenient imports.
 Recommend options for the input schema on top of the latest dated preset (experimental).
 
 `--recommend-options` reads the input schema, measures how it is written (shared property names, inline
-enums and objects, repeated shapes, titles, tagged unions, dotted keys, constraint keywords and formats), and
-applies the recommender's rule data. For a schema of up to 3000 estimated models, it then generates the
-candidate configurations in memory (the preset, the recommendation, and the recommendation without or with
-each option), compares their class names and the fields generated without their constraints, and recommends
-the best candidate, with class names before and after each option. It prints the latest dated preset to
-start from, the options to add with the reason for each, optional validation and policy options that stay out
-of the command, options it advises against, the compared candidates, and the resulting command and
-pyproject.toml block. Nothing is written. Options set on the command line or in pyproject.toml are kept and
-reported when the rules suggest another value. Add `--output-format json` for a structured payload.
+enums and objects, repeated shapes, titles, tagged unions, dotted keys), and applies the recommender's rule
+data. For a schema of up to 3000 estimated models, it then generates the candidate configurations in memory
+(the preset, the recommendation, and the recommendation without or with each option), compares their class
+names, and recommends the best candidate, with class names before and after each option. It prints the
+latest dated preset to start from, the options to add with the reason for each, options it advises against,
+the compared candidates, and the resulting command and pyproject.toml block. Nothing is written. Options set
+on the command line or in pyproject.toml are kept and reported when the rules suggest another value. Add
+`--output-format json` for a structured payload, or `--generate-prompt` to include the recommendation in an LLM
+prompt instead.
 
-**Related:** [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal), [`--naming-strategy`](model-customization.md#naming-strategy), `--output-format`, [`--preset`](base-options.md#preset)
+**Related:** [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal), `--generate-prompt`, [`--naming-strategy`](model-customization.md#naming-strategy), `--output-format`, [`--preset`](base-options.md#preset)
 
 !!! tip "Usage"
 
@@ -51274,7 +51291,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
     <!-- fmt: off -->
 
     ```
-    Option recommendations (experimental; full mode; rules 2026-10-18)
+    Option recommendations (experimental; full mode; rules 2026-10-17)
 
     Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
       components                       6, 2 operations
@@ -51287,9 +51304,6 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
       union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
       component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces
-      constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
-      formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
-      integer/number/boolean schemas   5
 
     Start from  --preset standard-py310-20261017
 
@@ -51365,18 +51379,6 @@ reported when the rules suggest another value. Add `--output-format json` for a 
             PaymentCard -> PaymentPaymentCard   at components/schemas/Payment > oneOf 0
             PaymentBank -> PaymentPaymentBank   at components/schemas/Payment > oneOf 1
 
-    Optional (policy; not in the command)
-      --strict-types int float bool   [policy.strict-scalar-types]
-          Pydantic validates in lax mode, which coerces input into the 5 integer, number and boolean
-          schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
-          booleans. Strict types reject such input. Whether to accept it depends on the project's
-          clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
-          integer, so leave int out to accept it.
-          measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
-          invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
-          rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
-          rejected
-
     Not recommended
       --use-title-as-name   [titles.keys-when-titles-collide]
           Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to
@@ -51390,23 +51392,22 @@ reported when the rules suggest another value. Add `--output-format json` for a 
           from keys renamed 0.0% of locations
 
     Trial  12 candidates generated in memory without formatting; nothing written
-      candidate                                            classes   problems  numbered  long  doubled  displaced  median  unconstrained
-      current                                                   22  5 (22.7%)         5     0        0          0       6              0
-      preset                                                    22  5 (22.7%)         5     0        0          0       6              0
-      recommended                                                9  2 (22.2%)         0     0        2          0      10              0
-      recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5              0   selected
-      recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11              0
-      recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14              0
-      recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7              0
-      recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10              0
-      recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6              0
-      recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5              0
-      recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5              0
-      recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5              0
+      candidate                                            classes   problems  numbered  long  doubled  displaced  median
+      current                                                   22  5 (22.7%)         5     0        0          0       6
+      preset                                                    22  5 (22.7%)         5     0        0          0       6
+      recommended                                                9  2 (22.2%)         0     0        2          0      10
+      recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5   selected
+      recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11
+      recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14
+      recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7
+      recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10
+      recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6
+      recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5
+      recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5
+      recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5
       current: the configuration as set, without the preset; never selected
       the last 4 rows: the selected configuration without or with one option, to measure each option on
       it; never selected
-      unconstrained: fields that dcg warns it generates without some of their constraints
 
     Changes from the current configuration (current -> recommended - naming-strategy)
       4 of 9 classes matched by schema location renamed (0 only renumbered), 13 removed, 0 added, e.g.
@@ -57275,6 +57276,8 @@ Use `--output-format json` when an LLM agent or tool should consume structured
 option metadata instead of Markdown.
 Use `--output-format-json-schema generate-prompt` when the agent needs the JSON
 Schema for that structured payload, such as when defining a tool contract.
+Add `--recommend-options` (experimental) with an input schema to include the
+schema analysis and the options recommended for it in the prompt.
 
 **See also:** [LLM Integration](../llm-integration.md) for detailed usage examples
 
@@ -57290,12 +57293,14 @@ Schema for that structured payload, such as when defining a tool contract.
     datamodel-codegen --generate-prompt "How do I generate strict types?" # (2)!
     datamodel-codegen --generate-prompt --output-format json # (3)!
     datamodel-codegen --output-format-json-schema generate-prompt # (4)!
+    datamodel-codegen --input schema.json --generate-prompt --recommend-options # (5)!
     ```
 
     1. :material-arrow-left: `--generate-prompt` - generate prompt without a question
     2. :material-arrow-left: Include a specific question in the prompt
     3. :material-arrow-left: Emit structured JSON for LLM/tool ingestion
     4. :material-arrow-left: Emit JSON Schema for structured prompt JSON
+    5. :material-arrow-left: Include the schema analysis and recommended options (experimental)
 
 ??? example "Quick Examples"
 
@@ -58894,6 +58899,8 @@ Use `--output-format json` when an LLM agent or tool should consume structured
 option metadata instead of Markdown.
 Use `--output-format-json-schema generate-prompt` when the agent needs the JSON
 Schema for that structured payload, such as when defining a tool contract.
+Add `--recommend-options` (experimental) with an input schema to include the
+schema analysis and the options recommended for it in the prompt.
 
 **See also:** [LLM Integration](../../llm-integration.md) for detailed usage examples
 
@@ -58909,12 +58916,14 @@ Schema for that structured payload, such as when defining a tool contract.
     datamodel-codegen --generate-prompt "How do I generate strict types?" # (2)!
     datamodel-codegen --generate-prompt --output-format json # (3)!
     datamodel-codegen --output-format-json-schema generate-prompt # (4)!
+    datamodel-codegen --input schema.json --generate-prompt --recommend-options # (5)!
     ```
 
     1. :material-arrow-left: `--generate-prompt` - generate prompt without a question
     2. :material-arrow-left: Include a specific question in the prompt
     3. :material-arrow-left: Emit structured JSON for LLM/tool ingestion
     4. :material-arrow-left: Emit JSON Schema for structured prompt JSON
+    5. :material-arrow-left: Include the schema analysis and recommended options (experimental)
 
 ??? example "Quick Examples"
 
@@ -59264,7 +59273,7 @@ This page lists deprecations and scheduled breaking changes.
 - **Warning category:** `FutureWarning`
 - **Replacement:** Set formatters explicitly, for example black and isort or builtin.
 
-Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.
+Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. Run datamodel-codegen with --recommend-options on one schema to pick a preset and options for it (experimental).
 
 ### `behavior.pydantic-v2-use-annotated-default`
 
@@ -59651,7 +59660,7 @@ This page lists features that are available but still experimental.
 | `cli-option.generate-schema-validators` | cli-option | `--generate-schema-validators` | 0.66.1 | - |
 | `cli-option.generate-server` | cli-option | `--generate-server fastapi and the --server-* options (and their [tool.datamodel-codegen] keys and generate() options)` | 0.84.0 | - |
 | `cli-option.install-skill` | cli-option | `--install-skill, --skill-scope, and --overwrite-skill` | 0.76.0 | - |
-| `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, its candidate comparison, and its JSON payload` | 0.86.0 | - |
+| `cli-option.recommend-options` | cli-option | `--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation` | 0.86.0 | - |
 | `cli-option.schema-validator-type` | cli-option | `--schema-validator-type` | 0.66.1 | - |
 | `cli-option.use-missing-sentinel` | cli-option | `--use-missing-sentinel` | 0.66.1 | - |
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
@@ -59739,12 +59748,12 @@ Use --install-skill with codex or claude-code. --skill-scope selects a project o
 ### `cli-option.recommend-options`
 
 - **Kind:** cli-option
-- **Target:** `--recommend-options, its rule data, its candidate comparison, and its JSON payload`
+- **Target:** `--recommend-options, its rule data, its candidate comparison, its JSON payload, and --generate-prompt --recommend-options with the prompt JSON field recommendation`
 - **Since:** 0.86.0
 
 Option recommendations are experimental; the rules, the schema signals they read, the class-name metrics, the report, and the JSON payload may change.
 
---recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. For schemas of up to 3000 estimated models, it also generates the candidate configurations in memory and recommends the one whose class names score best; nothing is written.
+--recommend-options reads the input schema, measures naming-relevant signals of OpenAPI, AsyncAPI, and JSON Schema documents, and prints the latest dated preset to start from with the options to add, as a command and a pyproject.toml block. Options set on the command line or in pyproject.toml are kept. For schemas of up to 3000 estimated models, it also generates the candidate configurations in memory and recommends the one whose class names score best; nothing is written. With --generate-prompt, the prompt embeds the report, and its JSON output carries the recommend-options payload as recommendation.
 
 ### `cli-option.schema-validator-type`
 

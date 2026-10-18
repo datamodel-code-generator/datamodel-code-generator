@@ -1313,7 +1313,7 @@ def test_main_json_reuse_enum_default_member(output_file: Path) -> None:
 
 
 def test_main_invalid_model_name_failed(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
-    """Test invalid model name error handling."""
+    """Test invalid model name error handling: a name --class-name sets is fixed there, not by --recommend-options."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "invalid_model_name.json",
         output_path=output_file,
@@ -1321,19 +1321,40 @@ def test_main_invalid_model_name_failed(capsys: pytest.CaptureFixture[str], outp
         extra_args=["--class-name", "with"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="title='with' is invalid class name. You have to set `--class-name` option",
+        expected_stderr=(
+            "title='with' is invalid class name. You have to set `--class-name` option\n"
+            "Hint: --class-name sets this name; change it to a valid Python class name or remove it.\n"
+        ),
     )
 
 
-def test_main_invalid_model_name_converted(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
-    """Test invalid model name conversion error."""
+@pytest.mark.parametrize(
+    ("extra_args", "hint"),
+    [
+        pytest.param(
+            [],
+            "Hint: add --recommend-options to this command to get a class name and naming options for this schema "
+            "(experimental).\n",
+            id="hint",
+        ),
+        pytest.param(["--check"], "", id="check-rejects-recommend-options"),
+    ],
+)
+def test_main_invalid_model_name_converted(
+    extra_args: list[str], hint: str, capsys: pytest.CaptureFixture[str], output_file: Path
+) -> None:
+    """Test invalid model name conversion error, with the hint to get a class name from --recommend-options.
+
+    The hint is left out where the command cannot take --recommend-options, such as with --check.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "invalid_model_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
+        extra_args=extra_args,
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="title='1Xyz' is invalid class name. You have to set `--class-name` option",
+        expected_stderr=f"title='1Xyz' is invalid class name. You have to set `--class-name` option\n{hint}",
     )
 
 
@@ -7730,7 +7751,7 @@ def test_main_jsonschema_model_name_map_warns_on_unmatched_keys(output_file: Pat
 def test_main_jsonschema_model_name_map_rejects_collision(
     output_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Test mapped class name collisions fail instead of adding a suffix."""
+    """Test mapped class name collisions fail instead of adding a suffix, with the hint to list the class names."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "model_name_map.json",
         output_path=output_file,
@@ -7738,7 +7759,10 @@ def test_main_jsonschema_model_name_map_rejects_collision(
         expected_exit=Exit.ERROR,
         file_should_not_exist=output_file,
         capsys=capsys,
-        expected_stderr_contains="but that model name is already used",
+        expected_stderr=(
+            "--model-name-map maps 'model_name_map.json#/definitions/Bar' to 'Renamed', but that model name is "
+            "already used\nHint: --emit-model-metadata lists the generated class names and their schema locations.\n"
+        ),
         extra_args=[
             "--model-name-map",
             '{"#/definitions/Foo": "Renamed", "#/definitions/Bar": "Renamed"}',

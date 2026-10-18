@@ -13,7 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from datamodel_code_generator.cli_options import CLI_OPTION_META, MANUAL_DOCS, OptionCategory
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
@@ -57,6 +57,11 @@ PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "Decision Checklist",
         (
+            (
+                "- Schema-specific options: when the input schema is available, add `--recommend-options` to this "
+                "command (experimental) to include the schema's facts and the options recommended for it on top of "
+                "the latest dated preset."
+            ),
             (
                 "- Input type: auto-detected schema/data, OpenAPI, AsyncAPI, JSON Schema, MCP tools, "
                 "XML Schema, Protocol Buffers, Avro, GraphQL, CSV, Python input model, or raw JSON/YAML/dict data."
@@ -123,13 +128,14 @@ PROMPT_GUIDANCE_SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "- `--strict-types` requires one or more values: `str`, `int`, `float`, `bool`, or `bytes`.",
             "- `--use-specialized-enum` requires `--target-python-version >= 3.11`.",
             (
-                "- `--output-format json` is supported for generation, `--generate-prompt`, `--check`, and "
-                "`--diff-against`; "
+                "- `--output-format json` is supported for generation, `--generate-prompt`, `--recommend-options`, "
+                "`--check`, and `--diff-against`; "
                 "not for `--watch`."
             ),
             (
                 "- `--output-format-json-schema` accepts `config`, `generate-prompt`, `generation`, "
-                "`model-metadata`, or `structured-output`; use `config` for JSON configuration schemas."
+                "`model-metadata`, `recommend-options`, or `structured-output`; use `config` for JSON configuration "
+                "schemas."
             ),
             "- `--validation` is deprecated; use `--field-constraints` for generated Field constraints.",
         ),
@@ -183,13 +189,24 @@ class PromptPayload(BaseModel):
     options_by_category: dict[str, list[OptionMetadataPayload]]
     options: list[OptionMetadataPayload]
     help_text: str
+    recommendation: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "The --recommend-options --output-format json payload for the input schema (experimental; its schema is "
+            "--output-format-json-schema recommend-options); absent unless the command has --recommend-options."
+        ),
+    )
 
 
 def _prompt_payload_json_schema() -> dict[str, Any]:
-    """Return the JSON Schema for structured prompt output."""
+    """Return the JSON Schema for structured prompt output.
+
+    The payload has no serializers, so it validates as it serializes; validation mode keeps a key the payload may leave
+    out optional on every Pydantic 2 release, which serialization mode marks required before Pydantic 2.4.
+    """
     return {
         "$schema": JSON_SCHEMA_DRAFT_2020_12,
-        **PromptPayload.model_json_schema(mode="serialization"),
+        **PromptPayload.model_json_schema(mode="validation"),
     }
 
 
@@ -198,9 +215,10 @@ def _dump_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True)
 
 
-def _dump_payload(payload: BaseModel) -> str:
-    """Serialize a Pydantic payload with stable JSON formatting."""
-    return _dump_json(payload.model_dump(mode="json"))
+def _dump_payload(payload: PromptPayload) -> str:
+    """Serialize a prompt payload with stable JSON formatting, leaving out a recommendation it does not have."""
+    exclude = None if payload.recommendation else {"recommendation"}
+    return _dump_json(payload.model_dump(mode="json", exclude=exclude))
 
 
 def generate_prompt_json_schema() -> str:
@@ -427,7 +445,9 @@ def _format_guidance_sections() -> str:
     return "\n".join(lines)
 
 
-def _generate_prompt_json(args: Namespace, help_text: str, parser: ArgumentParser) -> str:
+def _generate_prompt_json(
+    args: Namespace, help_text: str, parser: ArgumentParser, recommendation: dict[str, Any] | None
+) -> str:
     """Generate a machine-readable LLM consultation payload."""
     payload = PromptPayload(
         version=1,
@@ -439,17 +459,47 @@ def _generate_prompt_json(args: Namespace, help_text: str, parser: ArgumentParse
         options_by_category=_options_by_category_metadata(parser),
         options=_all_options_metadata(parser),
         help_text=_strip_ansi(help_text),
+        recommendation=recommendation or {},
     )
     return _dump_payload(payload)
 
 
-def generate_prompt(args: Namespace, help_text: str, parser: ArgumentParser | None = None) -> str:
+def _recommendation_lines(recommendation: dict[str, Any] | None) -> tuple[str, ...]:
+    """Format the embedded --recommend-options report as a prompt section.
+
+    The report quotes names from the schema, so its fence is longer than any run of backticks in it.
+    """
+    if recommendation is None:
+        return ()
+    content = recommendation["content"].rstrip()
+    fence = "`" * max(3, max(map(len, re.findall(r"`+", content)), default=0) + 1)
+    return (
+        "## Schema analysis and recommended options",
+        "",
+        "The `--recommend-options` report for the input schema (experimental):",
+        "",
+        fence,
+        content,
+        fence,
+        "",
+    )
+
+
+def generate_prompt(
+    args: Namespace,
+    help_text: str,
+    parser: ArgumentParser | None = None,
+    *,
+    recommendation: dict[str, Any] | None = None,
+) -> str:
     """Generate LLM consultation prompt.
 
     Args:
         args: Parsed command-line arguments.
         help_text: Full help text from arg_parser.format_help().
         parser: Argument parser used to extract machine-readable option metadata.
+        recommendation: The --recommend-options JSON payload to embed: JSON output includes it as is, and text output
+            shows its report and asks to start from its command.
 
     Returns:
         Formatted prompt string suitable for LLM consultation.
@@ -460,7 +510,7 @@ def generate_prompt(args: Namespace, help_text: str, parser: ArgumentParser | No
         parser = arg_parser
 
     if getattr(args, "output_format", None) == "json":
-        return _generate_prompt_json(args, help_text, parser)
+        return _generate_prompt_json(args, help_text, parser, recommendation)
 
     lines: list[str] = []
 
@@ -480,6 +530,7 @@ def generate_prompt(args: Namespace, help_text: str, parser: ArgumentParser | No
         _format_current_options(args, parser),
         "```",
         "",
+        *_recommendation_lines(recommendation),
         # Options by category with descriptions
         "## Options by Category",
         "",
@@ -506,5 +557,11 @@ def generate_prompt(args: Namespace, help_text: str, parser: ArgumentParser | No
         "4. Options considered but rejected, with a short reason",
         "5. Verification command that validates the generated CLI or output",
     ))
+    if recommendation is not None:
+        lines.extend((
+            "",
+            'Start from the command in "Schema analysis and recommended options" when it',
+            "has one, and give a reason for every option you add to it, change, or remove.",
+        ))
 
     return "\n".join(lines)

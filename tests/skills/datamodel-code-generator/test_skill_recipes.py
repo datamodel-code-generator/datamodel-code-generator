@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -9,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tests.conftest import assert_exact_directory_content, create_assert_file_content
+from tests.conftest import assert_exact_directory_content, assert_output, create_assert_file_content
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -30,16 +32,18 @@ COMMON_ARGS = (
 assert_file_content = create_assert_file_content(EXPECTED)
 
 
-def _run_codegen(args: Sequence[str]) -> None:
-    """Run datamodel-codegen and fail with captured output on errors."""
+def _run_codegen(args: Sequence[str], *, cwd: Path | None = None) -> str:
+    """Run datamodel-codegen, fail with captured output on errors, and return its stdout."""
     result = subprocess.run(
         [sys.executable, "-m", "datamodel_code_generator", *args],
         capture_output=True,
         text=True,
         check=False,
+        cwd=cwd,
     )
     if result.returncode != 0:
         pytest.fail(f"datamodel-codegen failed\nargs: {args!r}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}")
+    return result.stdout
 
 
 def test_run_codegen_reports_failure(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -153,3 +157,27 @@ def test_skill_recipe_check_mode_matches_expected_output(tmp_path: Path) -> None
     _run_codegen(base_args)
     assert_file_content(output, "check_mode.py")
     _run_codegen([*base_args, "--check"])
+
+
+def test_skill_recommend_options_recipe(tmp_path: Path) -> None:
+    """The option discovery recipe prints a recommendation whose arguments are the command that generates the models."""
+    shutil.copy(FIXTURES / "openapi.yaml", tmp_path / "openapi.yaml")
+    payload = _run_codegen(
+        [
+            "--input",
+            "openapi.yaml",
+            "--input-file-type",
+            "openapi",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--target-python-version",
+            TARGET_PYTHON,
+            "--recommend-options",
+            "--output-format",
+            "json",
+        ],
+        cwd=tmp_path,
+    )
+    assert_output(payload)
+    _run_codegen([*json.loads(payload)["arguments"], "--output", "models.py", "--disable-timestamp"], cwd=tmp_path)
+    assert_output((tmp_path / "models.py").read_text(encoding="utf-8"), name="models")

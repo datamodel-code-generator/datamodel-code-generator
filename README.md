@@ -141,6 +141,11 @@ See [CLI Reference](https://datamodel-code-generator.koxudaxi.dev/cli-reference/
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
 documentation, use [`practical-py312-20261017`](https://datamodel-code-generator.koxudaxi.dev/presets/#practical-py312-20261017).
 
+**Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
+analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
+command and `pyproject.toml` block. See
+[Option recommendations](https://datamodel-code-generator.koxudaxi.dev/recommend-options/).
+
 <details>
 <summary>Input (<code>schema.json</code>)</summary>
 
