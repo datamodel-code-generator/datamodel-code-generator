@@ -467,6 +467,7 @@ Procedure for a new decision:
 | bases including the generic base class | L6, after `__apply_generic_base_class` |
 | class names | L6, after `__change_imported_model_name` |
 | imports or names written in annotations | end of `_finalize_modules`, or at render |
+| the target Python or Pydantic version a generated construct needs | any pass: read its row in `_requirements.py` (`python_target_meets`, `pydantic_target_meets`, or `model_target_meets` for the target recorded on a Pydantic model); a new construct gets a row instead of a version comparison |
 
 A decision that changes field order, defaults or required state must also run before constructor ordering reads them
 (L5 `__fix_constructor_field_ordering`, L6 `__fix_tag_opt_out_field_ordering`); when that conflicts with a row above,
@@ -600,12 +601,20 @@ paths:
   narrowly allowlisted until they can be migrated without changing the public `ParserConfig` surface.
 - Entry points project source and reference settings into a frozen `ParserSourceContext` attached to their lightweight,
   already-validated config; direct parser APIs retain typed configuration and validation.
+- What generated code requires of its target is one frozen table in `_requirements.py`: each construct's library and
+  minimum version, what an unset Pydantic target means for it, and the `typing_extensions` backport an older Python
+  target imports. The version gates of the parsers and the model backends, `PythonVersion.has_*`, the StrEnum gates of
+  presets and the CLI, the Pydantic checks of server and client targets, and the backport import constants read it
+  instead of comparing versions. Not yet rows: the Pydantic target that `base_config.implied_target_settings` implies
+  for server and client targets, the Python minimum of `_api_generation`, the PEP 695 placeholder check of the
+  built-in formatter, and the per-version type backports of `_python_type_import_registry`.
 
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
 backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
-input-model, reference, model-composition, output-model, and shared-model files are classified explicitly. The
-composition root may select concrete backends, while shared-model modules must remain neutral: they cannot import a
-concrete backend or resolve one through `sys.modules`, including module-name constants and aliases. This keeps
+input-model, reference, model-composition, output-model, shared-model, and requirement-table files are classified
+explicitly. The composition root may select concrete backends, while shared-model modules must remain neutral: they
+cannot import a concrete backend or resolve one through `sys.modules`, including module-name constants and aliases.
+The requirement table may import only the standard library, `typing_extensions` and `enums`. This keeps
 backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral module
 registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
 backend policy therefore cannot hide in the shared layer. Its legacy allowlist is keyed by file, enclosing symbol, rule,

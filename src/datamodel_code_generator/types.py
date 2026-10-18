@@ -54,7 +54,8 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion, _is_pydantic_version_at_least
+from datamodel_code_generator._requirements import pydantic_target_meets
+from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
     IMPORT_ABC_MAPPING,
     IMPORT_ABC_SEQUENCE,
@@ -171,6 +172,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import StrictTypes
 
     class DataModelFieldBase(Protocol):
@@ -1464,8 +1466,8 @@ class DataTypeManager(ABC):
         *(f"typing.Supports{name}" for name in ("Abs", "Complex", "Float", "Index", "Int", "Round")),
     })
     """Known types that a number is a value of, which check the number keywords of a number schema on it."""
-    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[str, frozenset[str]]]] = MappingProxyType({})
-    """Number keywords a type takes from an explicit target version of the output model on, by the type's path."""
+    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = MappingProxyType({})
+    """Number keywords a type takes once the target version of the output model has a construct, by the type's path."""
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = True
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = True
@@ -1750,10 +1752,8 @@ class DataTypeManager(ABC):
         if number_values:
             if path in cls.NUMBER_VALUE_TYPES:
                 return NUMBER_KEYWORDS
-            if (
-                target_model_version is not None
-                and (added := cls.TARGET_NUMBER_KEYWORDS.get(path)) is not None
-                and _is_pydantic_version_at_least(target_model_version, added[0])
+            if (added := cls.TARGET_NUMBER_KEYWORDS.get(path)) is not None and pydantic_target_meets(
+                added[0], target_model_version
             ):
                 return cls.CONSTRAINT_KEYWORDS.get(path, _NO_KEYWORDS) | added[1]
         if (keywords := cls.CONSTRAINT_KEYWORDS.get(path)) is not None:

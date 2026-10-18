@@ -139,13 +139,16 @@ def implied_target_settings(config: Any, explicit: AbstractSet[str]) -> dict[str
     with pydantic 2.14 for Pydantic dataclasses, pydantic 2.14 for any sentinel, and the decodable unions and enums of
     msgspec. A setting that was set keeps its value, which the target refuses when it cannot use it.
     """
+    from datamodel_code_generator._requirements import python_target_meets  # noqa: PLC0415
     from datamodel_code_generator.enums import DataModelType, OpenAPIScope, TargetPydanticVersion  # noqa: PLC0415
 
     implied: dict[str, Any] = {}
     scopes = list(config.openapi_scopes or (OpenAPIScope.Schemas,))
     if "openapi_scopes" not in explicit and OpenAPIScope.Api not in scopes:
         implied["openapi_scopes"] = [*scopes, OpenAPIScope.Api]
-    if "target_python_version" not in explicit and not config.target_python_version.has_strenum:
+    if "target_python_version" not in explicit and not python_target_meets(
+        "python.strenum", config.target_python_version.version_key
+    ):
         implied["target_python_version"] = PythonVersion.PY_311
     backend = DataModelType(config.output_model_type)
     switches = {

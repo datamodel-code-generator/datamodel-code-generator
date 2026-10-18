@@ -2002,11 +2002,13 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
         )
         return Exit.ERROR
 
+    from datamodel_code_generator._requirements import python_target_meets  # noqa: PLC0415
+
     if (
         config.use_specialized_enum
         and namespace.use_specialized_enum is not False  # CLI didn't disable it
         and (namespace.use_specialized_enum is True or pyproject_config.get("use_specialized_enum") is True)
-        and not config.target_python_version.has_strenum
+        and not python_target_meets("python.strenum", config.target_python_version.version_key)
     ):
         print(  # noqa: T201
             f"Error: --use-specialized-enum requires --target-python-version 3.11 or later.\n"

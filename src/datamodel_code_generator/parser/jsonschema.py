@@ -51,6 +51,7 @@ from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_s
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
+from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import DefaultPutDict, LiteralType
 from datamodel_code_generator._source import (
     YamlValue,
@@ -11978,7 +11979,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         match specialized_type:
             case _ if specialized_type is StrEnum:
-                if not self.target_python_version.has_strenum or not all(
+                if not python_target_meets("python.strenum", self.target_python_version.version_key) or not all(
                     isinstance(enum_value, str) for enum_value in enum_values
                 ):
                     return Enum, type_

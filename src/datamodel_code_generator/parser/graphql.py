@@ -23,6 +23,7 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
 from datamodel_code_generator.model.enum import SPECIALIZED_ENUM_TYPE_MATCH, Enum, EnumMemberValue
 from datamodel_code_generator.parser.base import (
@@ -315,7 +316,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
         enum_cls: type[Enum] = Enum
         if (
-            self.target_python_version.has_strenum
+            python_target_meets("python.strenum", self.target_python_version.version_key)
             and self.use_specialized_enum
             and (specialized_type := SPECIALIZED_ENUM_TYPE_MATCH.get(Types.string))
         ):

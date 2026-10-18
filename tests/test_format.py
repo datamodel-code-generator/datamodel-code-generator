@@ -211,6 +211,27 @@ def test_python_version() -> None:
     _ = PythonVersion("{}.{}".format(*sys.version_info[:2]))
 
 
+_PYTHON_VERSION_CAPABILITY_MINIMUMS: dict[str, tuple[int, int]] = {
+    "has_union_operator": (3, 10),
+    "has_kw_only_dataclass": (3, 10),
+    "has_typed_dict_non_required": (3, 11),
+    "has_string_arguments_in_builtin_generics": (3, 11),
+    "has_strenum": (3, 11),
+    "has_type_statement": (3, 12),
+    "has_typed_dict_read_only": (3, 13),
+    "has_native_deferred_annotations": (3, 14),
+    "has_typed_dict_closed": (3, 15),
+}
+
+
+@pytest.mark.parametrize("python_version", list(PythonVersion), ids=lambda version: version.value)
+def test_python_version_capabilities(python_version: PythonVersion) -> None:
+    """Every public capability of a target Python version holds from the release that added it."""
+    assert {name: getattr(python_version, name) for name in _PYTHON_VERSION_CAPABILITY_MINIMUMS} == {
+        name: python_version.version_key >= minimum for name, minimum in _PYTHON_VERSION_CAPABILITY_MINIMUMS.items()
+    }
+
+
 def test_python_version_has_native_deferred_annotations() -> None:
     """Test that has_native_deferred_annotations returns correct values for each Python version."""
     assert not PythonVersion.PY_310.has_native_deferred_annotations

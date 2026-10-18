@@ -24,6 +24,7 @@ Layer: TypeAlias = Literal[
     "output-model",
     "shared-model",
     "target",
+    "requirements",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -45,6 +46,8 @@ PARSER_BACKEND_ATTRIBUTES: Final = frozenset({
     "has_typed_dict_non_required",
     "is_pydantic_extra_field",
 })
+PARSER_BACKEND_REQUIREMENT_READERS: Final = frozenset({"_meets", "python_target_meets"})
+PARSER_BACKEND_REQUIREMENT_PREFIX: Final = "python.typed_dict_"
 REFERENCE_BACKEND_DEFINITION_MARKERS: Final = ("dataclass", "msgspec", "pydantic", "typeddict")
 REFERENCE_EXTERNAL_BACKEND_ROOTS: Final = frozenset({"msgspec"})
 DYNAMIC_ATTRIBUTE_MIN_ARGS: Final = 2
@@ -71,6 +74,8 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
 })
+_REQUIREMENTS_ALLOWED_PACKAGE_MODULES: Final = frozenset({"datamodel_code_generator.enums"})
+_REQUIREMENTS_ALLOWED_EXTERNAL_ROOTS: Final = frozenset({*sys.stdlib_module_names, "typing_extensions"})
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
     "enum.py",
@@ -256,6 +261,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "output-model": "datamodel_code_generator.model.fixture",
             "shared-model": "datamodel_code_generator.model.shared_fixture",
             "target": "datamodel_code_generator.target_fixture",
+            "requirements": "datamodel_code_generator.requirements_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -281,6 +287,16 @@ def _concrete_backend_module(target: str) -> str | None:
     if parts[:2] != prefix or len(parts) < _BACKEND_MODULE_PART_COUNT or parts[2] not in CONCRETE_BACKEND_ROOTS:
         return None
     return ".".join((*prefix, parts[2]))
+
+
+def _is_requirements_dependency(target: str) -> bool:
+    """Return whether the requirement table may import a module: stdlib, typing_extensions, or enums."""
+    root = target.partition(".")[0]
+    if root == "datamodel_code_generator":
+        return any(
+            target == module or target.startswith(f"{module}.") for module in _REQUIREMENTS_ALLOWED_PACKAGE_MODULES
+        )
+    return root in _REQUIREMENTS_ALLOWED_EXTERNAL_ROOTS
 
 
 def _is_reference_backend_import(target: str) -> bool:
@@ -534,7 +550,10 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 continue
             self._record_import_alias(alias.asname or alias.name, module)
             self._check_import(
-                node, target if self.layer in {"reference", "target"} or alias.name.startswith("_") else module
+                node,
+                target
+                if self.layer in {"reference", "target", "requirements"} or alias.name.startswith("_")
+                else module,
             )
 
     def visit_Call(self, node: ast.Call) -> None:
@@ -543,7 +562,9 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         dynamic_target = None
         if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
             dynamic_target = self._resolved_dynamic_target(node, self._resolved_string(argument))
-        if (
+        if dynamic_target and self.layer == "requirements":
+            self._check_import(node, dynamic_target)
+        elif (
             dynamic_target
             and not self._check_target_boundary(node, dynamic_target)
             and self.layer in {"parser", "config", "reference", "shared-model"}
@@ -591,6 +612,20 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             )
 
         self._check_entrypoint_private_call(node, chain)
+
+        if (
+            self.layer == "parser"
+            and chain[-1:]
+            and chain[-1] in PARSER_BACKEND_REQUIREMENT_READERS
+            and (construct := self._resolved_string(self._requirement_construct_argument(node))) is not None
+            and construct.startswith(PARSER_BACKEND_REQUIREMENT_PREFIX)
+        ):
+            self._add(
+                node,
+                "backend-semantic-inspection",
+                construct,
+                "parser code must query a neutral DataModel or DataModelFieldBase capability",
+            )
 
         if (
             chain
@@ -830,6 +865,12 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             return node.args[0]
         return next((keyword.value for keyword in node.keywords if keyword.arg == "name"), None)
 
+    @staticmethod
+    def _requirement_construct_argument(node: ast.Call) -> ast.expr | None:
+        if node.args:
+            return node.args[0]
+        return next((keyword.value for keyword in node.keywords if keyword.arg == "construct"), None)
+
     def _is_sys_modules_registry(self, node: ast.AST) -> bool:
         match node:
             case ast.Name(id=name):
@@ -984,6 +1025,15 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         return False
 
     def _check_import(self, node: ast.AST, target: str) -> None:
+        if self.layer == "requirements" and not _is_requirements_dependency(target):
+            self._add(
+                node,
+                "requirements-import",
+                target,
+                "the requirement table is a leaf: import only the standard library, typing_extensions and "
+                "datamodel_code_generator.enums",
+            )
+            return
         if self.layer == "reference" and _is_reference_backend_import(target):
             self._add(
                 node,
@@ -1073,6 +1123,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
+        case ("_requirements.py",):
+            layer = "requirements"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

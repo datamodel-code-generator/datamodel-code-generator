@@ -12,6 +12,8 @@ from functools import lru_cache
 from itertools import starmap
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._requirements import backport_path
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
@@ -264,7 +266,7 @@ IMPORT_OPTIONAL = Import.from_full_path("typing.Optional")
 IMPORT_LITERAL = Import.from_full_path("typing.Literal")
 IMPORT_TUPLE = Import.from_full_path("typing.Tuple")
 IMPORT_TYPE_ALIAS = Import.from_full_path("typing.TypeAlias")
-IMPORT_TYPE_ALIAS_TYPE = Import.from_full_path("typing_extensions.TypeAliasType")
+IMPORT_TYPE_ALIAS_TYPE = Import.from_full_path(backport_path("python.type_statement"))
 IMPORT_SEQUENCE = Import.from_full_path("typing.Sequence")
 IMPORT_FROZEN_SET = Import.from_full_path("typing.FrozenSet")
 IMPORT_MAPPING = Import.from_full_path("typing.Mapping")

@@ -18,6 +18,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
 )
 from datamodel_code_generator._registry_render import _render_registry_json
+from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import LiteralType
 from datamodel_code_generator.base_config import BaseGenerateConfig
 from datamodel_code_generator.cli_options import CLI_OPTION_META
@@ -270,7 +271,9 @@ class PresetOptionGroup:
             return False
         if self.output_model_types and context.output_model_type not in self.output_model_types:
             return False
-        return not self.requires_python_strenum or context.target_python_version.has_strenum
+        return not self.requires_python_strenum or python_target_meets(
+            "python.strenum", context.target_python_version.version_key
+        )
 
 
 def _merge_preset_groups(groups: tuple[PresetOptionGroup, ...]) -> tuple[PresetConfigItem, ...]:
@@ -638,7 +641,9 @@ def _standard_option_groups_for_target(
     target_python_version: PythonVersion,
 ) -> tuple[PresetOptionGroup, ...]:
     return tuple(
-        group for group in option_groups if not group.requires_python_strenum or target_python_version.has_strenum
+        group
+        for group in option_groups
+        if not group.requires_python_strenum or python_target_meets("python.strenum", target_python_version.version_key)
     )
 
 

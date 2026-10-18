@@ -26,6 +26,7 @@ from typing_extensions import Self
 from datamodel_code_generator import Error, cached_path_exists
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
+from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
@@ -2171,7 +2172,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Prepare the output's annotation representation for the target runtime."""
         if key := cls.TYPED_EXTRA_PLAIN_ANNOTATION_TEMPLATE_DATA_KEY:
             extra_template_data.setdefault(ALL_MODEL, {})[key] = (
-                target_python_version.has_native_deferred_annotations or not use_deferred_annotations
+                python_target_meets("python.deferred_annotations", target_python_version.version_key)
+                or not use_deferred_annotations
             )
 
     @classmethod
@@ -2186,13 +2188,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if use_total_false and cls.SUPPORTS_TYPED_DICT_TOTAL_FALSE:
             data = extra_template_data[ALL_MODEL]
             data["use_total_false_for_typed_dict"] = True
-            if not target_python_version.has_typed_dict_non_required:
+            if not python_target_meets("python.typed_dict_required", target_python_version.version_key):
                 data["use_total_false_typeddict_backport"] = True
 
     @staticmethod
     def requires_extra_items_backport(target_python_version: PythonVersion) -> bool:
         """Preserve the historic extra-item template flag for custom output metadata."""
-        return not target_python_version.has_typed_dict_closed
+        return not python_target_meets("python.typed_dict_closed", target_python_version.version_key)
 
     @staticmethod
     def resolve_dataclass_arguments(
@@ -2504,7 +2506,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return reuse_model
 
     def _set_deprecated_decorator(self) -> None:
-        """Add a class-level deprecated decorator when schema metadata requires it."""
+        """Add a class-level deprecated decorator when schema metadata requires it.
+
+        Every target imports the decorator from its backport.
+        """
         if not self.extra_template_data.get("deprecated"):
             return
         from datamodel_code_generator._python_decorator import is_named_python_decorator  # noqa: PLC0415
@@ -2512,7 +2517,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if not any(is_named_python_decorator(decorator, "deprecated") for decorator in self.decorators):
             message = f"{self.class_name} is deprecated."
             self.decorators = [*self.decorators, f"@deprecated({message!r})"]
-        self._additional_imports.append(Import.from_full_path("typing_extensions.deprecated"))
+        self._additional_imports.append(Import.from_full_path(backport_path("python.deprecated_decorator")))
         self.clear_imports_cache()
 
     def replace_children_in_models(self, models: list[DataModel], new_ref: Reference) -> None:

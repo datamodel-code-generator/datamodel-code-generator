@@ -10,6 +10,7 @@ import sys
 from typing import TYPE_CHECKING, NamedTuple
 
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._requirements import pydantic_target_meets, python_target_meets
 
 from .base import UNDEFINED, ConstraintsBase, DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 
@@ -56,7 +57,7 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
     def get_auxiliary_model_types() -> tuple[type[DataModel], type[DataModel], type[DataModel]]:
         from . import scalar, type_alias, union  # noqa: PLC0415
 
-        if target_python_version.has_type_statement:
+        if python_target_meets("python.type_statement", target_python_version.version_key):
             return type_alias.TypeStatement, scalar.DataTypeScalarTypeStatement, union.DataTypeUnionTypeStatement
         if use_type_alias_type or data_model_type in pydantic_v2_models:
             return type_alias.TypeAliasTypeBackport, scalar.DataTypeScalarTypeBackport, union.DataTypeUnionTypeBackport
@@ -93,14 +94,9 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
         case DataModelType.PydanticV2Dataclass:
             from . import pydantic_v2  # noqa: PLC0415
             from .pydantic_v2 import dataclass as pydantic_v2_dataclass  # noqa: PLC0415
-            from .pydantic_v2.version import (  # noqa: PLC0415
-                PYDANTIC_V2_DATACLASS_ALIAS_MINIMUM,
-                PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM,
-                target_supports,
-            )
 
             type_alias_class, scalar_class, union_class = get_auxiliary_model_types()
-            if not target_supports(target_pydantic_version, PYDANTIC_V2_DATACLASS_TYPE_ALIAS_MINIMUM):
+            if not pydantic_target_meets("pydantic.dataclass_type_alias", target_pydantic_version):
                 from .pydantic_v2.type_alias import TypeAlias as CompatibleTypeAlias  # noqa: PLC0415
 
                 type_alias_class = CompatibleTypeAlias
@@ -108,7 +104,7 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
                 data_model=pydantic_v2_dataclass.DataClass,
                 root_model=type_alias_class,
                 field_model=pydantic_v2_dataclass.DataModelField
-                if target_supports(target_pydantic_version, PYDANTIC_V2_DATACLASS_ALIAS_MINIMUM)
+                if pydantic_target_meets("pydantic.dataclass_alias", target_pydantic_version)
                 else pydantic_v2_dataclass.DataModelFieldBackport,
                 data_type_manager=pydantic_v2.DataTypeManager,
                 dump_resolve_reference_action=None,
@@ -133,9 +129,9 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
             from .types import DataTypeManager  # noqa: PLC0415
 
             type_alias_class, scalar_class, union_class = get_auxiliary_model_types()
-            if target_python_version.has_typed_dict_read_only:
+            if python_target_meets("python.typed_dict_read_only", target_python_version.version_key):
                 typed_dict_field_model: type[DataModelFieldBase] = typed_dict.DataModelField
-            elif target_python_version.has_typed_dict_non_required:
+            elif python_target_meets("python.typed_dict_not_required", target_python_version.version_key):
                 typed_dict_field_model = typed_dict.DataModelFieldReadOnlyBackport
             else:
                 typed_dict_field_model = typed_dict.DataModelFieldBackport

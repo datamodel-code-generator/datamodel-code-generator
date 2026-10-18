@@ -5,6 +5,7 @@ Provides pre-defined Import objects for Pydantic v2 types (ConfigDict, AwareDate
 
 from __future__ import annotations
 
+from datamodel_code_generator._requirements import form_path
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import _pydantic_imports
 
@@ -26,7 +27,7 @@ IMPORT_BASE64_ENCODER = Import.from_full_path("pydantic.Base64Encoder")
 IMPORT_ENCODED_BYTES = Import.from_full_path("pydantic.EncodedBytes")
 IMPORT_SERIALIZE_AS_ANY = Import.from_full_path("pydantic.SerializeAsAny")
 IMPORT_MISSING = Import.from_full_path("pydantic.experimental.missing_sentinel.MISSING")
-IMPORT_PYDANTIC_MISSING = Import.from_full_path("pydantic.MISSING")
+IMPORT_PYDANTIC_MISSING = Import.from_full_path(form_path("pydantic.missing_sentinel"))
 IMPORT_PYDANTIC_DATACLASS = Import.from_full_path("pydantic.dataclasses.dataclass")
 IMPORT_ROOT_MODEL = Import.from_full_path("pydantic.RootModel")
 IMPORT_FIELD_VALIDATOR = Import.from_full_path("pydantic.field_validator")

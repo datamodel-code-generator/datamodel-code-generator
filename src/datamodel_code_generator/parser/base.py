@@ -61,6 +61,7 @@ from datamodel_code_generator._internal_utils import (
 from datamodel_code_generator._naming_hint import collecting_class_names
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
+from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets, python_target_meets
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -77,7 +78,6 @@ from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import (
     DefaultValueType,
     StrictTypes,
-    _is_pydantic_version_at_least,
     _pydantic_version_key,
 )
 from datamodel_code_generator.imports import (
@@ -197,7 +197,6 @@ _TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
 _SOURCE_REFERENCE_PATH_KEY: Final = "_source_reference_path"
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
-_TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM: Final = "2.10"
 
 
 @dataclass(frozen=True, slots=True)
@@ -6184,7 +6183,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not users:
             return False
         index = positions.get(model.path)
-        writes_strings = use_deferred_annotations and not self.target_python_version.has_native_deferred_annotations
+        writes_strings = use_deferred_annotations and not python_target_meets(
+            "python.deferred_annotations", self.target_python_version.version_key
+        )
         assigned = (
             model.field_binds_class_attribute(field)
             or (
@@ -6772,7 +6773,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
         minimums: dict[str, str] = {}
         for minimum in sorted(
-            {minimum for minimum, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()},
+            {
+                REQUIREMENTS[construct].minimum
+                for construct, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()
+            },
             key=_pydantic_version_key,
         ):
             taken = keywords_for(minimum)
@@ -7707,7 +7711,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ) and self.data_model_type.REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS:
             return False
         return bool(
-            self.target_python_version.has_native_deferred_annotations or (with_import and not disable_future_imports)
+            python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
+            or (with_import and not disable_future_imports)
         )
 
     def _has_forward_references(self, models: list[DataModel]) -> bool:  # noqa: PLR6301
@@ -7752,7 +7757,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> str:
         """Return future imports required by a single generated module."""
         if not (
-            self.target_python_version.has_native_deferred_annotations
+            python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
             and self._requires_explicit_deferred_annotations(ctx.models, config)
         ):
             return future_imports_str
@@ -7782,7 +7787,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if (
             with_import
             and not disable_future_imports
-            and not self.target_python_version.has_native_deferred_annotations
+            and not python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
         ):
             self.imports.append(IMPORT_ANNOTATIONS)
 
@@ -8352,12 +8357,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             models,
             self.pydantic_v2_root_model_type,
             use_deferred_annotations=use_deferred_annotations,
-            defers_recursive_containers=(target := self.target_pydantic_version) is None
-            or _is_pydantic_version_at_least(target, _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM),
+            defers_recursive_containers=pydantic_target_meets(
+                "pydantic.type_alias_module_namespace", self.target_pydantic_version
+            ),
             generation_store=self.generation_store,
             can_retain_cache=can_retain_cache,
             hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
-            use_typing_generics=not self.target_python_version.has_string_arguments_in_builtin_generics,
+            use_typing_generics=not python_target_meets(
+                "python.builtin_generic_strings", self.target_python_version.version_key
+            ),
         )
         if not unused_models:
             live_models = models
