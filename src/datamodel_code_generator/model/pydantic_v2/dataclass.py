@@ -47,7 +47,6 @@ from datamodel_code_generator.model.pydantic_v2.version import (
     model_target_supports,
 )
 from datamodel_code_generator.python_literal import represent_python_value
-from datamodel_code_generator.types import admits_none
 
 has_field_assignment = _dataclass_module.has_field_assignment
 _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY = "_safe_config_items"
@@ -61,7 +60,7 @@ def _writes_dataclass_default(field: DataModelFieldBase) -> bool:
     return (
         (not field.required or field.use_default_with_required)
         and not getattr(field, "has_default_factory_in_field", False)
-        and not (field.should_strip_default_none() and not admits_none(field.data_type))
+        and not (field.should_strip_default_none() and not field.data_type.admits_none)
     )
 
 

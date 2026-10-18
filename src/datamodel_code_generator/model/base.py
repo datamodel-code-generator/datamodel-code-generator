@@ -47,7 +47,6 @@ from datamodel_code_generator.types import (
     Nullable,
     chain_as_tuple,
     get_optional_type,
-    reference_source_nullable,
 )
 
 if TYPE_CHECKING:
@@ -1191,7 +1190,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         ):
             return False
 
-        if reference_source_nullable(data_type):
+        if data_type.names_nullable_model:
             return True
 
         match self.nullable:

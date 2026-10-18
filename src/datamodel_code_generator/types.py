@@ -530,40 +530,7 @@ class Nullable(Protocol):
         raise NotImplementedError
 
 
-def reference_source_nullable(data_type: DataType) -> bool:
-    """Return whether the type names a model that admits null and is not a type alias."""
-    return (
-        (reference := data_type.reference) is not None
-        and not getattr(source := reference.source, "is_alias", False)
-        and bool(getattr(source, "nullable", False))
-    )
-
-
-def _reference_adds_null(data_type: DataType) -> bool:
-    """Return whether the type hint adds the None of the nullable model the type names."""
-    return _NULL_STRIPPED_DATA_TYPE_KEY not in data_type.__dict__ and reference_source_nullable(data_type)
-
-
-def admits_none(data_type: DataType) -> bool:
-    """Return whether the rendered type hint includes None, without the writes that rendering makes.
-
-    The None is the type's own, that of the nullable model it names, or that of a union member whose hint
-    includes None, which the union takes over when it is rendered.
-    """
-    if data_type.is_optional or _reference_adds_null(data_type):
-        return True
-    return (
-        not data_type.is_tuple
-        and data_type.is_union
-        and not data_type.preserve_union_member_order
-        and any(
-            (member.type == NONE and not member.data_types) or (member.type != ANY and admits_none(member))
-            for member in data_type.data_types
-        )
-    )
-
-
-class DataType(_BaseModel):
+class DataType(_BaseModel):  # noqa: PLR0904
     """Represents a type in generated code with imports and references."""
 
     model_config = ConfigDict(
@@ -1093,8 +1060,40 @@ class DataType(_BaseModel):
             type_ = self._wrap_discriminator_type_hint(type_, discriminator)
         return type_
 
+    @property
+    def names_nullable_model(self) -> bool:
+        """Return whether the type names a model that admits null and is not a type alias."""
+        return (
+            (reference := self.reference) is not None
+            and not getattr(source := reference.source, "is_alias", False)
+            and bool(getattr(source, "nullable", False))
+        )
+
+    def _reference_adds_null(self) -> bool:
+        """Return whether the type hint adds the None of the nullable model the type names."""
+        return _NULL_STRIPPED_DATA_TYPE_KEY not in self.__dict__ and self.names_nullable_model
+
+    @property
+    def admits_none(self) -> bool:
+        """Return whether the rendered type hint includes None, without the writes that rendering makes.
+
+        The None is the type's own, that of the nullable model it names, or that of a union member whose hint
+        includes None, which the union takes over when it is rendered.
+        """
+        if self.is_optional or self._reference_adds_null():
+            return True
+        return (
+            not self.is_tuple
+            and self.is_union
+            and not self.preserve_union_member_order
+            and any(
+                (member.type == NONE and not member.data_types) or (member.type != ANY and member.admits_none)
+                for member in self.data_types
+            )
+        )
+
     def _apply_nullable_from_reference(self) -> None:
-        if self.is_optional or not _reference_adds_null(self):
+        if self.is_optional or not self._reference_adds_null():
             return
         self.is_optional = True
         self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True

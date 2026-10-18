@@ -306,7 +306,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `__set_one_literal_on_default` | required one-literal fields | default, required, nullable |
 | process | `refresh_field_config` (model) | field state | backend field config |
 | process | `__rename_fields_hiding_types` | same-named fields and types of the model family | field names or type names |
-| process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:admits_none`) | field order, constructor adjustments |
+| process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:DataType.admits_none`) | field order, constructor adjustments |
 | process | `__remove_overridden_models` | model-level `--type-overrides` | removes overridden models |
 | finalize | `__apply_type_overrides` | `--type-overrides` | field types; model-level overrides edit nodes on fields and base classes in place |
 | finalize | `unbind_fields` (model) | hidden type names | field binding |
@@ -344,7 +344,7 @@ that the type names; `types.py:DataType._render_union_type_hint` makes a union o
 None; `model/base.py:DataModelFieldBase._normalize_data_type_import_state`, which import collection runs, applies the
 first write and makes a union optional for a `null` member; and `parser/base.py:_flatten_union_members` (L5
 finalize) moves member nullability onto the union. Import collection already runs in L3 deduplication, so
-`is_optional` read before L7 depends on what ran first. A decision before L7 reads `types.py:admits_none(data_type)`,
+`is_optional` read before L7 depends on what ran first. A decision before L7 reads `types.py:DataType.admits_none`,
 which computes the rendered nullability without writing it.
 
 ### Hidden Couplings
@@ -394,7 +394,7 @@ collapse replacing a member of a shared list.
 | field order | end of the L5 loop (discriminator tags append fields to variants of any module); initial order: L1 construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`); msgspec keyword-only: L6 `__fix_tag_opt_out_field_ordering` |
 | field names | the model's own L5 `__rename_fields_hiding_types` |
 | field types | end of the L5 loop (collapse, overrides and discriminator tags reach every module; overrides replace the module's own field types in its L5 finalize, after constructor ordering); pydantic v2 type-alias bodies: L6 `__prepare_type_alias_fields` |
-| rendered nullability of a type | end of the L5 loop, like the field types it is computed from with `types.py:admits_none`; L7 writes it into `is_optional` (see L7). Known gap: the module's own `__apply_type_overrides` replaces field types after `__fix_constructor_field_ordering` has read it |
+| rendered nullability of a type | end of the L5 loop, like the field types it is computed from with `types.py:DataType.admits_none`; L7 writes it into `is_optional` (see L7). Known gap: the module's own `__apply_type_overrides` replaces field types after `__fix_constructor_field_ordering` has read it |
 | set vs list containers | end of the L5 loop (collapse and overrides can still replace item types) |
 | required, nullable | end of the L5 loop (discriminator tags, one-literal defaults, collapse `process_const()`); msgspec: L6 |
 | default values | the model's own L5 `__set_validate_default_on_fields`, unless another module's discriminator pass changes it; default-factory metadata: L6 `_set_nested_model_default_factory_metadata` |
@@ -541,7 +541,7 @@ it survives each of these steps is not verified.
   a default. The L1 construction key reads only facts known when the model is built, and a `None` default that the
   option may keep counts as no default there, because rendered nullability is final only at L7. L5
   `__fix_constructor_field_ordering` decides with the template rule (`FIELD_ASSIGNMENT_CHECKER`, through
-  `admits_none`) and moves a kept `None` after the fields without a default, where the output stays valid whichever
+  `DataType.admits_none`) and moves a kept `None` after the fields without a default, where the output stays valid whichever
   way the `= None` resolves at render. msgspec reads one predicate in both places, as a Struct never strips its
   defaults. The module's own `__apply_type_overrides` still runs after ordering: an override that replaces the type of
   a kept `None` can reorder working output, or leave a field without a default after another kept `None`. Applying
