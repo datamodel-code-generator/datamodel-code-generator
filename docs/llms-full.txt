@@ -60788,14 +60788,14 @@ A decision that changes field order, defaults or required state must also run be
 step 3 applies.
 
 **One home per decision.** A decision that several passes or backends need is one pure function in
-`model/_decisions/` over a frozen record of the facts it reads; the adapter that builds the record is the only code
-that reads the live objects, and callers are to go through it (readers of the stored `is_optional` move in a later
-step). `scripts/check_architecture_boundaries.py` keeps the
-package free of concrete backends.
+`model/_decisions/` over the immutable facts it reads, passed by keyword (or as a frozen record); the adapter that
+reads those facts is the only code that reads the live objects, and callers are to go through it (readers of the
+stored `is_optional` move in a later step). `scripts/check_architecture_boundaries.py` keeps the package free of
+concrete backends.
 
 | Decision | Pure core | Adapters |
 | --- | --- | --- |
-| whether a type's rendered hint, or the annotation a field writes around it, includes None | `model/_decisions/nullability.py`: `rendered_nullability(NullabilityFacts)`, `field_renders_none(FieldNullabilityFacts)` | `types.py:DataType.admits_none`; `model/base.py:DataModelFieldBase._field_null_source`; writes: `types.py:DataType._materialize_render_state` (see L7) |
+| whether a type's rendered hint, or the annotation a field writes around it, includes None | `model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, `field_renders_none` | `types.py:DataType.admits_none`; `model/base.py:DataModelFieldBase._field_null_source`; writes: `types.py:DataType._materialize_render_state` (see L7) |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it

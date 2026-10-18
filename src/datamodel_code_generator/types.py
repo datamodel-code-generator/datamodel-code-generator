@@ -175,7 +175,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.enums import StrictTypes
-    from datamodel_code_generator.model._decisions.nullability import NullabilityFacts
+    from datamodel_code_generator.model._decisions.nullability import NullSource
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -507,6 +507,14 @@ def get_optional_type(type_: str, use_union_operator: bool) -> str:  # noqa: FBT
     if use_union_operator:
         return f"{type_} | {NONE}"
     return f"{OPTIONAL_PREFIX}{type_}]"
+
+
+@cache
+def _nullability_core() -> ModuleType:
+    """Return the rendered nullability decision, imported once; ``model`` imports this module, so not at its top."""
+    from datamodel_code_generator.model._decisions import nullability  # noqa: PLC0415
+
+    return nullability
 
 
 def is_data_model_field(obj: object) -> TypeIs[DataModelFieldBase]:
@@ -1084,33 +1092,28 @@ class DataType(_BaseModel):  # noqa: PLR0904
         The None is the type's own, that of the nullable model it names, or that of a union member whose hint
         includes None, which the union takes over when it is rendered (``rendered_nullability``).
         """
-        from datamodel_code_generator.model._decisions.nullability import rendered_nullability  # noqa: PLC0415
+        return self._rendered_null_source() is not None
 
-        return rendered_nullability(self._nullability_facts()) is not None
-
-    def _nullability_facts(self) -> NullabilityFacts:
-        """Read the facts of the rendered nullability decision from the type and, for a union, from its members."""
-        from datamodel_code_generator.model._decisions.nullability import (  # noqa: PLC0415
-            MemberNullabilityFacts,
-            NullabilityFacts,
-        )
-
-        return NullabilityFacts(
-            self.is_optional,
-            self._reference_adds_null(),
-            self.is_tuple,
-            self.preserve_union_member_order,
-            tuple(
-                MemberNullabilityFacts(
-                    member.type == NONE and not member.data_types,
-                    member.type == ANY,
-                    member._nullability_facts(),  # noqa: SLF001
-                )
-                for member in self.data_types
+    def _rendered_null_source(self) -> NullSource | None:
+        """Return why the rendered type hint includes None, reading the members of a union only when they decide."""
+        core = _nullability_core()
+        members = self.data_types
+        return core.rendered_nullability(
+            own=self.is_optional,
+            reference=self._reference_adds_null(),
+            member_nulls=(member._gives_member_null(core) for member in members)  # noqa: SLF001
+            if core.takes_member_null(
+                is_tuple=self.is_tuple,
+                keeps_member_order=self.preserve_union_member_order,
+                member_count=len(members),
             )
-            if self.is_union
             else (),
         )
+
+    def _gives_member_null(self, core: ModuleType) -> bool:
+        """Return whether the type, as a member of a union, gives the union its None (``member_null``)."""
+        verdict = core.member_null(is_none=self.type == NONE and not self.data_types, is_any=self.type == ANY)
+        return self._rendered_null_source() is not None if verdict is None else verdict
 
     def _materialize_render_state(self, write: _RenderStateWrite, /) -> None:
         """Write what rendering decides about the type: the writer of its render-time state on shared nodes.
@@ -1124,11 +1127,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         match write:
             case "reference-null":
-                from datamodel_code_generator.model._decisions.nullability import (  # noqa: PLC0415
-                    rendered_nullability,
-                )
-
-                if rendered_nullability(self._nullability_facts()) != "reference":
+                if not (reference := self._reference_adds_null()) or (
+                    _nullability_core().rendered_nullability(own=self.is_optional, reference=reference) != "reference"
+                ):
                     return
                 self.is_optional = True
                 self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True

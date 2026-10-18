@@ -1,105 +1,87 @@
 """Rendered nullability: whether a type's hint, or the annotation a field writes around it, includes ``None``.
 
-The adapters ``types.py:DataType.admits_none`` and ``model/base.py:DataModelFieldBase._field_null_source`` build the
-fact records from the live objects; ``types.py:DataType._materialize_render_state`` writes what rendering decides.
+Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters
+``types.py:DataType.admits_none`` and ``model/base.py:DataModelFieldBase._field_null_source`` read the facts from the
+live objects; ``types.py:DataType._materialize_render_state`` writes what rendering decides.
 """
 
 from __future__ import annotations
 
-from typing import Literal, NamedTuple, TypeAlias, final
+from typing import TYPE_CHECKING, Literal, TypeAlias
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 __all__ = [
     "FieldNullSource",
-    "FieldNullabilityFacts",
-    "MemberNullabilityFacts",
     "NullSource",
-    "NullabilityFacts",
     "field_renders_none",
+    "member_null",
     "rendered_nullability",
+    "takes_member_null",
 ]
 
 NullSource: TypeAlias = Literal["own", "reference", "member"]
 FieldNullSource: TypeAlias = Literal["reference", "nullable", "type-has-null", "fall-back"]
 
 
-@final
-class NullabilityFacts(NamedTuple):
-    """The facts that decide whether the rendered hint of a type includes None.
-
-    ``own`` is the type's ``is_optional`` as written so far. ``reference`` tells that the type names a nullable model
-    that is not a type alias and that its None was not stripped. ``members`` holds the members of a union, and is
-    empty for any other type.
-    """
-
-    own: bool
-    reference: bool
-    is_tuple: bool
-    keeps_member_order: bool
-    members: tuple[MemberNullabilityFacts, ...]
-
-
-@final
-class MemberNullabilityFacts(NamedTuple):
-    """A union member: whether it is the bare None type, whether it renders as ``Any``, and its own facts."""
-
-    is_none: bool
-    is_any: bool
-    facts: NullabilityFacts
-
-
-@final
-class FieldNullabilityFacts(NamedTuple):
-    """The facts that decide whether a field writes None around the hint of its type.
-
-    ``hint_has_none`` tells that the type's hint includes None already (its ``is_optional``, unless it renders
-    ``Any``). ``pending_reference_null`` tells that the type names a nullable model whose None no rendered hint has
-    written yet, which only import collection that skips rendering the hint reads. ``fall_back_to_nullable`` is the
-    output backend's answer for an optional field without ``nullable``.
-    """
-
-    hint_has_none: bool
-    has_default_factory: bool
-    nullable: bool | None
-    required: bool
-    type_has_null: bool
-    fall_back_to_nullable: bool
-    pending_reference_null: bool = False
-
-
-def rendered_nullability(facts: NullabilityFacts, /) -> NullSource | None:
+def rendered_nullability(*, own: bool, reference: bool, member_nulls: Iterable[bool] = ()) -> NullSource | None:
     """Return why the rendered hint of a type includes None, or None when it does not.
 
-    A union that is not a tuple and does not keep its member order takes over the None of a member that is the bare
-    None type or whose own hint includes None, except a member rendered as ``Any``, which keeps no None.
+    ``own`` is the type's ``is_optional`` as written so far. ``reference`` tells that the type names a nullable model
+    that is not a type alias and that its None was not stripped. ``member_nulls`` tells, for each member of a union
+    that takes over the None of its members (``takes_member_null``), whether the member gives one (``member_null``);
+    it is read only when neither the type nor its model gives the None, so a caller that only asks which of those two
+    gives it leaves it out.
     """
-    if facts.own:
+    if own:
         return "own"
-    if facts.reference:
+    if reference:
         return "reference"
-    if (
-        not facts.is_tuple
-        and not facts.keeps_member_order
-        and len(facts.members) > 1
-        and any(
-            member.is_none or (not member.is_any and rendered_nullability(member.facts) is not None)
-            for member in facts.members
-        )
-    ):
+    if any(member_nulls):
         return "member"
     return None
 
 
-def field_renders_none(facts: FieldNullabilityFacts, /) -> FieldNullSource | None:
+def takes_member_null(*, is_tuple: bool, keeps_member_order: bool, member_count: int) -> bool:
+    """Return whether a type takes over the None of its members: a union that is no tuple and keeps no member order."""
+    return member_count > 1 and not is_tuple and not keeps_member_order
+
+
+def member_null(*, is_none: bool, is_any: bool) -> bool | None:
+    """Return whether a union member gives the union its None, or None when the member's own rendered hint decides.
+
+    The bare None type gives it, and a member rendered as ``Any`` keeps none.
+    """
+    return True if is_none else False if is_any else None
+
+
+def field_renders_none(  # noqa: PLR0913
+    *,
+    hint_has_none: bool,
+    has_default_factory: bool,
+    nullable: bool | None,
+    required: bool,
+    type_has_null: bool | None,
+    fall_back_to_nullable: bool,
+    pending_reference_null: bool = False,
+) -> FieldNullSource | None:
     """Return why a field writes None around the hint of its type, or None when it does not.
 
-    A default factory always gives a value, and a hint that includes None already keeps it as it is.
+    ``hint_has_none`` tells that the type's hint includes None already (its ``is_optional``, unless it renders
+    ``Any``); a default factory always gives a value, and such a hint keeps its None as it is.
+    ``pending_reference_null`` tells that the type names a nullable model whose None no rendered hint has written yet,
+    which only import collection that skips rendering the hint reads. A ``nullable`` that is not a bool counts as
+    not nullable. Without ``nullable``, a required field asks whether its schema type admits null (``type_has_null``)
+    and an optional field asks its output backend (``fall_back_to_nullable``), so a caller passes only the one that
+    applies.
     """
-    if facts.has_default_factory or facts.hint_has_none:
+    if has_default_factory or hint_has_none:
         return None
-    if facts.pending_reference_null:
+    if pending_reference_null:
         return "reference"
-    if facts.nullable is not None:
-        return "nullable" if facts.nullable else None
-    if facts.required:
-        return "type-has-null" if facts.type_has_null else None
-    return "fall-back" if facts.fall_back_to_nullable else None
+    if nullable is not None:
+        return "nullable" if nullable is True else None
+    if required:
+        return "type-has-null" if type_has_null else None
+    return "fall-back" if fall_back_to_nullable else None

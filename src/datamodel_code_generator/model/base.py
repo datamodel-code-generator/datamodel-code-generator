@@ -34,7 +34,7 @@ from datamodel_code_generator.imports import (
     IMPORT_UNION,
     Import,
 )
-from datamodel_code_generator.model._decisions.nullability import FieldNullabilityFacts, field_renders_none
+from datamodel_code_generator.model._decisions.nullability import field_renders_none
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
     _normalize_string,
@@ -805,17 +805,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         pending_reference_null: bool = False,
     ) -> FieldNullSource | None:
         """Return why the field writes None around the hint of ``data_type`` (``field_renders_none``)."""
-        nullable = self.nullable
+        required = self.required
         return field_renders_none(
-            FieldNullabilityFacts(
-                data_type.is_optional and data_type.type != ANY,
-                self.has_default_factory,
-                None if nullable is None else nullable is True,
-                self.required,
-                bool(self.type_has_null),
-                bool(self.fall_back_to_nullable),
-                pending_reference_null,
-            )
+            hint_has_none=data_type.is_optional and data_type.type != ANY,
+            has_default_factory=self.has_default_factory,
+            nullable=self.nullable,
+            required=required,
+            type_has_null=required and self.type_has_null,
+            fall_back_to_nullable=not required and self.fall_back_to_nullable,
+            pending_reference_null=pending_reference_null,
         )
 
     @property
