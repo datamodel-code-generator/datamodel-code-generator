@@ -364,9 +364,6 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     "openapi/allof_array_ref_override.yaml::components.schemas.DataType": (
         "schema requires a property absent from properties, so the generated model has no field to dump"
     ),
-    "openapi/issue_2953.yaml::components.schemas.DataType": (
-        "schema requires a property absent from properties, so the generated model has no field to dump"
-    ),
 }
 PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN_VERSION = "2.5.0"
 PYDANTIC_V2_0_RUNTIME_MAX_VERSION = "2.1.0"

@@ -15,6 +15,7 @@
   },
   {
     "name": "external_indirect",
+    "config_file": "external_later_config.json",
     "schema": "indirect",
     "config": {
       "First": {
@@ -29,6 +30,7 @@
   },
   {
     "name": "external_earlier",
+    "config_file": "external_later_config.json",
     "schema": "earlier",
     "config": {
       "First": {
@@ -43,6 +45,7 @@
   },
   {
     "name": "inherited_restrictive",
+    "config_file": "external_later_config.json",
     "schema": "single",
     "config": {
       "First": {

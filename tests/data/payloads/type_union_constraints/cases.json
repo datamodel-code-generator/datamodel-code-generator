@@ -43,13 +43,15 @@
   },
   "array_minimum_root": {
     "array_minimum_root_native.txt": "modeled_root_native.txt",
-    "array_minimum_root_0_runtime.txt": "modeled_root_0_runtime.txt"
+    "array_minimum_root_0_runtime.txt": "modeled_root_0_runtime.txt",
+    "payload": "array_items_root.json"
   },
   "array_minimum_field": {
     "array_minimum_field_native.txt": "modeled_root_native.txt",
     "array_minimum_field_msgspec_plain_runtime.txt": "modeled_root_0_runtime.txt",
     "array_minimum_field_0_runtime.txt": "modeled_root_0_runtime.txt",
-    "array_minimum_field_annotated.py": "array_minimum_field_1.py"
+    "array_minimum_field_annotated.py": "array_minimum_field_1.py",
+    "payload": "array_items_field.json"
   },
   "object_maximum_root": {},
   "object_maximum_field": {
@@ -115,21 +117,25 @@
   "modeled_plain_root": {
     "modeled_plain_root_native.txt": "modeled_root_0_runtime.txt",
     "modeled_plain_root_0_runtime.txt": "modeled_root_0_runtime.txt",
-    "modeled_plain_root_1.py": "modeled_plain_root_0.py"
+    "modeled_plain_root_1.py": "modeled_plain_root_0.py",
+    "payload": "modeled_root.json"
   },
   "modeled_plain_field": {
     "modeled_plain_field_native.txt": "modeled_root_0_runtime.txt",
     "modeled_plain_field_0_runtime.txt": "modeled_root_0_runtime.txt",
-    "modeled_plain_field_1.py": "modeled_plain_field_0.py"
+    "modeled_plain_field_1.py": "modeled_plain_field_0.py",
+    "payload": "modeled_field.json"
   },
   "numeric_min_root": {
     "numeric_min_root_1.py": "numeric_min_root_0.py",
-    "numeric_min_root_0_runtime.txt": "numeric_min_root_native.txt"
+    "numeric_min_root_0_runtime.txt": "numeric_min_root_native.txt",
+    "payload": "numeric_max_root.json"
   },
   "numeric_min_field": {
     "numeric_min_field_msgspec_plain_runtime.txt": "numeric_inapplicable_root_native.txt",
     "numeric_min_field_native.txt": "numeric_min_root_native.txt",
-    "numeric_min_field_0_runtime.txt": "numeric_min_root_native.txt"
+    "numeric_min_field_0_runtime.txt": "numeric_min_root_native.txt",
+    "payload": "numeric_max_field.json"
   },
   "numeric_max_root": {
     "numeric_max_root_1.py": "numeric_max_root_0.py",
@@ -141,11 +147,13 @@
   },
   "numeric_zero_root": {
     "numeric_zero_root_0_runtime.txt": "numeric_zero_root_native.txt",
-    "numeric_zero_root_1.py": "numeric_zero_root_0.py"
+    "numeric_zero_root_1.py": "numeric_zero_root_0.py",
+    "payload": "numeric_max_root.json"
   },
   "numeric_zero_field": {
     "numeric_zero_field_0_runtime.txt": "numeric_zero_root_native.txt",
-    "numeric_zero_field_native.txt": "numeric_zero_root_native.txt"
+    "numeric_zero_field_native.txt": "numeric_zero_root_native.txt",
+    "payload": "numeric_max_field.json"
   },
   "numeric_nullable_root": {
     "numeric_nullable_root_1.py": "numeric_nullable_root_0.py",
@@ -157,23 +165,27 @@
   },
   "numeric_inapplicable_root": {
     "numeric_inapplicable_root_1.py": "numeric_inapplicable_root_0.py",
-    "numeric_inapplicable_root_0_runtime.txt": "numeric_inapplicable_root_native.txt"
+    "numeric_inapplicable_root_0_runtime.txt": "numeric_inapplicable_root_native.txt",
+    "payload": "numeric_max_root.json"
   },
   "numeric_inapplicable_field": {
     "numeric_inapplicable_field_native.txt": "numeric_inapplicable_root_native.txt",
     "numeric_inapplicable_field_0_runtime.txt": "numeric_inapplicable_root_native.txt",
-    "numeric_inapplicable_field_1.py": "numeric_inapplicable_field_0.py"
+    "numeric_inapplicable_field_1.py": "numeric_inapplicable_field_0.py",
+    "payload": "numeric_max_field.json"
   },
   "numeric_metadata_root": {
     "numeric_metadata_root_0.py": "numeric_min_root_0.py",
     "numeric_metadata_root_1.py": "numeric_min_root_0.py",
     "numeric_metadata_root_0_runtime.txt": "numeric_min_root_native.txt",
-    "numeric_metadata_root_native.txt": "numeric_min_root_native.txt"
+    "numeric_metadata_root_native.txt": "numeric_min_root_native.txt",
+    "payload": "numeric_max_root.json"
   },
   "numeric_metadata_field": {
     "numeric_metadata_field_1.py": "numeric_min_field_1.py",
     "numeric_metadata_field_0.py": "numeric_min_field_0.py",
     "numeric_metadata_field_0_runtime.txt": "numeric_min_root_native.txt",
-    "numeric_metadata_field_native.txt": "numeric_min_root_native.txt"
+    "numeric_metadata_field_native.txt": "numeric_min_root_native.txt",
+    "payload": "numeric_max_field.json"
   }
 }

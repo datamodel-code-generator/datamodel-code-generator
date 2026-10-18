@@ -16967,17 +16967,37 @@ def test_main_jsonschema_collapse_root_models_property_names_reference(output_fi
 
 
 @pytest.mark.parametrize(
-    ("schema_name", "model_name", "extra_args"),
+    ("schema_name", "model_name", "extra_args", "invalid"),
     [
-        pytest.param("collapse_root_models_lookaround", "Holder", [], id="fields"),
-        pytest.param("collapse_root_models_lookaround", "Holder", ["--use-type-alias"], id="fields-type-alias"),
-        pytest.param("collapse_root_models_lookaround_root", "Holder", [], id="root-model"),
-        pytest.param("collapse_root_models_lookaround_inheritance", "Child", [], id="inheritance"),
-        pytest.param("collapse_root_models_lookaround_discriminator", "Root", [], id="discriminator"),
+        pytest.param("collapse_root_models_lookaround", "Holder", [], "collapse_root_models_lookaround", id="fields"),
+        pytest.param(
+            "collapse_root_models_lookaround",
+            "Holder",
+            ["--use-type-alias"],
+            "collapse_root_models_lookaround",
+            id="fields-type-alias",
+        ),
+        pytest.param(
+            "collapse_root_models_lookaround_root", "Holder", [], "collapse_root_models_lookaround", id="root-model"
+        ),
+        pytest.param(
+            "collapse_root_models_lookaround_inheritance",
+            "Child",
+            [],
+            "collapse_root_models_lookaround_inheritance",
+            id="inheritance",
+        ),
+        pytest.param(
+            "collapse_root_models_lookaround_discriminator",
+            "Root",
+            [],
+            "collapse_root_models_lookaround_discriminator",
+            id="discriminator",
+        ),
     ],
 )
 def test_main_jsonschema_collapse_root_models_lookaround(
-    output_file: Path, schema_name: str, model_name: str, extra_args: list[str]
+    output_file: Path, schema_name: str, model_name: str, extra_args: list[str], invalid: str
 ) -> None:
     """Select Python's regex engine for lookaround patterns that collapsed root models leave in final field types.
 
@@ -17006,7 +17026,7 @@ def test_main_jsonschema_collapse_root_models_lookaround(
         module_name=f"output_{schema_name}_{len(extra_args)}",
         model_name=model_name,
         valid_json=(DATA_PATH / f"payloads/{schema_name}_valid.json").read_text(),
-        invalid_json=(DATA_PATH / f"payloads/{schema_name}_invalid.json").read_text(),
+        invalid_json=(DATA_PATH / f"payloads/{invalid}_invalid.json").read_text(),
         expected_error_type="string_pattern_mismatch",
     )
 
@@ -19721,7 +19741,7 @@ def test_generate_refreshes_mutable_custom_templates_between_calls(tmp_path: Pat
     custom_template_path.parent.mkdir(parents=True)
     template_data_path = DATA_PATH / "templates_refresh_mutable"
     shutil.copyfile(template_data_path / "root_include.jinja2", custom_template_path)
-    shutil.copyfile(template_data_path / "body_first.jinja2", included_template_path)
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "body_first.jinja2", included_template_path)
     generate_kwargs = {
         "custom_template_dir": custom_template_dir,
         "disable_timestamp": True,
@@ -19848,7 +19868,8 @@ def test_generate_refreshes_custom_template_directory_symlink(tmp_path: Path) ->
     source_template_dir = tmp_path / "source" / "pydantic_v2"
     source_template_dir.mkdir(parents=True)
     (source_template_dir / "cycle").symlink_to(source_template_dir, target_is_directory=True)
-    (source_template_dir / "linked_template.jinja2").symlink_to(template_data_path / "root_first.jinja2")
+    standalone_template = DATA_PATH / "templates_dependencies" / "standalone.jinja2"
+    (source_template_dir / "linked_template.jinja2").symlink_to(standalone_template)
     os.mkfifo(source_template_dir / "non_template")
     custom_template_dir = tmp_path / "templates"
     custom_template_dir.mkdir()
@@ -19861,7 +19882,7 @@ def test_generate_refreshes_custom_template_directory_symlink(tmp_path: Path) ->
         "formatters": [Formatter.BUILTIN],
     }
 
-    shutil.copyfile(template_data_path / "root_first.jinja2", custom_template_path)
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "standalone.jinja2", custom_template_path)
     run_generate_file_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
@@ -19901,7 +19922,7 @@ def test_generate_refreshes_retargeted_custom_template_directory_symlink(tmp_pat
         if name.startswith("a-target-")
     ]
     first_target, second_target = candidates[:2]
-    shutil.copyfile(template_data_path / "root_first.jinja2", first_target / "BaseModel.jinja2")
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "standalone.jinja2", first_target / "BaseModel.jinja2")
     shutil.copyfile(template_data_path / "root_second.jinja2", second_target / "BaseModel.jinja2")
     custom_template_alias.unlink()
     custom_template_alias.symlink_to(first_target, target_is_directory=True)
@@ -19946,7 +19967,7 @@ def test_main_refreshes_modified_custom_template_between_calls(tmp_path: Path) -
     ]
     template_data_path = DATA_PATH / "templates_refresh_mutable"
 
-    shutil.copyfile(template_data_path / "root_first.jinja2", custom_template_path)
+    shutil.copyfile(DATA_PATH / "templates_dependencies" / "standalone.jinja2", custom_template_path)
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "custom_template_refresh.json",
         output_path=output_path,
@@ -25311,15 +25332,16 @@ def test_msgspec_enum_diagnostics_preserve_supported_representations(
     if not can_execute:
         return
     results = []
+    payloads = case.get("payloads", case["schema"])
     with _generated_model(output_file, "generated_msgspec_enum_controls", "Payload") as model:
         for payload in json.loads(
-            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{case['schema']}_valid.json").read_text()
+            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{payloads}_valid.json").read_text()
         ):
             converted = msgspec.convert(payload, type=model)
             decoded = msgspec.json.decode(json.dumps(payload).encode(), type=model)
             results.append({"convert": msgspec.to_builtins(converted), "decode": msgspec.to_builtins(decoded)})
         for payload in json.loads(
-            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{case['schema']}_invalid.json").read_text()
+            (DATA_PATH / "payloads/msgspec_enum_diagnostics" / f"{payloads}_invalid.json").read_text()
         ):
             with pytest.raises(msgspec.ValidationError):
                 msgspec.convert(payload, type=model)
@@ -26396,7 +26418,7 @@ def test_explicit_alias_names_external_namespace_precedence(
         str(
             JSON_SCHEMA_DATA_PATH.parent
             / "payloads/explicit_alias_namespace_inheritance"
-            / f"{case['name']}_config.json"
+            / case.get("config_file", f"{case['name']}_config.json")
         ),
         "--base-class",
         base_class,
@@ -27526,6 +27548,9 @@ def test_conditional_json_equality(
                 model(**value)
 
 
+INLINE_ALLOF_SHARED_PAYLOADS = dict.fromkeys(("conditional", "count", "nested", "referenced"), "core")
+
+
 @pytest.mark.parametrize("formatter", ["builtin", "external"])
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 @pytest.mark.parametrize(
@@ -27549,7 +27574,7 @@ def test_inline_allof_validators(
     """Validate native-schema and generated runtime behavior through both entrypoints."""
     source = JSON_SCHEMA_DATA_PATH / "inline_allof_validators" / f"{case}.json"
     payloads = DATA_PATH / "payloads/inline_allof_validators"
-    values = json.loads((payloads / f"{case}.json").read_text())
+    values = json.loads((payloads / f"{INLINE_ALLOF_SHARED_PAYLOADS.get(case, case)}.json").read_text())
     native_type = Draft7Validator if case == "ref_siblings_draft7" else Draft202012Validator
     native = native_type(json.loads(source.read_text()))
     error_type = values.get("error_type", "value_error")
@@ -27561,7 +27586,9 @@ def test_inline_allof_validators(
     if case in {"anyof", "core"}:
         monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
-    (output_file.parent / "pyproject.toml").write_text((source.parent / "pyproject.toml").read_text())
+    (output_file.parent / "pyproject.toml").write_text(
+        (DATA_PATH / "templates/builtin_boolean_wrapping/88.toml").read_text()
+    )
     suffix = "_builtin" if case in {"anyof", "core"} and formatter == "builtin" else ""
     expected = f"inline_allof_validators/{case}{suffix}.py"
     if entrypoint == "cli":
@@ -27622,6 +27649,22 @@ def test_inline_allof_validators(
             _assert_model_json_invalid(model.model_validate_json, json.dumps(payload), sibling["error_type"])
 
 
+MAPPING_INPUT_CASES = (
+    "AdditionalUnique",
+    "Any",
+    "ConditionalElse",
+    "Conditional",
+    "CountMinimum",
+    "Count",
+    "Nested",
+    "One",
+    "PatternUnique",
+    "Pattern",
+    "Unique",
+)
+MAPPING_SHARED_INPUTS = {"Count_valid": "Any_valid", "One_valid": "Any_valid", "CountMinimum_invalid": "Any_invalid"}
+
+
 @pytest.mark.parametrize("formatter", ["builtin", "external"])
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_schema_validator_mapping_inputs(
@@ -27660,9 +27703,12 @@ def test_schema_validator_mapping_inputs(
             generate_schema_validators=True,
             disable_timestamp=True,
         )
-    for valid_path in sorted(payloads.glob("*_valid.txt")):
-        case = valid_path.stem.removesuffix("_valid")
-        invalid_path = payloads / f"{case}_invalid.txt"
+    for case in MAPPING_INPUT_CASES:
+        valid_name, invalid_name = f"{case}_valid", f"{case}_invalid"
+        valid_path, invalid_path = (
+            payloads / f"{MAPPING_SHARED_INPUTS.get(name, name)}.txt" for name in (valid_name, invalid_name)
+        )
+        expected = DATA_PATH / "expected/payloads/mapping_schema_validators"
         schema_case = {"CountMinimum": "Count", "ConditionalElse": "Conditional"}.get(case, case)
         schema = json.loads(source.read_text(encoding="utf-8"))["$defs"][schema_case]
         native = Draft202012Validator(schema)
@@ -27684,19 +27730,13 @@ def test_schema_validator_mapping_inputs(
                 value = model.model_validate(valid)
                 assert_output(
                     json.dumps(value.model_dump(exclude_unset=True), default=dict, indent=2) + "\n",
-                    DATA_PATH / "expected" / valid_path.relative_to(DATA_PATH),
+                    expected / f"{valid_name}.txt",
                 )
                 _assert_model_json_invalid(
                     model.model_validate, invalid, "int_parsing" if case == "Pattern" else "value_error"
                 )
-            assert_output(
-                json.dumps(valid, default=dict, indent=2) + "\n",
-                DATA_PATH / "expected" / valid_path.relative_to(DATA_PATH),
-            )
-            assert_output(
-                json.dumps(invalid, default=dict, indent=2) + "\n",
-                DATA_PATH / "expected" / invalid_path.relative_to(DATA_PATH),
-            )
+            assert_output(json.dumps(valid, default=dict, indent=2) + "\n", expected / f"{valid_name}.txt")
+            assert_output(json.dumps(invalid, default=dict, indent=2) + "\n", expected / f"{invalid_name}.txt")
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
@@ -29142,7 +29182,7 @@ def test_type_union_constraints(name: str, constraints: bool, entry: str, output
     schema = json.loads(input_path.read_text())
     Draft202012Validator.check_schema(schema)
     validator = Draft202012Validator(schema)
-    payloads = json.loads((TYPE_UNION_PAYLOADS / f"{name}.json").read_text())
+    payloads = json.loads((TYPE_UNION_PAYLOADS / TYPE_UNION_CASES[name].get("payload", f"{name}.json")).read_text())
     assert_output(
         json.dumps([validator.is_valid(value) for value in payloads], indent=2) + "\n",
         TYPE_UNION_EXPECTED / TYPE_UNION_CASES[name].get(f"{name}_native.txt", f"{name}_native.txt"),
@@ -29222,7 +29262,7 @@ def test_type_union_constraint_options(name: str, mode: str, entry: str, output_
             expected_file=expected_file,
             **options,
         )
-    payloads = json.loads((TYPE_UNION_PAYLOADS / f"{name}.json").read_text())
+    payloads = json.loads((TYPE_UNION_PAYLOADS / TYPE_UNION_CASES[name].get("payload", f"{name}.json")).read_text())
     runtime_name = f"{name}_{mode}_runtime.txt" if mode == "msgspec_plain" else f"{name}_native.txt"
     expected_runtime = TYPE_UNION_EXPECTED / TYPE_UNION_CASES[name].get(runtime_name, runtime_name)
     actual = []

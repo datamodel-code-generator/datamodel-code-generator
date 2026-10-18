@@ -28,7 +28,7 @@ INPUT_DIFF_EXPECTED_PATH = DATA_PATH / "expected" / "main" / "input_diff"
 JSON_SCHEMA_INPUT_DIFF_PATH = DATA_PATH / "jsonschema" / "input_diff"
 OPENAPI_INPUT_DIFF_PATH = DATA_PATH / "openapi" / "input_diff"
 LOCAL_INPUT_TYPE_CASES: tuple[tuple[InputFileTypeLiteral, Path, bool], ...] = (
-    ("jsonschema", JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json", False),
+    ("jsonschema", JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json", False),
     ("openapi", OPENAPI_INPUT_DIFF_PATH / "new.yaml", True),
     ("asyncapi", DATA_PATH / "asyncapi" / "user-events.yaml", False),
     ("mcp-tools", DATA_PATH / "mcp_tools" / "direct_tool.json", False),
@@ -86,7 +86,7 @@ def test_diff_against_identical_single_file_does_not_write_virtual_output(
         input_path=new_input,
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--diff-against", str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json"), "--disable-timestamp"],
+        extra_args=["--diff-against", str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json"), "--disable-timestamp"],
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
@@ -106,7 +106,7 @@ def test_diff_against_supports_every_output_model_type(
         input_file_type="jsonschema",
         extra_args=[
             "--diff-against",
-            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json"),
+            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json"),
             "--disable-timestamp",
             "--output-model-type",
             output_model_type,
@@ -126,7 +126,7 @@ def test_diff_against_infers_each_input_type_independently(
     run_main_and_assert(
         input_path=JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.yaml",
         output_path=output_file,
-        extra_args=["--diff-against", str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json"), "--disable-timestamp"],
+        extra_args=["--diff-against", str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json"), "--disable-timestamp"],
         expected_exit=Exit.OK,
         output_should_not_exist=True,
         capsys=capsys,
@@ -216,7 +216,7 @@ def test_diff_against_reports_model_name_map_keys_that_match_no_model_of_the_cur
 @pytest.mark.parametrize(
     ("baseline", "current", "extra_args", "expected_exit", "expected_stdout"),
     [
-        pytest.param("same_old.json", "same_new.json", (), Exit.OK, "identical.txt", id="identical"),
+        pytest.param("same_new.json", "same_new.json", (), Exit.OK, "identical.txt", id="identical"),
         pytest.param("old.json", "new.json", (), Exit.DIFF, "different_suffixless_file.txt", id="different"),
         pytest.param(
             "old.json",
@@ -405,7 +405,7 @@ def test_diff_against_json_reports_identical_inputs_without_writing_virtual_outp
         input_file_type="jsonschema",
         extra_args=[
             "--diff-against",
-            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json"),
+            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json"),
             "--disable-timestamp",
             "--output-format",
             "json",
@@ -428,7 +428,7 @@ def test_diff_against_preserves_a_preexisting_virtual_file(
         input_file_type="jsonschema",
         extra_args=[
             "--diff-against",
-            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json"),
+            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json"),
             "--disable-timestamp",
         ],
         expected_exit=Exit.OK,
@@ -476,7 +476,7 @@ def test_diff_against_uses_the_virtual_output_context_for_relative_custom_format
         input_file_type="jsonschema",
         extra_args=[
             "--diff-against",
-            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json"),
+            str(JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json"),
             "--disable-timestamp",
             "--formatters",
             "builtin",
@@ -518,7 +518,7 @@ use-double-quotes = true
                 "--profile",
                 "compare",
                 "--diff-against",
-                str((JSON_SCHEMA_INPUT_DIFF_PATH / "same_old.json").resolve()),
+                str((JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json").resolve()),
                 "--disable-timestamp",
                 "--formatters",
                 "builtin",

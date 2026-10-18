@@ -4177,13 +4177,14 @@ def test_custom_formatters_kwargs_option(output_file: Path) -> None:
     configuration to user-defined formatter modules.
     """
     # Simple test - the option is accepted. Full usage requires custom formatter module.
+    (kwargs := output_file.parent / "formatter_kwargs.json").write_text("{}", encoding="utf-8")
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "pet_simple.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
-        extra_args=["--custom-formatters-kwargs", str(DATA_PATH / "config" / "formatter_kwargs.json")],
+        extra_args=["--custom-formatters-kwargs", str(kwargs)],
     )
 
 
@@ -4196,10 +4197,7 @@ def test_custom_formatters_kwargs_inline_json_option(output_file: Path) -> None:
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file=EXPECTED_MAIN_KR_PATH / "input_output" / "output.py",
-        extra_args=[
-            "--custom-formatters-kwargs",
-            (DATA_PATH / "config" / "formatter_kwargs.json").read_text(encoding="utf-8"),
-        ],
+        extra_args=["--custom-formatters-kwargs", "{}"],
     )
 
 

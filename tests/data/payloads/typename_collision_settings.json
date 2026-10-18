@@ -16,7 +16,8 @@
   "serialization": {
     "schema": "typename_collision.graphql",
     "serialization_aliases": "typename_collision_serialization_aliases.json",
-    "aliases": "typename_collision_aliases.json"
+    "aliases": "typename_collision_aliases.json",
+    "payload": "collision"
   },
   "scoped": {
     "schema": "typename_collision_scoped.graphql",

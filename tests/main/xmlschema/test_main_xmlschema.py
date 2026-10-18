@@ -1207,6 +1207,11 @@ XSD_PROPERTY_CONTROLS = (
     "default_namespace_alias_reuse",
     "empty_namespace_reuse",
 )
+XSD_PROPERTY_SHARED_INSTANCES = {
+    "empty_namespace_reuse.xml": "group_reuse.xml",
+    "simple_content_collision.xml": "namespaced_attributes.xml",
+    "simple_content_collision.invalid.xml": "namespaced_attributes.invalid.xml",
+}
 XSD_PROPERTY_BACKENDS = (
     DataModelType.PydanticV2BaseModel,
     DataModelType.PydanticV2Dataclass,
@@ -1220,10 +1225,14 @@ XSD_PROPERTY_BACKENDS = (
 def test_native_xsd_property_names(name: str) -> None:
     """Confirm collision and reuse fixtures are legal XSD with valid XML instances."""
     source = XML_SCHEMA_DATA_PATH / "field_name_collisions" / name
+    valid, invalid = (
+        source.with_name(XSD_PROPERTY_SHARED_INSTANCES.get(instance, instance))
+        for instance in (f"{name}.xml", f"{name}.invalid.xml")
+    )
     schema = etree.XMLSchema(etree.parse(str(source.with_suffix(".xsd"))))
-    schema.assertValid(etree.parse(str(source.with_suffix(".xml"))))
+    schema.assertValid(etree.parse(str(valid)))
     with pytest.raises(etree.DocumentInvalid):
-        schema.assertValid(etree.parse(str(source.with_suffix(".invalid.xml"))))
+        schema.assertValid(etree.parse(str(invalid)))
 
 
 @pytest.mark.parametrize("name", [*XSD_PROPERTY_CONTROLS, "unused"])

@@ -27,80 +27,99 @@
   },
   "enum_refs": {
     "enum_refs_runtime.txt": "patterns_runtime.txt",
-    "enum_refs_1.py": "enum_refs_0.py"
+    "enum_refs_1.py": "enum_refs_0.py",
+    "payload": "patterns.json"
   },
   "enum_oneof": {
     "enum_oneof_runtime.txt": "patterns_runtime.txt",
-    "enum_oneof_1.py": "enum_oneof_0.py"
+    "enum_oneof_1.py": "enum_oneof_0.py",
+    "payload": "patterns.json"
   },
   "unconstrained_values": {
     "unconstrained_values_0.py": "boolean_true_0.py",
     "unconstrained_values_1.py": "boolean_true_1.py",
-    "unconstrained_values_runtime.txt": "boolean_true_runtime.txt"
+    "unconstrained_values_runtime.txt": "boolean_true_runtime.txt",
+    "payload": "unconstrained.json"
   },
-  "boolean_true": {},
+  "boolean_true": {
+    "payload": "patterns.json"
+  },
   "false_patterns": {
     "false_patterns_runtime.txt": "patterns_runtime.txt",
-    "false_patterns_1.py": "false_patterns_0.py"
+    "false_patterns_1.py": "false_patterns_0.py",
+    "payload": "patterns.json"
   },
   "nested_unrestricted": {
     "nested_unrestricted_0.py": "boolean_true_0.py",
-    "nested_unrestricted_runtime.txt": "boolean_true_runtime.txt"
+    "nested_unrestricted_runtime.txt": "boolean_true_runtime.txt",
+    "payload": "patterns.json"
   },
   "reverse_unrestricted": {
     "reverse_unrestricted_0.py": "boolean_true_0.py",
-    "reverse_unrestricted_runtime.txt": "boolean_true_runtime.txt"
+    "reverse_unrestricted_runtime.txt": "boolean_true_runtime.txt",
+    "payload": "patterns.json"
   },
   "enum_then_any": {
     "enum_then_any_runtime.txt": "ref_then_any_runtime.txt",
-    "enum_then_any_1.py": "enum_then_any_0.py"
+    "enum_then_any_1.py": "enum_then_any_0.py",
+    "payload": "ref_then_any.json"
   },
   "enum_then_true": {
     "enum_then_true_runtime.txt": "ref_then_any_runtime.txt",
     "enum_then_true_1.py": "enum_then_any_0.py",
-    "enum_then_true_0.py": "enum_then_any_0.py"
+    "enum_then_true_0.py": "enum_then_any_0.py",
+    "payload": "ref_then_any.json"
   },
   "ref_then_any": {
     "ref_then_any_1.py": "ref_then_any_0.py"
   },
   "any_then_enum": {
     "any_then_enum_runtime.txt": "ref_then_any_runtime.txt",
-    "any_then_enum_1.py": "any_then_enum_0.py"
+    "any_then_enum_1.py": "any_then_enum_0.py",
+    "payload": "ref_then_any.json"
   },
   "extra_one_any_false": {
     "extra_one_any_false_1.py": "boolean_true_0.py",
     "extra_one_any_false_0.py": "boolean_true_0.py",
-    "extra_one_any_false_runtime.txt": "ref_then_any_runtime.txt"
+    "extra_one_any_false_runtime.txt": "ref_then_any_runtime.txt",
+    "payload": "ref_then_any.json"
   },
   "extra_one_true_false": {
     "extra_one_true_false_0.py": "boolean_true_0.py",
     "extra_one_true_false_1.py": "boolean_true_0.py",
-    "extra_one_true_false_runtime.txt": "ref_then_any_runtime.txt"
+    "extra_one_true_false_runtime.txt": "ref_then_any_runtime.txt",
+    "payload": "ref_then_any.json"
   },
   "extra_enum_disjoint": {
-    "extra_enum_disjoint_1.py": "extra_enum_disjoint_0.py"
+    "extra_enum_disjoint_1.py": "extra_enum_disjoint_0.py",
+    "payload": "ref_then_any.json"
   },
   "extra_enum_then_string": {
     "extra_enum_then_string_runtime.txt": "ref_then_any_runtime.txt",
-    "extra_enum_then_string_1.py": "extra_enum_then_string_0.py"
+    "extra_enum_then_string_1.py": "extra_enum_then_string_0.py",
+    "payload": "ref_then_any.json"
   },
   "root_type_union": {
     "root_type_union_1.py": "nested_0.py",
     "root_type_union_0.py": "nested_0.py",
-    "root_type_union_runtime.txt": "patterns_runtime.txt"
+    "root_type_union_runtime.txt": "patterns_runtime.txt",
+    "payload": "typed_patterns.json"
   },
   "branch_type_union": {
     "branch_type_union_1.py": "nested_0.py",
     "branch_type_union_0.py": "nested_0.py",
-    "branch_type_union_runtime.txt": "patterns_runtime.txt"
+    "branch_type_union_runtime.txt": "patterns_runtime.txt",
+    "payload": "typed_patterns.json"
   },
   "nested_type_union": {
     "nested_type_union_0.py": "nested_0.py",
     "nested_type_union_1.py": "nested_0.py",
-    "nested_type_union_runtime.txt": "nested_runtime.txt"
+    "nested_type_union_runtime.txt": "nested_runtime.txt",
+    "payload": "nested.json"
   },
   "unrestricted_type_union": {
-    "unrestricted_type_union_runtime.txt": "boolean_true_runtime.txt"
+    "unrestricted_type_union_runtime.txt": "boolean_true_runtime.txt",
+    "payload": "unconstrained.json"
   },
   "length_type_union": {
     "length_type_union_1.py": "lengths_0.py",

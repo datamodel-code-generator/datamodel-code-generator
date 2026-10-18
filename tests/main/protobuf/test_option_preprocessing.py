@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 SOURCE_PATH = DATA_PATH / "protobuf_option_preprocessing"
+BUILTIN_FORMATTER_CONFIG = DATA_PATH / "templates/builtin_boolean_wrapping/88.toml"
 EXPECTED_PATH = EXPECTED_PROTOBUF_PATH / "option_preprocessing"
 SCHEMAS = ["plain", "comments", "single", "double", "custom", "rpc"]
 
@@ -76,7 +77,7 @@ def test_protobuf_option_generation(
                     "--use-annotated",
                     *formatter_args,
                 ],
-                copy_files=[(SOURCE_PATH / "builtin_formatter.toml", output_file.parent / "pyproject.toml")]
+                copy_files=[(BUILTIN_FORMATTER_CONFIG, output_file.parent / "pyproject.toml")]
                 if formatter_args
                 else None,
                 assert_func=assert_file_content,

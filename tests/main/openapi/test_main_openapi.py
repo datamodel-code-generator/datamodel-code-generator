@@ -66,6 +66,7 @@ from tests.main.conftest import (
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPERIMENTAL_MISSING_IMPORT_WARNING,
+    JSON_SCHEMA_DATA_PATH,
     LEGACY_BLACK_SKIP,
     MSGSPEC_LEGACY_BLACK_SKIP,
     OPEN_API_DATA_PATH,
@@ -2831,7 +2832,7 @@ def test_main_custom_template_dir_old_style(
             input_file_type=None,
             extra_args=[
                 "--custom-template-dir",
-                str(DATA_PATH / "templates_old_style"),
+                str(DATA_PATH / "templates" / "pydantic"),
                 "--extra-template-data",
                 str(OPEN_API_DATA_PATH / "extra_data.json"),
             ],
@@ -3016,17 +3017,15 @@ def test_pyproject(tmp_path: Path) -> None:
             return str(path)
 
     output_file: Path = tmp_path / "output.py"
+    (empty := tmp_path / "empty.json").write_text("{}\n", encoding="utf-8")
     pyproject_toml_path = Path(DATA_PATH) / "project" / "pyproject.toml"
     pyproject_toml = (
         pyproject_toml_path
         .read_text()
         .replace("INPUT_PATH", get_path(OPEN_API_DATA_PATH / "api.yaml"))
         .replace("OUTPUT_PATH", get_path(output_file))
-        .replace("ALIASES_PATH", get_path(OPEN_API_DATA_PATH / "empty_aliases.json"))
-        .replace(
-            "EXTRA_TEMPLATE_DATA_PATH",
-            get_path(OPEN_API_DATA_PATH / "empty_data.json"),
-        )
+        .replace("ALIASES_PATH", get_path(empty))
+        .replace("EXTRA_TEMPLATE_DATA_PATH", get_path(empty))
         .replace("CUSTOM_TEMPLATE_DIR_PATH", get_path(tmp_path))
     )
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
@@ -9218,7 +9217,7 @@ def test_main_openapi_keyword_only_msgspec_with_extra_data(min_version: str, out
             "--target-python-version",
             min_version,
             "--extra-template-data",
-            str(OPEN_API_DATA_PATH / "extra_data_msgspec.json"),
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_msgspec.json"),
         ],
     )
 
@@ -9229,7 +9228,7 @@ def test_main_openapi_keyword_only_msgspec_with_extra_data(min_version: str, out
 )
 def test_main_generate_openapi_keyword_only_msgspec_with_extra_data(tmp_path: Path) -> None:
     """Test OpenAPI generation with keyword-only msgspec using generate function."""
-    extra_data = json.loads((OPEN_API_DATA_PATH / "extra_data_msgspec.json").read_text())
+    extra_data = json.loads((JSON_SCHEMA_DATA_PATH / "extra_data_msgspec.json").read_text())
     output_file: Path = tmp_path / "output.py"
     generate(
         input_=OPEN_API_DATA_PATH / "inheritance.yaml",
@@ -12231,6 +12230,8 @@ def test_discriminator_final_field_aliases(
     """Resolve variant fields without globalizing scoped aliases or changing tag input."""
     fixture_dir = OPEN_API_DATA_PATH / "discriminator_field_aliases"
     aliases_path = fixture_dir / f"{alias_file}_aliases.json"
+    if alias_file == "none":
+        (aliases_path := output_file.parent / "none_aliases.json").write_text("{}\n", encoding="utf-8")
     expected = EXPECTED_OPENAPI_PATH / "discriminator_field_aliases" / f"{case}.py"
     if entrypoint == "cli":
         args = ["--aliases", str(aliases_path), "--disable-timestamp"]

@@ -244,7 +244,6 @@ openapi/invalid_dotted_mixed_module.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_name_priority.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_relative_import.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_schema_name.yaml	yaml_fast_constructor/parity.txt
-openapi/issue_2953.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema_31.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer.yaml	yaml_fast_constructor/parity.txt
