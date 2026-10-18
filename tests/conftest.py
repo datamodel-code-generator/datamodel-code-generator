@@ -54,6 +54,7 @@ from tests.units import (
     format_refs,
     item_problem,
     label_path,
+    label_problem,
     merge_environments,
     nodeid_key,
     payload_predicate,
@@ -905,6 +906,14 @@ class _Ledger:
                 str(entry["item"]) for observations in self.observations for entry in observations["items"]
             )
             if (problem := item_problem(nodeid, self.config.rootpath, self.tests_root, listings))
+        ]
+        problems += [
+            f"{entry['item']}: {problem}"
+            for observations in self.observations
+            for entry in observations["items"]
+            for label, _, storage, _ in entry["compared"]
+            for name in dict.fromkeys((label, storage))
+            if (problem := label_problem(name))
         ]
         if problems:
             msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)

@@ -2144,6 +2144,13 @@ def test_ledger_apply_session_checks_its_input(ledger: LedgerProject, tmp_path: 
         encoding="utf-8",
     )
     assert f"{observed}: its environment is malformed" in ledger.run(f"--expected-apply={apply_file}").stderr.str()
+    entry["compared"] = [["../outside.txt", "0" * 64, "../outside.txt", None]]
+    (observed / "observed-main-1.jsonl").write_text(
+        f"{json.dumps({'facts': LANE, 'collected': []})}\n{json.dumps(entry)}\n", encoding="utf-8"
+    )
+    assert "suite/test_m.py::test_a: '../outside.txt' is not a relative path below tests/data/expected" in (
+        ledger.run(f"--expected-apply={apply_file}").stderr.str()
+    )
     apply_file.write_text(json.dumps({"payloads": [_payload()]}), encoding="utf-8")
     parallel = ledger.run(f"--expected-apply={apply_file}", "-n", "2", "suite")
     assert "--expected-apply writes expected files and runs in one process; run it without -n." in (
