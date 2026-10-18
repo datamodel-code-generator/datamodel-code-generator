@@ -2021,12 +2021,7 @@ def _annotation_null(field: DataModelFieldBase, type_value: TypeView) -> bool:
     """Return whether the emitted field annotation accepts None, as the field's type hint decides."""
     if _has_null(type_value):
         return True
-    data_type = field.data_type
-    if field.has_default_factory or (data_type.is_optional and data_type.type != "Any"):
-        return False
-    if field.nullable is not None:
-        return field.nullable
-    return bool(field.type_has_null) if field.required else bool(field.fall_back_to_nullable)
+    return field._field_null_source(field.data_type) is not None  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
 
 def _source_member(value: dict[str, YamlValue], key: str) -> YamlValue:

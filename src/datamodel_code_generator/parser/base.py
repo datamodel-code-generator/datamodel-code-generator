@@ -3175,20 +3175,21 @@ def _only_groups_members(data_type: DataType) -> bool:
     )
 
 
-def _flatten_union_members(data_type: DataType) -> None:
+def _flatten_union_members(data_type: DataType, enclosing: tuple[DataType, ...] = ()) -> None:
     """Hoist grouped members and their ``None`` into the union, so ruff finds no nested or repeated member to rewrite.
 
     Ruff rewrites a union with a nested union or a repeated member into a ``|`` chain, which fails at runtime
-    once a member is a string.
+    once a member is a string. A member's ``None`` moves to its union and to each union that one is flattened into.
     """
     members: list[DataType] = []
+    unions = (data_type, *enclosing)
     for member in data_type.data_types:
         if member.is_optional:
-            member.is_optional = False
-            data_type.is_optional = True
+            member._materialize_render_state("null-moved-to-union")  # noqa: SLF001
+            for union in unions:
+                union._materialize_render_state("member-null")  # noqa: SLF001
         if _only_groups_members(member):
-            _flatten_union_members(member)
-            data_type.is_optional = data_type.is_optional or member.is_optional
+            _flatten_union_members(member, unions)
             members.extend(member.data_types)
         else:
             members.append(member)

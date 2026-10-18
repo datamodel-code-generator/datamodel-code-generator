@@ -1079,6 +1079,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "target"
         case ("model", "__init__.py"):
             layer = "model-composition"
+        case ("model", "_decisions", *_):
+            layer = "shared-model"
         case ("model", filename) if filename in _NEUTRAL_MODEL_FILENAMES:
             layer = "shared-model"
         case ("model", *_):

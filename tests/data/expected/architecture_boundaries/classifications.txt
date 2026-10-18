@@ -7,6 +7,7 @@ model/base.py: shared-model
 model/__init__.py: model-composition
 model/pydantic_v2/base_model.py: output-model
 model/runtime_validation.py: shared-model
+model/_decisions/nullability.py: shared-model
 _api_generation.py: target
 _target_config.py: target
 types.py: shared

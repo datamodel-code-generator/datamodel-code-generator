@@ -60652,13 +60652,15 @@ opt-out decided in L6).
 model and formats the body. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
 (`model/__init__.py:get_data_model_types`). Rendering is not read-only. Rendering a type hint or collecting a field's
-imports writes `is_optional`: `types.py:DataType._apply_nullable_from_reference` adds the None of a nullable model
-that the type names; `types.py:DataType._render_union_type_hint` makes a union optional when a member's hint includes
-None; `model/base.py:DataModelFieldBase._normalize_data_type_import_state`, which import collection runs, applies the
-first write and makes a union optional for a `null` member; and `parser/base.py:_flatten_union_members` (L5
-finalize) moves member nullability onto the union. Import collection already runs in L3 deduplication, so
-`is_optional` read before L7 depends on what ran first. A decision before L7 reads `types.py:DataType.admits_none`,
-which computes the rendered nullability without writing it.
+imports writes `is_optional` on shared nodes through `types.py:DataType._materialize_render_state` (msgspec's
+`_strip_null` writes it on its own copies): `type_hint` adds the None
+of a nullable model that the type names; `types.py:DataType._render_union_type_hint` makes a union optional when a
+member's hint includes None; `model/base.py:DataModelFieldBase._normalize_data_type_import_state`, which import
+collection runs, applies the first write and makes a union optional for a `null` member; and
+`parser/base.py:_flatten_union_members` (L5 finalize) moves member nullability onto the union. Import collection
+already runs in L3 deduplication, so `is_optional` read before L7 depends on what ran first. A decision before L7
+reads `types.py:DataType.admits_none`, which computes the rendered nullability with
+`model/_decisions/nullability.py:rendered_nullability` without writing it.
 
 ### Hidden Couplings
 
@@ -60784,6 +60786,16 @@ Procedure for a new decision:
 A decision that changes field order, defaults or required state must also run before constructor ordering reads them
 (L5 `__fix_constructor_field_ordering`, L6 `__fix_tag_opt_out_field_ordering`); when that conflicts with a row above,
 step 3 applies.
+
+**One home per decision.** A decision that several passes or backends need is one pure function in
+`model/_decisions/` over a frozen record of the facts it reads; the adapter that builds the record is the only code
+that reads the live objects, and callers are to go through it (readers of the stored `is_optional` move in a later
+step). `scripts/check_architecture_boundaries.py` keeps the
+package free of concrete backends.
+
+| Decision | Pure core | Adapters |
+| --- | --- | --- |
+| whether a type's rendered hint, or the annotation a field writes around it, includes None | `model/_decisions/nullability.py`: `rendered_nullability(NullabilityFacts)`, `field_renders_none(FieldNullabilityFacts)` | `types.py:DataType.admits_none`; `model/base.py:DataModelFieldBase._field_null_source`; writes: `types.py:DataType._materialize_render_state` (see L7) |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it

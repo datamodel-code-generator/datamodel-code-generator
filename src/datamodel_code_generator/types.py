@@ -23,8 +23,10 @@ from typing import (
     Annotated,
     Any,
     ClassVar,
+    Literal,
     Optional,
     Protocol,
+    TypeAlias,
     TypeVar,
     Union,
     runtime_checkable,
@@ -45,7 +47,7 @@ from pydantic import (
     field_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, assert_never
 
 from datamodel_code_generator import imports as generator_imports
 from datamodel_code_generator._format_types import (
@@ -90,6 +92,7 @@ _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
 _REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
+_RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
 
 
 class DefaultValueRecipe(Enum):
@@ -172,6 +175,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.enums import StrictTypes
+    from datamodel_code_generator.model._decisions.nullability import NullabilityFacts
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -990,7 +994,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 continue
 
             if data_type_type == NONE:
-                self.is_optional = True
+                self._materialize_render_state("member-null")
                 continue
 
             non_optional_data_type_type = _remove_none_from_union(
@@ -998,13 +1002,13 @@ class DataType(_BaseModel):  # noqa: PLR0904
             )
 
             if non_optional_data_type_type != data_type_type:
-                self.is_optional = True
+                self._materialize_render_state("member-null")
 
             data_types.append(non_optional_data_type_type)
 
         if not data_types:
             type_ = ANY
-            self.import_ = self.import_ or IMPORT_ANY
+            self._materialize_render_state("empty-union")
         elif len(data_types) == 1:
             type_ = data_types[0]
         else:
@@ -1050,7 +1054,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         match len(data_types):
             case 0:
                 type_ = ANY
-                self.import_ = self.import_ or IMPORT_ANY
+                self._materialize_render_state("empty-union")
             case 1:
                 type_ = data_types[0]
             case _:
@@ -1078,25 +1082,64 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return whether the rendered type hint includes None, without the writes that rendering makes.
 
         The None is the type's own, that of the nullable model it names, or that of a union member whose hint
-        includes None, which the union takes over when it is rendered.
+        includes None, which the union takes over when it is rendered (``rendered_nullability``).
         """
-        if self.is_optional or self._reference_adds_null():
-            return True
-        return (
-            not self.is_tuple
-            and self.is_union
-            and not self.preserve_union_member_order
-            and any(
-                (member.type == NONE and not member.data_types) or (member.type != ANY and member.admits_none)
-                for member in self.data_types
-            )
+        from datamodel_code_generator.model._decisions.nullability import rendered_nullability  # noqa: PLC0415
+
+        return rendered_nullability(self._nullability_facts()) is not None
+
+    def _nullability_facts(self) -> NullabilityFacts:
+        """Read the facts of the rendered nullability decision from the type and, for a union, from its members."""
+        from datamodel_code_generator.model._decisions.nullability import (  # noqa: PLC0415
+            MemberNullabilityFacts,
+            NullabilityFacts,
         )
 
-    def _apply_nullable_from_reference(self) -> None:
-        if self.is_optional or not self._reference_adds_null():
-            return
-        self.is_optional = True
-        self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
+        return NullabilityFacts(
+            self.is_optional,
+            self._reference_adds_null(),
+            self.is_tuple,
+            self.preserve_union_member_order,
+            tuple(
+                MemberNullabilityFacts(
+                    member.type == NONE and not member.data_types,
+                    member.type == ANY,
+                    member._nullability_facts(),  # noqa: SLF001
+                )
+                for member in self.data_types
+            )
+            if self.is_union
+            else (),
+        )
+
+    def _materialize_render_state(self, write: _RenderStateWrite, /) -> None:
+        """Write what rendering decides about the type: the writer of its render-time state on shared nodes.
+
+        ``"reference-null"`` writes the None of the nullable model the type names into ``is_optional`` when the
+        rendered None comes from that model (``rendered_nullability``), marked as not the type's own.
+        ``"member-null"`` writes the None that a union takes over from a member, ``"null-moved-to-union"`` takes the
+        None off a member whose union writes it now, and ``"empty-union"`` gives a union without a member to write
+        the import of the ``Any`` it renders as. Rendering a hint, collecting a field's imports and union flattening
+        call it where they decide, some before L7, so ``is_optional`` read before L7 depends on what ran first.
+        """
+        match write:
+            case "reference-null":
+                from datamodel_code_generator.model._decisions.nullability import (  # noqa: PLC0415
+                    rendered_nullability,
+                )
+
+                if rendered_nullability(self._nullability_facts()) != "reference":
+                    return
+                self.is_optional = True
+                self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
+            case "member-null":
+                self.is_optional = True
+            case "null-moved-to-union":
+                self.is_optional = False
+            case "empty-union":
+                self.import_ = self.import_ or IMPORT_ANY
+            case _:  # pragma: no cover
+                assert_never(write)
 
     def _strip_null(self, *, own: bool) -> None:
         """Drop the None of the type, for good when it is the type's own rather than its nullable model's.
@@ -1201,7 +1244,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if not type_:
             type_ = self._render_nested_type_hint(use_base_type_hint=False, wrap_discriminator=True)
         if self.reference:
-            self._apply_nullable_from_reference()
+            self._materialize_render_state("reference-null")
         has_collection_container = self.is_frozen_set or self.is_set or self.is_sequence
         has_mapping_container = self.is_list or self.is_mapping or self.is_dict
         if has_collection_container or has_mapping_container:
@@ -1255,7 +1298,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if not type_:
             type_ = self._render_nested_type_hint(use_base_type_hint=True, wrap_discriminator=False)
         if self.reference:
-            self._apply_nullable_from_reference()
+            self._materialize_render_state("reference-null")
         if self.is_list or self.is_set or self.is_dict:
             type_ = self._wrap_container_type_hint(
                 type_,

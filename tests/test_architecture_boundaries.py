@@ -85,6 +85,7 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "model" / "__init__.py",
         source_root / "model" / "pydantic_v2" / "base_model.py",
         source_root / "model" / "runtime_validation.py",
+        source_root / "model" / "_decisions" / "nullability.py",
         source_root / "_api_generation.py",
         source_root / "_target_config.py",
         source_root / "types.py",
