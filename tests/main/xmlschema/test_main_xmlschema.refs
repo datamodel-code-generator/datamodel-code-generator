@@ -77,6 +77,9 @@ typed-dict	main/xmlschema/output_model_types/advanced_constructs_typing_TypedDic
 	main/xmlschema/xmlschema_self_extension_without_redefine_importable.py
 [test_main_xmlschema_single_root_same_name]
 	main/xmlschema/single_root_item.py
+[test_main_xmlschema_single_value_enum_as_const_keeps_converted]
+option	main/xmlschema/main_xmlschema/single_value_enum_as_const_keeps_converted[option].py
+without-option	main/xmlschema/main_xmlschema/single_value_enum_as_const_keeps_converted[without-option].py	= main/xmlschema/main_xmlschema/single_value_enum_as_const_keeps_converted[option].py
 [test_main_xmlschema_spec_constructs]
 	main/xmlschema/spec_constructs.py
 [test_main_xmlschema_special_float_bounds]

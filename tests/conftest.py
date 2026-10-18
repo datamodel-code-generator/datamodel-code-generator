@@ -65,6 +65,7 @@ from tests.units import (
     split_label,
     tree_label,
     tree_member,
+    uncollected_items,
     unit_digest,
     write_files,
 )
@@ -1654,14 +1655,27 @@ class _Ledger:
         (directory / f"observed-{worker}-{os.getpid()}.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     def apply_updates(self, session: pytest.Session) -> dict[Path, dict[tuple[str, str], list[Desired]]]:
-        """Merge observations from other environments or CI payloads into the lines of the items they name."""
+        """Merge observations from other environments or CI payloads into the lines of the items they name.
+
+        With ``drop_uncollected``, the lines of recorded items that no observed environment collects, although one of
+        them collected their whole module, go too; ``merge`` false applies only that.
+        """
         rootpath = self.config.rootpath
         local = {nodeid_key(rootpath, item.nodeid) for item in session.items}
         updates: dict[Path, dict[tuple[str, str], list[Desired]]] = {}
-        if self.observations:
+        if self.observations and self.apply_data.get("merge", True):
             for nodeid, desired in merge_environments(self.observations, self.expected_root, self.facts).items():
                 sidecar, function, param = nodeid_key(rootpath, nodeid)
                 updates.setdefault(sidecar, {})[function, param] = desired
+        if self.apply_data.get("drop_uncollected"):
+            recorded = [
+                self.nodeid(sidecar, f"{function}[{param}]" if param else function)
+                for sidecar in self.index.sidecars()
+                for function, param in self.index.item_lines(sidecar)
+            ]
+            for nodeid in uncollected_items(self.observations, recorded):
+                sidecar, function, param = nodeid_key(rootpath, nodeid)
+                updates.setdefault(sidecar, {})[function, param] = []
         for payload in self.apply_data.get("payloads", []):
             sidecar, function, param = nodeid_key(rootpath, payload["item"])
             current = updates.get(sidecar, {}).get((function, param))

@@ -21,7 +21,7 @@ from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.api_generation.support.backends import backend_settings
 from tests.api_generation.support.client_generation import formatter_refusal
-from tests.api_generation.support.fastapi_generation import SOURCE, server_options
+from tests.api_generation.support.fastapi_generation import SOURCE, fixture_path, server_options
 from tests.api_generation.support.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
@@ -51,13 +51,13 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
     shutil.rmtree(root / "services", ignore_errors=True)
     for name in case.get("files", ()):
         (root / name).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(SOURCE / name, root / name)
+        shutil.copy2(fixture_path(name), root / name)
     model = case.get("model", {})
     if isinstance(directory := model.get("custom_template_dir"), str):
         model = {**model, "custom_template_dir": SOURCE / directory}
     models = _models(case, package)
     generate(
-        shutil.copy2(SOURCE / case["input"], root / case["input"]),
+        shutil.copy2(fixture_path(case["input"]), root / case["input"]),
         **{
             "output": root / f"{models.replace('.', '/')}{'' if case.get('modular') else '.py'}",
             "input_file_type": "openapi",

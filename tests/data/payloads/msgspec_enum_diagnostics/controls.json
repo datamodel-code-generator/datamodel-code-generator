@@ -114,6 +114,7 @@
   {
     "name": "boolean_integer_alias",
     "schema": "boolean_integer_alias",
+    "payloads": "float_integer_alias",
     "options": {},
     "cli": [],
     "python": "3.10"
@@ -128,6 +129,7 @@
   {
     "name": "number_integer",
     "schema": "number_integer",
+    "payloads": "integral",
     "options": {},
     "cli": [],
     "python": "3.10"

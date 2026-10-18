@@ -98,10 +98,11 @@ def test_allof_ref_siblings(
             # Pydantic 2.1 through 2.13 validate a value matching no member of an enum with a None member as None.
             if case["name"] == "enum_null" and not (Version("2.1") <= Version(PYDANTIC_VERSION) < Version("2.14")):
                 expected = expected.with_name("enum_null_rejected_without_validators.txt")
+            oracle = expected.with_name(f"{case['oracle']}_without_validators.txt") if "oracle" in case else expected
             actual = []
             for value, expected_value in zip(
                 [*case["valid"], *case["invalid"]],
-                json.loads(expected.read_text(encoding="utf-8")),
+                json.loads(oracle.read_text(encoding="utf-8")),
                 strict=True,
             ):
                 if expected_value["accepted"]:

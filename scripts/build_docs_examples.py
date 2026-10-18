@@ -694,6 +694,12 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=EXPECTED_MAIN / "recommend_options" / "titled_variants.txt",
         ),
         _file_example(
+            "recommend-options.naming-hint",
+            "recommend-options.md",
+            language="text",
+            path=EXPECTED_MAIN / "recommend_options" / "naming_hint.txt",
+        ),
+        _file_example(
             "model-reuse.use-type-alias.schema",
             "model-reuse.md",
             language="json",

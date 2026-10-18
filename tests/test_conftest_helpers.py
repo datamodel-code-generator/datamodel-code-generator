@@ -1197,6 +1197,56 @@ def test_ledger_merges_observations_from_environments(ledger: LedgerProject, tmp
     ledger.run("suite", "--inline-snapshot=disable", env=builtin_env).assert_outcomes(passed=5, skipped=1)
 
 
+UNCOLLECTED_TESTS = """
+import pytest
+
+from tests.conftest import assert_output
+
+
+@pytest.mark.parametrize("case", ["kept"])
+def test_case(case):
+    assert_output(f"{case}\\n")
+"""
+
+
+def test_ledger_drops_items_no_environment_collects(ledger: LedgerProject, tmp_path: Path) -> None:
+    """Lines of an item no observed environment collects go, conditional ones too, with the files only they used.
+
+    Only modules some environment collected count: the lines of ``test_o.py``, which no observation collected, stay,
+    and so do the lines of an item an environment collected.
+    """
+    ledger.write("test_m.py", UNCOLLECTED_TESTS)
+    ledger.write("test_o.py", UNCOLLECTED_TESTS)
+    ledger.run("suite").assert_outcomes(passed=2)
+    kept = {module: ledger.refs(module) for module in ("test_m", "test_o")}
+    for module, prefix in (("test_m", "m"), ("test_o", "o")):
+        gone = [
+            units.RefLine("test_case", "gone", f"{prefix}/gone@{python}.txt", conditional=True)
+            for python in ("py310", "py314")
+        ]
+        for line in gone:
+            ledger.store(line.label, "gone\n")
+        lines = [*units.parse_refs(kept[module])[0], *gone]
+        (ledger.suite / f"{module}.refs").write_text(units.format_refs(lines), encoding="utf-8")
+    other = ledger.refs("test_o")
+    first, second = tmp_path / "first", tmp_path / "second"
+    for directory in (first, second):
+        ledger.run(f"--expected-observe={directory}", "suite/test_m.py").assert_outcomes(passed=1)
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(
+        json.dumps({"observations": [str(first), str(second)], "merge": False, "drop_uncollected": True}),
+        encoding="utf-8",
+    )
+    result = ledger.run(f"--expected-apply={apply_file}")
+    result.assert_outcomes()
+    assert "expected: removed the lines of suite/test_m.py::test_case[gone] from suite/test_m.refs" in (
+        result.stdout.str()
+    )
+    assert (ledger.refs(), ledger.refs("test_o")) == (kept["test_m"], other)
+    assert sorted(ledger.files()) == ["m/case[kept].txt", "o/gone@py310.txt", "o/gone@py314.txt"]
+    ledger.run("suite/test_m.py", env=GITHUB).assert_outcomes(passed=1)
+
+
 def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) -> None:
     """A payload from another environment adds an override for different content and marks labels it skips."""
     ledger.write(
@@ -1952,6 +2002,52 @@ def test_fix_expected_from_ci_and_all_environments(
     assert tox_command() == ["/bin/tox"]
     monkeypatch.setattr(fix_expected.shutil, "which", lambda _name: None)
     assert tox_command()[:3] == ["uvx", "--from", "tox>=4.32"]
+
+
+def test_fix_expected_drops_tests_no_environment_collects(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run over every environment drops the lines of tests none collects; ``--drop-uncollected`` does only that.
+
+    tox is an external tool: the fake creates environments whose Python is this one, and pytest runs for real.
+    """
+    import subprocess
+
+    from scripts import fix_expected
+
+    ledger.write("test_m.py", UNCOLLECTED_TESTS)
+    ledger.run("suite").assert_outcomes(passed=1)
+    recorded = ledger.refs()
+    gone = [
+        units.RefLine("test_case", "gone", f"m/gone@{python}.txt", conditional=True) for python in ("py310", "py314")
+    ]
+
+    def record_gone() -> None:
+        for line in gone:
+            ledger.store(line.label, "gone\n")
+        lines = [*units.parse_refs(recorded)[0], *gone]
+        (ledger.suite / "test_m.refs").write_text(units.format_refs(lines), encoding="utf-8")
+
+    real_run = subprocess.run
+
+    def fake_run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if command[:2] == ["tox", "run"]:
+            return subprocess.CompletedProcess(command, 0, stdout="")
+        return real_run([sys.executable, *command[1:]], **kwargs)
+
+    monkeypatch.setenv("PYTHONPATH", str(Path(__file__).parents[1]))
+    monkeypatch.setattr(fix_expected.subprocess, "run", fake_run)
+    monkeypatch.setattr(fix_expected, "tox_command", lambda: ["tox"])
+    monkeypatch.setattr(fix_expected, "ENVIRONMENTS", {"py314": fix_expected.ENVIRONMENTS["py314"]})
+    root, output = ["--root", str(ledger.pytester.path)], ledger.pytester.path / "observed"
+    record_gone()
+    assert fix_expected.main([*root, "--all-environments", "--workers", "0", "suite"]) == 0
+    assert (ledger.refs(), sorted(ledger.files())) == (recorded, ["m/case[kept].txt"])
+    record_gone()
+    observe = ["--all-environments", "--observe-only", "--output", str(output), "--workers", "0", "suite"]
+    assert fix_expected.main([*root, *observe]) == 0
+    assert fix_expected.main([*root, "--drop-uncollected", str(output / "py314")]) == 0
+    assert (ledger.refs(), sorted(ledger.files())) == (recorded, ["m/case[kept].txt"])
 
 
 ONE_TEST = "from tests.conftest import assert_output\n\nOUT = 'x\\n'\n\n\ndef test_a():\n    assert_output(OUT)\n"
@@ -2909,6 +3005,120 @@ def test_fix_expected_deduplicate_refuses(
         "suite/test_m.refs is not in the form pytest writes. "
         "Fix: python scripts/fix_expected.py --repair suite/test_m.refs\n"
     )
+
+
+def test_stored_expected_outputs_are_unique() -> None:
+    """Every content below tests/data/expected is stored once: tests with equal output share one stored unit.
+
+    A file no test records, outside the stored trees, counts as a unit of its own.
+    """
+    index = units.RefsIndex(Path(__file__).parent)
+    lines = index.all_lines()
+    unrecorded = units.unrecorded_files(lines, index.expected_root)
+    if groups := units.duplicates(lines, index.expected_root, unrecorded):
+        pytest.fail(units.duplicate_storages_message(groups, unrecorded), pytrace=False)  # pragma: no cover
+
+
+def test_test_inputs_are_unique() -> None:
+    """Every input below tests/data is stored once: a file, or a tree that tests read as a whole."""
+    if groups := units.input_duplicates(Path(__file__).parent / "data"):
+        pytest.fail(units.duplicate_inputs_message(groups), pytrace=False)  # pragma: no cover
+
+
+def test_input_duplicates_compare_files_and_trees(tmp_path: Path) -> None:
+    """Files compare by suffix and content with CRLF read as LF, and trees compare as a whole.
+
+    A registered directory or a Python package below ``python/`` is one unit from its outermost root, so its files may
+    repeat files elsewhere; expected output, caches, hidden directories, bytecode and the root ``__init__.py`` are not
+    inputs.
+    """
+    for name, data in {
+        "a/x.json": b"{}\r\n",
+        "b/y.json": b"{}\n",
+        "c/x.yaml": b"{}\n",
+        "t1/s.json": b"{}\n",
+        "t1/inner/u.json": b"1",
+        "t2/s.json": b"{}\n",
+        "t2/inner/u.json": b"1",
+        "python/pkg/__init__.py": b"",
+        "python/pkg/sub/__init__.py": b"",
+        "python/pkg2/__init__.py": b"",
+        "python/pkg2/sub/__init__.py": b"",
+        "python/loose.py": b"",
+        "expected/z.json": b"{}\n",
+        "d/__pycache__/m.json": b"{}\n",
+        "d/.hidden/h.json": b"{}\n",
+        "e/m.pyc": b"",
+        "__init__.py": b"",
+    }.items():
+        (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    groups = units.input_duplicates(tmp_path, ("t1", "t2", "t1/inner"))
+    assert sorted(groups) == [["a/x.json", "b/y.json"], ["python/pkg/", "python/pkg2/"], ["t1/", "t2/"]]
+    assert units.input_duplicates(tmp_path / "t1", ()) == []
+
+
+def test_duplicate_messages_name_the_fix() -> None:
+    """Failures name every copy with the command that removes it, and the command that stores expected output once."""
+    assert units.duplicate_inputs_message([["jsonschema/b.json", "jsonschema/a.json", "c.json"], ["t2/", "t1/"]]) == (
+        "tests/data/jsonschema/a.json has the same content as tests/data/c.json.\n"
+        "Fix: use tests/data/c.json in your test, then git rm tests/data/jsonschema/a.json\n"
+        "tests/data/jsonschema/b.json has the same content as tests/data/c.json.\n"
+        "Fix: use tests/data/c.json in your test, then git rm tests/data/jsonschema/b.json\n"
+        "tests/data/t2/ has the same content as tests/data/t1/.\n"
+        "Fix: use tests/data/t1 in your test, then git rm -r tests/data/t2\n"
+        "If a directory is read as a whole (a multi-file schema, an input directory, a copied project or templates), "
+        "add it to INPUT_TREES in tests/units.py: its files then form one unit."
+    )
+    assert units.duplicate_storages_message([["main/a.py", "main/b.py"]]) == (
+        "tests/data/expected/main/a.py and tests/data/expected/main/b.py store the same content.\n"
+        "Fix: python scripts/fix_expected.py --deduplicate && git add -A tests"
+    )
+    assert units.duplicate_storages_message([["c.txt", "d.txt"], ["e.txt", "f.txt", "g.txt"]], {"c.txt", "f.txt"}) == (
+        "tests/data/expected/c.txt and tests/data/expected/d.txt store the same content.\n"
+        "tests/data/expected/e.txt and tests/data/expected/f.txt and tests/data/expected/g.txt "
+        "store the same content.\n"
+        "Fix: no test records tests/data/expected/c.txt; read tests/data/expected/d.txt where it is read, "
+        "then git rm tests/data/expected/c.txt\n"
+        "Fix: no test records tests/data/expected/f.txt; read tests/data/expected/e.txt where it is read, "
+        "then git rm tests/data/expected/f.txt\n"
+        "Fix: python scripts/fix_expected.py --deduplicate && git add -A tests"
+    )
+    assert units.duplicate_storages_message([["h.txt", "i.txt"]], {"h.txt", "i.txt"}) == (
+        "tests/data/expected/h.txt and tests/data/expected/i.txt store the same content.\n"
+        "Fix: no test records tests/data/expected/i.txt; read tests/data/expected/h.txt where it is read, "
+        "then git rm tests/data/expected/i.txt"
+    )
+
+
+def test_unrecorded_expected_files_are_units(tmp_path: Path) -> None:
+    """A file no line stores and no stored tree holds is a unit of its own, compared with the stored units.
+
+    Files a stored tree's pattern selects belong to that tree, and caches and bytecode are not output.
+    """
+    expected = tmp_path / "expected"
+    for name, text in {
+        "m/a.txt": "same\n",
+        "m/copy.txt": "same\n",
+        "tree/x.py": "X = 1\n",
+        "tree/sub/y.py": "same\n",
+        "tree/notes.txt": "same\n",
+        "lone.py": "X = 1\n",
+        "m/__pycache__/c.txt": "same\n",
+        "m/.cache/d.txt": "same\n",
+        "m/e.pyc": "",
+    }.items():
+        (path := expected / name).parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    lines = {
+        tmp_path / "test_m.refs": [
+            units.RefLine("test_a", "", "m/a.txt"),
+            units.RefLine("test_tree", "", "tree//*.py"),
+        ]
+    }
+    unrecorded = units.unrecorded_files(lines, expected)
+    assert unrecorded == ["lone.py", "m/copy.txt", "tree/notes.txt"]
+    assert units.duplicates(lines, expected, unrecorded) == [["m/a.txt", "m/copy.txt", "tree/notes.txt"]]
 
 
 @pytest.mark.parametrize("option", ["--apply", "--from-ci", "--repair", "--deduplicate"])

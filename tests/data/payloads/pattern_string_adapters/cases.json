@@ -61,6 +61,7 @@
   },
   {
     "name": "constraints_off",
+    "source": "direct",
     "options": {
       "field_constraints": false
     },
@@ -69,6 +70,7 @@
   },
   {
     "name": "validators_off",
+    "source": "direct",
     "options": {
       "generate_schema_validators": false
     },
@@ -77,6 +79,7 @@
   },
   {
     "name": "force_optional",
+    "source": "direct",
     "options": {
       "force_optional_for_required_fields": true
     },
@@ -85,6 +88,7 @@
   },
   {
     "name": "force_defaults",
+    "source": "direct",
     "options": {
       "apply_default_values_for_required_fields": true
     },
@@ -93,6 +97,7 @@
   },
   {
     "name": "strip_defaults",
+    "source": "direct",
     "options": {
       "strip_default_none": true
     },
@@ -101,6 +106,7 @@
   },
   {
     "name": "annotated",
+    "source": "direct",
     "options": {
       "use_annotated": true
     },
@@ -109,6 +115,7 @@
   },
   {
     "name": "strict",
+    "source": "direct",
     "options": {
       "strict_types": [
         "str"
@@ -155,6 +162,7 @@
   },
   {
     "name": "custom",
+    "source": "direct",
     "options": {},
     "changed": false,
     "custom": true

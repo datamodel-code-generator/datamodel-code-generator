@@ -109,6 +109,17 @@ def test_main_asyncapi_single_value_enum_as_const(
     )
 
 
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_asyncapi_single_value_enum_as_const_keeps_xml_schema(extra_args: list[str], output_file: Path) -> None:
+    """Keep the fixed value of a nillable element in an embedded XML Schema, which is converted, not read as JSON."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "single_value_enum_as_const" / "xml_schema.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
 def test_main_asyncapi_3_json(output_file: Path) -> None:
     """Generate models from an AsyncAPI 3.x JSON document."""
     run_main_and_assert(

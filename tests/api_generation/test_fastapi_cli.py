@@ -14,6 +14,7 @@ from datamodel_code_generator import (
     Error,
     InputFileType,
     LeftoverFilesWarning,
+    NamingHintWarning,
     OpenAPIScope,
     PythonVersion,
     ServerBodyMode,
@@ -82,6 +83,7 @@ JSON_CASES = json.loads((CLI / "json-cases.json").read_text(encoding="utf-8"))
 REMOVED_OPTIONS = json.loads((CLI / "removed-options.json").read_text(encoding="utf-8"))
 LAYOUT_ERRORS = json.loads((CLI / "layout-errors.json").read_text(encoding="utf-8"))
 MODEL_DEPENDENCIES = json.loads((CLI / "model-dependencies.json").read_text(encoding="utf-8"))
+MODEL_DEPENDENCY_NOTICES = dict.fromkeys(("type-aliases", "additional-imports", "additional-modules"), "formats")
 CONFIGURED = [
     *("--server-layout", "routers", "--server-handler-mode", "async", "--server-include-request"),
     *("--server-body-mode", "request", "--server-router-names", '{"tag:pets": "animals"}'),
@@ -211,7 +213,9 @@ def test_fastapi_cli_model_dependencies(
         extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
         copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
         capsys=capsys,
-        expected_stderr=stored_expected(expected / f"{case_name}.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(
+            expected / f"{MODEL_DEPENDENCY_NOTICES.get(case_name, case_name)}.txt"
+        ).read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=expected / f"{case_name}.py",
         skip_code_validation=True,
@@ -1505,7 +1509,9 @@ def test_fastapi_cli_nested_models_example(
     run_main_with_args(
         arguments,
         capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-app-server.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / "run-commands" / "app-server.txt").read_text(
+            encoding="utf-8"
+        ),
         use_builtin_default_formatter=False,
     )
     run_main_with_args(
@@ -1565,6 +1571,22 @@ def test_fastapi_cli_leftover_files(
             if line.startswith(("EXTRA", "datamodel_code_generator.LeftoverFilesWarning"))
         )
     assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "leftover-files.txt")
+
+
+def test_fastapi_cli_naming_hint(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point to --recommend-options after a server run whose models are mostly numbered collisions, not in a check."""
+    monkeypatch.chdir(tmp_path)
+    shutil.copy2(DATA / "recommend_options" / "naming_hint.yaml", tmp_path / "naming_hint.yaml")
+    lines = []
+    for run, options in (("generate", []), ("check", ["--check"])):
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", NamingHintWarning)
+            run_main_with_args(["--input", "naming_hint.yaml", *DOC_OPTIONS, *options])
+        lines.append(f"# {run} run")
+        lines.extend(
+            f"{item.category.__name__}: {item.message}" for item in recorded if item.category is NamingHintWarning
+        )
+    assert_output("\n".join(lines) + "\n")
 
 
 def test_fastapi_cli_mixed_jobs(

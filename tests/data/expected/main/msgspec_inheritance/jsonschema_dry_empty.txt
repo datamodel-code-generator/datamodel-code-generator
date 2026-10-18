@@ -1,1 +1,26 @@
-msgspec.Struct model 'Payload' has incompatible layouts from generated bases 'LeftOuter' and 'RightInner'.
+{
+  "convert": {
+    "left1": 1,
+    "left2": 2,
+    "right1": 3
+  },
+  "decode": {
+    "left1": 1,
+    "left2": 2,
+    "right1": 3
+  },
+  "fields": [
+    "left1",
+    "left2",
+    "right1"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

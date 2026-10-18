@@ -1067,7 +1067,7 @@ def test_main_graphql_union_class_name_prefix(output_file: Path) -> None:
     This test verifies fix for issue #2939.
     """
     run_main_and_assert(
-        input_path=GRAPHQL_DATA_PATH / "union_class_name_prefix.graphql",
+        input_path=GRAPHQL_DATA_PATH / "union.graphql",
         output_path=output_file,
         input_file_type="graphql",
         assert_func=assert_file_content,

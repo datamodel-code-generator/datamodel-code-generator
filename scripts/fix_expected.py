@@ -19,6 +19,9 @@ Maintainers regenerate the index in every environment the CI lanes use (slow; ne
     python scripts/fix_expected.py --all-environments [--environment NAME ...] [-- PYTEST SELECTION]
     python scripts/fix_expected.py --all-environments --observe-only --output DIR [--environment NAME ...]
     python scripts/fix_expected.py --observations DIR [DIR ...]
+    python scripts/fix_expected.py --drop-uncollected DIR [DIR ...]
+A run over every environment also drops the lines of tests no environment collects any more, conditional lines
+included; ``--drop-uncollected`` does only that, from observations of every environment that collects their modules.
 
 Maintainers store each content once, for every sidecar or only those of some test directories, modules or sidecars:
     python scripts/fix_expected.py --deduplicate [PATH[::TEST] ...]
@@ -511,6 +514,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     group.add_argument("--repair", metavar="REFS", help="drop unreadable lines of a sidecar and re-record their tests")
     group.add_argument("--all-environments", action="store_true", help="maintainers: rebuild in every environment")
     group.add_argument("--observations", nargs="+", type=Path, metavar="DIR", help="maintainers: apply observations")
+    group.add_argument(
+        "--drop-uncollected",
+        nargs="+",
+        type=Path,
+        metavar="DIR",
+        help="maintainers: drop the lines of tests no observed environment collects",
+    )
     group.add_argument("--deduplicate", nargs="*", metavar="PATH", help="maintainers: store each content once")
     parser.add_argument("--environment", action="append", choices=sorted(ENVIRONMENTS), help="limit the environments")
     parser.add_argument("--observe-only", action="store_true", help="record observations without applying them")
@@ -532,6 +542,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "where": lambda nodeid: where(nodeid, root),
         "repair": lambda sidecar: repair(sidecar, root),
         "observations": lambda paths: run_apply({"observations": [str(path.resolve()) for path in paths]}, (), root),
+        "drop_uncollected": lambda paths: run_apply(
+            {"observations": [str(path.resolve()) for path in paths], "merge": False, "drop_uncollected": True},
+            (),
+            root,
+        ),
         "deduplicate": lambda paths: deduplicate_expected([*paths, *arguments.selection], root),
     }
     if chosen := next((name for name in commands if getattr(arguments, name) is not None), None):
@@ -546,7 +561,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments.observe_only:
         print(f"[fix_expected] observations in {output}")
         return 0
-    return run_apply({"observations": [str(path) for path in directories]}, (), root)
+    complete = not arguments.environment and len(directories) == len(names)
+    return run_apply({"observations": [str(path) for path in directories], "drop_uncollected": complete}, (), root)
 
 
 if __name__ == "__main__":

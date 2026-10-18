@@ -12,6 +12,7 @@ ExperimentalFeatureKind = Literal["input-format", "formatter", "cli-option", "py
 ExperimentalFeatureFormat = Literal["table", "json", "markdown"]
 ExperimentalFeatureId = Literal[
     "behavior.batch-generation-jobs",
+    "behavior.naming-hint",
     "behavior.remote-reference-lock",
     "cli-option.generate-client",
     "cli-option.generate-schema-validators",
@@ -59,6 +60,26 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "Define named generation jobs in [tool.datamodel-codegen.jobs] and select them with --job or "
             "--all-jobs. Each selected job has its own input and output, and the full selection is validated "
             "before generation begins."
+        ),
+    ),
+    "behavior.naming-hint": ExperimentalFeature(
+        id="behavior.naming-hint",
+        kind="behavior",
+        target="NamingHintWarning",
+        message=(
+            "The hint at --recommend-options that a command line generation shows when many class names are numbered "
+            "collisions is experimental; when it is shown and its text may change."
+        ),
+        since_version="0.86.0",
+        note=(
+            "A command line generation warns with datamodel_code_generator.NamingHintWarning when at least 10 class "
+            "names, and at least one in five, are numbered collisions: names the model resolver numbered because the "
+            "name without the number was taken, such as Pet1 beside Pet. It is shown at most once per command and "
+            "never by generate(). An explicit --naming-strategy, --model-name-map, or deprecated "
+            "--parent-scoped-naming, on the command line or in pyproject.toml, --check, --diff-against, "
+            "--output-format json, --disable-warnings, and the options --recommend-options refuses (--watch, "
+            "--all-jobs, and more than one --job) leave it out; a filter that turns warnings into errors drops it. "
+            "It never changes the generated files, the result of --check, or the exit code."
         ),
     ),
     "behavior.remote-reference-lock": ExperimentalFeature(

@@ -130,6 +130,7 @@ from datamodel_code_generator import (
     Error,
     InputFileType,
     InvalidClassNameError,
+    NamingHintWarning,
     ReuseScope,
     _validate_generation_path_conflicts,
     enable_debug_message,
@@ -173,6 +174,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from urllib.parse import ParseResult
 
+    from datamodel_code_generator._naming_hint import NamingHint
     from datamodel_code_generator._publication import (
         PublicationAnchor as _PublicationAnchor,
     )
@@ -229,6 +231,7 @@ BATCH_UNSAFE_CLI_FIELDS: frozenset[str] = frozenset({"input", "input_model", "ou
 BATCH_COMMAND_ONLY_CONFIG_FIELDS: frozenset[str] = frozenset({"list_deprecations", "list_experimental"})
 BATCH_CONFIG_CONTEXT_FIELDS: frozenset[str] = frozenset({"use_annotated", "use_specialized_enum"})
 BATCH_OUTER_CONFIG_FIELDS: frozenset[str] = frozenset({"watch", "watch_delay"})
+_NAMING_FIELDS: frozenset[str] = frozenset({"model_name_map", "naming_strategy", "parent_scoped_naming"})
 
 
 class Exit(IntEnum):
@@ -319,6 +322,7 @@ def _create_config(
         for name in _PYPROJECT_JSON_CONFIG_FIELDS
         if isinstance(value := cli_config_args.get(name, pyproject_config.get(name)), str | Path)
     }
+    config._naming_chosen = not _NAMING_FIELDS.isdisjoint({*pyproject_config, *cli_config_args})  # noqa: SLF001
     return config
 
 
@@ -1988,6 +1992,37 @@ def _apply_model_run_options(config: Config, namespace: Namespace, pyproject_con
     return None
 
 
+def _collect_naming_hint(config: Config, namespace: Namespace) -> NamingHint | None:
+    """Collect the class names of the generation run that follows for the naming hint, unless the run silences it.
+
+    An explicit naming strategy or model name map, a check, an input diff, JSON output, and disabled warnings silence
+    the hint, and so does a command that --recommend-options refuses, such as one with --watch or --all-jobs; the
+    invocation shows it at most once.
+    """
+    from datamodel_code_generator._naming_hint import collect_class_names  # noqa: PLC0415
+
+    return collect_class_names(
+        wanted=not (
+            config._naming_chosen  # noqa: SLF001
+            or config.check
+            or config.diff_against is not None
+            or namespace.output_format == "json"
+            or config.disable_warnings
+            or _recommend_options_conflict(namespace) is not None
+        )
+    )
+
+
+def _warn_naming_hint(hint: NamingHint | None) -> None:
+    """Point to --recommend-options when many class names of a successful generation are numbered collisions.
+
+    A filter that turns warnings into errors drops the hint instead of failing a run that succeeded.
+    """
+    if hint is not None and (message := hint.message()) is not None:
+        with suppress(NamingHintWarning):
+            warnings.warn(message, NamingHintWarning, stacklevel=2)
+
+
 def _run_target(  # noqa: PLR0913, PLR0917
     args: Sequence[str],
     namespace: Namespace,
@@ -2007,7 +2042,11 @@ def _run_target(  # noqa: PLR0913, PLR0917
     """
     from datamodel_code_generator._target_cli import run_target  # noqa: PLC0415
 
-    return Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job, implied or {}, announced or {}))
+    hint = _collect_naming_hint(config, namespace)
+    result = Exit(run_target(args, namespace, config, pyproject_path, batch, lock, job, implied or {}, announced or {}))
+    if result is Exit.OK:
+        _warn_naming_hint(hint)
+    return result
 
 
 def _staging_directory_for(target: Path) -> tempfile.TemporaryDirectory[str]:
@@ -3156,6 +3195,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         compare_output = None
 
     config.repair_invalid_dotted_stdout = _repairs_invalid_dotted_stdout(config, namespace, generate_output)
+    naming_hint = _collect_naming_hint(config, namespace)
 
     def cleanup_and_return(exit_code: Exit) -> Exit:
         if temp_context is not None:
@@ -3331,6 +3371,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         _write_comparison_output(comparison, namespace.output_format)
         return cleanup_and_return(Exit.DIFF if comparison.differences else Exit.OK)
 
+    _warn_naming_hint(naming_hint)
     if config.watch and start_watch:
         return cleanup_and_return(_watch_and_regenerate(args, config, watch_dependencies))
 
@@ -3339,11 +3380,12 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
 def main(args: Sequence[str] | None = None) -> Exit:
     """Execute datamodel code generation from command-line arguments."""
+    from datamodel_code_generator._naming_hint import naming_hint_scope  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator.deprecations import (  # ruff: ignore[import-outside-top-level]
         cli_migration_warning_scope,
     )
 
-    with cli_migration_warning_scope():
+    with cli_migration_warning_scope(), naming_hint_scope():
         return _main(args, start_watch=True)
 
 

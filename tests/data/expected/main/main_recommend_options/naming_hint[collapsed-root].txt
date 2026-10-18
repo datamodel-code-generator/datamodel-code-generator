@@ -1,0 +1,1 @@
+NamingHintWarning: 12 of 24 class names are numbered collisions (Status1...Status12). Add --recommend-options to this command to see naming options for this schema (experimental).

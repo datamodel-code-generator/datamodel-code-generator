@@ -7,6 +7,7 @@
   },
   {
     "name": "mutable",
+    "input": "integer",
     "options": {
       "enable_faux_immutability": false
     },
@@ -87,6 +88,7 @@
   },
   {
     "name": "custom",
+    "input": "integer",
     "options": {},
     "payload": 1,
     "safe": false,
@@ -94,6 +96,7 @@
   },
   {
     "name": "packaged",
+    "input": "integer",
     "options": {},
     "payload": 1,
     "safe": true,
@@ -101,6 +104,7 @@
   },
   {
     "name": "custom_base",
+    "input": "integer",
     "options": {
       "base_class": "tests.data.python.unique_model_sets.explicit_native.IdentityBase"
     },
@@ -109,6 +113,7 @@
   },
   {
     "name": "partial_template",
+    "input": "integer",
     "options": {},
     "payload": 1,
     "safe": false,
@@ -122,6 +127,7 @@
   },
   {
     "name": "validators",
+    "input": "integer",
     "options": {},
     "payload": 1,
     "safe": false,
@@ -141,6 +147,7 @@
   },
   {
     "name": "standard_naive_datetime",
+    "input": "standard_datetime",
     "options": {
       "output_datetime_class": "NaiveDatetime"
     },
@@ -179,6 +186,7 @@
   },
   {
     "name": "standard_custom",
+    "input": "opaque",
     "options": {},
     "payload": "2024-01-02",
     "safe": false,
@@ -186,6 +194,7 @@
   },
   {
     "name": "standard_partial",
+    "input": "opaque",
     "options": {},
     "payload": "2024-01-02",
     "safe": false,
@@ -193,6 +202,7 @@
   },
   {
     "name": "standard_validators",
+    "input": "opaque",
     "options": {},
     "payload": "2024-01-02",
     "safe": false,
@@ -214,6 +224,7 @@
   },
   {
     "name": "standard_plain_datetime",
+    "input": "standard_datetime",
     "options": {
       "output_datetime_class": "datetime"
     },
@@ -222,6 +233,7 @@
   },
   {
     "name": "standard_opaque_date",
+    "input": "transported_date",
     "options": {},
     "payload": "2024-01-02",
     "safe": false
@@ -361,6 +373,7 @@
   },
   {
     "name": "tuple_custom",
+    "input": "tuple",
     "options": {},
     "payload": [
       1,
@@ -371,6 +384,7 @@
   },
   {
     "name": "tuple_partial",
+    "input": "tuple",
     "options": {},
     "payload": [
       1,
@@ -381,6 +395,7 @@
   },
   {
     "name": "tuple_packaged",
+    "input": "tuple",
     "options": {},
     "payload": [
       1,
@@ -400,6 +415,7 @@
   },
   {
     "name": "tuple_custom_base",
+    "input": "tuple",
     "options": {
       "base_class": "tests.data.python.unique_model_sets.explicit_native.IdentityBase"
     },
@@ -425,6 +441,7 @@
   },
   {
     "name": "transported_date_tuple",
+    "input": "tuple_date",
     "options": {},
     "payload": [
       "2026-09-08"
@@ -531,6 +548,7 @@
   },
   {
     "name": "transported_custom",
+    "input": "transported_date",
     "options": {},
     "payload": "2026-09-08",
     "safe": false,
@@ -538,6 +556,7 @@
   },
   {
     "name": "transported_partial",
+    "input": "transported_date",
     "options": {},
     "payload": "2026-09-08",
     "safe": false,
@@ -545,6 +564,7 @@
   },
   {
     "name": "transported_validators",
+    "input": "transported_date",
     "options": {},
     "payload": "2026-09-08",
     "safe": false,
@@ -552,6 +572,7 @@
   },
   {
     "name": "transported_custom_base",
+    "input": "transported_date",
     "options": {
       "base_class": "tests.data.python.unique_model_sets.explicit_native.IdentityBase"
     },
@@ -572,6 +593,7 @@
   },
   {
     "name": "inherited_mutable_base",
+    "input": "inherited",
     "options": {},
     "payload": 1,
     "safe": true,
@@ -610,6 +632,7 @@
   {
     "name": "generic_mutable",
     "source": "mutable",
+    "input": "integer",
     "code": "mutable.py",
     "options": {
       "use_generic_base_class": true,
@@ -643,6 +666,7 @@
   {
     "name": "custom_hash",
     "source": "mutable",
+    "input": "integer",
     "native": "custom_hash",
     "options": {
       "enable_faux_immutability": false,

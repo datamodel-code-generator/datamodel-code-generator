@@ -2,6 +2,29 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_every_option_is_registered_with_the_recommender]
 	main/recommend_options/registry_coverage.txt
+[test_naming_hint]
+below-count	main/main_recommend_options/naming_hint[below-count].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+below-share	main/main_recommend_options/naming_hint[below-share].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+check	main/main_recommend_options/naming_hint[check].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+collapsed-root	main/main_recommend_options/naming_hint[collapsed-root].txt
+diff	main/main_recommend_options/naming_hint[diff].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+disable-warnings	main/main_recommend_options/naming_hint[disable-warnings].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+json	main/main_recommend_options/naming_hint[json].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+model-name-map	main/main_recommend_options/naming_hint[model-name-map].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+naming-strategy	main/main_recommend_options/naming_hint[naming-strategy].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+numbered	main/recommend_options/naming_hint.txt
+pyproject-map	main/main_recommend_options/naming_hint[pyproject-map].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pyproject-naming	main/main_recommend_options/naming_hint[pyproject-naming].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+recommend-options	main/main_recommend_options/naming_hint[recommend-options].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_naming_hint_as_error]
+command	main/main_recommend_options/naming_hint_as_error[command].txt
+one-job	main/main_recommend_options/naming_hint_as_error[one-job].txt	= main/main_recommend_options/naming_hint_as_error[command].txt
+[test_naming_hint_batch_jobs]
+all-jobs	main/main_recommend_options/naming_hint_batch_jobs[all-jobs].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+jobs	main/main_recommend_options/naming_hint_batch_jobs[jobs].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+one-job	main/recommend_options/naming_hint.txt
+[test_naming_hint_not_shown_by_generate]
+	main/main_recommend_options/naming_hint_not_shown_by_generate.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_recommend_options]
 	main/recommend_options/api.txt
 [test_recommend_options_compares_candidates]

@@ -37,6 +37,7 @@ __all__ = [
     "BROKEN",
     "CONFLICT",
     "FACTS",
+    "INPUT_TREES",
     "KEEP",
     "ORDER",
     "PAYLOAD_DECODED_LIMIT",
@@ -56,11 +57,14 @@ __all__ = [
     "decode_payload",
     "deduplicate",
     "derived_name",
+    "duplicate_inputs_message",
+    "duplicate_storages_message",
     "duplicates",
     "encode_payload",
     "encode_value",
     "facts_fit",
     "format_refs",
+    "input_duplicates",
     "item_problem",
     "label_path",
     "label_problem",
@@ -80,7 +84,9 @@ __all__ = [
     "stored_digest",
     "tree_label",
     "tree_member",
+    "uncollected_items",
     "unit_digest",
+    "unrecorded_files",
     "write_files",
 ]
 
@@ -1242,13 +1248,14 @@ class _Resolution:
         self.collect_garbage()
         return self.write_sidecars()
 
-    def duplicates(self) -> list[list[str]]:
+    def duplicates(self, extra: Iterable[str] = ()) -> list[list[str]]:
         """Return the stored units whose bytes another unit of their kind also stores, grouped.
 
         Files group with files of the same suffix, trees with trees; missing files and empty trees store nothing.
+        ``extra`` names more file units to compare, such as files no line stores.
         """
         groups: dict[tuple[str, str], list[str]] = {}
-        for storage in sorted(self.before):
+        for storage in sorted(self.before | set(extra)):
             name, pattern = split_label(storage)
             if self.value(storage) not in (None, {}):
                 kind = PurePosixPath(name).suffix if pattern is None else "/"
@@ -1306,9 +1313,166 @@ def resolve(
     return _Resolution(lines, updates, expected_root).run()
 
 
-def duplicates(lines: Mapping[Path, list[RefLine]], expected_root: Path) -> list[list[str]]:
-    """Return the storages of every content that more than one stored unit holds, one sorted group per content."""
-    return _Resolution(lines, {}, expected_root).duplicates()
+def duplicates(lines: Mapping[Path, list[RefLine]], expected_root: Path, extra: Iterable[str] = ()) -> list[list[str]]:
+    """Return the storages of every content that more than one stored unit holds, one sorted group per content.
+
+    ``extra`` names more file units below the expected root, such as the files ``unrecorded_files`` returns.
+    """
+    return _Resolution(lines, {}, expected_root).duplicates(extra)
+
+
+def unrecorded_files(lines: Mapping[Path, list[RefLine]], expected_root: Path) -> list[str]:
+    """Return the files below the expected root that no line stores and no stored tree holds: units of their own."""
+    stored: set[PurePosixPath] = set()
+    trees: dict[PurePosixPath, set[str]] = {}
+    for found in lines.values():
+        for line in found:
+            name, pattern = split_label(line.stored)
+            if pattern is None:
+                stored.add(PurePosixPath(name))
+            else:
+                trees.setdefault(PurePosixPath(name), set()).add(pattern)
+    result = []
+    for directory, folders, names in os.walk(expected_root):
+        folders[:] = sorted(folder for folder in folders if folder != "__pycache__" and not folder.startswith("."))
+        base = PurePosixPath(Path(directory).relative_to(expected_root).as_posix())
+        for name in sorted(names):
+            relative = base / name
+            held = any(
+                relative.relative_to(root).match(pattern)
+                for root in relative.parents
+                for pattern in trees.get(root, ())
+            )
+            if relative.suffix != ".pyc" and relative not in stored and not held:
+                result.append(relative.as_posix())
+    return result
+
+
+def duplicate_storages_message(groups: Sequence[Sequence[str]], unrecorded: Collection[str] = ()) -> str:
+    """Explain expected units that hold the same content: a copy no test records is deleted, the rest stored once."""
+    lines = [
+        f"{' and '.join(f'tests/data/expected/{storage}' for storage in group)} store the same content."
+        for group in groups
+    ]
+    for group in groups:
+        keep = split_label(next((name for name in group if name not in unrecorded), group[0]))[0]
+        lines += [
+            f"Fix: no test records tests/data/expected/{name}; read tests/data/expected/{keep} where it is read, "
+            f"then git rm tests/data/expected/{name}"
+            for name in group
+            if name in unrecorded and name != keep
+        ]
+    if any(sum(name not in unrecorded for name in group) > 1 for group in groups):
+        lines.append("Fix: python scripts/fix_expected.py --deduplicate && git add -A tests")
+    return "\n".join(lines)
+
+
+INPUT_TREES = (
+    "ci_shards/tree",
+    "config/external_ref_mapping_round_trip",
+    "generation_platform/client/cli/json-files",
+    "generation_platform/targets/spec",
+    "jsonschema/dotted_module_exports_reuse",
+    "jsonschema/dynamic_ref_merged_generic",
+    "jsonschema/dynamic_ref_partial_binding",
+    "jsonschema/external_reference",
+    "jsonschema/field_type_collision_inherited_modules",
+    "jsonschema/field_type_collision_inherited_modules_child_first",
+    "jsonschema/field_type_collision_inherited_modules_package",
+    "jsonschema/nested_resources/embedded",
+    "jsonschema/nested_resources/external_control",
+    "jsonschema/nested_resources/physical_collision",
+    "jsonschema/nested_resources/relative_base",
+    "jsonschema/non_dict_files",
+    "jsonschema/path_absolute_root_id_refs",
+    "jsonschema/path_absolute_root_id_refs_parent_traversal",
+    "jsonschema/ref_to_json_list",
+    "jsonschema/reuse_model_same_name_references",
+    "jsonschema/reuse_scope_tree",
+    "jsonschema/reuse_scope_tree_branch",
+    "jsonschema/reuse_scope_tree_conflict",
+    "jsonschema/reuse_scope_tree_conflict_dir",
+    "jsonschema/reuse_scope_tree_cross_module_users",
+    "jsonschema/reuse_scope_tree_multi",
+    "jsonschema/reuse_scope_tree_same_name_references",
+    "jsonschema/same_name_reference_fields",
+    "jsonschema/same_name_reference_literals",
+    "openapi/dynamic_ref_component_anchors",
+    "openapi/dynamic_ref_external_generic",
+    "openapi/external_discriminator_base",
+    "openapi/external_ref_mapping",
+    "openapi/single_value_enum_as_const",
+    "templates/additional_pattern_context",
+    "templates/pattern_intersection_context",
+    "templates_dependencies/default_templates",
+)
+"""Directories below ``tests/data`` that tests read as a whole, each one input unit: a multi-file schema whose files
+refer to each other, a directory passed as the input, a copied project, or a template directory. Python packages below
+``tests/data/python`` are input trees as well."""
+
+
+def _input_member(relative: PurePosixPath) -> bool:
+    """Return whether a file below the data root is test input: not expected output, a cache, or bytecode."""
+    return (
+        relative.parts[0] != "expected"
+        and relative.suffix != ".pyc"
+        and relative != PurePosixPath("__init__.py")
+        and not any(part == "__pycache__" or part.startswith(".") for part in relative.parts[:-1])
+    )
+
+
+def input_duplicates(data_root: Path, trees: Collection[str] = INPUT_TREES) -> list[list[str]]:
+    """Return the input units below a data root that hold the same content, one sorted group per content.
+
+    A unit is a file, or a tree hashed as a whole: an outermost directory in ``trees`` or an outermost Python package
+    below ``python/``, so the files of a tree may repeat files elsewhere. Files compare by suffix and content, trees by
+    their files' paths and contents, both with CRLF read as LF; a tree's name ends with ``/``.
+    """
+    files: dict[PurePosixPath, bytes] = {}
+    for directory, folders, names in os.walk(data_root):
+        folders.sort()
+        base = PurePosixPath(Path(directory).relative_to(data_root).as_posix())
+        files |= {
+            base / name: (Path(directory) / name).read_bytes().replace(b"\r\n", b"\n")
+            for name in names
+            if _input_member(base / name)
+        }
+    roots = {PurePosixPath(tree) for tree in trees}
+    roots |= {path.parent for path in files if path.name == "__init__.py" and path.parts[0] == "python"}
+    units: dict[str, dict[str, bytes]] = {}
+    for path, data in files.items():
+        root = next((parent for parent in reversed(path.parents) if parent in roots), None)
+        name, member = (
+            (path.as_posix(), "") if root is None else (f"{root.as_posix()}/", path.relative_to(root).as_posix())
+        )
+        units.setdefault(name, {})[member] = data
+    groups: dict[tuple[str, str], list[str]] = {}
+    for name, members in sorted(units.items()):
+        digest = hashlib.sha256()
+        for member, data in sorted(members.items()):
+            digest.update(b"%d:%s:%d:%s" % (len(member.encode()), member.encode(), len(data), data))
+        kind = "/" if name.endswith("/") else PurePosixPath(name).suffix
+        groups.setdefault((kind, digest.hexdigest()), []).append(name)
+    return [members for _, members in sorted(groups.items()) if len(members) > 1]
+
+
+def duplicate_inputs_message(groups: Sequence[Sequence[str]]) -> str:
+    """Explain input units that hold the same content: keep the shortest name and delete the others."""
+    lines = []
+    for group in groups:
+        keep, *copies = sorted(group, key=lambda name: (len(name), name))
+        survivor = f"tests/data/{keep.rstrip('/')}"
+        for copy in copies:
+            remove = f"git rm {'-r ' if copy.endswith('/') else ''}tests/data/{copy.rstrip('/')}"
+            lines += [
+                f"tests/data/{copy} has the same content as tests/data/{keep}.",
+                f"Fix: use {survivor} in your test, then {remove}",
+            ]
+    lines.append(
+        "If a directory is read as a whole (a multi-file schema, an input directory, a copied project or templates), "
+        "add it to INPUT_TREES in tests/units.py: its files then form one unit."
+    )
+    return "\n".join(lines)
 
 
 def deduplicate(
@@ -1464,6 +1628,17 @@ def merge_environments(
             )
         result[nodeid] = desired
     return result
+
+
+def uncollected_items(environments: Sequence[Observations], recorded: Iterable[str]) -> list[str]:
+    """Return the recorded items no environment collected although one of them collected their whole module.
+
+    Environments collect different parameters of a test, so an item only counts as gone when none of them has it;
+    then every line of it goes, conditional ones included.
+    """
+    collected = {nodeid for environment in environments for nodeid in environment["collected"]}
+    modules = {nodeid.partition("::")[0] for nodeid in collected}
+    return sorted({nodeid for nodeid in recorded if nodeid.partition("::")[0] in modules} - collected)
 
 
 def _merged_lines(

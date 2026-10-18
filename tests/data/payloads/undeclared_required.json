@@ -194,7 +194,8 @@
     },
     "runtime_names": {
       "True": "custom_objects_True_runtime.txt"
-    }
+    },
+    "source": "objects"
   },
   "optional_open": {
     "options": {
@@ -227,7 +228,8 @@
     "runtime_names": {
       "False": "custom_open_False_runtime.txt",
       "True": "custom_open_False_runtime.txt"
-    }
+    },
+    "source": "open"
   },
   "default_objects": {
     "options": {
@@ -280,7 +282,8 @@
     "legacy_code_names": {
       "False_external_22": "default_objects_False_builtin_black23.py",
       "False_external_23": "default_objects_False_builtin_black23.py"
-    }
+    },
+    "source": "objects"
   },
   "default_declared": {
     "options": {
@@ -312,7 +315,8 @@
     },
     "runtime_names": {
       "True": "default_declared_False_runtime.txt"
-    }
+    },
+    "source": "declared"
   },
   "alias_open": {
     "options": {
@@ -345,7 +349,8 @@
       "False_external": "alias_open_False_builtin.py",
       "True_builtin": "alias_open_True_builtin.py",
       "True_external": "alias_open_True_builtin.py"
-    }
+    },
+    "source": "open"
   },
   "custom_objects": {
     "options": {},
@@ -396,7 +401,8 @@
     "legacy_code_names": {
       "False_external_22": "custom_objects_False_external_black22.py",
       "False_external_23": "custom_objects_False_external_black23.py"
-    }
+    },
+    "source": "objects"
   },
   "custom_open": {
     "options": {},
@@ -426,7 +432,8 @@
     },
     "runtime_names": {
       "True": "custom_open_False_runtime.txt"
-    }
+    },
+    "source": "open"
   },
   "extra_objects": {
     "options": {
@@ -482,7 +489,8 @@
     },
     "runtime_names": {
       "True": "custom_objects_True_runtime.txt"
-    }
+    },
+    "source": "objects"
   },
   "base_objects": {
     "options": {
@@ -535,7 +543,8 @@
     "legacy_code_names": {
       "False_external_22": "base_objects_False_external_black23.py",
       "False_external_23": "base_objects_False_external_black23.py"
-    }
+    },
+    "source": "objects"
   },
   "schema_base_open": {
     "options": {},

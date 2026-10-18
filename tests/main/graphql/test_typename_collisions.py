@@ -46,7 +46,9 @@ def test_graphql_typename_collisions(
 ) -> None:
     """Retain local typename attributes and inherited aliases across backends."""
     settings = json.loads((DATA_PATH / "payloads/typename_collision_settings.json").read_text())[profile]
-    payload = json.loads((DATA_PATH / "payloads" / f"typename_collision_{profile}.json").read_text())
+    payload = json.loads(
+        (DATA_PATH / "payloads" / f"typename_collision_{settings.pop('payload', profile)}.json").read_text()
+    )
     input_path = GRAPHQL_DATA_PATH / settings.pop("schema")
     expected_name = f"typename_{profile}_{output_model_type.value.replace('.', '_')}_{no_typename}"
     with warnings.catch_warnings(record=True) as recorded:

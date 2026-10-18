@@ -21,8 +21,10 @@ from datamodel_code_generator.model._constraints import PatternConstraints as _C
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     BaseClassDataType,
+    BaseLayoutView,
     _default_factory_type_name,
     _nested_model_default_factory,
+    linearize_data_models,
 )
 from datamodel_code_generator.model.field_name import MsgspecFieldNameResolver
 from datamodel_code_generator.model.imports import (
@@ -159,6 +161,29 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import Reference
 
 
+def _is_instance_field(field: DataModelFieldBase) -> bool:
+    """Return whether a field takes a slot of its struct, unlike the class variable a msgspec tag field becomes."""
+    return not field.is_class_var
+
+
+def _same_model(model: DataModel) -> DataModel:
+    """Return the model itself as the model whose layout it has."""
+    return model
+
+
+def _is_never_opaque(model: DataModel) -> bool:  # noqa: ARG001
+    """Return that only a configured base, which the layout check finds itself, hides the slots of a model."""
+    return False
+
+
+_FINAL_LAYOUT_VIEW = BaseLayoutView(_is_instance_field, _same_model, _is_never_opaque)
+
+
+def _user_struct_options(model: DataModel) -> dict[str, Any]:
+    """Return the struct options that template data gives a model, which builtin templates read only from a dict."""
+    return options if isinstance(options := model.extra_template_data.get("base_class_kwargs"), dict) else {}
+
+
 def has_field_assignment(field: DataModelFieldBase) -> bool:
     """Return whether a msgspec field renders with a default assignment."""
     return field.use_default_with_required or not (field.required or field.should_strip_default_none())
@@ -220,6 +245,7 @@ class Struct(DataModel):
     SUPPORTS_NULL_ENUM_MEMBER: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
+    FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS: ClassVar[bool] = True
@@ -291,14 +317,31 @@ class Struct(DataModel):
         )
 
     @staticmethod
-    def _find_layout_conflict(bases: list[DataModel]) -> tuple[DataModel, DataModel] | None:
+    def _layout_parents(model: DataModel, view: BaseLayoutView) -> list[DataModel]:
+        """Return the generated Struct bases of a model as the view of the layouts sees them."""
+        return [
+            view.layout_model(parent.reference.source)
+            for parent in model.base_classes
+            if parent.reference and isinstance(parent.reference.source, Struct)
+        ]
+
+    @staticmethod
+    def _has_unknown_layout(model: DataModel, view: BaseLayoutView) -> bool:
+        """Return whether a configured base or the view hides the slots a model has."""
+        return Struct._has_opaque_layout_base(model) or view.is_opaque(model)
+
+    @staticmethod
+    def _find_layout_conflict(
+        bases: list[DataModel], view: BaseLayoutView = _FINAL_LAYOUT_VIEW
+    ) -> tuple[DataModel, DataModel] | None:
         """Find independent slot owners with linear storage for compatible graphs.
 
         Field introduction depths distinguish inherited slots from extensions.
         Encounter ranks retain the original diagnostic order independently of
         the parent-first traversal needed to establish each model's layout.
+        The view tells the fields that take slots and the model whose layout a model has.
         """
-        pending = [(base, False) for base in bases]
+        pending = [(view.layout_model(base), False) for base in bases]
         visited: dict[str, int] = {}
         owner_depths: dict[str, int] = {}
         field_depths: dict[str | None, int] = {}
@@ -307,14 +350,10 @@ class Struct(DataModel):
             base, complete = pending.pop()
             if not complete and base.path in visited:
                 continue
-            parents = [
-                parent.reference.source
-                for parent in base.base_classes
-                if parent.reference and isinstance(parent.reference.source, Struct)
-            ]
+            parents = Struct._layout_parents(base, view)
             if not complete:
                 visited[base.path] = len(visited)
-                if Struct._has_opaque_layout_base(base):
+                if Struct._has_unknown_layout(base, view):
                     return None
                 pending.append((base, True))
                 pending.extend((parent, False) for parent in reversed(parents))
@@ -323,11 +362,11 @@ class Struct(DataModel):
             if new_names := [
                 field.name
                 for field in base.fields
-                if not field.is_class_var and field_depths.get(field.name, len(owners) + 1) > parent_depth
+                if view.is_slot(field) and field_depths.get(field.name, len(owners) + 1) > parent_depth
             ]:
                 if parent_depth != len(owners):
                     other = min(owners[parent_depth:], key=lambda owner: visited[owner.path])
-                    return Struct._select_layout_conflict((other, base), pending, owners, owner_depths, visited)
+                    return Struct._select_layout_conflict((other, base), pending, owners, owner_depths, visited, view)
                 owners.append(base)
                 for name in new_names:
                     field_depths[name] = len(owners)
@@ -336,12 +375,13 @@ class Struct(DataModel):
         return None
 
     @staticmethod
-    def _select_layout_conflict(
+    def _select_layout_conflict(  # noqa: PLR0913, PLR0917
         conflict: tuple[DataModel, DataModel],
         pending: list[tuple[DataModel, bool]],
         owners: list[DataModel],
         owner_depths: dict[str, int],
         encounter_ranks: dict[str, int],
+        view: BaseLayoutView,
     ) -> tuple[DataModel, DataModel] | None:
         """Prefer an earlier active slot owner without repeating the layout proof.
 
@@ -352,11 +392,7 @@ class Struct(DataModel):
         for base, complete in reversed(pending):
             if not complete:
                 continue
-            parents = [
-                parent.reference.source
-                for parent in base.base_classes
-                if parent.reference and isinstance(parent.reference.source, Struct)
-            ]
+            parents = Struct._layout_parents(base, view)
             ancestor_paths: set[str] = set()
             inherited_names: set[str | None] = set()
             parent_depth = 0
@@ -364,33 +400,52 @@ class Struct(DataModel):
                 parent = parents.pop()
                 if parent.path in ancestor_paths:
                     continue
-                if Struct._has_opaque_layout_base(parent):
+                if Struct._has_unknown_layout(parent, view):
                     return None
                 ancestor_paths.add(parent.path)
                 parent_depth = max(parent_depth, owner_depths.get(parent.path, 0))
-                inherited_names.update(field.name for field in parent.fields if not field.is_class_var)
-                parents.extend(
-                    ancestor.reference.source
-                    for ancestor in parent.base_classes
-                    if ancestor.reference and isinstance(ancestor.reference.source, Struct)
-                )
+                inherited_names.update(field.name for field in parent.fields if view.is_slot(field))
+                parents.extend(Struct._layout_parents(parent, view))
             if parent_depth < len(owners) and any(
-                field.name not in inherited_names and not field.is_class_var for field in base.fields
+                field.name not in inherited_names and view.is_slot(field) for field in base.fields
             ):
                 other = min(owners[parent_depth:], key=lambda owner: encounter_ranks[owner.path])
                 conflict = other, base
         return conflict
 
-    def _validate_base_layouts(self) -> None:
-        """Allow empty mixins and shared layouts, but reject independent slot extensions."""
-        if self._uses_custom_root_template:
-            return
-        bases: list[DataModel] = [
+    def _generated_layout_bases(self) -> list[DataModel]:
+        """Return the generated Struct bases in the order the layout of the bases is diagnosed in."""
+        return [
             base.reference.source
             for base in reversed(self.base_classes)
             if base.reference and isinstance(base.reference.source, Struct)
         ]
-        if conflict := self._find_layout_conflict(bases):
+
+    def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None:
+        """Flatten the struct where msgspec cannot combine the layouts of its generated bases, as the view sees them."""
+        if not self._uses_custom_root_template and self._find_layout_conflict(self._generated_layout_bases(), view):
+            flatten(self)
+
+    def flatten_base_layouts(
+        self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
+    ) -> list[DataModelFieldBase]:
+        """Return the fields in the order the constructor needs, and make the struct options of the bases its own.
+
+        msgspec makes a struct take each option from the first class in its method resolution order that sets it.
+        """
+        inherited_options: dict[str, Any] = {}
+        for model in reversed(linearize_data_models([self])[1:]):
+            inherited_options.update(_user_struct_options(model))
+        options = _user_struct_options(self)
+        for name, value in inherited_options.items():
+            options.setdefault(name, value)
+        return sorted(super().flatten_base_layouts(adopt_field), key=has_field_assignment)
+
+    def _validate_base_layouts(self) -> None:
+        """Allow empty mixins and shared layouts, but reject independent slot extensions."""
+        if self._uses_custom_root_template:
+            return
+        if conflict := self._find_layout_conflict(self._generated_layout_bases()):
             other, base = conflict
             msg = (
                 f"msgspec.Struct model {self.class_name!r} has incompatible layouts from generated bases "

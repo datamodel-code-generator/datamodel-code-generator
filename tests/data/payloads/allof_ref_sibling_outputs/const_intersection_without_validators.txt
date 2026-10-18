@@ -1,9 +1,0 @@
-[
-  {
-    "accepted": true,
-    "value": "b"
-  },
-  {
-    "accepted": false
-  }
-]

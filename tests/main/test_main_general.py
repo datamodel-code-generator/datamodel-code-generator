@@ -1968,9 +1968,12 @@ def test_mcp_tools_invalid(
     output_file: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Reject invalid MCP tool schema profile input through the CLI path."""
+    """Reject invalid MCP tool schema profile input through the CLI path; an empty document needs no fixture."""
+    input_path = DATA_PATH / "mcp_tools" / input_file
+    if input_file == "no_tools.json":
+        (input_path := output_file.parent / input_file).write_text("{}\n", encoding="utf-8")
     run_main_and_assert(
-        input_path=DATA_PATH / "mcp_tools" / input_file,
+        input_path=input_path,
         output_path=output_file,
         input_file_type="mcp-tools",
         expected_exit=Exit.ERROR,
@@ -4401,7 +4404,7 @@ require manual `model_rebuild()` calls for cross-module runtime references.""",
         "--no-use-type-checking-imports",
         "--disable-timestamp",
     ],
-    golden_output="openapi/no_use_type_checking_imports_internal.py",
+    golden_output="openapi/no_use_type_checking_imports/_internal.py",
     related_options=["--use-type-checking-imports", "--formatters", "--use-exact-imports"],
 )
 def test_no_use_type_checking_imports(output_dir: Path) -> None:

@@ -17,7 +17,7 @@ from functools import cached_property, lru_cache
 from itertools import accumulate, takewhile
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 from warnings import warn
 
 from pydantic import ConfigDict, Field
@@ -1923,6 +1923,18 @@ class BaseClassDataType(DataType):
 UNDEFINED: Any = object()
 
 
+class BaseLayoutView(NamedTuple):
+    """How the layouts of generated bases look before the processing of each module changes them.
+
+    ``is_slot`` accepts the fields that keep a slot whatever that processing does, ``layout_model`` gives the model
+    whose layout a model may take from it, and ``is_opaque`` tells the models whose layout the generator does not know.
+    """
+
+    is_slot: Callable[[DataModelFieldBase], bool]
+    layout_model: Callable[[DataModel], DataModel]
+    is_opaque: Callable[[DataModel], bool]
+
+
 def _has_field_assignment(field: DataModelFieldBase) -> bool:
     """Return whether a standard model field renders with an assignment."""
     return (bool(field.field) and not field.use_annotated) or not (
@@ -2030,6 +2042,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
+    FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = False
     REQUIRES_ADDITIONAL_PROPERTIES_REFERENCE_CLASSES: ClassVar[bool] = False
     SUPPORTS_TYPED_DICT_TOTAL_FALSE: ClassVar[bool] = False
     SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = True
@@ -2106,6 +2119,37 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def has_keyword_only_definition(self) -> bool:  # noqa: PLR6301
         """Return whether the model already makes inherited fields keyword-only."""
         return False
+
+    def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None:
+        """Flatten the model where the output cannot combine the layouts of its generated bases, as msgspec cannot."""
+
+    def flatten_base_layouts(
+        self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
+    ) -> list[DataModelFieldBase]:
+        """Return the fields that declare the model without its generated bases.
+
+        Each base gives its fields after those of its own bases, in declaration order, and the model its fields last.
+        A name keeps its first position and the field declared last, and is required where any declaration requires
+        it, as allOf merges the properties of its parts. ``adopt_field`` makes a field one of the model, required or
+        not.
+        """
+        fields: dict[object, DataModelFieldBase] = {}
+        required: dict[object, bool] = {}
+        visited: set[int] = set()
+
+        def collect(model: DataModel) -> None:
+            if id(model) in visited:
+                return
+            visited.add(id(model))
+            for base in _find_base_classes(model):
+                collect(base)
+            for field in model.fields:
+                key = id(field) if field.name is None else field.name
+                fields[key] = field
+                required[key] = required.get(key, False) or field.required
+
+        collect(self)
+        return [adopt_field(field, required[key]) for key, field in fields.items()]
 
     def orders_required_assignments_before_defaults(self) -> bool:  # noqa: PLR6301
         """Return whether required fields written as assignments must precede the fields with defaults."""

@@ -933,12 +933,12 @@ def test_legacy_relative_custom_root_template_remains_trusted() -> None:
     model = BaseModel(
         fields=[],
         reference=Reference(path="Model", original_name="Model", name="Model"),
-        custom_template_dir=Path("tests/data/templates_old_style"),
+        custom_template_dir=Path("tests/data/templates/pydantic"),
         extra_template_data=defaultdict(dict, {"Model": {"comment": RawComment()}}),
     )
 
     assert model._uses_custom_root_template
-    assert Path(model.template.filename).resolve() == Path("tests/data/templates_old_style/BaseModel.jinja2").resolve()
+    assert Path(model.template.filename).resolve() == Path("tests/data/templates/pydantic/BaseModel.jinja2").resolve()
     assert "\nraw_custom_marker = True" in model.render()
 
 

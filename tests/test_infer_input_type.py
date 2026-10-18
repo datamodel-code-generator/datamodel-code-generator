@@ -148,10 +148,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
         if file.name.endswith((
             "aliases.json",
             "extra_data.json",
-            "extra_data_msgspec.json",
             "invalid.yaml",
             "list.json",
-            "empty_data.json",
             "root_model.yaml",
             "json_pointer.yaml",
             "const.json",

@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info:
+  title: Mixed types
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Kind:
+      oneOf:
+        - {type: string, enum: [named]}
+        - {type: integer, enum: [1]}
+    Settings:
+      type: object
+      properties:
+        kind: {$ref: '#/components/schemas/Kind'}
+        limit:
+          anyOf:
+            - {type: string, enum: [unlimited]}
+            - {type: integer, enum: [0]}
+            - {type: 'null'}
+        cache:
+          oneOf:
+            - {type: boolean, enum: [false]}
+            - {type: string, enum: [auto]}
+        level:
+          oneOf:
+            - {type: string, enum: [low]}
+            - {type: string, enum: [high]}
+      required: [kind]

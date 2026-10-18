@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info: {title: Statuses, version: "1"}
+paths: {}
+components:
+  schemas:
+    Status:
+      type: string
+    Order:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            order_state:
+              type: string
+    Invoice:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            invoice_state:
+              type: string
+    Shipment:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            shipment_state:
+              type: string
+    Customer:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            customer_state:
+              type: string
+    Product:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            product_state:
+              type: string
+    Payment:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            payment_state:
+              type: string
+    Refund:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            refund_state:
+              type: string
+    Review:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            review_state:
+              type: string
+    Coupon:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            coupon_state:
+              type: string
+    Store:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            store_state:
+              type: string
+    Warehouse:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            warehouse_state:
+              type: string
+    Supplier:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/Status'
+        status:
+          type: object
+          properties:
+            supplier_state:
+              type: string
