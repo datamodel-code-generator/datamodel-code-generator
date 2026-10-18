@@ -12191,8 +12191,8 @@ def test_discriminator_final_field_aliases(
             unchanged_inputs={"aliases": aliases},
             **options,
         )
-    payload_dir = DATA_PATH / "payloads" / "discriminator_alias_outputs"
-    payloads = json.loads((payload_dir / "validation.json").read_text())
+    payload_dir = DATA_PATH / "expected" / "payloads" / "discriminator_alias_outputs"
+    payloads = json.loads((DATA_PATH / "payloads" / "discriminator_alias_outputs" / "validation.json").read_text())
     runtime: dict[str, Any] = {}
     wire_name = "wireKind" if "serialization_aliases" in options else "petType"
     for tag, detail in [("cat", "meow"), ("dog", "bark")]:
@@ -12428,14 +12428,14 @@ def test_external_discriminator_base(output_file: Path, entrypoint: str, case: s
             assert_output(
                 json.dumps(model.model_validate(payload).model_dump(by_alias=True, exclude_none=True), sort_keys=True)
                 + "\n",
-                DATA_PATH / "payloads" / "external_discriminator_outputs" / f"{case}_{tag}.txt",
+                DATA_PATH / "expected" / "payloads" / "external_discriminator_outputs" / f"{case}_{tag}.txt",
             )
     if case == "many_ordinary":
         with _generated_model(output_file, "generated_discriminator_ordinary_refs", "Controls") as model:
             payload = {"field0": {"value": "first"}, "field99": {"value": "last"}}
             assert_output(
                 json.dumps(model.model_validate(payload).model_dump(exclude_none=True), sort_keys=True) + "\n",
-                DATA_PATH / "payloads" / "external_discriminator_outputs" / "ordinary.txt",
+                DATA_PATH / "expected" / "payloads" / "external_discriminator_outputs" / "ordinary.txt",
             )
 
 
@@ -12474,7 +12474,7 @@ def test_external_discriminator_multiple_inputs(
             payload = {"item": {"kind": tag, detail: "yes"}}
             assert_output(
                 json.dumps(module.Wrapper.model_validate(payload).model_dump(exclude_none=True), sort_keys=True) + "\n",
-                DATA_PATH / "payloads" / "external_discriminator_outputs" / f"local_{tag}.txt",
+                DATA_PATH / "expected" / "payloads" / "external_discriminator_outputs" / f"local_{tag}.txt",
             )
 
 
@@ -12524,7 +12524,7 @@ def test_external_discriminator_parent_load_order(output_file: Path, entrypoint:
             with _generated_model(model_file, "discriminator_pending_dump", "Wrapper") as model:
                 assert_output(
                     json.dumps(model.model_validate(payloads[tag]).model_dump(), sort_keys=True) + "\n",
-                    DATA_PATH / "payloads/external_discriminator_outputs" / f"local_{tag}.txt",
+                    DATA_PATH / "expected/payloads/external_discriminator_outputs" / f"local_{tag}.txt",
                 )
 
 

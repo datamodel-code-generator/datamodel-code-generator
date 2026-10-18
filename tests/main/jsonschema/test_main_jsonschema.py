@@ -3266,7 +3266,10 @@ def test_main_jsonschema_field_type_collision_runtime(
         parsed = validator((payload_path / valid_payload).read_text(encoding="utf-8"))
         with pytest.raises(error_type):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
-        assert_output(f"{getattr(parsed.values.left, field_name).x}\n", payload_path / "runtime.txt")
+        assert_output(
+            f"{getattr(parsed.values.left, field_name).x}\n",
+            DATA_PATH / "expected/payloads/field_type_collision_runtime/runtime.txt",
+        )
 
 
 def _annotation_type_names(annotation: Any) -> set[str]:
@@ -3470,7 +3473,9 @@ def test_main_jsonschema_field_type_collision_cross_module(
         parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
         with pytest.raises(ValidationError):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
-        assert_output(f"{parsed.Bar.x}\n", payload_path / "runtime.txt")
+        assert_output(
+            f"{parsed.Bar.x}\n", DATA_PATH / "expected/payloads/field_type_collision_cross_module/runtime.txt"
+        )
 
 
 @pytest.mark.parametrize(
@@ -3595,7 +3600,10 @@ def test_main_jsonschema_field_type_collision_inherited_modules(
         parsed = validator((payload_path / "valid.json").read_text(encoding="utf-8"))
         with pytest.raises(ValidationError):
             validator((payload_path / "invalid.json").read_text(encoding="utf-8"))
-        assert_output(f"{getattr(parsed, field_name).x}\n", payload_path / "runtime.txt")
+        assert_output(
+            f"{getattr(parsed, field_name).x}\n",
+            DATA_PATH / "expected/payloads/field_type_collision_cross_module/runtime.txt",
+        )
 
 
 def test_main_reuse_model_discriminator_literal(output_file: Path) -> None:
@@ -25634,7 +25642,7 @@ def test_msgspec_inheritance_preserve_other_backends(
             decoded = msgspec.json.decode(json.dumps(case["payload"]), type=model)
             assert_output(
                 json.dumps({"convert": converted, "decode": decoded}, sort_keys=True) + "\n",
-                DATA_PATH / "payloads/msgspec_inheritance_typed_dict.txt",
+                DATA_PATH / "expected/payloads/msgspec_inheritance_typed_dict.txt",
             )
             with pytest.raises(msgspec.ValidationError, match="missing required field"):
                 msgspec.convert({}, type=model)
@@ -26057,7 +26065,7 @@ def test_explicit_alias_names_valid_shadows(
             parsed = msgspec.json.decode(b'{"a": "A", "b": 1}', type=model)
             assert_output(
                 json.dumps(msgspec.to_builtins(parsed), sort_keys=True) + "\n" + repr(parsed) + "\n",
-                JSON_SCHEMA_DATA_PATH.parent / "payloads" / "explicit_alias_msgspec_field.txt",
+                JSON_SCHEMA_DATA_PATH.parent / "expected" / "payloads" / "explicit_alias_msgspec_field.txt",
             )
             with pytest.raises(msgspec.ValidationError, match="missing required field `b`"):
                 msgspec.json.decode(b'{"a": "A"}', type=model)
@@ -26780,7 +26788,7 @@ def test_validator_collisions(
         with _generated_model(output_file, "validator_single", "Single") as model:
             assert_output(
                 json.dumps({"value": model(value="V").value}, indent=2) + "\n",
-                DATA_PATH / "payloads/validator_runtime/single.txt",
+                DATA_PATH / "expected/payloads/validator_runtime/single.txt",
             )
         return
     with _generated_model(output_file, "validator_collisions", "Collision") as model:
@@ -26797,7 +26805,7 @@ def test_validator_collisions(
                 {"result": model.model_validate(data).model_dump(), "fields": list(model.model_fields)}, indent=2
             )
             + "\n",
-            DATA_PATH / "payloads/validator_runtime/collision.txt",
+            DATA_PATH / "expected/payloads/validator_runtime/collision.txt",
         )
         for field in ("validate_validator", "validate_validator_1"):
             _assert_model_json_invalid(
@@ -26847,7 +26855,7 @@ def test_validator_inheritance_definition_order(output_file: Path, entrypoint: s
                 indent=2,
             )
             + "\n",
-            DATA_PATH / "payloads/validator_runtime/inheritance.txt",
+            DATA_PATH / "expected/payloads/validator_runtime/inheritance.txt",
         )
 
 
@@ -26896,7 +26904,7 @@ def test_validator_finalized_model_import(output_dir: Path, entrypoint: str, exa
                 indent=2,
             )
             + "\n",
-            DATA_PATH / "payloads/validator_runtime/imports.txt",
+            DATA_PATH / "expected/payloads/validator_runtime/imports.txt",
         )
 
 
@@ -27008,7 +27016,7 @@ def test_field_name_bindings(
                 _assert_python_module_importable(output_file, "generated_delayed", "Record")
             assert_output(
                 f"native: {native_error}\ngenerated: {generated_error.value}\n",
-                DATA_PATH / "payloads/field_name_bindings_runtime/native_delayed_error.txt",
+                DATA_PATH / "expected/payloads/field_name_bindings_runtime/native_delayed_error.txt",
             )
             return
     properties = json.loads(schema_path.read_text(encoding="utf-8"))["properties"]
@@ -27031,7 +27039,7 @@ def test_field_name_bindings(
                     {"decode_matches_convert": msgspec.json.decode(json.dumps(data), type=model) == parsed}, indent=2
                 )
                 + "\n",
-                DATA_PATH / "payloads/field_name_bindings_runtime/decode.txt",
+                DATA_PATH / "expected/payloads/field_name_bindings_runtime/decode.txt",
             )
         else:
             payload = (
@@ -27061,7 +27069,7 @@ def test_field_name_bindings(
             )
         assert_output(
             json.dumps(observations, ensure_ascii=False, indent=2) + "\n",
-            DATA_PATH / "payloads/field_name_bindings_runtime" / f"{case}.txt",
+            DATA_PATH / "expected/payloads/field_name_bindings_runtime" / f"{case}.txt",
         )
 
 
@@ -27120,7 +27128,7 @@ def test_field_name_factory_template(output_file: Path, entrypoint: str, templat
         observations.update(items=result.items, Optional=result.Optional, choice=result.choice)
         assert_output(
             json.dumps(observations, ensure_ascii=False, indent=2) + "\n",
-            DATA_PATH / "payloads/field_name_bindings_runtime/factory.txt",
+            DATA_PATH / "expected/payloads/field_name_bindings_runtime/factory.txt",
         )
 
 
@@ -27176,7 +27184,7 @@ def test_field_name_template_helper(output_file: Path, entrypoint: str, formatte
         observations.update(Optional=result.Optional, items=result.items)
         assert_output(
             json.dumps(observations, indent=2) + "\n",
-            DATA_PATH / "payloads/field_name_bindings_runtime/helper_model.txt",
+            DATA_PATH / "expected/payloads/field_name_bindings_runtime/helper_model.txt",
         )
     with _generated_model(output_file, "field_name_helper", "Helper") as helper:
         observations = {"value": helper().value}
@@ -27184,7 +27192,7 @@ def test_field_name_template_helper(output_file: Path, entrypoint: str, formatte
             observations["annotation_preserved"] = get_type_hints(helper)["value"] == int | None
         assert_output(
             json.dumps(observations, indent=2) + "\n",
-            DATA_PATH / "payloads/field_name_bindings_runtime" / f"{case}.txt",
+            DATA_PATH / "expected/payloads/field_name_bindings_runtime" / f"{case}.txt",
         )
 
 
@@ -27540,7 +27548,7 @@ def test_inline_allof_validators(
     error_type = values.get("error_type", "value_error")
     assert_output(
         json.dumps([native.is_valid(values["valid"]), native.is_valid(values["invalid"])]) + "\n",
-        payloads / "native.txt",
+        DATA_PATH / "expected/payloads/inline_allof_validators/native.txt",
     )
     # These cases assert separate formatter goldens because their wrapping differs.
     if case in {"anyof", "core"}:
@@ -27657,7 +27665,7 @@ def test_schema_validator_mapping_inputs(
                 native.is_valid(json.loads(invalid_path.read_text(encoding="utf-8"))),
             ])
             + "\n",
-            payloads / "native.txt",
+            DATA_PATH / "expected/payloads/mapping_schema_validators/native.txt",
         )
         for container in (dict, UserDict, MappingProxyType):
             valid = json.loads(valid_path.read_text(encoding="utf-8"), object_hook=container)
@@ -27668,13 +27676,20 @@ def test_schema_validator_mapping_inputs(
                 _assert_model_json_invalid(model.model_validate, None, "model_type")
                 value = model.model_validate(valid)
                 assert_output(
-                    json.dumps(value.model_dump(exclude_unset=True), default=dict, indent=2) + "\n", valid_path
+                    json.dumps(value.model_dump(exclude_unset=True), default=dict, indent=2) + "\n",
+                    DATA_PATH / "expected" / valid_path.relative_to(DATA_PATH),
                 )
                 _assert_model_json_invalid(
                     model.model_validate, invalid, "int_parsing" if case == "Pattern" else "value_error"
                 )
-            assert_output(json.dumps(valid, default=dict, indent=2) + "\n", valid_path)
-            assert_output(json.dumps(invalid, default=dict, indent=2) + "\n", invalid_path)
+            assert_output(
+                json.dumps(valid, default=dict, indent=2) + "\n",
+                DATA_PATH / "expected" / valid_path.relative_to(DATA_PATH),
+            )
+            assert_output(
+                json.dumps(invalid, default=dict, indent=2) + "\n",
+                DATA_PATH / "expected" / invalid_path.relative_to(DATA_PATH),
+            )
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])

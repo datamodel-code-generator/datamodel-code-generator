@@ -3095,8 +3095,8 @@ scoped_empty_choices	main/jsonschema/explicit_alias_names_scoped_empty_choices.p
 empty-None	main/jsonschema/explicit_alias_names_empty.py
 invalid-None	main/jsonschema/explicit_alias_names_invalid.py
 keyword-None	main/jsonschema/explicit_alias_names_keyword.py
-msgspec_field-None	../payloads/explicit_alias_msgspec_field.txt
 msgspec_field-None	main/jsonschema/explicit_alias_names_msgspec_field.py
+msgspec_field-None	payloads/explicit_alias_msgspec_field.txt
 namespace_warning-None	main/jsonschema/explicit_alias_names_namespace_warning.py
 shadow_copy-None	main/jsonschema/explicit_alias_names_shadow_copy.py
 shadow_dict-None	main/jsonschema/explicit_alias_names_shadow_dict.py
@@ -4629,582 +4629,582 @@ True-OpaqueModel	main/jsonschema/explicit_frozen_sets/opaque.runtime.txt
 #all#	main/jsonschema/field_validators_all_skipped.py
 User	main/jsonschema/field_validators_all_skipped.py
 [test_field_name_bindings]
-DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
 DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.DataclassesDataclass-collision-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-collision-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-control-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.DataclassesDataclass-control-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.DataclassesDataclass-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.DataclassesDataclass-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-late-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-late-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-required-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-required-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-unused-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-unused-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.10_False.py
-DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.14_False.py
-DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-wire-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.10_True.py
-DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.14_True.py
-DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/DataclassesDataclass_3.14_True.py
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.DataclassesDataclass-wire-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
-DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-collision-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
-DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
+DataModelType.MsgspecStruct-control-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
 DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-late-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/typing.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-required-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/typing/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/typing.txt
+DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/typing.txt
 DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/typing/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-typing-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/typing.txt
 DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-unused-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.10_False.py
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.14_False.py
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.10_True.py
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.14_True.py
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/decode.txt
-DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/MsgspecStruct_3.14_True.py
-DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/decode.txt
+DataModelType.MsgspecStruct-wire-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-collision-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-collision-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-control-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2BaseModel-control-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2BaseModel-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2BaseModel-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-late-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-late-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-required-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-typing-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/typing.txt
+DataModelType.PydanticV2BaseModel-required-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2BaseModel-typing-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/typing/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-typing-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/typing.txt
+DataModelType.PydanticV2BaseModel-typing-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/typing.txt
 DataModelType.PydanticV2BaseModel-typing-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/typing/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-typing-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/typing.txt
 DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-unused-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-unused-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.10_False.py
-DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.14_False.py
-DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-wire-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.10_True.py
-DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/PydanticV2BaseModel_3.14_True.py
-DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2BaseModel-wire-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2Dataclass-collision-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/collision.txt
+DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/collision/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-collision-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/collision.txt	= payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-control-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/control.txt
+DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/control/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2Dataclass-control-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/control.txt
 DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2Dataclass-forward-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/forward.txt
+DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/forward.txt
 DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/forward.txt	?
-DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/native_delayed_error.txt	?
+DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/forward/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/forward.txt	?
+DataModelType.PydanticV2Dataclass-forward-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/native_delayed_error.txt	?
 DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-late-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/late.txt
+DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/late/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-late-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/late.txt
 DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-required-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/required.txt
+DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/required/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-required-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/required.txt
 DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-unused-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/unused.txt
+DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/unused/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-unused-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/unused.txt
 DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.10_False.py
-DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.14_False.py
-DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_310-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-wire-False-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_310-api	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_310-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_310-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_310-cli	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.10_True.py
-DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-api	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_310-cli	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-api	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.14_True.py
-DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-cli	../payloads/field_name_bindings_runtime/wire.txt
+DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-api	payloads/field_name_bindings_runtime/wire.txt
 DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-cli	main/jsonschema/field_name_bindings/wire/PydanticV2Dataclass_3.14_True.py
+DataModelType.PydanticV2Dataclass-wire-True-PythonVersion.PY_314-cli	payloads/field_name_bindings_runtime/wire.txt
 [test_field_name_factory_template]
-builtin-factory-api	../payloads/field_name_bindings_runtime/factory.txt
 builtin-factory-api	main/jsonschema/field_name_bindings/factory.py
-builtin-factory-cli	../payloads/field_name_bindings_runtime/factory.txt
+builtin-factory-api	payloads/field_name_bindings_runtime/factory.txt
 builtin-factory-cli	main/jsonschema/field_name_bindings/factory.py
-builtin-nested-api	../payloads/field_name_bindings_runtime/factory.txt
+builtin-factory-cli	payloads/field_name_bindings_runtime/factory.txt
 builtin-nested-api	main/jsonschema/field_name_bindings/nested.py
-builtin-nested-cli	../payloads/field_name_bindings_runtime/factory.txt
+builtin-nested-api	payloads/field_name_bindings_runtime/factory.txt
 builtin-nested-cli	main/jsonschema/field_name_bindings/nested.py
-builtin-wrapper-api	../payloads/field_name_bindings_runtime/factory.txt
+builtin-nested-cli	payloads/field_name_bindings_runtime/factory.txt
 builtin-wrapper-api	main/jsonschema/field_name_bindings/wrapper.py
-builtin-wrapper-cli	../payloads/field_name_bindings_runtime/factory.txt
+builtin-wrapper-api	payloads/field_name_bindings_runtime/factory.txt
 builtin-wrapper-cli	main/jsonschema/field_name_bindings/wrapper.py
-external-factory-api	../payloads/field_name_bindings_runtime/factory.txt
+builtin-wrapper-cli	payloads/field_name_bindings_runtime/factory.txt
 external-factory-api	main/jsonschema/field_name_bindings/factory.py
-external-factory-cli	../payloads/field_name_bindings_runtime/factory.txt
+external-factory-api	payloads/field_name_bindings_runtime/factory.txt
 external-factory-cli	main/jsonschema/field_name_bindings/factory.py
-external-nested-api	../payloads/field_name_bindings_runtime/factory.txt
+external-factory-cli	payloads/field_name_bindings_runtime/factory.txt
 external-nested-api	main/jsonschema/field_name_bindings/nested.py
-external-nested-cli	../payloads/field_name_bindings_runtime/factory.txt
+external-nested-api	payloads/field_name_bindings_runtime/factory.txt
 external-nested-cli	main/jsonschema/field_name_bindings/nested.py
-external-wrapper-api	../payloads/field_name_bindings_runtime/factory.txt
+external-nested-cli	payloads/field_name_bindings_runtime/factory.txt
 external-wrapper-api	main/jsonschema/field_name_bindings/wrapper.py
-external-wrapper-cli	../payloads/field_name_bindings_runtime/factory.txt
+external-wrapper-api	payloads/field_name_bindings_runtime/factory.txt
 external-wrapper-cli	main/jsonschema/field_name_bindings/wrapper.py
+external-wrapper-cli	payloads/field_name_bindings_runtime/factory.txt
 [test_field_name_template_helper]
-helper_collision-builtin-api	../payloads/field_name_bindings_runtime/helper_collision.txt
-helper_collision-builtin-api	../payloads/field_name_bindings_runtime/helper_model.txt
 helper_collision-builtin-api	main/jsonschema/field_name_bindings/helper_collision.py
-helper_collision-builtin-cli	../payloads/field_name_bindings_runtime/helper_collision.txt
-helper_collision-builtin-cli	../payloads/field_name_bindings_runtime/helper_model.txt
+helper_collision-builtin-api	payloads/field_name_bindings_runtime/helper_collision.txt
+helper_collision-builtin-api	payloads/field_name_bindings_runtime/helper_model.txt
 helper_collision-builtin-cli	main/jsonschema/field_name_bindings/helper_collision.py
-helper_collision-external-api	../payloads/field_name_bindings_runtime/helper_collision.txt
-helper_collision-external-api	../payloads/field_name_bindings_runtime/helper_model.txt
+helper_collision-builtin-cli	payloads/field_name_bindings_runtime/helper_collision.txt
+helper_collision-builtin-cli	payloads/field_name_bindings_runtime/helper_model.txt
 helper_collision-external-api	main/jsonschema/field_name_bindings/helper_collision.py
-helper_collision-external-cli	../payloads/field_name_bindings_runtime/helper_collision.txt
-helper_collision-external-cli	../payloads/field_name_bindings_runtime/helper_model.txt
+helper_collision-external-api	payloads/field_name_bindings_runtime/helper_collision.txt
+helper_collision-external-api	payloads/field_name_bindings_runtime/helper_model.txt
 helper_collision-external-cli	main/jsonschema/field_name_bindings/helper_collision.py
-helper_normal-builtin-api	../payloads/field_name_bindings_runtime/helper_model.txt
-helper_normal-builtin-api	../payloads/field_name_bindings_runtime/helper_normal.txt
+helper_collision-external-cli	payloads/field_name_bindings_runtime/helper_collision.txt
+helper_collision-external-cli	payloads/field_name_bindings_runtime/helper_model.txt
 helper_normal-builtin-api	main/jsonschema/field_name_bindings/helper_normal.py
-helper_normal-builtin-cli	../payloads/field_name_bindings_runtime/helper_model.txt
-helper_normal-builtin-cli	../payloads/field_name_bindings_runtime/helper_normal.txt
+helper_normal-builtin-api	payloads/field_name_bindings_runtime/helper_model.txt
+helper_normal-builtin-api	payloads/field_name_bindings_runtime/helper_normal.txt
 helper_normal-builtin-cli	main/jsonschema/field_name_bindings/helper_normal.py
-helper_normal-external-api	../payloads/field_name_bindings_runtime/helper_model.txt
-helper_normal-external-api	../payloads/field_name_bindings_runtime/helper_normal.txt
+helper_normal-builtin-cli	payloads/field_name_bindings_runtime/helper_model.txt
+helper_normal-builtin-cli	payloads/field_name_bindings_runtime/helper_normal.txt
 helper_normal-external-api	main/jsonschema/field_name_bindings/helper_normal.py
-helper_normal-external-cli	../payloads/field_name_bindings_runtime/helper_model.txt
-helper_normal-external-cli	../payloads/field_name_bindings_runtime/helper_normal.txt
+helper_normal-external-api	payloads/field_name_bindings_runtime/helper_model.txt
+helper_normal-external-api	payloads/field_name_bindings_runtime/helper_normal.txt
 helper_normal-external-cli	main/jsonschema/field_name_bindings/helper_normal.py
+helper_normal-external-cli	payloads/field_name_bindings_runtime/helper_model.txt
+helper_normal-external-cli	payloads/field_name_bindings_runtime/helper_normal.txt
 [test_field_validators]
 	main/jsonschema/field_validators.py
 [test_field_validators_all_skipped]
@@ -5256,86 +5256,86 @@ legacy-option-custom-template	main/jsonschema/structured_enum_values.py
 [test_generate_strict_dotted_custom_generator_nested]
 	main/jsonschema/strict_dotted_custom_generator_nested//*.py
 [test_inline_allof_validators]
-anyof-api-builtin	../payloads/inline_allof_validators/native.txt
 anyof-api-builtin	main/jsonschema/inline_allof_validators/anyof_builtin.py
-anyof-api-external	../payloads/inline_allof_validators/native.txt
+anyof-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 anyof-api-external	main/jsonschema/inline_allof_validators/anyof.py
-anyof-cli-builtin	../payloads/inline_allof_validators/native.txt
+anyof-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 anyof-cli-builtin	main/jsonschema/inline_allof_validators/anyof_builtin.py
-anyof-cli-external	../payloads/inline_allof_validators/native.txt
+anyof-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 anyof-cli-external	main/jsonschema/inline_allof_validators/anyof.py
-conditional-api-builtin	../payloads/inline_allof_validators/native.txt
+anyof-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 conditional-api-builtin	main/jsonschema/inline_allof_validators/conditional.py
-conditional-api-external	../payloads/inline_allof_validators/native.txt
+conditional-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 conditional-api-external	main/jsonschema/inline_allof_validators/conditional.py
-conditional-cli-builtin	../payloads/inline_allof_validators/native.txt
+conditional-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 conditional-cli-builtin	main/jsonschema/inline_allof_validators/conditional.py
-conditional-cli-external	../payloads/inline_allof_validators/native.txt
+conditional-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 conditional-cli-external	main/jsonschema/inline_allof_validators/conditional.py
-core-api-builtin	../payloads/inline_allof_validators/native.txt
+conditional-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 core-api-builtin	main/jsonschema/inline_allof_validators/core_builtin.py
-core-api-external	../payloads/inline_allof_validators/native.txt
+core-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 core-api-external	main/jsonschema/inline_allof_validators/core.py
-core-cli-builtin	../payloads/inline_allof_validators/native.txt
+core-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 core-cli-builtin	main/jsonschema/inline_allof_validators/core_builtin.py
-core-cli-external	../payloads/inline_allof_validators/native.txt
+core-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 core-cli-external	main/jsonschema/inline_allof_validators/core.py
-count-api-builtin	../payloads/inline_allof_validators/native.txt
+core-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 count-api-builtin	main/jsonschema/inline_allof_validators/count.py
-count-api-external	../payloads/inline_allof_validators/native.txt
+count-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 count-api-external	main/jsonschema/inline_allof_validators/count.py
-count-cli-builtin	../payloads/inline_allof_validators/native.txt
+count-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 count-cli-builtin	main/jsonschema/inline_allof_validators/count.py
-count-cli-external	../payloads/inline_allof_validators/native.txt
+count-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 count-cli-external	main/jsonschema/inline_allof_validators/count.py
-inherited-api-builtin	../payloads/inline_allof_validators/native.txt
+count-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 inherited-api-builtin	main/jsonschema/inline_allof_validators/inherited.py
-inherited-api-external	../payloads/inline_allof_validators/native.txt
+inherited-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 inherited-api-external	main/jsonschema/inline_allof_validators/inherited.py
-inherited-cli-builtin	../payloads/inline_allof_validators/native.txt
+inherited-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 inherited-cli-builtin	main/jsonschema/inline_allof_validators/inherited.py
-inherited-cli-external	../payloads/inline_allof_validators/native.txt
+inherited-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 inherited-cli-external	main/jsonschema/inline_allof_validators/inherited.py
-nested-api-builtin	../payloads/inline_allof_validators/native.txt
+inherited-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 nested-api-builtin	main/jsonschema/inline_allof_validators/nested.py
-nested-api-external	../payloads/inline_allof_validators/native.txt
+nested-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 nested-api-external	main/jsonschema/inline_allof_validators/nested.py
-nested-cli-builtin	../payloads/inline_allof_validators/native.txt
+nested-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 nested-cli-builtin	main/jsonschema/inline_allof_validators/nested.py
-nested-cli-external	../payloads/inline_allof_validators/native.txt
+nested-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 nested-cli-external	main/jsonschema/inline_allof_validators/nested.py
-oneof-api-builtin	../payloads/inline_allof_validators/native.txt
+nested-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 oneof-api-builtin	main/jsonschema/inline_allof_validators/oneof.py
-oneof-api-external	../payloads/inline_allof_validators/native.txt
+oneof-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 oneof-api-external	main/jsonschema/inline_allof_validators/oneof.py
-oneof-cli-builtin	../payloads/inline_allof_validators/native.txt
+oneof-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 oneof-cli-builtin	main/jsonschema/inline_allof_validators/oneof.py
-oneof-cli-external	../payloads/inline_allof_validators/native.txt
+oneof-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 oneof-cli-external	main/jsonschema/inline_allof_validators/oneof.py
-ref_siblings-api-builtin	../payloads/inline_allof_validators/native.txt
+oneof-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings-api-builtin	main/jsonschema/inline_allof_validators/ref_siblings.py
-ref_siblings-api-external	../payloads/inline_allof_validators/native.txt
+ref_siblings-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings-api-external	main/jsonschema/inline_allof_validators/ref_siblings.py
-ref_siblings-cli-builtin	../payloads/inline_allof_validators/native.txt
+ref_siblings-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings-cli-builtin	main/jsonschema/inline_allof_validators/ref_siblings.py
-ref_siblings-cli-external	../payloads/inline_allof_validators/native.txt
+ref_siblings-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings-cli-external	main/jsonschema/inline_allof_validators/ref_siblings.py
-ref_siblings_draft7-api-builtin	../payloads/inline_allof_validators/native.txt
+ref_siblings-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings_draft7-api-builtin	main/jsonschema/inline_allof_validators/ref_siblings_draft7.py
-ref_siblings_draft7-api-external	../payloads/inline_allof_validators/native.txt
+ref_siblings_draft7-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings_draft7-api-external	main/jsonschema/inline_allof_validators/ref_siblings_draft7.py
-ref_siblings_draft7-cli-builtin	../payloads/inline_allof_validators/native.txt
+ref_siblings_draft7-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings_draft7-cli-builtin	main/jsonschema/inline_allof_validators/ref_siblings_draft7.py
-ref_siblings_draft7-cli-external	../payloads/inline_allof_validators/native.txt
+ref_siblings_draft7-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 ref_siblings_draft7-cli-external	main/jsonschema/inline_allof_validators/ref_siblings_draft7.py
-referenced-api-builtin	../payloads/inline_allof_validators/native.txt
+ref_siblings_draft7-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 referenced-api-builtin	main/jsonschema/inline_allof_validators/referenced.py
-referenced-api-external	../payloads/inline_allof_validators/native.txt
+referenced-api-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 referenced-api-external	main/jsonschema/inline_allof_validators/referenced.py
-referenced-cli-builtin	../payloads/inline_allof_validators/native.txt
+referenced-api-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 referenced-cli-builtin	main/jsonschema/inline_allof_validators/referenced.py
-referenced-cli-external	../payloads/inline_allof_validators/native.txt
+referenced-cli-builtin	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 referenced-cli-external	main/jsonschema/inline_allof_validators/referenced.py
+referenced-cli-external	payloads/inline_allof_validators/native.txt	= payloads/mapping_schema_validators/native.txt
 [test_invalid_pattern_does_not_change_generation]
 builtin	main/jsonschema/pattern_intersections/invalid_regex.py
 external	main/jsonschema/pattern_intersections/invalid_regex.py
@@ -6197,18 +6197,18 @@ legacy-option	main/jsonschema/falsy_default_enum_member.py
 [test_main_jsonschema_field_include_all_keys]
 	main/jsonschema/general.py
 [test_main_jsonschema_field_type_collision_cross_module]
-base-model-exact-import	../payloads/field_type_collision_cross_module/runtime.txt
 base-model-exact-import	main/jsonschema/field_type_collision_cross_module/base_model_exact//*.py
-base-model-module-import	../payloads/field_type_collision_cross_module/runtime.txt
+base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-module-import	main/jsonschema/field_type_collision_cross_module/base_model//*.py
-exact-import	../payloads/field_type_collision_cross_module/runtime.txt
+base-model-module-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 exact-import	main/jsonschema/field_type_collision_cross_module/exact//*.py
-exact-import-rename-field	../payloads/field_type_collision_cross_module/runtime.txt
+exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 exact-import-rename-field	main/jsonschema/field_type_collision_cross_module/exact//*.py
-module-import	../payloads/field_type_collision_cross_module/runtime.txt
+exact-import-rename-field	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 module-import	main/jsonschema/field_type_collision_cross_module/default//*.py
-module-import-rename-field	../payloads/field_type_collision_cross_module/runtime.txt
+module-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 module-import-rename-field	main/jsonschema/field_type_collision_cross_module/default//*.py
+module-import-rename-field	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_main_jsonschema_field_type_collision_dataclass]
 defaults	main/jsonschema/field_type_collision_runtime/dataclass_defaults_no_future_imports.py
 defaults	main/jsonschema/field_type_collision_runtime/dataclass_defaults_no_future_imports.txt
@@ -6241,127 +6241,127 @@ speed	main/jsonschema/field_type_collision_runtime/dataclass_no_future_imports.t
 [test_main_jsonschema_field_type_collision_dataclass_class_var]
 	main/jsonschema/field_type_collision_runtime/dataclass_class_var.py
 [test_main_jsonschema_field_type_collision_inherited_modules]
-base-module-first	../payloads/field_type_collision_cross_module/runtime.txt
 base-module-first	main/jsonschema/field_type_collision_inherited_modules//*.py
-base-module-first-rename-type	../payloads/field_type_collision_cross_module/runtime.txt
+base-module-first	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-module-first-rename-type	main/jsonschema/field_type_collision_inherited_modules_rename_type/dataclass//*.py
-base-module-first-rename-type-base-model	../payloads/field_type_collision_cross_module/runtime.txt
+base-module-first-rename-type	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-module-first-rename-type-base-model	main/jsonschema/field_type_collision_inherited_modules_rename_type/base_model//*.py
-base-module-first-rename-type-base-model-exact-import	../payloads/field_type_collision_cross_module/runtime.txt
+base-module-first-rename-type-base-model	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-module-first-rename-type-base-model-exact-import	main/jsonschema/field_type_collision_inherited_modules_rename_type/base_model_exact//*.py
-child-module-first	../payloads/field_type_collision_cross_module/runtime.txt
+base-module-first-rename-type-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 child-module-first	main/jsonschema/field_type_collision_inherited_modules_child_first/dataclass//*.py
-child-module-first-base-model	../payloads/field_type_collision_cross_module/runtime.txt
+child-module-first	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 child-module-first-base-model	main/jsonschema/field_type_collision_inherited_modules_child_first/base_model//*.py
-child-module-first-rename-type-base-model-exact-import	../payloads/field_type_collision_cross_module/runtime.txt
+child-module-first-base-model	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 child-module-first-rename-type-base-model-exact-import	main/jsonschema/field_type_collision_inherited_modules_child_first/base_model_rename_type_exact//*.py
-packages-first-rename-type-base-model	../payloads/field_type_collision_cross_module/runtime.txt
+child-module-first-rename-type-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 packages-first-rename-type-base-model	main/jsonschema/field_type_collision_inherited_modules_package/base_model_rename_type//*.py
-packages-first-rename-type-base-model-exact-import	../payloads/field_type_collision_cross_module/runtime.txt
+packages-first-rename-type-base-model	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 packages-first-rename-type-base-model-exact-import	main/jsonschema/field_type_collision_inherited_modules_package/base_model_rename_type_exact//*.py
+packages-first-rename-type-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_main_jsonschema_field_type_collision_rename_type_double]
 	main/jsonschema/field_type_collision_rename_type_double.py
 [test_main_jsonschema_field_type_collision_runtime]
-base-model-other	../payloads/field_type_collision_runtime/runtime.txt
 base-model-other	main/jsonschema/field_type_collision_runtime/base_model_other.py
-base-model-other-before-inherited-taken-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+base-model-other	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-other-before-inherited-taken-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_inherited_taken_no_future_imports.py
-base-model-other-before-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+base-model-other-before-inherited-taken-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-other-before-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_no_future_imports.py
-base-model-other-before-taken-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+base-model-other-before-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-other-before-taken-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_taken_no_future_imports.py
-base-model-other-before-taken-rename-type-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+base-model-other-before-taken-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-other-before-taken-rename-type-no-future-imports	main/jsonschema/field_type_collision_runtime/base_model_other_before_taken_rename_type_no_future_imports.py
-base-model-other-py314	../payloads/field_type_collision_runtime/runtime.txt
+base-model-other-before-taken-rename-type-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-other-py314	main/jsonschema/field_type_collision_runtime/base_model_other_py314.py
-base-model-other-rename-type	../payloads/field_type_collision_runtime/runtime.txt
+base-model-other-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 base-model-other-rename-type	main/jsonschema/field_type_collision_runtime/base_model_other_rename_type.py
-msgspec	../payloads/field_type_collision_runtime/runtime.txt
+base-model-other-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec	main/jsonschema/field_type_collision_runtime/msgspec.py
-msgspec-defaults-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-defaults-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_defaults_no_future_imports.py
-msgspec-defaults-py311-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-defaults-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-defaults-py311-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_defaults_py311_no_future_imports.py
-msgspec-inherited-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-defaults-py311-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-inherited-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_inherited_no_future_imports.py
-msgspec-later-default-factory	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-inherited-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-later-default-factory	main/jsonschema/field_type_collision_runtime/msgspec_later_default_factory.py
-msgspec-later-default-factory-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-later-default-factory	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-later-default-factory-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_later_default_factory_no_future_imports.py
-msgspec-later-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-later-default-factory-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-later-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_later_no_future_imports.py
-msgspec-later-py314	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-later-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-later-py314	main/jsonschema/field_type_collision_runtime/msgspec_later_py314.py
-msgspec-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-later-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_no_future_imports.py
-msgspec-other-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-other-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_other_no_future_imports.py
-msgspec-py314	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-other-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-py314	main/jsonschema/field_type_collision_runtime/msgspec_py314.py
-msgspec-rename-type	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-rename-type	main/jsonschema/field_type_collision_runtime/msgspec_rename_type.py
-msgspec-rename-type-py314	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-rename-type-py314	main/jsonschema/field_type_collision_runtime/msgspec_py314.py
-msgspec-required	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-rename-type-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-required	main/jsonschema/field_type_collision_runtime/msgspec_required.py
-msgspec-required-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-required	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-required-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_required_no_future_imports.py
-msgspec-required-py314	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-required-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-required-py314	main/jsonschema/field_type_collision_runtime/msgspec_required_py314.py
-msgspec-required-py314-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-required-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 msgspec-required-py314-no-future-imports	main/jsonschema/field_type_collision_runtime/msgspec_required_py314_no_future_imports.py
-pydantic-dataclass	../payloads/field_type_collision_runtime/runtime.txt
+msgspec-required-py314-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass	main/jsonschema/field_type_collision_runtime/pydantic_dataclass.py
-pydantic-dataclass-described	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-described	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_described.py
-pydantic-dataclass-described-annotated	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-described	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-described-annotated	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_described_annotated.py
-pydantic-dataclass-forward-annotated	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-described-annotated	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-forward-annotated	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_forward_annotated.py
-pydantic-dataclass-forward-annotated-pydantic-2	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-forward-annotated	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-forward-annotated-pydantic-2	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2.py
-pydantic-dataclass-forward-annotated-pydantic-2-slots	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-forward-annotated-pydantic-2	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-forward-annotated-pydantic-2-slots	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_forward_annotated_pydantic_2_slots.py
-pydantic-dataclass-inherited	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-forward-annotated-pydantic-2-slots	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-inherited	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_inherited.py
-pydantic-dataclass-nullable-strip-default-none	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-inherited	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-nullable-strip-default-none	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_nullable_strip_default_none.py
-pydantic-dataclass-other	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-nullable-strip-default-none	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-other	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other.py
-pydantic-dataclass-other-before-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-other	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-other-before-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_before_no_future_imports.py
-pydantic-dataclass-other-before-taken-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-other-before-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-other-before-taken-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_before_taken_no_future_imports.py
-pydantic-dataclass-other-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-other-before-taken-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-other-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_no_future_imports.py
-pydantic-dataclass-other-py314	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-other-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-other-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_other_py314.py
-pydantic-dataclass-py314	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-other-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_py314.py
-pydantic-dataclass-rename-type	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-rename-type	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_rename_type.py
-pydantic-dataclass-required	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-required	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required.py
-pydantic-dataclass-required-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-required	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-required-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_no_future_imports.py
-pydantic-dataclass-required-py314	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-required-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-required-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_py314.py
-pydantic-dataclass-required-rename-type	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-required-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-required-rename-type	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required.py
-pydantic-dataclass-required-slots	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-required-rename-type	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-required-slots	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_slots.py
-pydantic-dataclass-required-slots-no-future-imports	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-required-slots	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-required-slots-no-future-imports	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_slots_no_future_imports.py
-pydantic-dataclass-required-slots-py314	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-required-slots-no-future-imports	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-required-slots-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_required_slots_py314.py
-pydantic-dataclass-self-named	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-required-slots-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-self-named	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_self_named.py
-pydantic-dataclass-self-named-py314	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-self-named	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-self-named-py314	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_self_named_py314.py
-pydantic-dataclass-self-named-pydantic-2	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-self-named-py314	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-self-named-pydantic-2	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_self_named_pydantic_2.py
-pydantic-dataclass-subclass	../payloads/field_type_collision_runtime/runtime.txt
+pydantic-dataclass-self-named-pydantic-2	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-subclass	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_subclass.py
+pydantic-dataclass-subclass	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 [test_main_jsonschema_forwarding_reference_collapse_root]
 	main/jsonschema/forwarding_reference//*.py
 [test_main_jsonschema_generate_schema_validators]
@@ -8063,14 +8063,14 @@ DataModelType.PydanticV2Dataclass-graphql-api	main/msgspec_inheritance/other_gra
 DataModelType.PydanticV2Dataclass-graphql-cli	main/msgspec_inheritance/other_graphql_pydantic_v2_dataclass.py
 DataModelType.PydanticV2Dataclass-jsonschema-api	main/msgspec_inheritance/other_jsonschema_pydantic_v2_dataclass.py
 DataModelType.PydanticV2Dataclass-jsonschema-cli	main/msgspec_inheritance/other_jsonschema_pydantic_v2_dataclass.py
-DataModelType.TypingTypedDict-graphql-api	../payloads/msgspec_inheritance_typed_dict.txt
 DataModelType.TypingTypedDict-graphql-api	main/msgspec_inheritance/other_graphql_typing_TypedDict.py
-DataModelType.TypingTypedDict-graphql-cli	../payloads/msgspec_inheritance_typed_dict.txt
+DataModelType.TypingTypedDict-graphql-api	payloads/msgspec_inheritance_typed_dict.txt
 DataModelType.TypingTypedDict-graphql-cli	main/msgspec_inheritance/other_graphql_typing_TypedDict.py
-DataModelType.TypingTypedDict-jsonschema-api	../payloads/msgspec_inheritance_typed_dict.txt
+DataModelType.TypingTypedDict-graphql-cli	payloads/msgspec_inheritance_typed_dict.txt
 DataModelType.TypingTypedDict-jsonschema-api	main/msgspec_inheritance/other_jsonschema_typing_TypedDict.py
-DataModelType.TypingTypedDict-jsonschema-cli	../payloads/msgspec_inheritance_typed_dict.txt
+DataModelType.TypingTypedDict-jsonschema-api	payloads/msgspec_inheritance_typed_dict.txt
 DataModelType.TypingTypedDict-jsonschema-cli	main/msgspec_inheritance/other_jsonschema_typing_TypedDict.py
+DataModelType.TypingTypedDict-jsonschema-cli	payloads/msgspec_inheritance_typed_dict.txt
 [test_msgspec_inheritance_reject_conflicting_layouts]
 graphql_diamond_both-api	main/msgspec_inheritance/absent.txt
 graphql_diamond_both-api	main/msgspec_inheritance/graphql_diamond_both.txt
@@ -12193,102 +12193,102 @@ bundled-cli	main/jsonschema/inline_allof_validators/oneof.py
 legacy-api	main/jsonschema/mapping_schema_validators_legacy_helper.py
 legacy-cli	main/jsonschema/mapping_schema_validators_legacy_helper.py
 [test_schema_validator_mapping_inputs]
-api-builtin	../payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/AdditionalUnique_valid.txt
-api-builtin	../payloads/mapping_schema_validators/Any_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/Any_valid.txt
-api-builtin	../payloads/mapping_schema_validators/ConditionalElse_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/ConditionalElse_valid.txt
-api-builtin	../payloads/mapping_schema_validators/Conditional_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/Conditional_valid.txt
-api-builtin	../payloads/mapping_schema_validators/CountMinimum_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/CountMinimum_valid.txt
-api-builtin	../payloads/mapping_schema_validators/Count_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/Count_valid.txt
-api-builtin	../payloads/mapping_schema_validators/Nested_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/Nested_valid.txt
-api-builtin	../payloads/mapping_schema_validators/One_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/One_valid.txt
-api-builtin	../payloads/mapping_schema_validators/PatternUnique_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/PatternUnique_valid.txt
-api-builtin	../payloads/mapping_schema_validators/Pattern_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/Pattern_valid.txt
-api-builtin	../payloads/mapping_schema_validators/Unique_invalid.txt
-api-builtin	../payloads/mapping_schema_validators/Unique_valid.txt
-api-builtin	../payloads/mapping_schema_validators/native.txt
 api-builtin	main/jsonschema/mapping_schema_validators_builtin.py
-api-external	../payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
-api-external	../payloads/mapping_schema_validators/AdditionalUnique_valid.txt
-api-external	../payloads/mapping_schema_validators/Any_invalid.txt
-api-external	../payloads/mapping_schema_validators/Any_valid.txt
-api-external	../payloads/mapping_schema_validators/ConditionalElse_invalid.txt
-api-external	../payloads/mapping_schema_validators/ConditionalElse_valid.txt
-api-external	../payloads/mapping_schema_validators/Conditional_invalid.txt
-api-external	../payloads/mapping_schema_validators/Conditional_valid.txt
-api-external	../payloads/mapping_schema_validators/CountMinimum_invalid.txt
-api-external	../payloads/mapping_schema_validators/CountMinimum_valid.txt
-api-external	../payloads/mapping_schema_validators/Count_invalid.txt
-api-external	../payloads/mapping_schema_validators/Count_valid.txt
-api-external	../payloads/mapping_schema_validators/Nested_invalid.txt
-api-external	../payloads/mapping_schema_validators/Nested_valid.txt
-api-external	../payloads/mapping_schema_validators/One_invalid.txt
-api-external	../payloads/mapping_schema_validators/One_valid.txt
-api-external	../payloads/mapping_schema_validators/PatternUnique_invalid.txt
-api-external	../payloads/mapping_schema_validators/PatternUnique_valid.txt
-api-external	../payloads/mapping_schema_validators/Pattern_invalid.txt
-api-external	../payloads/mapping_schema_validators/Pattern_valid.txt
-api-external	../payloads/mapping_schema_validators/Unique_invalid.txt
-api-external	../payloads/mapping_schema_validators/Unique_valid.txt
-api-external	../payloads/mapping_schema_validators/native.txt
+api-builtin	payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
+api-builtin	payloads/mapping_schema_validators/AdditionalUnique_valid.txt
+api-builtin	payloads/mapping_schema_validators/Any_invalid.txt	= main/empty_model_metadata_modules.txt
+api-builtin	payloads/mapping_schema_validators/Any_valid.txt
+api-builtin	payloads/mapping_schema_validators/ConditionalElse_invalid.txt
+api-builtin	payloads/mapping_schema_validators/ConditionalElse_valid.txt
+api-builtin	payloads/mapping_schema_validators/Conditional_invalid.txt
+api-builtin	payloads/mapping_schema_validators/Conditional_valid.txt
+api-builtin	payloads/mapping_schema_validators/CountMinimum_invalid.txt	= main/empty_model_metadata_modules.txt
+api-builtin	payloads/mapping_schema_validators/CountMinimum_valid.txt
+api-builtin	payloads/mapping_schema_validators/Count_invalid.txt
+api-builtin	payloads/mapping_schema_validators/Count_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+api-builtin	payloads/mapping_schema_validators/Nested_invalid.txt
+api-builtin	payloads/mapping_schema_validators/Nested_valid.txt
+api-builtin	payloads/mapping_schema_validators/One_invalid.txt
+api-builtin	payloads/mapping_schema_validators/One_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+api-builtin	payloads/mapping_schema_validators/PatternUnique_invalid.txt
+api-builtin	payloads/mapping_schema_validators/PatternUnique_valid.txt
+api-builtin	payloads/mapping_schema_validators/Pattern_invalid.txt
+api-builtin	payloads/mapping_schema_validators/Pattern_valid.txt
+api-builtin	payloads/mapping_schema_validators/Unique_invalid.txt
+api-builtin	payloads/mapping_schema_validators/Unique_valid.txt
+api-builtin	payloads/mapping_schema_validators/native.txt
 api-external	main/jsonschema/mapping_schema_validators.py
-cli-builtin	../payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/AdditionalUnique_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/Any_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/Any_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/ConditionalElse_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/ConditionalElse_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/Conditional_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/Conditional_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/CountMinimum_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/CountMinimum_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/Count_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/Count_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/Nested_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/Nested_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/One_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/One_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/PatternUnique_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/PatternUnique_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/Pattern_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/Pattern_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/Unique_invalid.txt
-cli-builtin	../payloads/mapping_schema_validators/Unique_valid.txt
-cli-builtin	../payloads/mapping_schema_validators/native.txt
+api-external	payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
+api-external	payloads/mapping_schema_validators/AdditionalUnique_valid.txt
+api-external	payloads/mapping_schema_validators/Any_invalid.txt	= main/empty_model_metadata_modules.txt
+api-external	payloads/mapping_schema_validators/Any_valid.txt
+api-external	payloads/mapping_schema_validators/ConditionalElse_invalid.txt
+api-external	payloads/mapping_schema_validators/ConditionalElse_valid.txt
+api-external	payloads/mapping_schema_validators/Conditional_invalid.txt
+api-external	payloads/mapping_schema_validators/Conditional_valid.txt
+api-external	payloads/mapping_schema_validators/CountMinimum_invalid.txt	= main/empty_model_metadata_modules.txt
+api-external	payloads/mapping_schema_validators/CountMinimum_valid.txt
+api-external	payloads/mapping_schema_validators/Count_invalid.txt
+api-external	payloads/mapping_schema_validators/Count_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+api-external	payloads/mapping_schema_validators/Nested_invalid.txt
+api-external	payloads/mapping_schema_validators/Nested_valid.txt
+api-external	payloads/mapping_schema_validators/One_invalid.txt
+api-external	payloads/mapping_schema_validators/One_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+api-external	payloads/mapping_schema_validators/PatternUnique_invalid.txt
+api-external	payloads/mapping_schema_validators/PatternUnique_valid.txt
+api-external	payloads/mapping_schema_validators/Pattern_invalid.txt
+api-external	payloads/mapping_schema_validators/Pattern_valid.txt
+api-external	payloads/mapping_schema_validators/Unique_invalid.txt
+api-external	payloads/mapping_schema_validators/Unique_valid.txt
+api-external	payloads/mapping_schema_validators/native.txt
 cli-builtin	main/jsonschema/mapping_schema_validators_builtin.py
-cli-external	../payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
-cli-external	../payloads/mapping_schema_validators/AdditionalUnique_valid.txt
-cli-external	../payloads/mapping_schema_validators/Any_invalid.txt
-cli-external	../payloads/mapping_schema_validators/Any_valid.txt
-cli-external	../payloads/mapping_schema_validators/ConditionalElse_invalid.txt
-cli-external	../payloads/mapping_schema_validators/ConditionalElse_valid.txt
-cli-external	../payloads/mapping_schema_validators/Conditional_invalid.txt
-cli-external	../payloads/mapping_schema_validators/Conditional_valid.txt
-cli-external	../payloads/mapping_schema_validators/CountMinimum_invalid.txt
-cli-external	../payloads/mapping_schema_validators/CountMinimum_valid.txt
-cli-external	../payloads/mapping_schema_validators/Count_invalid.txt
-cli-external	../payloads/mapping_schema_validators/Count_valid.txt
-cli-external	../payloads/mapping_schema_validators/Nested_invalid.txt
-cli-external	../payloads/mapping_schema_validators/Nested_valid.txt
-cli-external	../payloads/mapping_schema_validators/One_invalid.txt
-cli-external	../payloads/mapping_schema_validators/One_valid.txt
-cli-external	../payloads/mapping_schema_validators/PatternUnique_invalid.txt
-cli-external	../payloads/mapping_schema_validators/PatternUnique_valid.txt
-cli-external	../payloads/mapping_schema_validators/Pattern_invalid.txt
-cli-external	../payloads/mapping_schema_validators/Pattern_valid.txt
-cli-external	../payloads/mapping_schema_validators/Unique_invalid.txt
-cli-external	../payloads/mapping_schema_validators/Unique_valid.txt
-cli-external	../payloads/mapping_schema_validators/native.txt
+cli-builtin	payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/AdditionalUnique_valid.txt
+cli-builtin	payloads/mapping_schema_validators/Any_invalid.txt	= main/empty_model_metadata_modules.txt
+cli-builtin	payloads/mapping_schema_validators/Any_valid.txt
+cli-builtin	payloads/mapping_schema_validators/ConditionalElse_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/ConditionalElse_valid.txt
+cli-builtin	payloads/mapping_schema_validators/Conditional_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/Conditional_valid.txt
+cli-builtin	payloads/mapping_schema_validators/CountMinimum_invalid.txt	= main/empty_model_metadata_modules.txt
+cli-builtin	payloads/mapping_schema_validators/CountMinimum_valid.txt
+cli-builtin	payloads/mapping_schema_validators/Count_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/Count_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+cli-builtin	payloads/mapping_schema_validators/Nested_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/Nested_valid.txt
+cli-builtin	payloads/mapping_schema_validators/One_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/One_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+cli-builtin	payloads/mapping_schema_validators/PatternUnique_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/PatternUnique_valid.txt
+cli-builtin	payloads/mapping_schema_validators/Pattern_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/Pattern_valid.txt
+cli-builtin	payloads/mapping_schema_validators/Unique_invalid.txt
+cli-builtin	payloads/mapping_schema_validators/Unique_valid.txt
+cli-builtin	payloads/mapping_schema_validators/native.txt
 cli-external	main/jsonschema/mapping_schema_validators.py
+cli-external	payloads/mapping_schema_validators/AdditionalUnique_invalid.txt
+cli-external	payloads/mapping_schema_validators/AdditionalUnique_valid.txt
+cli-external	payloads/mapping_schema_validators/Any_invalid.txt	= main/empty_model_metadata_modules.txt
+cli-external	payloads/mapping_schema_validators/Any_valid.txt
+cli-external	payloads/mapping_schema_validators/ConditionalElse_invalid.txt
+cli-external	payloads/mapping_schema_validators/ConditionalElse_valid.txt
+cli-external	payloads/mapping_schema_validators/Conditional_invalid.txt
+cli-external	payloads/mapping_schema_validators/Conditional_valid.txt
+cli-external	payloads/mapping_schema_validators/CountMinimum_invalid.txt	= main/empty_model_metadata_modules.txt
+cli-external	payloads/mapping_schema_validators/CountMinimum_valid.txt
+cli-external	payloads/mapping_schema_validators/Count_invalid.txt
+cli-external	payloads/mapping_schema_validators/Count_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+cli-external	payloads/mapping_schema_validators/Nested_invalid.txt
+cli-external	payloads/mapping_schema_validators/Nested_valid.txt
+cli-external	payloads/mapping_schema_validators/One_invalid.txt
+cli-external	payloads/mapping_schema_validators/One_valid.txt	= payloads/mapping_schema_validators/Any_valid.txt
+cli-external	payloads/mapping_schema_validators/PatternUnique_invalid.txt
+cli-external	payloads/mapping_schema_validators/PatternUnique_valid.txt
+cli-external	payloads/mapping_schema_validators/Pattern_invalid.txt
+cli-external	payloads/mapping_schema_validators/Pattern_valid.txt
+cli-external	payloads/mapping_schema_validators/Unique_invalid.txt
+cli-external	payloads/mapping_schema_validators/Unique_valid.txt
+cli-external	payloads/mapping_schema_validators/native.txt
 [test_standard_frozen_unhashable_subclass]
 bound_union-1-None	main/jsonschema/explicit_frozen_sets/bound_union.py
 bound_union-1-None	main/jsonschema/explicit_frozen_sets/subclass_identity.txt
@@ -13574,56 +13574,56 @@ external-cli-True-True-unknown_keyword	main/jsonschema/unknown_pattern_annotatio
 [test_use_default_strict_nullable_required]
 	main/jsonschema/use_default_strict_nullable_required.py
 [test_validator_collisions]
-False-api-collisions-extra_template_data	../payloads/validator_runtime/collision.txt
 False-api-collisions-extra_template_data	main/jsonschema/validator_collisions.py
-False-api-collisions-validators	../payloads/validator_runtime/collision.txt
+False-api-collisions-extra_template_data	payloads/validator_runtime/collision.txt
 False-api-collisions-validators	main/jsonschema/validator_collisions.py
-False-api-single-extra_template_data	../payloads/validator_runtime/single.txt
+False-api-collisions-validators	payloads/validator_runtime/collision.txt
 False-api-single-extra_template_data	main/jsonschema/validator_single.py
-False-api-single-validators	../payloads/validator_runtime/single.txt
+False-api-single-extra_template_data	payloads/validator_runtime/single.txt
 False-api-single-validators	main/jsonschema/validator_single.py
-False-cli-collisions-extra_template_data	../payloads/validator_runtime/collision.txt
+False-api-single-validators	payloads/validator_runtime/single.txt
 False-cli-collisions-extra_template_data	main/jsonschema/validator_collisions.py
-False-cli-collisions-validators	../payloads/validator_runtime/collision.txt
+False-cli-collisions-extra_template_data	payloads/validator_runtime/collision.txt
 False-cli-collisions-validators	main/jsonschema/validator_collisions.py
-False-cli-single-extra_template_data	../payloads/validator_runtime/single.txt
+False-cli-collisions-validators	payloads/validator_runtime/collision.txt
 False-cli-single-extra_template_data	main/jsonschema/validator_single.py
-False-cli-single-validators	../payloads/validator_runtime/single.txt
+False-cli-single-extra_template_data	payloads/validator_runtime/single.txt
 False-cli-single-validators	main/jsonschema/validator_single.py
-True-api-collisions-extra_template_data	../payloads/validator_runtime/collision.txt
+False-cli-single-validators	payloads/validator_runtime/single.txt
 True-api-collisions-extra_template_data	main/jsonschema/validator_collisions_custom.py
-True-api-collisions-validators	../payloads/validator_runtime/collision.txt
+True-api-collisions-extra_template_data	payloads/validator_runtime/collision.txt
 True-api-collisions-validators	main/jsonschema/validator_collisions_custom.py
-True-api-single-extra_template_data	../payloads/validator_runtime/single.txt
+True-api-collisions-validators	payloads/validator_runtime/collision.txt
 True-api-single-extra_template_data	main/jsonschema/validator_single_custom.py
-True-api-single-validators	../payloads/validator_runtime/single.txt
+True-api-single-extra_template_data	payloads/validator_runtime/single.txt
 True-api-single-validators	main/jsonschema/validator_single_custom.py
-True-cli-collisions-extra_template_data	../payloads/validator_runtime/collision.txt
+True-api-single-validators	payloads/validator_runtime/single.txt
 True-cli-collisions-extra_template_data	main/jsonschema/validator_collisions_custom.py
-True-cli-collisions-validators	../payloads/validator_runtime/collision.txt
+True-cli-collisions-extra_template_data	payloads/validator_runtime/collision.txt
 True-cli-collisions-validators	main/jsonschema/validator_collisions_custom.py
-True-cli-single-extra_template_data	../payloads/validator_runtime/single.txt
+True-cli-collisions-validators	payloads/validator_runtime/collision.txt
 True-cli-single-extra_template_data	main/jsonschema/validator_single_custom.py
-True-cli-single-validators	../payloads/validator_runtime/single.txt
+True-cli-single-extra_template_data	payloads/validator_runtime/single.txt
 True-cli-single-validators	main/jsonschema/validator_single_custom.py
+True-cli-single-validators	payloads/validator_runtime/single.txt
 [test_validator_finalized_model_import]
-False-api	../payloads/validator_runtime/imports.txt
 False-api	main/jsonschema/validator_import_models//*.py
-False-cli	../payloads/validator_runtime/imports.txt
+False-api	payloads/validator_runtime/imports.txt
 False-cli	main/jsonschema/validator_import_models//*.py
-True-api	../payloads/validator_runtime/imports.txt
+False-cli	payloads/validator_runtime/imports.txt
 True-api	main/jsonschema/validator_import_models//*.py
-True-cli	../payloads/validator_runtime/imports.txt
+True-api	payloads/validator_runtime/imports.txt
 True-cli	main/jsonschema/validator_import_models//*.py
+True-cli	payloads/validator_runtime/imports.txt
 [test_validator_inheritance_definition_order]
-base-api	../payloads/validator_runtime/inheritance.txt
 base-api	main/jsonschema/validator_inheritance_base_first.py
-base-cli	../payloads/validator_runtime/inheritance.txt
+base-api	payloads/validator_runtime/inheritance.txt
 base-cli	main/jsonschema/validator_inheritance_base_first.py
-child-api	../payloads/validator_runtime/inheritance.txt
+base-cli	payloads/validator_runtime/inheritance.txt
 child-api	main/jsonschema/validator_inheritance_child_first.py
-child-cli	../payloads/validator_runtime/inheritance.txt
+child-api	payloads/validator_runtime/inheritance.txt
 child-cli	main/jsonschema/validator_inheritance_child_first.py
+child-cli	payloads/validator_runtime/inheritance.txt
 [test_x_python_type_backend_import_collision]
 	main/jsonschema/x_python_type_backend_import_collision.py
 [test_x_python_type_binding_collisions]

@@ -60,8 +60,8 @@ github-api-issue-states.graphql-extra_args2-github_api_issue_states-IssueState	m
 [test_main_graphql_interface_mro]
 	main/graphql/interface_mro.py
 [test_main_graphql_msgspec_field_type_collision_list]
-	../payloads/field_type_collision_graphql/runtime.txt
 	main/graphql/same_named_list_msgspec_no_future_imports.py
+	payloads/field_type_collision_graphql/runtime.txt
 [test_main_graphql_msgspec_unions]
 	main/graphql/msgspec_unions.py
 	main/graphql/msgspec_unions_warnings.txt

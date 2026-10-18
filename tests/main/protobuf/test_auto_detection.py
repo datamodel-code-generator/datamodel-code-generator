@@ -90,7 +90,9 @@ def test_protobuf_auto_generation(
         else:
             adapter = TypeAdapter(model)
             result = adapter.dump_python(adapter.validate_python(payload))
-        assert_output(json.dumps(result, indent=2) + "\n", PAYLOAD_PATH / "runtime.txt")
+        assert_output(
+            json.dumps(result, indent=2) + "\n", DATA_PATH / "expected/payloads/protobuf_auto_detection/runtime.txt"
+        )
 
 
 @pytest.mark.parametrize("schema", SCHEMAS)

@@ -1,1 +1,0 @@
-{"item": {"bark": "yes", "kind": "dog"}}
