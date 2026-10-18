@@ -423,21 +423,6 @@ REFERENCED_STANDARD_BACKENDS = [
 ]
 
 
-@pytest.fixture(scope="module")
-def standard_proto_has_editions() -> bool:
-    """Select snapshots for the standard descriptors supplied by the real compiler."""
-    path = DATA_PATH / "protobuf_referenced_standard/standard_message.proto"
-    descriptors, _ = ProtobufParser(path)._compile_descriptor_set()
-    return any(
-        field.name == "edition"
-        for descriptor in descriptors.file
-        if descriptor.name == "google/protobuf/api.proto"
-        for message in descriptor.message_type
-        if message.name == "Api"
-        for field in message.field
-    )
-
-
 @pytest.mark.parametrize("name", REFERENCED_STANDARD_CASES)
 def test_native_referenced_standard_types(name: str) -> None:
     """Confirm actual protoc descriptors and ProtoJSON accept and reject the external cases."""
@@ -463,26 +448,20 @@ def test_native_referenced_standard_types(name: str) -> None:
 
 
 @pytest.mark.parametrize("name", REFERENCED_STANDARD_CASES)
-def test_referenced_standard_definition_order(name: str, standard_proto_has_editions: bool) -> None:
+def test_referenced_standard_definition_order(name: str) -> None:
     """Materialize exactly the referenced closure and preserve defaults and comments."""
     path = DATA_PATH / "protobuf_referenced_standard" / f"{name}.proto"
     schema = convert_protobuf_schema_data(path.read_text(), base_path=path.parent)
-    suffix = "_pre_editions" if name in {"nullvalue", "standard_message"} and not standard_proto_has_editions else ""
-    assert_output(
-        json.dumps(schema, indent=2) + "\n", EXPECTED_PROTOBUF_PATH / "referenced_standard" / f"{name}{suffix}.txt"
-    )
+    assert_output(json.dumps(schema, indent=2) + "\n", EXPECTED_PROTOBUF_PATH / "referenced_standard" / f"{name}.txt")
 
 
 @pytest.mark.parametrize("name", REFERENCED_STANDARD_CASES)
 @pytest.mark.parametrize("strict", [False, True])
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
-def test_referenced_standard_generation(
-    name: str, strict: bool, entrypoint: str, output_file: Path, standard_proto_has_editions: bool
-) -> None:
+def test_referenced_standard_generation(name: str, strict: bool, entrypoint: str, output_file: Path) -> None:
     """Resolve real CLI/API references while preserving normal output and validation."""
     path = DATA_PATH / "protobuf_referenced_standard" / f"{name}.proto"
-    suffix = "_pre_editions" if name == "standard_message" and not standard_proto_has_editions else ""
-    expected = f"referenced_standard/{name}{suffix}.py"
+    expected = f"referenced_standard/{name}.py"
     if entrypoint == "cli":
         run_main_and_assert(
             input_path=path,

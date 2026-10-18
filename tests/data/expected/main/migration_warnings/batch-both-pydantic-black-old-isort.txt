@@ -1,2 +1,0 @@
-Black/isort will become optional. Declare the corresponding extras; see --help.
-Support for isort <6 will end in a future release.

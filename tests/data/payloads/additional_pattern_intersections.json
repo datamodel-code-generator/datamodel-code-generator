@@ -57,10 +57,6 @@
       "True_True_builtin": "boolean_custom_True_False_builtin.py",
       "True_True_external": "boolean_custom_True_False_builtin.py"
     },
-    "legacy_code_names": {
-      "False_False_external_23": "boolean_custom_False_False_external_black23.py",
-      "False_True_external_23": "boolean_custom_False_False_external_black23.py"
-    },
     "runtime_names": {
       "False_False": "boolean_False_False_runtime.txt",
       "False_True": "boolean_False_False_runtime.txt",
@@ -102,9 +98,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_False_False_builtin_black23.py",
-      "False_False_external_23": "minimum_False_False_builtin_black23.py",
-      "False_True_external_22": "minimum_False_True_builtin_black23.py",
-      "False_True_external_23": "minimum_False_True_builtin_black23.py"
+      "False_True_external_22": "minimum_False_True_builtin_black23.py"
     },
     "runtime_names": {
       "False_True": "minimum_False_False_runtime.txt",
@@ -146,9 +140,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_custom_False_False_external_black22.py",
-      "False_False_external_23": "minimum_custom_False_False_external_black23.py",
-      "False_True_external_22": "minimum_custom_False_True_external_black22.py",
-      "False_True_external_23": "minimum_custom_False_True_external_black23.py"
+      "False_True_external_22": "minimum_custom_False_True_external_black22.py"
     },
     "runtime_names": {
       "False_False": "minimum_False_False_runtime.txt",
@@ -202,9 +194,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "prefix_suffix_False_False_builtin_black23.py",
-      "False_False_external_23": "prefix_suffix_False_False_builtin_black23.py",
-      "False_True_external_22": "prefix_suffix_False_False_builtin_black23.py",
-      "False_True_external_23": "prefix_suffix_False_False_builtin_black23.py"
+      "False_True_external_22": "prefix_suffix_False_False_builtin_black23.py"
     },
     "runtime_names": {
       "False_True": "prefix_suffix_False_False_runtime.txt",
@@ -258,9 +248,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "prefix_suffix_custom_False_False_external_black22.py",
-      "False_False_external_23": "prefix_suffix_custom_False_False_external_black23.py",
-      "False_True_external_22": "prefix_suffix_custom_False_False_external_black22.py",
-      "False_True_external_23": "prefix_suffix_custom_False_False_external_black23.py"
+      "False_True_external_22": "prefix_suffix_custom_False_False_external_black22.py"
     },
     "runtime_names": {
       "False_False": "prefix_suffix_False_False_runtime.txt",
@@ -361,9 +349,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_float_False_False_builtin_black23.py",
-      "False_False_external_23": "minimum_float_False_False_builtin_black23.py",
-      "False_True_external_22": "minimum_float_False_True_builtin_black23.py",
-      "False_True_external_23": "minimum_float_False_True_builtin_black23.py"
+      "False_True_external_22": "minimum_float_False_True_builtin_black23.py"
     },
     "runtime_names": {
       "False_False": "minimum_False_False_runtime.txt",
@@ -395,9 +381,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_large_False_False_external_black23.py",
-      "False_False_external_23": "minimum_large_False_False_external_black23.py",
-      "False_True_external_22": "minimum_large_False_True_builtin_black23.py",
-      "False_True_external_23": "minimum_large_False_True_builtin_black23.py"
+      "False_True_external_22": "minimum_large_False_True_builtin_black23.py"
     },
     "runtime_names": {
       "False_True": "minimum_large_False_False_runtime.txt",
@@ -438,9 +422,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_maximum_False_False_builtin_black23.py",
-      "False_False_external_23": "minimum_maximum_False_False_builtin_black23.py",
-      "False_True_external_22": "minimum_maximum_False_True_builtin_black23.py",
-      "False_True_external_23": "minimum_maximum_False_True_builtin_black23.py"
+      "False_True_external_22": "minimum_maximum_False_True_builtin_black23.py"
     },
     "runtime_names": {
       "False_False": "minimum_False_False_runtime.txt",
@@ -483,9 +465,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_number_False_False_builtin_black23.py",
-      "False_False_external_23": "minimum_number_False_False_builtin_black23.py",
-      "False_True_external_22": "minimum_number_False_True_builtin_black23.py",
-      "False_True_external_23": "minimum_number_False_True_builtin_black23.py"
+      "False_True_external_22": "minimum_number_False_True_builtin_black23.py"
     }
   },
   "minimum_shared": {
@@ -522,9 +502,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_shared_False_False_builtin_black23.py",
-      "False_False_external_23": "minimum_shared_False_False_builtin_black23.py",
-      "False_True_external_22": "minimum_shared_False_True_builtin_black23.py",
-      "False_True_external_23": "minimum_shared_False_True_builtin_black23.py"
+      "False_True_external_22": "minimum_shared_False_True_builtin_black23.py"
     }
   },
   "suffix_prefix": {
@@ -565,9 +543,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "suffix_prefix_False_False_builtin_black23.py",
-      "False_False_external_23": "suffix_prefix_False_False_builtin_black23.py",
-      "False_True_external_22": "suffix_prefix_False_False_builtin_black23.py",
-      "False_True_external_23": "suffix_prefix_False_False_builtin_black23.py"
+      "False_True_external_22": "suffix_prefix_False_False_builtin_black23.py"
     },
     "runtime_names": {
       "False_True": "suffix_prefix_False_False_runtime.txt",
@@ -650,9 +626,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "anchored_disjoint_False_False_builtin_black23.py",
-      "False_False_external_23": "anchored_disjoint_False_False_builtin_black23.py",
-      "False_True_external_22": "anchored_disjoint_False_False_builtin_black23.py",
-      "False_True_external_23": "anchored_disjoint_False_False_builtin_black23.py"
+      "False_True_external_22": "anchored_disjoint_False_False_builtin_black23.py"
     },
     "runtime_names": {
       "False_True": "anchored_disjoint_False_False_runtime.txt",
@@ -677,9 +651,7 @@
     },
     "legacy_code_names": {
       "False_False_external_22": "minimum_null_False_False_builtin_black23.py",
-      "False_False_external_23": "minimum_null_False_False_builtin_black23.py",
-      "False_True_external_22": "minimum_null_False_False_builtin_black23.py",
-      "False_True_external_23": "minimum_null_False_False_builtin_black23.py"
+      "False_True_external_22": "minimum_null_False_False_builtin_black23.py"
     },
     "runtime_names": {
       "False_True": "minimum_null_False_False_runtime.txt",

@@ -46,8 +46,7 @@
       "True_external": "objects_True_external.py"
     },
     "legacy_code_names": {
-      "False_external_22": "objects_False_builtin_black23.py",
-      "False_external_23": "objects_False_builtin_black23.py"
+      "False_external_22": "objects_False_builtin_black23.py"
     },
     "runtime_names": {
       "True": "default_objects_True_runtime.txt"
@@ -189,8 +188,7 @@
       "True_external": "optional_objects_True_builtin.py"
     },
     "legacy_code_names": {
-      "False_external_22": "optional_objects_False_external_black23.py",
-      "False_external_23": "optional_objects_False_external_black23.py"
+      "False_external_22": "optional_objects_False_external_black23.py"
     },
     "runtime_names": {
       "True": "custom_objects_True_runtime.txt"
@@ -280,8 +278,7 @@
       "True_external": "default_objects_True_external.py"
     },
     "legacy_code_names": {
-      "False_external_22": "default_objects_False_builtin_black23.py",
-      "False_external_23": "default_objects_False_builtin_black23.py"
+      "False_external_22": "default_objects_False_builtin_black23.py"
     },
     "source": "objects"
   },
@@ -399,8 +396,7 @@
       "True_external": "custom_objects_True_builtin.py"
     },
     "legacy_code_names": {
-      "False_external_22": "custom_objects_False_external_black22.py",
-      "False_external_23": "custom_objects_False_external_black23.py"
+      "False_external_22": "custom_objects_False_external_black22.py"
     },
     "source": "objects"
   },
@@ -484,8 +480,7 @@
       "True_external": "extra_objects_True_builtin.py"
     },
     "legacy_code_names": {
-      "False_external_22": "extra_objects_False_builtin_black23.py",
-      "False_external_23": "extra_objects_False_builtin_black23.py"
+      "False_external_22": "extra_objects_False_builtin_black23.py"
     },
     "runtime_names": {
       "True": "custom_objects_True_runtime.txt"
@@ -541,8 +536,7 @@
       "True_external": "base_objects_True_external.py"
     },
     "legacy_code_names": {
-      "False_external_22": "base_objects_False_external_black23.py",
-      "False_external_23": "base_objects_False_external_black23.py"
+      "False_external_22": "base_objects_False_external_black23.py"
     },
     "source": "objects"
   },

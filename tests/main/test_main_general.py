@@ -1005,9 +1005,7 @@ def test_standard_preset_msgspec_struct(output_file: Path) -> None:
             "msgspec.Struct",
         ],
         assert_func=assert_file_content,
-        expected_file=(
-            "standard_preset_msgspec_struct_black_lt_24.py" if BLACK_LT_24 else "standard_preset_msgspec_struct.py"
-        ),
+        expected_file="standard_preset_msgspec_struct.py",
     )
 
 

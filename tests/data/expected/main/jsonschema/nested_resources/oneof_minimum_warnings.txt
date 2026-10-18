@@ -1,4 +1,0 @@
-[
-  "Pydantic serializer warnings:\n  Expected `Union[definition-ref, bool]` but got `JsonSchemaObject` - serialized value may not be as expected",
-  "Pydantic serializer warnings:\n  Expected `Union[definition-ref, bool]` but got `JsonSchemaObject` - serialized value may not be as expected"
-]

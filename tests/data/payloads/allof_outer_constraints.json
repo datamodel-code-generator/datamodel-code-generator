@@ -286,11 +286,7 @@
     "error_type": "greater_than_equal",
     "expected_constraints": true,
     "datetime_class": "datetime",
-    "dump_file": "numeric_date_time_dump.txt",
-    "runtime_dump_files": {
-      "2.0": "numeric_date_time_dump_pydantic200.txt",
-      "2.0.0": "numeric_date_time_dump_pydantic200.txt"
-    }
+    "dump_file": "numeric_date_time_dump.txt"
   },
   {
     "name": "number_date_time_bounds",
@@ -305,11 +301,7 @@
     "error_type": "greater_than_equal",
     "expected_constraints": true,
     "datetime_class": "datetime",
-    "dump_file": "numeric_date_time_dump.txt",
-    "runtime_dump_files": {
-      "2.0": "numeric_date_time_dump_pydantic200.txt",
-      "2.0.0": "numeric_date_time_dump_pydantic200.txt"
-    }
+    "dump_file": "numeric_date_time_dump.txt"
   },
   {
     "name": "number_mapped_string_length",

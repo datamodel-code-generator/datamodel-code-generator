@@ -1,2 +1,0 @@
-Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.
-Support for isort <6 will end in a future release.
