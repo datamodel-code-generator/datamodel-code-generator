@@ -115,9 +115,11 @@ openapi/circular_imports_acyclic.yaml	../yaml_fast_constructor/parity.txt
 openapi/circular_imports_class_conflict.yaml	../yaml_fast_constructor/parity.txt
 openapi/circular_imports_different_prefixes.yaml	../yaml_fast_constructor/parity.txt
 openapi/circular_imports_mixed_prefixes.yaml	../yaml_fast_constructor/parity.txt
+openapi/circular_imports_pattern_properties_ref.yaml	../yaml_fast_constructor/parity.txt
 openapi/circular_imports_small_cycle.yaml	../yaml_fast_constructor/parity.txt
 openapi/circular_imports_stripe_like.yaml	../yaml_fast_constructor/parity.txt
 openapi/circular_imports_with_inheritance.yaml	../yaml_fast_constructor/parity.txt
+openapi/collapse_root_models_module_named_field.yaml	../yaml_fast_constructor/parity.txt
 openapi/collapse_root_models_recursive_invalid_dotted.yaml	../yaml_fast_constructor/parity.txt
 openapi/component_embedded_ids/api.yaml	../yaml_fast_constructor/parity.txt
 openapi/component_embedded_ids/remote.yaml	../yaml_fast_constructor/parity.txt
@@ -170,6 +172,9 @@ openapi/discriminator_no_mapping.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_no_mapping_no_subtypes.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_oneof_short_mapping.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_partial_mapping.yaml	../yaml_fast_constructor/parity.txt
+openapi/discriminator_pattern.yaml	../yaml_fast_constructor/parity.txt
+openapi/discriminator_pattern_mismatch.yaml	../yaml_fast_constructor/parity.txt
+openapi/discriminator_pattern_nested_choices.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_read_write_variant_tags.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_reuse_same_tags.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_reuse_tree_mappings.yaml	../yaml_fast_constructor/parity.txt
@@ -249,9 +254,11 @@ openapi/max_min_number.yaml	../yaml_fast_constructor/parity.txt
 openapi/missing_sentinel_nullable.yaml	../yaml_fast_constructor/parity.txt
 openapi/modular.yaml	../yaml_fast_constructor/parity.txt
 openapi/modular_unencodable_last_module.yaml	../yaml_fast_constructor/parity.txt
+openapi/msgspec_enum_unions.yaml	../yaml_fast_constructor/parity.txt
 openapi/msgspec_inline_const.yaml	../yaml_fast_constructor/parity.txt
 openapi/msgspec_nullable_enum.yaml	../yaml_fast_constructor/parity.txt
 openapi/msgspec_nullable_enum_31.yaml	../yaml_fast_constructor/parity.txt
+openapi/msgspec_nullable_enum_inherited.yaml	../yaml_fast_constructor/parity.txt
 openapi/msgspec_oneof_with_null.yaml	../yaml_fast_constructor/parity.txt
 openapi/msgspec_union_tag_clashes.yaml	../yaml_fast_constructor/parity.txt
 openapi/multiple_aliases_parameters.yaml	../yaml_fast_constructor/parity.txt
