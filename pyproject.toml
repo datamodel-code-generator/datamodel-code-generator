@@ -187,7 +187,6 @@ conflicts = [
     { group = "blacklatest" },
     { group = "black24" },
     { group = "black22" },
-    { group = "black23" },
     { group = "dev" },
   ],
   [
