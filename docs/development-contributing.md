@@ -262,6 +262,27 @@ then a summary. It exits with 1 when any run differs, fails only on your side or
 side, or when every run fails on both sides. Use `--base-python` to compare with another interpreter, such as a build of another branch, and
 `--no-cache` when that build changes without a version change. The script needs a POSIX system.
 
+## Calibrating the option recommender
+
+`scripts/recommender_calibrate.py` checks the option recommender's rules against the public schemas listed in
+`scripts/recommender_corpus.toml`. Each entry pins a spec to a commit and a sha256, names its license and the schema
+style it stands for, and is either a calibration or a holdout schema. Specs are downloaded into a cache at run time,
+used only when the digest matches, and never committed.
+
+```bash
+.venv/bin/python scripts/recommender_calibrate.py --check-manifest
+.venv/bin/python scripts/recommender_calibrate.py --out calibration-run --import-check --jobs 4
+```
+
+For each schema, a run asks the recommender for its recommendation and scores every configuration of the manifest's
+decision grid. It writes `report.md` (regret against the best grid configuration, rules whose decision disagrees with
+the grid, threshold and preset proposals, changes since `scripts/recommender_calibration.json`), `scores.json`, a
+proposed `calibration.json` and, when a threshold change would agree better with the grid, `rules.diff`. The script
+never edits the rules, the calibration file or the manifest: proposals go through a normal pull request. A spec whose
+`$ref` leaves the document is rejected unless its entry sets `stub_external_refs`, so generation never reads other
+files or the network. Generated code runs only with `--import-check`, in a temporary directory through an isolated
+interpreter.
+
 ## ➕ Adding a New CLI Option
 
 When adding a new CLI option to `datamodel-code-generator`, follow these steps:

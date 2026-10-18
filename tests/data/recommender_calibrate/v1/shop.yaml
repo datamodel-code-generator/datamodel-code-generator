@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: Shop
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Cart:
+      title: Item
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            title: Line
+            type: object
+            properties:
+              sku:
+                type: string
+              state:
+                type: string
+                enum: [new, reserved]
+    Invoice:
+      title: Item
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            title: Line
+            type: object
+            properties:
+              amount:
+                type: integer
+              state:
+                type: string
+                enum: [draft, paid]

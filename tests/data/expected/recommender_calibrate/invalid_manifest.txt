@@ -1,0 +1,11 @@
+exit=1
+--- stdout
+
+--- stderr
+error: invalid manifest corpus.toml:
+  unknown top-level keys extra
+  schema 'pets': versions must have distinct dates in ascending order
+  schema 'shop': source must be the https:// or file:// URL of a git repository
+  schema 'shop' versions[0]: unknown keys tag
+  schema 'config': kind must be one of asyncapi, jsonschema, openapi, not 'graphql'
+  schema 'broken': kind must be one of asyncapi, jsonschema, openapi, not 'graphql'
