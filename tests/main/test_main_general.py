@@ -3722,6 +3722,29 @@ def test_all_exports_recursive_local_model_collision_error(
     )
 
 
+def test_all_exports_recursive_multiple_collisions_error(output_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Test --all-exports-scope=recursive lists every colliding export name in sorted order."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "all_exports_multiple_collisions.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--all-exports-scope",
+            "recursive",
+        ],
+        expected_exit=Exit.ERROR,
+        expected_stderr=(
+            "Name collision detected with --all-exports-scope:\n"
+            "  'Item' is defined in: .foo, .bar\n"
+            "  'Message' conflicts with a model in __init__.py\n"
+            "  'Pet' is defined in: .foo, .bar\n\n"
+            "Use --all-exports-collision-strategy minimal-prefix or full-prefix to prefix the colliding names with "
+            "their module names.\n"
+        ),
+        capsys=capsys,
+    )
+
+
 def test_all_exports_scope_children_no_child_exports(output_dir: Path) -> None:
     """Test --all-exports-scope=children when __init__.py has models but no direct child exports."""
     run_main_and_assert(

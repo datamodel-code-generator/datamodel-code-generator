@@ -7302,14 +7302,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return result
 
     @classmethod
-    def _raise_collision_error(  # pragma: no cover
+    def _raise_collision_error(
         cls,
         by_name: dict[str, list[tuple[str, tuple[str, ...], str]]],
         colliding: set[str],
     ) -> None:
         """Raise an error with collision details."""
         details = []
-        for n in colliding:
+        for n in sorted(colliding):
             if len(items := by_name[n]) > 1:
                 details.append(f"  '{n}' is defined in: {', '.join(f'.{s}' for _, _, s in items)}")
             else:
