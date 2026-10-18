@@ -450,6 +450,10 @@ html.show_contexts = false
 html.skip_covered = false
 covdefaults.subtract_omit = "*/__main__.py"
 
+[tool.inline-snapshot]
+default-flags = [ "short-report", "create" ]
+default-flags-tui = [ "short-report", "create" ]
+
 [tool.pydantic-pycharm-plugin]
 ignore-init-method-arguments = true
 parsable-types.str = [ "int", "float" ]

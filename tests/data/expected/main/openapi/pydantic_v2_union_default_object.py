@@ -4,19 +4,21 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Union
-
 from pydantic import BaseModel, Field
 
 
 class Interval(BaseModel):
-    start: Optional[int] = None
-    end: Optional[int] = None
+    start: int | None = None
+    end: int | None = None
 
 
 class Container(BaseModel):
-    interval_or_string: Optional[Union[Interval, str]] = Field(
-        default_factory=lambda: Interval.model_validate({'start': 2009, 'end': 2019})
+    interval_or_string: Interval | str | None = Field(
+        {'start': 2009, 'end': 2019}, validate_default=True
     )
-    string_or_interval: Optional[Union[Interval, str]] = 'some string value'
-    dict_or_interval: Optional[Union[Dict[str, str], Interval]] = {'key': 'value'}
+    string_or_interval: Interval | str | None = Field(
+        'some string value', validate_default=True
+    )
+    dict_or_interval: dict[str, str] | Interval | None = Field(
+        {'key': 'value'}, validate_default=True
+    )

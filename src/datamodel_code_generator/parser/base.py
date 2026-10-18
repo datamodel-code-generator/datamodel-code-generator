@@ -17,7 +17,7 @@ from collections import Counter, OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache, partial
-from itertools import chain, groupby, pairwise
+from itertools import chain, groupby, islice, pairwise
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -690,6 +690,8 @@ def _build_keep_model_order_dependency_maps(
 ) -> _KeepModelOrderDeps:
     strong_deps: ModelDeps = {}
     all_deps: ModelDeps = {}
+    runtime_validation_references = _runtime_validation_reference_paths(models, same_module=False)
+    class_names = {model.path: model.class_name for model in models} if runtime_validation_references else {}
     for model in models:
         strong, deps = _collect_keep_model_order_deps(
             model,
@@ -698,6 +700,10 @@ def _build_keep_model_order_dependency_maps(
             pydantic_v2_root_model_type=pydantic_v2_root_model_type,
             use_deferred_annotations=use_deferred_annotations,
         )
+        if reference_paths := runtime_validation_references.get(model.path):
+            runtime_validation_deps = {class_names[reference_path] for reference_path in reference_paths} - imported
+            strong |= runtime_validation_deps
+            deps |= runtime_validation_deps
         strong_deps[model.class_name] = strong
         all_deps[model.class_name] = deps
     return _KeepModelOrderDeps(strong=strong_deps, all=all_deps)
@@ -794,11 +800,12 @@ def _reorder_models_keep_model_order(
     models[:] = [model_by_name[name] for name in ordered_names]
 
 
-def _sort_internal_module_models(
+def _sort_models_by_class_body_references(
     models: list[DataModel],
     pydantic_v2_root_model_type: type[DataModel] | None,
+    runtime_validation_references: Mapping[str, frozenset[str]],
 ) -> list[DataModel]:
-    """Order models moved to _internal.py so runtime base classes are defined first."""
+    """Define first the models a class body evaluates: base classes, root types and runtime rule types."""
     model_paths = {model.path for model in models}
     order_index = {model.path: index for index, model in enumerate(models)}
     edges: dict[str, set[str]] = {model.path: set() for model in models}
@@ -810,6 +817,8 @@ def _sort_internal_module_models(
     for model in models:
         for base_class in model.base_classes:
             add_dependency(model, base_class.reference.path if base_class.reference else None)
+        for reference_path in runtime_validation_references.get(model.path, ()):
+            add_dependency(model, reference_path)
         if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
             for field in model.fields:
                 for data_type in field.data_type.all_data_types:
@@ -818,6 +827,41 @@ def _sort_internal_module_models(
     sorted_paths = stable_toposort(list(order_index), edges, key=order_index.__getitem__)
     model_by_path = {model.path: model for model in models}
     return [model_by_path[path] for path in sorted_paths]
+
+
+def _runtime_validation_reference_paths(models: Sequence[DataModel], *, same_module: bool) -> dict[str, frozenset[str]]:
+    """Map models to the listed models their runtime rules name; with ``same_module``, other modules are imported."""
+    references_by_path: dict[str, frozenset[str]] = {}
+    model_paths: set[str] = set()
+    for model in models:
+        if not (references := model.schema_runtime_validation_references):
+            continue
+        model_paths = model_paths or {listed_model.path for listed_model in models}
+        module_path = model.module_path if same_module else None
+        if reference_paths := frozenset(
+            reference.path
+            for reference in references
+            if reference.path in model_paths
+            and (
+                module_path is None
+                or (isinstance(source := reference.source, DataModel) and source.module_path == module_path)
+            )
+        ):
+            references_by_path[model.path] = reference_paths
+    return references_by_path
+
+
+def _runtime_validation_names_later_model(
+    models: list[DataModel],
+    runtime_validation_references: Mapping[str, frozenset[str]],
+) -> bool:
+    """Return whether a runtime rule names a model that ``models`` list after the rule's model."""
+    positions = {model.path: index for index, model in enumerate(models)}
+    return any(
+        positions.get(reference_path, -1) > index
+        for index, model in enumerate(models)
+        for reference_path in runtime_validation_references.get(model.path, ())
+    )
 
 
 SPECIAL_PATH_FORMAT: str = "#-datamodel-code-generator-#-{}-#-special-#"
@@ -1170,10 +1214,13 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     generation_index: GenerationIndex | None = None,
     *,
     pydantic_v2_root_model_type: type[DataModel] | None = None,
+    runtime_validation_references: Mapping[str, frozenset[str]] | None = None,
 ) -> tuple[list[DataModel], SortedDataModels, list[str]]:
     """Sort data models by dependency order for correct forward references."""
     if sorted_data_models is None:
         sorted_data_models = OrderedDict()
+
+    runtime_validation_references = runtime_validation_references or {}
 
     if require_update_action_models is None:
         require_update_action_models = []
@@ -1189,9 +1236,12 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         require_update_action_model_paths.add(path)
 
     def get_reference_classes(model: DataModel) -> frozenset[str]:
-        if generation_index is None:
-            return model.reference_classes
-        return generation_index.reference_classes_for_model(model)
+        reference_classes = (
+            model.reference_classes if generation_index is None else generation_index.reference_classes_for_model(model)
+        )
+        if model_runtime_validation_references := runtime_validation_references.get(model.path):
+            return reference_classes | model_runtime_validation_references
+        return reference_classes
 
     sorted_model_count: int = len(sorted_data_models)
     sorted_model_paths = set(sorted_data_models)
@@ -1224,6 +1274,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     recursion_count - 1,
                     generation_index,
                     pydantic_v2_root_model_type=pydantic_v2_root_model_type,
+                    runtime_validation_references=runtime_validation_references,
                 )
             except RecursionError:  # pragma: no cover
                 pass
@@ -1273,6 +1324,13 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
             seen_orderings.add(sig)
             unresolved_references = sorted_unresolved_models
+
+        if runtime_validation_references and _runtime_validation_names_later_model(
+            unresolved_references, runtime_validation_references
+        ):
+            unresolved_references = _sort_models_by_class_body_references(
+                unresolved_references, pydantic_v2_root_model_type, runtime_validation_references
+            )
 
         # circular reference
         unsorted_data_model_names = set(path_to_index.keys())
@@ -2177,20 +2235,31 @@ def _get_source_field_name(field: DataModelFieldBase) -> str | None:
     return field.original_name if field.original_name is not None else field.alias or field.name
 
 
-def _find_discriminator_value(
+def _iter_discriminator_fields(
     fields: Iterable[DataModelFieldBase],
     field_name: str,
     *,
     field_name_mode: Literal["original", "resolved", "either"] = "either",
-) -> DiscriminatorValue | None:
+) -> Iterator[tuple[DataModelFieldBase, DiscriminatorValue]]:
+    """Yield the fields of the discriminator's name that carry one discriminator value, with that value."""
     for field in fields:
         if field_name_mode == "original":
             matches = _get_source_field_name(field) == field_name
         else:
             matches = field.name == field_name or (field_name_mode == "either" and field.original_name == field_name)
         if matches and (value := _get_discriminator_field_value(field)) is not None:
-            return value
-    return None
+            yield field, value
+
+
+def _find_discriminator_value(
+    fields: Iterable[DataModelFieldBase],
+    field_name: str,
+    *,
+    field_name_mode: Literal["original", "resolved", "either"] = "either",
+) -> DiscriminatorValue | None:
+    return next(
+        (value for _, value in _iter_discriminator_fields(fields, field_name, field_name_mode=field_name_mode)), None
+    )
 
 
 def _get_discriminator_values(
@@ -2469,6 +2538,75 @@ def _remove_discriminator(field: DataModelFieldBase) -> None:
     field.data_type.discriminator = None
 
 
+def _discriminator_tag_constraints(field: DataModelFieldBase) -> tuple[ConstraintsBase, dict[str, Any], str] | None:
+    """Return the constraints of a tag an output model writes as ``Field()`` arguments, their values and pattern."""
+    if not field.SUPPORTS_FIELD_CONSTRAINTS or not isinstance(constraints := field.constraints, ConstraintsBase):
+        return None
+    values = constraints.model_dump(by_alias=True, exclude_unset=True)
+    if (pattern := values.pop("pattern", None)) is None:
+        return None
+    return constraints, values, pattern
+
+
+def _tag_satisfies_pattern(value: DiscriminatorValue, pattern: str) -> bool:
+    """Return whether a tag value satisfies a pattern as ``re.search`` finds it, which a non-string always does.
+
+    A pattern Python cannot compile counts as satisfied.
+    """
+    try:
+        return not isinstance(value, str) or re.search(pattern, value) is not None
+    except re.error:
+        return True
+
+
+def _drop_discriminator_tag_patterns(
+    tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
+) -> None:
+    """Write the tags of a union without patterns where an output model writes constraints as ``Field()`` arguments.
+
+    Pydantic checks a pattern on the tag's ``Literal`` by validating the value again as a ``str``, which hides the
+    ``Literal`` from the discriminator, and the ``Literal`` decides the tag anyway once every tag value satisfies the
+    pattern. A tag value outside its pattern leaves every pattern of the union, as the schema rejects that variant.
+    The other constraints stay.
+    """
+    patterned = [
+        (field, found, tag_values)
+        for field, tag_values in tag_fields
+        if (found := _discriminator_tag_constraints(field)) is not None
+    ]
+    if not all(
+        _tag_satisfies_pattern(value, pattern) for _, (_, _, pattern), tag_values in patterned for value in tag_values
+    ):
+        return
+    for field, (constraints, values, _), _ in patterned:
+        field.constraints = type(constraints).model_validate(values)
+        field.invalidate_semantic_caches()
+
+
+def _iter_nested_discriminator_tag_fields(
+    data_types: Iterable[DataType],
+    field_name: str,
+    *,
+    field_name_mode: Literal["original", "either"],
+) -> Iterator[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]]:
+    """Yield the tag fields of the variants that nested choices give a union, with their tag values.
+
+    Such a variant keeps the tag it declares or inherits, so the field giving it is its own one, else the inherited
+    one, which the empty subclass of a reused model also reads.
+    """
+    for data_type, can_update_discriminator, _ in _iter_discriminator_data_types(data_types):
+        source = data_type.reference.source if data_type.reference else None
+        if can_update_discriminator or not isinstance(source, DataModel):
+            continue
+        for tag_field, value in islice(
+            _iter_discriminator_fields(
+                chain(source.fields, source.iter_all_fields()), field_name, field_name_mode=field_name_mode
+            ),
+            1,
+        ):
+            yield tag_field, (value,)
+
+
 def _is_discriminator_container(data_type: DataType) -> bool:
     return (
         data_type.is_dict
@@ -2601,6 +2739,97 @@ def _msgspec_union_message(name: str, refusal: _MsgspecRefusal, *, discriminated
     return (
         f"msgspec cannot decode {union}: its Struct types {names} are not all tagged, and only the "
         "variants of a discriminated union are tagged, with --use-msgspec-tagged-unions."
+    )
+
+
+_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS: frozenset[str] = frozenset({
+    "bytes",
+    "bytearray",
+    "datetime",
+    "date",
+    "time",
+    "timedelta",
+    "UUID",
+    "Decimal",
+})
+_MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...]]
+
+
+def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[DataType]:
+    """Yield the members of a union as written, spreading the member unions that render as part of it."""
+    for data_type in data_types:
+        if data_type.is_union and not _is_discriminator_container(data_type):
+            yield from _iter_written_union_members(data_type.data_types)
+        else:
+            yield data_type
+
+
+def _msgspec_value_kind(value: object) -> str:
+    """Return ``str`` or ``int`` for an Enum or Literal value written as one, subclasses but not bool, else ``""``."""
+    return "str" if isinstance(value, str) else "int" if isinstance(value, int) and not isinstance(value, bool) else ""
+
+
+def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumClash, ...]:
+    """Return each kind and its written members of a union that msgspec decodes once its Enums are written as Literal.
+
+    msgspec decodes a union only if it holds an Enum of str values as its one str-like member and an Enum of int
+    values as its one int-like member, while it takes Literal values beside each other and beside str or int. A
+    member of another str-like type, such as bytes, refuses a Literal of str values too, so it leaves the str side be.
+    """
+    enums: dict[str, set[int]] = {"str": set(), "int": set()}
+    names: dict[str, dict[str, None]] = {"str": {}, "int": {}}
+    others: set[str] = set()
+    refused: set[str] = set()
+    for member in _iter_written_union_members(data_types):
+        for leaf, _, _ in _iter_discriminator_data_types((member,)):
+            if isinstance(source := leaf.reference.source if leaf.reference else None, Enum):
+                if (
+                    kinds := {_msgspec_value_kind(get_raw_enum_member_value(field.default)) for field in source.fields}
+                ) in ({"str"}, {"int"}):
+                    enums[kind := kinds.pop()].add(id(source))
+                    names[kind][member.type_hint] = None
+            elif source is None and not leaf.data_types and not leaf.enum_member_literals:
+                if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
+                    refused.add("str")
+                for kind in (
+                    {_msgspec_value_kind(literal) for literal in leaf.literals} or {leaf.type or ""}
+                ) & names.keys():
+                    others.add(kind)
+                    names[kind][member.type_hint] = None
+    return tuple(
+        (kind, (*names[kind],))
+        for kind, ids in enums.items()
+        if ids and len(ids) + (kind in others) > 1 and kind not in refused
+    )
+
+
+def _msgspec_refused_union_enums(data_type: DataType) -> tuple[_MsgspecEnumClash, ...]:
+    """Return each kind of a union msgspec refuses for an Enum, unless an alias it names is refused for that kind."""
+    if (
+        not data_type.is_union
+        or _is_discriminator_container(data_type)
+        or not (clashes := _msgspec_enum_clashes(data_type.data_types))
+    ):
+        return ()
+    covered = {kind for root in _iter_union_alias_roots(data_type) for kind, _ in _msgspec_enum_clashes((root,))}
+    return tuple(clash for clash in clashes if clash[0] not in covered)
+
+
+def _msgspec_field_enum_clashes(data_types: Iterable[DataType]) -> dict[str, tuple[str, ...]]:
+    """Return the written members of each kind that the unions among some types are refused for, the first union's."""
+    clashes: dict[str, tuple[str, ...]] = {}
+    for kind, members in chain.from_iterable(map(_msgspec_refused_union_enums, data_types)):
+        clashes.setdefault(kind, members)
+    return clashes
+
+
+def _msgspec_enum_union_message(name: str, clash: _MsgspecEnumClash) -> str:
+    """Describe a union that msgspec refuses to decode because it holds an Enum beside another member of its kind."""
+    kind, members = clash
+    return (
+        f"msgspec cannot decode the union {name}: its {kind}-like members {', '.join(members)} include an Enum, "
+        f"while a msgspec union holds an Enum only as its one {kind}-like member. Pass --enum-field-as-literal all "
+        f"to write enums as Literal values, which msgspec decodes beside {kind} and other Literal values."
     )
 
 
@@ -4351,6 +4580,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     _remove_discriminator(field)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                     continue
+                tag_fields: list[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]] = [
+                    *_iter_nested_discriminator_tag_fields(
+                        field.data_type.data_types,
+                        property_name if field.SUPPORTS_DISCRIMINATOR else field_name,
+                        field_name_mode="original" if field.SUPPORTS_DISCRIMINATOR else "either",
+                    )
+                ]
 
                 if field.SUPPORTS_DISCRIMINATOR:
                     field_name = self._get_discriminator_field_name(
@@ -4427,6 +4663,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             and (literal := literals[0]) == expected_value
                         ):
                             has_one_literal = True
+                            tag_fields.append((discriminator_field, (literal,)))
                             if not has_reused_variant:
                                 self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=False)
                             match discriminator_model:
@@ -4471,6 +4708,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
                         discriminator_field.required = True
+                        tag_fields.append((discriminator_field, discriminator_values))
                         self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
                         if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
@@ -4537,6 +4775,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 discriminator_field,
                                 _get_mapped_discriminator_tag(discriminator_values, base_enum_source),
                             ))
+                _drop_discriminator_tag_patterns(tag_fields)
                 if not tags:
                     continue
                 if tagged_unions:
@@ -5577,23 +5816,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     continue
                 member = _literal_member(field.data_type)
                 discriminated = bool(field.extras.get("discriminator"))
+                nested = [*field.data_type.all_data_types][::-1]
                 refusal = next(
-                    filter(
-                        operator.itemgetter(0),
-                        map(_msgspec_refused_union_structs, reversed([*field.data_type.all_data_types])),
-                    ),
-                    _NO_MSGSPEC_REFUSAL,
+                    filter(operator.itemgetter(0), map(_msgspec_refused_union_structs, nested)), _NO_MSGSPEC_REFUSAL
                 )
                 refused = bool(refusal[0]) and (
                     refusal[1] is not None or not (discriminated and self.use_msgspec_tagged_unions)
                 )
-                if member is None and not refused:
+                clashes = _msgspec_field_enum_clashes(nested)
+                if member is None and not refused and not clashes:
                     continue
                 name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
                 if member is not None:
                     warn(_msgspec_literal_member_message(name, member), stacklevel=2)
                 if refused:
                     warn(_msgspec_union_message(name, refusal, discriminated=discriminated), stacklevel=2)
+                for clash in clashes.items():
+                    warn(_msgspec_enum_union_message(name, clash), stacklevel=2)
 
     def _apply_inherited_field_default(
         self,
@@ -7272,7 +7511,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_class_mappings, path_mapping = self.__rename_and_relocate_scc_models(
                 all_scc_models, model_to_original_module, internal_module, internal_path
             )
-            all_scc_models = _sort_internal_module_models(all_scc_models, self.pydantic_v2_root_model_type)
+            all_scc_models = _sort_models_by_class_body_references(
+                all_scc_models,
+                self.pydantic_v2_root_model_type,
+                _runtime_validation_reference_paths(all_scc_models, same_module=False),
+            )
             all_path_mappings.update(path_mapping)
 
             for scc_module in scc:
@@ -8699,6 +8942,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.results,
             generation_index=self.generation_store.index,
             pydantic_v2_root_model_type=self.pydantic_v2_root_model_type,
+            runtime_validation_references=(
+                None if self.keep_model_order else _runtime_validation_reference_paths(self.results, same_module=True)
+            ),
         )
         source_reference_paths: Mapping[DataModel, str] | None = (
             {

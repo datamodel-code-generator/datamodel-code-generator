@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info: {title: discriminator tags outside their pattern, version: "1"}
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      properties:
+        type: {type: string, const: cat, pattern: '^dog$'}
+      required: [type]
+    Dog:
+      type: object
+      properties:
+        type: {type: string, pattern: '^dog$'}
+      required: [type]
+    Bee:
+      type: object
+      properties:
+        type: {type: string, pattern: '^b'}
+      required: [type]
+    Bird:
+      type: object
+      properties:
+        type: {type: string, pattern: '^b'}
+      required: [type]
+    Fish:
+      type: object
+      properties:
+        type: {type: string, pattern: '^f'}
+      required: [type]
+    Frog:
+      type: object
+      properties:
+        type: {type: string, pattern: '^f'}
+      required: [type]
+    Pets:
+      type: object
+      properties:
+        constTag:
+          oneOf: [{$ref: '#/components/schemas/Cat'}, {$ref: '#/components/schemas/Dog'}]
+          discriminator:
+            propertyName: type
+            mapping: {cat: '#/components/schemas/Cat', dog: '#/components/schemas/Dog'}
+        mappedTag:
+          oneOf: [{$ref: '#/components/schemas/Bee'}, {$ref: '#/components/schemas/Bird'}]
+          discriminator:
+            propertyName: type
+            mapping: {bee: '#/components/schemas/Bee', parrot: '#/components/schemas/Bird'}
+        oneOfMappedTags:
+          oneOf: [{$ref: '#/components/schemas/Fish'}, {$ref: '#/components/schemas/Frog'}]
+          discriminator:
+            propertyName: type
+            mapping: {fish: '#/components/schemas/Fish', shark: '#/components/schemas/Fish', frog: '#/components/schemas/Frog'}
