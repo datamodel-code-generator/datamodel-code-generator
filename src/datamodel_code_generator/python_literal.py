@@ -216,6 +216,20 @@ def _safe_non_finite_float(value: float) -> float:
     return _NonFiniteFloat(value) if not isfinite(value) else value
 
 
+def _safe_non_finite_value(value: Any) -> Any:
+    """Make every non-finite float of a parsed JSON value source-safe, copying only containers that hold one."""
+    match value:
+        case float():
+            return _safe_non_finite_float(value)
+        case dict():
+            safe_items = {key: _safe_non_finite_value(item) for key, item in value.items()}
+            return value if all(safe_items[key] is item for key, item in value.items()) else safe_items
+        case list():
+            safe_list = [_safe_non_finite_value(item) for item in value]
+            return value if all(safe is item for safe, item in zip(safe_list, value, strict=True)) else safe_list
+    return value
+
+
 def _semantic_value_text(value: object) -> str:
     """Return parser-internal text without source-literal replacements."""
     return repr(float(value)) if isinstance(value, _NonFiniteFloat) else str(value)

@@ -6489,6 +6489,12 @@ typed-dict	main/jsonschema/output_model_types/msgspec_unset_fastpath_typing_Type
 	main/jsonschema/no_empty_collapsed_external_model//*.py
 [test_main_jsonschema_non_dict_files_in_directory]
 	main/jsonschema/non_dict_files//*.py
+[test_main_jsonschema_non_finite_enum_members]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/non_finite_enum_members[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.dataclass].py
+typing.TypedDict	main/jsonschema/main_jsonschema/non_finite_enum_members[typing.TypedDict].py
 [test_main_jsonschema_non_finite_number_values]
 	main/jsonschema/non_finite_number_values.py
 [test_main_jsonschema_non_finite_number_values_remaining_backends]

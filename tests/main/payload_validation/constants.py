@@ -227,6 +227,10 @@ EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/non_finite_container_defaults.json": (
         "non-finite defaults cannot be represented in the JSON payloads hypothesis-jsonschema generates"
     ),
+    "jsonschema/non_finite_enum_members.yaml": (
+        "non-finite enum members cannot be represented in the JSON payloads hypothesis-jsonschema generates; "
+        "test_main_jsonschema_non_finite_enum_members imports the output of every backend"
+    ),
     "jsonschema/non_finite_number_values.json": (
         "non-finite bounds cannot be satisfied by any JSON payload hypothesis-jsonschema generates"
     ),

@@ -121,7 +121,7 @@ from datamodel_code_generator.parser.schema_version import (
     detect_jsonschema_version,
     get_data_formats,
 )
-from datamodel_code_generator.python_literal import _semantic_value_text
+from datamodel_code_generator.python_literal import _safe_non_finite_value, _semantic_value_text
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     SPECIAL_PATH_MARKER,
@@ -12061,7 +12061,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 case None:
                     default = NULL_ENUM_MEMBER_VALUE
                 case _:
-                    default = enum_part
+                    default = _safe_non_finite_value(enum_part)
             if obj.type == "string" or isinstance(enum_part, str):
                 field_name = (
                     enum_names[i]
