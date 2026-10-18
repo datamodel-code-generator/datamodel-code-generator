@@ -30,7 +30,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING, Any, NamedTuple, TypedDict
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
 __all__ = [
     "AT_HOME",
@@ -54,7 +54,9 @@ __all__ = [
     "UnsafeWriteError",
     "apply_payload",
     "decode_payload",
+    "deduplicate",
     "derived_name",
+    "duplicates",
     "encode_payload",
     "encode_value",
     "facts_fit",
@@ -62,6 +64,7 @@ __all__ = [
     "item_problem",
     "label_path",
     "label_problem",
+    "label_storages",
     "merge_environments",
     "nodeid_key",
     "parse_predicate",
@@ -74,6 +77,7 @@ __all__ = [
     "refs_sections",
     "resolve",
     "split_label",
+    "stored_digest",
     "tree_label",
     "tree_member",
     "unit_digest",
@@ -271,6 +275,21 @@ def write_files(tests_root: Path, writes: Mapping[Path, str], deletes: Iterable[
         temporary = real.with_name(f".{os.getpid()}.tmp")
         temporary.write_bytes(text.encode("utf-8"))
         temporary.replace(real)
+
+
+def stored_digest(path: Path, pattern: str | None, deleted: Collection[Path] = ()) -> str:
+    """Return a digest of the bytes a stored unit holds: a file's bytes, or the names and bytes of a tree's files.
+
+    Files in ``deleted`` count as gone, so a plan can be checked before it is written; a missing file and an empty
+    tree have digests of their own.
+    """
+    files = [path] if pattern is None else sorted(file for file in path.rglob(pattern) if tree_member(file, path))
+    digest = hashlib.sha256(b"file" if pattern is None else b"tree")
+    for file in files:
+        if file not in deleted and file.is_file():
+            relative, data = file.relative_to(path).as_posix().encode(), file.read_bytes()
+            digest.update(b"%d:%s:%d:%s" % (len(relative), relative, len(data), data))
+    return digest.hexdigest()
 
 
 def unit_digest(label: str, value: object) -> str:
@@ -471,7 +490,7 @@ class RefsIndex:
     _cache: dict[Path, tuple[list[RefLine], list[Problem]]] = field(default_factory=dict)
     _items: dict[Path, dict[tuple[str, str], list[RefLine]]] = field(default_factory=dict)
     _sidecars: list[Path] | None = None
-    _storages: dict[str, str] | None = None
+    _storages: dict[str, dict[str | None, str]] | None = None
 
     @property
     def expected_root(self) -> Path:
@@ -509,27 +528,48 @@ class RefsIndex:
         """Return the lines of every sidecar."""
         return {sidecar: self.load(sidecar)[0] for sidecar in self.sidecars()}
 
-    def stored_path(self, path: Path) -> Path:
-        """Return where the expected output a path names is stored; paths the index does not name are unchanged.
+    def storage(self, name: str) -> str | None:
+        """Return where the expected output a name relative to the expected root is stored, or None.
 
-        A path names a file label or a file inside a tree label. When references with that label store it in
-        different places, the one stored at the label itself wins.
+        A name is a label's path (a file, or a tree's directory) or a file a tree label's pattern selects; each
+        pattern of a directory is tried. Which reference decides is ``label_storages``'s choice.
         """
         if self._storages is None:
-            self._storages = {}
-            for lines in self.all_lines().values():
-                for line in lines:
-                    name, storage = split_label(line.label)[0], split_label(line.stored)[0]
-                    if name not in self._storages or storage == name:
-                        self._storages[name] = storage
+            self._storages = label_storages(self.all_lines())
+        relative = PurePosixPath(name)
+        for candidate in (relative, *relative.parents):
+            entries = self._storages.get(str(candidate), {})
+            inside = relative.relative_to(candidate) if entries else relative
+            for pattern, storage in sorted(entries.items(), key=lambda entry: (entry[0] is not None, entry[0] or "")):
+                if candidate == relative or (pattern is not None and inside.match(pattern)):
+                    return (PurePosixPath(storage) / inside).as_posix()
+        return None
+
+    def stored_path(self, path: Path) -> Path:
+        """Return where the expected output a path names is stored; paths the index does not name are unchanged."""
         try:
-            relative = PurePosixPath(Path(os.path.relpath(path, self.expected_root)).as_posix())
+            relative = Path(os.path.relpath(path, self.expected_root)).as_posix()
         except ValueError:  # another drive on Windows: nothing in the index names it
             return path
-        for candidate in (relative, *relative.parents):
-            if (storage := self._storages.get(str(candidate))) is not None:
-                return label_path(storage, self.expected_root) / relative.relative_to(candidate)
-        return path
+        return path if (storage := self.storage(relative)) is None else self.expected_root / storage
+
+
+def label_storages(lines: Mapping[Path, list[RefLine]]) -> dict[str, dict[str | None, str]]:
+    """Return where each label path is stored, by tree pattern (None for a file label), for code that reads by name.
+
+    Of the references to one label, a line without an environment predicate wins over overrides, then the one stored
+    at the label itself, then the first storage by name, so the choice never depends on which sidecar comes first.
+    """
+    best: dict[tuple[str, str | None], tuple[bool, bool, str]] = {}
+    for found in lines.values():
+        for line in found:
+            (label, pattern), storage = split_label(line.label), split_label(line.stored)[0]
+            rank = (bool(line.predicate), storage != label, storage)
+            best[label, pattern] = min(best.get((label, pattern), rank), rank)
+    result: dict[str, dict[str | None, str]] = {}
+    for (label, pattern), (_, _, storage) in best.items():
+        result.setdefault(label, {})[pattern] = storage
+    return result
 
 
 def encode_payload(payload: Mapping[str, object], limit: int) -> str | None:
@@ -1178,6 +1218,13 @@ class _Resolution:
                 self.plan.deletes.update(removed)
                 self.plan.events.append(Event("deleted", storage))
 
+    def write_sidecars(self) -> Plan:
+        for sidecar in self.current.keys() | self.kept.keys():
+            text = format_refs(self.kept.get(sidecar, []))
+            if text != format_refs(self.current.get(sidecar, [])):
+                self.plan.sidecars[sidecar] = text
+        return self.plan
+
     def run(self) -> Plan:
         self.collect()
         by_old: dict[str | None, dict[str, list[_Pending]]] = {}
@@ -1193,11 +1240,51 @@ class _Resolution:
         self.rehome()
         self.collapse_overrides()
         self.collect_garbage()
-        for sidecar in self.current.keys() | self.kept.keys():
-            text = format_refs(self.kept.get(sidecar, []))
-            if text != format_refs(self.current.get(sidecar, [])):
-                self.plan.sidecars[sidecar] = text
-        return self.plan
+        return self.write_sidecars()
+
+    def duplicates(self) -> list[list[str]]:
+        """Return the stored units whose bytes another unit of their kind also stores, grouped.
+
+        Files group with files of the same suffix, trees with trees; missing files and empty trees store nothing.
+        """
+        groups: dict[tuple[str, str], list[str]] = {}
+        for storage in sorted(self.before):
+            name, pattern = split_label(storage)
+            if self.value(storage) not in (None, {}):
+                kind = PurePosixPath(name).suffix if pattern is None else "/"
+                groups.setdefault((kind, stored_digest(self.path(storage), pattern)), []).append(storage)
+        return [members for _, members in sorted(groups.items()) if len(members) > 1]
+
+    def merge_duplicates(self, scope: Callable[[Path, RefLine], bool], keep: Collection[str]) -> Plan:
+        """Point the references in scope at one unit per content and delete the copies left unused.
+
+        The survivor is chosen among every reference, so areas deduplicated one at a time end alike: a unit stored at
+        a path in ``keep``, then the unit stored at a label of its own, then the one with the most references, then
+        the shortest and first name. References outside the scope keep their storage, and so do the copies they use;
+        units stored at a path in ``keep`` keep every reference, so they are never deleted.
+        """
+        self.collect()
+        users = self.users()
+        for members in self.duplicates():
+            survivor = min(
+                members,
+                key=lambda storage: (
+                    split_label(storage)[0] not in keep,
+                    all(line.label != storage for _, line in users[storage]),
+                    -len(users[storage]),
+                    len(storage),
+                    storage,
+                ),
+            )
+            for storage in members:
+                if storage == survivor or split_label(storage)[0] in keep:
+                    continue
+                if moving := [user for user in users[storage] if scope(*user)]:
+                    self.repoint(moving, survivor)
+                    items = tuple((sidecar, line.item) for sidecar, line in moving)
+                    self.plan.events.append(Event("merged", storage, items, (), survivor))
+        self.collect_garbage()
+        return self.write_sidecars()
 
 
 def _slug(sidecar: Path, line: RefLine) -> str:
@@ -1217,6 +1304,26 @@ def resolve(
     (function, parameter id) to every line the item should have.
     """
     return _Resolution(lines, updates, expected_root).run()
+
+
+def duplicates(lines: Mapping[Path, list[RefLine]], expected_root: Path) -> list[list[str]]:
+    """Return the storages of every content that more than one stored unit holds, one sorted group per content."""
+    return _Resolution(lines, {}, expected_root).duplicates()
+
+
+def deduplicate(
+    lines: Mapping[Path, list[RefLine]],
+    expected_root: Path,
+    scope: Callable[[Path, RefLine], bool],
+    keep: Collection[str] = (),
+) -> Plan:
+    """Plan pointing the references in scope (by sidecar and line) at one stored unit per content.
+
+    ``lines`` holds every sidecar, so the survivor and the copies still in use are known. Units stored at a path in
+    ``keep`` (relative to the expected root) stay where they are. The plan rewrites only storage columns and deletes
+    only stored files that no reference uses any more; every line keeps comparing the same content.
+    """
+    return _Resolution(lines, {}, expected_root).merge_duplicates(scope, keep)
 
 
 def _fact_value(fact: str, value: str) -> str:

@@ -9,7 +9,7 @@ import pytest
 
 import datamodel_code_generator as dcg
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-from tests.conftest import assert_output
+from tests.conftest import assert_output, stored_expected
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
@@ -40,7 +40,7 @@ def test_api_cli_backends(backend: str, tmp_path: Path) -> None:
             "black",
             "isort",
         ],
-        expected_output=(EXPECTED / f"{backend.replace('.', '_')}.py").read_text() + "\n",
+        expected_output=stored_expected(EXPECTED / f"{backend.replace('.', '_')}.py").read_text() + "\n",
     )
 
 

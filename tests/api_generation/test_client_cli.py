@@ -19,14 +19,14 @@ from tests.api_generation.support.client_generation import (
     client_generate_options,
     prepare_client_case,
 )
-from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content
+from tests.conftest import assert_generated_modules_output, assert_output, create_assert_file_content, stored_expected
 from tests.main.conftest import run_main_and_assert, run_main_with_args, run_main_with_system_exit
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform" / "client"
 CLI = SOURCE / "cli"
 EXPECTED = DATA / "expected" / "main" / "generation_platform" / "client"
-DEPENDENCIES = (EXPECTED / "cli" / "dependencies.txt").read_text(encoding="utf-8")
+DEPENDENCIES = stored_expected(EXPECTED / "cli" / "dependencies.txt").read_text(encoding="utf-8")
 OPTIONS = [
     *("--target-python-version", "3.11", "--openapi-scopes", "schemas", "api"),
     *("--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", "--disable-timestamp"),
@@ -998,7 +998,9 @@ def test_client_cli_shared_models_jobs(
     run_main_with_args(
         ["--all-jobs"],
         capsys=capsys,
-        expected_stderr=(EXPECTED / "cli" / "shared-models-dependencies.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / "shared-models-dependencies.txt").read_text(
+            encoding="utf-8"
+        ),
     )
     assert_file_content(tmp_path / "models.py", "cli/options/models.py")
     assert_file_content(tmp_path / SYNC, "cli/options/_sync.py")

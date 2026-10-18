@@ -54,6 +54,7 @@ from tests.conftest import (
     assert_output,
     assert_warnings_contain,
     freeze_time,
+    stored_expected,
     validate_generated_code,
 )
 from tests.main.conftest import (
@@ -1980,7 +1981,7 @@ def test_main_collapse_root_models_recursive_invalid_dotted_stdout(capsys: pytes
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -1996,7 +1997,7 @@ def test_main_invalid_dotted_mixed_keys_stdout(capsys: pytest.CaptureFixture[str
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2012,7 +2013,7 @@ def test_main_usable_invalid_dotted_schema_name_stdout(capsys: pytest.CaptureFix
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2028,7 +2029,7 @@ def test_main_invalid_dotted_future_import_stdout(capsys: pytest.CaptureFixture[
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2051,7 +2052,7 @@ def test_main_invalid_dotted_relative_import_stdout(capsys: pytest.CaptureFixtur
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2074,7 +2075,7 @@ def test_main_invalid_dotted_import_binding_stdout(capsys: pytest.CaptureFixture
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2097,7 +2098,7 @@ def test_main_invalid_dotted_conflicting_models_stdout(capsys: pytest.CaptureFix
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2120,7 +2121,7 @@ def test_main_invalid_dotted_name_priority_stdout(capsys: pytest.CaptureFixture[
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2136,7 +2137,7 @@ def test_main_invalid_dotted_info_version_stdout(capsys: pytest.CaptureFixture[s
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2152,7 +2153,7 @@ def test_main_usable_invalid_dotted_no_future_stdout(capsys: pytest.CaptureFixtu
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2176,7 +2177,9 @@ def test_main_usable_invalid_dotted_inherited_enum_stdout(capsys: pytest.Capture
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=sys.version_info >= (3, 11))
+    validate_generated_code(
+        stored_expected(expected_path).read_text(), str(expected_path), do_exec=sys.version_info >= (3, 11)
+    )
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2200,7 +2203,9 @@ def test_main_usable_converging_invalid_dotted_models_stdout(capsys: pytest.Capt
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=sys.version_info >= (3, 11))
+    validate_generated_code(
+        stored_expected(expected_path).read_text(), str(expected_path), do_exec=sys.version_info >= (3, 11)
+    )
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2225,7 +2230,7 @@ def test_main_usable_collapsed_invalid_dotted_models_stdout(capsys: pytest.Captu
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2247,7 +2252,7 @@ def test_main_usable_discriminator_invalid_dotted_models_stdout(capsys: pytest.C
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2321,7 +2326,7 @@ def test_main_usable_identical_invalid_dotted_models_stdout(capsys: pytest.Captu
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config
@@ -2358,7 +2363,7 @@ def test_main_invalid_dotted_mixed_module_stdout(capsys: pytest.CaptureFixture[s
         capsys=capsys,
         assert_no_stderr=True,
     )
-    validate_generated_code(expected_path.read_text(), str(expected_path), do_exec=True)
+    validate_generated_code(stored_expected(expected_path).read_text(), str(expected_path), do_exec=True)
 
 
 @pytest.mark.isolate_builtin_formatter_config

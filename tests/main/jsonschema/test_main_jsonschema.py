@@ -89,6 +89,7 @@ from tests.conftest import (
     assert_warnings_do_not_contain,
     create_assert_file_content,
     freeze_time,
+    stored_expected,
     validate_generated_code,
 )
 from tests.data.python.schema_resource_server import RecordingRequestHandler
@@ -25513,7 +25514,7 @@ def test_msgspec_inheritance_reject_conflicting_layouts(
             extra_args=["--output-model-type", "msgspec.Struct", *case["cli"]],
             expected_exit=Exit.ERROR,
             capsys=capsys,
-            expected_stderr=expected.read_text(),
+            expected_stderr=stored_expected(expected).read_text(),
             output_should_not_exist=True,
         )
     else:
@@ -26672,7 +26673,7 @@ def test_allof_final_scoped_aliases_invalid(
             ],
             expected_exit=Exit.ERROR,
             capsys=capsys,
-            expected_stderr=expected.read_text(),
+            expected_stderr=stored_expected(expected).read_text(),
             output_should_not_exist=True,
         )
 
@@ -27743,7 +27744,7 @@ def test_schema_validator_legacy_custom_helper(
 RESOURCES_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "nested_resources"
 
 
-RESOURCES_CASES = json.loads((RESOURCES_EXPECTED / "cases.json").read_text(encoding="utf-8"))
+RESOURCES_CASES = json.loads(stored_expected(RESOURCES_EXPECTED / "cases.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
@@ -27879,7 +27880,7 @@ def test_nested_schema_resources(tmp_path: Path, case: str, entrypoint: str, for
 @pytest.mark.parametrize("strict_refs", [False, True])
 @pytest.mark.parametrize(
     "case",
-    json.loads((RESOURCES_EXPECTED / "identifier_cases.json").read_text(encoding="utf-8")),
+    json.loads(stored_expected(RESOURCES_EXPECTED / "identifier_cases.json").read_text(encoding="utf-8")),
     ids=lambda case: f"{case['source']}-{case['version']}-{case.get('mode', 'lenient')}",
 )
 def test_schema_resource_identifier_versions(
@@ -27951,7 +27952,9 @@ def test_missing_embedded_anchor(
     validator_class = validator_for(schema)
     validator_class.check_schema(schema)
     validator = validator_class(schema, registry=Registry().with_resource("root.json", Resource.from_contents(schema)))
-    payload = json.loads((RESOURCES_EXPECTED / "missing_anchor_payload.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        stored_expected(RESOURCES_EXPECTED / "missing_anchor_payload.json").read_text(encoding="utf-8")
+    )
     with pytest.raises(Unresolvable) as native_error:
         validator.is_valid(payload)
     assert_output(str(native_error.value), RESOURCES_EXPECTED / "missing_anchor_native_error.txt")
@@ -27992,7 +27995,9 @@ def test_missing_embedded_anchor(
                     ],
                     expected_exit=Exit.ERROR,
                     capsys=capsys,
-                    expected_stderr=(RESOURCES_EXPECTED / "missing_anchor_cli_error.txt").read_text(encoding="utf-8"),
+                    expected_stderr=stored_expected(RESOURCES_EXPECTED / "missing_anchor_cli_error.txt").read_text(
+                        encoding="utf-8"
+                    ),
                 )
             else:
                 with pytest.raises(Error) as error:
@@ -29278,7 +29283,7 @@ def test_type_union_pattern_properties(output_file: Path, entrypoint: str, *, sc
 PATTERN_INTERSECTION_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "pattern_intersections"
 
 
-PATTERN_INTERSECTION_CASES = json.loads((PATTERN_INTERSECTION_EXPECTED / "cases.json").read_text())
+PATTERN_INTERSECTION_CASES = json.loads(stored_expected(PATTERN_INTERSECTION_EXPECTED / "cases.json").read_text())
 
 
 @pytest.mark.parametrize("case", PATTERN_INTERSECTION_CASES)

@@ -14,7 +14,7 @@ from datamodel_code_generator.enums import AllExportsScope
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.openapi_scope import ApiModelResolver, ApiOpenAPIParser
-from tests.conftest import assert_directory_content, assert_inputs_not_mutated, assert_output
+from tests.conftest import assert_directory_content, assert_inputs_not_mutated, assert_output, stored_expected
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -68,7 +68,7 @@ def test_api_empty_inventory(dot: bool, exports: AllExportsScope | None, existin
     output = tmp_path / "models.py"
     metadata = tmp_path / "metadata.json"
     if existing:
-        output.write_bytes((EXPECTED / "existing-output.txt").read_bytes())
+        output.write_bytes(stored_expected(EXPECTED / "existing-output.txt").read_bytes())
     result = generate(
         SOURCE / "contentless.json",
         input_file_type=InputFileType.OpenAPI,

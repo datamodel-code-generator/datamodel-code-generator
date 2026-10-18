@@ -45,7 +45,7 @@ from datamodel_code_generator.http import (
     get_body,
 )
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from tests.conftest import assert_output, create_assert_file_content
+from tests.conftest import assert_output, create_assert_file_content, stored_expected
 from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -2159,7 +2159,7 @@ def test_cli_batch_check_update_lock_keeps_the_existing_output_and_discards_the_
     source_input = JSON_SCHEMA_DATA_PATH / "person.json"
     output_path = tmp_path / "output.py"
     output_path.write_text(
-        (DATA_PATH / "expected" / "main" / "person.py").read_text(encoding="utf-8"),
+        stored_expected(DATA_PATH / "expected" / "main" / "person.py").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     lockfile = tmp_path / "remote.lock"
@@ -2192,7 +2192,7 @@ def test_cli_check_update_lock_keeps_the_existing_output_and_discards_the_staged
     source_input = JSON_SCHEMA_DATA_PATH / "person.json"
     output_path = tmp_path / "output.py"
     output_path.write_text(
-        (DATA_PATH / "expected" / "main" / "person.py").read_text(encoding="utf-8"),
+        stored_expected(DATA_PATH / "expected" / "main" / "person.py").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     lockfile = tmp_path / "remote.lock"
@@ -2220,7 +2220,7 @@ def test_cli_batch_mixed_check_and_update_lock_publishes_the_shared_write_job_lo
     source_input = JSON_SCHEMA_DATA_PATH / "person.json"
     check_output = tmp_path / "check.py"
     check_output.write_text(
-        (DATA_PATH / "expected" / "main" / "person.py").read_text(encoding="utf-8"),
+        stored_expected(DATA_PATH / "expected" / "main" / "person.py").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
     write_output = tmp_path / "write.py"

@@ -11,7 +11,7 @@ from pydantic import TypeAdapter
 
 from datamodel_code_generator import InputFileType, PythonVersion
 from datamodel_code_generator.format import Formatter
-from tests.conftest import assert_output
+from tests.conftest import assert_output, stored_expected
 from tests.main.conftest import (
     JSON_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -65,7 +65,9 @@ def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_met
             )
     if emit_metadata:
         assert_output(metadata_path.read_text(encoding="utf-8"), expected_metadata)
-    metadata = json.loads((metadata_path if emit_metadata else expected_metadata).read_text(encoding="utf-8"))
+    metadata = json.loads(
+        stored_expected(metadata_path if emit_metadata else expected_metadata).read_text(encoding="utf-8")
+    )
     payloads = json.loads((JSON_DATA_PATH / "root_model_metadata_payloads.json").read_text(encoding="utf-8"))
     runtime = []
     with _generated_model(output_file, "root_model_metadata", "RootMetadata") as model:

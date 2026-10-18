@@ -32,7 +32,7 @@ from datamodel_code_generator.parser.base import Source, dump_templates
 from datamodel_code_generator.parser.graphql import GraphQLParser
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from tests.conftest import assert_output, assert_warnings_contain, create_assert_file_content
+from tests.conftest import assert_output, assert_warnings_contain, create_assert_file_content, stored_expected
 from tests.main.conftest import (
     DATA_PATH,
     InputFileTypeLiteral,
@@ -254,8 +254,10 @@ def test_output_path_can_write_inside_input_directory(
         metadata = (input_path if metadata_location == "inside" else tmp_path) / "model_map.json"
     expected_directory = tmp_path / "expected"
     expected_directory.mkdir()
-    shutil.copyfile(DATA_PATH / "expected" / "main" / "person.py", expected_directory / "person.py")
-    shutil.copyfile(EXPECTED_MALFORMED_PATH / "directory_input_init.py", expected_directory / "__init__.py")
+    shutil.copyfile(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), expected_directory / "person.py")
+    shutil.copyfile(
+        stored_expected(EXPECTED_MALFORMED_PATH / "directory_input_init.py"), expected_directory / "__init__.py"
+    )
     for run in range(2):
         match entrypoint:
             case "api":
@@ -428,8 +430,10 @@ def test_directory_input_excludes_metadata_symlink_spellings(tmp_path: Path, tar
     metadata.symlink_to((input_path if target_inside else tmp_path) / "metadata.json")
     expected_directory = tmp_path / "expected"
     expected_directory.mkdir()
-    shutil.copyfile(DATA_PATH / "expected" / "main" / "person.py", expected_directory / "person.py")
-    shutil.copyfile(EXPECTED_MALFORMED_PATH / "directory_input_init.py", expected_directory / "__init__.py")
+    shutil.copyfile(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), expected_directory / "person.py")
+    shutil.copyfile(
+        stored_expected(EXPECTED_MALFORMED_PATH / "directory_input_init.py"), expected_directory / "__init__.py"
+    )
     for _ in range(2):
         run_main_and_assert(
             input_path=input_path,
@@ -495,7 +499,7 @@ def test_directory_auto_input_does_not_infer_from_generated_files(
     """A directory containing only previous output has no schema to infer."""
     source_path = tmp_path / "schemas"
     source_path.mkdir()
-    shutil.copyfile(DATA_PATH / "expected" / "main" / "person.py", source_path / "person.py")
+    shutil.copyfile(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), source_path / "person.py")
     run_main_and_assert(
         input_path=source_path,
         output_path=source_path,
@@ -548,7 +552,7 @@ def test_modular_output_file_is_a_clean_cli_error(tmp_path: Path, capsys: pytest
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr="Modular references require an output directory, not a file\n",
-        copy_files=[(existing_file, output_path)],
+        copy_files=[(stored_expected(existing_file), output_path)],
     )
     assert_output(output_path.read_text(encoding="utf-8"), existing_file)
 
@@ -567,7 +571,7 @@ def test_modular_output_below_a_file_keeps_the_filesystem_error(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains=TRACEBACK_HEADER,
-        copy_files=[(DATA_PATH / "expected" / "main" / "person.py", occupied_path)],
+        copy_files=[(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), occupied_path)],
     )
 
 

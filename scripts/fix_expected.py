@@ -19,6 +19,12 @@ Maintainers regenerate the index in every environment the CI lanes use (slow; ne
     python scripts/fix_expected.py --all-environments [--environment NAME ...] [-- PYTEST SELECTION]
     python scripts/fix_expected.py --all-environments --observe-only --output DIR [--environment NAME ...]
     python scripts/fix_expected.py --observations DIR [DIR ...]
+
+Maintainers store each content once, for every sidecar or only those of some test directories, modules or sidecars:
+    python scripts/fix_expected.py --deduplicate [PATH[::TEST] ...]
+It points the references of equal stored units at one of them and deletes the copies left unused, after checking that
+every line compares the same bytes as before; it only rewrites sidecars and deletes stored files. Files a test may
+have found by listing their directory (glob, iterdir, walk...) stay, since deleting one would shrink its comparisons.
 """
 
 from __future__ import annotations
@@ -32,29 +38,36 @@ import subprocess
 import sys
 import tempfile
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT)]
 
+from tests.expected_access import listing_tests  # noqa: E402
 from tests.units import (  # noqa: E402
     BROKEN,
     REFS_SUFFIX,
+    RefLine,
     RefsIndex,
     UnsafeWriteError,
     decode_payload,
+    deduplicate,
+    duplicates,
     format_refs,
     label_path,
+    label_storages,
     parse_refs,
     payload_problem,
     predicate_text,
     refs_sections,
     split_label,
+    stored_digest,
+    tree_label,
     write_files,
 )
 
@@ -178,12 +191,10 @@ def run_apply(data: dict[str, object], modules: Iterable[str], root: Path = ROOT
 
 
 def index_for(module: str, root: Path = ROOT) -> RefsIndex:
-    """Return the index of the tests root a module path lies in: the nearest directory with ``data/expected``."""
+    """Return the index of the tests root a path is or lies in: the nearest directory with ``data/expected``."""
+    path = root / module
     return RefsIndex(
-        next(
-            (parent for parent in (root / module).parents if (parent / "data" / "expected").is_dir()),
-            root / "tests",
-        )
+        next((parent for parent in (path, *path.parents) if (parent / "data" / "expected").is_dir()), root / "tests")
     )
 
 
@@ -246,6 +257,151 @@ def repair(sidecar: str, root: Path = ROOT) -> int:
     command = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-p", "no:xdist", "-q", *selection]
     result = subprocess.run(command, cwd=root, check=False)
     return 0 if result.returncode in {0, 5} else result.returncode
+
+
+def compared_bytes(
+    lines: Mapping[Path, list[RefLine]], expected_root: Path, deleted: Collection[Path] = ()
+) -> dict[tuple[Path, RefLine], str]:
+    """Return a digest of the stored bytes each line compares, by sidecar and the line without its storage.
+
+    Files in ``deleted`` count as gone, so a plan can be checked before it is written.
+    """
+    digests: dict[str, str] = {}
+
+    def stored(storage: str) -> str:
+        if storage not in digests:
+            name, pattern = split_label(storage)
+            digests[storage] = stored_digest(expected_root / name, pattern, deleted)
+        return digests[storage]
+
+    return {
+        (sidecar, replace(line, storage=None)): stored(line.stored)
+        for sidecar, found in lines.items()
+        for line in found
+    }
+
+
+def resolved_bytes(
+    lines: Mapping[Path, list[RefLine]], expected_root: Path, deleted: Collection[Path] = ()
+) -> dict[str, str]:
+    """Return a digest of the stored bytes code that reads a label by name gets (``stored_expected``, the docs).
+
+    Files in ``deleted`` count as gone, so a plan can be checked before it is written.
+    """
+    return {
+        tree_label(label, pattern) if pattern is not None else label: stored_digest(
+            expected_root / storage, pattern, deleted
+        )
+        for label, storages in label_storages(lines).items()
+        for pattern, storage in storages.items()
+    }
+
+
+def disagreeing_storages(lines: Mapping[Path, list[RefLine]], compared: Mapping[tuple[Path, RefLine], str]) -> set[str]:
+    """Return the storages of labels whose references compare different bytes.
+
+    What reading such a label by name returns depends on which of its units exist, so they all stay.
+    """
+    contents: dict[str, set[str]] = {}
+    for sidecar, found in lines.items():
+        for line in found:
+            contents.setdefault(line.label, set()).add(compared[sidecar, replace(line, storage=None)])
+    return {split_label(line.stored)[0] for found in lines.values() for line in found if len(contents[line.label]) > 1}
+
+
+def listed_labels(index: RefsIndex, lines: Mapping[Path, list[RefLine]]) -> set[str]:
+    """Return the label paths of tests that list a directory below the expected root; units stored there stay.
+
+    Such a test may decide what it compares from the files it finds, so deleting one could silently shrink its
+    comparisons (``tests/expected_access.py`` finds them).
+    """
+    base = index.tests_root.parent
+    listing = listing_tests(base, index.tests_root)
+    return {
+        split_label(line.label)[0]
+        for sidecar, found in lines.items()
+        for line in found
+        if line.function in listing.get(sidecar.with_suffix(".py").relative_to(base), ())
+    }
+
+
+def _selects(sidecar: Path, line: RefLine, target: Path, test: str) -> bool:
+    """Return whether a selection (a directory, module or sidecar, and an optional test or item) takes in a line."""
+    inside = sidecar.is_relative_to(target) if target.is_dir() else sidecar == target.with_suffix(REFS_SUFFIX)
+    return inside and (not test or test in {line.function, line.item} or line.function.startswith(f"{test}::"))
+
+
+def deduplicate_expected(paths: Sequence[str], root: Path = ROOT) -> int:
+    """Store each content once for the tests of the given directories, modules, sidecars, tests or items.
+
+    Without paths every sidecar takes part. The plan is checked before anything is written: every line must compare
+    the same bytes afterwards.
+    """
+    index = RefsIndex(index_for(paths[0].partition("::")[0] if paths else "tests", root).tests_root.resolve())
+    selected = [((root / module).resolve(), test) for module, _, test in (path.partition("::") for path in paths)]
+    if outside := [
+        path
+        for path, (target, _) in zip(paths, selected, strict=True)
+        if not target.exists() or not target.is_relative_to(index.tests_root)
+    ]:
+        print(f"{outside[0]} is not a test directory, module or sidecar below {index.tests_root.name}/.")
+        return 2
+    if unreadable := [sidecar for sidecar in index.sidecars() if index.load(sidecar)[1]]:
+        sidecar = Path(os.path.relpath(unreadable[0], root)).as_posix()
+        print(f"{sidecar} is not in the form pytest writes. Fix: python scripts/fix_expected.py --repair {sidecar}")
+        return 2
+    lines = index.all_lines()
+    references = [(sidecar, line) for sidecar, found in lines.items() for line in found]
+    if unmatched := [
+        path
+        for path, (target, test) in zip(paths, selected, strict=True)
+        if test and not any(_selects(sidecar, line, target, test) for sidecar, line in references)
+    ]:
+        print(f"{unmatched[0]} names no test that compares recorded expected output.")
+        return 2
+    before = compared_bytes(lines, index.expected_root)
+    keep = listed_labels(index, lines) | disagreeing_storages(lines, before)
+    plan = deduplicate(
+        lines,
+        index.expected_root,
+        lambda sidecar, line: not selected or any(_selects(sidecar, line, *selection) for selection in selected),
+        keep,
+    )
+    after = {
+        sidecar: parse_refs(plan.sidecars[sidecar])[0] if sidecar in plan.sidecars else found
+        for sidecar, found in lines.items()
+    }
+    planned = compared_bytes(after, index.expected_root, plan.deletes)
+    named, renamed = (
+        resolved_bytes(lines, index.expected_root),
+        resolved_bytes(after, index.expected_root, plan.deletes),
+    )
+    differing = sorted(
+        f"  {Path(os.path.relpath(sidecar, root)).as_posix()}: {line.item} {line.label}"
+        for sidecar, line in before.keys() | planned.keys()
+        if before.get((sidecar, line)) != planned.get((sidecar, line))
+    ) + sorted(
+        f"  {label}, read by name" for label in named.keys() | renamed.keys() if named.get(label) != renamed.get(label)
+    )
+    if differing:
+        print("Refused: these would compare or read other bytes; nothing was written:")
+        print("\n".join(differing))
+        return 1
+    write_files(index.tests_root, plan.sidecars, plan.deletes)
+    moved = [event for event in plan.events if event.kind == "merged"]
+    remaining = duplicates(after, index.expected_root)
+    trees = sum(len(group) - 1 for group in remaining if split_label(group[0])[1] is not None)
+    files = sum(len(group) - 1 for group in remaining) - trees
+    print(
+        f"Deduplicated: {sum(len(event.items) for event in moved)} references in {len(plan.sidecars)} sidecars now use "
+        f"{len({event.target for event in moved})} stored units; deleted {len(plan.deletes)} stored files. "
+        "Every line compares the same bytes as before.\n"
+        f"Remaining duplicates in all sidecars: {files} files, {trees} trees."
+    )
+    if kept := [storage for group in remaining for storage in group if split_label(storage)[0] in keep]:
+        print("Kept in all sidecars, because a test lists their directory or their label's references differ:")
+        print("\n".join(f"  {storage}" for storage in kept))
+    return 0
 
 
 def ci_variable() -> str | None:
@@ -371,6 +527,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     group.add_argument("--repair", metavar="REFS", help="drop unreadable lines of a sidecar and re-record their tests")
     group.add_argument("--all-environments", action="store_true", help="maintainers: rebuild in every environment")
     group.add_argument("--observations", nargs="+", type=Path, metavar="DIR", help="maintainers: apply observations")
+    group.add_argument("--deduplicate", nargs="*", metavar="PATH", help="maintainers: store each content once")
     parser.add_argument("--environment", action="append", choices=sorted(ENVIRONMENTS), help="limit the environments")
     parser.add_argument("--observe-only", action="store_true", help="record observations without applying them")
     parser.add_argument("--output", type=Path, help="where observations are recorded (default: a temporary dir)")
@@ -378,6 +535,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, default=ROOT, help=argparse.SUPPRESS)
     parser.add_argument("selection", nargs="*", help="pytest selection for --all-environments (default: each lane's)")
     arguments = parser.parse_args(argv)
+    if arguments.selection and not arguments.all_environments and arguments.deduplicate is None:
+        parser.error("a pytest selection only goes with --all-environments, and paths with --deduplicate")
+    if not arguments.all_environments and (
+        arguments.environment or arguments.observe_only or arguments.output or arguments.workers != "auto"
+    ):
+        parser.error("--environment, --observe-only, --output and --workers only go with --all-environments")
     root = arguments.root.resolve()
     commands: dict[str, Callable[[Any], int]] = {
         "apply": lambda texts: apply_payloads(texts, root),
@@ -385,9 +548,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "where": lambda nodeid: where(nodeid, root),
         "repair": lambda sidecar: repair(sidecar, root),
         "observations": lambda paths: run_apply({"observations": [str(path.resolve()) for path in paths]}, (), root),
+        "deduplicate": lambda paths: deduplicate_expected([*paths, *arguments.selection], root),
     }
-    if chosen := next((name for name in commands if getattr(arguments, name)), None):
-        if chosen in {"apply", "from_ci", "repair"} and (variable := ci_variable()):
+    if chosen := next((name for name in commands if getattr(arguments, name) is not None), None):
+        if chosen in {"apply", "from_ci", "repair", "deduplicate"} and (variable := ci_variable()):
             option = f"--{chosen.replace('_', '-')}"
             print(f"{variable} is set: {option} writes expected files, which CI never does. Run it on your machine.")
             return 2

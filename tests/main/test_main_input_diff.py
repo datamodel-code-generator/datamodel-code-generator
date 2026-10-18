@@ -17,7 +17,7 @@ from datamodel_code_generator.__main__ import (
     _output_comparison_policy,
     _write_comparison_output,
 )
-from tests.conftest import assert_output, create_assert_file_content
+from tests.conftest import assert_output, create_assert_file_content, stored_expected
 from tests.main.conftest import DATA_PATH, InputFileTypeLiteral, run_main_and_assert, run_main_with_args
 
 if TYPE_CHECKING:
@@ -437,7 +437,7 @@ def test_diff_against_preserves_a_preexisting_virtual_file(
         capsys=capsys,
         expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
         assert_no_stderr=True,
-        copy_files=[(VIRTUAL_FILE_SENTINEL, output_file)],
+        copy_files=[(stored_expected(VIRTUAL_FILE_SENTINEL), output_file)],
     )
 
 
@@ -460,7 +460,7 @@ def test_diff_against_preserves_a_preexisting_virtual_directory(
         capsys=capsys,
         expected_stdout_path=INPUT_DIFF_EXPECTED_PATH / "identical.txt",
         assert_no_stderr=True,
-        copy_files=[(VIRTUAL_DIRECTORY_SENTINEL / "sentinel.py", output_dir / "sentinel.py")],
+        copy_files=[(stored_expected(VIRTUAL_DIRECTORY_SENTINEL / "sentinel.py"), output_dir / "sentinel.py")],
     )
 
 
@@ -535,8 +535,10 @@ def test_diff_against_json_fixture_matches_structured_output_schema() -> None:
     """The input-diff payload remains part of the public structured-output schema."""
     schema_path = DATA_PATH / "expected" / "main_kr" / "output_format_json" / "structured_output_schema.txt"
     jsonschema.validate(
-        instance=json.loads((INPUT_DIFF_EXPECTED_PATH / "different_file_json.txt").read_text(encoding="utf-8")),
-        schema=json.loads(schema_path.read_text(encoding="utf-8")),
+        instance=json.loads(
+            stored_expected(INPUT_DIFF_EXPECTED_PATH / "different_file_json.txt").read_text(encoding="utf-8")
+        ),
+        schema=json.loads(stored_expected(schema_path).read_text(encoding="utf-8")),
     )
 
 

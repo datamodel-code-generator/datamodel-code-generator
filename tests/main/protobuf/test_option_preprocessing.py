@@ -15,7 +15,7 @@ from pydantic import TypeAdapter
 from datamodel_code_generator import DataModelType, InputFileType
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
-from tests.conftest import assert_output
+from tests.conftest import assert_output, stored_expected
 from tests.main.conftest import (
     DATA_PATH,
     EXPECTED_PROTOBUF_PATH,
@@ -102,7 +102,7 @@ def test_protobuf_option_generation(
             return
     suffix = "unset_runtime" if backend in {DataModelType.TypingTypedDict, DataModelType.MsgspecStruct} else "runtime"
     runtime_path = EXPECTED_PATH / f"{schema}_{suffix}.txt"
-    payload = json.loads(runtime_path.read_text()) if backend == DataModelType.TypingTypedDict else {}
+    payload = json.loads(stored_expected(runtime_path).read_text()) if backend == DataModelType.TypingTypedDict else {}
     with _generated_model(output_file, "protobuf_options", "Payload") as model:
         if backend == DataModelType.MsgspecStruct:
             result = msgspec.to_builtins(msgspec.convert(payload, type=model))

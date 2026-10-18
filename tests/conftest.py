@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from functools import cached_property
+from functools import cache, cached_property
 from itertools import islice, starmap
 from pathlib import Path, PurePosixPath
 from types import ModuleType
@@ -475,7 +475,8 @@ def pytest_collection_modifyitems(
 
     The server and client targets need Python 3.11 or later, so their tests and those of the wire codecs they share
     are skipped on older Pythons, including when a CI shard names their files. CLI doc metadata is always collected
-    for test_cli_doc_coverage.py, and its markers are validated only when --collect-cli-docs is used.
+    for test_cli_doc_coverage.py; its markers are validated, and their expected paths resolved through the index, only
+    when --collect-cli-docs is used.
     """
     if sys.version_info < TARGET_PYTHON:
         skip = pytest.mark.skip(reason="The server and client targets need Python 3.11 or later")
@@ -501,7 +502,7 @@ def pytest_collection_modifyitems(
 
         config._cli_doc_items.append({
             "node_id": item.nodeid,
-            "marker_kwargs": _stored_cli_doc_paths(config, item, marker.kwargs),
+            "marker_kwargs": _stored_cli_doc_paths(config, item, marker.kwargs) if collect_cli_docs else marker.kwargs,
             "option_description": option_description,
         })
 
@@ -1822,22 +1823,23 @@ class _LedgerPlugin:
 
 
 def _stored_cli_doc_paths(config: pytest.Config, item: pytest.Item, kwargs: Mapping[str, Any]) -> Mapping[str, Any]:
-    """Point the expected paths of a cli_doc marker at their storage when the index stores them elsewhere."""
+    """Point the expected paths of a cli_doc marker at their storage when the index stores them elsewhere.
+
+    A path is relative to ``expected/main`` or else to ``expected``, as the docs builder reads it. The item's own
+    lines decide where its labels are stored; any other label, tree directory or file in a tree resolves through the
+    whole index, so a path another test compares follows that test's storage.
+    """
     if (ledger := config.stash.get(_LEDGER, None)) is None:  # pragma: no cover
-        return kwargs
-    stored = {
-        line.label: line.stored
-        for line in ledger.index.item_lines(item.path.with_suffix(REFS_SUFFIX)).get(_item_key(item), [])
-        if line.stored != line.label
-    }
-    if not stored:
         return kwargs
 
     def resolve(path: str) -> str:
-        return stored.get(f"main/{path}", stored.get(path, path))
+        for name in (f"main/{path}".rstrip("/"), path.rstrip("/")):
+            if (storage := _own_storage(ledger, item, name) or ledger.index.storage(name)) is not None:
+                return path if storage == name else storage
+        return path
 
     def resolve_value(key: str, value: Any) -> Any:
-        if key in {"golden_output", "expected_stdout"} and isinstance(value, str):
+        if key in {"golden_output", "expected_stdout", "comparison_output"} and isinstance(value, str):
             value = resolve(value)
         elif key in {"version_outputs", "model_outputs"} and isinstance(value, dict):
             value = {name: resolve(path) for name, path in value.items()}
@@ -1851,6 +1853,49 @@ def _stored_cli_doc_paths(config: pytest.Config, item: pytest.Item, kwargs: Mapp
 def _ledger() -> _Ledger | None:
     """Return the ledger of the running item's session, or None outside a test."""
     return _CURRENT_ITEMS[-1].config.stash.get(_LEDGER, None) if _CURRENT_ITEMS else None
+
+
+def _own_storage(ledger: _Ledger, item: pytest.Item, name: str) -> str | None:
+    """Return where the item's own line stores a label path, or a file one of its tree labels selects, or None.
+
+    Of an item's lines for one label, the one that applies in this environment decides, as in its comparison.
+    """
+    lines: dict[str, list[RefLine]] = {}
+    for line in ledger.index.item_lines(item.path.with_suffix(REFS_SUFFIX)).get(_item_key(item), []):
+        lines.setdefault(line.label, []).append(line)
+    relative = PurePosixPath(name)
+    for label, candidates in sorted(lines.items()):
+        path, pattern = split_label(label)
+        if not relative.is_relative_to(path):
+            continue
+        inside = relative.relative_to(path)
+        selected = inside == PurePosixPath() or (pattern is not None and inside.match(pattern))
+        if selected and (line := _applicable(candidates, ledger.facts)) is not None:
+            return (PurePosixPath(split_label(line.stored)[0]) / inside).as_posix()
+    return None
+
+
+@cache
+def _tests_index() -> RefsIndex:
+    """Return the index of this repository's tests, for expected files read outside a running test."""
+    return RefsIndex(Path(__file__).parent)
+
+
+def stored_expected(path: Path) -> Path:
+    """Return the file that stores the expected output at a path below the expected root.
+
+    Tests with equal output share one stored file, so a test that reads an expected file itself (as input, or to
+    check another test's output) reads it through this. The running test's own ``.refs`` lines decide first, then
+    those of any test; a path the index does not name, or outside the expected root, is returned unchanged.
+    """
+    ledger = _ledger()
+    index = _tests_index() if ledger is None else ledger.index
+    if not path.is_relative_to(index.expected_root):
+        return path
+    name = path.relative_to(index.expected_root).as_posix()
+    own = None if ledger is None else _own_storage(ledger, _CURRENT_ITEMS[-1], name)
+    storage = own or index.storage(name)
+    return path if storage is None else index.expected_root / storage
 
 
 _OWN_FILE_HINT = "otherwise compare the second against its own expected file"

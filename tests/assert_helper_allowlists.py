@@ -77,6 +77,9 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/generation_platform/codecs/typing/negative.py",
         "private-import:tests/data/generation_platform/codecs/typing/positive.py",
     ),
+    "stored-file-audits": (
+        "expected-read:tests/test_format.py::test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files",
+    ),
     "unobservable-cleanup": ("normal-path-mock:tests/api_generation/support/fastapi_upstream.py::_observe",),
 }
 FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
@@ -1167,6 +1170,10 @@ ALLOWLIST_GROUP_REASONS = {
     "runtime-tables": (
         "Combinatorial wire-rule tables, the official JSON Schema suite, and the codec type-check probes exercise "
         "the runtime directly."
+    ),
+    "stored-file-audits": (
+        "Audits of every stored file below tests/data/expected (formatter parity) read each file where it is stored, "
+        "whichever tests share it."
     ),
     "unobservable-cleanup": (
         "Files the multipart parser allocates for a request it then refuses never reach a handler, so a spy on their "

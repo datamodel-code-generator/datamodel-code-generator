@@ -1261,21 +1261,27 @@ def test_ledger_payload_too_large(ledger: LedgerProject) -> None:
 
 
 def test_ledger_resolves_cli_doc_paths(ledger: LedgerProject) -> None:
-    """CLI documentation collection reads expected output from where the index stores it."""
+    """CLI documentation collection reads expected output from where the index stores it.
+
+    The item's own labels follow its lines; a label or tree directory of another test follows the whole index, and
+    paths stored where they are named, or not named at all, stay as written.
+    """
     ledger.write(
         "test_m.py",
         """
         import pytest
         from pathlib import Path
 
-        from tests.conftest import assert_output
+        from tests.conftest import assert_generated_modules_output, assert_output
 
         EXPECTED = Path(__file__).parent / "data" / "expected"
 
 
         @pytest.mark.cli_doc(
             options=["--x"], option_description="x", cli_args=["--x"], golden_output="doc.txt",
-            version_outputs={"3.10": "doc.txt"}, extra_outputs=[{"title": "t", "path": "doc.txt"}],
+            version_outputs={"3.10": "doc.txt", "3.11": "tree", "3.12": "tree/a.py"},
+            extra_outputs=[{"title": "t", "path": "doc.txt"}], comparison_output="copy", input_schema="s.json",
+            model_outputs={"dataclass": "other.txt", "msgspec": "missing.txt"},
         )
         def test_doc():
             assert_output("doc\\n", EXPECTED / "main" / "doc.txt")
@@ -1283,21 +1289,37 @@ def test_ledger_resolves_cli_doc_paths(ledger: LedgerProject) -> None:
 
         def test_same():
             assert_output("doc\\n", EXPECTED / "other.txt")
+
+
+        def test_tree():
+            assert_generated_modules_output({("a.py",): "A = 1\\n"}, EXPECTED / "main" / "tree")
+
+
+        def test_copy():
+            assert_generated_modules_output({("a.py",): "A = 1\\n"}, EXPECTED / "main" / "copy")
         """,
     )
     ledger.store("other.txt", "doc\n")
     ledger.run("suite/test_m.py::test_same").assert_outcomes(passed=1)
-    ledger.run("suite/test_m.py::test_doc").assert_outcomes(passed=1)
-    config = ledger.pytester.parseconfigure("suite")
+    ledger.run("suite/test_m.py::test_tree").assert_outcomes(passed=1)
+    ledger.run("suite").assert_outcomes(passed=4)
+    assert "[test_copy]\n\tmain/copy//*.py\t= main/tree//*.py\n" in ledger.refs()
+    config = ledger.pytester.parseconfigure("suite", "--collect-cli-docs")
     session = pytest.Session.from_config(config)
     config.hook.pytest_sessionstart(session=session)
     session.perform_collect()
     kwargs = next(item["marker_kwargs"] for item in config._cli_doc_items if item["node_id"].endswith("test_doc"))
-    assert (kwargs["golden_output"], kwargs["version_outputs"], kwargs["extra_outputs"][0]["path"]) == (
-        "other.txt",
-        {"3.10": "other.txt"},
-        "other.txt",
-    )
+    assert kwargs | {"options": None, "option_description": None, "cli_args": None} == {
+        "options": None,
+        "option_description": None,
+        "cli_args": None,
+        "input_schema": "s.json",
+        "golden_output": "other.txt",
+        "version_outputs": {"3.10": "other.txt", "3.11": "tree", "3.12": "tree/a.py"},
+        "extra_outputs": [{"title": "t", "path": "other.txt"}],
+        "comparison_output": "main/tree",
+        "model_outputs": {"dataclass": "other.txt", "msgspec": "missing.txt"},
+    }
     config._ensure_unconfigure()
 
 
@@ -2496,7 +2518,484 @@ def test_write_files_checks_every_path_first(tmp_path: Path, name: str, reason: 
     assert ((expected / "file.txt" / "inner.txt").read_text(encoding="utf-8"), keep.parent.exists()) == ("x\n", False)
 
 
-@pytest.mark.parametrize("option", ["--apply", "--from-ci", "--repair"])
+DUPLICATED_M = """
+from pathlib import Path
+
+import pytest
+
+from tests.conftest import assert_generated_modules_output, assert_output
+
+EXPECTED = Path(__file__).parent / "data" / "expected"
+SAME = "same\\n"
+X = {("x.py",): "X = 1\\n"}
+README = {("r.md",): "r\\n"}
+
+
+def test_a():
+    assert_output(SAME, EXPECTED / "m" / "a.txt")
+
+
+def test_b():
+    assert_output(SAME, EXPECTED / "m" / "b.txt")
+
+
+def test_x():
+    assert_output(SAME, EXPECTED / "m" / "x.txt")
+
+
+def test_y():
+    assert_output(SAME, EXPECTED / "m" / "y.txt")
+
+
+def test_z():
+    assert_output(SAME, EXPECTED / "m" / "z.txt")
+
+
+def test_tree1():
+    assert_generated_modules_output(X, EXPECTED / "t1")
+
+
+def test_tree2():
+    assert_generated_modules_output(X, EXPECTED / "t2")
+
+
+def test_file():
+    assert_output("X = 1\\n", EXPECTED / "f" / "x.py")
+
+
+def test_inner():
+    assert_output("X = 1\\n", EXPECTED / "t1" / "x.py")
+
+
+def test_empty1():
+    assert_generated_modules_output(README, EXPECTED / "e1")
+
+
+def test_empty2():
+    assert_generated_modules_output(README, EXPECTED / "e2")
+
+
+@pytest.mark.parametrize("case", ["one", "two"])
+def test_p(case):
+    assert_output(SAME, EXPECTED / "m" / "p.txt")
+
+
+def test_crlf():
+    assert_output(SAME, EXPECTED / "m" / "crlf.txt")
+"""
+DUPLICATED_N = """
+from pathlib import Path
+
+from tests.conftest import assert_output
+
+EXPECTED = Path(__file__).parent / "data" / "expected"
+
+
+def test_d():
+    assert_output("same\\n", EXPECTED / "n" / "d.txt")
+
+
+def test_e():
+    assert_output("same\\n", EXPECTED / "n" / "e.txt")
+"""
+
+
+def _duplicated(ledger: LedgerProject, capsys: pytest.CaptureFixture[str]) -> None:
+    """Store equal outputs several times, as the index held them before every content was stored once."""
+    ledger.write("test_m.py", DUPLICATED_M)
+    ledger.write("test_n.py", DUPLICATED_N)
+    for label in ("m/a.txt", "m/b.txt", "m/p.txt", "m/shared~x.txt", "n/e.txt"):
+        ledger.store(label, "same\n")
+    ledger.store("m/crlf.txt", "").write_bytes(b"same\r\n")
+    for label in ("t1/x.py", "t2/x.py", "f/x.py"):
+        ledger.store(label, "X = 1\n")
+    line = units.RefLine
+    (ledger.suite / "test_m.refs").write_text(
+        units.format_refs([
+            line("test_a", "", "m/a.txt"),
+            line("test_b", "", "m/b.txt"),
+            *(line(f"test_{name}", "", f"m/{name}.txt", storage="m/shared~x.txt") for name in "xyz"),
+            line("test_tree1", "", "t1//*.py"),
+            line("test_tree2", "", "t2//*.py"),
+            line("test_file", "", "f/x.py"),
+            line("test_inner", "", "t1/x.py"),
+            line("test_empty1", "", "e1//*.py"),
+            line("test_empty2", "", "e2//*.py"),
+            line("test_p", "one", "m/p.txt"),
+            line("test_p", "two", "m/p.txt"),
+            line("test_crlf", "", "m/crlf.txt"),
+        ]),
+        encoding="utf-8",
+    )
+    (ledger.suite / "test_n.refs").write_text(
+        units.format_refs([line("test_d", "", "n/d.txt", storage="m/b.txt"), line("test_e", "", "n/e.txt")]),
+        encoding="utf-8",
+    )
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=16)
+    capsys.readouterr()
+
+
+def test_fix_expected_deduplicates_stored_units(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Equal units are stored once, area by area, and every test still compares the same content.
+
+    The survivor is stored at a label of its own (``m/shared~x.txt`` has more references but is no test's label),
+    then has the most references, then the shortest and first name. A file unit inside a surviving tree stays as part
+    of the tree, empty trees store nothing to merge, and ``m/crlf.txt`` compares equal but stores other bytes.
+    """
+    _duplicated(ledger, capsys)
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite/test_m.py::test_p[one]") == 0
+    assert capsys.readouterr().out == (
+        "Deduplicated: 1 references in 1 sidecars now use 1 stored units; deleted 0 stored files. "
+        "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 5 files, 1 trees.\n"
+    )
+    assert "[test_p]\none\tm/p.txt\t= m/b.txt\ntwo\tm/p.txt\n" in ledger.refs()
+    assert _fix_expected(ledger, monkeypatch, "suite/test_m.py", "--deduplicate") == 0
+    assert capsys.readouterr().out == (
+        "Deduplicated: 7 references in 1 sidecars now use 3 stored units; deleted 4 stored files. "
+        "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 1 files, 0 trees.\n"
+    )
+    assert ledger.refs() == HEADER + (
+        "[test_a]\n\tm/a.txt\t= m/b.txt\n[test_b]\n\tm/b.txt\n[test_crlf]\n\tm/crlf.txt\n[test_empty1]\n\te1//*.py\n"
+        "[test_empty2]\n\te2//*.py\n[test_file]\n\tf/x.py\n[test_inner]\n\tt1/x.py\t= f/x.py\n"
+        "[test_p]\none\tm/p.txt\t= m/b.txt\ntwo\tm/p.txt\t= m/b.txt\n[test_tree1]\n\tt1//*.py\n"
+        "[test_tree2]\n\tt2//*.py\t= t1//*.py\n[test_x]\n\tm/x.txt\t= m/b.txt\n[test_y]\n\tm/y.txt\t= m/b.txt\n"
+        "[test_z]\n\tm/z.txt\t= m/b.txt\n"
+    )
+    assert ledger.refs("test_n") == HEADER + "[test_d]\n\tn/d.txt\t= m/b.txt\n[test_e]\n\tn/e.txt\n"
+    assert sorted(ledger.files()) == ["f/x.py", "m/b.txt", "m/crlf.txt", "n/e.txt", "t1/x.py"]
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 0
+    assert capsys.readouterr().out.endswith(
+        "deleted 1 stored files. Every line compares the same bytes as before.\n"
+        "Remaining duplicates in all sidecars: 0 files, 0 trees.\n"
+    )
+    assert ledger.refs("test_n") == HEADER + "[test_d]\n\tn/d.txt\t= m/b.txt\n[test_e]\n\tn/e.txt\t= m/b.txt\n"
+    assert sorted(ledger.files()) == ["f/x.py", "m/b.txt", "m/crlf.txt", "t1/x.py"]
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=16)
+
+
+LISTING = """
+import ast
+from os import listdir
+from pathlib import Path
+
+from tests.conftest import assert_output
+
+EXPECTED = Path(__file__).parent / "data" / "expected"
+OUTPUT = {"a.py": "same\\n", "b.py": "B = 1\\n"}
+
+
+def test_listed():
+    for name in sorted(path.name for path in (EXPECTED / "pkg").glob("*.py")):
+        assert_output(OUTPUT[name], EXPECTED / "pkg" / name)
+
+
+class TestMore:
+    def test_listed(self):
+        for name in sorted(listdir(EXPECTED / "more")):
+            assert_output(OUTPUT[name], EXPECTED / "more" / name)
+
+
+def test_copy():
+    assert_output("same\\n", EXPECTED / "c" / "a.py")
+
+
+def test_walk():
+    list(ast.walk(ast.parse("x = 1")))
+    assert_output("B = 1\\n", EXPECTED / "w" / "b.py")
+"""
+
+
+LISTING_SHARED = """
+from pathlib import Path
+
+from tests.conftest import assert_output, stored_expected
+
+EXPECTED = Path(__file__).parent.parent / "data" / "expected"
+
+
+def test_through_helper():
+    for path in sorted(stored_expected(EXPECTED / "via").glob("*.py")):
+        assert_output(path.read_text(), EXPECTED / "via" / path.name)
+
+
+def test_plain():
+    assert_output("same\\n", EXPECTED / "plain" / "a.py")
+"""
+LISTING_MODULE = """
+from pathlib import Path
+
+from tests.conftest import assert_output
+
+EXPECTED = Path(__file__).parent.parent / "data" / "expected"
+CASES = sorted((EXPECTED / "mod").glob("*.py"))
+
+
+def test_module():
+    assert_output("same\\n", EXPECTED / "mod" / "a.py")
+"""
+
+
+def test_fix_expected_deduplicate_keeps_files_a_test_lists(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Units at the labels of a test that lists a directory below the expected root stay, and other copies use them.
+
+    Such a test may compare what it finds there: ``test_listed`` globs ``pkg``, ``TestMore`` lists ``more`` with
+    ``os.listdir``, ``test_through_helper`` lists ``via`` through ``stored_expected``, and ``test_module`` lives in a
+    module that lists ``mod`` at import. ``ast.walk`` walks no directory, so ``w/b.py`` is an ordinary copy, as is
+    ``plain``.
+    """
+    ledger.write("test_l.py", LISTING)
+    ledger.write("sub/test_s.py", LISTING_SHARED)
+    ledger.write("sub/test_t.py", LISTING_MODULE)
+    for label in ("pkg/a.py", "more/a.py", "c/a.py", "via/a.py", "plain/a.py", "mod/a.py"):
+        ledger.store(label, "same\n")
+    for label in ("pkg/b.py", "w/b.py"):
+        ledger.store(label, "B = 1\n")
+    line = units.RefLine
+    for module, lines in {
+        "test_l": [
+            line("TestMore::test_listed", "", "more/a.py"),
+            line("test_copy", "", "c/a.py"),
+            line("test_listed", "", "pkg/a.py"),
+            line("test_listed", "", "pkg/b.py"),
+            line("test_walk", "", "w/b.py"),
+        ],
+        "sub/test_s": [line("test_through_helper", "", "via/a.py"), line("test_plain", "", "plain/a.py")],
+        "sub/test_t": [line("test_module", "", "mod/a.py")],
+    }.items():
+        (ledger.suite / f"{module}.refs").write_text(units.format_refs(lines), encoding="utf-8")
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=7)
+    capsys.readouterr()
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 0
+    assert capsys.readouterr().out == (
+        "Deduplicated: 3 references in 2 sidecars now use 2 stored units; deleted 3 stored files. "
+        "Every line compares the same bytes as before.\nRemaining duplicates in all sidecars: 3 files, 0 trees.\n"
+        "Kept in all sidecars, because a test lists their directory or their label's references differ:\n"
+        "  mod/a.py\n  more/a.py\n  pkg/a.py\n  via/a.py\n"
+    )
+    assert ledger.refs("test_l") == HEADER + (
+        "[TestMore::test_listed]\n\tmore/a.py\n[test_copy]\n\tc/a.py\t= mod/a.py\n"
+        "[test_listed]\n\tpkg/a.py\n\tpkg/b.py\n[test_walk]\n\tw/b.py\t= pkg/b.py\n"
+    )
+    assert (
+        ledger.refs("sub/test_s")
+        == HEADER + "[test_plain]\n\tplain/a.py\t= mod/a.py\n[test_through_helper]\n\tvia/a.py\n"
+    )
+    assert sorted(ledger.files()) == ["mod/a.py", "more/a.py", "pkg/a.py", "pkg/b.py", "via/a.py"]
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=7)
+
+
+STORED_READS = """
+from pathlib import Path
+
+import pytest
+
+from tests.conftest import assert_generated_modules_output, assert_output, stored_expected
+
+EXPECTED = Path(__file__).parent / "data" / "expected"
+OUTSIDE_A_TEST = stored_expected(EXPECTED / "m" / "a.txt")
+
+
+def test_a():
+    assert_output("x\\n", EXPECTED / "m" / "a.txt")
+    assert stored_expected(EXPECTED / "m" / "a.txt").read_text() == "x\\n"
+
+
+def test_b():
+    assert_output("y\\n", EXPECTED / "m" / "a.txt")
+    assert stored_expected(EXPECTED / "m" / "a.txt").read_text() == "y\\n"
+
+
+def test_tree():
+    assert_generated_modules_output({("t.py",): "T = 1\\n"}, EXPECTED / "tree")
+
+
+def test_reader(tmp_path):
+    assert stored_expected(EXPECTED / "m" / "a.txt").read_text() == "x\\n"
+    assert stored_expected(EXPECTED / "tree" / "t.py") == EXPECTED / "copy" / "t.py"
+    assert stored_expected(EXPECTED / "tree" / "notes.txt") == EXPECTED / "tree" / "notes.txt"
+    assert stored_expected(EXPECTED / "unknown.txt") == EXPECTED / "unknown.txt"
+    assert stored_expected(tmp_path) == tmp_path
+    assert OUTSIDE_A_TEST == EXPECTED / "m" / "a.txt"
+    assert stored_expected(EXPECTED / "o.txt").read_text() == "base\\n"
+    assert stored_expected(EXPECTED / "mixed" / "r.md") == EXPECTED / "mixed" / "r.md"
+    assert stored_expected(EXPECTED / "mixed" / "a.py") == EXPECTED / "pyfiles" / "a.py"
+    assert stored_expected(EXPECTED / "pair" / "p.py") == EXPECTED / "pair-one" / "p.py"
+
+
+def test_override():
+    assert_output("here\\n", EXPECTED / "o.txt")
+    assert stored_expected(EXPECTED / "o.txt").read_text() == "here\\n"
+
+
+def test_mixed():
+    modules = {("a.py",): "A = 1\\n", ("r.md",): "r\\n"}
+    assert_generated_modules_output(modules, EXPECTED / "mixed")
+    assert_generated_modules_output(modules, EXPECTED / "mixed", pattern="*.md")
+
+
+@pytest.mark.parametrize("name", ["one", "two"])
+def test_pair(name):
+    assert_generated_modules_output({("p.py",): f"P = '{name}'\\n"}, EXPECTED / "pair")
+    assert stored_expected(EXPECTED / "pair" / "p.py").read_text() == f"P = '{name}'\\n"
+"""
+
+
+def test_stored_expected_follows_the_index(ledger: LedgerProject) -> None:
+    """A test reads an expected file where the index stores it: its own applicable line first, then any test's line.
+
+    Its own line is the one that applies here (``@python`` overrides) and covers files its tree labels select
+    (``pair``); other tests read a label's base line, stored at the label first (``o.txt``), and each pattern of a
+    directory (``mixed``). A file of a tree label's directory that the pattern does not select, an unrecorded path, a
+    path outside the expected root, and a read at import time (no running test; this project is not the
+    repository's) stay as named.
+    """
+    ledger.write("test_r.py", STORED_READS)
+    ledger.store("m/a.txt", "x\n")
+    ledger.store("m/a~b.txt", "y\n")
+    ledger.store("copy/t.py", "T = 1\n")
+    ledger.store("tree/notes.txt", "n\n")
+    for label, text in {
+        "o.txt": "base\n",
+        "o@here.txt": "here\n",
+        "o@old.txt": "old\n",
+        "mixed/r.md": "r\n",
+        "pyfiles/a.py": "A = 1\n",
+        "pair-one/p.py": "P = 'one'\n",
+        "pair-two/p.py": "P = 'two'\n",
+    }.items():
+        ledger.store(label, text)
+    line = units.RefLine
+    python = (("python", shared_conftest.expected_environment_facts()["python"]),)
+    (ledger.suite / "test_r.refs").write_text(
+        units.format_refs([
+            line("test_a", "", "m/a.txt"),
+            line("test_b", "", "m/a.txt", storage="m/a~b.txt"),
+            line("test_tree", "", "tree//*.py", storage="copy//*.py"),
+            line("test_override", "", "o.txt"),
+            line("test_override", "", "o.txt", predicate=python, storage="o@here.txt"),
+            line("test_override", "", "o.txt", predicate=(("python", "2.7"),), storage="o@old.txt"),
+            line("test_mixed", "", "mixed//*.py", storage="pyfiles//*.py"),
+            line("test_mixed", "", "mixed//*.md"),
+            line("test_pair", "one", "pair//*.py", storage="pair-one//*.py"),
+            line("test_pair", "two", "pair//*.py", storage="pair-two//*.py"),
+        ]),
+        encoding="utf-8",
+    )
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=8)
+
+
+READ_BY_NAME = """
+from pathlib import Path
+
+from tests.conftest import assert_output
+
+EXPECTED = Path(__file__).parent / "data" / "expected"
+
+
+def test_q1():
+    assert_output("x\\n", EXPECTED / "q" / "l.txt")
+
+
+def test_q2():
+    assert_output("y\\n", EXPECTED / "q" / "l.txt")
+
+
+def test_q3():
+    assert_output("x\\n", EXPECTED / "c.txt")
+"""
+
+
+def test_fix_expected_deduplicate_keeps_what_labels_read_by_name_return(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Units of a label whose references differ stay, so reading the label by name returns what it did.
+
+    ``q/l.txt`` reads as its own copy (``x``); the shorter ``c.txt`` would survive otherwise, and ``q/l.txt`` would
+    then read as ``b/q2.txt`` (``y``). A plan that does that anyway is refused although every line compares the same.
+    """
+    from scripts import fix_expected
+
+    ledger.write("test_q.py", READ_BY_NAME)
+    for label, text in {"q/l.txt": "x\n", "b/q2.txt": "y\n", "c.txt": "x\n"}.items():
+        ledger.store(label, text)
+    line = units.RefLine
+    lines = [line("test_q1", "", "q/l.txt"), line("test_q2", "", "q/l.txt", storage="b/q2.txt")]
+    (ledger.suite / "test_q.refs").write_text(
+        units.format_refs([*lines, line("test_q3", "", "c.txt")]), encoding="utf-8"
+    )
+    capsys.readouterr()
+    refs = (ledger.suite / "test_q.refs").read_text(encoding="utf-8")
+    bad = units.Plan(
+        sidecars={
+            ledger.suite / "test_q.refs": units.format_refs([
+                line("test_q1", "", "q/l.txt", storage="c.txt"),
+                lines[1],
+                line("test_q3", "", "c.txt"),
+            ])
+        },
+        deletes={ledger.expected / "q" / "l.txt"},
+    )
+    with monkeypatch.context() as patched:
+        patched.setattr(fix_expected, "deduplicate", lambda *_: bad)
+        assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 1
+    assert capsys.readouterr().out == (
+        "Refused: these would compare or read other bytes; nothing was written:\n  q/l.txt, read by name\n"
+    )
+    assert ledger.refs("test_q") == refs
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 0
+    assert ledger.refs("test_q") == HEADER + (
+        "[test_q1]\n\tq/l.txt\n[test_q2]\n\tq/l.txt\t= b/q2.txt\n[test_q3]\n\tc.txt\t= q/l.txt\n"
+    )
+    assert sorted(ledger.files()) == ["b/q2.txt", "q/l.txt"]
+    ledger.run("suite", env=GITHUB).assert_outcomes(passed=3)
+
+
+def test_fix_expected_deduplicate_refuses(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Deduplication writes nothing for unknown paths, sidecars pytest cannot read, or a plan that changes content."""
+    from scripts import fix_expected
+
+    _duplicated(ledger, capsys)
+    files, refs = ledger.files(), ledger.refs()
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite/missing") == 2
+    assert capsys.readouterr().out == "suite/missing is not a test directory, module or sidecar below suite/.\n"
+    monkeypatch.setattr(fix_expected, "deduplicate", lambda *_: units.Plan(deletes={ledger.expected / "m" / "b.txt"}))
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite") == 1
+    assert capsys.readouterr().out == (
+        "Refused: these would compare or read other bytes; nothing was written:\n"
+        "  suite/test_m.refs: test_b m/b.txt\n  suite/test_n.refs: test_d n/d.txt\n"
+        "  m/b.txt, read by name\n  n/d.txt, read by name\n"
+    )
+    assert (ledger.files(), ledger.refs()) == (files, refs)
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite/test_m.py::test_p[three]") == 2
+    assert capsys.readouterr().out == (
+        "suite/test_m.py::test_p[three] names no test that compares recorded expected output.\n"
+    )
+    for arguments, error in {
+        ("--where", "suite/test_m.py::test_a", "extra"): (
+            "error: a pytest selection only goes with --all-environments, and paths with --deduplicate"
+        ),
+        ("--deduplicate", "suite", "--workers", "2"): (
+            "error: --environment, --observe-only, --output and --workers only go with --all-environments"
+        ),
+    }.items():
+        with pytest.raises(SystemExit) as stopped:
+            fix_expected.main(["--root", str(ledger.pytester.path), *arguments])
+        assert (stopped.value.code, capsys.readouterr().err.splitlines()[-1].partition(": ")[2]) == (2, error)
+    (ledger.suite / "test_m.refs").write_text(HEADER + "[test_a]\n\tm/a.txt\t!\n", encoding="utf-8")
+    assert _fix_expected(ledger, monkeypatch, "--deduplicate", "suite/test_n.py") == 2
+    assert capsys.readouterr().out == (
+        "suite/test_m.refs is not in the form pytest writes. "
+        "Fix: python scripts/fix_expected.py --repair suite/test_m.refs\n"
+    )
+
+
+@pytest.mark.parametrize("option", ["--apply", "--from-ci", "--repair", "--deduplicate"])
 def test_fix_expected_refuses_to_write_in_ci(
     ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], option: str
 ) -> None:

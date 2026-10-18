@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from tests.api_generation.support.backends import backend_arguments
-from tests.conftest import assert_output
+from tests.conftest import assert_output, stored_expected
 from tests.main.conftest import run_main_and_assert
 
 DATA = Path(__file__).parents[1] / "data"
@@ -91,7 +91,7 @@ def test_client_install(
     dependency_kind = (
         "pydantic" if backend.startswith("pydantic") else "msgspec" if backend.startswith("msgspec") else "stdlib"
     )
-    notice = (EXPECTED / f"{profile}-{dependency_kind}-dependencies.txt").read_text(encoding="utf-8")
+    notice = stored_expected(EXPECTED / f"{profile}-{dependency_kind}-dependencies.txt").read_text(encoding="utf-8")
     run_main_and_assert(
         input_path=source,
         output_path=Path("publication_client_models.py"),

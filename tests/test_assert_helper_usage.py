@@ -30,6 +30,7 @@ from tests.conftest import (
     assert_httpx_get_kwargs,
     create_httpx_get_mock,
 )
+from tests.expected_access import READ, expected_accesses
 from tests.main.conftest import (
     _assert_generated_package_model_validation,
     assert_generated_model_json_invalid,
@@ -146,6 +147,7 @@ NORMAL_PATH_MOCK = "normal-path-mock"
 MARKER_REASON = "marker-reason"
 DATA_LOGIC = "data-logic"
 EMBEDDED_SOURCE = "embedded-source"
+EXPECTED_READ = "expected-read"
 SUPPORT_RULES = frozenset({PRIVATE_IMPORT, NORMAL_PATH_MOCK, MARKER_REASON})
 TEST_RULES = SUPPORT_RULES | {DIRECT_ASSERT, DISGUISED_ASSERT}
 HELPER_RULES = TEST_RULES | {ASSERTION_HELPER}
@@ -195,6 +197,13 @@ RULE_FAILURE_MESSAGES = {
         "generated router calls. Code that drives generation or a generated package and returns report text lives "
         "beside its tests in tests/api_generation/support or tests/api_generation/scenarios, where it is linted, "
         "covered, and analysed like the tests. A new fixture module is a justified entry in JUSTIFIED_VIOLATIONS."
+    ),
+    EXPECTED_READ: (
+        "Tests with equal output share one stored file, and fix runs split, merge, and move stored files, so a path "
+        "below tests/data/expected names whatever is stored there now. Test code that reads an expected file itself, "
+        "as input or to check another test's output, reads it through tests.conftest.stored_expected(path), which "
+        "follows the .refs index; only the ledger in tests/conftest.py and tests/units.py opens stored files by path. "
+        "Audits of every stored file below a directory are justified entries in JUSTIFIED_VIOLATIONS."
     ),
     EMBEDDED_SOURCE: (
         "Generated files are pinned at their generated path, as the model tests pin them (assert_file_content, "
@@ -1111,7 +1120,23 @@ def _collect_findings(tests_root: Path, exempt_files: Iterable[Path]) -> list[Fi
         rules = _file_rules(path.relative_to(tests_root), exempt_file_set)
         findings.extend(finding for finding in _analyze(path, tests_root).findings if finding.rule in rules)
     findings.extend(_location_findings(tests_root))
+    findings.extend(_expected_read_findings(tests_root))
     return findings
+
+
+def _expected_read_findings(tests_root: Path) -> list[Finding]:
+    """Return the reads of stored expected files by path, outside the ledger and ``stored_expected``."""
+    return [
+        Finding(
+            EXPECTED_READ,
+            (tests_root.parent / access.module).relative_to(tests_root),
+            access.owner.replace("::", "."),
+            access.lineno,
+            access.text,
+        )
+        for access in expected_accesses(tests_root.parent, tests_root)
+        if access.kind == READ
+    ]
 
 
 def _exemption_problems(tests_root: Path, configured: frozenset[Path], frozen: frozenset[Path]) -> list[str]:
@@ -2425,6 +2450,169 @@ def test_collect_findings_applies_rules_by_module_kind(tmp_path: Path) -> None:
         "direct-assert nested/example_test.py:1 <module>: assert True",
         "private-import nested/support.py:1 <module>: datamodel_code_generator._source",
         "private-import test_exempt.py:1 <module>: datamodel_code_generator._source",
+    ]
+
+
+EXPECTED_READS_PROBE = """\
+import os
+from pathlib import Path
+
+from {package}.helpers.paths import EXPECTED as ROOT, INPUTS
+from {package}.helpers.reader import read
+from tests.conftest import stored_expected
+
+LOCAL = Path("{package}/data/expected/local.txt")
+NAMES = ["a.txt", "b.txt"]
+TEXT = (ROOT / "module.txt").read_text()
+
+
+def test_reads(tmp_path, flag):
+    ROOT.joinpath("sub", "x.txt").read_bytes()
+    (ROOT / f"{{flag}}.txt").with_suffix(".json").open()
+    for name in NAMES:
+        (ROOT / name).read_text()
+    other = tmp_path / "out.txt"
+    other.read_text()
+    (INPUTS / "input.json").read_text()
+    (ROOT.parent / "x.txt").read_text()
+    stored_expected(ROOT / "a.txt").read_text()
+    chosen = other if flag else ROOT / "c.txt"
+    chosen.read_text()
+    with open(os.path.join(ROOT, "d.txt")) as handle:
+        handle.read()
+    LOCAL.resolve().read_text()
+    first, second = ROOT / "e.txt", tmp_path
+    first.read_text()
+    second.read_text()
+    head, *rest = [ROOT / "g.txt", tmp_path]
+    rest.read_text()
+    if (found := ROOT / "i.txt").exists():
+        found.read_text()
+    path: Path = ROOT / "j.txt"
+    path.read_text()
+    read(ROOT / "k.txt")
+    read(tmp_path, path=ROOT / "t.txt")
+    (None or ROOT / "o.txt").read_text()
+    for item in (ROOT / "p.txt", tmp_path):
+        item.read_text()
+    [ROOT / "q.txt"][0].read_text()
+    open(str(Path(ROOT, "r.txt")))
+    [entry.read_text() for entry in ROOT.glob("*.txt")]
+    opener = lambda target: target.read_text()
+    opener(ROOT / "l.txt")
+    ROOT.stat().read_text()
+    read(*NAMES)
+
+
+class TestReads:
+    def test_method(self):
+        (Path(__file__).parent / "data" / "expected" / "n.txt").read_text()
+
+
+async def test_async():
+    async for item in ROOT.iterdir():
+        pass
+    async with ROOT.open() as handle:
+        pass
+"""
+
+
+EXPECTED_READS_EDGES = """\
+import shutil
+from pathlib import Path
+
+EXPECTED = Path(__file__).parent / "data" / "expected"
+
+
+class Base:
+    pass
+
+
+class TestMore(Base, metaclass=type):
+    def test_edges(self, tmp_path, *, flag, mode=None):
+        self.holder = EXPECTED
+        size: int
+        with (EXPECTED / "m.txt").open():
+            pass
+        tmp_path.resolve().read_text()
+        missing_name.read_text()
+
+
+def copies(tmp_path, *args, **kwargs):
+    shutil.copyfile(EXPECTED / "s.txt", tmp_path)
+    shutil.copytree(EXPECTED / "tree", tmp_path)
+    shutil.copy(stored_expected(EXPECTED / "u.txt"), tmp_path)
+    (EXPECTED / "v.txt").copy(tmp_path)
+    run(copy_files=[(EXPECTED / "w.txt", tmp_path), (tmp_path, tmp_path), ()])
+    run(copy_files=None)
+    for found in stored_expected(EXPECTED / "dir").glob("*.py"):
+        found.read_text()
+    stored_expected(EXPECTED / "x.txt").read_text()
+    stored_expected().read_text()
+"""
+
+
+def test_collect_findings_reports_expected_reads(tmp_path: Path) -> None:
+    """Reads of paths below the expected root are reported where they happen, whichever way the path is built.
+
+    Paths follow module constants imported from helper modules, loops, unpacking, conditionals, and the arguments
+    callers pass to helpers; tmp paths, inputs beside the expected root, and ``stored_expected`` results are not
+    reads of stored files, and listings are left to ``--deduplicate``.
+    """
+    package = tmp_path.name
+    findings = _probe_findings(
+        tmp_path,
+        {
+            "helpers/__init__.py": (
+                "from .paths import EXPECTED as PACKAGED\n\nTEXT = (PACKAGED / 'init.txt').read_text()\n"
+            ),
+            "helpers/more.py": (
+                "from .paths import EXPECTED\nfrom . import paths\n\nTEXT = (EXPECTED / 'relative.txt').read_text()\n"
+            ),
+            "helpers/paths.py": (
+                "from pathlib import Path\n\n"
+                'EXPECTED = Path(__file__).parent.parent / "data" / "expected"\n'
+                'INPUTS = EXPECTED.parents[1] / "python"\n'
+            ),
+            "helpers/reader.py": "def read(item, *, path=None):\n    return (path or item).read_text()\n",
+            "test_reads.py": EXPECTED_READS_PROBE.format(package=package),
+            "test_more.py": EXPECTED_READS_EDGES,
+            "conftest.py": "from pathlib import Path\n\n(Path(__file__).parent / 'data' / 'expected').read_text()\n",
+            "data/python/driver.py": "",
+        },
+    )
+    assert [finding for finding in findings if finding.startswith("expected-read")] == [
+        "expected-read helpers/__init__.py:3 <module>: (PACKAGED / 'init.txt').read_text()",
+        "expected-read helpers/more.py:4 <module>: (EXPECTED / 'relative.txt').read_text()",
+        "expected-read test_more.py:15 TestMore.test_edges: (EXPECTED / 'm.txt').open()",
+        "expected-read test_more.py:22 copies: shutil.copyfile(EXPECTED / 's.txt', tmp_path)",
+        "expected-read test_more.py:23 copies: shutil.copytree(EXPECTED / 'tree', tmp_path)",
+        "expected-read test_more.py:25 copies: (EXPECTED / 'v.txt').copy(tmp_path)",
+        (
+            "expected-read test_more.py:26 copies: "
+            "run(copy_files=[(EXPECTED / 'w.txt', tmp_path), (tmp_path, tmp_path), ()])"
+        ),
+        "expected-read test_more.py:29 copies: found.read_text()",
+        "expected-read test_reads.py:10 <module>: (ROOT / 'module.txt').read_text()",
+        "expected-read test_reads.py:14 test_reads: ROOT.joinpath('sub', 'x.txt').read_bytes()",
+        "expected-read test_reads.py:15 test_reads: (ROOT / f'{flag}.txt').with_suffix('.json').open()",
+        "expected-read test_reads.py:17 test_reads: (ROOT / name).read_text()",
+        "expected-read test_reads.py:24 test_reads: chosen.read_text()",
+        "expected-read test_reads.py:25 test_reads: open(os.path.join(ROOT, 'd.txt'))",
+        "expected-read test_reads.py:27 test_reads: LOCAL.resolve().read_text()",
+        "expected-read test_reads.py:29 test_reads: first.read_text()",
+        "expected-read test_reads.py:34 test_reads: found.read_text()",
+        "expected-read test_reads.py:36 test_reads: path.read_text()",
+        "expected-read test_reads.py:39 test_reads: (None or ROOT / 'o.txt').read_text()",
+        "expected-read test_reads.py:41 test_reads: item.read_text()",
+        "expected-read test_reads.py:42 test_reads: [ROOT / 'q.txt'][0].read_text()",
+        "expected-read test_reads.py:43 test_reads: open(str(Path(ROOT, 'r.txt')))",
+        "expected-read test_reads.py:44 test_reads: entry.read_text()",
+        (
+            "expected-read test_reads.py:53 TestReads.test_method: "
+            "(Path(__file__).parent / 'data' / 'expected' / 'n.txt').read_text()"
+        ),
+        "expected-read test_reads.py:59 test_async: ROOT.open()",
     ]
 
 

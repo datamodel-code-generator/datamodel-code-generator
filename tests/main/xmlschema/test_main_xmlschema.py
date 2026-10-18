@@ -23,7 +23,7 @@ from datamodel_code_generator.parser.xmlschema import (
     _read_xml_text,
     convert_xml_schema_data,
 )
-from tests.conftest import assert_output
+from tests.conftest import assert_output, stored_expected
 from tests.main.conftest import (
     BACKEND_GOLDEN_CASES,
     BACKEND_GOLDEN_TARGET_ARGS,
@@ -90,7 +90,7 @@ def test_read_xml_text_detects_byte_order_mark(tmp_path: Path, byte_order_mark: 
     """Decode XML source according to its byte order mark."""
     schema_path = tmp_path / "schema.xsd"
     expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_initial.txt"
-    schema_text = expected_path.read_text(encoding="utf-8")
+    schema_text = stored_expected(expected_path).read_text(encoding="utf-8")
     schema_path.write_bytes(byte_order_mark + schema_text.encode(xml_encoding))
 
     assert_output(_read_xml_text(schema_path, "ascii"), expected_path)
@@ -101,10 +101,10 @@ def test_read_xml_text_reads_updated_source(tmp_path: Path) -> None:
     schema_path = tmp_path / "schema.xsd"
     first_expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_initial.txt"
     second_expected_path = EXPECTED_XML_SCHEMA_PATH / "xml_text_updated.txt"
-    schema_path.write_bytes(first_expected_path.read_text(encoding="utf-8").encode("latin-1"))
+    schema_path.write_bytes(stored_expected(first_expected_path).read_text(encoding="utf-8").encode("latin-1"))
     assert_output(_read_xml_text(schema_path, "latin-1"), first_expected_path)
 
-    schema_path.write_bytes(second_expected_path.read_text(encoding="utf-8").encode("latin-1"))
+    schema_path.write_bytes(stored_expected(second_expected_path).read_text(encoding="utf-8").encode("latin-1"))
     assert_output(_read_xml_text(schema_path, "latin-1"), second_expected_path)
 
 

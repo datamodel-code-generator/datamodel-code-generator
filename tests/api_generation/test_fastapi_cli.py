@@ -27,7 +27,13 @@ from datamodel_code_generator import (
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
 from scripts.build_docs_examples import read_with_newest_preset
-from tests.conftest import assert_directory_content, assert_output, create_assert_file_content, freeze_time
+from tests.conftest import (
+    assert_directory_content,
+    assert_output,
+    create_assert_file_content,
+    freeze_time,
+    stored_expected,
+)
 from tests.data.python.custom_formatters.shift_frozen_time import CodeFormatter
 from tests.main.conftest import (
     TIMESTAMP,
@@ -129,7 +135,7 @@ def test_fastapi_cli_generate(
         extra_args=_server(),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -180,7 +186,7 @@ def test_fastapi_cli_generate(
         input_file_type="openapi",
         extra_args=_server(),
         capsys=capsys,
-        expected_stderr=REGENERATED.read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(REGENERATED).read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -205,7 +211,7 @@ def test_fastapi_cli_model_dependencies(
         extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
         copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
         capsys=capsys,
-        expected_stderr=(expected / f"{case_name}.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(expected / f"{case_name}.txt").read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=expected / f"{case_name}.py",
         skip_code_validation=True,
@@ -242,7 +248,9 @@ def test_fastapi_cli_check_read_only(
         output_path=output,
         extra_args=_server(*arguments, output=server),
         capsys=capsys,
-        expected_stderr=(EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)).read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / case.get("notice", DEPENDENCIES.name)).read_text(
+            encoding="utf-8"
+        ),
         skip_code_validation=nested_package,
     )
     roots = [root for root in (tmp_path / server, tmp_path / output) if root.is_dir()]
@@ -309,7 +317,7 @@ def test_fastapi_cli_check_outputs(
             output_path=output,
             extra_args=_server(*options, output=server),
             capsys=capsys,
-            expected_stderr=notice.read_text(encoding="utf-8"),
+            expected_stderr=stored_expected(notice).read_text(encoding="utf-8"),
             skip_code_validation=unvalidated,
         )
     for name in case.get("remove", ()):
@@ -337,7 +345,7 @@ def test_fastapi_cli_check_outputs(
                 output_path=output,
                 extra_args=_server(*options, *case.get("options", ()), output=server),
                 capsys=capsys,
-                expected_stderr=repeated.read_text(encoding="utf-8"),
+                expected_stderr=stored_expected(repeated).read_text(encoding="utf-8"),
                 skip_code_validation=unvalidated,
             )
     assert_output(
@@ -415,7 +423,7 @@ def test_fastapi_cli_generation_json(
             output_path=model,
             extra_args=_server("--encoding", encoding, output=str(server)),
             capsys=capsys,
-            expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+            expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
         )
     for name, text in case.get("write", {}).items():
         (path := tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
@@ -488,7 +496,7 @@ def test_fastapi_cli_pyproject(
     """Write the same models and package from pyproject.toml alone as from the options, then check them."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-server.toml")
-    run_main_with_args([], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    run_main_with_args([], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"))
     assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
     run_main_with_args(["--check"], capsys=capsys, assert_no_stderr=True)
@@ -556,7 +564,7 @@ def test_fastapi_cli_precedence(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-precedence.toml")
-    expected = (EXPECTED / "cli" / notice).read_text(encoding="utf-8")
+    expected = stored_expected(EXPECTED / "cli" / notice).read_text(encoding="utf-8")
     run_main_with_args(arguments, capsys=capsys, expected_stderr=expected)
     report = "".join(_methods(path) for path in sorted(tmp_path.glob("*/services.py")))
     assert_output(
@@ -578,12 +586,12 @@ def test_fastapi_cli_pyproject_paths(
     shutil.copy2(CLI / "names.json", project / "names.json")
     (work / "names.json").write_text('{"/paths/~1pets/get": "find_pets"}', encoding="utf-8")
     monkeypatch.chdir(work)
-    notice = (EXPECTED / "cli" / "dependencies-project.txt").read_text(encoding="utf-8")
+    notice = stored_expected(EXPECTED / "cli" / "dependencies-project.txt").read_text(encoding="utf-8")
     run_main_with_args([], capsys=capsys, expected_stderr=notice.format(project=project.as_posix()))
     run_main_with_args(
         ["--server-output", "service", "--server-operation-names", "names.json"],
         capsys=capsys,
-        expected_stderr=(EXPECTED / "cli" / "dependencies-service.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-service.txt").read_text(encoding="utf-8"),
     )
     services = sorted(tmp_path.rglob("services.py"), key=lambda path: path.relative_to(tmp_path).as_posix())
     assert_output(
@@ -621,7 +629,7 @@ def test_fastapi_cli_json_file_documents(
     for name in pyproject:
         shutil.copy2(CLI / name, project / "pyproject.toml")
     monkeypatch.chdir(work)
-    notice = (EXPECTED / "cli" / "dependencies-project.txt").read_text(encoding="utf-8")
+    notice = stored_expected(EXPECTED / "cli" / "dependencies-project.txt").read_text(encoding="utf-8")
     run_main_with_args(arguments, capsys=capsys, expected_stderr=notice.format(project=project.as_posix()))
     assert_output(_methods(project / "server" / "services.py"), EXPECTED / "cli" / "json-file-documents.txt")
 
@@ -686,7 +694,9 @@ def test_fastapi_cli_include_paths(
         extra_args=_server(*include, output="service"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stderr=(EXPECTED / "cli" / "dependencies-include-paths.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-include-paths.txt").read_text(
+            encoding="utf-8"
+        ),
         file_should_not_exist=tmp_path / "server",
     )
     assert_output(
@@ -713,7 +723,7 @@ def test_fastapi_cli_stdin(tmp_path: Path, capsys: pytest.CaptureFixture[str], m
         input_file_type="openapi",
         extra_args=_server(),
         capsys=capsys,
-        expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file="cli/stdin-models.py",
     )
@@ -846,7 +856,7 @@ def test_fastapi_cli_removed_options(
         ],
         expected_code=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=(EXPECTED / "cli" / "removed-options" / f"{case_name}.txt").read_text(
+        expected_stderr_contains=stored_expected(EXPECTED / "cli" / "removed-options" / f"{case_name}.txt").read_text(
             encoding="utf-8"
         ),
     )
@@ -1060,7 +1070,7 @@ def test_fastapi_cli_model_option_warning(
         copy_files=_inputs(tmp_path),
         capsys=capsys,
         expected_stderr="Warning: --reuse-scope=tree has no effect without --reuse-model\n"
-        + DEPENDENCIES.read_text(encoding="utf-8"),
+        + stored_expected(DEPENDENCIES).read_text(encoding="utf-8"),
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -1364,7 +1374,9 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     """Write the models and the package of a server job as a single run does, check them, then check a drift."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-jobs.toml")
-    run_main_with_args(["--job", "server"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    run_main_with_args(
+        ["--job", "server"], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
+    )
     assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
     run_main_with_args(["--job", "server", "--check"], capsys=capsys, assert_no_stderr=True)
@@ -1493,7 +1505,7 @@ def test_fastapi_cli_nested_models_example(
     run_main_with_args(
         arguments,
         capsys=capsys,
-        expected_stderr=(EXPECTED / "cli" / "dependencies-app-server.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-app-server.txt").read_text(encoding="utf-8"),
         use_builtin_default_formatter=False,
     )
     run_main_with_args(
@@ -1508,7 +1520,9 @@ def test_fastapi_cli_nested_job(
     """Write the models of a server job inside its own package, as a single run can, then check both as one tree."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-nested-jobs.toml")
-    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    run_main_with_args(
+        ["--all-jobs"], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
+    )
     assert_file_content(tmp_path / "server" / "models.py", PACKAGE / "models.py")
     run_main_with_args(["--all-jobs", "--check"], capsys=capsys, assert_no_stderr=True)
     (tmp_path / "server" / "extensions.py").write_text("# User extension\n", encoding="utf-8")
@@ -1559,7 +1573,9 @@ def test_fastapi_cli_mixed_jobs(
     """Run a model-only job and a server job together; both write the models a model-only run writes."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-mixed-jobs.toml")
-    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    run_main_with_args(
+        ["--all-jobs"], capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
+    )
     assert_file_content(tmp_path / "schemas.py", PACKAGE / "models.py")
     assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
@@ -1660,7 +1676,7 @@ def test_fastapi_cli_jobs_json_paths(
     run_main_with_args(
         ["--all-jobs", "--output-format", "json"],
         capsys=capsys,
-        expected_stderr=(EXPECTED / "cli" / "dependencies-layout-jobs.txt").read_text(encoding="utf-8"),
+        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-layout-jobs.txt").read_text(encoding="utf-8"),
     )
     run_main_with_args(
         ["--all-jobs", "--check", "--output-format", "json"],
@@ -1686,7 +1702,9 @@ def test_fastapi_cli_shared_models_jobs(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-shared-models-jobs.toml")
-    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr=SHARED_DEPENDENCIES.read_text(encoding="utf-8"))
+    run_main_with_args(
+        ["--all-jobs"], capsys=capsys, expected_stderr=stored_expected(SHARED_DEPENDENCIES).read_text(encoding="utf-8")
+    )
     assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
     assert_output(_methods(tmp_path / "back" / "admin" / "services.py"), EXPECTED / "cli" / "shared-models.txt")
@@ -2016,7 +2034,9 @@ def test_fastapi_cli_shared_models_timestamp(
     with freeze_time(TIMESTAMP) as clock:
         monkeypatch.setattr(CodeFormatter, "clock", clock, raising=False)
         run_main_with_args(
-            ["--all-jobs"], capsys=capsys, expected_stderr=SHARED_DEPENDENCIES.read_text(encoding="utf-8")
+            ["--all-jobs"],
+            capsys=capsys,
+            expected_stderr=stored_expected(SHARED_DEPENDENCIES).read_text(encoding="utf-8"),
         )
     assert_file_content(tmp_path / "models.py", "cli/timestamp-models.py")
     assert_file_content(tmp_path / "back" / "admin" / "services.py", "cli/timestamp-services.py")
@@ -2040,7 +2060,9 @@ def test_fastapi_cli_job_precedence(
     """Take each server setting of a job from the command line, then the job table, then its profile."""
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-mixed-jobs.toml")
-    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    run_main_with_args(
+        arguments, capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
+    )
     assert_output(
         f"$ datamodel-codegen {' '.join(arguments)}\n{_methods(tmp_path / 'server' / 'services.py')}",
         EXPECTED / "cli" / "precedence" / f"{name}.txt",
@@ -2745,7 +2767,9 @@ def test_fastapi_cli_implementation_stubs(
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
     arguments = ["--input", "pets.yaml", "--input-file-type", "openapi", "--output", "models.py", *_server()]
-    run_main_with_args(arguments, capsys=capsys, expected_stderr=DEPENDENCIES.read_text(encoding="utf-8"))
+    run_main_with_args(
+        arguments, capsys=capsys, expected_stderr=stored_expected(DEPENDENCIES).read_text(encoding="utf-8")
+    )
     services = tmp_path / "services"
     pets = services / "pets.py"
     pets.write_text("# edited\n", encoding="utf-8")

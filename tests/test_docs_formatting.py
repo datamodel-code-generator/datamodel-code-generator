@@ -11,7 +11,7 @@ import pytest
 from packaging.version import Version
 
 from scripts import build_cli_docs, build_docs_examples, build_preset_docs
-from tests.conftest import assert_output
+from tests.conftest import assert_output, stored_expected
 
 DATA = Path(__file__).parent / "data"
 EXPECTED = DATA / "expected" / "docs_formatting"
@@ -22,7 +22,7 @@ MODEL_PATH = "docs_formatting/model.py"
 @pytest.mark.parametrize("kind", ["fixture", "golden", "stdout_file", "stdout", "extra", "readme", "quick_start"])
 def test_documentation_formatting_preserves_generated_examples(kind: str) -> None:
     """Real Ruff formats surrounding prose examples while keeping generated fixtures verbatim."""
-    model = (DATA / "expected" / "main" / MODEL_PATH).read_text(encoding="utf-8")
+    model = stored_expected(DATA / "expected" / "main" / MODEL_PATH).read_text(encoding="utf-8")
     example = build_cli_docs.CLIDocExample(node_id="formatting", option_description="")
     rendered = ""
     match kind:
