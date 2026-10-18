@@ -1435,6 +1435,12 @@ api-enum	main/openapi/single_value_enum_as_const_api.py
 api-written-as-const	main/openapi/single_value_enum_as_const_api.py
 schemas-paths-parameters-enum	main/openapi/single_value_enum_as_const.py
 schemas-paths-parameters-written-as-const	main/openapi/single_value_enum_as_const.py
+[test_main_openapi_single_value_enum_as_const_mixed_types]
+enum	main/openapi/main_openapi/single_value_enum_as_const_mixed_types[enum].py
+enum-literal-one	main/openapi/main_openapi/single_value_enum_as_const_mixed_types[enum-literal-one].py	= main/openapi/main_openapi/single_value_enum_as_const_mixed_types[enum].py
+msgspec	main/openapi/main_openapi/single_value_enum_as_const_mixed_types[msgspec].py
+written-as-const	main/openapi/main_openapi/single_value_enum_as_const_mixed_types[written-as-const].py	= main/openapi/main_openapi/single_value_enum_as_const_mixed_types[enum].py
+written-as-const-without-option	main/openapi/main_openapi/single_value_enum_as_const_mixed_types[written-as-const-without-option].py
 [test_main_openapi_single_value_enum_as_const_null_branch]
 enum	main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum].py
 enum-literal-one	main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum-literal-one].py	= main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum].py

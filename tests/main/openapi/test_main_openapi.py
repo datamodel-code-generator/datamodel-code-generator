@@ -4060,6 +4060,57 @@ def test_main_openapi_single_value_enum_as_const_null_branch(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_path", "output_model", "extra_args"),
+    [
+        pytest.param(
+            "single_value_enum_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="enum",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const", "--enum-field-as-literal", "one"],
+            id="enum-literal-one",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="written-as-const",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/mixed_types.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            id="written-as-const-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/mixed_types.yaml",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const"],
+            id="msgspec",
+        ),
+    ],
+)
+def test_main_openapi_single_value_enum_as_const_mixed_types(
+    input_path: str, output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Keep one-value branches of different JSON types apart under --use-single-value-enum-as-const.
+
+    One Enum of str and int values cannot be decoded by msgspec, so each branch is typed as its const, while branches
+    of one JSON type still merge. Without the option, const branches of different JSON types still merge.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
+    )
+
+
 @pytest.mark.skipif(
     version.parse(pydantic.VERSION) < version.parse("1.9.0"),
     reason="Require Pydantic version 1.9.0 or later ",

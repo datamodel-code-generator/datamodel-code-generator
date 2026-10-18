@@ -362,6 +362,7 @@ openapi/single_value_enum_as_const/api.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/common.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/extension_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/headers.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/mixed_types.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/null_branch.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/paths_scope.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/region.yaml	yaml_fast_constructor/parity.txt
@@ -369,6 +370,7 @@ openapi/single_value_enum_as_const/schemas.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/api.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/common.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/headers.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/mixed_types.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/null_branch.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/region.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/schemas.yaml	yaml_fast_constructor/parity.txt

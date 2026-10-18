@@ -13,6 +13,9 @@ XRayGetResponse: TypeAlias = Literal['ok'] | None
 RayGetResponse: TypeAlias = Literal['ok'] | None
 
 
+XSettingsGetResponse: TypeAlias = Literal['auto'] | Literal[1]
+
+
 class ThingEnum(Enum):
     thing = 'thing'
 

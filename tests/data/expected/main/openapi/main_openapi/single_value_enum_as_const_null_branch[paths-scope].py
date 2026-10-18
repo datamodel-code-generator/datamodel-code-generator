@@ -18,6 +18,10 @@ class RayGetResponse(RootModel[Literal['ok'] | None]):
     root: Literal['ok'] | None
 
 
+class XSettingsGetResponse(RootModel[Literal['auto'] | Literal[1]]):
+    root: Literal['auto'] | Literal[1]
+
+
 class ThingEnum(Enum):
     thing = 'thing'
 

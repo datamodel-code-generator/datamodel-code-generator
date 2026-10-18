@@ -1943,8 +1943,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> tuple[list[Any], list[str], list[str], str | None, bool] | None:
         """Extract enum values from oneOf/anyOf const pattern.
 
-        Const branches that --use-single-value-enum-as-const read and that hold one value beside null leave no enum to
-        merge: the branches are typed as written, the const as its Literal and null as None.
+        Const branches that --use-single-value-enum-as-const read merge into one Enum only when there are two or more
+        and all hold values of one JSON type; otherwise each branch is typed as written, each const as its Literal and
+        null as None.
         """
         enum_values: list[Any] = []
         varnames: list[str] = []
@@ -1989,7 +1990,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         if not enum_values:  # pragma: no cover
             return None
-        if read_as_const and sum(value is not None for value in enum_values) == 1:
+        if read_as_const and (
+            len(values := [value for value in enum_values if value is not None]) == 1
+            or len({_get_json_value_type(value) for value in values}) > 1
+        ):
             return None
 
         final_type = inferred_type
