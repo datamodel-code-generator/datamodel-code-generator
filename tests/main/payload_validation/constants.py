@@ -294,6 +294,10 @@ EXCLUDED_CASES: dict[str, str] = {
         "top-level nullable object components need a wrapper policy; "
         "test_main_openapi_strip_default_none_constructor_order imports the models that reference them",
     ),
+    "openapi/type_overrides_constructor_order.yaml::components.schemas.Nullable": (
+        "top-level nullable object components need a wrapper policy; "
+        "test_main_openapi_type_overrides_constructor_order imports the models that reference it"
+    ),
     "jsonschema/collapse_root_models_lookaround_discriminator.json": (
         "discriminator tags come from a referenced pattern rather than an enum, so schema-valid tags miss the mapping; "
         "test_main_jsonschema_collapse_root_models_lookaround checks the generated tags and regex engine"

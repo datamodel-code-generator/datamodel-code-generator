@@ -306,9 +306,10 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `__set_one_literal_on_default` | required one-literal fields | default, required, nullable |
 | process | `refresh_field_config` (model) | field state | backend field config |
 | process | `__rename_fields_hiding_types` | same-named fields and types of the model family | field names or type names |
-| process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:DataType.admits_none`) | field order, constructor adjustments |
-| process | `__remove_overridden_models` | model-level `--type-overrides` | removes overridden models |
-| finalize | `__apply_type_overrides` | `--type-overrides` | field types; model-level overrides edit nodes on fields and base classes in place |
+| process | `__remove_overridden_models` | model-level `--type-overrides` | removes overridden models from the module's list (constructor ordering still runs on them) |
+| process | `__apply_field_type_overrides` | `--type-overrides`, field names | field types of the kept models; model-level overrides edit nodes on fields in place |
+| process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:DataType.admits_none`), field types after overrides, bases before base-class overrides | field order, constructor adjustments |
+| finalize | `__apply_base_class_type_overrides` | model-level `--type-overrides` | base classes; edits base-class nodes in place |
 | finalize | `unbind_fields` (model) | hidden type names | field binding |
 | finalize | `__update_type_aliases` | model order, forward references | quotes forward references in place (`data_type.alias`), union operator along one `.parent` chain |
 | finalize | `__set_validate_default_on_fields` | live models, defaults | deserialized defaults, default validation |
@@ -393,13 +394,13 @@ collapse replacing a member of a shared list.
 | instance field set | end of the L5 loop; msgspec: L6 `_tag_fields_of_tagged_bases` |
 | field order | end of the L5 loop (discriminator tags append fields to variants of any module); initial order: L1 construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`); msgspec keyword-only: L6 `__fix_tag_opt_out_field_ordering` |
 | field names | the model's own L5 `__rename_fields_hiding_types` |
-| field types | end of the L5 loop (collapse, overrides and discriminator tags reach every module; overrides replace the module's own field types in its L5 finalize, after constructor ordering); pydantic v2 type-alias bodies: L6 `__prepare_type_alias_fields` |
-| rendered nullability of a type | end of the L5 loop, like the field types it is computed from with `types.py:DataType.admits_none`; L7 writes it into `is_optional` (see L7). Known gap: the module's own `__apply_type_overrides` replaces field types after `__fix_constructor_field_ordering` has read it |
+| field types | end of the L5 loop (collapse, overrides and discriminator tags reach every module; overrides replace the module's own field types in its L5 `__apply_field_type_overrides`, before constructor ordering); pydantic v2 type-alias bodies: L6 `__prepare_type_alias_fields` |
+| rendered nullability of a type | end of the L5 loop, like the field types it is computed from with `types.py:DataType.admits_none`; L7 writes it into `is_optional` (see L7) |
 | set vs list containers | end of the L5 loop (collapse and overrides can still replace item types) |
 | required, nullable | end of the L5 loop (discriminator tags, one-literal defaults, collapse `process_const()`); msgspec: L6 |
 | default values | the model's own L5 `__set_validate_default_on_fields`, unless another module's discriminator pass changes it; default-factory metadata: L6 `_set_nested_model_default_factory_metadata` |
 | discriminator tags | pydantic: end of the L5 loop; msgspec: L6 `_tag_fields_of_tagged_bases` |
-| applied type overrides | end of the L5 loop |
+| applied type overrides | field types: the module's own L5 `__apply_field_type_overrides`; base classes: the model's own L5 `__apply_base_class_type_overrides` |
 | root-model collapse | end of the L5 loop (circular paths: the L4 snapshot, not recomputed) |
 | class names and reference paths | L6 `__change_imported_model_name` |
 | module membership | L6 unused-model removal |
@@ -463,7 +464,7 @@ Procedure for a new decision:
 | field set, required or nullable of a model in the same module, without discriminator tags | after that module's `__set_one_literal_on_default` (before `__fix_constructor_field_ordering` if ordering must see the result) |
 | a fact of a model in another module that the module loop can still change | L6, after the module loop (facts that settle earlier, such as mapped names, follow their own row) |
 | discriminator tags or msgspec ClassVars | L6, after `_tag_fields_of_tagged_bases` |
-| type overrides | after the module loop |
+| type overrides | field types of a model in the same module: after that module's `__apply_field_type_overrides`; of a model in another module: after the module loop; base classes: after the model's `__apply_base_class_type_overrides` |
 | bases including the generic base class | L6, after `__apply_generic_base_class` |
 | class names | L6, after `__change_imported_model_name` |
 | imports or names written in annotations | end of `_finalize_modules`, or at render |
@@ -543,9 +544,12 @@ it survives each of these steps is not verified.
   `__fix_constructor_field_ordering` decides with the template rule (`FIELD_ASSIGNMENT_CHECKER`, through
   `DataType.admits_none`) and moves a kept `None` after the fields without a default, where the output stays valid whichever
   way the `= None` resolves at render. msgspec reads one predicate in both places, as a Struct never strips its
-  defaults. The module's own `__apply_type_overrides` still runs after ordering: an override that replaces the type of
-  a kept `None` can reorder working output, or leave a field without a default after another kept `None`. Applying
-  overrides before `__fix_constructor_field_ordering` closes that gap.
+  defaults. Ordering decides from the field types and `Field()` arguments the class body renders, so a module applies
+  `--type-overrides` to the field types of the models it keeps before `__fix_constructor_field_ordering`
+  ([#4949](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4949),
+  [#4955](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4955)). A base class that an
+  override replaces stays the generated model for ordering, as the generator cannot see the replacing class's fields,
+  so base-class overrides are applied after ordering.
 
 ## References And Names
 

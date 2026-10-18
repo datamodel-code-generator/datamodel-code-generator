@@ -3497,6 +3497,56 @@ def test_main_openapi_strip_default_none_constructor_order(
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "warning"),
+    [
+        pytest.param(
+            ["--strip-default-none", "--type-overrides", '{"TwoKept.n2": "decimal.Decimal"}'],
+            None,
+            id="strip-default-none-field-type-override",
+        ),
+        pytest.param(
+            ["--field-constraints", "--type-overrides", '{"Constrained.n": "builtins.str"}'],
+            r"Pydantic does not take ge on str",
+            id="field-constraints-field-type-override",
+        ),
+        pytest.param(
+            ["--strip-default-none", "--field-constraints", "--type-overrides", '{"Constrained.n": "builtins.str"}'],
+            r"Pydantic does not take ge on str",
+            id="strip-default-none-field-constraints-field-type-override",
+        ),
+        pytest.param(["--type-overrides", '{"Base": "decimal.Decimal"}'], None, id="base-class-type-override"),
+    ],
+)
+def test_main_openapi_type_overrides_constructor_order(
+    extra_args: list[str], warning: str | None, output_file: Path
+) -> None:
+    """Order Pydantic dataclass fields by the field types and ``Field()`` arguments left by --type-overrides.
+
+    An override that replaces the type of the second of two kept ``None`` defaults under --strip-default-none
+    leaves it without a default, so it precedes the first. An override that drops the only ``Field()`` constraint
+    of a required field under --field-constraints leaves it without an assignment, so it precedes the default.
+    A base class that an override replaces stays the generated model for ordering, so a subclass field without a
+    default after an inherited default stays keyword-only.
+    """
+    with pytest.warns(UserWarning, match=warning) if warning else contextlib.nullcontext():
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "type_overrides_constructor_order.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.dataclass",
+                "--target-python-version",
+                "3.10",
+                "--formatters",
+                "builtin",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
+
+
 def test_disable_timestamp(output_file: Path) -> None:
     """Test OpenAPI generation with timestamp disabled."""
     run_main_and_assert(

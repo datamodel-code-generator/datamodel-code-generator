@@ -1,0 +1,45 @@
+openapi: 3.1.0
+info:
+  title: type overrides constructor order
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Nullable:
+      type: [object, "null"]
+      properties:
+        a:
+          type: string
+    TwoKept:
+      type: object
+      properties:
+        n1:
+          $ref: '#/components/schemas/Nullable'
+        n2:
+          $ref: '#/components/schemas/Nullable'
+    Constrained:
+      type: object
+      required: [n, q]
+      properties:
+        d:
+          type: string
+          default: x
+        n:
+          type: integer
+          minimum: 1
+        q:
+          type: string
+    Base:
+      type: object
+      properties:
+        x:
+          type: string
+          default: a
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+        - type: object
+          required: [y]
+          properties:
+            y:
+              type: string

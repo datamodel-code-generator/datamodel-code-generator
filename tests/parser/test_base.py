@@ -675,7 +675,8 @@ def test_apply_type_overrides_fast_path_preserves_models(parser_fixture: C) -> N
     parser_fixture._type_override_imports = {"Other.value": Import(from_="custom", import_="Value")}
     parser_fixture._model_type_override_imports = {}
 
-    parser_fixture._Parser__apply_type_overrides([model])
+    parser_fixture._Parser__apply_field_type_overrides([model])
+    parser_fixture._Parser__apply_base_class_type_overrides([model])
 
     assert model.fields == [field]
 

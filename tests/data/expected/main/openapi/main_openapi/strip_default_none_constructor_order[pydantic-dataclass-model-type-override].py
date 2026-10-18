@@ -43,15 +43,15 @@ class SpellingRequired:
 
 @dataclass
 class M:
-    q: str | None
     n: Decimal | None
+    q: str | None
     d: str | None = 'x'
 
 
 @dataclass
 class Earlier:
-    r: str
     n: Decimal | None
+    r: str
     d: str | None = 'x'
 
 

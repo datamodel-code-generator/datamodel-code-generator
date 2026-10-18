@@ -6644,8 +6644,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return models
         return [m for m in models if m.class_name not in self._model_type_override_imports]
 
-    def __apply_type_overrides(self, models: list[DataModel]) -> None:
-        """Replace type references with custom import types.
+    def __apply_field_type_overrides(self, models: list[DataModel]) -> None:
+        """Replace field type references with custom import types, before constructor ordering reads the field types.
 
         Supports two key formats:
         - Model-level: {"CustomType": "my_app.Type"} - applies to all references
@@ -6671,8 +6671,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         pass
             if fields_overridden:
                 model.clear_imports_cache()
-            if not self._model_type_override_imports:
-                continue
+
+    def __apply_base_class_type_overrides(self, models: list[DataModel]) -> None:
+        """Replace base classes that model-level overrides name with custom import types, after constructor ordering.
+
+        Constructor ordering reads an overridden base as the generated model, the only description of the class that
+        replaces it.
+        """
+        if not self._model_type_override_imports:
+            return
+        for model in models:
             base_classes_overridden = False
             for base_class in model.base_classes:
                 if self._apply_override_to_data_type(base_class):
@@ -8316,9 +8324,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.__rename_fields_hiding_types(
             models, can_retain_cache=can_retain_cache, use_deferred_annotations=use_deferred_annotations
         )
+        kept_models = self.__remove_overridden_models(models)
+        self.__apply_field_type_overrides(kept_models)
         self.__fix_constructor_field_ordering(models)
-
-        return self.__remove_overridden_models(models)
+        return kept_models
 
     def __assign_forward_reference_fields(self, models: list[DataModel], *, can_retain_cache: bool) -> None:
         """Let each model render fields by assignment when ``Field()`` inside ``Annotated`` would be unsafe.
@@ -8344,7 +8353,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         A field that hides a type of its class's annotations is left unbound where the model can, and without
         future imports the type is written as a string.
         """
-        self.__apply_type_overrides(models)
+        self.__apply_base_class_type_overrides(models)
         for model in models:
             if (names := _hidden_type_names(model)) and model.unbind_fields(names):
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)

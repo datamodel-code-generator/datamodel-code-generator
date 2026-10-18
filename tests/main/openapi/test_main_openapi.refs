@@ -1511,6 +1511,11 @@ pydantic-dataclass-annotated	main/openapi/output_model_types/field_render_plan_p
 	main/openapi/type_alias_recursive_pydantic_v2.py
 [test_main_openapi_type_mappings_byte_to_binary]
 	main/openapi/type_mappings_byte_to_binary.py
+[test_main_openapi_type_overrides_constructor_order]
+base-class-type-override	main/openapi/main_openapi/type_overrides_constructor_order[base-class-type-override].py
+field-constraints-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[field-constraints-field-type-override].py
+strip-default-none-field-constraints-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-constraints-field-type-override].py
+strip-default-none-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-type-override].py
 [test_main_openapi_union_default_object]
 msgspec.Struct-msgspec_union_default_object.py	main/openapi/msgspec_union_default_object.py
 pydantic_v2.BaseModel-pydantic_v2_union_default_object.py	main/openapi/pydantic_v2_union_default_object.py
