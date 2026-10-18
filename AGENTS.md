@@ -15,6 +15,11 @@ the ones failures print, inside the development environment (`.tox/dev` from `to
   failures print the exact command to run.
 - A CI failure that ends with `dcg-expected-fix:` is fixed by the `python scripts/fix_expected.py ...` command it prints.
 
+## Adding an option
+
+- Follow "Adding a New CLI Option" in `docs/development-contributing.md`, including Step 4: register the option with
+  the recommender, or `test_every_option_is_registered_with_the_recommender` fails.
+
 ## Changing the parser
 
 [Model processing passes](docs/architecture.md#model-processing-passes) lists the passes in order, when each fact

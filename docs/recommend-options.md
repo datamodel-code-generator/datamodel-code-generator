@@ -378,8 +378,8 @@ No. Explicit options are kept, and disagreements are reported under "Your config
 
 **Is the output stable?**
 The same input, options, and installed version give the same report. The report does not depend on the machine or
-on installed libraries, and whether candidates are compared depends on the schema size, not on time. Upgrading datamodel-code-generator can change the recommendation when a new preset or a rule
-revision is released.
+on installed libraries, and whether candidates are compared depends on the schema size, not on time. Upgrading
+datamodel-code-generator can change the recommendation when a new preset or a rule revision is released.
 
 **Why is an option I expected missing?**
 Either the preset already sets it (listed under "Start from"), the schema does not show the signal its rule needs,

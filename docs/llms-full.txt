@@ -4544,8 +4544,8 @@ No. Explicit options are kept, and disagreements are reported under "Your config
 
 **Is the output stable?**
 The same input, options, and installed version give the same report. The report does not depend on the machine or
-on installed libraries, and whether candidates are compared depends on the schema size, not on time. Upgrading datamodel-code-generator can change the recommendation when a new preset or a rule
-revision is released.
+on installed libraries, and whether candidates are compared depends on the schema size, not on time. Upgrading
+datamodel-code-generator can change the recommendation when a new preset or a rule revision is released.
 
 **Why is an option I expected missing?**
 Either the preset already sets it (listed under "Start from"), the schema does not show the signal its rule needs,
@@ -61219,6 +61219,123 @@ never edits the rules, the calibration file or the manifest: proposals go throug
 files or the network. Generated code runs only with `--import-check`, in a temporary directory through an isolated
 interpreter.
 
+Runs use only the refs pinned in the manifest and never ask the network whether they are current. Add the opt-in
+`--check-upstream` to an `--out` run to also ask each schema's source repository for its `HEAD` with `git ls-remote`
+(this uses the network, but downloads no spec). `report.md` then gets a "Proposed rotation" section that lists the
+schemas whose upstream head differs from the newest pinned ref. Rotating an entry pins that head, with its date and
+sha256, as the newest version, and the version pinned before becomes the baseline. Like every proposal, a rotation
+is made by hand in a pull request.
+
+The grid scores only the decisions it lists (`[grid]` in the manifest, keyed by rule `decision`), and a rule is judged
+by its own `when`: `contested_when` and the order of rules within a decision are not modelled.
+
+## Writing a recommender rule
+
+Rules are data in `src/datamodel_code_generator/resources/recommender_rules.json`. The schema is measured in
+`src/datamodel_code_generator/_recommend/_signals.py`, rules are loaded, validated and evaluated in `_rules.py`, and
+the report is written by `_report.py`. This rule from the file (evidence shortened) turns inline enums into
+`Literal` types:
+
+```json
+{
+  "id": "enums.inline-value-sets-as-literal",
+  "decision": "enum-shape",
+  "when": {
+    "all": [
+      {"signal": "inline_enums", "op": ">=", "value": 5},
+      {"ratio": ["inline_enums", "all_enums"], "op": ">=", "value": 0.5}
+    ]
+  },
+  "set": {"enum_field_as_literal": "all"},
+  "reason": "Most enums are inline value sets of one property (inline enums: {inline_enums} of {all_enums}). As Enum classes they add one class name each, the longest and most numbered names; Literal types keep the values without a class.",
+  "evidence": ["GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227"]
+}
+```
+
+### Rule fields
+
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `id` | Yes | `<group>.<name>` in lowercase letters, digits and hyphens. The report prints it after each option. |
+| `decision` | Yes | The question the rule answers, such as `title-source`. Lowercase letters, digits and hyphens. |
+| `applies_to` | No | Limits the rule to `input_file_types` and `output_model_types`; empty or missing means all. |
+| `when` | Yes | The condition that fires the rule (see below). |
+| `set` | No | Config fields (snake_case) and their values, spelled as in `pyproject.toml`. |
+| `value_from` | No | A field computed by `pascal_case_input_stem`: a class name made from the input file name. |
+| `reason` | Yes | Why the option helps this schema. `{name}` placeholders are filled from the schema's signals. |
+| `caveats` | No | Texts printed as `caveat:` after the reason, with placeholders filled. |
+| `evidence` | Yes | Measurements printed as `measured:`, as written (no placeholders). |
+| `contested_when` | No | A condition that argues against the rule on this schema. |
+| `contested_reason` | No | Why, printed as `against:` with placeholders filled. |
+| `optional` | No | `validation` or `policy`: the rule's values are only listed in that section of the report. |
+
+How rules are decided:
+
+- Rules are evaluated in file order. Within one `decision`, the first rule that applies to the input and output
+  model type, whose `when` matches, and that has its values wins; later rules of that decision are skipped. A
+  `value_from` rule has no value when the input has no file name or a named schema already has that class name, so
+  the next rule of its decision can fire. Put the specific rule of a decision before the general one.
+- A field belongs to one decision. When candidates are compared, the trial generates the recommendation without
+  each decision (candidate `recommended - <decision>`), so the options a decision sets are kept or left out together.
+- A fired rule's values join the command when they differ from what the starting preset gives and the user did
+  not set the field. Values the preset already gives are listed under "Start from"; a rule that only sets fields to
+  `false` and that the preset already follows is listed under "Not recommended". When the user set a field to
+  another value, the user's value is kept and the difference is listed under "Your configuration".
+- When `contested_when` also matches, the rule is listed under "Consider" with `contested_reason` and stays out of
+  the command.
+- An `optional` rule is listed under "Optional (validation; not in the command)" or "Optional (policy; not in the
+  command)". Its values never join the command, the configuration, or the compared candidates.
+- A value no CLI option can express (`false` for a field without a `--no-` option) makes the recommender start from
+  the next family in `families` and add a note that says which value.
+
+### Conditions
+
+A condition is one of these objects, nested freely:
+
+- `{"signal": "<name>", "op": "<op>", "value": <number>}` compares one signal with a number.
+- `{"ratio": ["<numerator>", "<denominator>"], "op": "<op>", "value": <number>}` compares the ratio of two signals
+  with a number. A zero denominator never matches.
+- `{"all": [<condition>, ...]}`, `{"any": [<condition>, ...]}` and `{"not": <condition>}`.
+
+`op` is one of `>=`, `>`, `<=`, `<`, `==` and `!=`. Signals are integer counts; a yes/no signal such as
+`root_is_object` is `0` or `1`. The signal names are the `SignalName` literal in `_signals.py`, counted by
+`measure_signals()`. To see a schema's signals, run:
+
+```bash
+datamodel-codegen --input schema.yaml --recommend-options quick --output-format json
+```
+
+The payload's `signals` are the counts conditions read; `signals` and `facts` (example texts such as
+`inline_title_examples`, or `none` when empty) are the placeholders `reason`, `caveats` and `contested_reason` may
+use. Write a literal brace as `{{` or `}}`. A new signal goes into `SignalName` and is counted in `measure_signals()`;
+it then appears in every JSON report, so record the changed expected reports.
+
+### Validation
+
+- Unknown keys, an unknown signal name, a bad `id` or `decision`, or an unknown `op` fail when the rules load, so
+  every recommender run and test fails.
+- `set` values are validated through the same model as preset values, so a rule cannot name a field that does not
+  exist or give it an invalid value. An `optional` rule's values are validated as generation options instead, so any
+  generation option may be one.
+- `test_recommender_rules_match_the_option_registry` in `tests/main/test_main_recommend_options.py` fails when a
+  field a rule sets has no registry entry listing the rule or has no CLI option, when a field is decided by more than
+  one decision, or when a text uses a placeholder that is neither a signal nor a fact.
+
+### What a new rule needs
+
+1. Measured evidence on public schemas. Run [the calibration](#calibrating-the-option-recommender) (add the
+   decision's values to `[grid]` in `scripts/recommender_corpus.toml` to score it), or compare the trial of
+   `--recommend-options full` with and without the rule's options on the corpus schemas. Write each measurement in
+   `evidence`: the schema, what changed, and the numbers. Users read every rule text in the report, so never cite
+   issue or pull request numbers or list known bugs in it.
+2. A test fixture: a small schema under `tests/data/recommend_options/` that fires the rule, added as a
+   `pytest.param` to `test_recommend_options_for_schemas`. Run the test to record its expected report under
+   `tests/data/expected/main/recommend_options/`, accept the changed reports of other fixtures with
+   `--inline-snapshot=fix`, and check that each change is one the rule should make.
+3. A registry entry: list the rule id in `options.<field>.rules` for every field it sets (see
+   [Step 4](#step-4-register-the-option-in-the-recommender-required)).
+4. A new `rules_revision`: the date of the change.
+
 ## ➕ Adding a New CLI Option
 
 When adding a new CLI option to `datamodel-code-generator`, follow these steps:
@@ -61280,7 +61397,8 @@ Every option needs a decision in the [option recommender](recommend-options.md).
 (the snake_case name, such as `my_new_option` for `--my-new-option`) to the `options` table of
 `src/datamodel_code_generator/resources/recommender_rules.json`, in alphabetical order.
 
-If a recommender rule decides the option, list the rule ids. Each rule's `set` must include the field:
+If a recommender rule decides the option, list the rule ids. Each rule's `set` must include the field (see
+[Writing a recommender rule](#writing-a-recommender-rule)):
 
 ```json
 "my_new_option": {"rules": ["naming.my-rule"]}
