@@ -11,7 +11,7 @@
 +The `--recommend-options` report for the input schema (experimental):
 +
 +```
-+Option recommendations (experimental; quick mode; rules 2026-10-17)
++Option recommendations (experimental; quick mode; rules 2026-10-18)
 +
 +Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
 +  components                       6, 2 operations
@@ -24,6 +24,9 @@
 +  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
 +  union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
 +  component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces
++  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
++  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
++  integer/number/boolean schemas   5
 +
 +Start from  --preset standard-py314-20261017
 +
@@ -75,6 +78,18 @@
 +      WorkflowDispatchInputString, Boolean, ...)
 +      measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
 +      schemas without tagged or key branches: no change
++
++Optional (policy; not in the command)
++  --strict-types int float bool   [policy.strict-scalar-types]
++      Pydantic validates in lax mode, which coerces input into the 5 integer, number and boolean
++      schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
++      booleans. Strict types reject such input. Whether to accept it depends on the project's
++      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
++      integer, so leave int out to accept it.
++      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
++      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
++      rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
++      rejected
 +
 +Not recommended
 +  --use-title-as-name   [titles.keys-when-titles-collide]

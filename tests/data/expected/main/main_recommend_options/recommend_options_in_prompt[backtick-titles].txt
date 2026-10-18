@@ -10,7 +10,7 @@
 +The `--recommend-options` report for the input schema (experimental):
 +
 +````
-+Option recommendations (experimental; quick mode; rules 2026-10-17)
++Option recommendations (experimental; quick mode; rules 2026-10-18)
 +
 +Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
 +  components                       0, 0 operations
@@ -23,6 +23,9 @@
 +  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
 +  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
 +  component keys                   none; 0 dotted in 0 namespaces
++  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
++  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
++  integer/number/boolean schemas   0
 +  root schema                      object model 1, title words 1
 +
 +Start from  --preset standard-py310-20261017

@@ -2436,15 +2436,16 @@ create an __init__.py that re-exports all models for convenient imports.
 Recommend options for the input schema on top of the latest dated preset (experimental).
 
 `--recommend-options` reads the input schema, measures how it is written (shared property names, inline
-enums and objects, repeated shapes, titles, tagged unions, dotted keys), and applies the recommender's rule
-data. For a schema of up to 3000 estimated models, it then generates the candidate configurations in memory
-(the preset, the recommendation, and the recommendation without or with each option), compares their class
-names, and recommends the best candidate, with class names before and after each option. It prints the
-latest dated preset to start from, the options to add with the reason for each, options it advises against,
-the compared candidates, and the resulting command and pyproject.toml block. Nothing is written. Options set
-on the command line or in pyproject.toml are kept and reported when the rules suggest another value. Add
-`--output-format json` for a structured payload, or `--generate-prompt` to include the recommendation in an LLM
-prompt instead.
+enums and objects, repeated shapes, titles, tagged unions, dotted keys, constraint keywords and formats), and
+applies the recommender's rule data. For a schema of up to 3000 estimated models, it then generates the
+candidate configurations in memory (the preset, the recommendation, and the recommendation without or with
+each option), compares their class names and the fields generated without their constraints, and recommends
+the best candidate, with class names before and after each option. It prints the latest dated preset to
+start from, the options to add with the reason for each, optional validation and policy options that stay out
+of the command, options it advises against, the compared candidates, and the resulting command and
+pyproject.toml block. Nothing is written. Options set on the command line or in pyproject.toml are kept and
+reported when the rules suggest another value. Add `--output-format json` for a structured payload, or
+`--generate-prompt` to include the recommendation in an LLM prompt instead.
 
 **Related:** [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal), `--generate-prompt`, [`--naming-strategy`](model-customization.md#naming-strategy), `--output-format`, [`--preset`](base-options.md#preset)
 
@@ -2628,7 +2629,7 @@ prompt instead.
     <!-- fmt: off -->
 
     ```
-    Option recommendations (experimental; full mode; rules 2026-10-17)
+    Option recommendations (experimental; full mode; rules 2026-10-18)
 
     Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
       components                       6, 2 operations
@@ -2641,6 +2642,9 @@ prompt instead.
       unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
       union branch tags                2 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
       component keys                   PascalCase (4 of 6); 2 dotted in 2 namespaces
+      constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+      formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+      integer/number/boolean schemas   5
 
     Start from  --preset standard-py310-20261017
 
@@ -2716,6 +2720,18 @@ prompt instead.
             PaymentCard -> PaymentPaymentCard   at components/schemas/Payment > oneOf 0
             PaymentBank -> PaymentPaymentBank   at components/schemas/Payment > oneOf 1
 
+    Optional (policy; not in the command)
+      --strict-types int float bool   [policy.strict-scalar-types]
+          Pydantic validates in lax mode, which coerces input into the 5 integer, number and boolean
+          schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
+          booleans. Strict types reject such input. Whether to accept it depends on the project's
+          clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
+          integer, so leave int out to accept it.
+          measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
+          invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
+          rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
+          rejected
+
     Not recommended
       --use-title-as-name   [titles.keys-when-titles-collide]
           Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to
@@ -2729,22 +2745,23 @@ prompt instead.
           from keys renamed 0.0% of locations
 
     Trial  12 candidates generated in memory without formatting; nothing written
-      candidate                                            classes   problems  numbered  long  doubled  displaced  median
-      current                                                   22  5 (22.7%)         5     0        0          0       6
-      preset                                                    22  5 (22.7%)         5     0        0          0       6
-      recommended                                                9  2 (22.2%)         0     0        2          0      10
-      recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5   selected
-      recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11
-      recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14
-      recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7
-      recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10
-      recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6
-      recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5
-      recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5
-      recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5
+      candidate                                            classes   problems  numbered  long  doubled  displaced  median  unconstrained
+      current                                                   22  5 (22.7%)         5     0        0          0       6              0
+      preset                                                    22  5 (22.7%)         5     0        0          0       6              0
+      recommended                                                9  2 (22.2%)         0     0        2          0      10              0
+      recommended - naming-strategy                              9   0 (0.0%)         0     0        0          0       5              0   selected
+      recommended - enum-shape                                  15  2 (13.3%)         0     0        2          0      11              0
+      recommended - reuse                                       17  2 (11.8%)         0     0        2          0      14              0
+      recommended - dotted-keys                                 14  2 (14.3%)         0     0        2          0       7              0
+      recommended - union-variant-names                          9  2 (22.2%)         1     0        2          0      10              0
+      recommended - naming-strategy - enum-shape                15  3 (20.0%)         3     0        0          0       6              0
+      recommended - naming-strategy - reuse                     14   0 (0.0%)         0     0        0          0       5              0
+      recommended - naming-strategy - dotted-keys               12   0 (0.0%)         0     0        0          0       5              0
+      recommended - naming-strategy - union-variant-names        9  2 (22.2%)         2     0        0          0       5              0
       current: the configuration as set, without the preset; never selected
       the last 4 rows: the selected configuration without or with one option, to measure each option on
       it; never selected
+      unconstrained: fields that dcg warns it generates without some of their constraints
 
     Changes from the current configuration (current -> recommended - naming-strategy)
       4 of 9 classes matched by schema location renamed (0 only renumbered), 13 removed, 0 added, e.g.
