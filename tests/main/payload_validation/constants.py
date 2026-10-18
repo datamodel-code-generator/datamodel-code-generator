@@ -361,6 +361,9 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/unique_items_schema_validators.json": (
         "pydantic drops extra nested object properties while dumping, which can collapse distinct uniqueItems values"
     ),
+    "jsonschema/use_tag_as_union_variant_name_edges.json": (
+        "pydantic union branch normalization can dump a oneOf value into a shape that matches multiple branches"
+    ),
     "openapi/allof_array_ref_override.yaml::components.schemas.DataType": (
         "schema requires a property absent from properties, so the generated model has no field to dump"
     ),
