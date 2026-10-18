@@ -2856,6 +2856,7 @@ def test_mixed():
     modules = {("a.py",): "A = 1\\n", ("r.md",): "r\\n"}
     assert_generated_modules_output(modules, EXPECTED / "mixed")
     assert_generated_modules_output(modules, EXPECTED / "mixed", pattern="*.md")
+    assert stored_expected(EXPECTED / "mixed" / "a.py") == EXPECTED / "pyfiles" / "a.py"
 
 
 @pytest.mark.parametrize("name", ["one", "two"])
