@@ -4,8 +4,35 @@
 	main/recommend_options/registry_coverage.txt
 [test_recommend_options]
 	main/recommend_options/api.txt
-[test_recommend_options_accepts_quick]
-	main/recommend_options/titled_variants.txt
+[test_recommend_options_compares_candidates]
+candidate-limit	main/recommend_options/full/many_options.txt
+contested-option	main/recommend_options/full/service_config.txt
+diff-against	main/recommend_options/full/store_diff_against.txt
+graphql	main/recommend_options/full/graphql.txt
+input-model	main/recommend_options/full/input_model.txt
+json	main/recommend_options/full/api_json.txt
+json-data	main/recommend_options/full/json_data.txt
+package-output	main/recommend_options/full/api_package.txt
+preset-argument	main/recommend_options/full/api_preset_argument.txt
+rejected-candidates	main/recommend_options/full/numeric_title.txt
+server-target	main/recommend_options/full/server_target.txt
+small-schema-default	main/recommend_options/titled_variants.txt
+[test_recommend_options_compares_candidates_for_directories]
+	main/recommend_options/full/directory.txt
+[test_recommend_options_compares_candidates_for_projects]
+	main/recommend_options/full/project_changes.txt
+[test_recommend_options_compares_candidates_from_stdin]
+all-rejected	main/recommend_options/full/all_rejected.txt
+schema	main/recommend_options/full/stdin.txt
+[test_recommend_options_compares_candidates_from_url]
+	main/recommend_options/full/url.txt
+[test_recommend_options_compares_candidates_while_updating_the_lock]
+	main/recommend_options/full/url_update_lock.txt
+	main/recommend_options/full/url_update_lock_file.txt
+[test_recommend_options_default_skips_large_comparisons]
+large-schema	main/recommend_options/full/large_default.txt
+large-schema-and-previous	main/recommend_options/full/large_default_diff_against.txt
+size-unknown	main/recommend_options/full/graphql_default.txt
 [test_recommend_options_for_projects]
 changes	main/recommend_options/project_changes.txt
 current	main/recommend_options/project_current.txt
@@ -23,12 +50,14 @@ jsonschema	main/recommend_options/service_config.txt
 jsonschema-contested-option-set	main/recommend_options/service_config_naming_set.txt
 older-preset	main/recommend_options/api_older_preset.txt
 openapi-scopes	main/recommend_options/operations.txt
+paths-scope	main/recommend_options/operations_paths.txt
 preset-value	main/recommend_options/api_practical.txt
 root-name-taken	main/recommend_options/order.txt
 swagger	main/recommend_options/swagger.txt
+swagger-definitions	main/recommend_options/swagger_jsonschema.txt
+swagger-json	main/recommend_options/swagger_json.txt
 typed-dict	main/recommend_options/api_typed_dict.txt
 union-edges	main/recommend_options/union_edges.txt
-unique-titles	main/recommend_options/titled_variants.txt
 [test_recommend_options_from_stdin]
 	main/recommend_options/stdin.txt
 [test_recommend_options_from_url]
@@ -38,6 +67,8 @@ update-lock	main/recommend_options/url_update_lock.txt
 	main/recommend_options/json_schema.txt
 [test_recommend_options_quotes_arguments]
 	main/recommend_options/quoted_input_json.txt
+[test_recommend_options_rejects_candidates_that_fail]
+	main/recommend_options/full/directory_undecodable.txt
 [test_recommend_options_without_schema_rules]
 directory	main/recommend_options/directory.txt
 graphql	main/recommend_options/graphql.txt
