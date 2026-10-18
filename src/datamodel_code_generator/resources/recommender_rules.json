@@ -268,9 +268,6 @@
         "infer_union_variant_names": false
       },
       "reason": "Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no sibling shares: {inline_tagged_union_branches}; objects with one required key: {single_key_required_open}); otherwise they are named after their parent and a number.",
-      "caveats": [
-        "With --naming-strategy full-path, a single-key branch whose value is an object repeats the key (FieldValueFieldValue)."
-      ],
       "evidence": [
         "OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)",
         "GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805 (Changes23 -> ChangesBody)",

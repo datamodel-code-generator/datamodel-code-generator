@@ -4475,6 +4475,12 @@ collide is skipped for the next one, and literal names win over key names, so a
 key name that collides with a literal name or another key name is dropped and
 its branch keeps a position-based name.
 
+Under `--naming-strategy parent-prefixed` or `full-path`, a model in the value
+of a branch named after its key is named as if the branch were not in its path,
+so the key is not repeated: the branch `ItemEditedChangesFieldValue` holds
+`ItemEditedFieldValue`, not `ItemEditedChangesFieldValueFieldValue`, numbered
+like any other name when another model has it.
+
 | Branches | default | `--infer-union-variant-names` | `--use-tag-as-union-variant-name` |
 |----------|---------|-------------------------------|-----------------------------------|
 | Several branches, distinct `type` literals | `Pet1`, `Pet2` | `PetCat`, `PetDog` | `PetCat`, `PetDog` |

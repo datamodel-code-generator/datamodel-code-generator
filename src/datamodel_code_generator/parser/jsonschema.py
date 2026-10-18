@@ -594,6 +594,12 @@ def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None
     return f"{module_name}{separator}{variant_name}" if module_name else variant_name
 
 
+def _strip_special_path_suffix(path: str) -> str:
+    """Return a joined path without the special path markers its last segment ends with."""
+    head, separator, last = path.rpartition("/")
+    return f"{head}{separator}{last.partition(SPECIAL_PATH_MARKER)[0]}"
+
+
 def _get_tagged_union_value(literal: JsonSchemaLiteral) -> TaggedUnionValue | None:
     """Return a supported tagged-union value for a JSON Schema literal."""
     match literal:
@@ -1722,6 +1728,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._rw_model_variant_requirement_cache: dict[tuple[str, str], bool] = {}
         self._rw_model_variant_references: dict[tuple[str, str], Reference] = {}
         self._local_ref_path_cache: dict[Path, Path] = {}
+        self._tag_key_variant_paths: dict[str, str] = {}
         if self.generate_schema_validators:
             self._property_count_rule_cache: dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]] = {}
         self.field_keys: set[str] = {
@@ -4370,12 +4377,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         name: str,
         obj: JsonSchemaObject,
         combined_schemas: Sequence[JsonSchemaObject],
+        variant_keys: dict[int, str],
     ) -> list[str | None] | None:
         """Name the branches from literal fields, or with tag names only for a union literal fields leave unnamed.
 
         Tag names come from a literal that one branch alone may carry, skipping fields the union schema fixes to a
         literal, then from the keys of key branches; a key name whose class name equals that of a literal name or
-        another key name is dropped. With tags, names must also differ as class names.
+        another key name is dropped. With tags, names must also differ as class names. The key of each branch named
+        after its key goes into `variant_keys` by branch index.
         """
         variant_names = self._infer_union_variant_literal_names(name, obj, combined_schemas)
         if not self.use_tag_as_union_variant_name or (variant_names and any(variant_names)):
@@ -4395,6 +4404,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for index, class_name in key_class_names.items():
             if counts[class_name] == 1 and class_name not in literal_class_names:
                 tag_names[index] = key_names[index]
+                variant_keys[index] = tag_keys[index]
         return tag_names
 
     def _get_inferred_union_variant_names(
@@ -4402,10 +4412,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         name: str,
         obj: JsonSchemaObject,
         combined_schemas: Sequence[JsonSchemaObject],
+        variant_keys: dict[int, str],
     ) -> list[str | None] | None:
         if not self.infer_union_variant_names:
             return None
-        return self._infer_union_variant_names(name, obj, combined_schemas)
+        return self._infer_union_variant_names(name, obj, combined_schemas, variant_keys)
 
     def _get_tagged_union_field_values(
         self,
@@ -4453,15 +4464,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             case _:
                 obj.extras["discriminator"] = {"propertyName": tag_field}
 
-    def _parse_combined_schema_items(
+    def _parse_combined_schema_items(  # noqa: PLR0913, PLR0917
         self,
         name: str,
         obj: JsonSchemaObject,
         path: list[str],
         combined_schemas: Sequence[JsonSchemaObject],
         variant_names: Sequence[str | None] | None,
+        variant_keys: Mapping[int, str],
     ) -> list[DataType]:
+        """Parse the branches of a union, recording each branch named after its key, not its title, by its path."""
         if variant_names:
+            for index, key in variant_keys.items():
+                variant_name = variant_names[index] or name
+                if self._apply_title_as_name(variant_name, combined_schemas[index]) == variant_name:
+                    self._tag_key_variant_paths[self.model_resolver.join_path((*path, str(index)))] = key
             return [
                 self.parse_item(
                     variant_names[index] or name,
@@ -8006,10 +8023,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
                 )
 
-        variant_names = self._get_inferred_union_variant_names(name, obj, combined_schemas)
+        variant_keys: dict[int, str] = {}
+        variant_names = self._get_inferred_union_variant_names(name, obj, combined_schemas, variant_keys)
         if self._output_model_context.requires_tagged_union_discriminator:
             self._set_tagged_union_discriminator(obj, combined_schemas)
-        parsed_schemas = self._parse_combined_schema_items(name, obj, path, combined_schemas, variant_names)
+        parsed_schemas = self._parse_combined_schema_items(
+            name, obj, path, combined_schemas, variant_names, variant_keys
+        )
         if not parsed_schemas:
             self._raise_unsatisfiable_schema(path, target_attribute_name)
         common_path_keyword = f"{target_attribute_name}Common"
@@ -10210,6 +10230,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase] = []
 
         exclude_field_names: set[str] = set()
+        variant_key = (
+            self._tag_key_variant_paths.get(_strip_special_path_suffix(self.model_resolver.join_path(tuple(path))))
+            if self._tag_key_variant_paths
+            else None
+        )
         for original_field_name, field in properties.items():
             field_name, alias = self.model_resolver.get_valid_field_name_and_alias(
                 original_field_name,
@@ -10246,6 +10271,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if field.has_ref_with_schema_keywords and not field.is_ref_with_nullable_only:
                 field = self._merge_ref_with_schema(field)  # noqa: PLW2901
 
+            if original_field_name == variant_key:
+                self.model_resolver.name_past_parent([*path, field_name])
             field_type = self.parse_item(modular_name, field, [*path, field_name])
 
             if self.force_optional_for_required_fields:

@@ -2670,7 +2670,7 @@ def test_infer_union_variant_names_uses_discriminator_literals() -> None:
         _json_schema_object({"properties": {"kind": {"enum": ["ready"]}}}),
     ]
 
-    assert parser._infer_union_variant_names("pkg.Event", parent, variants) == [None, "pkg.Event_ready"]
+    assert parser._infer_union_variant_names("pkg.Event", parent, variants, {}) == [None, "pkg.Event_ready"]
 
 
 def test_infer_union_variant_names_distinguishes_literal_types() -> None:
@@ -2683,7 +2683,7 @@ def test_infer_union_variant_names_distinguishes_literal_types() -> None:
         _json_schema_object({"properties": {"kind": {"const": True}}}),
     ]
 
-    assert parser._infer_union_variant_names("Event", parent, variants) == [
+    assert parser._infer_union_variant_names("Event", parent, variants, {}) == [
         "Event_int_1",
         "Event__1",
         "Event_bool_true",
@@ -2700,7 +2700,7 @@ def test_infer_union_variant_names_skips_generated_name_collisions() -> None:
         _json_schema_object({"properties": {"kind": {"const": "int_1"}, "fallback": {"const": "updated"}}}),
     ]
 
-    assert parser._infer_union_variant_names("Event", parent, variants) == ["Event_created", "Event_updated"]
+    assert parser._infer_union_variant_names("Event", parent, variants, {}) == ["Event_created", "Event_updated"]
 
 
 def test_union_variant_literal_helpers_handle_refs_and_invalid_fields(tmp_path: Path, mocker: MockerFixture) -> None:
@@ -2788,7 +2788,7 @@ def test_infer_union_variant_names_returns_none_when_no_literal_field_matches() 
         _json_schema_object({"properties": {"kind": {"const": "ready"}}}),
     ]
 
-    assert parser._infer_union_variant_names("Event", _json_schema_object({}), variants) is None
+    assert parser._infer_union_variant_names("Event", _json_schema_object({}), variants, {}) is None
 
 
 def test_infer_union_variant_names_disabled() -> None:
@@ -2799,7 +2799,7 @@ def test_infer_union_variant_names_disabled() -> None:
         _json_schema_object({"properties": {"kind": {"const": "deleted"}}}),
     ]
 
-    assert parser._get_inferred_union_variant_names("Event", _json_schema_object({}), variants) is None
+    assert parser._get_inferred_union_variant_names("Event", _json_schema_object({}), variants, {}) is None
 
 
 @pytest.mark.parametrize(

@@ -53,8 +53,6 @@ Add (5 options)
       Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
       sibling shares: 2; objects with one required key: 0); otherwise they are named after their
       parent and a number.
-      caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
-      the key (FieldValueFieldValue).
       measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
       (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
       measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805

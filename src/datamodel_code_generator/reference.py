@@ -930,6 +930,7 @@ class ModelResolver:  # noqa: PLR0904
         self.final_yielding_names: dict[str, tuple[str, str | None]] = {}
         self.yielding_name_changes: set[str] = set()
         self._new_references_yield = False
+        self._paths_named_past_parent: set[tuple[str, ...]] = set()
 
         # Default value overrides from external JSON file
         self.default_value_overrides: Mapping[str, Any] = (
@@ -994,6 +995,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("final_yielding_names", {})
         self.__dict__.setdefault("yielding_name_changes", set())
         self.__dict__.setdefault("_new_references_yield", False)
+        self.__dict__.setdefault("_paths_named_past_parent", set())
         for name, value in slot_state.items():
             setattr(self, name, value)
 
@@ -1498,15 +1500,23 @@ class ModelResolver:  # noqa: PLR0904
         self._update_reference_name(None, reference.name, unique=use_unique)
         return reference
 
+    def name_past_parent(self, path: Sequence[str]) -> None:
+        """Prefix the models under ``path`` as if the model that holds ``path`` were not in their path."""
+        self._paths_named_past_parent.add(tuple(path))
+
     def _find_parent_reference(self, path: Sequence[str]) -> Reference | None:
         """Find the closest parent reference for a given path.
 
-        Traverses up the path hierarchy to find the first existing parent reference.
+        Traverses up the path hierarchy to find the first existing parent reference, passing over one whose child
+        on the way is named past it.
         Returns None if no parent reference is found.
         """
         parent_path = list(path[:-1])
         while parent_path:
-            if parent_reference := self.references.get(self.join_path(tuple(parent_path))):
+            if (parent_reference := self.references.get(self.join_path(tuple(parent_path)))) and (
+                not self._paths_named_past_parent
+                or tuple(path[: len(parent_path) + 1]) not in self._paths_named_past_parent
+            ):
                 return parent_reference
             parent_path = parent_path[:-1]
         return None

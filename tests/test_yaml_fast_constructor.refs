@@ -389,6 +389,7 @@ openapi/usable_identical_invalid_dotted_models.yaml	yaml_fast_constructor/parity
 openapi/usable_invalid_dotted_inherited_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/usable_invalid_dotted_schema_name.yaml	yaml_fast_constructor/parity.txt
 openapi/use_status_code_in_response_name.yaml	yaml_fast_constructor/parity.txt
+openapi/use_tag_as_union_variant_name_parent_prefix.yaml	yaml_fast_constructor/parity.txt
 openapi/webhooks.yaml	yaml_fast_constructor/parity.txt
 openapi/webhooks_ref_with_external_schema/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/webhooks_ref_with_external_schema/webhooks/model.yaml	yaml_fast_constructor/parity.txt

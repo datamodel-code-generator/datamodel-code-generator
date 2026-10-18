@@ -4284,8 +4284,6 @@ Left out after the trial (the rules recommend these)
       Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
       sibling shares: 2; objects with one required key: 0); otherwise they are named after their
       parent and a number.
-      caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
-      the key (FieldValueFieldValue).
       measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
       (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
       measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805
@@ -34332,6 +34330,12 @@ collide is skipped for the next one, and literal names win over key names, so a
 key name that collides with a literal name or another key name is dropped and
 its branch keeps a position-based name.
 
+Under `--naming-strategy parent-prefixed` or `full-path`, a model in the value
+of a branch named after its key is named as if the branch were not in its path,
+so the key is not repeated: the branch `ItemEditedChangesFieldValue` holds
+`ItemEditedFieldValue`, not `ItemEditedChangesFieldValueFieldValue`, numbered
+like any other name when another model has it.
+
 | Branches | default | `--infer-union-variant-names` | `--use-tag-as-union-variant-name` |
 |----------|---------|-------------------------------|-----------------------------------|
 | Several branches, distinct `type` literals | `Pet1`, `Pet2` | `PetCat`, `PetDog` | `PetCat`, `PetDog` |
@@ -51275,8 +51279,6 @@ on the command line or in pyproject.toml are kept and reported when the rules su
           Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no
           sibling shares: 2; objects with one required key: 0); otherwise they are named after their
           parent and a number.
-          caveat: With --naming-strategy full-path, a single-key branch whose value is an object repeats
-          the key (FieldValueFieldValue).
           measured: OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names
           (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)
           measured: GitHub REST API description (1 tagged, 4 key branches): preset 1808 -> 1805

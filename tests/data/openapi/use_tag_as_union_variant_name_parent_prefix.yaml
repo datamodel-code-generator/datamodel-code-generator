@@ -1,0 +1,240 @@
+openapi: 3.0.3
+info: {title: single-key branches, version: '1'}
+paths: {}
+components:
+  schemas:
+    Ref:
+      type: object
+      properties:
+        x: {type: string}
+    ItemEdited:
+      type: object
+      properties:
+        field_value:
+          type: object
+          properties:
+            own: {type: string}
+        changes:
+          oneOf:
+          - type: object
+            required: [field_value]
+            properties:
+              field_value:
+                type: object
+                properties:
+                  from: {type: string}
+                  nested:
+                    type: object
+                    properties:
+                      a: {type: string}
+          - type: object
+            required: [body]
+            properties:
+              body: {type: string, enum: [a, b]}
+          - type: object
+            required: [items]
+            properties:
+              items:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    b: {type: integer}
+          - type: object
+            required: [ref]
+            properties:
+              ref: {$ref: '#/components/schemas/Ref'}
+          - type: object
+            required: [plain]
+            properties:
+              plain: {type: integer}
+    StreamEvent:
+      oneOf:
+      - type: object
+        required: [delta]
+        properties:
+          delta:
+            type: object
+            properties:
+              text: {type: string}
+      - type: object
+        required: [done]
+        properties:
+          done:
+            type: object
+            properties:
+              ok: {type: boolean}
+    Shared:
+      type: object
+      properties:
+        event:
+          type: object
+          properties:
+            meta:
+              type: object
+              properties:
+                id: {type: string}
+          oneOf:
+          - type: object
+            required: [start]
+            properties:
+              start:
+                type: object
+                properties:
+                  at: {type: integer}
+          - type: object
+            required: [stop]
+            properties:
+              stop:
+                type: object
+                properties:
+                  at: {type: integer}
+    Base:
+      type: object
+      properties:
+        id: {type: string}
+    WithAllOf:
+      type: object
+      properties:
+        change:
+          allOf:
+          - {$ref: '#/components/schemas/Base'}
+          oneOf:
+          - type: object
+            required: [added]
+            properties:
+              added:
+                type: object
+                properties:
+                  name: {type: string}
+          - type: object
+            required: [removed]
+            properties:
+              removed:
+                type: object
+                properties:
+                  name: {type: string}
+    Titled:
+      type: object
+      properties:
+        kind:
+          oneOf:
+          - type: object
+            title: NamedByTitle
+            required: [first]
+            properties:
+              first:
+                type: object
+                properties:
+                  a: {type: string}
+          - type: object
+            required: [second]
+            properties:
+              second:
+                type: object
+                properties:
+                  b: {type: string}
+    NestedKeys:
+      type: object
+      properties:
+        outer:
+          oneOf:
+          - type: object
+            required: [inner]
+            properties:
+              inner:
+                oneOf:
+                - type: object
+                  required: [left]
+                  properties:
+                    left:
+                      type: object
+                      properties:
+                        a: {type: string}
+                - type: object
+                  required: [right]
+                  properties:
+                    right:
+                      type: object
+                      properties:
+                        b: {type: string}
+          - type: object
+            required: [other]
+            properties:
+              other:
+                type: object
+                properties:
+                  c: {type: string}
+    Aliased:
+      type: object
+      properties:
+        op:
+          oneOf:
+          - type: object
+            required: [class]
+            properties:
+              class:
+                type: object
+                properties:
+                  a: {type: string}
+          - type: object
+            required: [new-value]
+            properties:
+              new-value:
+                type: object
+                properties:
+                  b: {type: string}
+    Untagged:
+      type: object
+      properties:
+        multi:
+          oneOf:
+          - type: object
+            required: [a, b]
+            properties:
+              a:
+                type: object
+                properties:
+                  x: {type: string}
+              b: {type: string}
+          - type: object
+            required: [c]
+            properties:
+              c:
+                type: object
+                properties:
+                  y: {type: string}
+        collide:
+          oneOf:
+          - type: object
+            required: [Foo]
+            properties:
+              Foo:
+                type: object
+                properties:
+                  x: {type: string}
+          - type: object
+            required: [foo]
+            properties:
+              foo:
+                type: object
+                properties:
+                  y: {type: string}
+    Timeline:
+      type: array
+      items:
+        anyOf:
+        - type: object
+          required: [opened]
+          properties:
+            opened:
+              type: object
+              properties:
+                t: {type: integer}
+        - type: object
+          required: [closed]
+          properties:
+            closed:
+              type: object
+              properties:
+                t: {type: integer}
