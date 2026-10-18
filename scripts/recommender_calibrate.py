@@ -9,9 +9,9 @@ Usage:
 
 The manifest pins every spec to a commit and a sha256. Specs are downloaded into the cache directory at run time
 and used only when the digest matches; nothing is vendored. A spec with a `$ref` outside the document is rejected
-unless its entry stubs external references, so generation never reads other files or the network, and the
-recommender runs with unreachable proxies as a second guard. The newest pinned version of a schema is the subject and
-the previous one, when pinned, its baseline (`--diff-against`).
+unless its entry stubs external references, so generation never reads other files or the network, and every
+generation runs with --no-allow-remote-refs, so a remote `$ref` that slips through fails instead of being fetched. The
+newest pinned version of a schema is the subject and the previous one, when pinned, its baseline (`--diff-against`).
 
 The recommender is the installed `datamodel-codegen --recommend-options full --output-format json`, called in this
 process. For every subject the script takes its recommendation, then scores each configuration of the manifest's
@@ -29,11 +29,16 @@ shipped rules data. The script writes to --out (which must be empty):
 It never edits the rules, the calibration file or the manifest.
 
 With --import-check it generates the recommended, the best and the preset-candidate configurations into fresh
-temporary directories and imports them in an isolated interpreter (no user site, PYTHON* variables ignored, a
-temporary home, unreachable proxies). That is the only place generated code runs.
+temporary directories and imports them in an isolated copy of this interpreter (no user site, PYTHON* variables
+ignored, a temporary home), so it needs a Python at least as new as --target-python-version. That is the only place
+generated code runs.
 
 Runs use only the pinned refs. With --check-upstream, `git ls-remote` asks each schema's source repository for its
 HEAD, and the report proposes rotating the entries whose head is not the newest pinned ref.
+
+Known limitations: a rule is judged by its own `when`; `contested_when` and the order of rules within a decision are
+not modelled. Each grid point is a full trial, which also generates the recommendation's neighbours when rules decide
+fields the grid leaves unset, and generates the baseline too, so large schemas take a while.
 """
 
 from __future__ import annotations
@@ -59,6 +64,7 @@ import urllib.request
 import warnings
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -102,7 +108,7 @@ BASENAME_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\.(?:json|yaml|yml)")
 LICENSE_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9.+-]*(?: (?:AND|OR|WITH) [A-Za-z0-9][A-Za-z0-9.+-]*)*")
 ERROR_MESSAGE = re.compile(r"\berror:\s*(?P<message>\S.*)", re.IGNORECASE)
 EXCEPTION_LINE = re.compile(r"[A-Za-z_][\w.]*(?:Error|Exception)\b")
-UNSAFE_TEXT = re.compile(r"[^A-Za-z0-9 _.,:;'\"`()\[\]{}<>=+*/#@!?$%&~^-]")
+UNSAFE_TEXT = re.compile(r"[^A-Za-z0-9 _.,:;'\"`()\[\]{}<>=+*/\\#@!?$%&~^-]")
 URL_SCHEMES = ("https", "file")
 MAX_BYTES = 64 * 1024 * 1024
 CHUNK_BYTES = 1024 * 1024
@@ -112,9 +118,8 @@ IMPORT_TIMEOUT = 600
 MESSAGE_LIMIT = 160
 SHORT_REF = 12
 USER_AGENT = "datamodel-code-generator-recommender-calibration"
-UNREACHABLE_PROXY = "http://127.0.0.1:9"
-PROXY_VARIABLES = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy")
-NO_PROXY_VARIABLES = ("NO_PROXY", "no_proxy")
+GUARD_FLAGS = ("--ignore-pyproject", "--no-allow-remote-refs")
+THRESHOLD_PRECISION = Decimal("0.0001")
 REF_KEY = "$ref"
 IO_OPTIONS = frozenset({"--input", "--url", "--output"})
 CONTEXT_OPTIONS = frozenset({"--input-file-type", "--output-model-type", "--target-python-version"})
@@ -538,22 +543,6 @@ def _cli() -> Callable[[Sequence[str]], int]:
     return main
 
 
-@contextlib.contextmanager
-def _offline_environment() -> Iterator[None]:
-    """Point every proxy variable at an unreachable address while the recommender runs."""
-    names = (*PROXY_VARIABLES, *NO_PROXY_VARIABLES)
-    saved = {name: os.environ.get(name) for name in names}
-    os.environ.update({**dict.fromkeys(PROXY_VARIABLES, UNREACHABLE_PROXY), **dict.fromkeys(NO_PROXY_VARIABLES, "")})
-    try:
-        yield
-    finally:
-        for name, value in saved.items():
-            if value is None:
-                os.environ.pop(name, None)
-            else:
-                os.environ[name] = value
-
-
 def _failure(stderr: str, code: object) -> str:
     """Return why a command failed: the message of its `error:` line without the program name, else its first line."""
     found = next((match["message"] for line in stderr.splitlines() if (match := ERROR_MESSAGE.search(line))), stderr)
@@ -583,12 +572,7 @@ def _execute(task: _Task) -> dict[str, Any]:
     """
     arguments, score = task
     stdout, stderr = io.StringIO(), io.StringIO()
-    with (
-        _offline_environment(),
-        warnings.catch_warnings(),
-        contextlib.redirect_stdout(stdout),
-        contextlib.redirect_stderr(stderr),
-    ):
+    with warnings.catch_warnings(), contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
         warnings.simplefilter("ignore")
         try:
             code = _cli()(arguments)
@@ -602,7 +586,8 @@ def _execute(task: _Task) -> dict[str, Any]:
     if score:
         return _measurement(_candidate(payload["trial"], payload["trial"]["current"]))
     kept = {key: value for key, value in payload.items() if key not in DROPPED_PAYLOAD_KEYS}
-    return {**kept, "arguments": _without(payload["arguments"], IO_OPTIONS)}
+    arguments = [token for token in _without(payload["arguments"], IO_OPTIONS) if token not in GUARD_FLAGS]
+    return {**kept, "arguments": arguments}
 
 
 def _run_tasks(tasks: list[_Task], jobs: int) -> list[dict[str, Any]]:
@@ -634,7 +619,7 @@ def _invocation(subject: Subject, settings: Settings) -> list[str]:
         str(output),
         *_context(subject, settings),
         *baseline,
-        "--ignore-pyproject",
+        *GUARD_FLAGS,
         "--recommend-options",
         "full",
         "--output-format",
@@ -945,12 +930,25 @@ def _with_value(when: Any, path: tuple[str | int, ...], value: float) -> Any:
     return edited
 
 
+def _bound(value: float, op: str) -> float:
+    """Round a candidate threshold to four decimals on the side that keeps each observed value's verdict.
+
+    A schema whose value is a candidate fires under `>=` and `<=` and stays quiet under `>` and `<`; rounding down for
+    `>=` and `<` and up for `>` and `<=` keeps it so.
+    """
+    if isinstance(value, int):
+        return value
+    rounding = ROUND_FLOOR if op in {">=", "<"} else ROUND_CEILING
+    return float(Decimal(repr(value)).quantize(THRESHOLD_PRECISION, rounding=rounding))
+
+
 def _thresholds(leaf: Mapping[str, Any], cases: list[tuple[Run, str]]) -> list[float]:
+    """Return the candidate thresholds of a leaf as the rules data would record them: observed values and one beyond."""
     observed = sorted({operand for run, _ in cases if (operand := _operand(leaf, run.payload["signals"])) is not None})
     if not observed:
         return []
     beyond = observed[-1] + 1 if leaf["op"] in {">=", "<"} else observed[0] - 1
-    return sorted({*observed, beyond} - {leaf["value"]})
+    return sorted({_bound(value, leaf["op"]) for value in (*observed, beyond)} - {leaf["value"]})
 
 
 def _threshold_proposal(
@@ -976,7 +974,7 @@ def _threshold_proposal(
                         "rule_index": index,
                         "leaf": _leaf_text(leaf),
                         "current": leaf["value"],
-                        "proposed": round(value, 4),
+                        "proposed": value,
                         "calibration": [len(current["calibration"]), len(trial["calibration"])],
                         "holdout": [len(current["holdout"]), len(trial["holdout"])],
                     },
@@ -1023,12 +1021,27 @@ def _rule_rows(
     return rows, proposals
 
 
-def _preset_value(
-    runs: list[Run], points: list[dict[str, dict[str, Any]]], decision: str, value: Mapping[str, Any]
-) -> bool | None:
-    """Return whether a grid value is what the preset already gives, from the delta of a configuration with it."""
+def _preset_value(run: Run, points: list[dict[str, dict[str, Any]]], decision: str, value: Mapping[str, Any]) -> bool:
+    """Return whether a grid value is what the preset gives a run's input kind, from the delta of its configurations."""
     index = _split(points, decision, value)[0][0]
-    return next((not any(name in run.grid[index]["delta"] for name in value) for run in runs), None)
+    return not any(name in run.grid[index]["delta"] for name in value)
+
+
+def _preset_point(
+    run: Run,
+    points: list[dict[str, dict[str, Any]]],
+    grid: Mapping[str, tuple[dict[str, Any], ...]],
+    decision: str,
+    value: Mapping[str, Any],
+) -> int | None:
+    """Return the grid point of the preset with only this value changed for a run's input kind, if the grid has it."""
+    target = {
+        axis: value
+        if axis == decision
+        else next((item for item in items if _preset_value(run, points, axis, item)), None)
+        for axis, items in grid.items()
+    }
+    return None if None in target.values() else points.index(target)
 
 
 def _preset_candidates(
@@ -1037,22 +1050,16 @@ def _preset_candidates(
     grid: Mapping[str, tuple[dict[str, Any], ...]],
     settings: Settings,
 ) -> list[dict[str, Any]]:
-    """Compare each value the preset does not set with the rest of its axis on every schema.
+    """Compare each value the preset does not set for some input kind with the rest of its axis on every schema.
 
     A value would become part of a new dated preset, so its import check generates the latest preset with only
-    that value changed.
+    that value changed, as the preset resolves for each schema's input kind.
     """
-    defaults = {
-        decision: next((value for value in values if _preset_value(runs, points, decision, value)), None)
-        for decision, values in grid.items()
-    }
     candidates: list[dict[str, Any]] = []
     for decision, values in grid.items():
         for value in values:
-            if _preset_value(runs, points, decision, value) is not False:
+            if all(_preset_value(run, points, decision, value) for run in runs):
                 continue
-            target = {**defaults, decision: value}
-            preset_index = None if None in target.values() else points.index(target)
             inside_indexes, outside_indexes = _split(points, decision, value)
             wins = {role: [0, 0] for role in ROLES}
             losses: dict[str, float] = {}
@@ -1069,6 +1076,7 @@ def _preset_candidates(
                 elif _rank(with_value) > _rank(without_value):
                     extra = with_value["metrics"]["problems"] - without_value["metrics"]["problems"]
                     losses[schema.schema_id] = max(extra, 0)
+                preset_index = _preset_point(run, points, grid, decision, value)
                 preset_result = None if preset_index is None else run.grid[preset_index]
                 import_arguments[schema.schema_id] = (
                     tuple(_point_arguments(run.subject, settings, preset_result))
@@ -1093,16 +1101,25 @@ def _isolated_environment(home: Path) -> dict[str, str]:
     env = {
         "PATH": os.environ.get("PATH", os.defpath),
         **dict.fromkeys(("HOME", "USERPROFILE", "TMPDIR", "TEMP", "TMP"), str(home)),
-        **dict.fromkeys(PROXY_VARIABLES, UNREACHABLE_PROXY),
-        **dict.fromkeys(NO_PROXY_VARIABLES, ""),
     }
     if system_root := os.environ.get("SYSTEMROOT"):
         env["SYSTEMROOT"] = system_root
     return env
 
 
+def _without_local_paths(text: str, cwd: Path) -> str:
+    """Replace the working directory, this interpreter's prefixes and the home directory with placeholders."""
+    places = {"<tmp>": cwd, "<prefix>": Path(sys.prefix), "<base prefix>": Path(sys.base_prefix), "<home>": Path.home()}
+    for old, new in sorted(
+        {(str(variant), name) for name, path in places.items() for variant in (path, path.resolve())},
+        key=lambda pair: (-len(pair[0]), pair[1]),
+    ):
+        text = text.replace(old, new)
+    return text
+
+
 def _isolated_run(command: list[str], *, cwd: Path, env: dict[str, str], timeout: int) -> str | None:
-    """Run one command in cwd; return None on success, else its last exception line (or last line) without cwd."""
+    """Run one command in cwd; return None on success, else its last exception line (or last line), paths replaced."""
     try:
         completed = subprocess.run(
             command, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout, check=False
@@ -1111,11 +1128,7 @@ def _isolated_run(command: list[str], *, cwd: Path, env: dict[str, str], timeout
         return f"timed out after {timeout} s"
     if completed.returncode == 0:
         return None
-    lines = [
-        line.replace(str(cwd.resolve()), "<tmp>").replace(str(cwd), "<tmp>")
-        for line in completed.stderr.splitlines()
-        if line.strip()
-    ]
+    lines = [_without_local_paths(line, cwd) for line in completed.stderr.splitlines() if line.strip()]
     found = next((line for line in reversed(lines) if EXCEPTION_LINE.match(line)), lines[-1] if lines else None)
     return _safe(found or f"exit code {completed.returncode}")
 
@@ -1137,6 +1150,7 @@ def _import_check(subject: Subject, arguments: list[str]) -> str:
             str(subject.input_path),
             "--output",
             str(output),
+            *GUARD_FLAGS,
         ]
         if error := _isolated_run([*generate, *arguments], cwd=root, env=env, timeout=GENERATE_TIMEOUT):
             return f"generation failed: {error}"
@@ -1542,11 +1556,28 @@ def _settle_candidates(
             candidate["status"] = f"not proposed: imports fail on {', '.join(failing)}" if failing else "proposed"
 
 
-def _calibrate(ns: argparse.Namespace, manifest: Manifest, subjects: list[Subject]) -> int:
+def _out_settings(ns: argparse.Namespace) -> Settings:
+    """Check what a calibration run needs before any work and return its settings.
+
+    --out must be empty, the settings must have a preset, and --import-check imports the generated code with this
+    interpreter, so it must be at least as new as the target Python version.
+    """
     if ns.out.exists() and (not ns.out.is_dir() or any(ns.out.iterdir())):
         msg = "--out must be a new or empty directory"
         raise CalibrationError(msg)
     settings = _settings(ns.output_model_type, ns.target_python_version)
+    target = tuple(int(part) for part in settings.target_python_version.split("."))
+    if ns.import_check and sys.version_info[:2] < target:
+        msg = (
+            f"--import-check imports code generated for Python {settings.target_python_version} with Python "
+            f"{sys.version_info[0]}.{sys.version_info[1]}; run the script with Python "
+            f"{settings.target_python_version} or newer, or lower --target-python-version"
+        )
+        raise CalibrationError(msg)
+    return settings
+
+
+def _calibrate(ns: argparse.Namespace, settings: Settings, manifest: Manifest, subjects: list[Subject]) -> int:
     points = _grid_points(manifest.grid)
     names = {name for values in manifest.grid.values() for value in values for name in value}
     effective = {
@@ -1632,16 +1663,17 @@ def _run(ns: argparse.Namespace) -> int:
     if ns.check_upstream and ns.out is None:
         msg = "--check-upstream reports in --out"
         raise CalibrationError(msg)
+    settings = None if ns.out is None else _out_settings(ns)
     manifest = _load_manifest(ns.manifest)
     if ns.check_manifest:
         print(_manifest_summary(manifest))
         return 0
     schemas = _select(manifest, ns.only)
     subjects = _fetch_subjects(schemas, ns.cache_dir)
-    if ns.fetch_only:
+    if settings is None:
         print(f"verified {sum(min(len(schema.versions), 2) for schema in schemas)} files")
         return 0
-    return _calibrate(ns, manifest, subjects)
+    return _calibrate(ns, settings, manifest, subjects)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

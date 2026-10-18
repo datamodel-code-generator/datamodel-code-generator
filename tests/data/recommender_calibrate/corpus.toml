@@ -48,3 +48,13 @@ source = "https://example.com/broken"
 url = "@FIXTURES@/{ref}/broken.json"
 represents = "JSON document whose top level is an array, which the recommender rejects"
 versions = [{ ref = "v1", date = "2026-01-25", sha256 = "@SHA256:v1/broken.json@" }]
+
+[[schema]]
+id = "enums"
+kind = "openapi"
+role = "calibration"
+license = "MIT"
+source = "https://example.com/enums"
+url = "@FIXTURES@/{ref}/enums.json"
+represents = "inline enums that share a property name, 6 of 14 enums inline (a ratio of 3/7)"
+versions = [{ ref = "v1", date = "2026-01-30", sha256 = "@SHA256:v1/enums.json@" }]

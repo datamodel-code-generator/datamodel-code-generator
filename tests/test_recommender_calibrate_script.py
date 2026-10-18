@@ -93,7 +93,7 @@ def test_calibration_run(tmp_path: Path) -> None:
 
     `broken`'s recommendation fails (exit 1). --check-upstream proposes rotating `pets` and `config`, whose source
     HEAD moved past the newest pin, keeps `shop`, pinned at its source's HEAD, and reports that `broken`'s source has
-    no HEAD.
+    no HEAD. The target is the oldest Python version CI runs, since --import-check imports with this interpreter.
     """
     moved = tmp_path / "moved.git"
     head = _upstream(moved, commit=True)
@@ -113,7 +113,7 @@ def test_calibration_run(tmp_path: Path) -> None:
         ),
     )
     out = tmp_path / "out"
-    common = ["--manifest", str(manifest)]
+    common = ["--manifest", str(manifest), "--only", "pets", "shop", "config", "broken"]
     placeholders = {head: "<upstream head>", head[:12]: "<upstream head:12>"}
     first = _run(
         [
@@ -122,6 +122,8 @@ def test_calibration_run(tmp_path: Path) -> None:
             str(out),
             "--import-check",
             "--check-upstream",
+            "--target-python-version",
+            "3.10",
             "--calibration",
             str(FIXTURES / "calibration.json"),
         ],
@@ -159,6 +161,17 @@ def test_calibration_run(tmp_path: Path) -> None:
             True,
         ),
         (
+            "ratio_threshold",
+            (
+                (
+                    'naming-strategy = [{}, { naming_strategy = "full-path" }]',
+                    'naming-strategy = [{}, { naming_strategy = "numbered" }]',
+                ),
+            ),
+            ["--only", "enums", "--calibration", str(FIXTURES / "none.json")],
+            True,
+        ),
+        (
             "parallel",
             (),
             ["--only", "pets", "--jobs", "2", "--calibration", str(FIXTURES / "none.json")],
@@ -172,7 +185,8 @@ def test_calibration_cases(
     """Pinned digests, the $ref guard and manifest validation fail closed; other modes and grid values.
 
     --check-upstream needs --out; a grid value no option expresses is rejected, and a preset proposal waits for
-    --import-check; recommender processes give the same scores.
+    --import-check; a ratio threshold of 3/7 is proposed rounded down so that the schema still fires; recommender
+    processes give the same scores.
     """
     out = tmp_path / "out"
     output = _run(
