@@ -185,8 +185,11 @@ def _user_struct_options(model: DataModel) -> dict[str, Any]:
 
 
 def has_field_assignment(field: DataModelFieldBase) -> bool:
-    """Return whether a msgspec field renders with a default assignment."""
-    return field.use_default_with_required or not (field.required or field.should_strip_default_none())
+    """Return whether a msgspec field renders with a default assignment.
+
+    A Struct writes a default for every optional field, ``UNSET`` or ``None``, with ``--strip-default-none`` too.
+    """
+    return field.use_default_with_required or not field.required
 
 
 def get_field_default_info(field: DataModelFieldBase) -> tuple[bool, bool]:
@@ -234,6 +237,7 @@ class Struct(DataModel):
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
     FIELD_ASSIGNMENT_CHECKER = staticmethod(has_field_assignment)
+    FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(has_field_assignment)
     FIELD_DEFAULT_CLASSIFIER = staticmethod(get_field_default_info)
     FIELD_NAME_MODEL_TYPE: ClassVar[ModelType] = ModelType.MSGSPEC
     FIELD_NAME_RESOLVER_CLASS: ClassVar[type[FieldNameResolver]] = MsgspecFieldNameResolver
@@ -280,7 +284,7 @@ class Struct(DataModel):
         """Initialize msgspec Struct with fields sorted by field assignment requirement."""
         super().__init__(
             reference=reference,
-            fields=sorted(fields, key=has_field_assignment),
+            fields=sorted(fields, key=type(self).FIELD_CONSTRUCTION_ORDER_KEY),
             decorators=decorators,
             base_classes=base_classes,
             custom_base_class=custom_base_class,
@@ -439,7 +443,7 @@ class Struct(DataModel):
         options = _user_struct_options(self)
         for name, value in inherited_options.items():
             options.setdefault(name, value)
-        return sorted(super().flatten_base_layouts(adopt_field), key=has_field_assignment)
+        return sorted(super().flatten_base_layouts(adopt_field), key=type(self).FIELD_CONSTRUCTION_ORDER_KEY)
 
     def _validate_base_layouts(self) -> None:
         """Allow empty mixins and shared layouts, but reject independent slot extensions."""

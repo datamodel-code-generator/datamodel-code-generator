@@ -190,6 +190,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
     FIELD_DEFAULT_CLASSIFIER = staticmethod(get_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(field_participates_in_constructor)
+    FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(_has_field_assignment)
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
     USES_DATACLASS_ARGUMENTS: ClassVar[bool] = True
     SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT: ClassVar[bool] = True
@@ -273,7 +274,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """Initialize dataclass with fields sorted by field assignment requirement."""
         super().__init__(
             reference=reference,
-            fields=sorted(fields, key=_has_field_assignment),
+            fields=sorted(fields, key=type(self).FIELD_CONSTRUCTION_ORDER_KEY),
             decorators=decorators,
             base_classes=base_classes,
             custom_base_class=custom_base_class,

@@ -3362,7 +3362,11 @@ def test_main_with_snake_case_field(output_file: Path) -> None:
 
 The `--strip-default-none` option removes fields that have None as their default value from the
 generated models. This results in cleaner model definitions by excluding optional fields that
-default to None.""",
+default to None.
+
+The option has no effect on `msgspec.Struct` output. A Struct defaults an omitted field to `UNSET`,
+not `None`, so there is no `None` default to strip. Only a field that `nullable: true` makes nullable
+under `--strict-nullable` defaults to `None`, and that default stays, as the field's type admits None.""",
     input_schema="openapi/api.yaml",
     cli_args=["--strip-default-none"],
     golden_output="openapi/with_strip_default_none.py",
@@ -3373,6 +3377,10 @@ def test_main_with_strip_default_none(output_file: Path) -> None:
     The `--strip-default-none` option removes fields that have None as their default value from the
     generated models. This results in cleaner model definitions by excluding optional fields that
     default to None.
+
+    The option has no effect on `msgspec.Struct` output. A Struct defaults an omitted field to `UNSET`,
+    not `None`, so there is no `None` default to strip. Only a field that `nullable: true` makes nullable
+    under `--strict-nullable` defaults to `None`, and that default stays, as the field's type admits None.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "api.yaml",
@@ -3431,6 +3439,59 @@ def test_main_openapi_strip_default_none_semantic_default(
             "--target-python-version",
             target_python_version,
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.dataclass", [], id="pydantic-dataclass"),
+        pytest.param("pydantic_v2.dataclass", ["--keyword-only"], id="pydantic-dataclass-keyword-only"),
+        pytest.param("pydantic_v2.dataclass", ["--use-annotated"], id="pydantic-dataclass-annotated"),
+        pytest.param(
+            "pydantic_v2.dataclass", ["--target-pydantic-version", "2.14"], id="pydantic-dataclass-target-2.14"
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            ["--type-overrides", '{"Nullable": "decimal.Decimal"}'],
+            id="pydantic-dataclass-model-type-override",
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            ["--type-overrides", '{"M.n": "decimal.Decimal"}'],
+            id="pydantic-dataclass-field-type-override",
+        ),
+        pytest.param("msgspec.Struct", [], id="msgspec"),
+        pytest.param("msgspec.Struct", ["--keyword-only"], id="msgspec-keyword-only"),
+        pytest.param("dataclasses.dataclass", [], id="dataclass"),
+    ],
+)
+def test_main_openapi_strip_default_none_constructor_order(
+    output_model_type: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Order constructor fields by the defaults the class body writes under --strip-default-none.
+
+    A Pydantic dataclass keeps ``= None`` where the rendered type admits None: an ``anyOf`` null branch,
+    ``type: [..., "null"]``, a nullable model it names (defined before or after it) or a union member naming one.
+    Such a field follows the fields without a default and precedes the other defaults, whatever the null spelling;
+    a keyword-only model keeps it among the fields without a default. msgspec.Struct keeps every default, so the
+    option leaves its output as without it.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "strip_default_none_constructor_order.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--strip-default-none",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+        force_exec_validation=True,
     )
 
 

@@ -82,6 +82,9 @@ pydantic_v2.BaseModel-simple_star_wars.py	main/graphql/simple_star_wars.py
 	main/graphql/enums_no_specialized.py	= main/graphql/enums.py
 [test_main_graphql_split_graphql_schemas]
 	main/graphql/split_graphql_schemas.py
+[test_main_graphql_strip_default_none_constructor_order]
+msgspec	main/graphql/main_graphql/strip_default_none_constructor_order[msgspec].py
+pydantic-dataclass	main/graphql/main_graphql/strip_default_none_constructor_order[pydantic-dataclass].py
 [test_main_graphql_type_alias]
 	main/graphql/type_alias.py
 [test_main_graphql_type_alias_py312]

@@ -596,7 +596,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Set field name prefix when first character can't be
                         used as Python field name (default: `field`)
   --strict-nullable     Treat default field as a non-nullable field
-  --strip-default-none  Strip default None on fields
+  --strip-default-none  Strip default None on fields (no effect on
+                        msgspec.Struct: it defaults an omitted field to UNSET,
+                        and to None only when the type admits None)
   --union-mode {smart,left_to_right}
                         Union mode for only pydantic v2 field
   --use-attribute-docstrings

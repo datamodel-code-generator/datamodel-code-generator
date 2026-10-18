@@ -6,7 +6,7 @@ Generates pydantic.dataclasses.dataclass decorated classes with validation suppo
 from __future__ import annotations
 
 import keyword
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
@@ -47,13 +47,37 @@ from datamodel_code_generator.model.pydantic_v2.version import (
     model_target_supports,
 )
 from datamodel_code_generator.python_literal import represent_python_value
+from datamodel_code_generator.types import admits_none
 
 has_field_assignment = _dataclass_module.has_field_assignment
 _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY = "_safe_config_items"
 
 
+def _writes_dataclass_default(field: DataModelFieldBase) -> bool:
+    """Return whether ``dataclass.jinja2`` writes ``= <default>`` after the field's annotation.
+
+    A ``None`` default that ``--strip-default-none`` strips stays when the rendered annotation admits None.
+    """
+    return (
+        not getattr(field, "has_default_factory_in_field", False)
+        and (not field.required or field.use_default_with_required)
+        and not (field.should_strip_default_none() and not admits_none(field.data_type))
+    )
+
+
 def _has_pydantic_dataclass_field_assignment(field: DataModelFieldBase) -> bool:
-    """Check assignments that must remain visible to Python dataclasses."""
+    """Return whether ``dataclass.jinja2`` writes an assignment for the field."""
+    if field.use_annotated and getattr(field, "requires_dataclass_field_assignment", False):
+        return bool(field.field)
+    return (bool(field.field) and not field.use_annotated) or _writes_dataclass_default(field)
+
+
+def _construction_order_key(field: DataModelFieldBase) -> bool:
+    """Return whether the class body gives the field a default whatever its rendered type turns out to be.
+
+    A ``None`` default that ``--strip-default-none`` keeps only for a type that admits None counts as no default
+    here, as the type is final later; constructor ordering then puts such a field after the fields without one.
+    """
     if field.use_annotated and getattr(field, "requires_dataclass_field_assignment", False):
         return bool(field.field)
     return _has_field_assignment(field)
@@ -92,6 +116,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     FIELD_ASSIGNMENT_CHECKER = staticmethod(_has_pydantic_dataclass_field_assignment)
     FIELD_DEFAULT_CLASSIFIER = staticmethod(_get_pydantic_dataclass_field_default_info)
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(_pydantic_dataclass_field_participates_in_constructor)
+    FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(_construction_order_key)
     USES_DATACLASS_ARGUMENTS: ClassVar[bool] = True
     SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT: ClassVar[bool] = True
     REQUIRES_EXPLICIT_INHERITED_FACTORY_OVERRIDE: ClassVar[bool] = True
@@ -137,7 +162,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """Initialize pydantic v2 dataclass with sorted fields and ConfigDict support."""
         super().__init__(
             reference=reference,
-            fields=sorted(fields, key=_has_pydantic_dataclass_field_assignment),
+            fields=sorted(fields, key=type(self).FIELD_CONSTRUCTION_ORDER_KEY),
             decorators=decorators,
             base_classes=base_classes,
             custom_base_class=custom_base_class,
@@ -195,13 +220,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
 
     def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301
         """Return whether ``dataclass.jinja2`` writes an assignment for the field."""
-        if field.field and not field.annotated:
-            return True
-        return (
-            not cast("DataModelField", field).has_default_factory_in_field
-            and (not field.required or field.use_default_with_required)
-            and (field.represented_default != "None" or not field.strip_default_none or field.data_type.is_optional)
-        )
+        return _has_pydantic_dataclass_field_assignment(field)
 
     def class_attribute_hides_named_type(
         self, field: DataModelFieldBase, *, assigned: bool, resolved_late: bool, as_string: bool
@@ -234,7 +253,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """Write fields that name a later model by assignment, keeping required fields before defaults."""
         if not super().assign_forward_reference_fields(positions, index):
             return False
-        self.fields.sort(key=_has_pydantic_dataclass_field_assignment)
+        self.fields.sort(key=type(self).FIELD_CONSTRUCTION_ORDER_KEY)
         return True
 
     def _apply_lookaround_regex_engine(self) -> None:

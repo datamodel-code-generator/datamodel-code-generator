@@ -5205,6 +5205,10 @@ The `--strip-default-none` option removes fields that have None as their default
 generated models. This results in cleaner model definitions by excluding optional fields that
 default to None.
 
+The option has no effect on `msgspec.Struct` output. A Struct defaults an omitted field to `UNSET`,
+not `None`, so there is no `None` default to strip. Only a field that `nullable: true` makes nullable
+under `--strict-nullable` defaults to `None`, and that default stays, as the field's type admits None.
+
 !!! tip "Usage"
 
     ```bash

@@ -1473,6 +1473,7 @@ openapi/special_yaml_keywords.yaml::components.schemas.on	payloads/native_numeri
 openapi/strict_types_field_constraints.yaml::components.schemas.Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strict_types_field_constraints.yaml::components.schemas.Score	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strict_types_field_constraints.yaml::components.schemas.Timestamp	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/strip_default_none_constructor_order.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_pydantic_v2.yaml::components.schemas.Issue1816Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_semantic.yaml::components.schemas.SemanticNoneModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.AnnotatedType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2979,6 +2980,7 @@ openapi/special_yaml_keywords.yaml::components.schemas.on	payloads/native_numeri
 openapi/strict_types_field_constraints.yaml::components.schemas.Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strict_types_field_constraints.yaml::components.schemas.Score	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strict_types_field_constraints.yaml::components.schemas.Timestamp	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/strip_default_none_constructor_order.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_pydantic_v2.yaml::components.schemas.Issue1816Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_semantic.yaml::components.schemas.SemanticNoneModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.AnnotatedType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

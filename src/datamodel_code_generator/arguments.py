@@ -1072,7 +1072,8 @@ field_options.add_argument(
 )
 field_options.add_argument(
     "--strip-default-none",
-    help="Strip default None on fields",
+    help="Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to "
+    "None only when the type admits None)",
     action="store_true",
     default=None,
 )
