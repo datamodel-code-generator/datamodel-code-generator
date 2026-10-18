@@ -255,30 +255,40 @@ def ci_variable() -> str | None:
     return is_ci_run() or None
 
 
+class GhError(RuntimeError):
+    """A gh command failed, for example because a run's logs are not available until the run finishes."""
+
+
+def gh(*arguments: str) -> str:
+    """Return what a gh command prints; a failing command raises ``GhError`` with what gh reported."""
+    result = subprocess.run([shutil.which("gh") or "gh", *arguments], capture_output=True, text=True, check=False)
+    if result.returncode:
+        raise GhError(result.stderr.strip())
+    return result.stdout
+
+
 def ci_logs(reference: str) -> str:
     """Return the failed-job logs of a CI run, or of the latest failed runs of a pull request (``#123``)."""
-    gh = shutil.which("gh") or "gh"
     run_ids = [reference]
     if reference.startswith("#"):
-        head = subprocess.run(
-            [gh, "pr", "view", reference[1:], "--json", "headRefOid", "--jq", ".headRefOid"],
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-        runs = json.loads(
-            subprocess.run(
-                [gh, "run", "list", "--commit", head, "--json", "databaseId,conclusion"],
-                capture_output=True,
-                text=True,
-                check=True,
-            ).stdout
-        )
+        head = gh("pr", "view", reference[1:], "--json", "headRefOid", "--jq", ".headRefOid").strip()
+        runs = json.loads(gh("run", "list", "--commit", head, "--json", "databaseId,conclusion"))
         run_ids = [str(run["databaseId"]) for run in runs if run["conclusion"] == "failure"]
-    return "\n".join(
-        subprocess.run([gh, "run", "view", run_id, "--log-failed"], capture_output=True, text=True, check=True).stdout
-        for run_id in run_ids
-    )
+    return "\n".join(gh("run", "view", run_id, "--log-failed") for run_id in run_ids)
+
+
+def from_ci(reference: str, root: Path = ROOT) -> int:
+    """Apply every payload of a CI run; when gh cannot read its logs, say how to go on instead."""
+    try:
+        log = ci_logs(reference)
+    except GhError as error:
+        print(
+            f"gh could not read the failed-job logs of {reference}: {error}\n"
+            "If the run is still in progress, wait for it to finish and run this command again, or paste the "
+            f"{PAYLOAD_PREFIX.strip()} lines of its log into: python scripts/fix_expected.py --apply '<payload>' ..."
+        )
+        return 2
+    return apply_payloads(payloads_in(log), root, skip=True)
 
 
 def where(nodeid: str, root: Path = ROOT) -> int:
@@ -371,7 +381,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = arguments.root.resolve()
     commands: dict[str, Callable[[Any], int]] = {
         "apply": lambda texts: apply_payloads(texts, root),
-        "from_ci": lambda run: apply_payloads(payloads_in(ci_logs(run)), root, skip=True),
+        "from_ci": lambda run: from_ci(run, root),
         "where": lambda nodeid: where(nodeid, root),
         "repair": lambda sidecar: repair(sidecar, root),
         "observations": lambda paths: run_apply({"observations": [str(path.resolve()) for path in paths]}, (), root),

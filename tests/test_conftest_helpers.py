@@ -1839,6 +1839,7 @@ def test_fix_expected_from_ci_and_all_environments(
     )
     failure = ledger.run("suite", env={"CI": "true", "GITHUB_ACTIONS": "true"}).stdout.str()
     log = f"dcg-expected-fix: {_foreign(fix_expected.payloads_in(failure)[0])}\n"
+    in_progress = "run 9 is still in progress; logs will be available when it is complete"
     monkeypatch.setenv("PYTHONPATH", str(Path(__file__).parents[1]))
     real_run = subprocess.run
     commands: list[list[str]] = []
@@ -1854,6 +1855,8 @@ def test_fix_expected_from_ci_and_all_environments(
                     0,
                     json.dumps([{"databaseId": 7, "conclusion": "failure"}, {"databaseId": 8, "conclusion": "ok"}]),
                 )
+            case [_, "run", "view", "9", "--log-failed"]:
+                return subprocess.CompletedProcess(command, 1, stdout="", stderr=f"{in_progress}\n")
             case [_, "run", "view", run_id, "--log-failed"]:
                 result = (0, log if run_id == "7" else "no payloads here\n")
             case ["tox", "run", "-q", "-e", environment, "--notest"]:
@@ -1876,6 +1879,13 @@ def test_fix_expected_from_ci_and_all_environments(
     assert any(command[1:4] == ["run", "view", "7"] for command in commands)
     assert fix_expected.main([*root, "--from-ci", "99"]) == 1
     assert "No dcg-expected-fix payloads to apply." in capsys.readouterr().out
+    assert fix_expected.main([*root, "--from-ci", "9"]) == 2
+    assert capsys.readouterr().out == (
+        f"gh could not read the failed-job logs of 9: {in_progress}\n"
+        "If the run is still in progress, wait for it to finish and run this command again, or paste the "
+        "dcg-expected-fix: lines of its log into: python scripts/fix_expected.py --apply '<payload>' ...\n"
+    )
+    assert ledger.refs() == HEADER + "[test_new]\n\tm/new.txt\n"
     output = ledger.pytester.path / "observed"
     environments = ["--environment", "py314", "--environment", "pydantic214", "--environment", "pydantic212"]
     assert (
