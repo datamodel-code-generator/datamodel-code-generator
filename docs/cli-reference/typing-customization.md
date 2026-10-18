@@ -383,14 +383,14 @@ inheriting from them.
 
 
         class Thing(Entity):
-            type: str | None = 'playground:Thing'
+            type: str
             type_list: list[str] | None = ['playground:Thing']
             name: constr(min_length=1) = Field(..., description='The things name')
 
 
         class Location(Entity2):
-            type: str | None = 'playground:Location'
-            type_list: list[str] | None = ['playground:Location']
+            type: str
+            type_list: list[str]
             address: constr(min_length=5) = Field(
                 ..., description='The address of the location'
             )
@@ -6374,29 +6374,30 @@ to true, enforcing uniqueness at the type level.
 
     from __future__ import annotations
 
-    from pydantic import AnyUrl, BaseModel, Field
+    from pydantic import AnyUrl, BaseModel, Field, RootModel
 
 
     class Pet(BaseModel):
+        __hash__ = object.__hash__
         id: int = Field(..., ge=0, le=9223372036854775807)
         name: str = Field(..., max_length=256)
         tag: str | None = Field(None, max_length=64)
 
 
-    class Pets(BaseModel):
-        __root__: set[Pet] = Field(..., max_items=10, min_items=1, unique_items=True)
+    class Pets(RootModel[set[Pet]]):
+        root: set[Pet] = Field(..., max_length=10, min_length=1)
 
 
-    class UID(BaseModel):
-        __root__: int = Field(..., ge=0)
+    class UID(RootModel[int]):
+        root: int = Field(..., ge=0)
 
 
-    class Phone(BaseModel):
-        __root__: str = Field(..., min_length=3)
+    class Phone(RootModel[str]):
+        root: str = Field(..., min_length=3)
 
 
-    class FaxItem(BaseModel):
-        __root__: str = Field(..., min_length=3)
+    class FaxItem(RootModel[str]):
+        root: str = Field(..., min_length=3)
 
 
     class User(BaseModel):
@@ -6404,7 +6405,7 @@ to true, enforcing uniqueness at the type level.
         name: str = Field(..., max_length=256)
         tag: str | None = Field(None, max_length=64)
         uid: UID
-        phones: list[Phone] | None = Field(None, max_items=10)
+        phones: list[Phone] | None = Field(None, max_length=10)
         fax: list[FaxItem] | None = None
         height: int | float | None = Field(None, ge=1.0, le=300.0)
         weight: float | int | None = Field(None, ge=1.0, le=1000.0)
@@ -6412,16 +6413,16 @@ to true, enforcing uniqueness at the type level.
         rating: float | None = Field(None, gt=0.0, le=5.0)
 
 
-    class Users(BaseModel):
-        __root__: list[User]
+    class Users(RootModel[list[User]]):
+        root: list[User]
 
 
-    class Id(BaseModel):
-        __root__: str
+    class Id(RootModel[str]):
+        root: str
 
 
-    class Rules(BaseModel):
-        __root__: list[str]
+    class Rules(RootModel[list[str]]):
+        root: list[str]
 
 
     class Error(BaseModel):
@@ -6444,8 +6445,8 @@ to true, enforcing uniqueness at the type level.
         )
 
 
-    class Apis(BaseModel):
-        __root__: list[Api]
+    class Apis(RootModel[list[Api]]):
+        root: list[Api]
 
 
     class Event(BaseModel):

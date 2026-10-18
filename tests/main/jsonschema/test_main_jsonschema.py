@@ -18225,6 +18225,17 @@ def test_main_allof_class_hierarchy(output_file: Path) -> None:
     )
 
 
+def test_main_allof_class_hierarchy_default(output_file: Path) -> None:
+    """Generate the default allOf hierarchy that the --allof-class-hierarchy docs compare with."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_class_hierarchy.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file="allof_class_hierarchy_ref.py",
+    )
+
+
 @pytest.mark.benchmark
 def test_main_allof_root_model_constraints_none(output_file: Path) -> None:
     """Test allOf with root model reference without merging (issue #1901)."""

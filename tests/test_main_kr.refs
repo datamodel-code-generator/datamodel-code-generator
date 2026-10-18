@@ -155,6 +155,8 @@ modular	main_kr/multi_module_stdout/error.txt
 	main_kr/main_use_schema_description/output.py
 [test_no_alias]
 	main_kr/no_alias/with_option.py
+[test_no_alias_without_option]
+	main_kr/no_alias/without_option.py
 [test_no_subclass_enum_no_capitalise_builtin_names]
 	main_kr/no_subclass_enum_no_capitalise_builtin_names.py
 [test_output_format_json_check_missing_output_directory]

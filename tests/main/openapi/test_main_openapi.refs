@@ -826,6 +826,8 @@ pydantic_v2.BaseModel-const_field_pydantic_v2.py	main/openapi/const_field_pydant
 typing.TypedDict-const_field_typed_dict.py	main/openapi/const_field_typed_dict.py
 [test_main_openapi_const_field_type_override]
 	main/openapi/const_field_type_override.py
+[test_main_openapi_const_field_without_collapse]
+	main/openapi/const_baseline.py
 [test_main_openapi_const_optional_values]
 	main/openapi/const_optional_values_31.py
 [test_main_openapi_content_in_parameters]

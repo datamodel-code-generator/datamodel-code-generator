@@ -4470,7 +4470,7 @@ for multi-module Pydantic output where runtime imports might otherwise be preser
         "--use-type-checking-imports",
         "--disable-timestamp",
     ],
-    golden_output="openapi/use_type_checking_imports_internal.py",
+    golden_output="openapi/use_type_checking_imports_for_multi_module_pydantic_ruff/_internal.py",
     related_options=["--no-use-type-checking-imports", "--formatters", "--use-exact-imports"],
 )
 def test_use_type_checking_imports_for_multi_module_pydantic_ruff() -> None:

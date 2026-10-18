@@ -3909,6 +3909,18 @@ def test_custom_file_header(output_file: Path) -> None:
     )
 
 
+@freeze_time("2019-07-26")
+def test_no_alias_without_option(output_file: Path) -> None:
+    """Generate the output the --no-alias, --use-serialization-alias and --custom-file-header docs compare with."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "no_alias.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        expected_file=EXPECTED_MAIN_KR_PATH / "no_alias" / "without_option.py",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--url", "--http-headers"],
     option_description="""Fetch a schema from a URL with custom HTTP headers.

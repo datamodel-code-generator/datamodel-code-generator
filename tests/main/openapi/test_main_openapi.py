@@ -3140,7 +3140,7 @@ list types for JSON Schema arrays that have the uniqueItems constraint set
 to true, enforcing uniqueness at the type level.""",
     input_schema="openapi/api_constrained.yaml",
     cli_args=["--use-unique-items-as-set", "--field-constraints"],
-    golden_output="openapi/with_field_constraints_use_unique_items_as_set.py",
+    golden_output="openapi/with_field_constraints_pydantic_v2_use_standard_collections_set.py",
 )
 def test_main_with_field_constraints(
     output_model: str, expected_output: str, args: list[str], output_file: Path
@@ -5654,6 +5654,17 @@ def test_main_openapi_const_field(output_model: str, expected_output: str, outpu
         assert_func=assert_file_content,
         expected_file=expected_output,
         extra_args=["--output-model-type", output_model, "--collapse-root-models"],
+    )
+
+
+def test_main_openapi_const_field_without_collapse(output_file: Path) -> None:
+    """Generate the root models of const fields that the --collapse-root-models docs compare with."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "const.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file="const_baseline.py",
     )
 
 

@@ -5478,6 +5478,8 @@ to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/to_snake_u
 	main/jsonschema/all_of_with_object.py
 [test_main_allof_class_hierarchy]
 	main/jsonschema/allof_class_hierarchy.py
+[test_main_allof_class_hierarchy_default]
+	main/jsonschema/allof_class_hierarchy_ref.py
 [test_main_allof_inheritance_cycle_custom_class_template]
 	main/jsonschema/allof_inheritance_cycle_custom_class_template.py
 [test_main_allof_inheritance_cycle_custom_typed_dict_class_template]
