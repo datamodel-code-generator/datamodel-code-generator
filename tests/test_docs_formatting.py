@@ -11,7 +11,7 @@ import pytest
 from packaging.version import Version
 
 from scripts import build_cli_docs, build_docs_examples, build_preset_docs
-from tests.conftest import assert_output, stored_expected
+from tests.conftest import assert_output
 
 DATA = Path(__file__).parent / "data"
 EXPECTED = DATA / "expected" / "docs_formatting"
@@ -20,9 +20,13 @@ MODEL_PATH = "docs_formatting/model.py"
 
 @pytest.mark.skipif(Version(version("ruff")) < Version("0.16.6"), reason="Requires Ruff Markdown formatting")
 @pytest.mark.parametrize("kind", ["fixture", "golden", "stdout_file", "stdout", "extra", "readme", "quick_start"])
-def test_documentation_formatting_preserves_generated_examples(kind: str) -> None:
-    """Real Ruff formats surrounding prose examples while keeping generated fixtures verbatim."""
-    model = stored_expected(DATA / "expected" / "main" / MODEL_PATH).read_text(encoding="utf-8")
+def test_documentation_formatting_preserves_generated_examples(kind: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Real Ruff formats surrounding prose examples while keeping generated fixtures verbatim.
+
+    The docs builders read the example model, an input, from tests/data instead of the expected outputs.
+    """
+    monkeypatch.setattr(build_cli_docs, "EXPECTED_PATH", DATA)
+    model = (DATA / MODEL_PATH).read_text(encoding="utf-8")
     example = build_cli_docs.CLIDocExample(node_id="formatting", option_description="")
     rendered = ""
     match kind:

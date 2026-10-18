@@ -252,12 +252,7 @@ def test_output_path_can_write_inside_input_directory(
     metadata = None
     if metadata_location is not None:
         metadata = (input_path if metadata_location == "inside" else tmp_path) / "model_map.json"
-    expected_directory = tmp_path / "expected"
-    expected_directory.mkdir()
-    shutil.copyfile(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), expected_directory / "person.py")
-    shutil.copyfile(
-        stored_expected(EXPECTED_MALFORMED_PATH / "directory_input_init.py"), expected_directory / "__init__.py"
-    )
+    expected_directory = EXPECTED_MALFORMED_PATH / "directory_input"
     for run in range(2):
         match entrypoint:
             case "api":
@@ -428,12 +423,7 @@ def test_directory_input_excludes_metadata_symlink_spellings(tmp_path: Path, tar
     output_path = tmp_path / "generated"
     metadata = input_path / "model_map.json"
     metadata.symlink_to((input_path if target_inside else tmp_path) / "metadata.json")
-    expected_directory = tmp_path / "expected"
-    expected_directory.mkdir()
-    shutil.copyfile(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), expected_directory / "person.py")
-    shutil.copyfile(
-        stored_expected(EXPECTED_MALFORMED_PATH / "directory_input_init.py"), expected_directory / "__init__.py"
-    )
+    expected_directory = EXPECTED_MALFORMED_PATH / "directory_input"
     for _ in range(2):
         run_main_and_assert(
             input_path=input_path,
