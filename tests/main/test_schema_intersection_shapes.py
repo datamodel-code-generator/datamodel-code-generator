@@ -82,6 +82,8 @@ def _args(input_path: Path, output_path: Path, backend: DataModelType, options: 
         "--output-model-type",
         backend.value,
         "--disable-timestamp",
+        "--formatters",
+        "builtin",
         *options,
     ]
 
@@ -102,7 +104,14 @@ def test_schema_intersection_shape_output(
             input_path=input_path,
             output_path=output_file,
             input_file_type="openapi" if input_path.suffix == ".yaml" else "jsonschema",
-            extra_args=["--output-model-type", backend.value, "--disable-timestamp", *options],
+            extra_args=[
+                "--output-model-type",
+                backend.value,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                *options,
+            ],
         )
     if messages := dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning):
         assert_output("".join(f"{message}\n" for message in messages), name="warnings")

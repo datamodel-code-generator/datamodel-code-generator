@@ -75,7 +75,8 @@ class Model(Struct):
     m2: M2 | UnsetType = UNSET
     path_a: (
         Annotated[
-            str, Meta(description='D', examples=['bb'], min_length=2, title='BaseT')
+            str,
+            Meta(description='D', examples=['bb'], min_length=2, title='BaseT'),
         ]
         | UnsetType
     ) = 'base'
