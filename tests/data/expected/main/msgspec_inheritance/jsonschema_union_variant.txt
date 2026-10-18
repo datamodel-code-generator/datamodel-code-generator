@@ -1,0 +1,26 @@
+{
+  "convert": {
+    "pet": {
+      "meow": "m",
+      "name": "n"
+    }
+  },
+  "decode": {
+    "pet": {
+      "meow": "m",
+      "name": "n"
+    }
+  },
+  "fields": [
+    "pet"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

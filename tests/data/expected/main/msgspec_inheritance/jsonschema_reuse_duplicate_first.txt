@@ -1,0 +1,26 @@
+{
+  "convert": {
+    "name": "n",
+    "id": 1
+  },
+  "decode": {
+    "name": "n",
+    "id": 1
+  },
+  "fields": [
+    "name",
+    "id"
+  ],
+  "bases": [
+    "Labeled",
+    "Named"
+  ],
+  "mro": [
+    "Payload",
+    "Labeled",
+    "Named",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

@@ -18111,7 +18111,9 @@ def test_main_allof_root_model_constraints_merge(output_file: Path) -> None:
 only when there are no property conflicts between parent schemas. Otherwise, properties are merged into the child class
 which is then decoupled from the parent classes and no longer inherits from them.
 `--allof-class-hierarchy always` keeps class hierarchy for allOf schemas,
-even in multiple inheritance scenarios where two parent schemas define the same property.""",
+even in multiple inheritance scenarios where two parent schemas define the same property.
+msgspec.Struct output declares the fields of parent classes whose layouts msgspec cannot combine instead of
+inheriting from them.""",
     input_schema="jsonschema/allof_root_model_constraints.json",
     cli_args=["--allof-class-hierarchy", "always"],
     golden_output="main/jsonschema/allof_class_hierarchy.py",
@@ -23095,7 +23097,6 @@ def test_main_allof_inheritance_late_local_base_custom_typed_dict_class_template
         ("pydantic_v2.BaseModel", ALLOF_INHERITANCE_MRO_ERROR),
         ("pydantic_v2.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
         ("dataclasses.dataclass", ALLOF_INHERITANCE_MRO_ERROR),
-        ("msgspec.Struct", "msgspec.Struct model 'C' has incompatible layouts from generated bases 'A' and 'B'.\n"),
     ],
 )
 def test_main_allof_inheritance_mro_conflict(
@@ -23111,6 +23112,18 @@ def test_main_allof_inheritance_mro_conflict(
         capsys=capsys,
         expected_stderr=expected_stderr,
         output_should_not_exist=True,
+    )
+
+
+def test_main_allof_inheritance_mro_conflict_msgspec(output_file: Path) -> None:
+    """Flatten the msgspec Structs whose generated bases have neither compatible layouts nor a resolution order."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "mro_conflict.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct"],
+        assert_func=assert_file_content,
+        force_exec_validation=True,
     )
 
 
@@ -25540,7 +25553,7 @@ def test_msgspec_inheritance_preserve_compatible_layouts(output_file: Path, entr
 
     options = case["options"].copy()
     if "custom_template_dir" in options:
-        options["custom_template_dir"] = MSGSPEC_INHERITANCE_DATA / "templates"
+        options["custom_template_dir"] = MSGSPEC_INHERITANCE_DATA / Path(options["custom_template_dir"]).name
 
     if entrypoint == "cli":
         run_main_and_assert(
@@ -25582,10 +25595,11 @@ def test_msgspec_inheritance_preserve_compatible_layouts(output_file: Path, entr
             "bases": [base.__name__ for base in model.__bases__],
             "mro": [base.__name__ for base in model.__mro__],
         }
+        invalid = case.get("invalid", {})
         with pytest.raises(msgspec.ValidationError):
-            msgspec.convert({}, type=model)
+            msgspec.convert(invalid, type=model)
         with pytest.raises(msgspec.ValidationError):
-            msgspec.json.decode(b"{}", type=model)
+            msgspec.json.decode(json.dumps(invalid), type=model)
     assert_output(json.dumps(result, indent=2) + "\n", MSGSPEC_INHERITANCE_EXPECTED / f"{case['name']}.txt")
 
 

@@ -1,0 +1,30 @@
+{
+  "convert": {
+    "name": "n",
+    "nickname": "k",
+    "created_at": "t",
+    "id": 1
+  },
+  "decode": {
+    "name": "n",
+    "nickname": "k",
+    "created_at": "t",
+    "id": 1
+  },
+  "fields": [
+    "name",
+    "nickname",
+    "created_at",
+    "id",
+    "updated_at"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

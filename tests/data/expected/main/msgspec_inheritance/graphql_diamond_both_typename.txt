@@ -1,0 +1,32 @@
+{
+  "convert": {
+    "a": "a",
+    "b": 2,
+    "d": 4,
+    "c": 3,
+    "__typename": "Payload"
+  },
+  "decode": {
+    "a": "a",
+    "b": 2,
+    "d": 4,
+    "c": 3,
+    "__typename": "Payload"
+  },
+  "fields": [
+    "a",
+    "b",
+    "d",
+    "c",
+    "typename__"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}

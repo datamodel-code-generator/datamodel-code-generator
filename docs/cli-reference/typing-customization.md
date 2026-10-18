@@ -67,6 +67,8 @@ only when there are no property conflicts between parent schemas. Otherwise, pro
 which is then decoupled from the parent classes and no longer inherits from them.
 `--allof-class-hierarchy always` keeps class hierarchy for allOf schemas,
 even in multiple inheritance scenarios where two parent schemas define the same property.
+msgspec.Struct output declares the fields of parent classes whose layouts msgspec cannot combine instead of
+inheriting from them.
 
 !!! tip "Usage"
 

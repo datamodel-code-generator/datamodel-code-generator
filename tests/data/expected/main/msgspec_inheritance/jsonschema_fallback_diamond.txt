@@ -1,1 +1,23 @@
-msgspec.Struct model 'Payload' has incompatible layouts from generated bases 'Seed' and 'Other'.
+{
+  "convert": {
+    "seed": 1,
+    "other": 2
+  },
+  "decode": {
+    "seed": 1,
+    "other": 2
+  },
+  "fields": [
+    "seed",
+    "other"
+  ],
+  "bases": [
+    "Struct"
+  ],
+  "mro": [
+    "Payload",
+    "Struct",
+    "_StructMixin",
+    "object"
+  ]
+}
