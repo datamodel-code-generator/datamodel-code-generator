@@ -1435,6 +1435,18 @@ api-enum	main/openapi/single_value_enum_as_const_api.py
 api-written-as-const	main/openapi/single_value_enum_as_const_api.py
 schemas-paths-parameters-enum	main/openapi/single_value_enum_as_const.py
 schemas-paths-parameters-written-as-const	main/openapi/single_value_enum_as_const.py
+[test_main_openapi_single_value_enum_as_const_null_branch]
+enum	main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum].py
+enum-literal-one	main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum-literal-one].py	= main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum].py
+extension-keys	main/openapi/main_openapi/single_value_enum_as_const_null_branch[extension-keys].py
+extension-keys-without-option	main/openapi/main_openapi/single_value_enum_as_const_null_branch[extension-keys-without-option].py
+msgspec	main/openapi/main_openapi/single_value_enum_as_const_null_branch[msgspec].py
+paths-scope	main/openapi/main_openapi/single_value_enum_as_const_null_branch[paths-scope].py
+paths-scope-msgspec	main/openapi/main_openapi/single_value_enum_as_const_null_branch[paths-scope-msgspec].py
+paths-scope-without-option	main/openapi/main_openapi/single_value_enum_as_const_null_branch[paths-scope-without-option].py
+without-option-literal-one	main/openapi/main_openapi/single_value_enum_as_const_null_branch[without-option-literal-one].py	= main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum].py
+written-as-const	main/openapi/main_openapi/single_value_enum_as_const_null_branch[written-as-const].py	= main/openapi/main_openapi/single_value_enum_as_const_null_branch[enum].py
+written-as-const-without-option	main/openapi/main_openapi/single_value_enum_as_const_null_branch[written-as-const-without-option].py
 [test_main_openapi_strict_types_field_constraints_msgspec]
 	main/openapi/strict_types_field_constraints_msgspec.py
 [test_main_openapi_strict_types_field_constraints_pydantic_v2]

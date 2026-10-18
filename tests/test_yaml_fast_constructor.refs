@@ -20,6 +20,7 @@ asyncapi/single_value_enum_as_const/v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/v3.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/written_as_const/v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/written_as_const/v3.yaml	yaml_fast_constructor/parity.txt
+asyncapi/single_value_enum_as_const/xml_schema.yaml	yaml_fast_constructor/parity.txt
 asyncapi/stable-surface.yaml	yaml_fast_constructor/parity.txt
 asyncapi/unknown-version.yaml	yaml_fast_constructor/parity.txt
 asyncapi/user-events.yaml	yaml_fast_constructor/parity.txt
@@ -359,12 +360,16 @@ openapi/shadowed_imports.yaml	yaml_fast_constructor/parity.txt
 openapi/shadowed_imports_base_and_fields.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/api.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/common.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/extension_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/headers.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/null_branch.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/paths_scope.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/region.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/schemas.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/api.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/common.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/headers.yaml	yaml_fast_constructor/parity.txt
+openapi/single_value_enum_as_const/written_as_const/null_branch.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/region.yaml	yaml_fast_constructor/parity.txt
 openapi/single_value_enum_as_const/written_as_const/schemas.yaml	yaml_fast_constructor/parity.txt
 openapi/special_yaml_keywords.yaml	yaml_fast_constructor/parity.txt

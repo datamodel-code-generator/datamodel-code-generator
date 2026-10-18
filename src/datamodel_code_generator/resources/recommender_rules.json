@@ -1106,7 +1106,7 @@
     },
     "use_single_value_enum_as_const": {
       "not_recommended": "runtime-behaviour",
-      "reason": "Never improved class names on the measured schemas and adds types; a nullable one-value enum also loses null."
+      "reason": "Never improved class names on the measured schemas; a nullable one-value enum also loses null."
     },
     "use_specialized_enum": {
       "not_recommended": "preset",

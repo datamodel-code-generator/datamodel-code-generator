@@ -13,6 +13,27 @@ class Kind(Enum):
     legacy = 'legacy'
 
 
+class StateEnum(Enum):
+    x = 'x'
+
+
+class State(RootModel[StateEnum | None]):
+    root: StateEnum | None = None
+
+
+class Code(Enum):
+    x = 'x'
+    field_1 = 1
+
+
+class Mode(Enum):
+    x = 'x'
+
+
+class Only(Enum):
+    x = 'x'
+
+
 class Level1(Enum):
     low = 'low'
 
@@ -28,3 +49,7 @@ class Level(RootModel[Level1 | Level2]):
 class Legacy(BaseModel):
     kind: Kind | None = None
     level: Level | None = None
+    state: State | None = None
+    code: Code | None = None
+    mode: Mode | None = None
+    only: Only | None = None

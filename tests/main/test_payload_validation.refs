@@ -680,6 +680,7 @@ jsonschema/simple_pydantic_v2_fields.json	payloads/native_numeric_empty_errors.t
 jsonschema/simple_string.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_line_description_with_example.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/draft_04.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/single_value_enum_as_const/extension_defs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/mixed_drafts/a_legacy.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/mixed_drafts/b_modern.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/schema.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1456,8 +1457,13 @@ openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	paylo
 openapi/shadowed_modules/single.json::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::components.schemas.Status	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/null_branch.yaml::components.schemas.Marker	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/paths_scope.yaml::paths./ray.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/paths_scope.yaml::paths./x-ray.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/paths_scope.yaml::paths./x-settings.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/api.yaml::components.schemas.Status	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/written_as_const/null_branch.yaml::components.schemas.Marker	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.None	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.True	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.false	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2183,6 +2189,7 @@ jsonschema/simple_pydantic_v2_fields.json	payloads/native_numeric_empty_errors.t
 jsonschema/simple_string.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_line_description_with_example.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/draft_04.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/single_value_enum_as_const/extension_defs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/mixed_drafts/a_legacy.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/mixed_drafts/b_modern.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/single_value_enum_as_const/schema.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2954,8 +2961,13 @@ openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	paylo
 openapi/shadowed_modules/single.json::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::components.schemas.Status	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/null_branch.yaml::components.schemas.Marker	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/paths_scope.yaml::paths./ray.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/paths_scope.yaml::paths./x-ray.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/paths_scope.yaml::paths./x-settings.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/api.yaml::components.schemas.Status	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/single_value_enum_as_const/written_as_const/null_branch.yaml::components.schemas.Marker	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.None	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.True	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.false	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

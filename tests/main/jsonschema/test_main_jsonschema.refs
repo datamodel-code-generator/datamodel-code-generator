@@ -6805,6 +6805,9 @@ serialization_alias	main/jsonschema/alias_generator_serialization_aliases/serial
 	main/jsonschema/serialization_aliases_with_use_serialization_alias.py
 [test_main_jsonschema_single_value_enum_as_const]
 	main/jsonschema/single_value_enum_as_const/pydantic_v2.py
+[test_main_jsonschema_single_value_enum_as_const_extension_defs]
+option	main/jsonschema/main_jsonschema/single_value_enum_as_const_extension_defs[option].py
+without-option	main/jsonschema/main_jsonschema/single_value_enum_as_const_extension_defs[without-option].py
 [test_main_jsonschema_single_value_enum_as_const_keeps_draft_04]
 option	main/jsonschema/single_value_enum_as_const/draft_04.py
 without-option	main/jsonschema/single_value_enum_as_const/draft_04.py

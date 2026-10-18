@@ -294,6 +294,7 @@ _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS = frozenset({
     JsonSchemaVersion.Draft7,
 })
 _PYTHON_FIELD_OVERRIDES_KEY = "__python_field_overrides"
+_READ_AS_CONST_KEY = "x-datamodel-code-generator-read-as-const"
 
 
 _NUMERIC_TYPE_DOMAINS = {
@@ -877,8 +878,9 @@ def _single_value_enum_as_const(
 
     The values of instance data keywords, extensions other than x-propertyNames, links, security requirements and
     servers hold no schemas and stay as written. Those words are names, not keywords, in maps of named entries such
-    as properties, $defs, responses, webhooks, channels or the component maps. Unchanged parts are shared, so cached
-    documents stay intact.
+    as properties, $defs, responses, webhooks, channels or the component maps. Each schema read so that holds a const
+    is marked, so that the const branches the option reads are known wherever the parser copies them to. Unchanged
+    parts are shared, so cached documents stay intact.
     """
     if isinstance(value, list):
         items = [_single_value_enum_as_const(item, named_entry_maps) for item in value]
@@ -892,9 +894,13 @@ def _single_value_enum_as_const(
         and (updated := _single_value_enum_as_const(child, named_entry_maps, child_entries)) is not child
     }
     result = {**value, **changed} if changed else value
-    if entries == "object" and isinstance(enum := value.get("enum"), list) and len(enum) == 1 and "const" not in value:
-        return {("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in result.items()}
-    return result
+    if entries != "object":
+        return result
+    if isinstance(enum := value.get("enum"), list) and len(enum) == 1 and "const" not in value:
+        result = {
+            ("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in result.items()
+        }
+    return {**result, _READ_AS_CONST_KEY: True} if "const" in result else result
 
 
 def _is_object_only_type(type_: str | list[str] | None) -> bool:
@@ -1046,6 +1052,7 @@ class JsonSchemaObject(BaseModel):
         "x_enum_varnames",
         "x_enum_descriptions",
         "x_enum_field_as_literal",
+        "read_as_const",
         "definitions",
         "$defs",
         "default",
@@ -1230,6 +1237,7 @@ class JsonSchemaObject(BaseModel):
     custom_type_path: Optional[str] = Field(default=None, alias="customTypePath")  # noqa: UP045
     custom_base_path: str | list[str] | None = Field(default=None, alias="customBasePath")
     is_boolean_schema_false: bool = Field(default=False, exclude=True)
+    read_as_const: bool = Field(default=False, alias=_READ_AS_CONST_KEY)
     extras: dict[str, Any] = Field(alias=__extra_key__, default_factory=dict)
     discriminator: Optional[Union[Discriminator, str]] = None  # noqa: UP007, UP045
     model_config = ConfigDict(
@@ -1454,6 +1462,7 @@ EXCLUDE_FIELD_KEYS = (set(JsonSchemaObject.get_fields()) - DEFAULT_FIELD_KEYS - 
     "$dynamicRef",
     "$dynamicAnchor",
     "self",
+    _READ_AS_CONST_KEY,
     JsonSchemaObject.__extra_key__,
 }
 
@@ -1932,12 +1941,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _extract_const_enum_from_combined(  # noqa: PLR0912
         cls, items: list[JsonSchemaObject | bool], parent_type: str | list[str] | None
     ) -> tuple[list[Any], list[str], list[str], str | None, bool] | None:
-        """Extract enum values from oneOf/anyOf const pattern."""
+        """Extract enum values from oneOf/anyOf const pattern.
+
+        Const branches that --use-single-value-enum-as-const read and that hold one value beside null leave no enum to
+        merge: the branches are typed as written, the const as its Literal and null as None.
+        """
         enum_values: list[Any] = []
         varnames: list[str] = []
         descriptions: list[str] = []
         nullable = False
         inferred_type: str | None = None
+        read_as_const = True
 
         for item in items:
             if item is False:
@@ -1956,6 +1970,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
             const_value = item.extras["const"]
             enum_values.append(const_value)
+            read_as_const = read_as_const and item.read_as_const
 
             if item.title:
                 varnames.append(item.title)
@@ -1973,6 +1988,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         inferred_type = "number"
 
         if not enum_values:  # pragma: no cover
+            return None
+        if read_as_const and sum(value is not None for value in enum_values) == 1:
             return None
 
         final_type = inferred_type

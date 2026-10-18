@@ -181,6 +181,17 @@ def test_main_xmlschema_edge_cases(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_xmlschema_single_value_enum_as_const_keeps_converted(extra_args: list[str], output_file: Path) -> None:
+    """Keep the fixed values of nillable elements as written, as XML Schema is converted rather than read as JSON."""
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "single_value_enum_as_const.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
 def test_main_xmlschema_fixed_decimal(output_file: Path) -> None:
     """Generate Decimal defaults for fixed XML Schema decimal values."""
     run_main_and_assert(

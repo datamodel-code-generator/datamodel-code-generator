@@ -9384,6 +9384,17 @@ def test_main_jsonschema_single_value_enum_as_const_keeps_draft_04(extra_args: l
 
 
 @pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_jsonschema_single_value_enum_as_const_extension_defs(extra_args: list[str], output_file: Path) -> None:
+    """Merge the branches of a schema under an extension key that a $ref with siblings names, as written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "extension_defs.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("extra_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
 def test_main_jsonschema_single_value_enum_as_const_mixed_drafts(extra_args: list[str], output_dir: Path) -> None:
     """Keep a draft-07 file as written when the directory's models are parsed with an earlier draft-04 file's draft."""
     run_main_and_assert(

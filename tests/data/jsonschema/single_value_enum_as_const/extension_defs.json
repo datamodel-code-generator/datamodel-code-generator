@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "rate": {
+      "$ref": "#/x-defs/Rate",
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 5
+    },
+    "local": {
+      "$ref": "#/$defs/Local",
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 5
+    }
+  },
+  "x-defs": {
+    "Rate": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "low"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Local": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "near"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

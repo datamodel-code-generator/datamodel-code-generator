@@ -3972,6 +3972,94 @@ def test_main_openapi_single_value_enum_as_const(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_path", "output_model", "extra_args"),
+    [
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="enum",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const", "--enum-field-as-literal", "one"],
+            id="enum-literal-one",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="written-as-const",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            ["--enum-field-as-literal", "one"],
+            id="without-option-literal-one",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/written_as_const/null_branch.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            id="written-as-const-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/null_branch.yaml",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const"],
+            id="msgspec",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/extension_keys.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const"],
+            id="extension-keys",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/extension_keys.yaml",
+            "pydantic_v2.BaseModel",
+            [],
+            id="extension-keys-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/paths_scope.yaml",
+            "pydantic_v2.BaseModel",
+            ["--use-single-value-enum-as-const", "--openapi-scopes", "schemas", "paths"],
+            id="paths-scope",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/paths_scope.yaml",
+            "pydantic_v2.BaseModel",
+            ["--openapi-scopes", "schemas", "paths"],
+            id="paths-scope-without-option",
+        ),
+        pytest.param(
+            "single_value_enum_as_const/paths_scope.yaml",
+            "msgspec.Struct",
+            ["--use-single-value-enum-as-const", "--openapi-scopes", "schemas", "paths"],
+            id="paths-scope-msgspec",
+        ),
+    ],
+)
+def test_main_openapi_single_value_enum_as_const_null_branch(
+    input_path: str, output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Type one value beside a null branch as Literal[...] | None under --use-single-value-enum-as-const.
+
+    Without the option, const branches beside a null branch still merge into an Enum and a root model, as they do
+    under an extension key, which the option reads as written, while a property, path or parameter named like a
+    keyword or an extension is read.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
+    )
+
+
 @pytest.mark.skipif(
     version.parse(pydantic.VERSION) < version.parse("1.9.0"),
     reason="Require Pydantic version 1.9.0 or later ",
