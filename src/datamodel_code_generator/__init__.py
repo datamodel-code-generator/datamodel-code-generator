@@ -606,13 +606,6 @@ class InvalidClassNameError(Error):
         super().__init__(message=message)
 
 
-_INVALID_CLASS_NAME_CLI_HINT = (
-    "You have to set `--class-name` option\n"
-    "Hint: add --recommend-options to this command to get a class name and naming options for this schema "
-    "(experimental)."
-)
-
-
 def _validate_output_datetime_class(
     output_model_type: DataModelType, output_datetime_class: DatetimeClassType | None
 ) -> None:

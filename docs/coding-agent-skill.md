@@ -22,7 +22,7 @@ datamodel-codegen --input SCHEMA [--input-file-type TYPE] [--output-model-type T
 
 Use `arguments` from the payload (or `config` for a project configured in `pyproject.toml`) as the starting command, and do not add options it lists under `not_recommended` without a stated reason. When the goal needs judgment beyond the schema's shape, add `--recommend-options` to a `--generate-prompt` command so the prompt includes the recommendation, and decide from both. See [Option recommendations](recommend-options.md).
 
-`datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents.
+`datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents. Add `--recommend-options` when an input schema is available; without an input schema, run `--generate-prompt` alone.
 
 ```bash
 datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema." --recommend-options

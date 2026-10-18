@@ -64,6 +64,7 @@ union-edges	main/recommend_options/union_edges.txt
 no-lock	main/recommend_options/url.txt
 update-lock	main/recommend_options/url_update_lock.txt
 [test_recommend_options_in_prompt]
+backtick-titles	main/main_recommend_options/recommend_options_in_prompt[backtick-titles].txt
 job	main/main_recommend_options/recommend_options_in_prompt[job].txt
 json	main/main_recommend_options/recommend_options_in_prompt[json].txt
 text	main/main_recommend_options/recommend_options_in_prompt[text].txt

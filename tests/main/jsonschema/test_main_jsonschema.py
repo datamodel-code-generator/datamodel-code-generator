@@ -1325,19 +1325,33 @@ def test_main_invalid_model_name_failed(capsys: pytest.CaptureFixture[str], outp
     )
 
 
-def test_main_invalid_model_name_converted(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
-    """Test invalid model name conversion error, with the hint to get a class name from --recommend-options."""
+@pytest.mark.parametrize(
+    ("extra_args", "hint"),
+    [
+        pytest.param(
+            [],
+            "Hint: add --recommend-options to this command to get a class name and naming options for this schema "
+            "(experimental).\n",
+            id="hint",
+        ),
+        pytest.param(["--check"], "", id="check-rejects-recommend-options"),
+    ],
+)
+def test_main_invalid_model_name_converted(
+    extra_args: list[str], hint: str, capsys: pytest.CaptureFixture[str], output_file: Path
+) -> None:
+    """Test invalid model name conversion error, with the hint to get a class name from --recommend-options.
+
+    The hint is left out where the command cannot take --recommend-options, such as with --check.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "invalid_model_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
+        extra_args=extra_args,
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr=(
-            "title='1Xyz' is invalid class name. You have to set `--class-name` option\n"
-            "Hint: add --recommend-options to this command to get a class name and naming options for this schema "
-            "(experimental).\n"
-        ),
+        expected_stderr=f"title='1Xyz' is invalid class name. You have to set `--class-name` option\n{hint}",
     )
 
 

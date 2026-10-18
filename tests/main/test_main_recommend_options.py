@@ -98,11 +98,18 @@ names, and recommends the best candidate, with class names before and after each
 latest dated preset to start from, the options to add with the reason for each, options it advises against,
 the compared candidates, and the resulting command and pyproject.toml block. Nothing is written. Options set
 on the command line or in pyproject.toml are kept and reported when the rules suggest another value. Add
-`--output-format json` for a structured payload.""",
+`--output-format json` for a structured payload, or `--generate-prompt` to include the recommendation in an LLM
+prompt instead.""",
     input_schema="recommend_options/api.yaml",
     cli_args=["--input", "api.yaml", "--input-file-type", "openapi", "--recommend-options"],
     expected_stdout="main/recommend_options/api.txt",
-    related_options=["--preset", "--output-format", "--naming-strategy", "--enum-field-as-literal"],
+    related_options=[
+        "--preset",
+        "--output-format",
+        "--generate-prompt",
+        "--naming-strategy",
+        "--enum-field-as-literal",
+    ],
 )
 def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Recommend options for the input schema on top of the latest dated preset (experimental).
@@ -115,7 +122,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     latest dated preset to start from, the options to add with the reason for each, options it advises against,
     the compared candidates, and the resulting command and pyproject.toml block. Nothing is written. Options set
     on the command line or in pyproject.toml are kept and reported when the rules suggest another value. Add
-    `--output-format json` for a structured payload.
+    `--output-format json` for a structured payload, or `--generate-prompt` to include the recommendation in an LLM
+    prompt instead.
     """
     _recommend(
         tmp_path,
@@ -422,6 +430,7 @@ def _printed(args: Sequence[str], capsys: pytest.CaptureFixture[str]) -> str:
             ["--input", "api.yaml", "--input-file-type", "openapi", "--output-format", "json"], ("api.yaml",), id="json"
         ),
         pytest.param(["--job", "api"], ("api.yaml", "project_job/pyproject.toml"), id="job"),
+        pytest.param(["--input", "backtick_titles.json"], ("backtick_titles.json",), id="backtick-titles"),
     ],
 )
 def test_recommend_options_in_prompt(
@@ -429,10 +438,10 @@ def test_recommend_options_in_prompt(
 ) -> None:
     """With --generate-prompt, embed the recommendation in the prompt; the rest of the prompt stays the same.
 
-    The text prompt shows the report before the options and asks to start from its command; the JSON prompt adds the
-    --recommend-options payload as ``recommendation``, valid against the prompt, structured-output and
-    recommend-options schemas. The stored output is the difference from the prompt without --recommend-options,
-    without line numbers, so that options added to the prompt do not move it.
+    The text prompt shows the report before the options, fenced by more backticks than the schema's titles hold, and
+    asks to start from its command; the JSON prompt adds the --recommend-options payload as ``recommendation``, valid
+    against the prompt, structured-output and recommend-options schemas. The stored output is the difference from the
+    prompt without --recommend-options, without line numbers, so that options added to the prompt do not move it.
     """
     for name in inputs:
         shutil.copy(INPUT_PATH / name, tmp_path / Path(name).name)

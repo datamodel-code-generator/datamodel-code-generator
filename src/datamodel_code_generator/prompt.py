@@ -473,17 +473,22 @@ def _generate_prompt_json(
 
 
 def _recommendation_lines(recommendation: dict[str, Any] | None) -> tuple[str, ...]:
-    """Format the embedded --recommend-options report as a prompt section."""
+    """Format the embedded --recommend-options report as a prompt section.
+
+    The report quotes names from the schema, so its fence is longer than any run of backticks in it.
+    """
     if recommendation is None:
         return ()
+    content = recommendation["content"].rstrip()
+    fence = "`" * max(3, max(map(len, re.findall(r"`+", content)), default=0) + 1)
     return (
         "## Schema analysis and recommended options",
         "",
         "The `--recommend-options` report for the input schema (experimental):",
         "",
-        "```",
-        recommendation["content"].rstrip(),
-        "```",
+        fence,
+        content,
+        fence,
         "",
     )
 

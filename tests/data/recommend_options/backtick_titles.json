@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Snippets",
+  "type": "object",
+  "properties": {
+    "python": {"title": "```", "type": "object", "properties": {"code": {"type": "string"}}},
+    "shell": {"title": "```", "type": "object", "properties": {"command": {"type": "string"}}}
+  }
+}

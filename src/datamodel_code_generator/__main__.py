@@ -126,7 +126,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator import (
-    _INVALID_CLASS_NAME_CLI_HINT,
     _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR,
     DataModelType,
     Error,
@@ -1563,6 +1562,17 @@ def _recommend_options_conflict(args: Namespace) -> str | None:
         (args.list_experimental is not None, "--list-experimental"),
     )
     return next((option for conflict, option in conflicts if conflict), None)
+
+
+def _invalid_class_name_message(error: InvalidClassNameError, args: Namespace) -> str:
+    """Return the CLI message of an invalid class name, with the --recommend-options hint where the command takes it."""
+    message = f"{error} You have to set `--class-name` option"
+    if _recommend_options_conflict(args) is not None:
+        return message
+    return (
+        f"{message}\nHint: add --recommend-options to this command to get a class name and naming options for this "
+        "schema (experimental)."
+    )
 
 
 def _cli_arguments(config: Mapping[str, TomlValue]) -> list[str]:
@@ -3252,7 +3262,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                     logical_output=_batch_original_output,
                 )
     except InvalidClassNameError as e:
-        print(f"{e} {_INVALID_CLASS_NAME_CLI_HINT}", file=sys.stderr)  # noqa: T201
+        print(_invalid_class_name_message(e, namespace), file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
     except UnicodeDecodeError as e:
         print(f"Unable to decode input using encoding {config.encoding!r}: {e}", file=sys.stderr)  # noqa: T201

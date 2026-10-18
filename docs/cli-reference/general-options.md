@@ -2443,9 +2443,10 @@ names, and recommends the best candidate, with class names before and after each
 latest dated preset to start from, the options to add with the reason for each, options it advises against,
 the compared candidates, and the resulting command and pyproject.toml block. Nothing is written. Options set
 on the command line or in pyproject.toml are kept and reported when the rules suggest another value. Add
-`--output-format json` for a structured payload.
+`--output-format json` for a structured payload, or `--generate-prompt` to include the recommendation in an LLM
+prompt instead.
 
-**Related:** [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal), [`--naming-strategy`](model-customization.md#naming-strategy), `--output-format`, [`--preset`](base-options.md#preset)
+**Related:** [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal), `--generate-prompt`, [`--naming-strategy`](model-customization.md#naming-strategy), `--output-format`, [`--preset`](base-options.md#preset)
 
 !!! tip "Usage"
 

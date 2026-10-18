@@ -1,0 +1,63 @@
+--- --generate-prompt
++++ --recommend-options
+@@
+ ```
+ --input backtick_titles.json
+ ```
++
++## Schema analysis and recommended options
++
++The `--recommend-options` report for the input schema (experimental):
++
++````
++Option recommendations (experimental; quick mode; rules 2026-10-17)
++
++Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
++  components                       0, 0 operations
++  inline objects / enums           2 / 0, nesting depth 1
++  shared property names            0 (none)
++  inline names = component names   0
++  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
++  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
++  inline titles                    2 objects, most repeated 2 (``` x2)
++  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
++  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
++  component keys                   none; 0 dotted in 0 namespaces
++  root schema                      object model 1, title words 1
++
++Start from  --preset standard-py310-20261017
++
++Add (1 option)
++  --class-name BacktickTitles   [root.class-name-for-root-object]
++      The root schema is an object model. Without --class-name its class is Model (with
++      --use-title-as-name, its title: Snippets), and full-path prefixes that name onto root-level
++      models. The suggested name comes from the input file name; replace it with the name the
++      project wants.
++      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
++      became TsConfig, names over 40 characters 6 -> 0
++      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
++      Workflow, Compose and PackageJson
++
++Notes
++  - Target Python is not set: the recommendation assumes 3.10, the default. Set
++    --target-python-version to start from the preset of the Python version the project runs.
++
++Command
++  datamodel-codegen --class-name BacktickTitles --input backtick_titles.json --preset standard-py310-20261017
++
++pyproject.toml
++  [tool.datamodel-codegen]
++  class-name = "BacktickTitles"
++  input = "backtick_titles.json"
++  preset = "standard-py310-20261017"
++````
+ 
+ ## Options by Category
+ 
+@@
+ 3. Current options that should remain unchanged
+ 4. Options considered but rejected, with a short reason
+ 5. Verification command that validates the generated CLI or output
++
++Start from the command in "Schema analysis and recommended options" when it
++has one, and give a reason for every option you add to it, change, or remove.

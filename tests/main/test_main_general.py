@@ -3714,8 +3714,7 @@ def test_all_exports_recursive_local_model_collision_error(
         expected_stderr=(
             "Name collision detected with --all-exports-scope:\n"
             "  'Message' conflicts with a model in __init__.py\n\n"
-            "Use --all-exports-collision-strategy to specify how to handle collisions.\n"
-            "Hint: --all-exports-collision-strategy minimal-prefix or full-prefix prefixes the colliding names with "
+            "Use --all-exports-collision-strategy minimal-prefix or full-prefix to prefix the colliding names with "
             "their module names.\n"
         ),
         capsys=capsys,
