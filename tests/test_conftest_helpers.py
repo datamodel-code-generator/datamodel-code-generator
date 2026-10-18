@@ -1197,6 +1197,56 @@ def test_ledger_merges_observations_from_environments(ledger: LedgerProject, tmp
     ledger.run("suite", "--inline-snapshot=disable", env=builtin_env).assert_outcomes(passed=5, skipped=1)
 
 
+UNCOLLECTED_TESTS = """
+import pytest
+
+from tests.conftest import assert_output
+
+
+@pytest.mark.parametrize("case", ["kept"])
+def test_case(case):
+    assert_output(f"{case}\\n")
+"""
+
+
+def test_ledger_drops_items_no_environment_collects(ledger: LedgerProject, tmp_path: Path) -> None:
+    """Lines of an item no observed environment collects go, conditional ones too, with the files only they used.
+
+    Only modules some environment collected count: the lines of ``test_o.py``, which no observation collected, stay,
+    and so do the lines of an item an environment collected.
+    """
+    ledger.write("test_m.py", UNCOLLECTED_TESTS)
+    ledger.write("test_o.py", UNCOLLECTED_TESTS)
+    ledger.run("suite").assert_outcomes(passed=2)
+    kept = {module: ledger.refs(module) for module in ("test_m", "test_o")}
+    for module, prefix in (("test_m", "m"), ("test_o", "o")):
+        gone = [
+            units.RefLine("test_case", "gone", f"{prefix}/gone@{python}.txt", conditional=True)
+            for python in ("py310", "py314")
+        ]
+        for line in gone:
+            ledger.store(line.label, "gone\n")
+        lines = [*units.parse_refs(kept[module])[0], *gone]
+        (ledger.suite / f"{module}.refs").write_text(units.format_refs(lines), encoding="utf-8")
+    other = ledger.refs("test_o")
+    first, second = tmp_path / "first", tmp_path / "second"
+    for directory in (first, second):
+        ledger.run(f"--expected-observe={directory}", "suite/test_m.py").assert_outcomes(passed=1)
+    apply_file = tmp_path / "apply.json"
+    apply_file.write_text(
+        json.dumps({"observations": [str(first), str(second)], "merge": False, "drop_uncollected": True}),
+        encoding="utf-8",
+    )
+    result = ledger.run(f"--expected-apply={apply_file}")
+    result.assert_outcomes()
+    assert "expected: removed the lines of suite/test_m.py::test_case[gone] from suite/test_m.refs" in (
+        result.stdout.str()
+    )
+    assert (ledger.refs(), ledger.refs("test_o")) == (kept["test_m"], other)
+    assert sorted(ledger.files()) == ["m/case[kept].txt", "o/gone@py310.txt", "o/gone@py314.txt"]
+    ledger.run("suite/test_m.py", env=GITHUB).assert_outcomes(passed=1)
+
+
 def test_ledger_applies_foreign_payloads(ledger: LedgerProject, tmp_path: Path) -> None:
     """A payload from another environment adds an override for different content and marks labels it skips."""
     ledger.write(
@@ -1952,6 +2002,52 @@ def test_fix_expected_from_ci_and_all_environments(
     assert tox_command() == ["/bin/tox"]
     monkeypatch.setattr(fix_expected.shutil, "which", lambda _name: None)
     assert tox_command()[:3] == ["uvx", "--from", "tox>=4.32"]
+
+
+def test_fix_expected_drops_tests_no_environment_collects(
+    ledger: LedgerProject, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run over every environment drops the lines of tests none collects; ``--drop-uncollected`` does only that.
+
+    tox is an external tool: the fake creates environments whose Python is this one, and pytest runs for real.
+    """
+    import subprocess
+
+    from scripts import fix_expected
+
+    ledger.write("test_m.py", UNCOLLECTED_TESTS)
+    ledger.run("suite").assert_outcomes(passed=1)
+    recorded = ledger.refs()
+    gone = [
+        units.RefLine("test_case", "gone", f"m/gone@{python}.txt", conditional=True) for python in ("py310", "py314")
+    ]
+
+    def record_gone() -> None:
+        for line in gone:
+            ledger.store(line.label, "gone\n")
+        lines = [*units.parse_refs(recorded)[0], *gone]
+        (ledger.suite / "test_m.refs").write_text(units.format_refs(lines), encoding="utf-8")
+
+    real_run = subprocess.run
+
+    def fake_run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if command[:2] == ["tox", "run"]:
+            return subprocess.CompletedProcess(command, 0, stdout="")
+        return real_run([sys.executable, *command[1:]], **kwargs)
+
+    monkeypatch.setenv("PYTHONPATH", str(Path(__file__).parents[1]))
+    monkeypatch.setattr(fix_expected.subprocess, "run", fake_run)
+    monkeypatch.setattr(fix_expected, "tox_command", lambda: ["tox"])
+    monkeypatch.setattr(fix_expected, "ENVIRONMENTS", {"py314": fix_expected.ENVIRONMENTS["py314"]})
+    root, output = ["--root", str(ledger.pytester.path)], ledger.pytester.path / "observed"
+    record_gone()
+    assert fix_expected.main([*root, "--all-environments", "--workers", "0", "suite"]) == 0
+    assert (ledger.refs(), sorted(ledger.files())) == (recorded, ["m/case[kept].txt"])
+    record_gone()
+    observe = ["--all-environments", "--observe-only", "--output", str(output), "--workers", "0", "suite"]
+    assert fix_expected.main([*root, *observe]) == 0
+    assert fix_expected.main([*root, "--drop-uncollected", str(output / "py314")]) == 0
+    assert (ledger.refs(), sorted(ledger.files())) == (recorded, ["m/case[kept].txt"])
 
 
 ONE_TEST = "from tests.conftest import assert_output\n\nOUT = 'x\\n'\n\n\ndef test_a():\n    assert_output(OUT)\n"

@@ -84,6 +84,7 @@ __all__ = [
     "stored_digest",
     "tree_label",
     "tree_member",
+    "uncollected_items",
     "unit_digest",
     "write_files",
 ]
@@ -1587,6 +1588,17 @@ def merge_environments(
             )
         result[nodeid] = desired
     return result
+
+
+def uncollected_items(environments: Sequence[Observations], recorded: Iterable[str]) -> list[str]:
+    """Return the recorded items no environment collected although one of them collected their whole module.
+
+    Environments collect different parameters of a test, so an item only counts as gone when none of them has it;
+    then every line of it goes, conditional ones included.
+    """
+    collected = {nodeid for environment in environments for nodeid in environment["collected"]}
+    modules = {nodeid.partition("::")[0] for nodeid in collected}
+    return sorted({nodeid for nodeid in recorded if nodeid.partition("::")[0] in modules} - collected)
 
 
 def _merged_lines(
