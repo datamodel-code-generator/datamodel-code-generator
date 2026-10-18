@@ -7792,22 +7792,26 @@ pydantic_v2_dataclass.py-extra_args2	main/jsonschema/x_python_type_literal_enum_
 [test_missing_embedded_anchor]
 builtin-api	main/jsonschema/nested_resources/missing_anchor_api_error.txt
 builtin-api	main/jsonschema/nested_resources/missing_anchor_native_error.txt
+builtin-cli	main/jsonschema/nested_resources/missing_anchor_cli_error.txt
 builtin-cli	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 builtin-dict	main/jsonschema/nested_resources/missing_anchor_api_error.txt
 builtin-dict	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 builtin-url-api	main/jsonschema/nested_resources/missing_anchor_api_error.txt
 builtin-url-api	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 builtin-url-api	main/jsonschema/nested_resources/missing_anchor_requests.txt	= main/jsonschema/nested_resources/id_metadata_requests.txt
+builtin-url-cli	main/jsonschema/nested_resources/missing_anchor_cli_error.txt
 builtin-url-cli	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 builtin-url-cli	main/jsonschema/nested_resources/missing_anchor_requests.txt	= main/jsonschema/nested_resources/id_metadata_requests.txt
 external-api	main/jsonschema/nested_resources/missing_anchor_api_error.txt
 external-api	main/jsonschema/nested_resources/missing_anchor_native_error.txt
+external-cli	main/jsonschema/nested_resources/missing_anchor_cli_error.txt
 external-cli	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 external-dict	main/jsonschema/nested_resources/missing_anchor_api_error.txt
 external-dict	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 external-url-api	main/jsonschema/nested_resources/missing_anchor_api_error.txt
 external-url-api	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 external-url-api	main/jsonschema/nested_resources/missing_anchor_requests.txt	= main/jsonschema/nested_resources/id_metadata_requests.txt
+external-url-cli	main/jsonschema/nested_resources/missing_anchor_cli_error.txt
 external-url-cli	main/jsonschema/nested_resources/missing_anchor_native_error.txt
 external-url-cli	main/jsonschema/nested_resources/missing_anchor_requests.txt	= main/jsonschema/nested_resources/id_metadata_requests.txt
 [test_msgspec_enum_diagnostics_integer_subclasses]

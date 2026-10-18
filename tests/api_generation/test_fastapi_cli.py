@@ -188,7 +188,7 @@ def test_fastapi_cli_generate(
         input_file_type="openapi",
         extra_args=_server(),
         capsys=capsys,
-        expected_stderr=stored_expected(REGENERATED).read_text(encoding="utf-8"),
+        expected_stderr_path=REGENERATED,
         assert_func=assert_file_content,
         expected_file=PACKAGE / "models.py",
     )
@@ -213,9 +213,7 @@ def test_fastapi_cli_model_dependencies(
         extra_args=_server(*MODEL_DEPENDENCIES[case_name]),
         copy_files=[(CLI / "model-dependencies.yaml", tmp_path / "contacts.yaml")],
         capsys=capsys,
-        expected_stderr=stored_expected(
-            expected / f"{MODEL_DEPENDENCY_NOTICES.get(case_name, case_name)}.txt"
-        ).read_text(encoding="utf-8"),
+        expected_stderr_path=expected / f"{MODEL_DEPENDENCY_NOTICES.get(case_name, case_name)}.txt",
         assert_func=assert_file_content,
         expected_file=expected / f"{case_name}.py",
         skip_code_validation=True,
@@ -321,7 +319,7 @@ def test_fastapi_cli_check_outputs(
             output_path=output,
             extra_args=_server(*options, output=server),
             capsys=capsys,
-            expected_stderr=stored_expected(notice).read_text(encoding="utf-8"),
+            expected_stderr_path=notice,
             skip_code_validation=unvalidated,
         )
     for name in case.get("remove", ()):
@@ -349,7 +347,7 @@ def test_fastapi_cli_check_outputs(
                 output_path=output,
                 extra_args=_server(*options, *case.get("options", ()), output=server),
                 capsys=capsys,
-                expected_stderr=stored_expected(repeated).read_text(encoding="utf-8"),
+                expected_stderr_path=repeated,
                 skip_code_validation=unvalidated,
             )
     assert_output(
@@ -568,8 +566,7 @@ def test_fastapi_cli_precedence(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-precedence.toml")
-    expected = stored_expected(EXPECTED / "cli" / notice).read_text(encoding="utf-8")
-    run_main_with_args(arguments, capsys=capsys, expected_stderr=expected)
+    run_main_with_args(arguments, capsys=capsys, expected_stderr_path=EXPECTED / "cli" / notice)
     report = "".join(_methods(path) for path in sorted(tmp_path.glob("*/services.py")))
     assert_output(
         f"$ datamodel-codegen {' '.join(arguments)}\n{report}", EXPECTED / "cli" / "precedence" / f"{name}.txt"
@@ -590,12 +587,14 @@ def test_fastapi_cli_pyproject_paths(
     shutil.copy2(CLI / "names.json", project / "names.json")
     (work / "names.json").write_text('{"/paths/~1pets/get": "find_pets"}', encoding="utf-8")
     monkeypatch.chdir(work)
-    notice = stored_expected(EXPECTED / "cli" / "dependencies-project.txt").read_text(encoding="utf-8")
-    run_main_with_args([], capsys=capsys, expected_stderr=notice.format(project=project.as_posix()))
+    run_main_with_args([], capsys=capsys)
+    assert_output(
+        capsys.readouterr().err.replace(project.as_posix(), "<project>"), EXPECTED / "cli" / "dependencies-project.txt"
+    )
     run_main_with_args(
         ["--server-output", "service", "--server-operation-names", "names.json"],
         capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-service.txt").read_text(encoding="utf-8"),
+        expected_stderr_path=EXPECTED / "cli" / "dependencies-service.txt",
     )
     services = sorted(tmp_path.rglob("services.py"), key=lambda path: path.relative_to(tmp_path).as_posix())
     assert_output(
@@ -633,8 +632,10 @@ def test_fastapi_cli_json_file_documents(
     for name in pyproject:
         shutil.copy2(CLI / name, project / "pyproject.toml")
     monkeypatch.chdir(work)
-    notice = stored_expected(EXPECTED / "cli" / "dependencies-project.txt").read_text(encoding="utf-8")
-    run_main_with_args(arguments, capsys=capsys, expected_stderr=notice.format(project=project.as_posix()))
+    run_main_with_args(arguments, capsys=capsys)
+    assert_output(
+        capsys.readouterr().err.replace(project.as_posix(), "<project>"), EXPECTED / "cli" / "dependencies-project.txt"
+    )
     assert_output(_methods(project / "server" / "services.py"), EXPECTED / "cli" / "json-file-documents.txt")
 
 
@@ -698,9 +699,7 @@ def test_fastapi_cli_include_paths(
         extra_args=_server(*include, output="service"),
         copy_files=_inputs(tmp_path),
         capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-include-paths.txt").read_text(
-            encoding="utf-8"
-        ),
+        expected_stderr_path=EXPECTED / "cli" / "dependencies-include-paths.txt",
         file_should_not_exist=tmp_path / "server",
     )
     assert_output(
@@ -860,9 +859,7 @@ def test_fastapi_cli_removed_options(
         ],
         expected_code=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=stored_expected(EXPECTED / "cli" / "removed-options" / f"{case_name}.txt").read_text(
-            encoding="utf-8"
-        ),
+        expected_stderr_contains=f"error: unrecognized arguments: {' '.join(REMOVED_OPTIONS[case_name])}\n",
     )
     assert_output(
         "".join(f"{path.name}\n" for path in sorted(tmp_path.iterdir())),
@@ -1698,7 +1695,7 @@ def test_fastapi_cli_jobs_json_paths(
     run_main_with_args(
         ["--all-jobs", "--output-format", "json"],
         capsys=capsys,
-        expected_stderr=stored_expected(EXPECTED / "cli" / "dependencies-layout-jobs.txt").read_text(encoding="utf-8"),
+        expected_stderr_path=EXPECTED / "cli" / "dependencies-layout-jobs.txt",
     )
     run_main_with_args(
         ["--all-jobs", "--check", "--output-format", "json"],
@@ -1724,9 +1721,7 @@ def test_fastapi_cli_shared_models_jobs(
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path, "pyproject-shared-models-jobs.toml")
-    run_main_with_args(
-        ["--all-jobs"], capsys=capsys, expected_stderr=stored_expected(SHARED_DEPENDENCIES).read_text(encoding="utf-8")
-    )
+    run_main_with_args(["--all-jobs"], capsys=capsys, expected_stderr_path=SHARED_DEPENDENCIES)
     assert_file_content(tmp_path / "models.py", PACKAGE / "models.py")
     assert_directory_content(tmp_path / "server", PACKAGE / "server")
     assert_output(_methods(tmp_path / "back" / "admin" / "services.py"), EXPECTED / "cli" / "shared-models.txt")
@@ -2058,7 +2053,7 @@ def test_fastapi_cli_shared_models_timestamp(
         run_main_with_args(
             ["--all-jobs"],
             capsys=capsys,
-            expected_stderr=stored_expected(SHARED_DEPENDENCIES).read_text(encoding="utf-8"),
+            expected_stderr_path=SHARED_DEPENDENCIES,
         )
     assert_file_content(tmp_path / "models.py", "cli/timestamp-models.py")
     assert_file_content(tmp_path / "back" / "admin" / "services.py", "cli/timestamp-services.py")

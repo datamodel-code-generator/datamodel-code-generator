@@ -23,7 +23,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter, PythonVersion, is_supported_in_black
 from datamodel_code_generator.parser.avro import convert_avro_schema_data
-from tests.conftest import assert_inputs_not_mutated, assert_mutable_copy_is_isolated, assert_output, stored_expected
+from tests.conftest import assert_inputs_not_mutated, assert_mutable_copy_is_isolated, assert_output
 from tests.main.avro.conftest import assert_file_content
 from tests.main.conftest import (
     AVRO_DATA_PATH,
@@ -944,9 +944,7 @@ def test_avro_namespace_reference_precedence(output_file: Path, entrypoint: str)
         expected_error_type="missing",
         expected_attribute_path=("chosen", "local_value"),
         expected_attribute_value=3,
-        expected_repr=stored_expected(AVRO_DATA_PATH.parent / "expected/main/avro/namespace_reference_precedence.txt")
-        .read_text(encoding="utf-8")
-        .strip(),
+        expected_repr_path=AVRO_DATA_PATH.parent / "expected/main/avro/namespace_reference_precedence.txt",
     )
 
 

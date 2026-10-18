@@ -320,6 +320,7 @@ def _assert_captured_output(
     *,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
+    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     derived_stdout: bool = False,
@@ -327,6 +328,7 @@ def _assert_captured_output(
     if not any((
         expected_stdout_path is not None,
         expected_stderr is not None,
+        expected_stderr_path is not None,
         expected_stderr_contains is not None,
         assert_no_stderr,
         derived_stdout,
@@ -341,6 +343,8 @@ def _assert_captured_output(
         _compare_derived(_normalize_line_endings(captured.out), role=_derived_output_role(".stdout"), suffix=".txt")
     if expected_stderr is not None and captured.err != expected_stderr:  # pragma: no cover
         pytest.fail(f"Expected stderr:\n{expected_stderr}\n\nActual stderr:\n{captured.err}")
+    if expected_stderr_path is not None:
+        assert_output(captured.err, expected_stderr_path)
     if expected_stderr_contains is not None and expected_stderr_contains not in captured.err:  # pragma: no cover
         pytest.fail(f"Expected stderr to contain: {expected_stderr_contains!r}\n\nActual stderr:\n{captured.err}")
     if assert_no_stderr and captured.err:  # pragma: no cover
@@ -679,6 +683,7 @@ def run_main_with_args(
     capsys: pytest.CaptureFixture[str] | None = None,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
+    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     use_parsed_source_cache: bool = True,
@@ -693,6 +698,7 @@ def run_main_with_args(
         capsys: pytest capsys fixture for capturing output assertions
         expected_stdout_path: Path to file with expected stdout content
         expected_stderr: Exact expected stderr
+        expected_stderr_path: Path to file with expected stderr content
         expected_stderr_contains: Expected stderr substring
         assert_no_stderr: Assert stderr is empty
         use_parsed_source_cache: Enable the process-local parsed source cache for generation-style commands
@@ -722,6 +728,7 @@ def run_main_with_args(
         capsys,
         expected_stdout_path=expected_stdout_path,
         expected_stderr=expected_stderr,
+        expected_stderr_path=expected_stderr_path,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
     )
@@ -980,6 +987,7 @@ def run_main_and_assert(  # noqa: PLR0912
     capsys: pytest.CaptureFixture[str] | None = None,
     expected_stdout_path: Path | None = None,
     expected_stderr: str | None = None,
+    expected_stderr_path: Path | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
     # Other options
@@ -1031,6 +1039,7 @@ def run_main_and_assert(  # noqa: PLR0912
         capsys: pytest capsys fixture
         expected_stdout_path: Compare stdout with file
         expected_stderr: Assert exact stderr match
+        expected_stderr_path: Compare stderr with file
         expected_stderr_contains: Assert stderr contains string
         assert_no_stderr: Assert stderr is empty
 
@@ -1131,6 +1140,7 @@ def run_main_and_assert(  # noqa: PLR0912
         capsys,
         expected_stdout_path=expected_stdout_path,
         expected_stderr=expected_stderr,
+        expected_stderr_path=expected_stderr_path,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
         derived_stdout=derived_stdout and capsys is not None,
@@ -1542,9 +1552,13 @@ def assert_generated_model_json_validation(
     expected_attribute_value: Any = None,
     expected_keyword_only_fields: Collection[str] | None = None,
     expected_repr: str | None = None,
+    expected_repr_path: Path | None = None,
     invalid_keyword_arguments: Sequence[tuple[Mapping[str, Any], str]] = (),
 ) -> None:
-    """Import a generated module and validate JSON data through a generated Pydantic model or dataclass."""
+    """Import a generated module and validate JSON data through a generated Pydantic model or dataclass.
+
+    The repr of the parsed value equals ``expected_repr``, or the expected file ``expected_repr_path`` as one line.
+    """
     with _generated_model(output_path, module_name, model_name) as model:
         validate_json = _model_json_validator(model)
         parsed = validate_json(valid_json)
@@ -1583,6 +1597,8 @@ def assert_generated_model_json_validation(
 
         if expected_repr is not None and repr(parsed) != expected_repr:  # pragma: no cover
             pytest.fail(f"Expected repr {expected_repr!r}, got {parsed!r}", pytrace=False)
+        if expected_repr_path is not None:
+            assert_output(f"{parsed!r}\n", expected_repr_path)
 
         _assert_model_json_invalid(validate_json, invalid_json, expected_error_type)
         for keyword_arguments, keyword_error_type in invalid_keyword_arguments:

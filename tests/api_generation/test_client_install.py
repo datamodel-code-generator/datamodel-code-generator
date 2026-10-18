@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from tests.api_generation.support.backends import backend_arguments
-from tests.conftest import assert_output, stored_expected
+from tests.conftest import assert_output
 from tests.main.conftest import run_main_and_assert
 
 DATA = Path(__file__).parents[1] / "data"
@@ -92,17 +92,15 @@ def test_client_install(
         "pydantic" if backend.startswith("pydantic") else "msgspec" if backend.startswith("msgspec") else "stdlib"
     )
     notice_profile = "all" if profile == "all" else "api-key"
-    notice = stored_expected(EXPECTED / f"{notice_profile}-{dependency_kind}-dependencies.txt").read_text(
-        encoding="utf-8"
-    )
     run_main_and_assert(
         input_path=source,
         output_path=Path("publication_client_models.py"),
         input_file_type="openapi",
         extra_args=arguments,
         capsys=capsys,
-        expected_stderr=notice,
     )
+    notice = capsys.readouterr().err
+    assert_output(notice, EXPECTED / f"{notice_profile}-{dependency_kind}-dependencies.txt")
     command = shlex.split(notice.splitlines()[1])
     subprocess.run(
         [*command, "--no-sync", "--resolution", "lowest-direct", "--python", sys.executable],

@@ -124,7 +124,9 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 	main_kr/main_docstring_special_chars/output.py
 [test_main_fail_on_multi_module_stdout]
 invalid-dotted-repair	__init__.py
+invalid-dotted-repair	main_kr/multi_module_stdout/error.txt
 modular	__init__.py
+modular	main_kr/multi_module_stdout/error.txt
 [test_main_modular]
 	main_kr/main_modular//*.py	= main/openapi/modular//*.py
 [test_main_modular_json_no_file]

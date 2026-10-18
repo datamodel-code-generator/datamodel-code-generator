@@ -28090,9 +28090,7 @@ def test_missing_embedded_anchor(
                     ],
                     expected_exit=Exit.ERROR,
                     capsys=capsys,
-                    expected_stderr=stored_expected(RESOURCES_EXPECTED / "missing_anchor_cli_error.txt").read_text(
-                        encoding="utf-8"
-                    ),
+                    expected_stderr_path=RESOURCES_EXPECTED / "missing_anchor_cli_error.txt",
                 )
             else:
                 with pytest.raises(Error) as error:

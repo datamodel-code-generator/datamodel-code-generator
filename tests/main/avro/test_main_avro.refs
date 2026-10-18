@@ -186,7 +186,9 @@ mappings1-temporal_defaults_mapped_strings.py-temporal_defaults_simple_dataclass
 mappings1-temporal_defaults_mapped_strings.py-temporal_defaults_simple_dataclass.txt	main/avro/temporal_defaults_simple_dataclass.txt
 [test_avro_namespace_reference_precedence]
 api	main/avro/namespace_reference_precedence.py
+api	main/avro/namespace_reference_precedence.txt
 cli	main/avro/namespace_reference_precedence.py
+cli	main/avro/namespace_reference_precedence.txt
 [test_avro_overridden_logical_defaults]
 decimal	main/avro/overridden_logical_defaults_decimal.py
 decimal	main/avro/overridden_logical_defaults_decimal.txt
