@@ -1,0 +1,1 @@
+# Shared copyright header

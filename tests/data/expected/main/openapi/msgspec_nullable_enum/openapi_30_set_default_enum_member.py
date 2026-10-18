@@ -11,13 +11,11 @@ from msgspec import UNSET, Struct, UnsetType
 
 class Level(IntEnum):
     integer_1 = 1
-    integer_None = None
     integer_2 = 2
 
 
 class LevelDefault(IntEnum):
     integer_1 = 1
-    integer_None = None
     integer_2 = 2
 
 
@@ -40,7 +38,6 @@ class OnlyNull(Enum):
 
 class Inline(IntEnum):
     integer_5 = 5
-    integer_None = None
     integer_6 = 6
 
 

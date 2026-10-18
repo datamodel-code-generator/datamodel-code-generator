@@ -616,8 +616,9 @@ def test_merge_release_benchmarks_does_not_pin_an_explicitly_unpinned_snapshot(t
     )
 
 
-def test_merge_release_benchmarks_cli_writes_expected_payload(tmp_path: Path) -> None:
+def test_merge_release_benchmarks_cli_writes_expected_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The merge CLI combines selection metadata and per-version fragments."""
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
     selection_path = tmp_path / "release-benchmark-selection.json"
     selector_result = subprocess.run(
         [

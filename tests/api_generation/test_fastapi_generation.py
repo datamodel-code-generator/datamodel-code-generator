@@ -11,12 +11,7 @@ from tests.api_generation.support.fastapi_generation import (
     fastapi_api_report,
     fastapi_render,
 )
-from tests.conftest import (
-    assert_exact_directory_content,
-    assert_generated_modules_output,
-    assert_output,
-    write_generated_modules,
-)
+from tests.conftest import assert_generated_modules_output, assert_output
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/fastapi"
 
@@ -80,11 +75,8 @@ def test_fastapi_render(case: str, tmp_path: Path) -> None:
     """Plan each operation's parameters, body, and responses, and render the package they need."""
     report, rendered, documented = fastapi_render(case, tmp_path / "render")
     assert_output(report, EXPECTED / f"{case}.txt")
-    for backend, modules in rendered.items():
-        assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
-    write_generated_modules(tmp_path / "documents", documented)
-    for pattern in ("*.md", "*.json"):
-        assert_exact_directory_content(tmp_path / "documents", EXPECTED / "packages" / case, pattern)
+    package = {(backend, *parts): body for backend, modules in rendered.items() for parts, body in modules.items()}
+    assert_generated_modules_output({**package, **documented}, EXPECTED / "packages" / case, pattern="*")
 
 
 @pytest.mark.parametrize(
@@ -112,11 +104,8 @@ def test_fastapi_template_fallback(case: str, *, builtin_sources: bool, tmp_path
     report, rendered, documented = fastapi_render(case, tmp_path / "render", builtin_sources=builtin_sources)
     expected = report.splitlines()[0].removeprefix("# ")
     assert_output(report, EXPECTED / f"{expected}.txt")
-    for backend, modules in rendered.items():
-        assert_generated_modules_output(modules, EXPECTED / "packages" / expected / backend)
-    write_generated_modules(tmp_path / "documents", documented)
-    for pattern in ("*.md", "*.json"):
-        assert_exact_directory_content(tmp_path / "documents", EXPECTED / "packages" / expected, pattern)
+    package = {(backend, *parts): body for backend, modules in rendered.items() for parts, body in modules.items()}
+    assert_generated_modules_output({**package, **documented}, EXPECTED / "packages" / expected, pattern="*")
 
 
 def test_fastapi_api(tmp_path: Path) -> None:

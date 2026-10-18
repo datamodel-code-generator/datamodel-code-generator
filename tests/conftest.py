@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import difflib
+import hashlib
 import importlib
 import inspect
 import json
 import os
 import re
+import shlex
 import socket
 import sys
 import time
@@ -17,23 +19,58 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import cached_property
 from itertools import islice, starmap
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
+from pathlib import Path, PurePosixPath
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
 
 import pytest
 import time_machine
-from inline_snapshot import external_file, get_snapshot_value, register_format_alias
-from inline_snapshot._external._storage._protocol import StorageLookupError
 from inline_snapshot._global_state import state as inline_snapshot_state
 from typing_extensions import Required
 
 from datamodel_code_generator import MIN_VERSION
 from datamodel_code_generator.http import _get_httpx
+from tests.units import (
+    AT_HOME,
+    BROKEN,
+    CONFLICT,
+    ORDER,
+    REFS_SUFFIX,
+    Desired,
+    Event,
+    Observations,
+    Plan,
+    Problem,
+    RefLine,
+    RefsIndex,
+    UnsafeWriteError,
+    apply_payload,
+    derived_name,
+    encode_payload,
+    facts_fit,
+    format_refs,
+    item_problem,
+    label_path,
+    merge_environments,
+    nodeid_key,
+    payload_predicate,
+    payload_problem,
+    predicate_matches,
+    read_unit,
+    resolve,
+    split_label,
+    tree_label,
+    tree_member,
+    unit_digest,
+    write_files,
+)
 
 if TYPE_CHECKING:
     import warnings
+    from collections.abc import Iterable
 
 CLI_DOC_COLLECTION_OUTPUT = Path(__file__).parent / "cli_doc" / ".cli_doc_collection.json"
 CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weights.json"
@@ -175,6 +212,22 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         metavar="INDEX/TOTAL",
         help="Run one of TOTAL shards of the selected tests, split by their measured CI durations",
     )
+    parser.addoption(
+        "--expected-observe",
+        metavar="DIR",
+        help="Record every expected-output comparison into DIR without failing on unrecorded or changed output "
+        "(used by scripts/fix_expected.py --all-environments)",
+    )
+    parser.addoption(
+        "--expected-apply",
+        metavar="FILE",
+        help="Apply expected output observed elsewhere (scripts/fix_expected.py) instead of running the tests",
+    )
+    parser.addini(
+        "expected_tests_root",
+        "Directory holding the test modules and data/expected, relative to the rootdir (default: tests/).",
+        default="",
+    )
     parser.addini(
         "assert_helper_direct_assert_exempt_files",
         "Test files under tests/ that are exempt from the shared assertion helper direct-assert guard.",
@@ -196,6 +249,8 @@ def pytest_configure(config: pytest.Config) -> None:
         "aliases: list of alternative option names (e.g., ['--capitalise-enum-members']).",
     )
     config._cli_doc_items: list[dict[str, Any]] = []
+    ledger = config.stash[_LEDGER] = _Ledger(config)
+    config.pluginmanager.register(_LedgerPlugin(ledger), "expected-ledger")
     config.pluginmanager.register(SlowTestOrdering(), "slow-test-ordering")
 
 
@@ -445,7 +500,7 @@ def pytest_collection_modifyitems(
 
         config._cli_doc_items.append({
             "node_id": item.nodeid,
-            "marker_kwargs": marker.kwargs,
+            "marker_kwargs": _stored_cli_doc_paths(config, item, marker.kwargs),
             "option_description": option_description,
         })
 
@@ -457,9 +512,9 @@ def pytest_collection_modifyitems(
         pytest.fail(error_msg, pytrace=False)
 
 
-def pytest_runtestloop(session: pytest.Session) -> bool | None:  # pragma: no cover
-    """Skip test execution when --collect-cli-docs is used."""
-    if session.config.getoption("--collect-cli-docs"):
+def pytest_runtestloop(session: pytest.Session) -> bool | None:
+    """Skip test execution when --collect-cli-docs or --expected-apply is used."""
+    if session.config.getoption("--collect-cli-docs") or session.config.getoption("--expected-apply"):
         return True
     return None
 
@@ -575,64 +630,8 @@ def _normalize_generated_text(text: str) -> str:
     return text if text.endswith("\n") else f"{text}\n"
 
 
-def _get_tox_env() -> str:  # pragma: no cover
-    """Get the current tox environment name from TOX_ENV_NAME or fallback.
-
-    Strips parallel-only suffixes since inline-snapshot requires -n0 (single process).
-    Only called in assertion failure hints.
-    """
-    import os
-
-    env = os.environ.get("TOX_ENV_NAME", "<version>")
-    # Remove parallel-only suffixes since inline-snapshot needs single process mode.
-    return env.removesuffix("-nocov-parallel").removesuffix("-parallel")
-
-
-def _format_snapshot_hint(action: str) -> str:  # pragma: no cover
-    """Format a hint message for inline-snapshot commands with rich formatting.
-
-    Only called when assertions fail.
-    """
-    from io import StringIO
-
-    from rich.console import Console
-    from rich.text import Text
-
-    tox_env = _get_tox_env()
-    command = f"  tox run -e {tox_env} -- --inline-snapshot={action}"
-
-    description = "To update the expected file, run:" if action == "fix" else "To create the expected file, run:"
-
-    output = StringIO()
-    console = Console(file=output, force_terminal=True, width=200, soft_wrap=False)
-
-    console.print(Text(description, style="default"))
-    console.print(Text(command, style="bold cyan"))
-
-    return output.getvalue()
-
-
-def _format_new_content(content: str) -> str:  # pragma: no cover
-    """Format new content (for create mode) with green color.
-
-    Only called when expected file not found.
-    """
-    from io import StringIO
-
-    from rich.console import Console
-    from rich.text import Text
-
-    output = StringIO()
-    console = Console(file=output, force_terminal=True, width=200, soft_wrap=False)
-
-    for line in content.splitlines():
-        console.print(Text(f"+{line}", style="green"))
-
-    return output.getvalue()
-
-
-def _format_diff(expected: str, actual: str, expected_path: Path) -> str:  # pragma: no cover
-    """Format a unified diff between expected and actual content with colors.
+def _format_diff(expected: str, actual: str, expected_path: Path | str) -> str:  # pragma: no cover
+    """Format a unified diff between expected and actual content, in colour when pytest's ``--color`` allows it.
 
     Only called when content differs from expected.
     """
@@ -656,7 +655,8 @@ def _format_diff(expected: str, actual: str, expected_path: Path) -> str:  # pra
         return ""
 
     output = StringIO()
-    console = Console(file=output, force_terminal=True, width=200, soft_wrap=False)
+    color = _color_output()
+    console = Console(file=output, force_terminal=color, no_color=not color, width=200, soft_wrap=False)
 
     for line in diff_lines:
         line_stripped = line.rstrip("\n")
@@ -685,61 +685,1231 @@ def _infer_expected_file(caller_function_name: str) -> str:
     return f"{name}.py"
 
 
-def _assert_with_external_file(content: str, expected_path: Path) -> None:
-    """Assert content matches external file, handling line endings."""
-    __tracebackhide__ = True
+EXPECTED_FIX_PREFIX = "dcg-expected-fix: "
+"""Prefix of the line a CI failure prints so ``scripts/fix_expected.py --from-ci`` can apply CI's own output."""
+EXPECTED_PAYLOAD_LIMIT = 32 * 1024
+SIBLING_RERUN_SECONDS = 5.0
+_REFS_ITEM = "expected_refs"
+_CURRENT_ITEMS: list[pytest.Item] = []
+_LEDGER = pytest.StashKey["_Ledger"]()
+_UPDATE_CATEGORIES = frozenset({"create", "fix", "fix-assert", "trim", "update"})
+_PLATFORMS = ("linux", "darwin", "win32")
+
+
+def expected_environment_facts() -> dict[str, str]:
+    """Return the facts of this environment that expected-output overrides (``@black=22``) can select."""
+    from importlib.metadata import distributions
+
+    builtin = os.environ.get(TEST_DEFAULT_FORMATTER_ENV) == BUILTIN_FORMATTER_VALUE
+    return {
+        "python": f"{sys.version_info[0]}.{sys.version_info[1]}",
+        "formatter": BUILTIN_FORMATTER_VALUE if builtin else "external",
+        **{tool: next((found.version for found in distributions(name=tool)), "") for tool in ("black", "isort")},
+        "platform": next((name for name in _PLATFORMS if sys.platform.startswith(name)), sys.platform),
+    }
+
+
+class CiEnvironment(NamedTuple):
+    """How a run relates to CI: the variable that marks it as CI, and the GitHub Actions run it belongs to."""
+
+    variable: str | None
+    github_actions: bool
+    run_id: str | None
+
+
+def _ci_environment() -> CiEnvironment:
+    """Return how this run relates to CI; every CI decision about expected output goes through this function.
+
+    CI runs never create or fix expected output, even with an explicit ``--inline-snapshot=create`` or ``fix``, and
+    their failures print the payload that applies CI's output locally. tox passes the variables on (``pass_env``).
+    """
+    from inline_snapshot._snapshot_session import is_ci_run
+
+    github = bool(os.environ.get("GITHUB_ACTIONS"))
+    return CiEnvironment(is_ci_run() or None, github, os.environ.get("GITHUB_RUN_ID") if github else None)
+
+
+def _item_key(item: pytest.Item) -> tuple[str, str]:
+    """Return the function (with its class) and the parameter id of an item."""
+    module = item.getparent(pytest.Module)
+    key = item.nodeid[len(module.nodeid) + 2 :] if module is not None else item.name
+    function, _, param = key.partition("[")
+    return function, param[:-1]
+
+
+def _applicable(lines: Sequence[RefLine], facts: Mapping[str, str]) -> RefLine | None:
+    """Return the line that applies in this environment: the most specific matching override, else the base line."""
+    matching = [line for line in lines if predicate_matches(line.predicate, facts)]
+    return max(matching, key=lambda line: len(line.predicate), default=None)
+
+
+def _quote(argument: str) -> str:
+    return shlex.quote(argument)
+
+
+def _describe_facts(facts: Mapping[str, str]) -> str:
+    formatter = facts["formatter"]
+    tools = (
+        "builtin formatter"
+        if formatter == BUILTIN_FORMATTER_VALUE
+        else f"black {facts['black']}, isort {facts['isort']}"
+    )
+    return f"python {facts['python']}, {tools}"
+
+
+def _git_tracked(path: Path, root: Path) -> bool:
+    """Return whether git tracks a path; outside a repository nothing is tracked."""
+    import subprocess
+
     try:
-        expected = external_file(expected_path)
-    except FileNotFoundError:  # pragma: no cover
-        hint = _format_snapshot_hint("create")
-        formatted_content = _format_new_content(content)
-        msg = f"Expected file not found: {expected_path}\n{hint}\n{formatted_content}"
-        raise AssertionError(msg) from None
-    normalized_content = _normalize_line_endings(content)
+        result = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", "--", str(path)], cwd=root, capture_output=True, check=False
+        )
+    except OSError:  # pragma: no cover
+        return False
+    return result.returncode == 0
 
-    def raise_content_mismatch(normalized_expected: str) -> NoReturn:
-        hint = _format_snapshot_hint("fix")
-        diff = _format_diff(normalized_expected, normalized_content, expected_path)
-        msg = f"Content mismatch for {expected_path}\n{hint}\n{diff}"
-        raise AssertionError(msg) from None
 
-    def record_snapshot_update() -> None:
-        if matched := expected == normalized_content:
+def _color_output() -> bool:
+    """Return whether failure diffs may use colour: pytest's ``--color`` decides for the running test."""
+    config = _CURRENT_ITEMS[-1].config if _CURRENT_ITEMS else None
+    return (
+        config is not None
+        and config.pluginmanager.has_plugin("terminalreporter")
+        and config.get_terminal_writer().hasmarkup
+    )
+
+
+@dataclass
+class _Observation:
+    sidecar: Path
+    function: str
+    param: str
+    nodeid: str
+    label: str
+    value: object
+    line: RefLine | None
+    status: str
+
+    @cached_property
+    def digest(self) -> str:
+        """The digest of the observed value, computed only for changes and observations."""
+        return unit_digest(self.label, self.value)
+
+
+@dataclass
+class _Sidecar:
+    """A module's sidecar as a session uses it: lines by item, problems, and lines a merge left for one label."""
+
+    path: Path
+    items: dict[tuple[str, str], list[RefLine]]
+    problems: list[Problem]
+    flagged: dict[RefLine, str]
+
+    @property
+    def broken(self) -> list[Problem]:
+        """The lines that do not parse."""
+        return [problem for problem in self.problems if problem.kind == BROKEN]
+
+
+class _Ledger:
+    """Per-session state of the expected-output comparisons: the index, what the run observed, and what to write."""
+
+    def __init__(self, config: pytest.Config) -> None:
+        self.config = config
+        root = config.getini("expected_tests_root")
+        self.tests_root = (config.rootpath / root).resolve() if root else Path(__file__).parent
+        self.expected_root = self.tests_root / "data" / "expected"
+        self.expected_prefix = f"{self.expected_root}{os.sep}"
+        self.index = RefsIndex(self.tests_root)
+        self.facts = expected_environment_facts()
+        self.ci = _ci_environment()
+        self.observe_dir: str | None = config.getoption("--expected-observe")
+        self.apply_file: str | None = config.getoption("--expected-apply")
+        self.apply_data: dict[str, Any] = (
+            json.loads(Path(self.apply_file).read_text(encoding="utf-8")) if self.apply_file else {}
+        )
+        self.observations = [
+            _load_observations(Path(directory)) for directory in self.apply_data.get("observations", [])
+        ]
+        self.can_create = False
+        self.can_fix = False
+        self.disabled_reason: str | None = None
+        self.states: dict[Path, _Sidecar] = {}
+        self.changes: list[_Observation] = []
+        self.compared: dict[str, dict[str, object]] = {}
+        self.unnamed: dict[str, int] = {}
+        self.default_outputs: dict[tuple[str, str], int] = {}
+        self.observed_items: dict[str, list[list[object]]] = {}
+        self.outcomes: dict[str, str] = {}
+        self.drops: dict[tuple[Path, str, str], set[str]] = {}
+        self.repairs: dict[tuple[Path, str, str], set[RefLine]] = {}
+        self.stale: dict[Path, set[tuple[str, str]]] = {}
+        self.orphans: set[Path] = set()
+        self.module_tests: dict[Path, set[str]] = {}
+        self.keys: dict[str, tuple[str, str]] = {}
+        self.collected: list[str] = []
+        self.selected: set[str] | None = None
+        self.named: set[str] = set()
+        self.candidates: list[pytest.Item] = []
+        self.ran: set[str] = set()
+        self.rerun: list[str] = []
+        self.report: list[str] = []
+        self.refused = False
+        self.check_apply()
+
+    @property
+    def observing(self) -> bool:
+        return self.observe_dir is not None
+
+    def relative(self, path: Path) -> str:
+        return Path(os.path.relpath(path, self.config.rootpath)).as_posix()
+
+    @property
+    def stage(self) -> str:
+        """The command staging all a writing run may change: expected files and the sidecars of every module."""
+        return f"git add -A {self.relative(self.tests_root)}"
+
+    def check_apply(self) -> None:
+        """Refuse an apply session whose payloads or observations name anything but this suite's tests and labels.
+
+        With ``skip_rejected`` (``--from-ci``), refused payloads are reported and the others applied.
+        """
+        if self.apply_file is None:
             return
-        msg = f"inline-snapshot did not record {expected_path}: {matched}"
-        raise AssertionError(msg) from None
+        if getattr(self.config.option, "numprocesses", None) and not hasattr(self.config, "workerinput"):
+            msg = "--expected-apply writes expected files and runs in one process; run it without -n."
+            raise pytest.UsageError(msg)
+        payloads = self.apply_data.get("payloads", [])
+        refused = {
+            number: problem
+            for number, payload in enumerate(payloads, start=1)
+            if (problem := payload_problem(payload, self.config.rootpath, self.index) or self.own_payload(payload))
+        }
+        if refused and self.apply_data.get("skip_rejected"):
+            self.apply_data["payloads"] = [
+                payload for number, payload in enumerate(payloads, start=1) if number not in refused
+            ]
+            self.report += [f"expected: skipped a payload: {problem}" for problem in refused.values()]
+            refused = {}
+        problems = [f"payload {number}: {problem}" for number, problem in refused.items()]
+        problems += [
+            f"{directory}: its environment is malformed"
+            for directory, observations in zip(self.apply_data.get("observations", []), self.observations, strict=True)
+            if observations["items"] and not facts_fit(observations["facts"])
+        ]
+        listings: dict[Path, set[str]] = {}
+        problems += [
+            problem
+            for nodeid in dict.fromkeys(
+                str(entry["item"]) for observations in self.observations for entry in observations["items"]
+            )
+            if (problem := item_problem(nodeid, self.config.rootpath, self.tests_root, listings))
+        ]
+        if problems:
+            msg = "--expected-apply rejected its input; nothing was written:\n" + "\n".join(problems)
+            raise pytest.UsageError(msg)
 
-    match expected:
-        case str():
-            if normalized_content == (normalized_expected := _normalize_line_endings(expected)):
-                return
-            raise_content_mismatch(normalized_expected)
+    def own_payload(self, payload: Mapping[str, Any]) -> str | None:
+        """Refuse a payload no override predicate tells apart from this environment: only a local run changes it."""
+        if payload_predicate(payload["facts"], self.facts) is not None:
+            return None
+        target = payload["item"].partition("::")[0] if payload.get("stale") else payload["item"]
+        return (
+            "it comes from this environment, so there is no other environment to add an override for; "
+            f"this environment is yours, run: pytest {_quote(target)} --inline-snapshot=fix && {self.stage}"
+        )
 
-        case _:
-            update_flags = inline_snapshot_state().update_flags
-            try:
-                expected_value = get_snapshot_value(expected, "old")
-            except StorageLookupError:
-                expected_value = Ellipsis
+    def label(self, path: Path, pattern: str | None) -> str | None:
+        """Return the label of an expected path, or None for paths outside the tests root (compared directly)."""
+        absolute = os.path.abspath(path)  # noqa: PTH100
+        if absolute.startswith(self.expected_prefix):
+            name = absolute[len(self.expected_prefix) :].replace(os.sep, "/")
+        elif Path(absolute).is_relative_to(self.tests_root):
+            name = Path(os.path.relpath(absolute, self.expected_root)).as_posix()
+        else:
+            return None
+        return name if pattern is None else tree_label(name, pattern)
 
-            if expected_value is Ellipsis:
-                if update_flags.create:
-                    # Let inline-snapshot materialize missing external files only in create mode.
-                    record_snapshot_update()
-                    return
-                hint = _format_snapshot_hint("create")
-                formatted_content = _format_new_content(content)
-                msg = f"Expected file not found: {expected_path}\n{hint}\n{formatted_content}"
-                raise AssertionError(msg) from None
+    def key(self, item: pytest.Item) -> tuple[str, str]:
+        if (found := self.keys.get(item.nodeid)) is None:
+            found = self.keys[item.nodeid] = _item_key(item)
+        return found
 
-            if normalized_content == (normalized_expected := _normalize_line_endings(cast("str", expected_value))):
-                return
+    def sidecar(self, path: Path) -> _Sidecar:
+        """Return a module's sidecar; local runs first rewrite one that parses into the form pytest writes.
 
-            if update_flags.fix:
-                # Let inline-snapshot update existing external files only in fix mode.
-                record_snapshot_update()
-                return
-            raise_content_mismatch(normalized_expected)
+        A rewrite that ``write_files`` refuses is reported and fails the session.
+        """
+        if (state := self.states.get(path)) is not None:
+            return state
+        lines, problems = self.index.load(path)
+        if self.ci.variable is None and not any(problem.kind == BROKEN for problem in problems):
+            if any(problem.kind == ORDER for problem in problems):
+                try:
+                    write_files(self.tests_root, {path: format_refs(lines)})
+                except UnsafeWriteError as error:
+                    self.refuse(error)
+                else:
+                    self.report.append(f"expected: rewrote {self.relative(path)} in the form pytest writes")
+            problems = [problem for problem in problems if problem.kind != ORDER]
+        items = self.index.item_lines(path)
+        flagged = {
+            line: CONFLICT
+            for found in items.values()
+            for line in found
+            if sum(other.key == line.key for other in found) > 1
+        }
+        state = self.states[path] = _Sidecar(path, items, problems, flagged)
+        return state
+
+    def start(self) -> None:
+        state = inline_snapshot_state()
+        if self.ci.variable is not None:
+            from inline_snapshot._flags import Flags
+
+            state.update_flags = Flags()
+            state.flags -= _UPDATE_CATEGORIES
+        explicit = self.apply_file is not None
+        self.can_fix = explicit or bool(state.active and state.update_flags.fix)
+        self.can_create = self.can_fix or bool(state.active and state.update_flags.create)
+        self.disabled_reason = None if state.active else state.disable_reason
+        if self.can_fix and not explicit:
+            self.named = self.named_nodes()
+            self.widen()
+
+    def named_nodes(self) -> set[str]:
+        """Return the nodeids the command line names (``module::test``), as the root directory sees them."""
+        invocation = self.config.invocation_params.dir
+        return {
+            f"{self.relative(Path(os.path.abspath(invocation / path)))}::{rest}"  # noqa: PTH100
+            for path, separator, rest in (argument.partition("::") for argument in self.config.args)
+            if separator
+        }
+
+    def is_named(self, nodeid: str) -> bool:
+        """Return whether the command line names an item, or the test or class it belongs to."""
+        return any(nodeid == name or nodeid.startswith((f"{name}[", f"{name}::")) for name in self.named)
+
+    def widen(self) -> None:
+        """Collect every parameter of a test selected by one parameter, so its siblings can be re-run after a fix."""
+        invocation = self.config.invocation_params.dir
+        selected: set[str] = set()
+        widened: list[str] = []
+        for argument in self.config.args:
+            path, separator, rest = argument.partition("::")
+            if not separator or "[" not in rest:
+                widened.append(argument)
+                continue
+            module = Path(os.path.abspath(invocation / path))  # noqa: PTH100
+            selected.add(f"{self.relative(module)}::{rest}")
+            if (function := f"{path}::{rest.partition('[')[0]}") not in widened:
+                widened.append(function)
+        if selected:
+            self.selected = selected
+            self.config.args[:] = widened
+
+    def collect(self, items: list[pytest.Item]) -> None:
+        """Keep widened siblings aside, find stale lines of collected modules, and record the collection.
+
+        A line is stale when its test function no longer exists, or, in a module collected completely, when its
+        unconditional item was not collected.
+        """
+        if self.selected is not None:
+            keep = [item for item in items if item.nodeid in self.selected or not self._widened(item)]
+            self.candidates = [item for item in items if item not in keep]
+            if self.candidates:
+                self.config.hook.pytest_deselected(items=self.candidates)
+            items[:] = keep
+        full = self._fully_collected([*items, *self.candidates])
+        if self.observing and os.environ.get("PYTEST_XDIST_WORKER", "gw0") == "gw0":
+            self.collected = [item.nodeid for item in items if item.path in full]
+        by_module: dict[Path, tuple[set[tuple[str, str]], object]] = {}
+        for item in (*items, *self.candidates):
+            keys, _ = by_module.setdefault(item.path.with_suffix(REFS_SUFFIX), (set(), getattr(item, "module", None)))
+            keys.add(self.key(item))
+        for path, (keys, module) in by_module.items():
+            lines = self.index.load(path)[0]
+            names = self.module_tests.setdefault(path.with_suffix(".py"), _test_names(module) if module else set())
+            stale = {(line.function, line.param) for line in lines if module and line.function not in names}
+            if path.with_suffix(".py") in full:
+                stale |= {(line.function, line.param) for line in lines if not line.conditional} - keys
+            if stale:
+                self.stale[path] = stale
+
+    def _widened(self, item: pytest.Item) -> bool:
+        assert self.selected is not None
+        return any(item.nodeid.partition("[")[0] == nodeid.partition("[")[0] for nodeid in self.selected)
+
+    def _fully_collected(self, items: Sequence[pytest.Item]) -> set[Path]:
+        """Return the modules a run collected completely, so missing items mean renamed or deleted tests."""
+        if self.config.getoption("lf", False) or self.selected is not None:
+            return set()
+        invocation = self.config.invocation_params.dir
+        roots = [
+            Path(os.path.abspath(invocation / argument))  # noqa: PTH100
+            for argument in self.config.args
+            if "::" not in argument
+        ]
+        return {
+            module
+            for module in {item.path for item in items}
+            if any(module == root or module.is_relative_to(root) for root in roots)
+        }
+
+    def orphan(self, path: Path) -> str | None:
+        """Note a sidecar whose module no longer exists; return the failure when this run cannot remove it."""
+        self.orphans.add(path)
+        if self.can_create:
+            return None
+        refs = self.relative(path)
+        return (
+            f"{refs} has lines for {self.relative(path.with_suffix('.py'))}, which no longer exists.\n"
+            f"Fix: pytest {refs} --collect-only -q && {self.stage}\n"
+            "If its tests moved to another module, run that module too."
+        )
+
+    def refs_items(self, items: list[pytest.Item]) -> None:
+        """Append one failing item per module whose sidecar pytest would not have written, or names missing tests."""
+        if self.observing or self.apply_file is not None:
+            return
+        modules: dict[Path, pytest.Module] = {}
+        for item in items:
+            if (module := item.getparent(pytest.Module)) is not None:
+                modules.setdefault(item.path.with_suffix(REFS_SUFFIX), module)
+        for path, module in modules.items():
+            if messages := self.sidecar_messages(self.sidecar(path)):
+                items.append(_RefsItem.from_parent(module, name=_REFS_ITEM, message="\n\n".join(messages)))
+
+    def sidecar_messages(self, state: _Sidecar) -> list[str]:
+        """Describe what is wrong with a sidecar, each with the command that repairs it.
+
+        Lines that do not parse always fail. Everything else a local run that creates expected output repairs by
+        itself: it sorts the file, re-records lines pytest would not have written, and drops stale lines.
+        """
+        refs, module = self.relative(state.path), self.relative(state.path.with_suffix(".py"))
+        if broken := state.broken:
+            return [self.hand_edit_message(state.path, broken[0])]
+        if self.can_create:
+            return []
+        messages = [
+            f"{refs} is not in the form pytest writes (line {problem.number}: {problem.reason}); "
+            "a merge may have joined both sides.\n"
+            f"Fix: pytest {module} --collect-only -q && {self.stage}"
+            for problem in state.problems
+            if problem.kind == ORDER
+        ]
+        if flagged := sorted({line.item for line in state.flagged}):
+            reasons = "\n".join(f"  {item} lists one label twice (a merge kept both sides)" for item in flagged)
+            messages.append(
+                f"{refs} has lines pytest would not have written:\n{reasons}\n"
+                f"Fix: pytest {' '.join(_quote(f'{module}::{item}') for item in flagged)} && {self.stage}"
+            )
+        messages += [self.missing_storage_message(state, line) for line in self.missing_storages(state)][:1]
+        if state.path in self.stale:
+            messages.append(self.stale_message(state.path))
+        return messages
+
+    def missing_storages(self, state: _Sidecar) -> list[RefLine]:
+        """Return a line for each stored file the sidecar names that does not exist, listing each directory once."""
+        files = {
+            line.stored: line for found in state.items.values() for line in found if split_label(line.stored)[1] is None
+        }
+        listed: dict[Path, set[str]] = {}
+        missing = []
+        for storage, line in files.items():
+            path = label_path(storage, self.expected_root)
+            if path.parent not in listed:
+                listed[path.parent] = {entry.name for entry in path.parent.iterdir()} if path.parent.is_dir() else set()
+            if path.name not in listed[path.parent]:
+                missing.append(line)
+        return missing
+
+    def restore_lines(self, path: Path, nodeid: str) -> list[str]:
+        """Return how to bring back a missing stored file: from git when it tracks it, else from this machine."""
+        relative = self.relative(path)
+        if _git_tracked(path, self.config.rootpath):
+            return [
+                f"Fix: git checkout HEAD -- {relative}",
+                f"Or, to record the current output again: pytest {nodeid} && {self.stage}",
+            ]
+        return [
+            f"Fix, if pytest created it on your machine: {self.stage}",
+            f"Or, to record the current output again: pytest {nodeid} && {self.stage}",
+        ]
+
+    def missing_storage_message(self, state: _Sidecar, line: RefLine) -> str:
+        path = label_path(line.stored, self.expected_root)
+        refs, module = self.relative(state.path), self.relative(state.path.with_suffix(".py"))
+        return "\n".join([
+            f"{refs} stores {line.item} at {line.stored}, but {self.relative(path)} does not exist.",
+            *self.restore_lines(path, _quote(f"{module}::{line.item}")),
+        ])
+
+    def hand_edit_message(self, path: Path, problem: Problem) -> str:
+        refs = self.relative(path)
+        return (
+            f"{refs} was edited by hand (line {problem.number}: {problem.reason}); pytest writes this file.\n"
+            f"Fix: python scripts/fix_expected.py --repair {refs} && {self.stage}"
+        )
+
+    def stale_message(self, path: Path) -> str:
+        refs, module = self.relative(path), self.relative(path.with_suffix(".py"))
+        nodeids = [
+            f"{module}::{function}[{param}]" if param else f"{module}::{function}"
+            for function, param in sorted(self.stale[path])
+        ]
+        names = ", ".join(nodeids)
+        command = f"pytest {module} --collect-only -q && {self.stage}"
+        if self.ci.variable is None:
+            verb = "which no longer exists" if len(nodeids) == 1 else "which no longer exist"
+            return f"{refs} has lines for {names}, {verb}.\nFix: {command}"
+        encoded = [self.encode({"item": nodeid, "stale": True}) for nodeid in nodeids]
+        fix = (
+            [f"Fix: {self.apply_command(encoded)}", "It keeps them for the environments that have them, or drops them."]
+            if None not in encoded and sum(map(len, encoded)) <= EXPECTED_PAYLOAD_LIMIT
+            else [f"Fix, if they were renamed or deleted: {command}"]
+        )
+        return "\n".join([
+            f"{refs} has lines for {names}, which this environment ({_describe_facts(self.facts)}) does not collect.",
+            *fix,
+            *(f"{EXPECTED_FIX_PREFIX}{payload}" for payload in encoded if payload is not None),
+        ])
+
+    def derived_path(self, item: pytest.Item, *, role: str = "", suffix: str = "") -> Path:
+        """Name the output of a test that names no expected path: ``<module dir>/<module>/<function>[<id>]<role>``.
+
+        The ``<module>_`` prefix of the function is dropped unless that collides with another test of its class or
+        module, so the name never depends on which tests ran first.
+        """
+        module_path = item.path
+        stem = module_path.stem.removeprefix("test_")
+        function, param = self.key(item)
+        owner, _, name = function.rpartition("::")
+        short = name.removeprefix("test_")
+        if short.startswith(f"{stem}_"):
+            stripped = short[len(stem) + 1 :]
+            siblings = {
+                test.rpartition("::")[2].removeprefix("test_")
+                for test in self.module_tests.get(module_path, set())
+                if test.rpartition("::")[0] == owner
+            }
+            short = short if stripped in siblings else stripped
+        base = f"{owner.replace('::', '.')}.{short}" if owner else short
+        identifier = param
+        if len(f"{base}[{identifier}]{role}{suffix}") > 120:
+            identifier = f"{param[:80]}~{hashlib.sha1(param.encode()).hexdigest()[:8]}"
+        file_name = derived_name(f"{base}[{identifier}]" if param else base) + role + suffix
+        directory = self.expected_root / module_path.parent.relative_to(self.tests_root) / stem
+        return directory / file_name
+
+    def unnamed_output(self, item: pytest.Item) -> None:
+        count = self.unnamed[item.nodeid] = self.unnamed.get(item.nodeid, 0) + 1
+        if count > 1:
+            pytest.fail(
+                f"{item.nodeid} compares several outputs; name each one after the first: "
+                'assert_output(text, name="warnings")',
+                pytrace=False,
+            )
+
+    def choose(self, state: _Sidecar, key: tuple[str, str], lines: list[RefLine], value: object) -> RefLine | None:
+        """Return the line a comparison uses; a creating run sets aside lines pytest would not have written.
+
+        Of two lines a merge left for one label, the one whose stored content matches the output is kept.
+        """
+        applicable = [line for line in lines if predicate_matches(line.predicate, self.facts)]
+        if self.observing or not self.can_create or not any(line in state.flagged for line in applicable):
+            return _applicable(applicable, self.facts)
+        matching = next(
+            (
+                line
+                for line in applicable
+                if state.flagged.get(line) == CONFLICT
+                and read_unit(label_path(line.stored, self.expected_root), split_label(line.stored)[1]) == value
+            ),
+            None,
+        )
+        dropped = {line for line in applicable if line in state.flagged and line is not matching}
+        self.repairs.setdefault((state.path, *key), set()).update(dropped)
+        return _applicable([line for line in applicable if line not in dropped], self.facts)
+
+    def compare(self, item: pytest.Item, label: str, value: object, hint: str) -> None:
+        """Compare a value with the stored unit this item's line for the label resolves to, recording the result."""
+        __tracebackhide__ = True
+        state = self.sidecar(item.path.with_suffix(REFS_SUFFIX))
+        function, param = key = self.key(item)
+        if state.broken and not self.observing:
+            pytest.fail(self.hand_edit_message(state.path, state.broken[0]), pytrace=False)
+        seen = self.compared.setdefault(item.nodeid, {})
+        if label in seen and (previous := seen[label]) != value:
+            pytest.fail(
+                f"{item.nodeid} compares two different outputs against {label} (diff below).\n"
+                f"If they should be equal, fix the code; {hint}\n{_unit_diff(previous, value, label)}",
+                pytrace=False,
+            )
+        seen[label] = value
+        line = self.choose(state, key, [line for line in state.items.get(key, ()) if line.label == label], value)
+        storage = line.stored if line is not None else label
+        name, pattern = split_label(storage)
+        stored = read_unit(label_path(name, self.expected_root), pattern)
+        observation = _Observation(state.path, function, param, item.nodeid, label, value, line, "ok")
+        status = self._status(observation, stored)
+        observation.status = status
+        if self.observing:
+            self.observed_items.setdefault(item.nodeid, []).append([
+                label,
+                observation.digest,
+                storage,
+                None if status in {"ok", "home"} else value,
+            ])
+        if status != "ok":
+            self.changes.append(observation)
+
+    def _status(self, observation: _Observation, stored: object | None) -> str:
+        """Decide what a comparison means: equal (``ok``/``home``), ``changed`` or ``new``, or fail with the fix."""
+        __tracebackhide__ = True
+        equal = stored == observation.value
+        present = stored not in (None, {})
+        if observation.line is not None:
+            if equal:
+                return "ok"
+            if self.observing or (self.can_fix if present else self.can_create):
+                return "changed"
+            self.fail_mismatch(observation, stored)
+        if self.observing:
+            return "home" if equal else "new"
+        if observation.label.startswith("../") and not (equal and self.recorded_outside(observation)):
+            pytest.fail(
+                "Expected outputs live under tests/data/expected. "
+                "Fix: remove the path argument (pytest names the file)",
+                pytrace=False,
+            )
+        if not self.can_create:
+            self.fail_missing(observation, present)
+        if equal:
+            return "home"
+        if present and not self.can_fix:
+            self.fail_mismatch(observation, stored)
+        return "new"
+
+    def recorded_outside(self, observation: _Observation) -> bool:
+        """Whether another line of the sidecar already compares this label outside the expected directory."""
+        return any(
+            line.label == observation.label
+            for lines in self.index.item_lines(observation.sidecar).values()
+            for line in lines
+        )
+
+    def encode(self, payload: dict[str, object]) -> str | None:
+        """Encode what this lane compared, or None when the payload would be too large to print."""
+        return encode_payload({"facts": self.facts, **payload}, EXPECTED_PAYLOAD_LIMIT)
+
+    def apply_command(self, encoded: Sequence[str | None]) -> str:
+        """Return the command applying this lane's payloads locally."""
+        run = f"  (or --from-ci {self.ci.run_id})" if self.ci.run_id else ""
+        payloads = " ".join(f"'{payload}'" for payload in encoded)
+        return f"python scripts/fix_expected.py --apply {payloads} && {self.stage}{run}"
+
+    def lane_lines(self, nodeid: str, encoded: str | None) -> list[str]:
+        """Return the payload line of a CI failure, or the lane to run locally when the output is too large."""
+        if encoded is not None:
+            return [f"{EXPECTED_FIX_PREFIX}{encoded}"]
+        lane = os.environ.get("TOX_ENV_NAME", "<this lane>")
+        return [
+            (
+                "The output is too large for a payload; run this lane locally: "
+                f"tox run -e {lane} -- {_quote(nodeid)} --inline-snapshot=fix && {self.stage}"
+            )
+        ]
+
+    def fail_missing(self, observation: _Observation, home_exists: bool) -> NoReturn:
+        __tracebackhide__ = True
+        nodeid, refs = observation.nodeid, self.relative(observation.sidecar)
+        command = f"pytest {_quote(nodeid)}"
+        record = f"{command} && {self.stage}"
+        recorded = bool(self.sidecar(observation.sidecar).items.get((observation.function, observation.param)))
+        ci = self.ci
+        encoded = (
+            self.encode({
+                "item": nodeid,
+                "label": observation.label,
+                "digest": observation.digest,
+                "value": observation.value,
+            })
+            if ci.variable is not None
+            else None
+        )
+        if self.disabled_reason == "xdist" and ci.variable is None:
+            lines = [f"Expected output for {nodeid} was not created because pytest ran with -n.", f"Fix: {record}"]
+        elif ci.variable is not None and not ci.github_actions:
+            lines = [
+                f"No expected output recorded for {nodeid}; expected files are not written while {ci.variable} is set.",
+                f"Fix: {ci.variable}= {record}",
+            ]
+        elif recorded and ci.variable is not None and encoded is not None:
+            lines = [
+                (
+                    f"This environment ({_describe_facts(self.facts)}) compares {observation.label}, "
+                    f"which {refs} does not record for {nodeid}."
+                ),
+                f"Fix: {self.apply_command([encoded])}",
+                f"Or, if {nodeid} is new: {record}",
+            ]
+        elif home_exists:
+            lines = [f"{refs} has no line for {nodeid}.", f"Fix: {record}"]
+        else:
+            lines = [f"No expected output recorded for {nodeid}.", f"Fix: {record}"]
+        if ci.variable is not None:
+            lines += self.lane_lines(nodeid, encoded)
+        pytest.fail("\n".join(lines), pytrace=False)
+
+    def sharers(self, storage: str) -> int:
+        return sum(line.stored == storage for lines in self.index.all_lines().values() for line in lines)
+
+    def fail_mismatch(self, observation: _Observation, stored: object | None) -> NoReturn:
+        __tracebackhide__ = True
+        storage = observation.line.stored if observation.line is not None else observation.label
+        path = label_path(storage, self.expected_root)
+        relative, nodeid = self.relative(path), _quote(observation.nodeid)
+        if stored is None:
+            pytest.fail(
+                "\n".join([
+                    f"Expected output for {observation.nodeid} is missing: {relative}.",
+                    *self.restore_lines(path, nodeid),
+                ]),
+                pytrace=False,
+            )
+        count = self.sharers(storage)
+        used = f" (used by {count} tests)" if count > 1 else ""
+        lines = [f"Content mismatch: {observation.nodeid} expects {storage}{used}."]
+        fix = f"pytest {nodeid} --inline-snapshot=fix && {self.stage}"
+        if self.ci.variable is None:
+            lines += [f"If the new output is intended: {fix}", f"Otherwise: git checkout HEAD -- {relative}"]
+        else:
+            encoded = self.encode({
+                "item": observation.nodeid,
+                "label": observation.label,
+                "digest": observation.digest,
+                "value": observation.value,
+            })
+            lines.append(
+                f"This environment ({_describe_facts(self.facts)}) produces different output than the stored one."
+            )
+            if encoded is not None:
+                kept = "their stored files" if observation.line is not None and observation.line.predicate else storage
+                lines.append(
+                    f"Fix, if pytest {nodeid} passes on your machine (adds an override for this environment only; "
+                    f"other environments keep {kept}): {self.apply_command([encoded])}"
+                )
+            lines += [
+                f"Or, if the new output is intended everywhere: {fix}",
+                f"Or, to restore the stored file: git checkout HEAD -- {relative}",
+                *self.lane_lines(observation.nodeid, encoded),
+            ]
+        pytest.fail("\n".join([*lines, _unit_diff(stored, observation.value, relative)]), pytrace=False)
+
+    def check_exact(self, item: pytest.Item) -> None:
+        """Fail an item that passed without comparing every line its sidecar records for this environment.
+
+        An item that compared nothing fails even when its lines are conditional (``?``). A fix run drops the lines
+        an item did not compare when the item compared something here, or when the command line names it: other
+        environments may compare the lines of an item that compares nothing here, so a run over a module keeps them.
+        """
+        if self.observing or self.apply_file is not None:
+            return
+        state = self.sidecar(item.path.with_suffix(REFS_SUFFIX))
+        function, param = key = self.key(item)
+        compared = self.compared.get(item.nodeid, {})
+        applicable = [line for line in state.items.get(key, ()) if predicate_matches(line.predicate, self.facts)]
+        if self.can_create and (
+            flagged := {line for line in applicable if line in state.flagged and line.label not in compared}
+        ):
+            self.repairs.setdefault((state.path, *key), set()).update(flagged)
+            applicable = [line for line in applicable if line not in flagged]
+        if not applicable:
+            return
+        missing = sorted({
+            line.label for line in applicable if (not line.conditional or not compared) and line.label not in compared
+        })
+        if not missing:
+            return
+        if self.can_fix and (compared or self.is_named(item.nodeid)):
+            self.drops.setdefault((state.path, function, param), set()).update(missing)
+            return
+        refs, nodeid = self.relative(state.path), _quote(item.nodeid)
+        fix = f"pytest {nodeid} --inline-snapshot=fix && {self.stage}"
+        if not compared and all(line.conditional for line in applicable):
+            pytest.fail(
+                f"{item.nodeid} passed without comparing any expected output, but {refs} records "
+                f"{', '.join(missing)} for it in some environments.\n"
+                f"Fix: make the test compare its output here too; if it should no longer compare anything: {fix}",
+                pytrace=False,
+            )
+        if self.ci.variable is None:
+            message = [
+                f"{item.nodeid} did not compare {', '.join(missing)}, which {refs} records for it.",
+                f"If it no longer should: {fix}",
+            ]
+        else:
+            encoded = [self.encode({"item": item.nodeid, "label": label, "missing": True}) for label in missing]
+            message = [
+                (
+                    f"This environment ({_describe_facts(self.facts)}) does not compare {', '.join(missing)}, "
+                    f"which {refs} records for {item.nodeid}."
+                ),
+                f"Fix, if pytest {nodeid} compares them on your machine: {self.apply_command(encoded)}",
+                f"Or, if it should no longer compare them: {fix}",
+                *(f"{EXPECTED_FIX_PREFIX}{payload}" for payload in encoded),
+            ]
+        pytest.fail("\n".join(message), pytrace=False)
+
+    def begin(self, item: pytest.Item) -> None:
+        self.ran.add(item.nodeid)
+        if self.observing:
+            self.observed_items.setdefault(item.nodeid, [])
+        self.end(item)
+        self.unnamed.pop(item.nodeid, None)
+
+    def end(self, item: pytest.Item) -> None:
+        self.default_outputs = {key: count for key, count in self.default_outputs.items() if key[0] != item.nodeid}
+        self.compared.pop(item.nodeid, None)
+
+    def outcome(self, report: pytest.TestReport) -> None:
+        if not self.observing or report.nodeid not in self.observed_items:
+            return
+        if report.failed:
+            self.outcomes[report.nodeid] = "failed"
+        elif report.when == "call" or (report.skipped and report.when == "setup"):
+            self.outcomes.setdefault(report.nodeid, "passed" if report.passed else "skipped")
+
+    def rerun_siblings(self, session: pytest.Session) -> None:
+        """Re-run deselected parameters of a fixed test that share a changed unit, for at most a few seconds."""
+        if not self.can_fix or not self.candidates or session.shouldfail or session.shouldstop:
+            return
+        changed = {observation.line.stored for observation in self.changes if observation.line is not None}
+        functions = {(observation.sidecar, observation.function) for observation in self.changes}
+        queue = [
+            item
+            for item in self.candidates
+            if (item.path.with_suffix(REFS_SUFFIX), self.key(item)[0]) in functions
+            and any(
+                line.stored in changed
+                for line in self.sidecar(item.path.with_suffix(REFS_SUFFIX)).items.get(self.key(item), ())
+            )
+        ]
+        started = time.monotonic()
+        for index, item in enumerate(queue):
+            if time.monotonic() - started > SIBLING_RERUN_SECONDS:
+                break
+            item.ihook.pytest_runtest_protocol(item=item, nextitem=queue[index + 1] if index + 1 < len(queue) else None)
+            self.rerun.append(item.nodeid)
+
+    def updates(self) -> dict[Path, dict[tuple[str, str], list[Desired]]]:
+        """Turn this run's observations, dropped and repaired lines, stale items and orphans into wanted lines."""
+        updates: dict[Path, dict[tuple[str, str], list[Desired]]] = {}
+        changed: dict[tuple[Path, str, str], list[_Observation]] = {}
+        for observation in self.changes:
+            changed.setdefault((observation.sidecar, observation.function, observation.param), []).append(observation)
+        for key in sorted(changed.keys() | self.drops.keys() | self.repairs.keys()):
+            path, function, param = key
+            lines = self.sidecar(path).items.get((function, param), [])
+            dropped, repaired = self.drops.get(key, set()), self.repairs.get(key, set())
+            by_line = {id(observation.line): observation for observation in changed.get(key, []) if observation.line}
+            desired = [
+                Desired(line.label, line.conditional, line.predicate, observation.value, observation.digest, line)
+                if (observation := by_line.get(id(line))) is not None
+                else Desired(line.label, line.conditional, line.predicate, current=line)
+                for line in lines
+                if line.label not in dropped and line not in repaired
+            ]
+            desired += [
+                Desired(
+                    observation.label,
+                    value=AT_HOME if observation.status == "home" else observation.value,
+                    digest=observation.digest,
+                )
+                for observation in changed.get(key, [])
+                if observation.line is None
+            ]
+            updates.setdefault(path, {})[function, param] = desired
+        for path, keys in self.stale.items():
+            for key in keys:
+                updates.setdefault(path, {}).setdefault(key, [])
+        for path in self.orphans:
+            for key in self.index.item_lines(path):
+                updates.setdefault(path, {})[key] = []
+        return updates
+
+    def refuse(self, error: UnsafeWriteError) -> None:
+        """Report a refused write; the session fails when it finishes."""
+        self.report.append(f"expected: {error}")
+        self.refused = True
+
+    def finish(self, session: pytest.Session) -> None:
+        self.write_updates(session)
+        if self.refused:
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+    def write_updates(self, session: pytest.Session) -> None:
+        """Write what the session observed, applied, or created."""
+        if self.observing:
+            self.export()
+            return
+        if self.apply_file is not None:
+            updates = self.apply_updates(session)
+        elif self.can_create:
+            updates = self.updates()
+        else:
+            return
+        if not updates:
+            return
+        plan = resolve(self.index.all_lines(), updates, self.expected_root)
+        sidecars = {path: text for path, text in plan.sidecars.items() if text}
+        try:
+            write_files(self.tests_root, plan.writes | sidecars, [*plan.deletes, *plan.sidecars.keys() - sidecars])
+        except UnsafeWriteError as error:
+            self.refuse(error)
+            return
+        self.describe(plan, updates)
+
+    def nodeid(self, sidecar: Path, item: str) -> str:
+        """Return the nodeid of an item of a sidecar's module."""
+        return f"{self.relative(sidecar.with_suffix('.py'))}::{item}"
+
+    def describe(self, plan: Plan, updates: Mapping[Path, Mapping[tuple[str, str], list[Desired]]]) -> None:
+        """Report what the run wrote, with the command that updates sharers it did not run."""
+        adopted: dict[Path, list[str]] = {}
+        for event in plan.events:
+            if event.kind == "adopted":
+                adopted.setdefault(event.items[0][0], []).append(f"{event.items[0][1]} compares {event.storage}")
+                continue
+            others = sorted(set(starmap(self.nodeid, event.others)))
+            self.report.append(self.event_line(event, len(others)))
+            if not_run := [nodeid for nodeid in others if nodeid not in self.ran]:
+                self.report.append(f"If they should change too: {self.fix_command(not_run)}")
+        for sidecar, found in adopted.items():
+            refs = self.relative(sidecar)
+            if len(found) > 2:
+                self.report.append(f"expected: recorded {len(found)} tests in {refs} (their files already existed)")
+            else:
+                self.report.extend(f"expected: {text}; recorded in {refs}" for text in found)
+        self.report.extend(
+            f"expected: removed {self.relative(path)}; {self.relative(path.with_suffix('.py'))} no longer exists"
+            for path in sorted(self.orphans)
+        )
+        self.report.extend(
+            f"expected: removed the lines of {self.nodeid(sidecar, f'{function}[{param}]' if param else function)} "
+            f"from {self.relative(sidecar)}"
+            for sidecar, items in updates.items()
+            if sidecar not in self.orphans
+            for (function, param), desired in items.items()
+            if not desired and self.index.item_lines(sidecar).get((function, param))
+        )
+        if self.rerun:
+            self.report.append(f"expected: re-ran {len(self.rerun)} tests that share a changed file")
+        if changed := sorted({self.relative(path) for path in (*plan.writes, *plan.deletes, *plan.sidecars)}):
+            self.report.append(f"expected: changed {', '.join(changed)}; stage them all: {self.stage}")
+
+    def event_line(self, event: Event, others: int) -> str:
+        """Describe one thing a resolution did."""
+        refs = ", ".join(sorted({self.relative(sidecar) for sidecar, _ in event.items}))
+        items = ", ".join(item for _, item in event.items)
+        text = f"deleted {event.storage} (no test uses it)"
+        match event.kind:
+            case "created":
+                text = f"created {event.storage}; recorded in {refs}"
+            case "deduplicated":
+                text = f"{items} has the same output as {event.storage}; no new file; recorded in {refs}"
+            case "fixed":
+                text = f"fixed {event.storage} in place ({len(event.items)} tests)"
+            case "merged":
+                text = f"{items} now has the same output as {event.target}; it uses that file"
+            case "moved":
+                text = f"moved {event.storage} to {event.target}, the label of every test that uses it"
+            case "split":
+                unchanged = "" if event.rewritten else " (their files are unchanged)"
+                text = (
+                    f"{items} split from {others} tests that share {event.storage}{unchanged}; stored at {event.target}"
+                )
+        return f"expected: {text}"
+
+    def fix_command(self, nodeids: list[str]) -> str:
+        """Return one pytest command that fixes the given items, by function or module when there are many."""
+        selection = sorted({nodeid.partition("[")[0] for nodeid in nodeids}) if len(nodeids) > 5 else nodeids
+        if len(selection) > 5:
+            selection = sorted({nodeid.partition("::")[0] for nodeid in nodeids})
+        return f"pytest {' '.join(map(_quote, selection))} --inline-snapshot=fix && {self.stage}"
+
+    def export(self) -> None:
+        directory = Path(self.observe_dir or ".")
+        directory.mkdir(parents=True, exist_ok=True)
+        worker = os.environ.get("PYTEST_XDIST_WORKER", "main")
+        lines = [json.dumps({"facts": self.facts, "collected": self.collected})]
+        lines += [
+            json.dumps({"item": nodeid, "outcome": outcome, "compared": self.observed_items.get(nodeid, [])})
+            for nodeid, outcome in self.outcomes.items()
+        ]
+        (directory / f"observed-{worker}-{os.getpid()}.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def apply_updates(self, session: pytest.Session) -> dict[Path, dict[tuple[str, str], list[Desired]]]:
+        """Merge observations from other environments or CI payloads into the lines of the items they name."""
+        rootpath = self.config.rootpath
+        local = {nodeid_key(rootpath, item.nodeid) for item in session.items}
+        updates: dict[Path, dict[tuple[str, str], list[Desired]]] = {}
+        if self.observations:
+            for nodeid, desired in merge_environments(self.observations, self.expected_root, self.facts).items():
+                sidecar, function, param = nodeid_key(rootpath, nodeid)
+                updates.setdefault(sidecar, {})[function, param] = desired
+        for payload in self.apply_data.get("payloads", []):
+            sidecar, function, param = nodeid_key(rootpath, payload["item"])
+            current = updates.get(sidecar, {}).get((function, param))
+            lines = self.index.item_lines(sidecar).get((function, param), [])
+            base = (
+                current
+                if current is not None
+                else [Desired(line.label, line.conditional, line.predicate) for line in lines]
+            )
+            updates.setdefault(sidecar, {})[function, param] = apply_payload(
+                base, lines, payload, self.facts, exists=(sidecar, function, param) in local
+            )
+        return updates
+
+
+def _test_names(namespace: object, prefix: str = "") -> set[str]:
+    """Return the test functions of a module or class, with their classes, as they appear in nodeids.
+
+    Classes include inherited test methods.
+    """
+    members = (
+        vars(namespace).items()
+        if isinstance(namespace, ModuleType)
+        else ((name, getattr(namespace, name, None)) for name in dir(namespace))
+    )
+    names: set[str] = set()
+    for name, value in members:
+        if isinstance(value, type) and name.startswith("Test"):
+            names |= _test_names(value, f"{prefix}{name}::")
+        elif name.startswith("test") and callable(value):
+            names.add(f"{prefix}{name}")
+    return names
+
+
+def _load_observations(directory: Path) -> Observations:
+    """Load what one environment observed (``--expected-observe``): its facts, collection, and items."""
+    facts: dict[str, str] = {}
+    collected: set[str] = set()
+    items: dict[str, dict[str, Any]] = {}
+    for path in sorted(directory.glob("observed-*.jsonl")):
+        header, *entries = (json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line)
+        facts = header["facts"]
+        collected.update(header["collected"])
+        for entry in entries:
+            known = items.setdefault(entry["item"], entry)
+            known["compared"] = known["compared"] or entry["compared"]
+            known["outcome"] = "failed" if "failed" in {known["outcome"], entry["outcome"]} else known["outcome"]
+    return cast("Observations", {"facts": facts, "collected": sorted(collected), "items": list(items.values())})
+
+
+def _unit_diff(stored: object | None, value: object, path: str) -> str:  # pragma: no cover
+    """Show how a value differs from a stored unit: file diffs, or a tree's missing, extra, and changed files."""
+    if not isinstance(value, dict) or not isinstance(stored, (dict, type(None))):
+        old = stored if isinstance(stored, str) else json.dumps(stored, indent=2, ensure_ascii=False)
+        new = value if isinstance(value, str) else json.dumps(value, indent=2, ensure_ascii=False)
+        return _format_diff(old, new, path)
+    stored = stored or {}
+    parts = [f"missing: {relative}" for relative in sorted(set(stored) - set(value))]
+    parts += [f"new: {relative}" for relative in sorted(set(value) - set(stored))]
+    parts += [
+        f"{relative}:\n{_format_diff(stored[relative], value[relative], relative)}"
+        for relative in sorted(set(stored) & set(value))
+        if stored[relative] != value[relative]
+    ]
+    return "\n".join(parts)
+
+
+class _RefsItem(pytest.Item):
+    """A failing item reporting a sidecar pytest would not have written, or one whose tests no longer exist."""
+
+    def __init__(self, *, message: str | None, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.message = message
+
+    def runtest(self) -> None:
+        if self.message is not None:
+            pytest.fail(self.message, pytrace=False)
+
+    def reportinfo(self) -> tuple[Path, int, str]:
+        return self.path, 0, _REFS_ITEM
+
+
+class _OrphanRefs(pytest.File):
+    """A sidecar whose test module no longer exists: a creating run removes it, other runs fail its item."""
+
+    def collect(self) -> Iterable[pytest.Item]:
+        yield _RefsItem.from_parent(self, name=_REFS_ITEM, message=self.config.stash[_LEDGER].orphan(self.path))
+
+
+class _LedgerPlugin:
+    """Hooks that track the running item, check every comparison it made, and write expected output at the end."""
+
+    def __init__(self, ledger: _Ledger) -> None:
+        self.ledger = ledger
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_sessionstart(self, session: pytest.Session) -> None:  # noqa: ARG002
+        self.ledger.start()
+
+    def pytest_ignore_collect(self, collection_path: Path) -> bool | None:  # noqa: ARG002
+        """Collect nothing when applying only observations, which name every item they need."""
+        return True if self.ledger.apply_file is not None and not self.ledger.apply_data.get("payloads") else None
+
+    def pytest_collect_file(self, file_path: Path, parent: pytest.Collector) -> pytest.Collector | None:
+        """Collect a sidecar whose module is gone, outside observing and applying sessions."""
+        ledger = self.ledger
+        if (
+            file_path.suffix != REFS_SUFFIX
+            or file_path.with_suffix(".py").exists()
+            or ledger.observing
+            or ledger.apply_file is not None
+            or not file_path.is_relative_to(ledger.tests_root)
+        ):
+            return None
+        return _OrphanRefs.from_parent(parent, path=file_path)
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_collection_modifyitems(self, items: list[pytest.Item]) -> None:
+        self.ledger.collect(items)
+
+    @pytest.hookimpl(trylast=True, specname="pytest_collection_modifyitems")
+    def pytest_append_refs_items(self, items: list[pytest.Item]) -> None:
+        self.ledger.refs_items(items)
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_runtest_protocol(self, item: pytest.Item) -> Generator[None, object, object]:
+        _CURRENT_ITEMS.append(item)
+        self.ledger.begin(item)
+        try:
+            return (yield)
+        finally:
+            _CURRENT_ITEMS.remove(item)
+            self.ledger.end(item)
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_runtest_call(self, item: pytest.Item) -> Generator[None, object, object]:
+        result = yield
+        self.ledger.check_exact(item)
+        return result
+
+    def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
+        self.ledger.outcome(report)
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_runtestloop(self, session: pytest.Session) -> Generator[None, object, object]:
+        result = yield
+        self.ledger.rerun_siblings(session)
+        return result
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_sessionfinish(self, session: pytest.Session) -> None:
+        self.ledger.finish(session)
+
+    def pytest_terminal_summary(self, terminalreporter: Any) -> None:
+        if self.ledger.report:
+            terminalreporter.write_sep("-", "expected output")
+            for line in self.ledger.report:
+                terminalreporter.write_line(line)
+
+
+def _stored_cli_doc_paths(config: pytest.Config, item: pytest.Item, kwargs: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Point the expected paths of a cli_doc marker at their storage when the index stores them elsewhere."""
+    if (ledger := config.stash.get(_LEDGER, None)) is None:  # pragma: no cover
+        return kwargs
+    stored = {
+        line.label: line.stored
+        for line in ledger.index.item_lines(item.path.with_suffix(REFS_SUFFIX)).get(_item_key(item), [])
+        if line.stored != line.label
+    }
+    if not stored:
+        return kwargs
+
+    def resolve(path: str) -> str:
+        return stored.get(f"main/{path}", stored.get(path, path))
+
+    def resolve_value(key: str, value: Any) -> Any:
+        if key in {"golden_output", "expected_stdout"} and isinstance(value, str):
+            value = resolve(value)
+        elif key in {"version_outputs", "model_outputs"} and isinstance(value, dict):
+            value = {name: resolve(path) for name, path in value.items()}
+        elif key == "extra_outputs" and isinstance(value, list):
+            value = [{**output, "path": resolve(output["path"])} for output in value]
+        return value
+
+    return {key: resolve_value(key, value) for key, value in kwargs.items()}
+
+
+def _ledger() -> _Ledger | None:
+    """Return the ledger of the running item's session, or None outside a test."""
+    return _CURRENT_ITEMS[-1].config.stash.get(_LEDGER, None) if _CURRENT_ITEMS else None
+
+
+_OWN_FILE_HINT = "otherwise compare the second against its own expected file"
+
+
+def _compare_expected(
+    expected_path: Path, value: object, *, pattern: str | None = None, hint: str = _OWN_FILE_HINT
+) -> None:
+    """Compare a file value, or a tree's files when ``pattern`` is given, with the expected output stored at a path.
+
+    Paths under the tests root go through the ``.refs`` index of the running item; other paths, such as a second
+    generated tree, are compared directly. ``hint`` says how to keep two different outputs apart.
+    """
+    __tracebackhide__ = True
+    if pattern is not None and isinstance(value, dict):
+        # The stored tree holds only the files the pattern selects; compare the same files of the output.
+        value = {name: text for name, text in value.items() if PurePosixPath(name).match(pattern)}
+    ledger = _ledger()
+    label = ledger.label(expected_path, pattern) if ledger is not None else None
+    if ledger is None or label is None:
+        _compare_direct(expected_path, value, pattern)
+        return
+    ledger.compare(_CURRENT_ITEMS[-1], label, value, hint)
+
+
+def _compare_derived(
+    value: object, *, role: str = "", suffix: str = "", tree: bool = False, hint: str = _OWN_FILE_HINT
+) -> None:
+    """Compare output a test gives without an expected path against the one stored under its derived label."""
+    __tracebackhide__ = True
+    ledger = _ledger()
+    if ledger is None:  # pragma: no cover
+        pytest.fail("Expected output without a path can only be compared inside a test", pytrace=False)
+    path = ledger.derived_path(_CURRENT_ITEMS[-1], role=role, suffix=suffix)
+    _compare_expected(path, value, pattern="*" if tree else None, hint=hint)
+
+
+def expected_root() -> Path:
+    """Return the directory expected outputs live in for the running test."""
+    return ledger.expected_root if (ledger := _ledger()) is not None else Path(__file__).parent / "data" / "expected"
+
+
+def default_output_count(role: str = "") -> int:
+    """Count the unnamed outputs of one role the running test compared so far, including this one."""
+    if (ledger := _ledger()) is None:  # pragma: no cover
+        return 1
+    key = (_CURRENT_ITEMS[-1].nodeid, role)
+    ledger.default_outputs[key] = count = ledger.default_outputs.get(key, 0) + 1
+    return count
+
+
+def _compare_direct(expected_path: Path, value: object, pattern: str | None) -> None:
+    __tracebackhide__ = True
+    stored = read_unit(expected_path, pattern)
+    if stored is None:
+        pytest.fail(f"Expected file not found: {expected_path}", pytrace=False)
+    if stored != value:
+        pytest.fail(
+            f"Content mismatch for {expected_path}\n{_unit_diff(stored, value, str(expected_path))}", pytrace=False
+        )
 
 
 class AssertFileContent(Protocol):
@@ -795,33 +1965,48 @@ def create_assert_file_content(
             expected_name = _infer_expected_file(frame.f_back.f_code.co_name)
             del frame
 
-        expected_path = base_path / expected_name
         content = output_file.read_text(encoding=encoding)
         if transform is not None:
             content = transform(content)
-        _assert_with_external_file(content, expected_path)
+        _compare_expected(base_path / expected_name, _normalize_line_endings(content))
 
     return _assert_file_content
 
 
 def assert_output(
     output: object,
-    expected_path: Path,
+    expected_path: Path | None = None,
+    *,
+    name: str | None = None,
 ) -> None:
-    """Assert that output string matches expected external file.
+    """Assert that output matches the expected output stored for it.
 
     Args:
-        output: The output string to compare (e.g., captured.out, parser.parse()).
-        expected_path: Path to the expected file.
+        output: The output string to compare (e.g., captured.out, parser.parse()), or a JSON value for a .json path.
+        expected_path: Path to the expected file. Without it, pytest names the file after the test item.
+        name: Distinguishes several outputs of one test that pass no path, e.g. ``name="warnings"``.
 
     Usage:
         assert_output(captured.out, EXPECTED_PATH / "output.py")
-        assert_output(parser.parse(), EXPECTED_PATH / "output.py")
+        assert_output(parser.parse())
+        assert_output(captured.err, name="warnings")
     """
     __tracebackhide__ = True
-    if not isinstance(output, str):  # pragma: no cover
+    is_json_value = expected_path is not None and expected_path.suffix == ".json" and not isinstance(output, str)
+    if not isinstance(output, str) and not is_json_value:  # pragma: no cover
         pytest.fail(f"Expected generated output to be str, got {type(output).__name__}")
-    _assert_with_external_file(output, expected_path)
+    value = output if is_json_value else _normalize_line_endings(cast("str", output))
+    if expected_path is not None:
+        _compare_expected(expected_path, value)
+        return
+    if name is None and (ledger := _ledger()) is not None:
+        ledger.unnamed_output(_CURRENT_ITEMS[-1])
+    _compare_derived(
+        value,
+        role=f".{name}" if name else "",
+        suffix=".txt",
+        hint='otherwise name the second: assert_output(text, name="second")',
+    )
 
 
 def assert_mutable_copy_is_isolated(
@@ -865,6 +2050,15 @@ def assert_inputs_not_mutated(inputs: Mapping[str, object] | None) -> Generator[
             pytest.fail(f"{label} was mutated: before={before!r}, after={current!r}")
 
 
+def _output_tree(output_dir: Path, pattern: str, encoding: str = "utf-8") -> dict[str, str]:
+    """Read the files of an output directory that match a pattern, keyed by their POSIX path."""
+    return {
+        path.relative_to(output_dir).as_posix(): _normalize_line_endings(path.read_text(encoding=encoding))
+        for path in sorted(output_dir.rglob(pattern))
+        if tree_member(path, output_dir)
+    }
+
+
 def assert_directory_content(
     output_dir: Path,
     expected_dir: Path,
@@ -883,19 +2077,7 @@ def assert_directory_content(
         assert_directory_content(tmp_path / "model", EXPECTED_PATH / "main_modular")
     """
     __tracebackhide__ = True
-    output_files = {p.relative_to(output_dir) for p in output_dir.rglob(pattern)}
-    expected_files = {p.relative_to(expected_dir) for p in expected_dir.rglob(pattern)}
-
-    # Check for extra expected files (output missing files that are expected)
-    extra = expected_files - output_files
-    assert not extra, f"Expected files not in output: {extra}"
-
-    # Compare all output files (including new ones not yet in expected)
-    for output_path in output_dir.rglob(pattern):
-        relative_path = output_path.relative_to(output_dir)
-        expected_path = expected_dir / relative_path
-        result = output_path.read_text(encoding=encoding)
-        _assert_with_external_file(result, expected_path)
+    _compare_expected(expected_dir, _output_tree(output_dir, pattern, encoding), pattern=pattern)
 
 
 def assert_exact_directory_content(
@@ -904,26 +2086,9 @@ def assert_exact_directory_content(
     pattern: str = "*.py",
     encoding: str = "utf-8",
 ) -> None:
-    """Assert all files in output_dir match expected_dir exactly without snapshot indirection."""
+    """Assert all files in output_dir match expected_dir exactly, with no file missing or extra on either side."""
     __tracebackhide__ = True
-    output_files = {p.relative_to(output_dir) for p in output_dir.rglob(pattern)}
-    expected_files = {p.relative_to(expected_dir) for p in expected_dir.rglob(pattern)}
-
-    extra = expected_files - output_files
-    assert not extra, f"Expected files not in output: {extra}"
-
-    missing = output_files - expected_files
-    assert not missing, f"Output has files not in expected: {missing}"
-
-    for output_path in output_dir.rglob(pattern):
-        relative_path = output_path.relative_to(output_dir)
-        expected_path = expected_dir / relative_path
-        output = _normalize_line_endings(output_path.read_text(encoding=encoding))
-        expected = _normalize_line_endings(expected_path.read_text(encoding=encoding))
-        if output != expected:
-            diff = _format_diff(expected, output, expected_path)
-            msg = f"Content mismatch for {expected_path}\n{diff}"
-            raise AssertionError(msg)
+    _compare_expected(expected_dir, _output_tree(output_dir, pattern, encoding), pattern=pattern)
 
 
 def _get_full_body(result: object) -> str:
@@ -950,14 +2115,8 @@ def assert_parser_results(
         assert_parser_results(results, EXPECTED_PATH / "parser_output")
     """
     __tracebackhide__ = True
-    for expected_path in expected_dir.rglob(pattern):
-        key = str(expected_path.relative_to(expected_dir))
-        if key not in results:
-            msg = f"Parser result missing expected file: {key}"
-            raise AssertionError(msg)
-        result_obj = results.pop(key)
-        _assert_with_external_file(_get_full_body(result_obj), expected_path)
-    assert not results, list(results)
+    tree = {Path(key).as_posix(): _normalize_line_endings(_get_full_body(result)) for key, result in results.items()}
+    _compare_expected(expected_dir, tree, pattern=pattern)
 
 
 def assert_parser_modules(
@@ -975,42 +2134,25 @@ def assert_parser_modules(
         assert_parser_modules(modules, EXPECTED_PATH / "parser_modular")
     """
     __tracebackhide__ = True
-    output_files = set(starmap(Path, modules))
-    expected_files = {path.relative_to(expected_dir) for path in expected_dir.rglob("*.py")}
-
-    extra = expected_files - output_files
-    assert not extra, f"Expected files not in parser modules: {extra}"
-
-    missing = output_files - expected_files
-    assert not missing, f"Parser modules not in expected files: {missing}"
-
-    for paths, result in modules.items():
-        expected_path = expected_dir.joinpath(*paths)
-        _assert_with_external_file(_get_full_body(result), expected_path)
+    assert_generated_modules_output(modules, expected_dir)
 
 
 def assert_generated_modules_output(
     modules: Mapping[tuple[str, ...], Any],
     expected_dir: Path,
     transform: Callable[[str], str] | None = None,
+    pattern: str = "*.py",
 ) -> None:
-    """Assert generate(output=None) module output matches expected files exactly."""
+    """Assert generate(output=None) module output matches expected files exactly.
+
+    ``pattern`` selects the stored files compared; ``"*"`` compares the whole stored tree.
+    """
     __tracebackhide__ = True
-    output_files = set(starmap(Path, modules))
-    expected_files = {path.relative_to(expected_dir) for path in expected_dir.rglob("*.py")}
-
-    extra = expected_files - output_files
-    assert not extra, f"Expected files not in generated modules: {extra}"
-
-    missing = output_files - expected_files
-    assert not missing, f"Generated modules not in expected files: {missing}"
-
+    tree = {}
     for paths, result in modules.items():
-        expected_path = expected_dir.joinpath(*paths)
         content = _get_full_body(result)
-        if transform is not None:
-            content = transform(content)
-        _assert_with_external_file(content, expected_path)
+        tree[Path(*paths).as_posix()] = _normalize_line_endings(transform(content) if transform else content)
+    _compare_expected(expected_dir, tree, pattern=pattern)
 
 
 def write_generated_modules(output_dir: Path, modules: dict[tuple[str, ...], Any]) -> None:
@@ -1326,14 +2468,6 @@ def _isolate_builtin_formatter_config(
         encoding="utf-8",
     )
     monkeypatch.chdir(settings_path)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _inline_snapshot_file_formats() -> None:
-    register_format_alias(".py", ".txt")
-    register_format_alias(".pyi", ".txt")
-    register_format_alias(".snapshot", ".txt")
-    register_format_alias(".md", ".txt")
 
 
 @pytest.fixture(scope="session")

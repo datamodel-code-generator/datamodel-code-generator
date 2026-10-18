@@ -978,6 +978,7 @@ def test_fastapi_cli_output_options(
         extra_args=_server(*options),
         copy_files=_inputs(tmp_path),
         skip_code_validation="--encoding" in options,
+        transform=lambda text: text.replace(f"#   version:   {get_version()}", "#   version:   0.0.0"),
     )
     encoding = options[options.index("--encoding") + 1] if "--encoding" in options else "utf-8"
     text = (tmp_path / "server" / "routers" / "store.py").read_bytes().decode(encoding)

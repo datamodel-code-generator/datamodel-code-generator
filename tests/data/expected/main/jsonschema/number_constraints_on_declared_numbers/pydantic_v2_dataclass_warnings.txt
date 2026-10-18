@@ -1,6 +1,0 @@
-Pydantic does not take ge on str; Label is generated without this constraint.
-Pydantic does not take ge on str; NumberConstraintsOnDeclaredNumbers.label is generated without this constraint.
-Pydantic does not take ge on date; NumberConstraintsOnDeclaredNumbers.day is generated without this constraint.
-Pydantic does not take multiple_of on time; NumberConstraintsOnDeclaredNumbers.clock is generated without this constraint.
-Pydantic does not take le on Literal['a', 'b']; NumberConstraintsOnDeclaredNumbers.code is generated without this constraint.
-Pydantic checks multiple_of on timedelta only from 2.14 on, which an explicit --target-pydantic-version 2.14 or later selects; NumberConstraintsOnDeclaredNumbers.wait is generated without this constraint.

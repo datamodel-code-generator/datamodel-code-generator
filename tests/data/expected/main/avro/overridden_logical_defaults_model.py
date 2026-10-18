@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from builtins import bytes
-from datetime import timedelta as timedelta_aliased
 
 from pydantic import BaseModel, Field, RootModel, conbytes
 

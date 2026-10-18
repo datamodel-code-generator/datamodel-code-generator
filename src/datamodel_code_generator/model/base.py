@@ -2785,6 +2785,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return self._internal_template_data.get("schema_runtime_validation")
 
     @property
+    def schema_runtime_validation_references(self) -> tuple[Reference, ...]:
+        """Return the other models that runtime rules name, which the class body evaluates when it runs."""
+        if not (runtime_validation := self.schema_runtime_validation):
+            return ()
+        return tuple(
+            reference
+            for rule_data_type in runtime_validation.data_types
+            for data_type in rule_data_type.all_data_types
+            if (reference := data_type.reference) is not None and reference.path != self.path
+        )
+
+    @property
     def has_runtime_object_validation(self) -> bool:
         """Keep object validators when replacing a root model with its underlying type."""
         rules = self._internal_template_data.get("schema_runtime_validation") or self.extra_template_data.get(

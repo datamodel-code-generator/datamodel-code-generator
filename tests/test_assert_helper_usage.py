@@ -1716,6 +1716,7 @@ def test_run_main_runtime_validation_skips_newer_python_target(tmp_path: Path) -
             "3.14",
             "--formatters",
             "builtin",
+            "--disable-timestamp",
         ],
         skip_code_validation=True,
         runtime_validation_module="missing_module",

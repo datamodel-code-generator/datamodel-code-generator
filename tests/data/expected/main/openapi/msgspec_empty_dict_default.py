@@ -4,15 +4,15 @@
 
 from __future__ import annotations
 
-from typing import Union
-
-from msgspec import UNSET, Struct, UnsetType, field
+from msgspec import UNSET, Struct, UnsetType, convert, field
 
 
 class ObjectMeta(Struct):
-    name: Union[str, UnsetType] = UNSET
-    namespace: Union[str, UnsetType] = UNSET
+    name: str | UnsetType = UNSET
+    namespace: str | UnsetType = UNSET
 
 
 class PodSpec(Struct):
-    metadata: Union[ObjectMeta, UnsetType] = field(default_factory=dict)
+    metadata: ObjectMeta | UnsetType = field(
+        default_factory=lambda: convert({}, type=ObjectMeta)
+    )

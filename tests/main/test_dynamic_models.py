@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, cast
 
 import pydantic
 import pytest
-from inline_snapshot import external_file
 
 from datamodel_code_generator import (
     AllExportsCollisionStrategy,
@@ -93,7 +92,7 @@ def assert_dynamic_models(
             actual[name] = {"__name__": model.__name__, "data": model_dump}
             continue
         actual[name] = model_dump
-    assert actual == external_file(expected_path)
+    assert_output(actual, expected_path)
 
 
 @pytest.fixture(autouse=True)

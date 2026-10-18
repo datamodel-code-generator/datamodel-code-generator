@@ -7,11 +7,14 @@ import json
 import re
 import sys
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
+
+    from tests.units import RefsIndex
 
 ROOT = Path(__file__).parent.parent
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
@@ -115,9 +118,22 @@ class MarkdownCodeBlock:
     strip_python_header: bool = False
 
 
+@cache
+def expected_index() -> RefsIndex:
+    """Return the tests' ``.refs`` index of where expected output is stored."""
+    from tests.units import RefsIndex  # ruff: ignore[import-outside-top-level]
+
+    return RefsIndex(ROOT / "tests")
+
+
+def stored(path: Path) -> Path:
+    """Return where the expected output a path names is stored, following the index."""
+    return expected_index().stored_path(path)
+
+
 def read_text(path: Path) -> str:
-    """Read a UTF-8 fixture file."""
-    return path.read_text(encoding="utf-8").rstrip()
+    """Read a UTF-8 fixture file, or the expected output stored for it."""
+    return stored(path).read_text(encoding="utf-8").rstrip()
 
 
 def read_python_output(path: Path) -> str:
@@ -335,7 +351,7 @@ def json_helpers(path: Path, *names: str) -> str:
 
 def directory_files(path: Path) -> list[Path]:
     """Return stable file entries for generated directory examples."""
-    return sorted(file for file in path.iterdir() if file.is_file())
+    return sorted(file for file in stored(path).iterdir() if file.is_file())
 
 
 def directory_tree(path: Path, *, root_name: str) -> str:

@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info: {title: levels, version: "1"}
+paths: {}
+components:
+  schemas:
+    Level:
+      oneOf:
+        - {type: string, enum: [low]}
+        - {type: string, enum: [high]}
+    Size:
+      oneOf:
+        - {type: string, enum: [small, medium]}
+        - {type: string, enum: [large, huge]}
+    Code:
+      oneOf:
+        - {type: integer, enum: [1, 2]}
+        - {type: integer, enum: [3]}
+    Color:
+      type: string
+      enum: [red, green]
+    Rank:
+      type: integer
+      enum: [1, 2]
+    Mixed:
+      enum: [a, 1]
+    Name:
+      type: string
+    Pet:
+      type: object
+      properties:
+        name: {type: string}
+    Item:
+      type: object
+      required: [level]
+      properties:
+        level: {$ref: '#/components/schemas/Level'}
+        levelOrCount:
+          anyOf:
+            - {$ref: '#/components/schemas/Level'}
+            - {type: integer}
+        levelOrRank:
+          anyOf:
+            - {$ref: '#/components/schemas/Level'}
+            - {$ref: '#/components/schemas/Rank'}
+            - {type: integer}
+        size: {$ref: '#/components/schemas/Size'}
+        code: {$ref: '#/components/schemas/Code'}
+        color:
+          anyOf:
+            - {$ref: '#/components/schemas/Color'}
+            - {type: string}
+        tone:
+          anyOf:
+            - {$ref: '#/components/schemas/Color'}
+            - {const: blue}
+        colorOrName:
+          anyOf:
+            - {$ref: '#/components/schemas/Color'}
+            - {$ref: '#/components/schemas/Name'}
+        payload:
+          anyOf:
+            - {$ref: '#/components/schemas/Color'}
+            - {type: string, format: binary}
+        textOrPayload:
+          anyOf:
+            - {$ref: '#/components/schemas/Color'}
+            - {type: string}
+            - {type: string, format: binary}
+        priority:
+          anyOf:
+            - {type: integer, enum: [1, 2]}
+            - {type: integer}
+        tags:
+          type: array
+          items:
+            oneOf:
+              - {type: string, enum: [x]}
+              - {type: string, enum: [y]}
+        kind:
+          oneOf:
+            - {type: string, enum: [a]}
+            - {type: integer, enum: [1]}
+        ratio:
+          anyOf:
+            - {$ref: '#/components/schemas/Color'}
+            - {type: number}
+            - {type: array, items: {type: string}}
+            - {$ref: '#/components/schemas/Pet'}
+        mixed:
+          anyOf:
+            - {$ref: '#/components/schemas/Mixed'}
+            - {type: string}
+        open:
+          anyOf:
+            - {const: a}
+            - {type: string}

@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import inspect
+import io
 import json
 import os
 import shutil
@@ -14,7 +15,7 @@ import time
 import warnings
 from argparse import Namespace
 from collections.abc import Callable, Collection, Generator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext, redirect_stdout
 from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
 from functools import cache
@@ -41,13 +42,19 @@ from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.format import Formatter, PythonVersion, is_supported_in_black
 from tests.conftest import (
     AssertFileContent,
+    _compare_derived,
+    _compare_expected,
     _infer_expected_file,
+    _normalize_line_endings,
+    _output_tree,
     _validation_stats,
     assert_directory_content,
     assert_generate_wrote_file,
     assert_inputs_not_mutated,
     assert_output,
     assert_warnings_contain,
+    default_output_count,
+    expected_root,
     freeze_time,
     validate_generated_code,
 )
@@ -315,12 +322,14 @@ def _assert_captured_output(
     expected_stderr: str | None = None,
     expected_stderr_contains: str | None = None,
     assert_no_stderr: bool = False,
+    derived_stdout: bool = False,
 ) -> None:
     if not any((
         expected_stdout_path is not None,
         expected_stderr is not None,
         expected_stderr_contains is not None,
         assert_no_stderr,
+        derived_stdout,
     )):
         return
     if capsys is None:  # pragma: no cover
@@ -328,6 +337,8 @@ def _assert_captured_output(
     captured = capsys.readouterr()
     if expected_stdout_path is not None:
         assert_output(captured.out, expected_stdout_path)
+    if derived_stdout:
+        _compare_derived(_normalize_line_endings(captured.out), role=_derived_output_role(".stdout"), suffix=".txt")
     if expected_stderr is not None and captured.err != expected_stderr:  # pragma: no cover
         pytest.fail(f"Expected stderr:\n{expected_stderr}\n\nActual stderr:\n{captured.err}")
     if expected_stderr_contains is not None and expected_stderr_contains not in captured.err:  # pragma: no cover
@@ -846,6 +857,8 @@ def run_generate_file_and_assert(
 
     if expected_directory is not None:
         assert_directory_content(output_path, expected_directory)
+    elif assert_func is None:
+        _compare_output(output_path, expected_file, transform)
     else:
         if expected_file is None:
             frame = inspect.currentframe()
@@ -853,8 +866,6 @@ def run_generate_file_and_assert(
             assert frame.f_back is not None
             expected_file = _infer_expected_file(frame.f_back.f_code.co_name)
             del frame
-
-        assert assert_func is not None
         assert_func(output_path, expected_file, transform=transform)
     with _enable_test_parsed_source_cache(), assert_inputs_not_mutated(unchanged_inputs):
         _assert_builtin_generate_formatter_parity(
@@ -900,8 +911,51 @@ def run_generate_and_assert(
         result = output_path.read_text(encoding=encoding)
     if not isinstance(result, str):  # pragma: no cover
         pytest.fail(f"Expected generate() to return str, got {type(result).__name__}")
-    assert expected_file is not None
+    if expected_file is None:
+        _compare_derived(_normalize_line_endings(result), role=_derived_output_role(), suffix=".py")
+        return
     assert_output(result, expected_file)
+
+
+def _compare_output(
+    output_path: Path,
+    expected_file: str | Path | None,
+    transform: Callable[[str], str] | None,
+    encoding: str = "utf-8",
+) -> None:
+    """Compare a generated file or directory with ``expected_file``, or with the output stored under the test's name.
+
+    A relative ``expected_file`` is relative to tests/data/expected; a directory output compares the whole tree.
+    Without ``expected_file``, a test's second and later outputs are stored as ``<name>.2<suffix>`` and so on, and a
+    path generation did not write is not compared.
+    """
+    __tracebackhide__ = True
+    expected = None if expected_file is None else expected_root() / expected_file
+    if expected is None and not output_path.exists():
+        return
+    role = "" if expected is not None else _derived_output_role()
+    if output_path.is_dir():
+        tree = {
+            relative: _normalize_line_endings(transform(text)) if transform else text
+            for relative, text in _output_tree(output_path, "*", encoding).items()
+        }
+        if expected is None:
+            _compare_derived(tree, role=role, tree=True)
+        else:
+            _compare_expected(expected, tree, pattern="*")
+        return
+    content = output_path.read_text(encoding=encoding)
+    value = _normalize_line_endings(transform(content) if transform else content)
+    if expected is None:
+        _compare_derived(value, role=role, suffix=output_path.suffix)
+    else:
+        _compare_expected(expected, value)
+
+
+def _derived_output_role(role: str = "") -> str:
+    """Return the role of the running test's next unnamed output of a kind: ``role``, then ``.2<role>``, ..."""
+    count = default_output_count(role)
+    return role if count == 1 else f".{count}{role}"
 
 
 def run_main_and_assert(  # noqa: PLR0912
@@ -994,6 +1048,21 @@ def run_main_and_assert(  # noqa: PLR0912
         runtime_validation_data: Data passed to model_validate on the generated model
     """
     __tracebackhide__ = True
+    output_verification_requested = any((
+        assert_func is not None,
+        expected_file is not None,
+        expected_output is not None,
+        expected_directory is not None,
+        output_to_expected is not None,
+        file_should_not_exist is not None,
+        output_should_not_exist,
+    ))
+    derived_stdout = (
+        output_path is None
+        and expected_exit == Exit.OK
+        and expected_stdout_path is None
+        and not output_verification_requested
+    )
     runtime_validation_options = (
         runtime_validation_module,
         runtime_validation_model_name,
@@ -1007,6 +1076,7 @@ def run_main_and_assert(  # noqa: PLR0912
             "must be passed together"
         )
 
+    stdout: io.StringIO | None = None
     # Handle stdin input
     if stdin_path is not None:
         if monkeypatch is None:  # pragma: no cover
@@ -1042,6 +1112,7 @@ def run_main_and_assert(  # noqa: PLR0912
         with (
             _enable_test_parsed_source_cache(),
             _builtin_default_formatter_config(output_path, enabled=use_builtin_default),
+            redirect_stdout(io.StringIO()) if derived_stdout and capsys is None else nullcontext() as stdout,
         ):
             return_code = main(args)
     # Standard file input
@@ -1051,6 +1122,10 @@ def run_main_and_assert(  # noqa: PLR0912
         return_code = _run_main(input_path, output_path, input_file_type, extra_args=extra_args, copy_files=copy_files)
 
     _assert_exit_code(return_code, expected_exit, f"Input: {input_path}")
+    if stdout is not None:
+        _compare_derived(
+            _normalize_line_endings(stdout.getvalue()), role=_derived_output_role(".stdout"), suffix=".txt"
+        )
 
     _assert_captured_output(
         capsys,
@@ -1058,6 +1133,7 @@ def run_main_and_assert(  # noqa: PLR0912
         expected_stderr=expected_stderr,
         expected_stderr_contains=expected_stderr_contains,
         assert_no_stderr=assert_no_stderr,
+        derived_stdout=derived_stdout and capsys is not None,
     )
 
     output_verification_modes = (
@@ -1126,6 +1202,8 @@ def run_main_and_assert(  # noqa: PLR0912
             expected_file = _infer_expected_file(frame.f_back.f_code.co_name)
             del frame
         assert_func(output_path, expected_file, transform=transform)
+    elif output_path is not None:
+        _compare_output(output_path, expected_file, transform, _get_argument_value(extra_args, "--encoding") or "utf-8")
 
     with _enable_test_parsed_source_cache():
         _assert_builtin_cli_formatter_parity(
