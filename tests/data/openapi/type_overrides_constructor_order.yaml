@@ -29,6 +29,20 @@ components:
           minimum: 1
         q:
           type: string
+    Gain:
+      type: object
+      required: [g, q]
+      properties:
+        g:
+          type: array
+          items:
+            type: string
+          minimum: 5
+        q:
+          type: string
+        d:
+          type: string
+          default: x
     Base:
       type: object
       properties:

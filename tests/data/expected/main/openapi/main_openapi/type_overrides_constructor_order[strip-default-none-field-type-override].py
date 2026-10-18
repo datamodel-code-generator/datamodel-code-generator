@@ -29,6 +29,13 @@ class Constrained:
 
 
 @dataclass
+class Gain:
+    g: list[str]
+    q: str
+    d: str | None = 'x'
+
+
+@dataclass
 class Base:
     x: str | None = 'a'
 

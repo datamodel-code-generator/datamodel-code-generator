@@ -1514,6 +1514,8 @@ pydantic-dataclass-annotated	main/openapi/output_model_types/field_render_plan_p
 [test_main_openapi_type_overrides_constructor_order]
 base-class-type-override	main/openapi/main_openapi/type_overrides_constructor_order[base-class-type-override].py
 field-constraints-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[field-constraints-field-type-override].py
+field-constraints-field-type-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order[field-constraints-field-type-override-gains-field-argument].py
+field-type-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order[field-type-override-gains-field-argument].py
 strip-default-none-field-constraints-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-constraints-field-type-override].py
 strip-default-none-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-type-override].py
 [test_main_openapi_union_default_object]

@@ -60621,7 +60621,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `__rename_fields_hiding_types` | same-named fields and types of the model family | field names or type names |
 | process | `__remove_overridden_models` | model-level `--type-overrides` | removes overridden models from the module's list (constructor ordering still runs on them) |
 | process | `__apply_field_type_overrides` | `--type-overrides`, field names | field types of the kept models; model-level overrides edit nodes on fields in place |
-| process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:DataType.admits_none`), field types after overrides, bases before base-class overrides | field order, constructor adjustments |
+| process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:DataType.admits_none`), field types after overrides (a base in a module processed later is read before its own overrides), bases before base-class overrides | field order, constructor adjustments |
 | finalize | `__apply_base_class_type_overrides` | model-level `--type-overrides` | base classes; edits base-class nodes in place |
 | finalize | `unbind_fields` (model) | hidden type names | field binding |
 | finalize | `__update_type_aliases` | model order, forward references | quotes forward references in place (`data_type.alias`), union operator along one `.parent` chain |
@@ -60860,9 +60860,13 @@ it survives each of these steps is not verified.
   defaults. Ordering decides from the field types and `Field()` arguments the class body renders, so a module applies
   `--type-overrides` to the field types of the models it keeps before `__fix_constructor_field_ordering`
   ([#4949](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4949),
-  [#4955](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4955)). A base class that an
-  override replaces stays the generated model for ordering, as the generator cannot see the replacing class's fields,
-  so base-class overrides are applied after ordering.
+  [#4955](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4955)). A base in a module
+  processed later is still read before its own field-type overrides. That can only add a redundant `kw_only` to a
+  subclass field, for example `n: Decimal | None = Field(kw_only=True)` where the base's override already removed the
+  inherited default it reacts to; constructor ordering after the module loop (refactor P1,
+  [#4914](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4914) step 3) removes it. A base
+  class that an override replaces stays the generated model for ordering, as the generator cannot see the replacing
+  class's fields, so base-class overrides are applied after ordering.
 
 ## References And Names
 

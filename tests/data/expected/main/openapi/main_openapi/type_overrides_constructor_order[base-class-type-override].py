@@ -29,5 +29,12 @@ class Constrained:
 
 
 @dataclass
+class Gain:
+    g: list[str]
+    q: str
+    d: str | None = 'x'
+
+
+@dataclass
 class Child(Decimal):
     y: str = Field(..., kw_only=True)

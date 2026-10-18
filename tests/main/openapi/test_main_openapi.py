@@ -3515,6 +3515,14 @@ def test_main_openapi_strip_default_none_constructor_order(
             r"Pydantic does not take ge on str",
             id="strip-default-none-field-constraints-field-type-override",
         ),
+        pytest.param(
+            ["--type-overrides", '{"Gain.g": "decimal.Decimal"}'], None, id="field-type-override-gains-field-argument"
+        ),
+        pytest.param(
+            ["--field-constraints", "--type-overrides", '{"Gain.g": "decimal.Decimal"}'],
+            None,
+            id="field-constraints-field-type-override-gains-field-argument",
+        ),
         pytest.param(["--type-overrides", '{"Base": "decimal.Decimal"}'], None, id="base-class-type-override"),
     ],
 )
@@ -3526,8 +3534,10 @@ def test_main_openapi_type_overrides_constructor_order(
     An override that replaces the type of the second of two kept ``None`` defaults under --strip-default-none
     leaves it without a default, so it precedes the first. An override that drops the only ``Field()`` constraint
     of a required field under --field-constraints leaves it without an assignment, so it precedes the default.
-    A base class that an override replaces stays the generated model for ordering, so a subclass field without a
-    default after an inherited default stays keyword-only.
+    An override to a type that takes a number constraint the declared array type left out gives the required field
+    a ``Field(..., ge=...)``, so it follows the required field without an assignment. A base class that an override
+    replaces stays the generated model for ordering, so a subclass field without a default after an inherited
+    default stays keyword-only.
     """
     with pytest.warns(UserWarning, match=warning) if warning else contextlib.nullcontext():
         run_main_and_assert(
