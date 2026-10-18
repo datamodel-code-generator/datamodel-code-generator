@@ -27788,9 +27788,10 @@ def test_schema_validator_legacy_custom_helper(
 
 
 RESOURCES_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "nested_resources"
+RESOURCES_PAYLOADS = DATA_PATH / "payloads/nested_resources"
 
 
-RESOURCES_CASES = json.loads(stored_expected(RESOURCES_EXPECTED / "cases.json").read_text(encoding="utf-8"))
+RESOURCES_CASES = json.loads((RESOURCES_PAYLOADS / "cases.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize(
@@ -27926,7 +27927,7 @@ def test_nested_schema_resources(tmp_path: Path, case: str, entrypoint: str, for
 @pytest.mark.parametrize("strict_refs", [False, True])
 @pytest.mark.parametrize(
     "case",
-    json.loads(stored_expected(RESOURCES_EXPECTED / "identifier_cases.json").read_text(encoding="utf-8")),
+    json.loads((RESOURCES_PAYLOADS / "identifier_cases.json").read_text(encoding="utf-8")),
     ids=lambda case: f"{case['source']}-{case['version']}-{case.get('mode', 'lenient')}",
 )
 def test_schema_resource_identifier_versions(
@@ -27998,9 +27999,7 @@ def test_missing_embedded_anchor(
     validator_class = validator_for(schema)
     validator_class.check_schema(schema)
     validator = validator_class(schema, registry=Registry().with_resource("root.json", Resource.from_contents(schema)))
-    payload = json.loads(
-        stored_expected(RESOURCES_EXPECTED / "missing_anchor_payload.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((RESOURCES_PAYLOADS / "missing_anchor_payload.json").read_text(encoding="utf-8"))
     with pytest.raises(Unresolvable) as native_error:
         validator.is_valid(payload)
     assert_output(str(native_error.value), RESOURCES_EXPECTED / "missing_anchor_native_error.txt")
