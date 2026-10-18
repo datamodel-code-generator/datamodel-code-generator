@@ -2707,7 +2707,9 @@ def test_fastapi_cli_failures(
     )
 
 
-@pytest.mark.parametrize("case", ["class-name", "class-name-check", "encoding", "lock", "output-parent", "publication"])
+@pytest.mark.parametrize(
+    "case", ["class-name", "class-name-check", "class-name-option", "encoding", "lock", "output-parent", "publication"]
+)
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_model_error_context(
     case: str, structured: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
@@ -2715,7 +2717,8 @@ def test_fastapi_cli_model_error_context(
     """Keep model error hints, decoding context, lock errors, and filesystem errors without publishing files.
 
     A failed publication is reported as by the model runs that publish through the same journal. The class-name hint
-    to add --recommend-options is left out where the command cannot take it, such as with --check.
+    to add --recommend-options is left out where the command cannot take it, such as with --check, and a name that
+    --class-name sets is pointed back to that option.
     """
     monkeypatch.chdir(tmp_path)
     _copy(tmp_path)
@@ -2723,20 +2726,23 @@ def test_fastapi_cli_model_error_context(
     output = Path("models.py")
     stderr = "Error: "
     match case:
-        case "class-name" | "class-name-check":
+        case "class-name" | "class-name-check" | "class-name-option":
             options = [
                 "--custom-formatters",
                 "tests.data.python.custom_formatters.stop",
                 "--custom-formatters-kwargs",
                 '{"class_name": "1Xyz"}',
-                *(["--check"] if case == "class-name-check" else []),
+                *{"class-name-check": ["--check"], "class-name-option": ["--class-name", "1Xyz"]}.get(case, []),
             ]
-            stderr = "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n" + (
-                "Hint: add --recommend-options to this command to get a class name and naming options for this "
-                "schema (experimental).\n"
-                if case == "class-name"
-                else ""
-            )
+            stderr = "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n" + {
+                "class-name": (
+                    "Hint: add --recommend-options to this command to get a class name and naming options for this "
+                    "schema (experimental).\n"
+                ),
+                "class-name-option": (
+                    "Hint: --class-name sets this name; change it to a valid Python class name or remove it.\n"
+                ),
+            }.get(case, "")
         case "encoding":
             (tmp_path / "pets.yaml").write_bytes((CLI / "non-text.dat").read_bytes())
             stderr = "Error: Unable to decode input using encoding 'utf-8': "

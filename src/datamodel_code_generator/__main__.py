@@ -1564,9 +1564,15 @@ def _recommend_options_conflict(args: Namespace) -> str | None:
     return next((option for conflict, option in conflicts if conflict), None)
 
 
-def _invalid_class_name_message(error: InvalidClassNameError, args: Namespace) -> str:
-    """Return the CLI message of an invalid class name, with the --recommend-options hint where the command takes it."""
+def _invalid_class_name_message(error: InvalidClassNameError, args: Namespace, class_name: str | None) -> str:
+    """Return the CLI message of an invalid class name with a hint at its fix.
+
+    A name that --class-name sets is fixed there, as the recommender keeps it; a name from the schema gets the
+    --recommend-options hint where the command takes that option.
+    """
     message = f"{error} You have to set `--class-name` option"
+    if error.class_name == class_name:
+        return f"{message}\nHint: --class-name sets this name; change it to a valid Python class name or remove it."
     if _recommend_options_conflict(args) is not None:
         return message
     return (
@@ -3262,7 +3268,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                     logical_output=_batch_original_output,
                 )
     except InvalidClassNameError as e:
-        print(_invalid_class_name_message(e, namespace), file=sys.stderr)  # noqa: T201
+        print(_invalid_class_name_message(e, namespace, config.class_name), file=sys.stderr)  # noqa: T201
         return cleanup_and_return(Exit.ERROR)
     except UnicodeDecodeError as e:
         print(f"Unable to decode input using encoding {config.encoding!r}: {e}", file=sys.stderr)  # noqa: T201

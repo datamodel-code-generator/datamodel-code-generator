@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic.json_schema import SkipJsonSchema
 
-from datamodel_code_generator.prompt import PromptPayload, _Absent, _absent_when_unset
+from datamodel_code_generator.prompt import PromptPayload
+
+if TYPE_CHECKING:
+    from pydantic.json_schema import JsonDict
 
 JSON_SCHEMA_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
 
@@ -21,8 +25,14 @@ class GeneratedFilePayload(BaseModel):
     content: str
 
 
+_Absent: TypeAlias = SkipJsonSchema[None]
 _NEXT_STEPS = ("implied", "entrypoint", "implementation", "usage")
 _TARGET_DESCRIPTION = "The package and runtime dependencies of a server or client generation; absent for models only."
+
+
+def _absent_when_unset(schema: JsonDict) -> None:
+    """Leave the default out of an optional key's schema: the payload omits the key rather than printing null."""
+    schema.pop("default")
 
 
 def _implied(key: str, description: str) -> Any:

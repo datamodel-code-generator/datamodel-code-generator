@@ -11,18 +11,15 @@ import re
 from argparse import SUPPRESS, Action, ArgumentParser, BooleanOptionalAction
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-from pydantic.json_schema import SkipJsonSchema
 
 from datamodel_code_generator.cli_options import CLI_OPTION_META, MANUAL_DOCS, OptionCategory
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
 if TYPE_CHECKING:
     from argparse import Namespace
-
-    from pydantic.json_schema import JsonDict
 
 # Options to exclude from prompt output
 PROMPT_EXCLUDED_OPTIONS: frozenset[str] = frozenset({
@@ -178,14 +175,6 @@ class OptionMetadataPayload(BaseModel):
     deprecated_message: str | None
 
 
-_Absent: TypeAlias = SkipJsonSchema[None]
-
-
-def _absent_when_unset(schema: JsonDict) -> None:
-    """Leave the default out of an optional key's schema: the payload omits the key rather than printing null."""
-    schema.pop("default")
-
-
 class PromptPayload(BaseModel):
     """Structured JSON payload emitted by --generate-prompt --output-format json."""
 
@@ -200,21 +189,24 @@ class PromptPayload(BaseModel):
     options_by_category: dict[str, list[OptionMetadataPayload]]
     options: list[OptionMetadataPayload]
     help_text: str
-    recommendation: dict[str, Any] | _Absent = Field(
-        default=None,
+    recommendation: dict[str, Any] = Field(
+        default_factory=dict,
         description=(
             "The --recommend-options --output-format json payload for the input schema (experimental; its schema is "
             "--output-format-json-schema recommend-options); absent unless the command has --recommend-options."
         ),
-        json_schema_extra=_absent_when_unset,
     )
 
 
 def _prompt_payload_json_schema() -> dict[str, Any]:
-    """Return the JSON Schema for structured prompt output."""
+    """Return the JSON Schema for structured prompt output.
+
+    The payload has no serializers, so it validates as it serializes; validation mode keeps a key the payload may leave
+    out optional on every Pydantic 2 release, which serialization mode marks required before Pydantic 2.4.
+    """
     return {
         "$schema": JSON_SCHEMA_DRAFT_2020_12,
-        **PromptPayload.model_json_schema(mode="serialization"),
+        **PromptPayload.model_json_schema(mode="validation"),
     }
 
 
@@ -225,7 +217,7 @@ def _dump_json(value: Any) -> str:
 
 def _dump_payload(payload: PromptPayload) -> str:
     """Serialize a prompt payload with stable JSON formatting, leaving out a recommendation it does not have."""
-    exclude = {"recommendation"} if payload.recommendation is None else None
+    exclude = None if payload.recommendation else {"recommendation"}
     return _dump_json(payload.model_dump(mode="json", exclude=exclude))
 
 
@@ -467,7 +459,7 @@ def _generate_prompt_json(
         options_by_category=_options_by_category_metadata(parser),
         options=_all_options_metadata(parser),
         help_text=_strip_ansi(help_text),
-        recommendation=recommendation,
+        recommendation=recommendation or {},
     )
     return _dump_payload(payload)
 

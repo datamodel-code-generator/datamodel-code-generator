@@ -552,6 +552,7 @@ type-aliases	main/generation_platform/fastapi/cli/model-dependencies/type-aliase
 [test_fastapi_cli_model_error_context]
 json-class-name	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-class-name-check	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+json-class-name-option	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-encoding	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-lock	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-output-parent	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt

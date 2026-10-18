@@ -1313,7 +1313,7 @@ def test_main_json_reuse_enum_default_member(output_file: Path) -> None:
 
 
 def test_main_invalid_model_name_failed(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
-    """Test invalid model name error handling."""
+    """Test invalid model name error handling: a name --class-name sets is fixed there, not by --recommend-options."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "invalid_model_name.json",
         output_path=output_file,
@@ -1321,7 +1321,10 @@ def test_main_invalid_model_name_failed(capsys: pytest.CaptureFixture[str], outp
         extra_args=["--class-name", "with"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="title='with' is invalid class name. You have to set `--class-name` option",
+        expected_stderr=(
+            "title='with' is invalid class name. You have to set `--class-name` option\n"
+            "Hint: --class-name sets this name; change it to a valid Python class name or remove it.\n"
+        ),
     )
 
 

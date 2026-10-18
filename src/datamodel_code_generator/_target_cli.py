@@ -66,7 +66,7 @@ def run_target(  # noqa: PLR0913, PLR0917
     except Exception as error:  # noqa: BLE001
         from datamodel_code_generator._target_selection import keyed  # noqa: PLC0415
 
-        _failure(keyed(error, config), namespace, encoding=config.encoding)
+        _failure(keyed(error, config), namespace, config)
         return _ERROR
 
 
@@ -572,15 +572,15 @@ def _base(config: Any, namespace: Namespace, pyproject_path: Path | None, field:
     return Path.cwd() if pyproject_path is None or getattr(namespace, field) is not None else pyproject_path.parent
 
 
-def _failure(error: Exception, namespace: Namespace, *, encoding: str = "utf-8") -> None:
+def _failure(error: Exception, namespace: Namespace, config: Any) -> None:
     """Preserve model CLI error hints and unexpected-error tracebacks."""
     message = str(error)
     if isinstance(error, InvalidClassNameError):
         from datamodel_code_generator.__main__ import _invalid_class_name_message  # noqa: PLC0415
 
-        message = _invalid_class_name_message(error, namespace)
+        message = _invalid_class_name_message(error, namespace, config.class_name)
     elif isinstance(error, UnicodeDecodeError):
-        message = f"Unable to decode input using encoding {encoding!r}: {error}"
+        message = f"Unable to decode input using encoding {config.encoding!r}: {error}"
     elif not isinstance(error, (Error, OSError)):
         from datamodel_code_generator.remote_lock import RemoteLockError  # noqa: PLC0415
 
