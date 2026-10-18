@@ -345,8 +345,9 @@ How rules are decided:
   not set the field. Values the preset already gives are listed under "Start from"; a rule that only sets fields to
   `false` and that the preset already follows is listed under "Not recommended". When the user set a field to
   another value, the user's value is kept and the difference is listed under "Your configuration".
-- When `contested_when` also matches, the rule is listed under "Consider" with `contested_reason` and stays out of
-  the command.
+- When `contested_when` also matches, the rule is listed under "Consider" with `contested_reason`. Quick mode keeps
+  it out of the command. Full mode compares the recommendation with it (`recommended + DECISION`), and when that
+  candidate is selected, its values join the command and the configuration.
 - An `optional` rule is listed under "Optional (validation; not in the command)" or "Optional (policy; not in the
   command)". Its values never join the command, the configuration, or the compared candidates.
 - A value no CLI option can express (`false` for a field without a `--no-` option) makes the recommender start from
