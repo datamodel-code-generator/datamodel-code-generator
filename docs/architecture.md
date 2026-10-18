@@ -392,7 +392,8 @@ collapse replacing a member of a shared list.
 | class names and reference paths | L6 `__change_imported_model_name` |
 | module membership | L6 unused-model removal |
 | field aliases | the model's own L5 `__rename_fields_hiding_types`; validated in L6 |
-| names written in annotations, module imports | end of `_finalize_modules` |
+| names written in annotations, module imports except future imports | end of `_finalize_modules` |
+| `from __future__` imports (msgspec deferred annotations, forward references) | L7 rendering (`_get_module_future_imports`) |
 | set item identity hash | L6 `__mark_set_item_models_hashable` |
 
 In practice, the fields, types, defaults, tags and bases of every model are final once `__apply_generic_base_class`
@@ -448,7 +449,7 @@ Procedure for a new decision:
 | raw keywords of one schema object (`const`, `enum`, `nullable`, `uniqueItems`, extension keys) | L1 at that object, or record them on the field for a later pass |
 | names settled by `--model-name-map` or yielding names | after L2 `settle_yielding_names` |
 | field set, required or nullable of a model in the same module, without discriminator tags | after that module's `__set_one_literal_on_default` (before `__fix_constructor_field_ordering` if ordering must see the result) |
-| any fact of a model in another module | L6, after the module loop |
+| a fact of a model in another module that the module loop can still change | L6, after the module loop (facts that settle earlier, such as mapped names, follow their own row) |
 | discriminator tags or msgspec ClassVars | L6, after `_tag_fields_of_tagged_bases` |
 | type overrides | after the module loop |
 | bases including the generic base class | L6, after `__apply_generic_base_class` |
