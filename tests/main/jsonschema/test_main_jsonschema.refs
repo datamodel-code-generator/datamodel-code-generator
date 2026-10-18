@@ -5654,6 +5654,11 @@ constraints_on_typing_literals-use_annotated.py-extra_args7	main/jsonschema/cons
 	main/jsonschema/dataclass_field.py
 [test_main_dataclass_field_py312]
 	main/jsonschema/dataclass_field_py312.py
+[test_main_dataclass_nested_mapping_default_chain]
+	main/jsonschema/dataclass_nested_mapping_default_chain.py
+[test_main_dataclass_nested_mapping_default_reuse_path]
+inherited-cycle	main/jsonschema/dataclass_nested_mapping_default_reuse_path.py
+reuse-cycle	main/jsonschema/dataclass_nested_mapping_default_reuse_path.py	= main/jsonschema/dataclass_nested_mapping_default_reuse_path~main_dataclass_nested_mapping_default_reuse_path[reuse-cycle].py
 [test_main_dataclass_nested_mapping_defaults_require_constructor_arguments]
 	main/jsonschema/dataclass_nested_mapping_defaults.py
 [test_main_dataclass_non_finite_number_values]

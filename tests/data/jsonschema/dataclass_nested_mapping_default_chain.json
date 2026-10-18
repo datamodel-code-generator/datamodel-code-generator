@@ -1,0 +1,412 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "root": {
+      "$ref": "#/$defs/M0",
+      "default": {}
+    }
+  },
+  "$defs": {
+    "M0": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M1",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M1",
+          "default": {}
+        }
+      }
+    },
+    "M1": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M2",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M2",
+          "default": {}
+        }
+      }
+    },
+    "M2": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M3",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M3",
+          "default": {}
+        }
+      }
+    },
+    "M3": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M4",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M4",
+          "default": {}
+        }
+      }
+    },
+    "M4": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M5",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M5",
+          "default": {}
+        }
+      }
+    },
+    "M5": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M6",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M6",
+          "default": {}
+        }
+      }
+    },
+    "M6": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M7",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M7",
+          "default": {}
+        }
+      }
+    },
+    "M7": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M8",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M8",
+          "default": {}
+        }
+      }
+    },
+    "M8": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M9",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M9",
+          "default": {}
+        }
+      }
+    },
+    "M9": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M10",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M10",
+          "default": {}
+        }
+      }
+    },
+    "M10": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M11",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M11",
+          "default": {}
+        }
+      }
+    },
+    "M11": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M12",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M12",
+          "default": {}
+        }
+      }
+    },
+    "M12": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M13",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M13",
+          "default": {}
+        }
+      }
+    },
+    "M13": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M14",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M14",
+          "default": {}
+        }
+      }
+    },
+    "M14": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M15",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M15",
+          "default": {}
+        }
+      }
+    },
+    "M15": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M16",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M16",
+          "default": {}
+        }
+      }
+    },
+    "M16": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M17",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M17",
+          "default": {}
+        }
+      }
+    },
+    "M17": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M18",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M18",
+          "default": {}
+        }
+      }
+    },
+    "M18": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M19",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M19",
+          "default": {}
+        }
+      }
+    },
+    "M19": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M20",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M20",
+          "default": {}
+        }
+      }
+    },
+    "M20": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M21",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M21",
+          "default": {}
+        }
+      }
+    },
+    "M21": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M22",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M22",
+          "default": {}
+        }
+      }
+    },
+    "M22": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M23",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M23",
+          "default": {}
+        }
+      }
+    },
+    "M23": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M24",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M24",
+          "default": {}
+        }
+      }
+    },
+    "M24": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M25",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M25",
+          "default": {}
+        }
+      }
+    },
+    "M25": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M26",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M26",
+          "default": {}
+        }
+      }
+    },
+    "M26": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M27",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M27",
+          "default": {}
+        }
+      }
+    },
+    "M27": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M28",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M28",
+          "default": {}
+        }
+      }
+    },
+    "M28": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M29",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M29",
+          "default": {}
+        }
+      }
+    },
+    "M29": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "$ref": "#/$defs/M30",
+          "default": {}
+        },
+        "b": {
+          "$ref": "#/$defs/M30",
+          "default": {}
+        }
+      }
+    },
+    "M30": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string",
+          "default": "v"
+        }
+      }
+    }
+  }
+}

@@ -83,6 +83,10 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/allof_class_hierarchy.json": "intentionally invalid JSON fixture",
     "jsonschema/allof_inheritance_errors/mro_conflict.json": "generation rejects the inconsistent allOf inheritance",
     "jsonschema/collapse_root_models_decimal_defaults.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
+    "jsonschema/dataclass_nested_mapping_default_chain.json": (
+        "30-level chain with two references per level: hypothesis-jsonschema time roughly doubles per level "
+        "(10 examples take 47 s at depth 10); test_main_dataclass_nested_mapping_default_chain covers its generation"
+    ),
     "jsonschema/non_dict_files/list_only.json": "input is JSON data, not a JSON Schema document",
     "jsonschema/non_dict_files/list_only.yaml": "input is YAML data, not a JSON Schema document",
     "jsonschema/non_dict_files/whitespace_only.yaml": "empty YAML fixture",

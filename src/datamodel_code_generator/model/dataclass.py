@@ -31,7 +31,7 @@ from datamodel_code_generator.types import DataType, StrictTypes, chain_as_tuple
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Collection, Sequence
+    from collections.abc import Collection, Iterator, Sequence
     from pathlib import Path
 
     from typing_extensions import Self
@@ -77,14 +77,8 @@ def _nested_dataclass_sources(data_type: DataType) -> tuple[DataClass, ...]:
     return tuple(sources)
 
 
-def _has_recursive_nested_mapping_default(
-    model: DataClass,
-    active_paths: frozenset[str] = frozenset(),
-) -> bool:
-    """Return whether materializing model defaults would recurse through mapping factories."""
-    if model.path in active_paths:
-        return True
-    active_paths |= {model.path}
+def _iter_nested_mapping_default_sources(model: DataClass) -> Iterator[DataClass]:
+    """Yield dataclass models that the mapping defaults of model's constructor fields materialize."""
     effective_fields = model.fields if not model.base_classes else get_effective_fields(model)
     for field in effective_fields:
         if not field_participates_in_constructor(field) or not isinstance(field.default, dict):
@@ -96,11 +90,44 @@ def _has_recursive_nested_mapping_default(
             or any(data_type.is_dict or data_type.is_mapping for data_type in data_types)
         ):
             continue
-        if any(
-            _has_recursive_nested_mapping_default(source, active_paths)
-            for source in _nested_dataclass_sources(field.data_type)
-        ):
+        yield from _nested_dataclass_sources(field.data_type)
+
+
+def _walks_to_repeated_mapping_default_path(model: DataClass, active_paths: frozenset[str]) -> bool:
+    """Walk every mapping-default edge path from model; exact when distinct models share a path."""
+    if model.path in active_paths:
+        return True
+    active_paths |= {model.path}
+    return any(
+        _walks_to_repeated_mapping_default_path(source, active_paths)
+        for source in _iter_nested_mapping_default_sources(model)
+    )
+
+
+def _has_recursive_nested_mapping_default(model: DataClass) -> bool:
+    """Return whether materializing model defaults would recurse through mapping factories.
+
+    True when a mapping-default edge path from model reaches a model path already on it. One depth-first search
+    expands each model path once; its state lives only for this call. A path shared by two models falls back to
+    walking every edge path.
+    """
+    owners = {model.path: model}
+    active_paths = {model.path}
+    finished_paths: set[str] = set()
+    stack = [(model.path, _iter_nested_mapping_default_sources(model))]
+    while stack:
+        path, sources = stack[-1]
+        if (source := next(sources, None)) is None:
+            stack.pop()
+            active_paths.remove(path)
+            finished_paths.add(path)
+        elif (source_path := source.path) in active_paths:
             return True
+        elif owners.setdefault(source_path, source) is not source:
+            return _walks_to_repeated_mapping_default_path(model, frozenset())
+        elif source_path not in finished_paths:
+            active_paths.add(source_path)
+            stack.append((source_path, _iter_nested_mapping_default_sources(source)))
     return False
 
 

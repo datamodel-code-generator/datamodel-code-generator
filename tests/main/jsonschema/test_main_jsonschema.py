@@ -24695,6 +24695,59 @@ def test_main_dataclass_nested_mapping_defaults_require_constructor_arguments(ou
                 pytest.fail(f"Nested mapping defaults produced unexpected values: {actual!r}")
 
 
+@pytest.mark.timeout(30)
+def test_main_dataclass_nested_mapping_default_chain(output_file: Path) -> None:
+    """Decide mapping-default recursion once per model, so a 30-level `default: {}` chain generates quickly."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dataclass_nested_mapping_default_chain.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "dataclasses.dataclass", "--use-default"],
+        assert_func=assert_file_content,
+        importable_module_name="generated_dataclass_nested_mapping_default_chain",
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "invalid_json", "expected_error_type"),
+    [
+        pytest.param(
+            "dataclass_nested_mapping_default_reuse_path",
+            '{"holder": {"root": {"q": {"z": "x"}}}}',
+            "int_parsing",
+            id="inherited-cycle",
+        ),
+        pytest.param(
+            "dataclass_nested_mapping_default_reuse_path_cycle",
+            '{"c1": {"q": {"w": 1}}}',
+            "string_type",
+            id="reuse-cycle",
+        ),
+    ],
+)
+def test_main_dataclass_nested_mapping_default_reuse_path(
+    input_name: str, invalid_json: str, expected_error_type: str, output_file: Path
+) -> None:
+    """A reuse model whose path equals another model's keeps recursive mapping defaults as plain dicts."""
+    module_name = f"generated_{input_name}"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "dataclasses.dataclass", "--reuse-model"],
+        assert_func=assert_file_content,
+        importable_module_name=module_name,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=module_name,
+        model_name="Model",
+        valid_json="{}",
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
 def test_main_msgspec_decimal_constraints(output_file: Path) -> None:
     """Test msgspec leaves decimal constraints out of Meta, which msgspec does not take on Decimal."""
     with pytest.warns(UserWarning, match=r"msgspec\.Meta does not take ge, le, multiple_of on Decimal; Model\.p "):
