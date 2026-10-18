@@ -526,6 +526,7 @@
     }
   },
   "constrained_objects": {
+    "input": "../additional_pattern_intersections/minimum",
     "payloads": [
       {},
       {
@@ -602,6 +603,7 @@
     }
   },
   "different_literals": {
+    "input": "../additional_pattern_intersections/prefix_suffix",
     "payloads": [
       {},
       {
@@ -628,6 +630,7 @@
     "normal": true
   },
   "undeclared_required_object": {
+    "input": "../undeclared_required/objects",
     "payloads": [
       {},
       {
@@ -645,6 +648,7 @@
     }
   },
   "boolean_declared_schema": {
+    "input": "../additional_pattern_intersections/boolean",
     "payloads": [
       {},
       {
@@ -740,6 +744,7 @@
     }
   },
   "undeclared_root_required": {
+    "input": "../undeclared_required/closed",
     "payloads": [
       {},
       {
@@ -769,6 +774,7 @@
     }
   },
   "custom_base": {
+    "input": "overlap",
     "payloads": [
       {
         "x": {

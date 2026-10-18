@@ -14970,7 +14970,7 @@ def test_main_jsonschema_type_alias_inline_union_default_object_type_override_re
 ) -> None:
     """Validate TypeAdapter targets after late type overrides change field types."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object_type_override.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_inline_union_default_object.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
@@ -15868,7 +15868,7 @@ def test_main_jsonschema_reuse_scope_tree_branch(output_dir: Path) -> None:
 def test_main_jsonschema_reuse_scope_tree_dataclass(output_dir: Path) -> None:
     """Test --reuse-scope=tree with dataclasses output type (supports inheritance)."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_dataclass",
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
         expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_dataclass",
         input_file_type="jsonschema",
@@ -15879,7 +15879,7 @@ def test_main_jsonschema_reuse_scope_tree_dataclass(output_dir: Path) -> None:
 def test_main_jsonschema_reuse_scope_tree_dataclass_frozen(output_dir: Path) -> None:
     """Test --reuse-scope=tree preserves dataclass arguments in inherited models."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_dataclass",
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
         output_to_expected=[
             ("__init__.py", "reuse_scope_tree_dataclass_frozen/__init__.py"),
@@ -15904,7 +15904,7 @@ def test_main_jsonschema_reuse_scope_tree_dataclass_frozen(output_dir: Path) -> 
 def test_main_jsonschema_reuse_scope_tree_typeddict(output_dir: Path) -> None:
     """Test --reuse-scope=tree with TypedDict output type (no inheritance, direct reference)."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_typeddict",
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree",
         output_path=output_dir,
         expected_directory=EXPECTED_JSON_SCHEMA_PATH / "reuse_scope_tree_typeddict",
         input_file_type="jsonschema",
@@ -17214,7 +17214,7 @@ def test_main_jsonschema_collapse_root_models_name_strategy_child(output_file: P
 def test_main_jsonschema_collapse_root_models_name_strategy_parent(output_file: Path) -> None:
     """Test collapse-root-models with parent name strategy uses wrapper's name for inner model."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_parent.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_child.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
@@ -17227,7 +17227,7 @@ def test_main_jsonschema_collapse_root_models_name_strategy_requires_collapse_ro
 ) -> None:
     """Test that --collapse-root-models-name-strategy requires --collapse-root-models."""
     run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_parent.json",
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_child.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--collapse-root-models-name-strategy", "parent"],
@@ -28229,7 +28229,11 @@ def test_explicit_frozen_set_hashes(
     if entrypoint == "cli":
         args = [
             "--input",
-            str(JSON_SCHEMA_DATA_PATH / "explicit_frozen_sets" / f"{case.get('source', case['name'])}.json"),
+            str(
+                JSON_SCHEMA_DATA_PATH
+                / "explicit_frozen_sets"
+                / f"{case.get('input', case.get('source', case['name']))}.json"
+            ),
             "--input-file-type",
             "jsonschema",
             "--output",
@@ -28259,7 +28263,9 @@ def test_explicit_frozen_set_hashes(
                 dict, json.loads((DATA_PATH / "payloads/explicit_frozen_sets" / f"{extra_data}.json").read_text())
             )
         run_generate_and_assert(
-            input_=JSON_SCHEMA_DATA_PATH / "explicit_frozen_sets" / f"{case.get('source', case['name'])}.json",
+            input_=JSON_SCHEMA_DATA_PATH
+            / "explicit_frozen_sets"
+            / f"{case.get('input', case.get('source', case['name']))}.json",
             expected_file=expected_file,
             config=GenerateConfig(
                 input_file_type=InputFileType.JsonSchema,
@@ -29329,7 +29335,7 @@ def test_type_union_pattern_properties(output_file: Path, entrypoint: str, *, sc
 PATTERN_INTERSECTION_EXPECTED = EXPECTED_JSON_SCHEMA_PATH / "pattern_intersections"
 
 
-PATTERN_INTERSECTION_CASES = json.loads(stored_expected(PATTERN_INTERSECTION_EXPECTED / "cases.json").read_text())
+PATTERN_INTERSECTION_CASES = json.loads((DATA_PATH / "payloads/pattern_intersections.json").read_text())
 
 
 @pytest.mark.parametrize("case", PATTERN_INTERSECTION_CASES)
@@ -29343,7 +29349,8 @@ def test_pattern_property_intersections(
     # Each formatter has its own golden for intentionally different formatting.
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     source_case = PATTERN_INTERSECTION_CASES[case].get("source", case)
-    source = JSON_SCHEMA_DATA_PATH / "pattern_intersections" / f"{source_case}.json"
+    input_name = PATTERN_INTERSECTION_CASES[source_case].get("input", source_case)
+    source = JSON_SCHEMA_DATA_PATH / "pattern_intersections" / f"{input_name}.json"
     custom_template_dir = (
         JSON_SCHEMA_DATA_PATH.parent / "templates" / template
         if (template := PATTERN_INTERSECTION_CASES[case].get("custom_template"))
@@ -29479,8 +29486,8 @@ def test_additional_pattern_intersections(
     """Check complete generated code, native validation, dumps and input mutation."""
     # Each formatter has its own golden for intentionally different formatting.
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
-    source = ADDITIONAL_PATTERN_FIXTURES / f"{case}.json"
     record = ADDITIONAL_PATTERN_CASES[case]
+    source = ADDITIONAL_PATTERN_FIXTURES / f"{record.get('input', case)}.json"
     template = JSON_SCHEMA_DATA_PATH.parent / "templates" / record["custom"] if record["custom"] else None
     output = tmp_path / "output.py"
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
@@ -29579,8 +29586,8 @@ def test_undeclared_required(
     """Compare native validity, Python/JSON validation, full output and model field order."""
     # Each formatter has its own golden for intentionally different formatting.
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
-    source = UNDECLARED_REQUIRED_FIXTURES / f"{case}.json"
     record = UNDECLARED_REQUIRED_CASES[case]
+    source = UNDECLARED_REQUIRED_FIXTURES / f"{record.get('source', case)}.json"
     options = dict(record["options"])
     if record["custom"]:
         options["custom_template_dir"] = JSON_SCHEMA_DATA_PATH.parent / "templates" / "additional_pattern_context"

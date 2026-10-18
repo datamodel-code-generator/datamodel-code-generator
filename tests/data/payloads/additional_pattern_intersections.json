@@ -31,6 +31,7 @@
     }
   },
   "boolean_custom": {
+    "input": "boolean",
     "payloads": [
       {},
       {
@@ -111,6 +112,7 @@
     }
   },
   "minimum_custom": {
+    "input": "minimum",
     "payloads": [
       {},
       {
@@ -210,6 +212,7 @@
     }
   },
   "prefix_suffix_custom": {
+    "input": "prefix_suffix",
     "payloads": [
       {},
       {

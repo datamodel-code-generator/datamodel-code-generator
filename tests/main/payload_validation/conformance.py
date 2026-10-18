@@ -145,9 +145,6 @@ PYDANTIC_V2_DATACLASS_DEFINITION_RESOLUTION_EXCLUDED_CASES: Final[dict[str, str]
     "jsonschema/collapse_root_models_name_strategy_nested_wrappers.json": (
         "pydantic 2.7 dataclass schema construction cannot resolve generated collapsed-root definitions"
     ),
-    "jsonschema/collapse_root_models_name_strategy_parent.json": (
-        "pydantic 2.7 dataclass schema construction cannot resolve generated collapsed-root definitions"
-    ),
     "jsonschema/collapse_root_models_name_strategy_with_inheritance.json": (
         "pydantic 2.7 dataclass schema construction cannot resolve generated collapsed-root definitions"
     ),
