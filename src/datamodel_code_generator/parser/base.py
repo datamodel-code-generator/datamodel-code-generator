@@ -3431,7 +3431,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.generation_store, self.results = self._generation_store_factory()
         self._merged_copies: set[DataModel] = set()
         self.model_metadata: ModelMetadata | None = None
-        self.generated_class_names: tuple[str, ...] = ()
+        self.generated_class_names: tuple[tuple[str, str], ...] = ()
         self.invalid_dotted_stdout_repair_modules: tuple[ModulePath, ...] = ()
         self.generated_model_inventory: tuple[str, ...] | None = None
         self.source_data_fingerprint: bytes | None = None
@@ -9093,7 +9093,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self._finalize_modules(contexts, unused_models, model_to_module_models, module_to_import)
         if collecting_class_names():
-            self.generated_class_names = tuple(model.class_name for ctx in contexts for model in ctx.models)
+            self.generated_class_names = tuple(
+                (model.class_name, model.duplicate_class_name) for ctx in contexts for model in ctx.models
+            )
         if self.typed_nullable_maps or self.run_context.untyped_nullable_maps:
             self.__record_model_placement(contexts, bool(internal_modules))
         self._check_model_inheritance(contexts)

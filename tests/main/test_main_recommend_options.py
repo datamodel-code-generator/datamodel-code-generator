@@ -9,7 +9,7 @@ import warnings
 from importlib.resources import files
 from pathlib import Path
 from string import Formatter
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from packaging.version import Version
@@ -860,7 +860,13 @@ def test_recommend_options_full_reports_generation_errors(
         )
 
 
-NAMING_HINT_INPUTS = ("naming_hint.yaml", "naming_hint_few.yaml", "naming_hint_minority.yaml", "order.json")
+NAMING_HINT_INPUTS = (
+    "naming_hint.yaml",
+    "naming_hint_collapsed.yaml",
+    "naming_hint_few.yaml",
+    "naming_hint_minority.yaml",
+    "order.json",
+)
 
 
 def _naming_hints(recorded: Iterable[warnings.WarningMessage]) -> str:
@@ -871,60 +877,53 @@ def _naming_hints(recorded: Iterable[warnings.WarningMessage]) -> str:
 
 
 @pytest.mark.parametrize(
-    ("input_name", "options", "pyproject", "action", "expected_exit", "expected"),
+    ("input_name", "options", "pyproject", "expected_exit", "expected"),
     [
-        pytest.param("naming_hint.yaml", [], "", "always", Exit.OK, "naming_hint.txt", id="numbered"),
-        pytest.param("naming_hint_few.yaml", [], "", "always", Exit.OK, None, id="below-count"),
-        pytest.param("naming_hint_minority.yaml", [], "", "always", Exit.OK, None, id="below-share"),
-        pytest.param(
-            "naming_hint.yaml", ["--naming-strategy", "numbered"], "", "always", Exit.OK, None, id="naming-strategy"
-        ),
-        pytest.param(
-            "naming_hint.yaml", [], 'naming-strategy = "numbered"', "always", Exit.OK, None, id="pyproject-naming"
-        ),
+        pytest.param("naming_hint.yaml", [], "", Exit.OK, "naming_hint.txt", id="numbered"),
+        pytest.param("naming_hint_few.yaml", [], "", Exit.OK, None, id="below-count"),
+        pytest.param("naming_hint_minority.yaml", [], "", Exit.OK, None, id="below-share"),
+        pytest.param("naming_hint_collapsed.yaml", ["--collapse-root-models"], "", Exit.OK, None, id="collapsed-root"),
+        pytest.param("naming_hint.yaml", ["--naming-strategy", "numbered"], "", Exit.OK, None, id="naming-strategy"),
+        pytest.param("naming_hint.yaml", [], 'naming-strategy = "numbered"', Exit.OK, None, id="pyproject-naming"),
         pytest.param(
             "naming_hint.yaml",
             ["--model-name-map", '{"Order": "Purchase"}'],
             "",
-            "always",
             Exit.OK,
             None,
             id="model-name-map",
         ),
         pytest.param(
-            "naming_hint.yaml", [], 'model-name-map = {Order = "Purchase"}', "always", Exit.OK, None, id="pyproject-map"
+            "naming_hint.yaml", [], 'model-name-map = {Order = "Purchase"}', Exit.OK, None, id="pyproject-map"
         ),
-        pytest.param("naming_hint.yaml", ["--check"], "", "always", Exit.DIFF, None, id="check"),
-        pytest.param(
-            "naming_hint.yaml", ["--diff-against", "naming_hint_few.yaml"], "", "always", Exit.DIFF, None, id="diff"
-        ),
-        pytest.param("naming_hint.yaml", ["--output-format", "json"], "", "always", Exit.OK, None, id="json"),
-        pytest.param("naming_hint.yaml", ["--disable-warnings"], "", "always", Exit.OK, None, id="disable-warnings"),
-        pytest.param("naming_hint.yaml", [], "", "ignore", Exit.OK, None, id="warning-filter"),
-        pytest.param("naming_hint.yaml", ["--recommend-options"], "", "always", Exit.OK, None, id="recommend-options"),
+        pytest.param("naming_hint.yaml", ["--check"], "", Exit.DIFF, None, id="check"),
+        pytest.param("naming_hint.yaml", ["--diff-against", "naming_hint_few.yaml"], "", Exit.DIFF, None, id="diff"),
+        pytest.param("naming_hint.yaml", ["--output-format", "json"], "", Exit.OK, None, id="json"),
+        pytest.param("naming_hint.yaml", ["--disable-warnings"], "", Exit.OK, None, id="disable-warnings"),
+        pytest.param("naming_hint.yaml", ["--recommend-options"], "", Exit.OK, None, id="recommend-options"),
     ],
 )
 def test_naming_hint(
     input_name: str,
     options: list[str],
     pyproject: str,
-    action: Literal["always", "ignore"],
     expected_exit: Exit,
     expected: str | None,
     tmp_path: Path,
 ) -> None:
     """Point to --recommend-options after a generation whose class names are mostly numbered collisions.
 
-    The hint needs at least 10 numbered collisions that make one in five classes or more. An explicit naming strategy
-    or model name map, on the command line or in pyproject.toml, a check, an input diff, JSON output, disabled
-    warnings, a warning filter, and the candidate runs of --recommend-options leave it out; exit codes stay the same.
+    The hint needs at least 10 numbered collisions that make one in five classes or more; a collapsed root model keeps
+    its name, so the classes named after it are numbered. An explicit naming strategy or model name map, on the
+    command line or in pyproject.toml, a check, an input diff, JSON output, disabled warnings, and the candidate runs
+    of --recommend-options leave it out; exit codes stay the same.
     """
     for name in NAMING_HINT_INPUTS:
         shutil.copy(INPUT_PATH / name, tmp_path / name)
     if pyproject:
         (tmp_path / "pyproject.toml").write_text(f"[tool.datamodel-codegen]\n{pyproject}\n", encoding="utf-8")
     with chdir(tmp_path), warnings.catch_warnings(record=True) as recorded:
-        warnings.simplefilter(action, NamingHintWarning)
+        warnings.simplefilter("always", NamingHintWarning)
         run_main_with_args(
             ["--input", input_name, "--input-file-type", "openapi", "--output", "models.py", *options],
             expected_exit=expected_exit,
@@ -956,6 +955,30 @@ def test_naming_hint_batch_jobs(selection: list[str], expected: str | None, tmp_
         warnings.simplefilter("always", NamingHintWarning)
         run_main_with_args(selection)
     assert_output(_naming_hints(recorded), None if expected is None else EXPECTED_PATH / expected)
+
+
+@pytest.mark.parametrize(
+    ("arguments", "output"),
+    [
+        pytest.param(["--input", "naming_hint.yaml", "--output", "models.py"], "models.py", id="command"),
+        pytest.param(["--job", "shop"], "shop.py", id="one-job"),
+    ],
+)
+def test_naming_hint_as_error(arguments: list[str], output: str, tmp_path: Path) -> None:
+    """Drop the hint when warnings are errors: the run still writes its output and exits with 0."""
+    for name in NAMING_HINT_INPUTS:
+        shutil.copy(INPUT_PATH / name, tmp_path / name)
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\n"
+        'input-file-type = "openapi"\n'
+        "disable-timestamp = true\n"
+        'jobs.shop = {input = "naming_hint.yaml", output = "shop.py"}\n',
+        encoding="utf-8",
+    )
+    with chdir(tmp_path), warnings.catch_warnings():
+        warnings.simplefilter("error", NamingHintWarning)
+        run_main_with_args(arguments)
+    assert_output((tmp_path / output).read_text(encoding="utf-8"))
 
 
 def test_naming_hint_not_shown_by_generate(tmp_path: Path) -> None:

@@ -10,7 +10,6 @@ parser and the generation pipeline can import it.
 
 from __future__ import annotations
 
-import re
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -30,7 +29,6 @@ __all__ = [
 
 MIN_NUMBERED_NAMES: Final = 10
 MIN_NUMBERED_SHARE: Final = 5
-_TRAILING_DIGITS: Final = re.compile(r"\d+$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,21 +39,21 @@ class NumberedNames:
     example: str
 
 
-def numbered_names(names: Sequence[str]) -> NumberedNames | None:
+def numbered_names(names: Sequence[tuple[str, str]]) -> NumberedNames | None:
     """Count the classes whose names are numbered collisions; None when there are none.
 
-    A name is a numbered collision when it ends in digits and its stem, the name without them, is another class name,
-    as when ``Pet1`` is generated beside ``Pet``. Names that end in digits of the schema's own, such as ``Level1`` and
-    ``Level2`` without a ``Level``, are not counted. The example is the largest family of numbered collisions, first
-    and last by length.
+    ``names`` holds each class name with the name the model resolver wanted for it, which is empty unless the name
+    was taken. A class name is a numbered collision when it is that wanted name with the number the resolver added,
+    as ``Status1`` is when ``Status`` was taken, also by a model no class is generated for, such as a collapsed root
+    model. Digits of the schema's own, such as ``Level1`` and ``Level2``, and the suffix of
+    ``--duplicate-name-suffix`` never count. The example is the largest family, first and last by length.
     """
-    generated = set(names)
     families: dict[str, set[str]] = {}
     count = 0
-    for name in names:
-        if (stem := _TRAILING_DIGITS.sub("", name)) != name and stem in generated:
+    for name, wanted in names:
+        if wanted and name != wanted and name.startswith(wanted) and name[len(wanted) :].isdecimal():
             count += 1
-            families.setdefault(stem, set()).add(name)
+            families.setdefault(wanted, set()).add(name)
     if not count:
         return None
     _, members = min(families.items(), key=lambda family: (-len(family[1]), family[0]))
@@ -65,11 +63,14 @@ def numbered_names(names: Sequence[str]) -> NumberedNames | None:
 
 @dataclass(slots=True)
 class NamingHint:
-    """The naming hint of one command line invocation: whether it was shown, and the class names collected last."""
+    """The naming hint of one command line invocation: whether it was shown, and the class names collected last.
+
+    ``names`` holds each class name with the name the model resolver wanted for it, as ``numbered_names`` takes them.
+    """
 
     shown: bool = False
     collecting: bool = False
-    names: tuple[str, ...] = ()
+    names: tuple[tuple[str, str], ...] = ()
 
     def message(self) -> str | None:
         """Return the hint for the collected class names when they call for one, marking it shown.
@@ -119,7 +120,7 @@ def collecting_class_names() -> bool:
     return (hint := _NAMING_HINT.get()) is not None and hint.collecting
 
 
-def record_class_names(names: tuple[str, ...]) -> None:
+def record_class_names(names: tuple[tuple[str, str], ...]) -> None:
     """Record the class names of the parse a generation keeps, while the invocation collects them."""
     if (hint := _NAMING_HINT.get()) is not None and hint.collecting:
         hint.names = names

@@ -2014,9 +2014,13 @@ def _collect_naming_hint(config: Config, namespace: Namespace) -> NamingHint | N
 
 
 def _warn_naming_hint(hint: NamingHint | None) -> None:
-    """Point to --recommend-options when many class names of a successful generation are numbered collisions."""
+    """Point to --recommend-options when many class names of a successful generation are numbered collisions.
+
+    A filter that turns warnings into errors drops the hint instead of failing a run that succeeded.
+    """
     if hint is not None and (message := hint.message()) is not None:
-        warnings.warn(message, NamingHintWarning, stacklevel=2)
+        with suppress(NamingHintWarning):
+            warnings.warn(message, NamingHintWarning, stacklevel=2)
 
 
 def _run_target(  # noqa: PLR0913, PLR0917
