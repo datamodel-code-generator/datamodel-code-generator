@@ -4507,14 +4507,46 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         can_retain_cache: bool,
     ) -> None:
-        """Keep Pydantic v2 single-literal discriminator fields valid when forced optional."""
-        if not self.force_optional_for_required_fields or not discriminator_field.SUPPORTS_DISCRIMINATOR:
+        """Keep Pydantic v2 single-literal discriminator fields valid when optional or forced optional.
+
+        An optional tag would add ``None`` or the ``MISSING`` sentinel to its type, which Pydantic rejects as a
+        discriminator, so the tag takes its literal as default instead. A tag the schema declares nullable keeps its
+        type, and one it declares not nullable keeps its ``None`` default unless the sentinel would replace it.
+        """
+        if not discriminator_field.SUPPORTS_DISCRIMINATOR or not (
+            self.force_optional_for_required_fields
+            or (
+                not discriminator_field.required
+                and not discriminator_field.type_has_null
+                and (
+                    discriminator_field.nullable is None
+                    or (
+                        discriminator_field.nullable is False
+                        and discriminator_field.use_missing_sentinel
+                        and not discriminator_field.has_default
+                    )
+                )
+            )
+        ):
             return
 
         discriminator_field.default = literal
         discriminator_field.required = False
         discriminator_field.nullable = False
         _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
+    def __set_nested_discriminator_literal_defaults(
+        self,
+        tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
+        *,
+        can_retain_cache: bool,
+    ) -> None:
+        """Keep the single-literal tags of variants that nested choices give a union valid like the direct ones."""
+        for tag_field, values in tag_fields:
+            if tag_field.data_type.literals == [*values]:
+                self.__set_force_optional_discriminator_literal_default(
+                    cast("DataModel", tag_field.parent), tag_field, values[0], can_retain_cache=can_retain_cache
+                )
 
     def _get_discriminator_field_name(
         self, data_types: Iterable[DataType], property_name: str, default_name: str
@@ -4587,6 +4619,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         field_name_mode="original" if field.SUPPORTS_DISCRIMINATOR else "either",
                     )
                 ]
+                self.__set_nested_discriminator_literal_defaults(tag_fields, can_retain_cache=can_retain_cache)
 
                 if field.SUPPORTS_DISCRIMINATOR:
                     field_name = self._get_discriminator_field_name(

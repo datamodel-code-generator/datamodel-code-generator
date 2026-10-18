@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: Optional Literal Discriminator
+  version: "0.1.0"
+paths: {}
+components:
+  schemas:
+    Track:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - track
+        name:
+          type: string
+    Episode:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - episode
+        show:
+          type: string
+    Chapter:
+      type: object
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum:
+            - chapter
+          default: chapter
+    Queue:
+      type: object
+      properties:
+        current:
+          oneOf:
+            - $ref: "#/components/schemas/Track"
+            - $ref: "#/components/schemas/Episode"
+            - $ref: "#/components/schemas/Chapter"
+          discriminator:
+            propertyName: type
+    CardPayment:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: card
+        card_number:
+          type: integer
+    CashPayment:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          const: cash
+        received_amount:
+          type: integer
+    VoucherPayment:
+      type: object
+      properties:
+        code:
+          type: string
+        kind:
+          type: string
+          const: voucher
+          default: voucher
+    Payment:
+      oneOf:
+        - $ref: "#/components/schemas/CardPayment"
+        - $ref: "#/components/schemas/CashPayment"
+        - $ref: "#/components/schemas/VoucherPayment"
+      discriminator:
+        propertyName: kind
+        mapping:
+          card: "#/components/schemas/CardPayment"
+          cash: "#/components/schemas/CashPayment"
+          voucher: "#/components/schemas/VoucherPayment"

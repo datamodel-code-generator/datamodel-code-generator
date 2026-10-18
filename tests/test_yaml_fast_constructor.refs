@@ -171,6 +171,8 @@ openapi/discriminator_msgspec_tagged_unions_modules_variants_first.yaml	../yaml_
 openapi/discriminator_no_mapping.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_no_mapping_no_subtypes.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_oneof_short_mapping.yaml	../yaml_fast_constructor/parity.txt
+openapi/discriminator_optional_literal.yaml	../yaml_fast_constructor/parity.txt
+openapi/discriminator_optional_literal_nested.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_partial_mapping.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_pattern.yaml	../yaml_fast_constructor/parity.txt
 openapi/discriminator_pattern_mismatch.yaml	../yaml_fast_constructor/parity.txt

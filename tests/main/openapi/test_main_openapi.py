@@ -9075,6 +9075,76 @@ def test_main_openapi_discriminator_optional_pydantic_v2(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_name", "output_model", "optional_args", "expected_file"),
+    [
+        (
+            "discriminator_optional_literal",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one"),
+            "discriminator/optional_literal_pydantic_v2.py",
+        ),
+        (
+            "discriminator_optional_literal",
+            "pydantic_v2.dataclass",
+            ("--enum-field-as-literal", "one"),
+            "discriminator/optional_literal_pydantic_v2_dataclass.py",
+        ),
+        (
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one"),
+            "discriminator/optional_literal_nested_pydantic_v2.py",
+        ),
+        (
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one", "--strict-nullable"),
+            "discriminator/optional_literal_nested_strict_nullable_pydantic_v2.py",
+        ),
+        pytest.param(
+            "discriminator_optional_literal_nested",
+            "pydantic_v2.BaseModel",
+            ("--enum-field-as-literal", "one", "--use-missing-sentinel"),
+            "discriminator/optional_literal_nested_missing_sentinel_pydantic_v2.py",
+            marks=EXPERIMENTAL_MISSING_IMPORT_WARNING,
+        ),
+        (
+            "discriminator_optional_literal_nested",
+            "dataclasses.dataclass",
+            (),
+            "discriminator/optional_literal_nested_dataclass.py",
+        ),
+    ],
+)
+def test_main_openapi_discriminator_optional_literal(
+    input_name: str, output_model: str, optional_args: tuple[str, ...], expected_file: str, output_file: Path
+) -> None:
+    """Give optional one-value Literal discriminator tags their value as default so Pydantic accepts the union.
+
+    Variants that nested choices give the union follow the same rule. A tag the schema declares not nullable keeps
+    its ``None`` default unless the ``MISSING`` sentinel would replace it, and a nested tag that is not a ``Literal``
+    keeps its type.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        expected_file=expected_file,
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--target-python-version",
+            "3.10",
+            "--output-model-type",
+            output_model,
+            *optional_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
