@@ -9,7 +9,7 @@
 ## Options by Category
 
 ### Base Options
-- `--emit-model-metadata`: Write a separate JSON map from source schema references to the final generated models...
+- `--emit-model-metadata`: Write a separate JSON map from the final generated models, modules, fields, and type ...
 - `--encoding`: Specify character encoding for input and output files.
 - `--external-ref-mapping`: Map external `$ref` files to Python packages.
 - `--http-backend`: Select the HTTP client backend for remote schemas.
@@ -287,8 +287,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         List of modules with custom formatter (delimited list
                         input).
   --emit-model-metadata EMIT_MODEL_METADATA
-                        Write a separate JSON map from source schema
-                        references to generated models and fields.
+                        Write a separate JSON map from generated models and
+                        fields to the JSON Pointer locations of their source
+                        schemas; module and class name identify a model.
   --external-ref-mapping FILE_PATH=PYTHON_PACKAGE [FILE_PATH=PYTHON_PACKAGE ...]
                         Map external $ref file paths to Python import packages
                         instead of generating duplicate classes. Accepts one

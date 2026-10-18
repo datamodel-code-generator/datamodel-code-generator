@@ -14,13 +14,13 @@ from collections import Counter, defaultdict, deque
 from contextlib import contextmanager, suppress
 from copy import copy
 from fractions import Fraction
-from functools import cached_property, lru_cache
+from functools import cached_property, lru_cache, wraps
 from itertools import chain, starmap
 from math import gcd, lcm
 from operator import is_not
 from pathlib import Path
 from string import digits
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeVar, Union, cast
 from urllib.parse import ParseResult, unquote, urljoin, urlparse
 from warnings import warn
 
@@ -102,7 +102,6 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
-    _SOURCE_REFERENCE_PATH_KEY,
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     SPECIAL_PATH_FORMAT,
     Parser,
@@ -124,11 +123,18 @@ from datamodel_code_generator.parser.schema_version import (
 from datamodel_code_generator.python_literal import _semantic_value_text
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
+    SCHEMA_LOCATION_CONFLICT_KEY,
+    SCHEMA_LOCATION_INDEX,
+    SCHEMA_LOCATION_KEY,
+    SCHEMA_OWNER_FRAMES_KEY,
     SPECIAL_PATH_MARKER,
     ModelType,
     Reference,
+    SchemaLocation,
+    SchemaLocationIndex,
     get_inferred_module_name,
     is_url,
+    location_of,
 )
 from datamodel_code_generator.types import (
     ANY,
@@ -147,7 +153,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Container, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
-    from typing_extensions import TypeIs
+    from pydantic import ValidatorFunctionWrapHandler
+    from typing_extensions import Self, TypeIs
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
     from datamodel_code_generator._python_type_binding import BoundPythonType
@@ -295,6 +302,114 @@ _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS = frozenset({
 })
 _PYTHON_FIELD_OVERRIDES_KEY = "__python_field_overrides"
 _READ_AS_CONST_KEY = "x-datamodel-code-generator-read-as-const"
+
+
+_SchemaT = TypeVar("_SchemaT", bound="JsonSchemaObject")
+
+
+class _LocatedDict(dict):  # noqa: FURB189 - pydantic validates it as the dict it is
+    """The dump of a located schema object, which remembers the location of the object it was dumped from."""
+
+    __slots__ = ("schema_location",)
+
+    schema_location: SchemaLocation
+
+
+def _located(data: dict[str, Any], location: SchemaLocation | None) -> dict[str, Any]:
+    """Return a dumped schema object that remembers ``location``."""
+    if location is None:
+        return data
+    result = _LocatedDict(data)
+    result.schema_location = location
+    return result
+
+
+def _dump_location(data: object) -> SchemaLocation | None:
+    """Return the location a dumped schema object remembers, if it is one."""
+    return data.schema_location if isinstance(data, _LocatedDict) else None
+
+
+def _source_location(values: object) -> SchemaLocation | None:
+    """Return the location of the input a model is validated from: a located dump or a document object."""
+    return (
+        values.schema_location
+        if isinstance(values, _LocatedDict)
+        else None
+        if (index := SCHEMA_LOCATION_INDEX.get()) is None
+        else index.locations.get(id(values))
+    )
+
+
+def _locate(obj: _SchemaT, location: SchemaLocation | None) -> _SchemaT:
+    """Give a schema object that a copy step created the location of the schema object it stands for, if it has one."""
+    obj.__dict__[SCHEMA_LOCATION_KEY] = location
+    return obj
+
+
+def _locate_dump(obj: JsonSchemaObject, data: dict[str, Any]) -> dict[str, Any]:
+    """Give the dump of a schema object, and the dumps of its schema children, the locations of their sources.
+
+    The correspondence is the object's own structure (field, key, index), never a match across merge inputs.
+    """
+    fields = obj.__dict__
+    for name in obj.model_fields_set.intersection(_LOCATED_CHILD_FIELDS):
+        value, dumped = fields[name], data.get(name)
+        if isinstance(dumped, dict):
+            if isinstance(value, JsonSchemaObject):
+                data[name] = _locate_dump(value, dumped)
+            else:
+                data[name] = {
+                    key: _locate_dump(item, sub)
+                    if isinstance(item := value.get(key), JsonSchemaObject) and isinstance(sub, dict)
+                    else sub
+                    for key, sub in dumped.items()
+                }
+        elif isinstance(dumped, list):
+            data[name] = [
+                _locate_dump(item, sub) if isinstance(item, JsonSchemaObject) and isinstance(sub, dict) else sub
+                for item, sub in zip(value, dumped, strict=True)
+            ]
+    return _located(data, fields.get(SCHEMA_LOCATION_KEY))
+
+
+def _index_document(raw: Any, root: SchemaLocation, index: SchemaLocationIndex) -> Any:
+    """Return a loaded document as a tree and index each of its JSON objects by identity (L0).
+
+    An object that already has another location (a YAML alias, an object the caller shares, a document served under
+    several names) is copied for this position, and its holders are copied on write up to the root, so neither the
+    loader's nor the caller's objects are written and each object has one location. A container that is its own
+    ancestor is a cycle: it is copied once, the back edge points to the copy and is not descended. Arrays are not
+    indexed: an array shared between positions is copied when an object in it is.
+    """
+    document = root.document
+    locations = index.locations
+    ancestors: dict[int, Any] = {}
+
+    def visit(value: dict[Any, Any] | list[Any], tokens: tuple[str, ...]) -> Any:
+        if (ancestor := ancestors.get(value_id := id(value))) is not None:
+            if ancestor is value:
+                ancestors[value_id] = ancestor = copy(value)
+            return ancestor
+        location: SchemaLocation | None = None
+        if isinstance(value, dict):
+            location = SchemaLocation(document, tokens)
+            seen = locations.get(value_id)
+            ancestors[value_id] = copy(value) if seen is not None and seen != location else value
+        else:
+            ancestors[value_id] = value
+        for key, child in value.items() if isinstance(value, dict) else enumerate(value):
+            if isinstance(child, (dict, list)) and (updated := visit(child, (*tokens, str(key)))) is not child:
+                if (node := ancestors[value_id]) is value:
+                    ancestors[value_id] = node = copy(value)
+                node[key] = updated
+        node = ancestors.pop(value_id)
+        if location is not None:
+            locations[id(node)] = location
+        return node
+
+    result = visit(raw, root.tokens)
+    index.documents.append(result)
+    return result
 
 
 _NUMERIC_TYPE_DOMAINS = {
@@ -454,24 +569,6 @@ def _get_rw_model_variant_source_path(
     return f"{source_prefix}{separator}{source_name}{suffix}"
 
 
-def _get_unique_rw_model_variant_source_path(
-    source_variant_ref: str,
-    variant_name: str,
-    unique_name: str,
-    *,
-    collides_with_source: bool,
-) -> str:
-    """Keep logical metadata paths compatible and unambiguous on source collisions."""
-    if not collides_with_source:
-        return source_variant_ref
-    if unique_name != variant_name and unique_name.startswith(variant_name):
-        return f"{source_variant_ref}{unique_name.removeprefix(variant_name)}"
-    if numeric_index := unique_name.removeprefix(unique_name.rstrip(digits)):
-        return f"{source_variant_ref}{numeric_index}"
-    source_prefix, separator, _ = source_variant_ref.rpartition("/")
-    return f"{source_prefix}{separator}{unique_name}"
-
-
 def _get_json_value_type(value: object) -> str:
     """Return a JSON Schema primitive type name for a concrete value."""
     value_type = ""
@@ -535,6 +632,7 @@ _SCHEMA_OBJECT_CHILD_FIELDS = frozenset({
     "properties",
 })
 _CONDITIONAL_SCHEMA_KEYWORDS = frozenset({"if", "then", "else"})
+_LOCATED_CHILD_FIELDS = _SCHEMA_OBJECT_CHILD_FIELDS | {"additionalItems"}
 
 
 def _get_data_type_constraint_kwargs(
@@ -1008,7 +1106,7 @@ class Discriminator(BaseModel):
     mapping: Optional[dict[str, str]] = None  # noqa: UP045
 
 
-class JsonSchemaObject(BaseModel):
+class JsonSchemaObject(BaseModel):  # noqa: PLR0904
     """Represent a JSON Schema object with validation and parsing capabilities."""
 
     if not TYPE_CHECKING:  # pragma: no branch
@@ -1251,6 +1349,37 @@ class JsonSchemaObject(BaseModel):
         ignored_types=(cached_property,),
         defer_build=True,
     )
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _take_schema_location(cls, values: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+        """Give the object the location of the document object or the located dump it is validated from."""
+        result = handler(values)
+        if isinstance(values, _LocatedDict):
+            result.__dict__[SCHEMA_LOCATION_KEY] = values.schema_location
+        elif (index := SCHEMA_LOCATION_INDEX.get()) is not None and (location := index.locations.get(id(values))):
+            result.__dict__[SCHEMA_LOCATION_KEY] = location
+        return result
+
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+        """Dump the object; during a parse, each dumped schema object remembers the location of its source."""
+        data = super().model_dump(**kwargs)
+        if SCHEMA_LOCATION_INDEX.get() is None or kwargs.get("mode", "python") != "python":
+            return data
+        return _locate_dump(self, data)
+
+    @property
+    def schema_location(self) -> SchemaLocation | None:
+        """Return the location of the schema object this object stands for."""
+        return self.__dict__.get(SCHEMA_LOCATION_KEY)
+
+    def with_schema_location(self, location: SchemaLocation | None) -> Self:
+        """Return a shallow copy that stands for the schema object at ``location``; this object is never written."""
+        if location is None or self.__dict__.get(SCHEMA_LOCATION_KEY) == location:
+            return self
+        copied = self.model_copy()
+        copied.__dict__[SCHEMA_LOCATION_KEY] = location
+        return copied
 
     def model_post_init(self, __context: Any, /) -> None:
         """Apply post-validation compatibility handling for extension metadata."""
@@ -1613,6 +1742,52 @@ class _DynamicSpecialization(NamedTuple):
     path: tuple[str, ...]
 
 
+_BuilderT = TypeVar("_BuilderT", bound="Callable[..., Any]")
+
+
+def _set_schema_location(reference: Reference, location: SchemaLocation | None) -> None:
+    """Record where the model of a reference is built from; two different schema objects leave it without one.
+
+    Schema objects whose parse paths collide reach one Reference, and the location of either can disagree with the
+    model's content, so the Reference keeps none and is marked as conflicting. The location check skips it.
+    """
+    if location is not None and reference.__dict__.setdefault(SCHEMA_LOCATION_KEY, location) != location:
+        _mark_location_conflict(reference)
+
+
+def _mark_location_conflict(reference: Reference) -> None:
+    """Leave a Reference that several schema objects reach without a location."""
+    reference.__dict__[SCHEMA_LOCATION_KEY] = None
+    reference.__dict__[SCHEMA_LOCATION_CONFLICT_KEY] = True
+
+
+def _owner_frames_of_base(base_reference: Reference) -> tuple[list[Reference | None], ...]:
+    """Return the frames of the model that builds a base model: the base's frames without its own builder's."""
+    return base_reference.__dict__.get(SCHEMA_OWNER_FRAMES_KEY, ())[1:]
+
+
+def _builds_model(method: _BuilderT) -> _BuilderT:
+    """Run a model builder in a frame whose cell becomes the reference of the model it returns.
+
+    A model records the frames it is built in, so the innermost filled frame of another model names the model whose
+    parse built it.
+    """
+
+    @wraps(method)
+    def build(self: JsonSchemaParser, *args: Any, **kwargs: Any) -> Any:
+        cell: list[Reference | None] = [None]
+        self._model_frames.append(cell)
+        try:
+            result = method(self, *args, **kwargs)
+        finally:
+            self._model_frames.pop()
+        if isinstance(result, DataType) and result.reference is not None:
+            cell[0] = result.reference
+        return result
+
+    return cast("_BuilderT", build)
+
+
 @snooper_to_methods()  # noqa: PLR0904
 class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     """Parser for JSON Schema, JSON, YAML, Dict, and CSV formats."""
@@ -1718,6 +1893,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._loads_only_used_references = False
         self._dangling_refs: set[tuple[str, str]] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
+        self._schema_location_index = SchemaLocationIndex()
+        self._model_frames: list[list[Reference | None]] = []
         self._dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]] = {}
         self._recursive_anchor_index: dict[tuple[str, ...], list[str]] = {}
         self._ref_data_type_facts: dict[str, tuple[Any, bool]] = {}
@@ -2032,13 +2209,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if any(descriptions):
             enum_metadata["x-enum-descriptions"] = descriptions
 
-        return self.SCHEMA_OBJECT_TYPE(
-            type=enum_type,
-            enum=final_enum,
-            nullable=nullable,
-            title=original.title,
-            description=original.description,
-            **(enum_metadata | ({"default": original.default} if original.has_default else {})),
+        return _locate(
+            self.SCHEMA_OBJECT_TYPE(
+                type=enum_type,
+                enum=final_enum,
+                nullable=nullable,
+                title=original.title,
+                description=original.description,
+                **(enum_metadata | ({"default": original.default} if original.has_default else {})),
+            ),
+            original.schema_location,
         )
 
     def is_constraints_field(self, obj: JsonSchemaObject) -> bool:
@@ -3144,9 +3324,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 reference.loaded |= loaded
                 return reference
 
-        source_variant_ref = _get_rw_model_variant_source_path(base_reference, suffix)
-        source_variant_exists = self._ref_schema_exists(source_variant_ref)
-        if source_variant_exists:
+        if self._ref_schema_exists(source_variant_ref := _get_rw_model_variant_source_path(base_reference, suffix)):
             self.model_resolver.add_ref(source_variant_ref, resolved=True)
 
         class_name_suffix = self.model_resolver.class_name_suffix
@@ -3173,15 +3351,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             loaded=loaded,
             yields=yielding or None,
         )
-        source_reference_path = _get_unique_rw_model_variant_source_path(
-            source_variant_ref,
-            variant_name,
-            unique_name,
-            collides_with_source=source_variant_exists,
-        )
-        while source_variant_exists and self._ref_schema_exists(source_reference_path):
-            source_reference_path = f"{source_reference_path}1"
-        reference.__dict__[_SOURCE_REFERENCE_PATH_KEY] = source_reference_path
         if cache_key is not None:
             self._rw_model_variant_references[cache_key] = reference
         return reference
@@ -3342,8 +3511,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         model_fields = [self._copy_model_field(field) for field in model_fields]
         reference = self._get_rw_model_variant_reference(base_reference, suffix, loaded=True)
         self._update_field_refs_for_variant(model_fields, suffix)
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj, owner_frames=_owner_frames_of_base(base_reference))
         self._update_variant_additional_properties_metadata(reference.path, obj, suffix)
         self._copy_schema_runtime_validation_for_variant(
             base_reference.path,
@@ -3366,10 +3534,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             keyword_only=self.keyword_only,
             treat_dot_as_module=self.treat_dot_as_module,
             dataclass_arguments=self.dataclass_arguments,
-        )
-        model.__dict__[_SOURCE_REFERENCE_PATH_KEY] = reference.__dict__.get(
-            _SOURCE_REFERENCE_PATH_KEY,
-            _get_rw_model_variant_source_path(base_reference, suffix),
         )
         self.generation_store.register_model(model)
 
@@ -3946,6 +4110,35 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Set $id in extra template data."""
         if obj.id:
             self.extra_template_data[path]["schema_id"] = obj.id
+
+    def _record_schema_location(
+        self,
+        reference: Reference,
+        location: SchemaLocation | None,
+        *,
+        owner_frames: tuple[list[Reference | None], ...] | None = None,
+    ) -> None:
+        """Record where the model of ``reference`` is built from and the frames of the models building it (L1).
+
+        Both are kept on the Reference object, so they stay valid when later passes change ``Reference.path``. The
+        frames are innermost first; each cell holds the reference of the model its builder returned, once it returns.
+        """
+        _set_schema_location(reference, location)
+        reference.__dict__[SCHEMA_OWNER_FRAMES_KEY] = (
+            tuple(reversed(self._model_frames)) if owner_frames is None else owner_frames
+        )
+
+    def _record_schema_object(
+        self,
+        reference: Reference,
+        obj: JsonSchemaObject,
+        *,
+        owner_frames: tuple[list[Reference | None], ...] | None = None,
+    ) -> None:
+        """Record the schema object the model of ``reference`` is built from, and take its template data."""
+        self._record_schema_location(reference, obj.schema_location, owner_frames=owner_frames)
+        self._set_schema_metadata(reference.path, obj)
+        self.set_schema_extensions(reference.path, obj)
 
     def _set_schema_metadata(self, path: str, obj: JsonSchemaObject) -> None:
         """Set title, $id, additionalProperties and unevaluatedProperties in extra template data."""
@@ -4534,7 +4727,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for key, value in dict2.items():
             if key in result:
                 if isinstance(result[key], dict) and isinstance(value, dict):
-                    result[key] = self._deep_merge(result[key], value)
+                    result[key] = _located(self._deep_merge(result[key], value), _dump_location(value))
                     continue
                 if isinstance(result[key], list) and isinstance(value, list):
                     result[key] = result[key] + value  # noqa: PLR6104
@@ -5075,7 +5268,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         merged_obj = self.SCHEMA_OBJECT_TYPE.model_validate(merged)
         merged_obj.__dict__[_MERGED_REF_TARGET_KEY] = resolved_ref
-        return merged_obj
+        return _locate(merged_obj, obj.schema_location)
 
     def _rebase_schema_refs(self, schema: dict[str, Any], defining_ref: str) -> None:
         """Rewrite in place the references of a schema dumped from another document to the locations they name.
@@ -5694,11 +5887,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         parent_dict: dict[str, Any],
         child_dict: dict[str, Any],
     ) -> dict[str, Any]:
-        """Merge parent and child property schemas for allOf."""
-        if self.allof_merge_mode == AllOfMergeMode.NoMerge:
-            return child_dict.copy()
-        if "$ref" in child_dict:
-            return child_dict.copy()
+        """Merge parent and child property schemas for allOf; the result stands for the child schema."""
+        if self.allof_merge_mode == AllOfMergeMode.NoMerge or "$ref" in child_dict:
+            return _located(child_dict.copy(), _dump_location(child_dict))
 
         non_merged_fields: set[str] = set()
         if self.allof_merge_mode == AllOfMergeMode.Constraints:
@@ -5733,7 +5924,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     result[key] = self._merge_property_schemas(result[key], value)
             else:
                 result[key] = value
-        return result
+        return _located(result, _dump_location(child_dict))
 
     def _merge_inherited_nested_schemas(self, parent: object, child: object) -> object:
         """Intersect two schema-valued container keywords."""
@@ -6502,16 +6693,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         if excludes_null and "null" in parent_types:
             branch_child["nullable"] = False
-        return self._merge_inherited_type_shape_dict(
-            parent,
-            branch_child,
-            parent_ref,
-            self._get_nested_inherited_active(
+        return _located(
+            self._merge_inherited_type_shape_dict(
                 parent,
                 branch_child,
-                active,
+                parent_ref,
+                self._get_nested_inherited_active(
+                    parent,
+                    branch_child,
+                    active,
+                ),
+                parent_refs_resolved=True,
             ),
-            parent_refs_resolved=True,
+            _dump_location(parent),
         )
 
     def _merge_inherited_type_shape_dict(  # noqa: PLR0912, PLR0914
@@ -6583,24 +6777,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             parent_shape.pop("type", None)
             parent_shape["anyOf"] = [
-                self._merge_inherited_type_shape_dict(
-                    {
-                        "type": parent_type,
-                        **self._select_inherited_distributed_shape(
-                            branch_parent_shape,
-                            frozenset(parent_distributed_fields),
+                _located(
+                    self._merge_inherited_type_shape_dict(
+                        {
+                            "type": parent_type,
+                            **self._select_inherited_distributed_shape(
+                                branch_parent_shape,
+                                frozenset(parent_distributed_fields),
+                                frozenset((parent_type,)),
+                            ),
+                        },
+                        self._select_inherited_distributed_shape(
+                            child,
+                            distributed_fields,
                             frozenset((parent_type,)),
-                        ),
-                    },
-                    self._select_inherited_distributed_shape(
-                        child,
-                        distributed_fields,
-                        frozenset((parent_type,)),
-                    )
-                    | ({"nullable": False} if excludes_null and parent_type == "null" else {}),
-                    effective_ref,
-                    next_active,
-                    parent_refs_resolved=True,
+                        )
+                        | ({"nullable": False} if excludes_null and parent_type == "null" else {}),
+                        effective_ref,
+                        next_active,
+                        parent_refs_resolved=True,
+                    ),
+                    _dump_location(child),
                 )
                 for parent_type in sorted(parent_types)
             ]
@@ -6647,7 +6844,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             else:
                 result[key] = value
-        return result
+        return _located(result, _dump_location(child))
 
     def _merge_no_merge_inherited_property(
         self,
@@ -6874,7 +7071,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         if not merged_changed:
             return child_obj
-        return child_obj.model_copy(update={"properties": merged_properties})
+        return child_obj.model_copy(
+            update={
+                "properties": {
+                    prop_name: merged.with_schema_location(child_prop.schema_location)
+                    if isinstance(merged, JsonSchemaObject)
+                    and isinstance(child_prop := child_obj.properties[prop_name], JsonSchemaObject)
+                    else merged
+                    for prop_name, merged in merged_properties.items()
+                }
+            }
+        )
 
     @contextmanager
     def _inherited_ref_context(self, resolved_ref: str) -> Generator[None, None, None]:
@@ -7593,6 +7800,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 merged_dict = self._drop_incompatible_inherited_constraints(merged_dict, constraint_types)
             merged_schema = self.SCHEMA_OBJECT_TYPE.model_validate(merged_dict)
 
+        merged_schema = merged_schema.with_schema_location(obj.schema_location)
         if has_literals or (obj.format and merged_schema.has_constraint):
             with self._temporarily_enable_field_constraints():
                 if has_literals:
@@ -7617,11 +7825,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             previous = result[key]
             if isinstance(previous, dict) and isinstance(value, dict):
                 if schema_map or key in _INHERITED_NESTED_SCHEMA_FIELDS:
-                    result[key] = self._merge_all_of_schema(
-                        previous,
-                        value,
-                        schema_map=not schema_map and key in _INHERITED_SCHEMA_MAP_FIELDS,
-                        intersect_bounds=intersect_bounds,
+                    result[key] = _located(
+                        self._merge_all_of_schema(
+                            previous,
+                            value,
+                            schema_map=not schema_map and key in _INHERITED_SCHEMA_MAP_FIELDS,
+                            intersect_bounds=intersect_bounds,
+                        ),
+                        _dump_location(value),
                     )
                 else:
                     result[key] = self._deep_merge(previous, value)
@@ -7771,7 +7982,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _merge_all_of_root_value_children(  # noqa: PLR0912
         self, nodes: list[JsonSchemaObject | bool]
     ) -> dict[str, Any] | bool:
-        """Merge acyclic nodes while leaving recursive references for normal reference resolution."""
+        """Merge acyclic nodes while leaving recursive references for normal reference resolution.
+
+        The merged node stands for the last node, whose keywords win.
+        """
         children: list[JsonSchemaObject] = []
         for child in nodes:
             if not isinstance(child, JsonSchemaObject):
@@ -7823,7 +8037,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 }
         if required := list(dict.fromkeys(name for source in children for name in source.required)):
             merged["required"] = required
-        return merged
+        return _located(merged, children[-1].schema_location if children else None)
 
     def _merge_all_of_root_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:  # noqa: PLR0912
         """Unwrap one value schema or merge mapping-shaped allOf items into a root schema."""
@@ -8023,15 +8237,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         refs.append(index)
                     else:
                         combined_schemas.append(
-                            self._preserve_inherited_materialized_type_shape(
-                                target_attribute,
-                                self.SCHEMA_OBJECT_TYPE.model_validate(
-                                    self._merge_all_of_schema(
-                                        base_object,
-                                        merged_attr.model_dump(exclude_unset=True, by_alias=True),
-                                        intersect_bounds=False,
+                            _locate(
+                                self._preserve_inherited_materialized_type_shape(
+                                    target_attribute,
+                                    self.SCHEMA_OBJECT_TYPE.model_validate(
+                                        self._merge_all_of_schema(
+                                            base_object,
+                                            merged_attr.model_dump(exclude_unset=True, by_alias=True),
+                                            intersect_bounds=False,
+                                        ),
                                     ),
                                 ),
+                                target_attribute.schema_location,
                             )
                         )
                 else:
@@ -8039,15 +8256,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     refs.append(index)
             else:
                 combined_schemas.append(
-                    self._preserve_inherited_materialized_type_shape(
-                        target_attribute,
-                        self.SCHEMA_OBJECT_TYPE.model_validate(
-                            self._merge_all_of_schema(
-                                base_object,
-                                target_attribute.model_dump(exclude_unset=True, by_alias=True),
-                                intersect_bounds=False,
+                    _locate(
+                        self._preserve_inherited_materialized_type_shape(
+                            target_attribute,
+                            self.SCHEMA_OBJECT_TYPE.model_validate(
+                                self._merge_all_of_schema(
+                                    base_object,
+                                    target_attribute.model_dump(exclude_unset=True, by_alias=True),
+                                    intersect_bounds=False,
+                                ),
                             ),
                         ),
+                        target_attribute.schema_location,
                     )
                 )
 
@@ -8064,7 +8284,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return [
             self._parse_object_common_part(
                 name,
-                obj,
+                obj.with_schema_location(combined_schemas[i].schema_location),
                 [*get_special_path(common_path_keyword, path), str(i)],
                 ignore_duplicate_model=True,
                 fields=[],
@@ -9428,6 +9648,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 self._add_conditional_validator(reference_path, source, names_by_property)
 
+    @_builds_model
     def _parse_object_common_part(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         name: str,
@@ -9594,8 +9815,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if extra_field is not None:
             extra_field.target_python_version = self.target_python_version
             fields.insert(0, extra_field)
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
         if self.generate_schema_validators:
             self._add_schema_validators(reference.path, reference.name, obj, path, fields, base_classes)
 
@@ -9775,8 +9995,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ref_data_type: DataType,
     ) -> DataType:
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
         field = self.data_model_field_type(
             name=None,
             data_type=ref_data_type,
@@ -9889,8 +10108,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 variant_fields = [self._copy_model_field(field) for field in fields]
                 variant_reference = self._get_rw_model_variant_reference(reference, suffix, loaded=True)
                 self._update_field_refs_for_variant(variant_fields, suffix)
-                self._set_schema_metadata(variant_reference.path, obj)
-                self.set_schema_extensions(variant_reference.path, obj)
+                self._record_schema_object(variant_reference, obj, owner_frames=_owner_frames_of_base(reference))
                 self._update_variant_additional_properties_metadata(
                     variant_reference.path,
                     obj,
@@ -9921,10 +10139,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         description=description,
                         default=default,
                     )
-                )
-                variants[-1].__dict__[_SOURCE_REFERENCE_PATH_KEY] = variant_reference.__dict__.get(
-                    _SOURCE_REFERENCE_PATH_KEY,
-                    _get_rw_model_variant_source_path(reference, suffix),
                 )
             self._unregister_temporary_field_references(fields)
             return variants[0]
@@ -10125,6 +10339,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else self.parse_root_type(name, merged_root, path)
         )
 
+    @_builds_model
     def parse_all_of(  # noqa: PLR0911
         self,
         name: str,
@@ -10142,15 +10357,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         if merged_root := self._merge_all_of_root_schema(obj):
             if self.generate_schema_validators and hasattr(self.data_model_root_type, "add_literal_validation"):
-                return self._parse_all_of_root_value(name, merged_root, path)
-            return self._parse_all_of_merged_root(name, merged_root, path)
+                return self._parse_all_of_root_value(name, merged_root.with_schema_location(obj.schema_location), path)
+            return self._parse_all_of_merged_root(name, merged_root.with_schema_location(obj.schema_location), path)
 
         nullable = self._object_nullable(obj)
         merged_all_of_obj = self._merge_all_of_object(obj)
         if merged_all_of_obj:
             return self._parse_object_common_part(
                 name,
-                merged_all_of_obj,
+                merged_all_of_obj.with_schema_location(obj.schema_location),
                 path,
                 ignore_duplicate_model=ignore_duplicate_model,
                 fields=[],
@@ -10189,7 +10404,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not (fields or required or union_models) and (
             value_root := self._merge_all_of_value_schema(obj, path, base_classes)
         ):
-            return self._parse_all_of_merged_root(name, value_root, path)
+            return self._parse_all_of_merged_root(name, value_root.with_schema_location(obj.schema_location), path)
         if not union_models:
             return self._parse_object_common_part(
                 name,
@@ -10202,8 +10417,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 nullable=nullable,
             )
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
         all_of_data_type = self._parse_object_common_part(
             name,
             obj,
@@ -10216,14 +10430,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         assert all_of_data_type.reference is not None
         data_type = self.data_type(
             data_types=[
-                self._parse_object_common_part(
+                self._parse_all_of_union_model(
                     name,
                     obj,
                     get_special_path(f"union_model-{index}", path),
+                    (union_model, all_of_data_type.reference),
                     ignore_duplicate_model=ignore_duplicate_model,
-                    fields=[],
-                    base_classes=[union_model, all_of_data_type.reference],
-                    required=[],
                 )
                 for index, union_model in enumerate(union_models)
             ]
@@ -10244,6 +10456,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
+
+    def _parse_all_of_union_model(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+        bases: tuple[Reference, Reference],
+        *,
+        ignore_duplicate_model: bool,
+    ) -> DataType:
+        """Parse the class of one union member of an allOf, located at the member's branch.
+
+        The class of a member whose Reference several schema objects reach is left without a location too.
+        """
+        union_model = bases[0]
+        data_type = self._parse_object_common_part(
+            name,
+            obj.with_schema_location(location_of(union_model)),
+            path,
+            ignore_duplicate_model=ignore_duplicate_model,
+            fields=[],
+            base_classes=list(bases),
+            required=[],
+        )
+        if union_model.__dict__.get(SCHEMA_LOCATION_CONFLICT_KEY) and (reference := data_type.reference) is not None:
+            _mark_location_conflict(reference)
+        return data_type
 
     def _get_tag_key_variant_key(self, path: list[str]) -> str | None:
         """Return the key of the union branch modeled at `path` when its class name still comes from that key.
@@ -10653,6 +10892,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return obj.model_copy(update=updates) if updates else obj
 
+    @_builds_model
     def parse_object(
         self,
         name: str,
@@ -10708,8 +10948,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             fields.append(self._get_additional_properties_root_field(name, obj, path))
             data_model_type_class = self.data_model_root_type
 
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
         if self.generate_schema_validators:
             self._add_schema_validators(
                 reference.path,
@@ -11439,7 +11678,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         branch_schema["type"] = type_
         if obj.format is not None:
             branch_schema["format"] = obj.format
-        return self.SCHEMA_OBJECT_TYPE.model_validate(branch_schema)
+        return _locate(self.SCHEMA_OBJECT_TYPE.model_validate(branch_schema), obj.schema_location)
 
     def _parse_array_union_constrained_branch(
         self,
@@ -11611,6 +11850,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             **self._data_model_field_common_kwargs(),
         )
 
+    @_builds_model
     def parse_array(
         self,
         name: str,
@@ -11621,8 +11861,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse array schema into a root model with array type."""
         name = self._apply_title_as_name(name, obj)
         reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
         field = self.parse_array_fields(original_name or name, obj, [*path, name])
 
         non_array_types = self._get_array_union_non_array_types(obj)
@@ -11675,6 +11914,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return self.data_type(reference=reference)
 
+    @_builds_model
     def parse_root_type(
         self,
         name: str,
@@ -11810,8 +12050,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         name = self._apply_title_as_name(name, obj)
         if not reference:
             reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
         constraints = array_constraints or {}
         untaken: dict[str, Any] = {}
         if not constraints and (self.field_constraints or preserve_constraints):
@@ -11920,8 +12159,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         is_nullable = obj.nullable or obj.type_has_null
         reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
 
         constraints = self._get_constraint_values(obj) if self.field_constraints else {}
         if self._should_skip_root_field_constraints_for_multiple_types(obj):
@@ -12019,6 +12257,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return _semantic_value_text(enum_part["const"])
         return f"value_{index}"
 
+    @_builds_model
     def parse_enum(  # noqa: PLR0912, PLR0915
         self,
         name: str,
@@ -12116,8 +12355,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 loaded=True,
                 model_type="enum",
             )
-            self._set_schema_metadata(reference.path, obj)
-            self.set_schema_extensions(reference.path, obj)
+            self._record_schema_object(reference, obj)
             self._register_root_model(
                 reference=reference,
                 fields=[
@@ -12145,8 +12383,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         def create_enum(reference_: Reference) -> DataType:
             enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), enum_times)
-            self._set_schema_metadata(reference_.path, obj)
-            self.set_schema_extensions(reference_.path, obj)
+            self._record_schema_object(reference_, obj)
 
             enum = enum_cls(
                 reference=reference_,
@@ -12176,8 +12413,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not nullable:
             return create_enum(reference)
 
-        self._set_schema_metadata(reference.path, obj)
-        self.set_schema_extensions(reference.path, obj)
+        self._record_schema_object(reference, obj)
 
         enum_reference = self.model_resolver.add(
             [*path, "Enum"],
@@ -12944,8 +13180,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             prepared = self._rewrite_schema_resource_refs(
                 raw, document, base, self._schema_resource_root_bases[document], id_field, is_root=True
             )
+        prepared = self._index_document(prepared, path_parts)
         self._schema_resource_cache[document] = raw, prepared
         return prepared
+
+    def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
+        """Return a loaded document as a tree whose JSON objects are indexed by location (L0).
+
+        The document is named as reference paths name it. A copy of the root keeps the document as written that
+        ``_document_as_written`` returns for the loaded one. A mounted converted schema keeps its locations.
+        """
+        if (index := self._schema_location_index) is None or id(raw) in index.mounted:
+            return raw
+        document = self.model_resolver.join_path(tuple(path_parts)).partition("#")[0]
+        indexed = _index_document(raw, SchemaLocation(document, ()), index)
+        if (entry := self._documents_as_written.get(id(raw))) is not None and entry[0] is raw:
+            self._documents_as_written[id(indexed)] = indexed, entry[1]
+        return indexed
+
+    def _mount_converted_schema(self, converted: dict[str, Any], location: SchemaLocation | None) -> dict[str, Any]:
+        """Index a JSON Schema converted from a value of a document at the location of that value (L0)."""
+        if location is None or (index := self._schema_location_index) is None:
+            return converted  # pragma: no cover - the values a parser converts are in documents it has indexed
+        mounted = _index_document(converted, location, index)
+        index.mounted.add(id(mounted))
+        return mounted
 
     def _add_id_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Add $id and $anchor to model resolver."""
@@ -13008,6 +13267,39 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> None:
         """Parse a raw dictionary into a JsonSchemaObject and process it."""
         self._parse_raw_or_validated_obj(name, raw, path)
+
+    def _raw_location(self, raw: object) -> SchemaLocation | None:
+        """Return the location of a JSON container of a loaded document."""
+        return None if (index := self._schema_location_index) is None else index.locations.get(id(raw))
+
+    def _member_location(self, holder: object, *tokens: str) -> SchemaLocation | None:
+        """Return the location of a value below a JSON container, such as a boolean schema the index cannot key."""
+        return None if (location := self._raw_location(holder)) is None else location.child(*tokens)
+
+    def _validate_pointer_target(
+        self, document: object, tokens: Sequence[str], target: YamlValue, path: list[str]
+    ) -> JsonSchemaObject:
+        """Validate the value a JSON pointer names in a document; a boolean schema is located by the pointer."""
+        obj = self._validate_schema_object(target, path)
+        return _locate(obj, self._member_location(document, *map(str, tokens))) if isinstance(target, bool) else obj
+
+    def _record_boolean_schema_location(self, raw: YamlValue, path: list[str], location: SchemaLocation | None) -> None:
+        """Record ``location`` for the model parsed at ``path`` from a boolean schema, whose value cannot carry it."""
+        if (
+            isinstance(raw, bool)
+            and location is not None
+            and (reference := self.model_resolver.references.get(self.model_resolver.join_path(tuple(path))))
+        ):
+            _set_schema_location(reference, location)
+
+    def _parse_raw_at(self, name: str, raw: YamlValue, path: list[str], location: SchemaLocation | None) -> None:
+        """Parse a raw schema; a boolean schema gets ``location``."""
+        self.parse_raw_obj(name, raw, path)
+        self._record_boolean_schema_location(raw, path, location)
+
+    def _parse_raw_member(self, name: str, holder: Mapping[str, YamlValue], key: str, path: list[str]) -> None:
+        """Parse ``holder[key]``; a boolean schema takes its location from its holder."""
+        self._parse_raw_at(name, holder[key], path, self._member_location(holder, key))
 
     def _parse_raw_or_validated_obj(
         self,
@@ -13405,10 +13697,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self.model_resolver.current_base_path_context(source.path.parent),
                 self.model_resolver.current_root_context(path_parts),
             ):
+                loaded = prepared
                 for reserved_ref in sorted(reserved_refs):
                     if self.model_resolver.add_ref(reserved_ref, resolved=True).loaded:
                         continue
-                    self.raw_obj = self._load_source_dict(source) if prepared is None else prepared
+                    if loaded is None:
+                        loaded = self._index_document(self._load_source_dict(source), path_parts)
+                    self.raw_obj = loaded
                     self.parse_json_pointer(self.raw_obj, reserved_ref, path_parts)
 
         if model_count != len(self.results):
@@ -13427,7 +13722,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         models = self._get_model_by_json_pointer(raw, object_paths, ref)
         model_name = reference_paths[-1]
 
-        self.parse_raw_obj(model_name, models, [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]])
+        self._parse_raw_at(
+            model_name,
+            models,
+            [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]],
+            self._member_location(raw, *object_paths),
+        )
 
     def _get_model_by_json_pointer(
         self,
@@ -13435,7 +13735,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         object_paths: list[str],
         ref: str,
     ) -> YamlValue:
-        """Resolve one JSON pointer, preserving the legacy empty-schema fallback when it is missing."""
+        """Resolve one JSON pointer, preserving the legacy empty-schema fallback when it is missing.
+
+        The fallback stands for the missing target, so it is located where the pointer points.
+        """
         model = _get_model_by_path_or_missing(raw, object_paths)
         if model is not _MISSING_JSON_POINTER:
             return cast("YamlValue", model)
@@ -13444,7 +13747,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not source:
             source = self._source_path_for_diagnostics(self.current_source_path)
         self._dangling_refs.add((source, f"#{fragment}"))
-        return {}
+        return _located({}, self._member_location(raw, *map(str, object_paths)))
 
     def _report_parse_diagnostics(self) -> None:
         """Report each unique dangling local reference and compatibility resolution after schema parsing completes."""
@@ -13571,7 +13874,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else path_parts
         )
         with self.model_resolver.current_root_context(path_parts):
-            raw = self._prepare_schema_resources(raw, path_parts)
+            prepared = self._prepare_schema_resources(raw, path_parts)
+            if self.raw_obj is raw:
+                self.raw_obj = prepared
+            raw = prepared
             self._schema_resource_path_parts[self._schema_resource_document(path_parts)] = path_parts
             obj_name = self.model_resolver.add(
                 path,
@@ -13621,6 +13927,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         continue
                     seen_definition_metadata_paths.add(definition_path_key)
                     obj = self._validate_schema_object(model, definition_path)
+                    if isinstance(model, bool):
+                        obj = _locate(obj, self._member_location(definitions, *definition_path[len(path_parts) + 1 :]))
                     validated_definition_objects[definition_path_key] = obj
                     self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(definition_path)), obj)
                     self.parse_id(obj, definition_path)
@@ -13638,7 +13946,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         else self._get_model_by_json_pointer(raw, object_paths, ref)
                     )
                     model_name = object_paths[-1]
-                    self.parse_obj(model_name, self._validate_schema_object(models, path), path)
+                    self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
                 elif not self.skip_root_model:
                     self.parse_obj(obj_name, root_obj, path_parts or ["#"])
                 for key, model, path in definition_entries:
@@ -13669,7 +13977,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
                         model_name = reference_paths[-1]
                         path = [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]]
-                        self.parse_obj(model_name, self._validate_schema_object(models, path), path)
+                        self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
                     previous_reserved_refs = reserved_refs
                     reserved_refs = set(self.reserved_refs.get(key) or [])
                     if previous_reserved_refs == reserved_refs:

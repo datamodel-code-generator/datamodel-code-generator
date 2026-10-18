@@ -36,8 +36,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         List of modules with custom formatter (delimited list
                         input).
   --emit-model-metadata EMIT_MODEL_METADATA
-                        Write a separate JSON map from source schema
-                        references to generated models and fields.
+                        Write a separate JSON map from generated models and
+                        fields to the JSON Pointer locations of their source
+                        schemas; module and class name identify a model.
   --external-ref-mapping FILE_PATH=PYTHON_PACKAGE [FILE_PATH=PYTHON_PACKAGE ...]
                         Map external $ref file paths to Python import packages
                         instead of generating duplicate classes. Accepts one

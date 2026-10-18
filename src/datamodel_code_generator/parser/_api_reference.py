@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence  # noqa: TC003 - Public annotations support get_type_hints().
-from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from urllib.parse import quote, unquote
 
@@ -16,6 +15,7 @@ from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     ModelResolver,
     Reference,
+    SchemaLocation,
 )
 
 _BAD_PERCENT = re.compile(r"%(?![0-9a-fA-F]{2})")
@@ -71,12 +71,8 @@ def canonical_ref(ref: str) -> str:
     return canonical + marker + generated
 
 
-@dataclass(frozen=True, slots=True)
-class ApiDeclarationId:
-    """Identify an actual declaration independently of its generated Python name."""
-
-    document: str
-    tokens: tuple[str, ...]
+ApiDeclarationId = SchemaLocation
+"""Identify an actual declaration independently of its generated Python name: its document and pointer tokens."""
 
 
 class ApiModelResolver(ModelResolver):

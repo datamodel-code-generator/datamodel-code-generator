@@ -60,7 +60,7 @@ Consider (the schema also has signals against these)
       of 6 classes matched by schema location renamed (0 only renumbered), 0 removed, 1 added, e.g.
         Step1 -> StepStep   at definitions/step > oneOf 0
         Step2 -> StepStep1   at definitions/step > oneOf 1
-        With -> StepStepWith   at definitions/step > oneOf 0 > with_
+        With -> StepStepWith   at definitions/step > with
 
 Optional (policy; not in the command)
   --strict-types int float bool   [policy.strict-scalar-types]

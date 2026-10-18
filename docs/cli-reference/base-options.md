@@ -4,7 +4,7 @@
 
 | Option | Description |
 |--------|-------------|
-| [`--emit-model-metadata`](#emit-model-metadata) | Write a separate JSON map from source schema references to t... |
+| [`--emit-model-metadata`](#emit-model-metadata) | Write a separate JSON map from the final generated models, m... |
 | [`--encoding`](#encoding) | Specify character encoding for input and output files. |
 | [`--external-ref-mapping`](#external-ref-mapping) | Map external `$ref` files to Python packages. |
 | [`--http-backend`](#http-backend) | Select the HTTP client backend for remote schemas. |
@@ -38,7 +38,7 @@ Use URL input together with HTTP request controls for schemas served behind head
 
 ## `--emit-model-metadata` {#emit-model-metadata}
 
-Write a separate JSON map from source schema references to the final generated models, modules, fields, and type hints.
+Write a separate JSON map from the final generated models, modules, fields, and type hints to the JSON Pointer locations of their source schemas. Several models can share one location, such as read and write variants of one schema, so the module and class name identify a model.
 
 !!! tip "Usage"
 

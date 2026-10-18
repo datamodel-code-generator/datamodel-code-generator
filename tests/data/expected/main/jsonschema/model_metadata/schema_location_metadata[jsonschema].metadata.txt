@@ -1,0 +1,977 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Nested",
+      "name": "Nested",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/nested",
+      "source_path": [
+        "properties",
+        "nested"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "ListItem",
+      "name": "ListItem",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/list/items",
+      "source_path": [
+        "properties",
+        "list",
+        "items"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "b",
+          "alias": "b",
+          "original_name": "b",
+          "type": "int | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "TupleItem",
+      "name": "TupleItem",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/tuple/prefixItems/0",
+      "source_path": [
+        "properties",
+        "tuple",
+        "prefixItems",
+        "0"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "t0",
+          "alias": "t0",
+          "original_name": "t0",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Map",
+      "name": "Map",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/map/additionalProperties",
+      "source_path": [
+        "properties",
+        "map",
+        "additionalProperties"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "m",
+          "alias": "m",
+          "original_name": "m",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "PatternMap",
+      "name": "PatternMap",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/patternMap/patternProperties/^x~1y~0z$",
+      "source_path": [
+        "properties",
+        "patternMap",
+        "patternProperties",
+        "^x/y~z$"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "p",
+          "alias": "p",
+          "original_name": "p",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Union",
+      "name": "Union",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/union/oneOf/0",
+      "source_path": [
+        "properties",
+        "union",
+        "oneOf",
+        "0"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "u0",
+          "alias": "u0",
+          "original_name": "u0",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Union1",
+      "name": "Union1",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/union/oneOf/1",
+      "source_path": [
+        "properties",
+        "union",
+        "oneOf",
+        "1"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "u1",
+          "alias": "u1",
+          "original_name": "u1",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Kind",
+      "name": "Kind",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/kind",
+      "source_path": [
+        "properties",
+        "kind"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        },
+        {
+          "name": "b",
+          "alias": "b",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "ConstEnum",
+      "name": "ConstEnum",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/constEnum",
+      "source_path": [
+        "properties",
+        "constEnum"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "x",
+          "alias": "x",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        },
+        {
+          "name": "y",
+          "alias": "y",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Inner",
+      "name": "Inner",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Base/properties/inner",
+      "source_path": [
+        "$defs",
+        "Base",
+        "properties",
+        "inner"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "i",
+          "alias": "i",
+          "original_name": "i",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Local",
+      "name": "Local",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/merged/properties/local",
+      "source_path": [
+        "properties",
+        "merged",
+        "properties",
+        "local"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "l",
+          "alias": "l",
+          "original_name": "l",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Merged",
+      "name": "Merged",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/merged",
+      "source_path": [
+        "properties",
+        "merged"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Inner | None",
+          "required": false
+        },
+        {
+          "name": "local",
+          "alias": "local",
+          "original_name": "local",
+          "type": "Local | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "SiblingUnion",
+      "name": "SiblingUnion",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Choice/oneOf/0",
+      "source_path": [
+        "$defs",
+        "Choice",
+        "oneOf",
+        "0"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "SiblingUnion1",
+      "name": "SiblingUnion1",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Choice/oneOf/1",
+      "source_path": [
+        "$defs",
+        "Choice",
+        "oneOf",
+        "1"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "b",
+          "alias": "b",
+          "original_name": "b",
+          "type": "int",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "SiblingUnion2",
+      "name": "SiblingUnion2",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/siblingUnion/oneOf/0",
+      "source_path": [
+        "properties",
+        "siblingUnion",
+        "oneOf",
+        "0"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "c",
+          "alias": "c",
+          "original_name": "c",
+          "type": "bool",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "TypeList",
+      "name": "TypeList",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/typeList",
+      "source_path": [
+        "properties",
+        "typeList"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "o",
+          "alias": "o",
+          "original_name": "o",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Deep",
+      "name": "Deep",
+      "module": "",
+      "source_ref": "schema_location/ext.json#/$defs/Ext/properties/deep",
+      "source_path": [
+        "$defs",
+        "Ext",
+        "properties",
+        "deep"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "z",
+          "alias": "z",
+          "original_name": "z",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Ext",
+      "name": "Ext",
+      "module": "",
+      "source_ref": "schema_location/ext.json#/$defs/Ext",
+      "source_path": [
+        "$defs",
+        "Ext"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "deep",
+          "alias": "deep",
+          "original_name": "deep",
+          "type": "Deep | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Base",
+      "name": "Base",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Base",
+      "source_path": [
+        "$defs",
+        "Base"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Inner | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Choice1",
+      "name": "Choice1",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Choice/oneOf/0",
+      "source_path": [
+        "$defs",
+        "Choice",
+        "oneOf",
+        "0"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Choice2",
+      "name": "Choice2",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Choice/oneOf/1",
+      "source_path": [
+        "$defs",
+        "Choice",
+        "oneOf",
+        "1"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "b",
+          "alias": "b",
+          "original_name": "b",
+          "type": "int",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Choice",
+      "name": "Choice",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Choice",
+      "source_path": [
+        "$defs",
+        "Choice"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "Choice1 | Choice2",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "SlashName",
+      "name": "SlashName",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Slash~1Name",
+      "source_path": [
+        "$defs",
+        "Slash/Name"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "s",
+          "alias": "s",
+          "original_name": "s",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "TildeName",
+      "name": "TildeName",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Tilde~0Name",
+      "source_path": [
+        "$defs",
+        "Tilde~Name"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "t",
+          "alias": "t",
+          "original_name": "t",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Anything",
+      "name": "Anything",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Anything",
+      "source_path": [
+        "$defs",
+        "Anything"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "E",
+      "name": "E",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Embedded/properties/e",
+      "source_path": [
+        "$defs",
+        "Embedded",
+        "properties",
+        "e"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "x",
+          "alias": "x",
+          "original_name": "x",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Embedded",
+      "name": "Embedded",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Embedded",
+      "source_path": [
+        "$defs",
+        "Embedded"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "e",
+          "alias": "e",
+          "original_name": "e",
+          "type": "E | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "A",
+      "name": "A",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/A",
+      "source_path": [
+        "$defs",
+        "A"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "B",
+      "name": "B",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/B",
+      "source_path": [
+        "$defs",
+        "B"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "b",
+          "alias": "b",
+          "original_name": "b",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "CommonUnion1",
+      "name": "CommonUnion1",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/CommonUnion/anyOf/0",
+      "source_path": [
+        "$defs",
+        "CommonUnion",
+        "anyOf",
+        "0"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "shared",
+          "alias": "shared",
+          "original_name": "shared",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "CommonUnion2",
+      "name": "CommonUnion2",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/CommonUnion/anyOf/1",
+      "source_path": [
+        "$defs",
+        "CommonUnion",
+        "anyOf",
+        "1"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "shared",
+          "alias": "shared",
+          "original_name": "shared",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "CommonUnion",
+      "name": "CommonUnion",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/CommonUnion",
+      "source_path": [
+        "$defs",
+        "CommonUnion"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "CommonUnion1 | CommonUnion2",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "MergedRoot",
+      "name": "MergedRoot",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/MergedRoot",
+      "source_path": [
+        "$defs",
+        "MergedRoot"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "constr(min_length=1, max_length=5)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Meta",
+      "name": "Meta",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Tree/properties/meta",
+      "source_path": [
+        "$defs",
+        "Tree",
+        "properties",
+        "meta"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "m",
+          "alias": "m",
+          "original_name": "m",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Tree",
+      "name": "Tree",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Tree",
+      "source_path": [
+        "$defs",
+        "Tree"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "children",
+          "alias": "children",
+          "original_name": "children",
+          "type": "list[Tree] | None",
+          "required": false
+        },
+        {
+          "name": "meta",
+          "alias": "meta",
+          "original_name": "meta",
+          "type": "Meta | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Slash1Name",
+      "name": "Slash1Name",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Slash~1Name",
+      "source_path": [
+        "$defs",
+        "Slash/Name"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "s",
+          "alias": "s",
+          "original_name": "s",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Tilde0Name",
+      "name": "Tilde0Name",
+      "module": "",
+      "source_ref": "schema_location.json#/$defs/Tilde~0Name",
+      "source_path": [
+        "$defs",
+        "Tilde~Name"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "t",
+          "alias": "t",
+          "original_name": "t",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "AllOfProp",
+      "name": "AllOfProp",
+      "module": "",
+      "source_ref": "schema_location.json#/properties/allOfProp",
+      "source_path": [
+        "properties",
+        "allOfProp"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "extra",
+          "alias": "extra",
+          "original_name": "extra",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Root",
+      "name": "Root",
+      "module": "",
+      "source_ref": "schema_location.json#",
+      "source_path": [],
+      "title": "Root",
+      "fields": [
+        {
+          "name": "nested",
+          "alias": "nested",
+          "original_name": "nested",
+          "type": "Nested | None",
+          "required": false
+        },
+        {
+          "name": "list_",
+          "alias": "list",
+          "original_name": "list",
+          "type": "list[ListItem] | None",
+          "required": false
+        },
+        {
+          "name": "tuple",
+          "alias": "tuple",
+          "original_name": "tuple",
+          "type": "list[TupleItem] | None",
+          "required": false
+        },
+        {
+          "name": "map",
+          "alias": "map",
+          "original_name": "map",
+          "type": "dict[str, Map] | None",
+          "required": false
+        },
+        {
+          "name": "patternMap",
+          "alias": "patternMap",
+          "original_name": "patternMap",
+          "type": "dict[constr(pattern=r'^x/y~z$'), PatternMap] | None",
+          "required": false
+        },
+        {
+          "name": "union",
+          "alias": "union",
+          "original_name": "union",
+          "type": "Union | Union1 | None",
+          "required": false
+        },
+        {
+          "name": "kind",
+          "alias": "kind",
+          "original_name": "kind",
+          "type": "Kind | None",
+          "required": false
+        },
+        {
+          "name": "constEnum",
+          "alias": "constEnum",
+          "original_name": "constEnum",
+          "type": "ConstEnum | None",
+          "required": false
+        },
+        {
+          "name": "allOfProp",
+          "alias": "allOfProp",
+          "original_name": "allOfProp",
+          "type": "AllOfProp | None",
+          "required": false
+        },
+        {
+          "name": "merged",
+          "alias": "merged",
+          "original_name": "merged",
+          "type": "Merged | None",
+          "required": false
+        },
+        {
+          "name": "siblingUnion",
+          "alias": "siblingUnion",
+          "original_name": "siblingUnion",
+          "type": "SiblingUnion | SiblingUnion1 | SiblingUnion2 | None",
+          "required": false
+        },
+        {
+          "name": "external",
+          "alias": "external",
+          "original_name": "external",
+          "type": "Ext | None",
+          "required": false
+        },
+        {
+          "name": "typeList",
+          "alias": "typeList",
+          "original_name": "typeList",
+          "type": "list[str] | TypeList | None",
+          "required": false
+        },
+        {
+          "name": "slash",
+          "alias": "slash",
+          "original_name": "slash",
+          "type": "Slash1Name | None",
+          "required": false
+        },
+        {
+          "name": "tilde",
+          "alias": "tilde",
+          "original_name": "tilde",
+          "type": "Tilde0Name | None",
+          "required": false
+        },
+        {
+          "name": "anything",
+          "alias": "anything",
+          "original_name": "anything",
+          "type": "Anything | None",
+          "required": false
+        },
+        {
+          "name": "embedded",
+          "alias": "embedded",
+          "original_name": "embedded",
+          "type": "Embedded | None",
+          "required": false
+        },
+        {
+          "name": "common",
+          "alias": "common",
+          "original_name": "common",
+          "type": "CommonUnion | None",
+          "required": false
+        },
+        {
+          "name": "mergedRoot",
+          "alias": "mergedRoot",
+          "original_name": "mergedRoot",
+          "type": "MergedRoot | None",
+          "required": false
+        },
+        {
+          "name": "tree",
+          "alias": "tree",
+          "original_name": "tree",
+          "type": "Tree | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

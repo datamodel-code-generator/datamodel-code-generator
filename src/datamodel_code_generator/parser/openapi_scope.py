@@ -366,7 +366,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 self.parse_obj(reference.name, self._validate_schema_object(raw, [ref]), [ref])
             return
         models = self._get_model_by_json_pointer(raw, tokens, ref)
-        self.parse_raw_obj(tokens[-1], models, [*path_parts, "#", *tokens])
+        self._parse_raw_at(tokens[-1], models, [*path_parts, "#", *tokens], self._member_location(raw, *tokens))
 
     def _parse_file(  # noqa: PLR0913
         self,
@@ -407,11 +407,12 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._update_openapi_info_version(specification)
         self._collect_discriminator_schemas()
         components = _mapping(specification.get("components", {}), [*path_parts, "#/components"])
-        for key, value in _mapping(components.get("schemas", {}), ["#/components/schemas"]).items():
+        schemas = _mapping(components.get("schemas", {}), ["#/components/schemas"])
+        for key in schemas:
             path = [*path_parts, "#/components", "schemas", key]
             if self._declaration_id(path) in self._processed_declarations:
                 continue
-            self.parse_raw_obj(key, value, path)
+            self._parse_raw_member(key, schemas, key, path)
             self._processed_declarations.add(self._declaration_id(path))
         categories: tuple[tuple[Literal["parameters", "requestBodies", "responses", "headers"], str], ...] = (
             ("parameters", "Parameter"),
@@ -580,7 +581,8 @@ class ApiOpenAPIParser(OpenAPIParser):
                 msg = "API_INVALID_OBJECT: schema and content are mutually exclusive"
                 raise SchemaParseError(msg, path=path)
             if "schema" in raw:
-                self._acquire_schema(name, raw["schema"], [*path, "schema"], role=role)
+                self._acquire_schema(name, raw["schema"], schema_path := [*path, "schema"], role=role)
+                self._record_boolean_schema_location(raw["schema"], schema_path, self._member_location(raw, "schema"))
                 return
             content = _mapping(raw.get("content", {}), [*path, "content"])
             if len(content) != 1:
@@ -608,8 +610,16 @@ class ApiOpenAPIParser(OpenAPIParser):
                         self._acquire_item_schema(
                             name, medium["itemSchema"], media_path, schema.schema, role=schema_role
                         )
+                        self._record_boolean_schema_location(
+                            medium["itemSchema"],
+                            [*media_path, "itemSchema"],
+                            self._member_location(medium, "itemSchema"),
+                        )
                     else:
                         self._acquire_schema(name, schema.schema, [*media_path, "schema"], role=schema_role)
+                        self._record_boolean_schema_location(
+                            schema.schema, [*media_path, "schema"], self._member_location(medium, "schema")
+                        )
                 self._walk_encoding(name, medium, media, media_path, owner)
 
     def _walk_response(self, name: str, target: _ApiObject, *, header_name: str | None = None) -> None:

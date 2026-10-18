@@ -12,6 +12,7 @@ import stat
 from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property, lru_cache
 from itertools import zip_longest
@@ -272,6 +273,57 @@ SINGULAR_NAME_SUFFIX: str = "Item"
 ID_PATTERN: Pattern[str] = re.compile(r"^#[^/].*")
 
 SPECIAL_PATH_MARKER: str = "#-datamodel-code-generator-#-"
+
+SCHEMA_LOCATION_KEY: Final = "_schema_location"
+SCHEMA_LOCATION_CONFLICT_KEY: Final = "_schema_location_conflict"
+SCHEMA_OWNER_FRAMES_KEY: Final = "_schema_owner_frames"
+
+
+@dataclass(frozen=True, slots=True)
+class SchemaLocation:
+    """A JSON value of a loaded document: the document as reference paths name it and the tokens from its root."""
+
+    document: str
+    tokens: tuple[str, ...]
+
+    @property
+    def pointer(self) -> str:
+        """Return the RFC 6901 string form of the tokens, without percent-encoding."""
+        return "".join(f"/{token.replace('~', '~0').replace('/', '~1')}" for token in self.tokens)
+
+    def __str__(self) -> str:
+        """Return the document and the JSON Pointer joined by ``#``."""
+        return f"{self.document}#{self.pointer}"
+
+    def child(self, *tokens: str) -> SchemaLocation:
+        """Return the location of a value below this one."""
+        return SchemaLocation(self.document, (*self.tokens, *tokens))
+
+
+class SchemaLocationIndex:
+    """The location of every JSON object of the documents one parse loads, by object identity.
+
+    The index keeps the documents alive, so an identity stays valid for the whole parse. ``mounted`` holds the
+    converted schemas indexed at the location of the value they were converted from, which keep that location.
+    """
+
+    def __init__(self) -> None:
+        """Start an empty index."""
+        self.locations: dict[int, SchemaLocation] = {}
+        self.documents: list[object] = []
+        self.mounted: set[int] = set()
+
+
+SCHEMA_LOCATION_INDEX: ContextVar[SchemaLocationIndex | None] = ContextVar("schema_location_index", default=None)
+
+
+def location_of(reference: Reference) -> SchemaLocation | None:
+    """Return the location of the schema object the model of a reference is built from.
+
+    The location is recorded on the Reference object, so it survives later changes of ``Reference.path``. A Reference
+    that two different schema objects reach (colliding parse paths) has none.
+    """
+    return reference.__dict__.get(SCHEMA_LOCATION_KEY)
 
 
 def _source_path(path: str) -> str:

@@ -1,0 +1,157 @@
+openapi: 3.2.0
+info:
+  title: Schema locations
+  version: "1"
+security:
+  - key: []
+paths:
+  /pets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      parameters:
+        - name: filter
+          in: query
+          schema:
+            type: object
+            properties:
+              f:
+                type: string
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      requestBody:
+        $ref: "#/components/requestBodies/PetBody"
+      responses:
+        "201":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /owners:
+    $ref: "#/components/pathItems/Owners"
+  /streams:
+    get:
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: ok
+          content:
+            application/jsonl:
+              itemSchema:
+                type: object
+                properties:
+                  event:
+                    type: string
+            application/json:
+              schema: true
+webhooks:
+  newPet:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                w:
+                  type: string
+      responses:
+        "200":
+          description: ok
+components:
+  securitySchemes:
+    key:
+      type: apiKey
+      in: header
+      name: X-Key
+  pathItems:
+    Owners:
+      get:
+        parameters:
+          - name: q
+            in: query
+            schema:
+              type: object
+              properties:
+                a:
+                  type: string
+        responses:
+          "200":
+            description: ok
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    owner:
+                      type: string
+  requestBodies:
+    PetBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              rb:
+                type: string
+  responses:
+    NotFound:
+      description: not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        secret:
+          type: string
+          writeOnly: true
+        owner:
+          type: object
+          properties:
+            name:
+              type: string
+    PetRequest:
+      type: object
+      properties:
+        note:
+          type: string
+    Foo/Bar:
+      type: object
+      properties:
+        fb:
+          type: string
+    Tilde~Name:
+      type: object
+      properties:
+        t:
+          type: string
+    AnyValue: true

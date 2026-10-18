@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: Schema locations with YAML aliases
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: cat
+        owner: &owner
+          type: object
+          properties:
+            name:
+              type: string
+    Dog:
+      type: object
+      properties:
+        kind:
+          type: string
+          const: dog
+        owner: *owner
+    A: &a
+      type: object
+      properties:
+        x:
+          type: string
+        inner:
+          type: object
+          properties:
+            y:
+              type: integer
+    B: *a
+    Pet:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind

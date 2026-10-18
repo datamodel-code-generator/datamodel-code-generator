@@ -454,8 +454,9 @@ def test_main_array_uri_items_preserves_min_items(output_file: Path) -> None:
 @pytest.mark.cli_doc(
     options=["--emit-model-metadata"],
     option_description=(
-        "Write a separate JSON map from source schema references to the final generated models, modules, fields, "
-        "and type hints."
+        "Write a separate JSON map from the final generated models, modules, fields, and type hints to the JSON "
+        "Pointer locations of their source schemas. Several models can share one location, such as read and write "
+        "variants of one schema, so the module and class name identify a model."
     ),
     input_schema="jsonschema/model_metadata.json",
     cli_args=["--emit-model-metadata", "model-map.json", "--module-split-mode", "single", "--disable-timestamp"],

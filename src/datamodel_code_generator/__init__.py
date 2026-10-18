@@ -248,10 +248,11 @@ if TYPE_CHECKING:
         _SharedParserConfigDict,
         _PythonTypeExpressions | None,
     ]
-    _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, DataModelSet, bool]
+    _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, tuple[str, ...], DataModelSet, bool]
     _ParsedRun: TypeAlias = tuple[
         _ParserResults,
         ModelMetadata | None,
+        tuple[str, ...],
         DataModelSet,
         bool,
         _GenerationInput,
@@ -2735,7 +2736,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             else:
                 discarded_parser = parser
                 parser, results, data_model_types, defer_formatting, extra_template_data = untyped_parse
-        model_metadata = parser.model_metadata
+        model_metadata, model_identities = parser.model_metadata, parser.model_metadata_identities
         parser.record_dropped_constraints()
         class_names = parser.generated_class_names
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
@@ -2816,7 +2817,10 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                             candidate_attempt = capture.freeze_attempt(retry_parser, retry_results)
                         retry_accepted = True
                         results = retry_results
-                        model_metadata = retry_parser.model_metadata
+                        model_metadata, model_identities = (
+                            retry_parser.model_metadata,
+                            retry_parser.model_metadata_identities,
+                        )
                         retry_parser.record_dropped_constraints()
                         class_names = retry_parser.generated_class_names
                         data_model_types = retry_data_model_types
@@ -2837,7 +2841,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     from datamodel_code_generator._naming_hint import record_class_names  # noqa: PLC0415
 
     record_class_names(class_names)
-    return results, model_metadata, data_model_types, defer_formatting
+    return results, model_metadata, model_identities, data_model_types, defer_formatting
 
 
 def _emit_generation(  # noqa: PLR0913
@@ -2909,6 +2913,7 @@ def _run_generation(
             (
                 results,
                 model_metadata,
+                _,
                 data_model_types,
                 defer_formatting,
                 input_,
@@ -3019,7 +3024,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
         parser_factory = capture.parser_factory
         parse_generation = partial(_parse_generation, openapi_parser_factory=parser_factory)
         allow_empty_api = getattr(parser_factory, "_supports_api_scope", False) is True
-    results, model_metadata, data_model_types, defer_formatting = parse_generation(
+    results, model_metadata, model_identities, data_model_types, defer_formatting = parse_generation(
         input_,
         input_text,
         input_file_type,
@@ -3045,6 +3050,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
     return (
         results,
         model_metadata,
+        model_identities,
         data_model_types,
         defer_formatting,
         input_,
@@ -3062,13 +3068,15 @@ def _collect_model_metadata(
     config: GenerateConfig,
     *,
     remote_text_cache: DefaultPutDict[str, str],
-) -> tuple[ModelMetadata | None, InputFileType]:
+) -> tuple[ModelMetadata | None, tuple[str, ...], InputFileType]:
     """Return the metadata of the models generate() would write for a config, writing nothing, and the input type.
 
     The run takes generate()'s preparation, parse and compatibility retries, so the class names are the names
     generation gives; formatting, every output, and a selected server or client are left out. The remote lock is
-    checked, and with ``update_lock`` updated, in memory only: nothing commits it. The input type is the one the run
-    parsed, detected when the config's is auto. Runs that share ``remote_text_cache`` fetch each remote document once.
+    checked, and with ``update_lock`` updated, in memory only: nothing commits it. Beside the metadata come the
+    identity paths of its models, in the same order: internal keys that match a class across configurations, never
+    written. The input type is the one the run parsed, detected when the config's is auto. Runs that share
+    ``remote_text_cache`` fetch each remote document once.
     """
     config = _prepare_generate_facade_config(
         config.model_copy(
@@ -3093,7 +3101,7 @@ def _collect_model_metadata(
             remote_text_cache=remote_text_cache,
             collect_model_metadata=True,
         )
-        return parsed[1], parsed[-1]
+        return parsed[1], parsed[2], parsed[-1]
 
 
 def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
