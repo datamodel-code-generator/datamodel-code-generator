@@ -31,7 +31,9 @@ a final `datamodel-codegen` command.
 
 1. Inspect the user's goal and the input schema when it is available.
 2. Start from any options the user or existing project already selected.
-3. Run `datamodel-codegen [known options] --generate-prompt "<goal>"`.
+3. Run `datamodel-codegen [known options] --generate-prompt "<goal>"`. When the input
+   schema is available, add `--recommend-options` (experimental) so the prompt includes
+   the schema analysis and the recommended command to start from.
 4. Preserve current options unless they conflict with the goal or another option.
 5. Choose the minimal additional options needed for the requested output.
 6. Return the final CLI command, reasons for each non-obvious option, rejected

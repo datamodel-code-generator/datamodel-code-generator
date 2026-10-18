@@ -1,1 +1,1 @@
-Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.
+Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. Add --recommend-options to this command to pick a preset and options for this schema (experimental).

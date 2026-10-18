@@ -1326,14 +1326,18 @@ def test_main_invalid_model_name_failed(capsys: pytest.CaptureFixture[str], outp
 
 
 def test_main_invalid_model_name_converted(capsys: pytest.CaptureFixture[str], output_file: Path) -> None:
-    """Test invalid model name conversion error."""
+    """Test invalid model name conversion error, with the hint to get a class name from --recommend-options."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "invalid_model_name.json",
         output_path=output_file,
         input_file_type="jsonschema",
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="title='1Xyz' is invalid class name. You have to set `--class-name` option",
+        expected_stderr=(
+            "title='1Xyz' is invalid class name. You have to set `--class-name` option\n"
+            "Hint: add --recommend-options to this command to get a class name and naming options for this schema "
+            "(experimental).\n"
+        ),
     )
 
 
@@ -7730,7 +7734,7 @@ def test_main_jsonschema_model_name_map_warns_on_unmatched_keys(output_file: Pat
 def test_main_jsonschema_model_name_map_rejects_collision(
     output_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Test mapped class name collisions fail instead of adding a suffix."""
+    """Test mapped class name collisions fail instead of adding a suffix, with the hint to list the class names."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "model_name_map.json",
         output_path=output_file,
@@ -7738,7 +7742,10 @@ def test_main_jsonschema_model_name_map_rejects_collision(
         expected_exit=Exit.ERROR,
         file_should_not_exist=output_file,
         capsys=capsys,
-        expected_stderr_contains="but that model name is already used",
+        expected_stderr=(
+            "--model-name-map maps 'model_name_map.json#/definitions/Bar' to 'Renamed', but that model name is "
+            "already used\nHint: --emit-model-metadata lists the generated class names and their schema locations.\n"
+        ),
         extra_args=[
             "--model-name-map",
             '{"#/definitions/Foo": "Renamed", "#/definitions/Bar": "Renamed"}',

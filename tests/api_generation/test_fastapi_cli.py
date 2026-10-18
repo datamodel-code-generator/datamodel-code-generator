@@ -2729,7 +2729,11 @@ def test_fastapi_cli_model_error_context(
                 "--custom-formatters-kwargs",
                 '{"class_name": "1Xyz"}',
             ]
-            stderr = "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n"
+            stderr = (
+                "Error: title='1Xyz' is invalid class name. You have to set `--class-name` option\n"
+                "Hint: add --recommend-options to this command to get a class name and naming options for this "
+                "schema (experimental).\n"
+            )
         case "encoding":
             (tmp_path / "pets.yaml").write_bytes((CLI / "non-text.dat").read_bytes())
             stderr = "Error: Unable to decode input using encoding 'utf-8': "

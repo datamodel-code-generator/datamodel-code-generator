@@ -374,6 +374,13 @@ def _nested(table: tuple[str, ...], values: dict[str, Any]) -> dict[str, Any]:
 
 def render_json(recommendation: Recommendation, *, content: str, arguments: list[str]) -> str:
     """Render a recommendation as the recommend-options JSON payload."""
+    return json.dumps(
+        recommendation_payload(recommendation, content=content, arguments=arguments), indent=2, ensure_ascii=False
+    )
+
+
+def recommendation_payload(recommendation: Recommendation, *, content: str, arguments: list[str]) -> dict[str, Any]:
+    """Return the recommend-options JSON payload of a recommendation as JSON values."""
     from datamodel_code_generator._structured_output import (  # noqa: PLC0415
         RecommendBaselinePayload,
         RecommendContextPayload,
@@ -422,4 +429,4 @@ def render_json(recommendation: Recommendation, *, content: str, arguments: list
         config_complete=recommendation.config_complete,
         content=content,
     )
-    return json.dumps(payload.model_dump(mode="json"), indent=2, ensure_ascii=False)
+    return payload.model_dump(mode="json")

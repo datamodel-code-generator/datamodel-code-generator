@@ -49,7 +49,8 @@ Generate models in your browser without installing anything.
 
 ## 🚀 Start Here
 
-Install the CLI and generate your first model from [Getting Started](getting-started.md).
+Install the CLI and generate your first model from [Getting Started](getting-started.md). Then add
+`--recommend-options` to that command to get [options suited to your schema](recommend-options.md) (experimental).
 
 !!! note "Default output model"
     When `--output-model-type` is omitted, datamodel-code-generator generates Pydantic v2 BaseModel output

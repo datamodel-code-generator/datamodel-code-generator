@@ -51,7 +51,8 @@ Generate models in your browser without installing anything.
 
 ## 🚀 Start Here
 
-Install the CLI and generate your first model from [Getting Started](getting-started.md).
+Install the CLI and generate your first model from [Getting Started](getting-started.md). Then add
+`--recommend-options` to that command to get [options suited to your schema](recommend-options.md) (experimental).
 
 !!! note "Default output model"
     When `--output-model-type` is omitted, datamodel-code-generator generates Pydantic v2 BaseModel output
@@ -520,7 +521,8 @@ These public examples are grouped by how each project uses datamodel-code-genera
 
 Source: https://datamodel-code-generator.koxudaxi.dev/getting-started/
 
-Install `datamodel-code-generator` and generate your first Pydantic v2 model.
+Install `datamodel-code-generator`, generate your first Pydantic v2 model, and pick options for your schema with
+`--recommend-options` (experimental).
 
 ## Installation
 
@@ -600,6 +602,10 @@ See [CLI Reference](cli-reference/index.md) for all options. See [Presets](prese
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
 documentation, use [`practical-py312-20261017`](presets.md#practical-py312-20261017).
+
+**Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
+analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
+command and `pyproject.toml` block. See [Option recommendations](recommend-options.md).
 
 <details>
 <summary>Input (<code>schema.json</code>)</summary>
@@ -745,6 +751,8 @@ datamodel-codegen \
 ```
 
 Use `standard-py312-20261017` for the project-recommended modern Python 3.12 baseline. Use `practical-py312-20261017` when you also want schema-authored names, model reuse, and schema descriptions embedded in the generated code.
+
+To choose options on top of a preset for your schema, add `--recommend-options` to the command (experimental); see [Option recommendations](recommend-options.md).
 
 Presets dated 20260909 or later select builtin to avoid running external formatters. For project-wide Ruff consistency, use the preset with `--formatters ruff-check ruff-format`. Keep `--formatters black isort` to preserve existing Black/isort output. Earlier dated presets are unchanged. Black and isort remain required installation dependencies.
 
@@ -4374,6 +4382,18 @@ and class-name `changes` that measured it), the compared candidates under `trial
 configuration, and the `dropped` and `remeasured` counts), `notes`, the full command as `arguments`, the `config` table, and the text report as `content`.
 `rules_revision` identifies the rule data and `trial.metrics_version` the class-name metrics that produced it.
 
+## Ask an LLM with the recommendation
+
+Add `--recommend-options` to a [`--generate-prompt`](llm-integration.md) command to include the report in the prompt,
+under "Schema analysis and recommended options", and ask the LLM to start from the recommended command and give a
+reason for every option it changes. With `--output-format json`, the prompt payload has the recommendation payload as
+`recommendation`.
+
+```bash
+datamodel-codegen --input openapi.yaml --input-file-type openapi --recommend-options \
+  --generate-prompt "Which options keep the class names stable across schema versions?"
+```
+
 ## What it measures
 
 - It reads the input once and measures the schema signals without generating models.
@@ -4395,7 +4415,7 @@ configuration, and the `dropped` and `remeasured` counts), `notes`, the full com
 - When `--target-python-version` is not set, it assumes the default target and says so in the notes.
 
 It cannot be combined with `--check`, `--watch`, `--all-jobs`, more than one `--job`, `--generate-pyproject-config`,
-`--generate-cli-command`, `--generate-prompt`, `--install-skill`, `--list-deprecations`, or `--list-experimental`.
+`--generate-cli-command`, `--install-skill`, `--list-deprecations`, or `--list-experimental`.
 
 ## How candidates are compared
 
@@ -13429,7 +13449,9 @@ a final `datamodel-codegen` command.
 
 1. Inspect the user's goal and the input schema when it is available.
 2. Start from any options the user or existing project already selected.
-3. Run `datamodel-codegen [known options] --generate-prompt "<goal>"`.
+3. Run `datamodel-codegen [known options] --generate-prompt "<goal>"`. When the input
+   schema is available, add `--recommend-options` (experimental) so the prompt includes
+   the schema analysis and the recommended command to start from.
 4. Preserve current options unless they conflict with the goal or another option.
 5. Choose the minimal additional options needed for the requested output.
 6. Return the final CLI command, reasons for each non-obvious option, rejected
@@ -13656,9 +13678,18 @@ Agents should run `datamodel-codegen` instead of hand-writing generated models w
 
 The CLI handles refs, enums, nested models, unions, `allOf`, `oneOf`, `anyOf`, and model reuse. It also produces output that can be imported and checked after generation.
 
-Agents should also use the CLI for option discovery. `datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents.
+Agents should also use the CLI for option discovery. Before choosing options, run the recommender (experimental) and apply its result:
 
 ```bash
+datamodel-codegen --input SCHEMA [--input-file-type TYPE] [--output-model-type TYPE] --recommend-options --output-format json
+```
+
+Use `arguments` from the payload (or `config` for a project configured in `pyproject.toml`) as the starting command, and do not add options it lists under `not_recommended` without a stated reason. When the goal needs judgment beyond the schema's shape, add `--recommend-options` to a `--generate-prompt` command so the prompt includes the recommendation, and decide from both. See [Option recommendations](recommend-options.md).
+
+`datamodel-codegen --help` links to this skill documentation, and `--generate-prompt` can produce either Markdown guidance or structured JSON for tool-aware agents.
+
+```bash
+datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema." --recommend-options
 datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema."
 datamodel-codegen [known options] --generate-prompt "Find the minimal options for this schema." --output-format json
 datamodel-codegen --output-format-json-schema structured-output
@@ -57209,6 +57240,8 @@ Use `--output-format json` when an LLM agent or tool should consume structured
 option metadata instead of Markdown.
 Use `--output-format-json-schema generate-prompt` when the agent needs the JSON
 Schema for that structured payload, such as when defining a tool contract.
+Add `--recommend-options` (experimental) with an input schema to include the
+schema analysis and the options recommended for it in the prompt.
 
 **See also:** [LLM Integration](../llm-integration.md) for detailed usage examples
 
@@ -57224,12 +57257,14 @@ Schema for that structured payload, such as when defining a tool contract.
     datamodel-codegen --generate-prompt "How do I generate strict types?" # (2)!
     datamodel-codegen --generate-prompt --output-format json # (3)!
     datamodel-codegen --output-format-json-schema generate-prompt # (4)!
+    datamodel-codegen --input schema.json --generate-prompt --recommend-options # (5)!
     ```
 
     1. :material-arrow-left: `--generate-prompt` - generate prompt without a question
     2. :material-arrow-left: Include a specific question in the prompt
     3. :material-arrow-left: Emit structured JSON for LLM/tool ingestion
     4. :material-arrow-left: Emit JSON Schema for structured prompt JSON
+    5. :material-arrow-left: Include the schema analysis and recommended options (experimental)
 
 ??? example "Quick Examples"
 
@@ -58828,6 +58863,8 @@ Use `--output-format json` when an LLM agent or tool should consume structured
 option metadata instead of Markdown.
 Use `--output-format-json-schema generate-prompt` when the agent needs the JSON
 Schema for that structured payload, such as when defining a tool contract.
+Add `--recommend-options` (experimental) with an input schema to include the
+schema analysis and the options recommended for it in the prompt.
 
 **See also:** [LLM Integration](../../llm-integration.md) for detailed usage examples
 
@@ -58843,12 +58880,14 @@ Schema for that structured payload, such as when defining a tool contract.
     datamodel-codegen --generate-prompt "How do I generate strict types?" # (2)!
     datamodel-codegen --generate-prompt --output-format json # (3)!
     datamodel-codegen --output-format-json-schema generate-prompt # (4)!
+    datamodel-codegen --input schema.json --generate-prompt --recommend-options # (5)!
     ```
 
     1. :material-arrow-left: `--generate-prompt` - generate prompt without a question
     2. :material-arrow-left: Include a specific question in the prompt
     3. :material-arrow-left: Emit structured JSON for LLM/tool ingestion
     4. :material-arrow-left: Emit JSON Schema for structured prompt JSON
+    5. :material-arrow-left: Include the schema analysis and recommended options (experimental)
 
 ??? example "Quick Examples"
 
@@ -59198,7 +59237,7 @@ This page lists deprecations and scheduled breaking changes.
 - **Warning category:** `FutureWarning`
 - **Replacement:** Set formatters explicitly, for example black and isort or builtin.
 
-Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.
+Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. Add --recommend-options to this command to pick a preset and options for this schema (experimental).
 
 ### `behavior.pydantic-v2-use-annotated-default`
 

@@ -10,7 +10,7 @@ from itertools import starmap
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Final, cast
 
-from datamodel_code_generator import Error, InvalidClassNameError
+from datamodel_code_generator import _INVALID_CLASS_NAME_CLI_HINT, Error, InvalidClassNameError
 from datamodel_code_generator._target_documents import shown
 
 if TYPE_CHECKING:
@@ -576,7 +576,7 @@ def _failure(error: Exception, *, encoding: str = "utf-8") -> None:
     """Preserve model CLI error hints and unexpected-error tracebacks."""
     message = str(error)
     if isinstance(error, InvalidClassNameError):
-        message = f"{error} You have to set `--class-name` option"
+        message = f"{error} {_INVALID_CLASS_NAME_CLI_HINT}"
     elif isinstance(error, UnicodeDecodeError):
         message = f"Unable to decode input using encoding {encoding!r}: {error}"
     elif not isinstance(error, (Error, OSError)):

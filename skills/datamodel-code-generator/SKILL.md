@@ -58,13 +58,23 @@ If offline and no installed command is available, say that the CLI cannot be run
 
 ## Option discovery for agents
 
-When the right options are not obvious, use the CLI's own LLM workflow before choosing the final command:
+Before choosing options, run the recommender (experimental) and apply its result:
 
 ```bash
-datamodel-codegen [known options] --generate-prompt "Find the minimal options for this model-generation task."
+datamodel-codegen --input SCHEMA [--input-file-type TYPE] [--output-model-type TYPE] \
+  --recommend-options --output-format json
 ```
 
-Include the options already known from the project or user request. The prompt output explains current options, available options, option relationships, and verification steps.
+Use `arguments` from the payload (or `config` for a project configured in `pyproject.toml`) as the starting command. Do not add options it lists under `not_recommended` without a stated reason.
+
+When the user's goal needs judgment beyond the schema's shape, use the CLI's own LLM workflow and add `--recommend-options` to it, so the prompt includes the recommendation; decide from both:
+
+```bash
+datamodel-codegen [known options] --generate-prompt "Find the minimal options for this model-generation task." \
+  --recommend-options
+```
+
+Include the options already known from the project or user request. The prompt output explains current options, available options, option relationships, and verification steps. Without an input schema, run `--generate-prompt` alone.
 
 For agent tooling that consumes structured data, prefer JSON:
 
@@ -124,8 +134,11 @@ uvx datamodel-codegen \
   --input-file-type openapi \
   --output models.py \
   --output-model-type pydantic_v2.BaseModel \
-  --target-python-version 3.12
+  --target-python-version 3.12 \
+  --preset PRESET
 ```
+
+Replace `PRESET` with the preset the recommender prints, and add the options it recommends.
 
 For remote URLs or remote refs, use the HTTP extra:
 

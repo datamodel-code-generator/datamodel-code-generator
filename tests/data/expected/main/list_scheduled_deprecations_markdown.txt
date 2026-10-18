@@ -37,7 +37,7 @@ This page lists deprecations and scheduled breaking changes.
 - **Warning category:** `FutureWarning`
 - **Replacement:** Set formatters explicitly, for example black and isort or builtin.
 
-Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help.
+Default formatters will change to builtin. Set --formatters or --preset explicitly; see --help. Add --recommend-options to this command to pick a preset and options for this schema (experimental).
 
 ### `behavior.pydantic-v2-use-annotated-default`
 

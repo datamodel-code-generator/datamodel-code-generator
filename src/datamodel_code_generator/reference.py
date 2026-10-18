@@ -1072,7 +1072,8 @@ class ModelResolver:  # noqa: PLR0904
         if conflict_reason:
             msg = (
                 f"--model-name-map maps {redact_reference(path)!r} to {mapped_name!r}, "
-                f"but that model name is {conflict_reason}"
+                f"but that model name is {conflict_reason}\n"
+                "Hint: --emit-model-metadata lists the generated class names and their schema locations."
             )
             raise Error(msg)
 

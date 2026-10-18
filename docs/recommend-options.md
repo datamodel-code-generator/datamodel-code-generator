@@ -216,6 +216,18 @@ and class-name `changes` that measured it), the compared candidates under `trial
 configuration, and the `dropped` and `remeasured` counts), `notes`, the full command as `arguments`, the `config` table, and the text report as `content`.
 `rules_revision` identifies the rule data and `trial.metrics_version` the class-name metrics that produced it.
 
+## Ask an LLM with the recommendation
+
+Add `--recommend-options` to a [`--generate-prompt`](llm-integration.md) command to include the report in the prompt,
+under "Schema analysis and recommended options", and ask the LLM to start from the recommended command and give a
+reason for every option it changes. With `--output-format json`, the prompt payload has the recommendation payload as
+`recommendation`.
+
+```bash
+datamodel-codegen --input openapi.yaml --input-file-type openapi --recommend-options \
+  --generate-prompt "Which options keep the class names stable across schema versions?"
+```
+
 ## What it measures
 
 - It reads the input once and measures the schema signals without generating models.
@@ -237,7 +249,7 @@ configuration, and the `dropped` and `remeasured` counts), `notes`, the full com
 - When `--target-python-version` is not set, it assumes the default target and says so in the notes.
 
 It cannot be combined with `--check`, `--watch`, `--all-jobs`, more than one `--job`, `--generate-pyproject-config`,
-`--generate-cli-command`, `--generate-prompt`, `--install-skill`, `--list-deprecations`, or `--list-experimental`.
+`--generate-cli-command`, `--install-skill`, `--list-deprecations`, or `--list-experimental`.
 
 ## How candidates are compared
 

@@ -185,6 +185,12 @@
       "title": "Question",
       "type": "string"
     },
+    "recommendation": {
+      "additionalProperties": true,
+      "description": "The --recommend-options --output-format json payload for the input schema (experimental; its schema is --output-format-json-schema recommend-options); absent unless the command has --recommend-options.",
+      "title": "Recommendation",
+      "type": "object"
+    },
     "version": {
       "const": 1,
       "title": "Version",

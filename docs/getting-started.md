@@ -1,6 +1,7 @@
 # Getting Started
 
-Install `datamodel-code-generator` and generate your first Pydantic v2 model.
+Install `datamodel-code-generator`, generate your first Pydantic v2 model, and pick options for your schema with
+`--recommend-options` (experimental).
 
 ## Installation
 
@@ -80,6 +81,10 @@ See [CLI Reference](cli-reference/index.md) for all options. See [Presets](prese
 
 For more schema-aware output that preserves schema-authored names, reuses models, and embeds generated
 documentation, use [`practical-py312-20261017`](presets.md#practical-py312-20261017).
+
+**Not sure which options fit your schema?** Add `--recommend-options` to the command above (experimental). It
+analyses the schema and prints the options to add on top of the latest preset with the reason for each, and a ready
+command and `pyproject.toml` block. See [Option recommendations](recommend-options.md).
 
 <details>
 <summary>Input (<code>schema.json</code>)</summary>

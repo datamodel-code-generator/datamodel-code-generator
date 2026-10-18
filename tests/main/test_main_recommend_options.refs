@@ -63,6 +63,10 @@ union-edges	main/recommend_options/union_edges.txt
 [test_recommend_options_from_url]
 no-lock	main/recommend_options/url.txt
 update-lock	main/recommend_options/url_update_lock.txt
+[test_recommend_options_in_prompt]
+job	main/main_recommend_options/recommend_options_in_prompt[job].txt
+json	main/main_recommend_options/recommend_options_in_prompt[json].txt
+text	main/main_recommend_options/recommend_options_in_prompt[text].txt
 [test_recommend_options_json_schema]
 	main/recommend_options/json_schema.txt
 [test_recommend_options_quotes_arguments]

@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "recommend-options",
+  "mode": "full",
+  "rules_revision": "2026-10-17",
+  "calibrated_presets": "20261017",
+  "input": {
+    "source": "file",
+    "input_file_type": "openapi",
+    "document": "OpenAPI 3.1.0",
+    "analysed": true
+  },
+  "context": {
+    "output_model_type": "pydantic_v2.BaseModel",
+    "target_python_version": "3.10"
+  },
+  "signals": {
+    "all_enums": 0,
+    "component_enums": 0,
+    "component_title_duplicate_groups": 0,
+    "component_titles_equal_other_key": 0,
+    "component_titles_equal_own_key": 0,
+    "component_titles_in_duplicate_groups": 0,
+    "components": 1,
+    "discriminated_unions": 0,
+    "dotted_key_namespaces": 0,
+    "dotted_keys": 0,
+    "dotted_namespace_reference_cycles": 0,
+    "duplicate_inline_enum_shapes": 0,
+    "duplicate_inline_enums": 0,
+    "duplicate_inline_objects": 0,
+    "duplicate_inline_shapes": 0,
+    "estimated_models": 1,
+    "inline_enums": 0,
+    "inline_names_equal_component": 0,
+    "inline_object_union_variants": 0,
+    "inline_objects": 0,
+    "inline_scalar_union_variants": 0,
+    "inline_tagged_union_branches": 0,
+    "inline_title_max_repeat": 0,
+    "inline_titled_objects": 0,
+    "inline_titled_union_variants": 0,
+    "inline_union_variants": 0,
+    "max_inline_depth": 0,
+    "operations": 0,
+    "parent_copy_union_branches": 0,
+    "root_is_object": 0,
+    "root_title_words": 0,
+    "shared_inline_enum_names": 0,
+    "shared_inline_names": 0,
+    "shared_inline_object_names": 0,
+    "single_key_required_open": 0,
+    "single_key_union_branches": 0,
+    "single_value_enum_union_branches": 0,
+    "single_value_enums": 0,
+    "tagged_behind_ref": 0,
+    "titled_components": 0,
+    "unions": 0
+  },
+  "facts": {
+    "schema": "OpenAPI 3.1.0",
+    "scopes": "schemas",
+    "shared_inline_name_examples": "",
+    "inline_title_examples": "",
+    "duplicate_title_examples": "",
+    "key_style": "PascalCase (1 of 1)",
+    "root_title": ""
+  },
+  "baseline": {
+    "preset": "standard-py310-20261017",
+    "family": "standard",
+    "configured": false,
+    "covers": []
+  },
+  "recommendations": [],
+  "left_out": [],
+  "consider": [],
+  "not_recommended": [],
+  "disagreements": [],
+  "trial": {
+    "metrics_version": 1,
+    "candidates": [
+      {
+        "label": "current",
+        "preset": null,
+        "set": {},
+        "arguments": [],
+        "selectable": false,
+        "error": null,
+        "metrics": {
+          "types": 1,
+          "component": 1,
+          "inline": 0,
+          "operation": 0,
+          "readable": 1,
+          "numbered": 0,
+          "statuscode": 0,
+          "generic": 0,
+          "long": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "other_problems": 0,
+          "displaced": 0,
+          "inline_like_component": 0,
+          "union_variants": 0,
+          "union_variants_parent_numbered": 0,
+          "union_variants_numbered": 0,
+          "median_length": 8,
+          "max_length": 8,
+          "problems": 0,
+          "problems_percent": 0.0
+        },
+        "stability": null
+      },
+      {
+        "label": "preset",
+        "preset": "standard-py310-20261017",
+        "set": {},
+        "arguments": [],
+        "selectable": true,
+        "error": null,
+        "metrics": {
+          "types": 1,
+          "component": 1,
+          "inline": 0,
+          "operation": 0,
+          "readable": 1,
+          "numbered": 0,
+          "statuscode": 0,
+          "generic": 0,
+          "long": 0,
+          "doubled": 0,
+          "doubled_from_spec": 0,
+          "other_problems": 0,
+          "displaced": 0,
+          "inline_like_component": 0,
+          "union_variants": 0,
+          "union_variants_parent_numbered": 0,
+          "union_variants_numbered": 0,
+          "median_length": 8,
+          "max_length": 8,
+          "problems": 0,
+          "problems_percent": 0.0
+        },
+        "stability": null
+      }
+    ],
+    "ranking": [
+      "current",
+      "preset"
+    ],
+    "selected": "preset",
+    "current": "current",
+    "migration": {
+      "matched": 1,
+      "renamed": 0,
+      "renumbered": 0,
+      "removed": 0,
+      "added": 0,
+      "examples": []
+    },
+    "dropped": 0,
+    "remeasured": 0
+  },
+  "notes": [],
+  "arguments": [
+    "--input",
+    "openapi.yaml",
+    "--input-file-type",
+    "openapi",
+    "--output-model-type",
+    "pydantic_v2.BaseModel",
+    "--preset",
+    "standard-py310-20261017",
+    "--target-python-version",
+    "3.10"
+  ],
+  "config": {
+    "tool": {
+      "datamodel-codegen": {
+        "input": "openapi.yaml",
+        "input-file-type": "openapi",
+        "output-model-type": "pydantic_v2.BaseModel",
+        "preset": "standard-py310-20261017",
+        "target-python-version": "3.10"
+      }
+    }
+  },
+  "config_complete": true,
+  "content": "Option recommendations (experimental; full mode; rules 2026-10-17)\n\nSchema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)\n  components                       1, 0 operations\n  inline objects / enums           0 / 0, nesting depth 0\n  shared property names            0 (none)\n  inline names = component names   0\n  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets\n  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key\n  inline titles                    0 objects, most repeated 0 (none)\n  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants\n  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent\n  component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces\n\nStart from  --preset standard-py310-20261017\n\nAdd  nothing on top of the preset\n\nTrial  2 candidates generated in memory without formatting; nothing written\n  candidate  classes  problems  numbered  long  doubled  displaced  median\n  current          1  0 (0.0%)         0     0        0          0       8\n  preset           1  0 (0.0%)         0     0        0          0       8   selected\n  current: the configuration as set, without the preset; never selected\n\nChanges from the current configuration (current -> preset)\n  0 of 1 class matched by schema location renamed (0 only renumbered), 0 removed, 0 added\n\nCommand\n  datamodel-codegen --input openapi.yaml --input-file-type openapi --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261017 --target-python-version 3.10\n\npyproject.toml\n  [tool.datamodel-codegen]\n  input = \"openapi.yaml\"\n  input-file-type = \"openapi\"\n  output-model-type = \"pydantic_v2.BaseModel\"\n  preset = \"standard-py310-20261017\"\n  target-python-version = \"3.10\"\n"
+}
