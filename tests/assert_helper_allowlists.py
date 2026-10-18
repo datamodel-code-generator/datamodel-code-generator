@@ -79,6 +79,7 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
     ),
     "stored-file-audits": (
         "expected-read:tests/test_format.py::test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files",
+        "expected-read:tests/test_generated_import_closure.py::test_generated_modules_bind_the_names_they_use",
     ),
     "unobservable-cleanup": ("normal-path-mock:tests/api_generation/support/fastapi_upstream.py::_observe",),
 }
@@ -1172,8 +1173,8 @@ ALLOWLIST_GROUP_REASONS = {
         "the runtime directly."
     ),
     "stored-file-audits": (
-        "Audits of every stored file below tests/data/expected (formatter parity) list and read each file where it is "
-        "stored, whichever tests share it."
+        "Audits of every stored file below tests/data/expected (formatter parity, import closure) list and read each "
+        "file where it is stored, whichever tests share it."
     ),
     "unobservable-cleanup": (
         "Files the multipart parser allocates for a request it then refuses never reach a handler, so a spy on their "
