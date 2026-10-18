@@ -10,7 +10,7 @@
 	skills/datamodel-code-generator/check_mode.py
 [test_skill_single_file_recipes_match_expected_output]
 asyncapi.yaml-asyncapi-single_file/asyncapi.py-extra_args1	skills/datamodel-code-generator/single_file/asyncapi.py
-jsonschema.json-jsonschema-single_file/jsonschema.py-extra_args2	skills/datamodel-code-generator/single_file/jsonschema.py
+jsonschema.json-jsonschema-single_file/jsonschema.py-extra_args2	skills/datamodel-code-generator/single_file/jsonschema.py	= skills/datamodel-code-generator/check_mode.py
 mcp_tools.json-mcp-tools-single_file/mcp_tools.py-extra_args9	skills/datamodel-code-generator/single_file/mcp_tools.py
 openapi.yaml-openapi-single_file/openapi.py-extra_args0	skills/datamodel-code-generator/single_file/openapi.py
 sample.avsc-avro-single_file/avro.py-extra_args6	skills/datamodel-code-generator/single_file/avro.py

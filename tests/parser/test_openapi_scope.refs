@@ -76,7 +76,7 @@ anchors	main/generation_platform/api_scope/anchors.py
 local-roots	main/generation_platform/api_scope/local-roots.py
 [test_api_media_applicability]
 30	main/generation_platform/api_scope/media-30.py
-31	main/generation_platform/api_scope/media-31.py
+31	main/generation_platform/api_scope/media-31.py	= main/generation_platform/api_scope/media-30.py
 32	main/generation_platform/api_scope/media-32.py
 [test_api_memory_source]
 False	main/generation_platform/api_scope/pydantic_v2_BaseModel.py
@@ -89,7 +89,7 @@ DataModelType.PydanticV2Dataclass	main/generation_platform/api_scope/typed-reuse
 DataModelType.TypingTypedDict	main/generation_platform/api_scope/typed-reuse-TypingTypedDict.py
 [test_api_nonempty_dot_modules]
 AllExportsScope.Children	main/generation_platform/api_scope/dot-children//*.py
-AllExportsScope.Recursive	main/generation_platform/api_scope/dot-recursive//*.py
+AllExportsScope.Recursive	main/generation_platform/api_scope/dot-recursive//*.py	= main/generation_platform/api_scope/dot-children//*.py
 None	main/generation_platform/api_scope/dot-none//*.py
 [test_api_openapi_32_declarations]
 items-object	main/generation_platform/api_scope/items-object.py
@@ -101,9 +101,9 @@ methods-32	main/generation_platform/api_scope/methods-32.py
 	main/generation_platform/api_scope/declarations.py
 	main/generation_platform/api_scope/leaf-mapping.txt
 [test_api_rejects_lost_declaration_frame]
-	main/generation_platform/api_scope/empty-frames.txt
+	main/generation_platform/api_scope/empty-frames.txt	= main/generation_platform/no-retained-graph.txt
 [test_api_rejects_unresolved_anchor_from_resolver]
-	main/generation_platform/api_scope/empty-frames.txt
+	main/generation_platform/api_scope/empty-frames.txt	= main/generation_platform/no-retained-graph.txt
 [test_api_repeated_source_declarations]
 	main/generation_platform/api_scope/repeated-source//*.py
 [test_api_response_headers]
@@ -115,5 +115,5 @@ explicit	main/generation_platform/api_scope/version-explicit//*.py
 first	main/generation_platform/api_scope/version-first//*.py
 reversed	main/generation_platform/api_scope/version-reversed//*.py
 [test_api_root_feature_lifetime]
-3.2	main/generation_platform/api_scope/absent-output.txt
-auto	main/generation_platform/api_scope/absent-output.txt
+3.2	main/generation_platform/api_scope/absent-output.txt	= main/jsonschema/msgspec_enum_diagnostics/absent.txt
+auto	main/generation_platform/api_scope/absent-output.txt	= main/jsonschema/msgspec_enum_diagnostics/absent.txt

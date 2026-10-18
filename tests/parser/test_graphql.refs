@@ -5,7 +5,7 @@
 [test_graphql_generate_config_path_collection_options_parse]
 	parser/graphql/collection_options_generate.py
 [test_graphql_no_typename]
-	parser/graphql/no_typename.py
+	parser/graphql/no_typename.py	= main/graphql/no_typename.py
 [test_graphql_parser_config_path_collection_options_parse]
 	parser/graphql/collection_options.py
 [test_graphql_parser_options_path_collection_options_parse]

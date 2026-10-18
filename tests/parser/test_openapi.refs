@@ -43,7 +43,7 @@ True-True-custom_module.Base	parser/openapi/openapi_parser_parse_additional_prop
 [test_openapi_parser_parse_nested_anyof]
 	parser/openapi/openapi_parser_parse_nested_anyof/output.py
 [test_openapi_parser_parse_nested_oneof]
-	parser/openapi/openapi_parser_parse_nested_oneof/output.py
+	parser/openapi/openapi_parser_parse_nested_oneof/output.py	= parser/openapi/openapi_parser_parse_nested_anyof/output.py
 [test_openapi_parser_parse_oneof]
 	parser/openapi/openapi_parser_parse_oneof/output.py
 [test_openapi_parser_parse_remote_ref]

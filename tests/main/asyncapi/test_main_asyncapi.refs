@@ -27,7 +27,7 @@
 [test_main_asyncapi_output_model_types]
 dataclass	main/asyncapi/output_model_types/order_events_dataclasses_dataclass.py
 msgspec	main/asyncapi/output_model_types/order_events_msgspec_Struct.py
-pydantic-v2	main/asyncapi/output_model_types/order_events_pydantic_v2_BaseModel.py
+pydantic-v2	main/asyncapi/output_model_types/order_events_pydantic_v2_BaseModel.py	= main/asyncapi/order_events.py
 typed-dict	main/asyncapi/output_model_types/order_events_typing_TypedDict.py
 [test_main_asyncapi_protobuf_schema_format]
 	main/asyncapi/protobuf_schema_format.py

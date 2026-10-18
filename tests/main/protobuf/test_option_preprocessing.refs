@@ -2,18 +2,18 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_protobuf_option_compiler_oracle]
 comments	main/protobuf/option_preprocessing/comments_descriptor.txt
-comments	main/protobuf/option_preprocessing/protoc_exit.txt
+comments	main/protobuf/option_preprocessing/protoc_exit.txt	= main/protobuf/auto_detection/protoc_exit.txt
 custom	main/protobuf/option_preprocessing/custom_descriptor.txt
-custom	main/protobuf/option_preprocessing/protoc_exit.txt
+custom	main/protobuf/option_preprocessing/protoc_exit.txt	= main/protobuf/auto_detection/protoc_exit.txt
 double	main/protobuf/option_preprocessing/double_descriptor.txt
-double	main/protobuf/option_preprocessing/protoc_exit.txt
-plain	main/protobuf/option_preprocessing/plain_descriptor.txt
-plain	main/protobuf/option_preprocessing/protoc_exit.txt
-rpc	main/protobuf/option_preprocessing/protoc_exit.txt
+double	main/protobuf/option_preprocessing/protoc_exit.txt	= main/protobuf/auto_detection/protoc_exit.txt
+plain	main/protobuf/option_preprocessing/plain_descriptor.txt	= main/protobuf/option_preprocessing/rpc_descriptor.txt
+plain	main/protobuf/option_preprocessing/protoc_exit.txt	= main/protobuf/auto_detection/protoc_exit.txt
+rpc	main/protobuf/option_preprocessing/protoc_exit.txt	= main/protobuf/auto_detection/protoc_exit.txt
 rpc	main/protobuf/option_preprocessing/rpc_descriptor.txt
 rpc	main/protobuf/option_preprocessing/rpc_services.txt
-single	main/protobuf/option_preprocessing/protoc_exit.txt
-single	main/protobuf/option_preprocessing/single_descriptor.txt
+single	main/protobuf/option_preprocessing/protoc_exit.txt	= main/protobuf/auto_detection/protoc_exit.txt
+single	main/protobuf/option_preprocessing/single_descriptor.txt	= main/protobuf/option_preprocessing/double_descriptor.txt
 [test_protobuf_option_generation]
 cli-InputFileType.Auto-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_DataclassesDataclass.py
 cli-InputFileType.Auto-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
@@ -21,297 +21,297 @@ cli-InputFileType.Auto-DataModelType.DataclassesDataclass-custom	main/protobuf/o
 cli-InputFileType.Auto-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 cli-InputFileType.Auto-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_DataclassesDataclass.py
 cli-InputFileType.Auto-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-cli-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py
-cli-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+cli-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py	= main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
+cli-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Auto-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
 cli-InputFileType.Auto-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-cli-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py
-cli-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+cli-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py	= main/protobuf/option_preprocessing/double_DataclassesDataclass.py
+cli-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Auto-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_MsgspecStruct.py
-cli-InputFileType.Auto-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+cli-InputFileType.Auto-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Auto-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_MsgspecStruct.py
 cli-InputFileType.Auto-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 cli-InputFileType.Auto-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_MsgspecStruct.py
-cli-InputFileType.Auto-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-cli-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py
-cli-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+cli-InputFileType.Auto-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+cli-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py	= main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
+cli-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Auto-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
-cli-InputFileType.Auto-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-cli-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py
-cli-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+cli-InputFileType.Auto-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+cli-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py	= main/protobuf/option_preprocessing/double_MsgspecStruct.py
+cli-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_PydanticV2BaseModel.py
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_PydanticV2BaseModel.py
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_runtime.txt
-cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py
-cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
+cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
 cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py
-cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt
+cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
+cli-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_PydanticV2Dataclass.py
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_PydanticV2Dataclass.py
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py
-cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
+cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
 cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py
-cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
+cli-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Auto-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_TypingTypedDict.py
-cli-InputFileType.Auto-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+cli-InputFileType.Auto-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Auto-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_TypingTypedDict.py
 cli-InputFileType.Auto-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 cli-InputFileType.Auto-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_TypingTypedDict.py
-cli-InputFileType.Auto-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-cli-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py
-cli-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+cli-InputFileType.Auto-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+cli-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py	= main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
+cli-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Auto-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
-cli-InputFileType.Auto-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-cli-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py
-cli-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+cli-InputFileType.Auto-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+cli-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py	= main/protobuf/option_preprocessing/double_TypingTypedDict.py
+cli-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_DataclassesDataclass.py
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_DataclassesDataclass.py
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_DataclassesDataclass.py
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py
-cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py	= main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
+cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
 cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py
-cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py	= main/protobuf/option_preprocessing/double_DataclassesDataclass.py
+cli-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_MsgspecStruct.py
-cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_MsgspecStruct.py
 cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_MsgspecStruct.py
-cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py
-cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py	= main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
+cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
-cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py
-cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py	= main/protobuf/option_preprocessing/double_MsgspecStruct.py
+cli-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_PydanticV2BaseModel.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_PydanticV2BaseModel.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py
-cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
+cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py
-cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
+cli-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_PydanticV2Dataclass.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_PydanticV2Dataclass.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py
-cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
+cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
 cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py
-cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
+cli-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_TypingTypedDict.py
-cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_TypingTypedDict.py
 cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_TypingTypedDict.py
-cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py
-cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py	= main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
+cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
-cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py
-cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py	= main/protobuf/option_preprocessing/double_TypingTypedDict.py
+cli-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_DataclassesDataclass.py
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_DataclassesDataclass.py
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_DataclassesDataclass.py
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-path-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py
-path-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+path-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py	= main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
+path-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
 path-InputFileType.Auto-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-path-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py
-path-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+path-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py	= main/protobuf/option_preprocessing/double_DataclassesDataclass.py
+path-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Auto-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_MsgspecStruct.py
-path-InputFileType.Auto-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+path-InputFileType.Auto-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Auto-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_MsgspecStruct.py
 path-InputFileType.Auto-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 path-InputFileType.Auto-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_MsgspecStruct.py
-path-InputFileType.Auto-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-path-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py
-path-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+path-InputFileType.Auto-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+path-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py	= main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
+path-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Auto-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
-path-InputFileType.Auto-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-path-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py
-path-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+path-InputFileType.Auto-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+path-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py	= main/protobuf/option_preprocessing/double_MsgspecStruct.py
+path-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_PydanticV2BaseModel.py
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_PydanticV2BaseModel.py
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_runtime.txt
-path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py
-path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
+path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
 path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py
-path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt
+path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
+path-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_PydanticV2Dataclass.py
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_PydanticV2Dataclass.py
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py
-path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
+path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
 path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py
-path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
+path-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Auto-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_TypingTypedDict.py
-path-InputFileType.Auto-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+path-InputFileType.Auto-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Auto-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_TypingTypedDict.py
 path-InputFileType.Auto-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 path-InputFileType.Auto-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_TypingTypedDict.py
-path-InputFileType.Auto-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-path-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py
-path-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+path-InputFileType.Auto-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+path-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py	= main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
+path-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Auto-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
-path-InputFileType.Auto-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-path-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py
-path-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+path-InputFileType.Auto-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+path-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py	= main/protobuf/option_preprocessing/double_TypingTypedDict.py
+path-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_DataclassesDataclass.py
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_DataclassesDataclass.py
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_DataclassesDataclass.py
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py
-path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass.py	= main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
+path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_DataclassesDataclass.py
 path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py
-path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass.py	= main/protobuf/option_preprocessing/double_DataclassesDataclass.py
+path-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Protobuf-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_MsgspecStruct.py
-path-InputFileType.Protobuf-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+path-InputFileType.Protobuf-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Protobuf-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_MsgspecStruct.py
 path-InputFileType.Protobuf-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 path-InputFileType.Protobuf-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_MsgspecStruct.py
-path-InputFileType.Protobuf-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-path-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py
-path-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+path-InputFileType.Protobuf-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+path-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct.py	= main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
+path-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Protobuf-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_MsgspecStruct.py
-path-InputFileType.Protobuf-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-path-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py
-path-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+path-InputFileType.Protobuf-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+path-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct.py	= main/protobuf/option_preprocessing/double_MsgspecStruct.py
+path-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_PydanticV2BaseModel.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_PydanticV2BaseModel.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_runtime.txt
-path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py
-path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
+path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py
-path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt
+path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel.py	= main/protobuf/option_preprocessing/double_PydanticV2BaseModel.py
+path-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_PydanticV2Dataclass.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_PydanticV2Dataclass.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_runtime.txt
-path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py
-path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt
+path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
+path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass.py
 path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_runtime.txt
-path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py
-path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt
+path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass.py	= main/protobuf/option_preprocessing/double_PydanticV2Dataclass.py
+path-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 path-InputFileType.Protobuf-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_TypingTypedDict.py
-path-InputFileType.Protobuf-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt
+path-InputFileType.Protobuf-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_unset_runtime.txt	= main/protobuf/option_preprocessing/comments_runtime.txt
 path-InputFileType.Protobuf-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_TypingTypedDict.py
 path-InputFileType.Protobuf-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_unset_runtime.txt
 path-InputFileType.Protobuf-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_TypingTypedDict.py
-path-InputFileType.Protobuf-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt
-path-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py
-path-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt
+path-InputFileType.Protobuf-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
+path-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict.py	= main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
+path-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
 path-InputFileType.Protobuf-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_TypingTypedDict.py
-path-InputFileType.Protobuf-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt
-path-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py
-path-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt
+path-InputFileType.Protobuf-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_unset_runtime.txt	= main/protobuf/option_preprocessing/rpc_runtime.txt
+path-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict.py	= main/protobuf/option_preprocessing/double_TypingTypedDict.py
+path-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_unset_runtime.txt	= main/protobuf/option_preprocessing/double_runtime.txt
 text-InputFileType.Auto-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_DataclassesDataclass_text.py
 text-InputFileType.Auto-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_DataclassesDataclass_text.py
 text-InputFileType.Auto-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_DataclassesDataclass_text.py
-text-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass_text.py
+text-InputFileType.Auto-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass_text.py	= main/protobuf/option_preprocessing/rpc_DataclassesDataclass_text.py
 text-InputFileType.Auto-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_DataclassesDataclass_text.py
-text-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass_text.py
+text-InputFileType.Auto-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass_text.py	= main/protobuf/option_preprocessing/double_DataclassesDataclass_text.py
 text-InputFileType.Auto-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_MsgspecStruct_text.py
 text-InputFileType.Auto-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_MsgspecStruct_text.py
 text-InputFileType.Auto-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_MsgspecStruct_text.py
-text-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct_text.py
+text-InputFileType.Auto-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct_text.py	= main/protobuf/option_preprocessing/rpc_MsgspecStruct_text.py
 text-InputFileType.Auto-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_MsgspecStruct_text.py
-text-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct_text.py
+text-InputFileType.Auto-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct_text.py	= main/protobuf/option_preprocessing/double_MsgspecStruct_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_PydanticV2BaseModel_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_PydanticV2BaseModel_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_PydanticV2BaseModel_text.py
-text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel_text.py
+text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel_text.py	= main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel_text.py
-text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel_text.py
+text-InputFileType.Auto-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel_text.py	= main/protobuf/option_preprocessing/double_PydanticV2BaseModel_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_PydanticV2Dataclass_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_PydanticV2Dataclass_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_PydanticV2Dataclass_text.py
-text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass_text.py
+text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass_text.py	= main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass_text.py
 text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass_text.py
-text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass_text.py
+text-InputFileType.Auto-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass_text.py	= main/protobuf/option_preprocessing/double_PydanticV2Dataclass_text.py
 text-InputFileType.Auto-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_TypingTypedDict_text.py
 text-InputFileType.Auto-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_TypingTypedDict_text.py
 text-InputFileType.Auto-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_TypingTypedDict_text.py
-text-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict_text.py
+text-InputFileType.Auto-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict_text.py	= main/protobuf/option_preprocessing/rpc_TypingTypedDict_text.py
 text-InputFileType.Auto-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_TypingTypedDict_text.py
-text-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict_text.py
+text-InputFileType.Auto-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict_text.py	= main/protobuf/option_preprocessing/double_TypingTypedDict_text.py
 text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-comments	main/protobuf/option_preprocessing/comments_DataclassesDataclass_text.py
 text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-custom	main/protobuf/option_preprocessing/custom_DataclassesDataclass_text.py
 text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-double	main/protobuf/option_preprocessing/double_DataclassesDataclass_text.py
-text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass_text.py
+text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-plain	main/protobuf/option_preprocessing/plain_DataclassesDataclass_text.py	= main/protobuf/option_preprocessing/rpc_DataclassesDataclass_text.py
 text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-rpc	main/protobuf/option_preprocessing/rpc_DataclassesDataclass_text.py
-text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass_text.py
+text-InputFileType.Protobuf-DataModelType.DataclassesDataclass-single	main/protobuf/option_preprocessing/single_DataclassesDataclass_text.py	= main/protobuf/option_preprocessing/double_DataclassesDataclass_text.py
 text-InputFileType.Protobuf-DataModelType.MsgspecStruct-comments	main/protobuf/option_preprocessing/comments_MsgspecStruct_text.py
 text-InputFileType.Protobuf-DataModelType.MsgspecStruct-custom	main/protobuf/option_preprocessing/custom_MsgspecStruct_text.py
 text-InputFileType.Protobuf-DataModelType.MsgspecStruct-double	main/protobuf/option_preprocessing/double_MsgspecStruct_text.py
-text-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct_text.py
+text-InputFileType.Protobuf-DataModelType.MsgspecStruct-plain	main/protobuf/option_preprocessing/plain_MsgspecStruct_text.py	= main/protobuf/option_preprocessing/rpc_MsgspecStruct_text.py
 text-InputFileType.Protobuf-DataModelType.MsgspecStruct-rpc	main/protobuf/option_preprocessing/rpc_MsgspecStruct_text.py
-text-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct_text.py
+text-InputFileType.Protobuf-DataModelType.MsgspecStruct-single	main/protobuf/option_preprocessing/single_MsgspecStruct_text.py	= main/protobuf/option_preprocessing/double_MsgspecStruct_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-comments	main/protobuf/option_preprocessing/comments_PydanticV2BaseModel_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-custom	main/protobuf/option_preprocessing/custom_PydanticV2BaseModel_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-double	main/protobuf/option_preprocessing/double_PydanticV2BaseModel_text.py
-text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel_text.py
+text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-plain	main/protobuf/option_preprocessing/plain_PydanticV2BaseModel_text.py	= main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2BaseModel_text.py
-text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel_text.py
+text-InputFileType.Protobuf-DataModelType.PydanticV2BaseModel-single	main/protobuf/option_preprocessing/single_PydanticV2BaseModel_text.py	= main/protobuf/option_preprocessing/double_PydanticV2BaseModel_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-comments	main/protobuf/option_preprocessing/comments_PydanticV2Dataclass_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-custom	main/protobuf/option_preprocessing/custom_PydanticV2Dataclass_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-double	main/protobuf/option_preprocessing/double_PydanticV2Dataclass_text.py
-text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass_text.py
+text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-plain	main/protobuf/option_preprocessing/plain_PydanticV2Dataclass_text.py	= main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass_text.py
 text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-rpc	main/protobuf/option_preprocessing/rpc_PydanticV2Dataclass_text.py
-text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass_text.py
+text-InputFileType.Protobuf-DataModelType.PydanticV2Dataclass-single	main/protobuf/option_preprocessing/single_PydanticV2Dataclass_text.py	= main/protobuf/option_preprocessing/double_PydanticV2Dataclass_text.py
 text-InputFileType.Protobuf-DataModelType.TypingTypedDict-comments	main/protobuf/option_preprocessing/comments_TypingTypedDict_text.py
 text-InputFileType.Protobuf-DataModelType.TypingTypedDict-custom	main/protobuf/option_preprocessing/custom_TypingTypedDict_text.py
 text-InputFileType.Protobuf-DataModelType.TypingTypedDict-double	main/protobuf/option_preprocessing/double_TypingTypedDict_text.py
-text-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict_text.py
+text-InputFileType.Protobuf-DataModelType.TypingTypedDict-plain	main/protobuf/option_preprocessing/plain_TypingTypedDict_text.py	= main/protobuf/option_preprocessing/rpc_TypingTypedDict_text.py
 text-InputFileType.Protobuf-DataModelType.TypingTypedDict-rpc	main/protobuf/option_preprocessing/rpc_TypingTypedDict_text.py
-text-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict_text.py
+text-InputFileType.Protobuf-DataModelType.TypingTypedDict-single	main/protobuf/option_preprocessing/single_TypingTypedDict_text.py	= main/protobuf/option_preprocessing/double_TypingTypedDict_text.py

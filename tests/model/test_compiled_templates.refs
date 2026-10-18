@@ -6,7 +6,7 @@
 	model/compiled_templates/compile_check_stale.txt
 	model/compiled_templates/compile_generation_cleanup.txt
 [test_compile_check_matches_checked_in_generated_artifacts]
-	model/compiled_templates/compile_check_current.txt
+	model/compiled_templates/compile_check_current.txt	= target_python_tables/check_interpreter.txt
 [test_every_built_in_template_matches_its_jinja_oracle]
 	model/compiled_templates/all_templates_parity.txt
 [test_external_base_model_module_helper_stays_on_jinja]

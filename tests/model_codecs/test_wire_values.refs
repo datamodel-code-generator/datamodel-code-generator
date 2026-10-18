@@ -9,6 +9,6 @@
 [test_runtime_imports_stay_embeddable]
 	main/generation_platform/codecs/runtime-imports.txt
 [test_stdlib_codecs_match_their_source]
-	main/generation_platform/codecs/derived-codecs.txt
+	main/generation_platform/codecs/derived-codecs.txt	= target_python_tables/check_interpreter.txt
 [test_wire_alias_hints]
 	main/generation_platform/codecs/alias-hints.txt

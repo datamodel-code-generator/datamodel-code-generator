@@ -5,8 +5,8 @@
 [test_annotated_field_aliases]
 	main/graphql/annotated_field_aliases.py
 [test_annotated_use_standard_collections]
-	main/graphql/annotated_use_standard_collections.py
+	main/graphql/annotated_use_standard_collections.py	= main/graphql/annotated.py
 [test_annotated_use_standard_collections_use_union_operator]
-	main/graphql/annotated_use_standard_collections_use_union_operator.py
+	main/graphql/annotated_use_standard_collections_use_union_operator.py	= main/graphql/annotated.py
 [test_annotated_use_union_operator]
-	main/graphql/annotated_use_union_operator.py
+	main/graphql/annotated_use_union_operator.py	= main/graphql/annotated.py
