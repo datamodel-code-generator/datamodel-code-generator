@@ -126,6 +126,51 @@ components:
               type: string
             q:
               type: string
+    AliasedRequired:
+      type: object
+      required: [R-1]
+      properties:
+        n:
+          anyOf:
+            - $ref: '#/components/schemas/Plain'
+            - type: "null"
+        R-1:
+          type: string
+    WithDefault:
+      type: object
+      properties:
+        d:
+          type: string
+          default: x
+    KeptAfterInheritedDefault:
+      allOf:
+        - $ref: '#/components/schemas/WithDefault'
+        - type: object
+          properties:
+            n:
+              anyOf:
+                - $ref: '#/components/schemas/Plain'
+                - type: "null"
+    Cat:
+      type: object
+      required: [lives]
+      properties:
+        kind:
+          anyOf:
+            - type: string
+            - type: "null"
+        lives:
+          type: integer
+    NamedCat:
+      allOf:
+        - $ref: '#/components/schemas/Cat'
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              type: string
+            name:
+              type: string
     NullableLater:
       type: [object, "null"]
       properties:

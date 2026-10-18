@@ -2012,7 +2012,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         _field_participates_in_constructor
     )
     FIELD_CONSTRUCTION_ORDER_KEY: ClassVar[Callable[[DataModelFieldBase], bool] | None] = None
-    """Order key of the fields when the model is built: True for a field whose class-body default is known then."""
+    """Order key of the fields when the model is built: True for a field whose class-body default is known then.
+
+    None for a model that keeps its fields in schema order when it is built.
+    """
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = False
     # Kept opaque so this generic layer does not import reference-layer policy.
     FIELD_NAME_MODEL_TYPE: ClassVar[Any] = None
@@ -2098,6 +2101,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     ) -> DataModelFieldBase | None:
         """Create a model-specific typed extra field when supported."""
         return None
+
+    @classmethod
+    def order_fields_for_construction(cls, fields: Iterable[DataModelFieldBase]) -> list[DataModelFieldBase]:
+        """Return the fields sorted by ``FIELD_CONSTRUCTION_ORDER_KEY``, or as given when the model has no such key."""
+        return list(fields) if (key := cls.FIELD_CONSTRUCTION_ORDER_KEY) is None else sorted(fields, key=key)
 
     def apply_discriminator_tag(
         self,

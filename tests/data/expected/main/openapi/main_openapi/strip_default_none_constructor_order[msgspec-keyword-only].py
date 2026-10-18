@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Struct, UnsetType, field
 
 
 class Plain(Struct, kw_only=True):
@@ -63,6 +63,29 @@ class Base(Struct, kw_only=True):
 class Child(Base, kw_only=True):
     r: str
     q: str | UnsetType = UNSET
+
+
+class AliasedRequired(Struct, kw_only=True):
+    R_1: str = field(name='R-1')
+    n: Plain | None | UnsetType = UNSET
+
+
+class WithDefault(Struct, kw_only=True):
+    d: str | UnsetType = 'x'
+
+
+class KeptAfterInheritedDefault(WithDefault, kw_only=True):
+    n: Plain | None | UnsetType = UNSET
+
+
+class Cat(Struct, kw_only=True):
+    lives: int
+    kind: str | None | UnsetType = UNSET
+
+
+class NamedCat(Cat, kw_only=True):
+    kind: str | None
+    name: str | UnsetType = UNSET
 
 
 class NullableLater(Struct, kw_only=True):

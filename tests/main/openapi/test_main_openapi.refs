@@ -1468,7 +1468,7 @@ pydantic-dataclass-annotated	main/openapi/main_openapi/strip_default_none_constr
 pydantic-dataclass-field-type-override	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-field-type-override].py
 pydantic-dataclass-keyword-only	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-keyword-only].py
 pydantic-dataclass-model-type-override	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-model-type-override].py
-pydantic-dataclass-target-2.14	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-target-2.14].py	= main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass].py
+pydantic-dataclass-target-2.14	main/openapi/main_openapi/strip_default_none_constructor_order[pydantic-dataclass-target-2.14].py
 [test_main_openapi_strip_default_none_semantic_default]
 dataclass	main/openapi/strip_default_none_semantic_dataclass.py
 msgspec	main/openapi/strip_default_none_semantic_msgspec.py

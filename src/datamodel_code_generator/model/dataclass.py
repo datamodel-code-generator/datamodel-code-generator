@@ -274,7 +274,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """Initialize dataclass with fields sorted by field assignment requirement."""
         super().__init__(
             reference=reference,
-            fields=sorted(fields, key=type(self).FIELD_CONSTRUCTION_ORDER_KEY),
+            fields=self.order_fields_for_construction(fields),
             decorators=decorators,
             base_classes=base_classes,
             custom_base_class=custom_base_class,

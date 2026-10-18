@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 
 
@@ -73,6 +74,34 @@ class Base:
 class Child(Base):
     r: str
     q: str | None
+
+
+@dataclass(kw_only=True)
+class AliasedRequired:
+    n: Plain | None = None
+    R_1: str = Field(..., alias='R-1')
+
+
+@dataclass(kw_only=True)
+class WithDefault:
+    d: str | None = 'x'
+
+
+@dataclass(kw_only=True)
+class KeptAfterInheritedDefault(WithDefault):
+    n: Plain | None = None
+
+
+@dataclass(kw_only=True)
+class Cat:
+    kind: str | None = None
+    lives: int
+
+
+@dataclass(kw_only=True)
+class NamedCat(Cat):
+    name: str | None
+    kind: str | None = Field(...)
 
 
 @dataclass(kw_only=True)

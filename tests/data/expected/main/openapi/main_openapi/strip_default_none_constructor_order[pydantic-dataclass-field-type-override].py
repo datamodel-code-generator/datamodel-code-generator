@@ -79,6 +79,34 @@ class Child(Base):
 
 
 @dataclass
+class AliasedRequired:
+    n: Plain | None = None
+    R_1: str = Field(..., alias='R-1')
+
+
+@dataclass
+class WithDefault:
+    d: str | None = 'x'
+
+
+@dataclass
+class KeptAfterInheritedDefault(WithDefault):
+    n: Plain | None = None
+
+
+@dataclass
+class Cat:
+    lives: int
+    kind: str | None = None
+
+
+@dataclass
+class NamedCat(Cat):
+    kind: str | None = Field(...)
+    name: str | None = Field(kw_only=True)
+
+
+@dataclass
 class NullableLater:
     a: str | None
 

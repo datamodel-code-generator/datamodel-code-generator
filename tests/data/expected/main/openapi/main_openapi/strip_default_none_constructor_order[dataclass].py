@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -73,6 +73,34 @@ class Base:
 class Child(Base):
     r: str
     q: str | None
+
+
+@dataclass
+class AliasedRequired:
+    n: Plain | None
+    R_1: str
+
+
+@dataclass
+class WithDefault:
+    d: str | None = 'x'
+
+
+@dataclass
+class KeptAfterInheritedDefault(WithDefault):
+    n: Plain | None = field(kw_only=True)
+
+
+@dataclass
+class Cat:
+    kind: str | None
+    lives: int
+
+
+@dataclass
+class NamedCat(Cat):
+    kind: str | None
+    name: str | None
 
 
 @dataclass

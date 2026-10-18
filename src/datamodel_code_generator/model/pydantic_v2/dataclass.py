@@ -59,8 +59,8 @@ def _writes_dataclass_default(field: DataModelFieldBase) -> bool:
     A ``None`` default that ``--strip-default-none`` strips stays when the rendered annotation admits None.
     """
     return (
-        not getattr(field, "has_default_factory_in_field", False)
-        and (not field.required or field.use_default_with_required)
+        (not field.required or field.use_default_with_required)
+        and not getattr(field, "has_default_factory_in_field", False)
         and not (field.should_strip_default_none() and not admits_none(field.data_type))
     )
 
@@ -162,7 +162,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """Initialize pydantic v2 dataclass with sorted fields and ConfigDict support."""
         super().__init__(
             reference=reference,
-            fields=sorted(fields, key=type(self).FIELD_CONSTRUCTION_ORDER_KEY),
+            fields=self.order_fields_for_construction(fields),
             decorators=decorators,
             base_classes=base_classes,
             custom_base_class=custom_base_class,
@@ -253,7 +253,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """Write fields that name a later model by assignment, keeping required fields before defaults."""
         if not super().assign_forward_reference_fields(positions, index):
             return False
-        self.fields.sort(key=type(self).FIELD_CONSTRUCTION_ORDER_KEY)
+        self.fields[:] = self.order_fields_for_construction(self.fields)
         return True
 
     def _apply_lookaround_regex_engine(self) -> None:

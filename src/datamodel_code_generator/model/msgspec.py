@@ -284,7 +284,7 @@ class Struct(DataModel):
         """Initialize msgspec Struct with fields sorted by field assignment requirement."""
         super().__init__(
             reference=reference,
-            fields=sorted(fields, key=type(self).FIELD_CONSTRUCTION_ORDER_KEY),
+            fields=self.order_fields_for_construction(fields),
             decorators=decorators,
             base_classes=base_classes,
             custom_base_class=custom_base_class,
@@ -443,7 +443,7 @@ class Struct(DataModel):
         options = _user_struct_options(self)
         for name, value in inherited_options.items():
             options.setdefault(name, value)
-        return sorted(super().flatten_base_layouts(adopt_field), key=type(self).FIELD_CONSTRUCTION_ORDER_KEY)
+        return self.order_fields_for_construction(super().flatten_base_layouts(adopt_field))
 
     def _validate_base_layouts(self) -> None:
         """Allow empty mixins and shared layouts, but reject independent slot extensions."""

@@ -60571,10 +60571,11 @@ a new `DataType` that points to the one shared `Reference`. allOf `$ref` items b
 whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only captured here
 (`field.extras["discriminator"]`). Field construction already decides const handling: `DataModelFieldBase.__init__`
 calls `process_const()`. Dataclass-like models (`dataclasses`, Pydantic dataclasses, msgspec Structs) sort their
-fields when they are built, by `DataModel.FIELD_CONSTRUCTION_ORDER_KEY`. The key reads only facts known then; a
-`None` default that `--strip-default-none` may keep counts as no default. L5 `__fix_constructor_field_ordering`
-decides with the output model's `FIELD_ASSIGNMENT_CHECKER`, which states what the template writes, and moves fields
-whose default the template keeps after the fields without one.
+fields when they are built, by `DataModel.FIELD_CONSTRUCTION_ORDER_KEY`. The key reads only facts known then: on a
+Pydantic dataclass, a `None` default that `--strip-default-none` may keep counts as no default, while a msgspec
+Struct counts every optional field as having one, as it never strips its defaults. L5
+`__fix_constructor_field_ordering` decides with the output model's `FIELD_ASSIGNMENT_CHECKER`, which states what the
+template writes, and moves fields whose default the template keeps after the fields without one.
 
 **L2–L4.**
 
@@ -60588,7 +60589,7 @@ whose default the template keeps after the fields without one.
 | L3 `__replace_duplicate_name_in_module` | class names | `class_name` |
 | L3 `__reuse_model_tree_scope` | rendered model text across modules | moves canonicals to a shared module, replaces duplicates by empty subclasses or removes them |
 | L3 `__resolve_circular_imports` | module dependency graph | merges cyclic modules into `_internal` modules, relocates models |
-| L4 `__flatten_conflicting_base_layouts` (msgspec) | bases, fields, possible tags (`__find_possible_tag_names`) and reuse duplicates (`__find_possible_reuse_duplicates`) | copies base fields into Structs whose generated bases have conflicting layouts and drops those bases |
+| L4 `__flatten_conflicting_base_layouts` (msgspec) | bases, fields, possible tags (`__find_possible_tag_names`) and reuse duplicates (`__find_possible_reuse_duplicates`) | copies base fields into Structs whose generated bases have conflicting layouts, sorted by the construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`), and drops those bases |
 | L4 `unconstrain_union_members` (msgspec) | union members | field types |
 | L4 `__set_circular_root_model_paths` | root-model reference graph | circular root-model paths that every module's collapse reads |
 
@@ -60616,7 +60617,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `__set_one_literal_on_default` | required one-literal fields | default, required, nullable |
 | process | `refresh_field_config` (model) | field state | backend field config |
 | process | `__rename_fields_hiding_types` | same-named fields and types of the model family | field names or type names |
-| process | `__fix_constructor_field_ordering` | required and default state, inherited fields | field order, constructor adjustments |
+| process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:admits_none`) | field order, constructor adjustments |
 | process | `__remove_overridden_models` | model-level `--type-overrides` | removes overridden models |
 | finalize | `__apply_type_overrides` | `--type-overrides` | field types; model-level overrides edit nodes on fields and base classes in place |
 | finalize | `unbind_fields` (model) | hidden type names | field binding |
@@ -60704,7 +60705,7 @@ collapse replacing a member of a shared list.
 | field order | end of the L5 loop (discriminator tags append fields to variants of any module); initial order: L1 construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`); msgspec keyword-only: L6 `__fix_tag_opt_out_field_ordering` |
 | field names | the model's own L5 `__rename_fields_hiding_types` |
 | field types | end of the L5 loop (collapse, overrides and discriminator tags reach every module; overrides replace the module's own field types in its L5 finalize, after constructor ordering); pydantic v2 type-alias bodies: L6 `__prepare_type_alias_fields` |
-| rendered nullability of a type | L7 (the writes listed under L7); computed earlier with `types.py:admits_none` from the type, which is final after the module's own `__apply_type_overrides` |
+| rendered nullability of a type | end of the L5 loop, like the field types it is computed from with `types.py:admits_none`; L7 writes it into `is_optional` (see L7). Known gap: the module's own `__apply_type_overrides` replaces field types after `__fix_constructor_field_ordering` has read it |
 | set vs list containers | end of the L5 loop (collapse and overrides can still replace item types) |
 | required, nullable | end of the L5 loop (discriminator tags, one-literal defaults, collapse `process_const()`); msgspec: L6 |
 | default values | the model's own L5 `__set_validate_default_on_fields`, unless another module's discriminator pass changes it; default-factory metadata: L6 `_set_nested_model_default_factory_metadata` |
