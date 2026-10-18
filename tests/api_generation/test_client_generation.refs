@@ -5,12 +5,12 @@
 [test_client_config]
 auth-invalid	main/generation_platform/client/configs/auth-invalid.txt
 auth-unknown	main/generation_platform/client/configs/auth-unknown.txt
-auth-values	main/generation_platform/client/configs/auth-values.txt
+auth-values	main/generation_platform/client/configs/auth-values.txt	= main/generation_platform/client/configs/defaults.txt
 body-field-names-invalid	main/generation_platform/client/configs/body-field-names-invalid.txt
-body-fields	main/generation_platform/client/configs/body-fields.txt
+body-fields	main/generation_platform/client/configs/body-fields.txt	= main/generation_platform/client/configs/defaults.txt
 body-fields-invalid	main/generation_platform/client/configs/body-fields-invalid.txt
 compression-invalid	main/generation_platform/client/configs/compression-invalid.txt
-compression-values	main/generation_platform/client/configs/compression-values.txt
+compression-values	main/generation_platform/client/configs/compression-values.txt	= main/generation_platform/client/configs/defaults.txt
 defaults	main/generation_platform/client/configs/defaults.txt
 invalid-parameter-names	main/generation_platform/client/configs/invalid-parameter-names.txt
 invalid-shapes	main/generation_platform/client/configs/invalid-shapes.txt
@@ -20,7 +20,7 @@ reserved-type-name	main/generation_platform/client/configs/reserved-type-name.tx
 retry-conflicting-controls	main/generation_platform/client/configs/retry-conflicting-controls.txt
 retry-invalid	main/generation_platform/client/configs/retry-invalid.txt
 retry-unknown-field	main/generation_platform/client/configs/retry-unknown-field.txt
-retry-values	main/generation_platform/client/configs/retry-values.txt
+retry-values	main/generation_platform/client/configs/retry-values.txt	= main/generation_platform/client/configs/defaults.txt
 values	main/generation_platform/client/configs/values.txt
 [test_client_config_python_keys]
 body-field-keys-options0	main/generation_platform/client/configs/body-field-keys.txt
@@ -145,8 +145,8 @@ credential-name-errors	main/generation_platform/client/packages/credential-name-
 default-server	main/generation_platform/client/default-server.txt
 default-server	main/generation_platform/client/packages/default-server/pydantic_v2_BaseModel//*.py
 discriminator-copies	main/generation_platform/client/discriminator-copies.txt
-discriminator-copies	main/generation_platform/client/packages/discriminator-copies/dataclasses_dataclass//*.py
-discriminator-copies	main/generation_platform/client/packages/discriminator-copies/typing_TypedDict//*.py
+discriminator-copies	main/generation_platform/client/packages/discriminator-copies/dataclasses_dataclass//*.py	= main/generation_platform/client/packages/discriminator-reuse/dataclasses_dataclass//*.py
+discriminator-copies	main/generation_platform/client/packages/discriminator-copies/typing_TypedDict//*.py	= main/generation_platform/client/packages/discriminator-reuse/typing_TypedDict//*.py
 discriminator-reuse	main/generation_platform/client/discriminator-reuse.txt
 discriminator-reuse	main/generation_platform/client/packages/discriminator-reuse/dataclasses_dataclass//*.py
 discriminator-reuse	main/generation_platform/client/packages/discriminator-reuse/typing_TypedDict//*.py
@@ -290,7 +290,7 @@ templates-webhooks	main/generation_platform/client/templates-webhooks.txt
 type-checking-imports	main/generation_platform/client/packages/type-checking-imports/msgspec_Struct//*.py
 type-checking-imports	main/generation_platform/client/type-checking-imports.txt
 type-checking-imports-off	main/generation_platform/client/type-checking-imports-off.txt
-type-checking-imports-on	main/generation_platform/client/packages/type-checking-imports-on/pydantic_v2_BaseModel//*.py
+type-checking-imports-on	main/generation_platform/client/packages/type-checking-imports-on/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/type-checking-imports/msgspec_Struct//*.py
 type-checking-imports-on	main/generation_platform/client/type-checking-imports-on.txt
 type-spellings	main/generation_platform/client/packages/type-spellings/pydantic_v2_BaseModel//*.py
 type-spellings	main/generation_platform/client/type-spellings.txt
@@ -309,10 +309,10 @@ typeddict-target-keys	main/generation_platform/client/typeddict-target-keys.txt
 uploads	main/generation_platform/client/packages/uploads/pydantic_v2_BaseModel//*.py
 uploads	main/generation_platform/client/uploads.txt
 uploads-compression	main/generation_platform/client/uploads-compression.txt
-uploads-plans	main/generation_platform/client/packages/uploads-plans/dataclasses_dataclass//*.py
+uploads-plans	main/generation_platform/client/packages/uploads-plans/dataclasses_dataclass//*.py	= main/generation_platform/client/packages/uploads-plans/msgspec_Struct//*.py
 uploads-plans	main/generation_platform/client/packages/uploads-plans/msgspec_Struct//*.py
-uploads-plans	main/generation_platform/client/packages/uploads-plans/pydantic_v2_dataclass//*.py
-uploads-plans	main/generation_platform/client/packages/uploads-plans/typing_TypedDict//*.py
+uploads-plans	main/generation_platform/client/packages/uploads-plans/pydantic_v2_dataclass//*.py	= main/generation_platform/client/packages/uploads-plans/msgspec_Struct//*.py
+uploads-plans	main/generation_platform/client/packages/uploads-plans/typing_TypedDict//*.py	= main/generation_platform/client/packages/uploads-plans/msgspec_Struct//*.py
 uploads-plans	main/generation_platform/client/uploads-plans.txt
 validation-ambiguous	main/generation_platform/client/packages/validation-ambiguous/dataclasses_dataclass//*.py
 validation-ambiguous	main/generation_platform/client/validation-ambiguous.txt

@@ -32,7 +32,7 @@ api-pointer-tilde	main/generation_platform/client/bindings/api-pointer-tilde//*.
 api-pointer-utf8	main/generation_platform/client/bindings/api-pointer-utf8.txt
 api-pointer-utf8	main/generation_platform/client/bindings/api-pointer-utf8//*.py
 api-reference-anchors	main/generation_platform/client/bindings/api-reference-anchors.txt
-api-reference-anchors	main/generation_platform/client/bindings/api-reference-anchors//*.py
+api-reference-anchors	main/generation_platform/client/bindings/api-reference-anchors//*.py	= main/generation_platform/client/bindings/api-anchors//*.py
 api-reference-declarations	main/generation_platform/client/bindings/api-reference-declarations.txt
 api-reference-declarations	main/generation_platform/client/bindings/api-reference-declarations//*.py
 api-resources	main/generation_platform/client/bindings/api-resources.txt
@@ -134,7 +134,7 @@ edge-ref-sibling-recursive-target	main/generation_platform/client/bindings/edge-
 edge-scope-edges-api	main/generation_platform/client/bindings/edge-scope-edges-api.txt
 edge-scope-edges-api	main/generation_platform/client/bindings/edge-scope-edges-api//*.py
 edge-scope-edges-paths	main/generation_platform/client/bindings/edge-scope-edges-paths.txt
-edge-scope-edges-paths	main/generation_platform/client/bindings/edge-scope-edges-paths//*.py
+edge-scope-edges-paths	main/generation_platform/client/bindings/edge-scope-edges-paths//*.py	= main/generation_platform/client/bindings/edge-scope-edges-api//*.py
 edge-self-alias-redirect	main/generation_platform/client/bindings/edge-self-alias-redirect.txt
 edge-self-alias-redirect	main/generation_platform/client/bindings/edge-self-alias-redirect//*.py
 edge-typeddict-field-ownership	main/generation_platform/client/bindings/edge-typeddict-field-ownership.txt
@@ -234,7 +234,7 @@ metadata-types	main/generation_platform/client/bindings/metadata-types//*.py
 model-facts	main/generation_platform/client/bindings/model-facts.txt
 model-facts	main/generation_platform/client/bindings/model-facts//*.py
 model-facts-configured	main/generation_platform/client/bindings/model-facts-configured.txt
-model-facts-configured	main/generation_platform/client/bindings/model-facts-configured//*.py
+model-facts-configured	main/generation_platform/client/bindings/model-facts-configured//*.py	= main/generation_platform/client/bindings/model-facts//*.py
 model-facts-opaque	main/generation_platform/client/bindings/model-facts-opaque.txt
 model-facts-opaque	main/generation_platform/client/bindings/model-facts-opaque//*.py
 quoted-constraints	main/generation_platform/client/bindings/quoted-constraints.txt

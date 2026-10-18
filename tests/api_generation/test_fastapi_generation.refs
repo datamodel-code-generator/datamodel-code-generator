@@ -21,7 +21,7 @@ callbacks	main/generation_platform/fastapi/callbacks.txt
 callbacks	main/generation_platform/fastapi/packages/callbacks/
 codec-errors	main/generation_platform/fastapi/codec-errors.txt
 codec-errors	main/generation_platform/fastapi/packages/codec-errors/
-cookie-names	main/generation_platform/fastapi/cookie-names.txt
+cookie-names	main/generation_platform/fastapi/cookie-names.txt	= main/generation_platform/client/cookie-names.txt
 cookie-names	main/generation_platform/fastapi/packages/cookie-names/
 docstrings	main/generation_platform/fastapi/docstrings.txt
 docstrings	main/generation_platform/fastapi/packages/docstrings/
@@ -31,7 +31,7 @@ encoding	main/generation_platform/fastapi/encoding.txt
 encoding	main/generation_platform/fastapi/packages/encoding/
 group-errors	main/generation_platform/fastapi/group-errors.txt
 group-errors	main/generation_platform/fastapi/packages/group-errors/
-header-names	main/generation_platform/fastapi/header-names.txt
+header-names	main/generation_platform/fastapi/header-names.txt	= main/generation_platform/client/header-names.txt
 header-names	main/generation_platform/fastapi/packages/header-names/
 info	main/generation_platform/fastapi/info.txt
 info	main/generation_platform/fastapi/packages/info/

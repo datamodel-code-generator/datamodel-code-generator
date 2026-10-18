@@ -4,134 +4,134 @@
 json-changed-python	api_generation/fastapi_cli/check_outputs[json-changed-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-changed-python	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-changed-python	main/generation_platform/fastapi/cli/check/changed-python.json
-json-changed-python	main/generation_platform/fastapi/cli/no-warning.txt
+json-changed-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-changed-readme	api_generation/fastapi_cli/check_outputs[json-changed-readme].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-changed-readme	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-changed-readme	main/generation_platform/fastapi/cli/check/changed-readme.json
-json-changed-readme	main/generation_platform/fastapi/cli/no-warning.txt
+json-changed-readme	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-crlf	api_generation/fastapi_cli/check_outputs[json-crlf].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-crlf	api_generation/fastapi_cli/check_outputs[json-crlf].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-crlf	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-crlf	main/generation_platform/fastapi/cli/check/crlf.json
-json-crlf	main/generation_platform/fastapi/cli/no-warning.txt
+json-crlf	main/generation_platform/fastapi/cli/check/crlf.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-crlf	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-edited-regenerated	api_generation/fastapi_cli/check_outputs[json-edited-regenerated].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-edited-regenerated	api_generation/fastapi_cli/check_outputs[json-edited-regenerated].3.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-edited-regenerated	api_generation/fastapi_cli/check_outputs[json-edited-regenerated].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-edited-regenerated	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-edited-regenerated	main/generation_platform/fastapi/cli/check/edited-regenerated.json
-json-edited-regenerated	main/generation_platform/fastapi/cli/no-warning.txt
+json-edited-regenerated	main/generation_platform/fastapi/cli/check/edited-regenerated.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-edited-regenerated	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-empty-models	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-empty-models	main/generation_platform/fastapi/cli/check/empty-models.json
-json-empty-models	main/generation_platform/fastapi/cli/no-warning.txt
+json-empty-models	main/generation_platform/fastapi/cli/check/empty-models.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-empty-models	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-extra-nested-python	api_generation/fastapi_cli/check_outputs[json-extra-nested-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-extra-nested-python	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-extra-nested-python	main/generation_platform/fastapi/cli/check/extra-nested-python.json
-json-extra-nested-python	main/generation_platform/fastapi/cli/no-warning.txt
+json-extra-nested-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-extra-python	api_generation/fastapi_cli/check_outputs[json-extra-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-extra-python	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-extra-python	main/generation_platform/fastapi/cli/check/extra-python.json
-json-extra-python	main/generation_platform/fastapi/cli/no-warning.txt
+json-extra-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-foreign	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-foreign	main/generation_platform/fastapi/cli/check/foreign.json
-json-foreign	main/generation_platform/fastapi/cli/no-warning.txt
+json-foreign	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-ignore-bytecode-python	api_generation/fastapi_cli/check_outputs[json-ignore-bytecode-python].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-ignore-bytecode-python	api_generation/fastapi_cli/check_outputs[json-ignore-bytecode-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-ignore-bytecode-python	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-ignore-bytecode-python	main/generation_platform/fastapi/cli/check/ignore-bytecode-python.json
-json-ignore-bytecode-python	main/generation_platform/fastapi/cli/no-warning.txt
+json-ignore-bytecode-python	main/generation_platform/fastapi/cli/check/ignore-bytecode-python.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-ignore-bytecode-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-ignore-unrendered-text	api_generation/fastapi_cli/check_outputs[json-ignore-unrendered-text].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-ignore-unrendered-text	api_generation/fastapi_cli/check_outputs[json-ignore-unrendered-text].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-ignore-unrendered-text	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-ignore-unrendered-text	main/generation_platform/fastapi/cli/check/ignore-unrendered-text.json
-json-ignore-unrendered-text	main/generation_platform/fastapi/cli/no-warning.txt
+json-ignore-unrendered-text	main/generation_platform/fastapi/cli/check/ignore-unrendered-text.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-ignore-unrendered-text	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-latin-1	api_generation/fastapi_cli/check_outputs[json-latin-1].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-latin-1	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-latin-1	main/generation_platform/fastapi/cli/check/latin-1.json
-json-latin-1	main/generation_platform/fastapi/cli/no-warning.txt
+json-latin-1	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-leftover-manifest	api_generation/fastapi_cli/check_outputs[json-leftover-manifest].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-leftover-manifest	api_generation/fastapi_cli/check_outputs[json-leftover-manifest].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-leftover-manifest	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-leftover-manifest	main/generation_platform/fastapi/cli/check/leftover-manifest.json
-json-leftover-manifest	main/generation_platform/fastapi/cli/no-warning.txt
+json-leftover-manifest	main/generation_platform/fastapi/cli/check/leftover-manifest.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-leftover-manifest	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-lf	api_generation/fastapi_cli/check_outputs[json-lf].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-lf	api_generation/fastapi_cli/check_outputs[json-lf].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-lf	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-lf	main/generation_platform/fastapi/cli/check/lf.json
-json-lf	main/generation_platform/fastapi/cli/no-warning.txt
+json-lf	main/generation_platform/fastapi/cli/check/lf.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-lf	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-missing-marker	api_generation/fastapi_cli/check_outputs[json-missing-marker].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-missing-marker	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-missing-marker	main/generation_platform/fastapi/cli/check/missing-marker.json
-json-missing-marker	main/generation_platform/fastapi/cli/no-warning.txt
+json-missing-marker	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-missing-model	api_generation/fastapi_cli/check_outputs[json-missing-model].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-missing-model	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-missing-model	main/generation_platform/fastapi/cli/check/missing-model.json
-json-missing-model	main/generation_platform/fastapi/cli/no-warning.txt
+json-missing-model	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-missing-readme	api_generation/fastapi_cli/check_outputs[json-missing-readme].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-missing-readme	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-missing-readme	main/generation_platform/fastapi/cli/check/missing-readme.json
-json-missing-readme	main/generation_platform/fastapi/cli/no-warning.txt
+json-missing-readme	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-missing-root	api_generation/fastapi_cli/check_outputs[json-missing-root].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-missing-root	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-missing-root	main/generation_platform/fastapi/cli/check/missing-root.json
-json-missing-root	main/generation_platform/fastapi/cli/no-warning.txt
+json-missing-root	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-models-in-package	api_generation/fastapi_cli/check_outputs[json-models-in-package].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-models-in-package	api_generation/fastapi_cli/check_outputs[json-models-in-package].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-models-in-package	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-models-in-package	main/generation_platform/fastapi/cli/check/models-in-package.json
-json-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt
+json-models-in-package	main/generation_platform/fastapi/cli/check/models-in-package.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-models-in-package-changed	api_generation/fastapi_cli/check_outputs[json-models-in-package-changed].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-models-in-package-changed	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-models-in-package-changed	main/generation_platform/fastapi/cli/check/models-in-package-changed.json
-json-models-in-package-changed	main/generation_platform/fastapi/cli/no-warning.txt
+json-models-in-package-changed	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-models-in-package-stale	api_generation/fastapi_cli/check_outputs[json-models-in-package-stale].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-models-in-package-stale	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-models-in-package-stale	main/generation_platform/fastapi/cli/check/models-in-package-stale.json
-json-models-in-package-stale	main/generation_platform/fastapi/cli/no-warning.txt
+json-models-in-package-stale	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-modular	api_generation/fastapi_cli/check_outputs[json-modular].2/
 json-modular	api_generation/fastapi_cli/check_outputs[json-modular]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 json-modular	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-modular	main/generation_platform/fastapi/cli/check/modular.json
-json-modular	main/generation_platform/fastapi/cli/no-warning.txt
+json-modular	main/generation_platform/fastapi/cli/check/modular.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-modular	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-modular-extra	api_generation/fastapi_cli/check_outputs[json-modular-extra]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 json-modular-extra	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-modular-extra	main/generation_platform/fastapi/cli/check/modular-extra.json
-json-modular-extra	main/generation_platform/fastapi/cli/no-warning.txt
+json-modular-extra	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-modular-missing	api_generation/fastapi_cli/check_outputs[json-modular-missing]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 json-modular-missing	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-modular-missing	main/generation_platform/fastapi/cli/check/modular-missing.json
-json-modular-missing	main/generation_platform/fastapi/cli/no-warning.txt
+json-modular-missing	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-modular-models-in-package	api_generation/fastapi_cli/check_outputs[json-modular-models-in-package]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 json-modular-models-in-package	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-modular-models-in-package	main/generation_platform/fastapi/cli/check/modular-models-in-package.json
-json-modular-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt
+json-modular-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-nested-cwd	api_generation/fastapi_cli/check_outputs[json-nested-cwd].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-nested-cwd	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-nested-cwd	main/generation_platform/fastapi/cli/check/nested-cwd.json
-json-nested-cwd	main/generation_platform/fastapi/cli/no-warning.txt
+json-nested-cwd	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-non-text-python	api_generation/fastapi_cli/check_outputs[json-non-text-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-non-text-python	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-non-text-python	main/generation_platform/fastapi/cli/no-warning.txt
+json-non-text-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-non-text-readme	api_generation/fastapi_cli/check_outputs[json-non-text-readme].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-non-text-readme	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-non-text-readme	main/generation_platform/fastapi/cli/no-warning.txt
+json-non-text-readme	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-package-in-models	api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 json-package-in-models	api_generation/fastapi_cli/check_outputs[json-package-in-models]/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 json-package-in-models	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-package-in-models	main/generation_platform/fastapi/cli/check/package-in-models.json
-json-package-in-models	main/generation_platform/fastapi/cli/no-warning.txt
+json-package-in-models	main/generation_platform/fastapi/cli/check/package-in-models.json	= main/generation_platform/fastapi/cli/check/unchanged-models-server.json
+json-package-in-models	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-package-in-models-changed	api_generation/fastapi_cli/check_outputs[json-package-in-models-changed]/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 json-package-in-models-changed	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-package-in-models-changed	main/generation_platform/fastapi/cli/check/package-in-models-changed.json
-json-package-in-models-changed	main/generation_platform/fastapi/cli/no-warning.txt
+json-package-in-models-changed	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-package-in-models-services	api_generation/fastapi_cli/check_outputs[json-package-in-models-services].2/
 json-package-in-models-services	api_generation/fastapi_cli/check_outputs[json-package-in-models-services]/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 json-package-in-models-services	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-package-in-models-services	main/generation_platform/fastapi/cli/check/package-in-models-services.json
-json-package-in-models-services	main/generation_platform/fastapi/cli/no-warning.txt
+json-package-in-models-services	main/generation_platform/fastapi/cli/check/package-in-models-services.json	= main/generation_platform/fastapi/cli/check/unchanged-models-server.json
+json-package-in-models-services	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-stale	api_generation/fastapi_cli/check_outputs[json-stale].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-stale	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-stale	main/generation_platform/fastapi/cli/check/stale.json
-json-stale	main/generation_platform/fastapi/cli/no-warning.txt
+json-stale	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-stale-regenerated	api_generation/fastapi_cli/check_outputs[json-stale-regenerated].2.py
 json-stale-regenerated	api_generation/fastapi_cli/check_outputs[json-stale-regenerated].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-stale-regenerated	main/generation_platform/fastapi/cli/check-unchanged.txt
@@ -140,144 +140,144 @@ json-stale-regenerated	main/generation_platform/fastapi/cli/leftover-warning.txt
 json-suffixless-models-in-package	api_generation/fastapi_cli/check_outputs[json-suffixless-models-in-package]
 json-suffixless-models-in-package	api_generation/fastapi_cli/check_outputs[json-suffixless-models-in-package].2
 json-suffixless-models-in-package	main/generation_platform/fastapi/cli/check-unchanged.txt
-json-suffixless-models-in-package	main/generation_platform/fastapi/cli/check/suffixless-models-in-package.json
-json-suffixless-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt
+json-suffixless-models-in-package	main/generation_platform/fastapi/cli/check/suffixless-models-in-package.json	= main/generation_platform/fastapi/cli/check/unchanged.json
+json-suffixless-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 json-unchanged	api_generation/fastapi_cli/check_outputs[json-unchanged].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-unchanged	api_generation/fastapi_cli/check_outputs[json-unchanged].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-unchanged	main/generation_platform/fastapi/cli/check-unchanged.txt
 json-unchanged	main/generation_platform/fastapi/cli/check/unchanged.json
-json-unchanged	main/generation_platform/fastapi/cli/no-warning.txt
+json-unchanged	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-changed-python	api_generation/fastapi_cli/check_outputs[text-changed-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-changed-python	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-changed-python	main/generation_platform/fastapi/cli/check/changed-python.txt
-text-changed-python	main/generation_platform/fastapi/cli/no-warning.txt
+text-changed-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-changed-readme	api_generation/fastapi_cli/check_outputs[text-changed-readme].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-changed-readme	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-changed-readme	main/generation_platform/fastapi/cli/check/changed-readme.txt
-text-changed-readme	main/generation_platform/fastapi/cli/no-warning.txt
+text-changed-readme	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-crlf	api_generation/fastapi_cli/check_outputs[text-crlf].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-crlf	api_generation/fastapi_cli/check_outputs[text-crlf].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-crlf	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-crlf	main/generation_platform/fastapi/cli/check/crlf.txt
-text-crlf	main/generation_platform/fastapi/cli/no-warning.txt
+text-crlf	main/generation_platform/fastapi/cli/check/crlf.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-crlf	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-edited-regenerated	api_generation/fastapi_cli/check_outputs[text-edited-regenerated].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-edited-regenerated	api_generation/fastapi_cli/check_outputs[text-edited-regenerated].3.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-edited-regenerated	api_generation/fastapi_cli/check_outputs[text-edited-regenerated].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-edited-regenerated	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-edited-regenerated	main/generation_platform/fastapi/cli/check/edited-regenerated.txt
-text-edited-regenerated	main/generation_platform/fastapi/cli/no-warning.txt
+text-edited-regenerated	main/generation_platform/fastapi/cli/check/edited-regenerated.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-edited-regenerated	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-empty-models	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-empty-models	main/generation_platform/fastapi/cli/check/empty-models.txt
-text-empty-models	main/generation_platform/fastapi/cli/no-warning.txt
+text-empty-models	main/generation_platform/fastapi/cli/check/empty-models.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-empty-models	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-extra-nested-python	api_generation/fastapi_cli/check_outputs[text-extra-nested-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-extra-nested-python	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-extra-nested-python	main/generation_platform/fastapi/cli/check/extra-nested-python.txt
-text-extra-nested-python	main/generation_platform/fastapi/cli/no-warning.txt
+text-extra-nested-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-extra-python	api_generation/fastapi_cli/check_outputs[text-extra-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-extra-python	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-extra-python	main/generation_platform/fastapi/cli/check/extra-python.txt
-text-extra-python	main/generation_platform/fastapi/cli/no-warning.txt
+text-extra-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-foreign	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-foreign	main/generation_platform/fastapi/cli/check/foreign.txt
-text-foreign	main/generation_platform/fastapi/cli/no-warning.txt
+text-foreign	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-ignore-bytecode-python	api_generation/fastapi_cli/check_outputs[text-ignore-bytecode-python].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-ignore-bytecode-python	api_generation/fastapi_cli/check_outputs[text-ignore-bytecode-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-ignore-bytecode-python	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-ignore-bytecode-python	main/generation_platform/fastapi/cli/check/ignore-bytecode-python.txt
-text-ignore-bytecode-python	main/generation_platform/fastapi/cli/no-warning.txt
+text-ignore-bytecode-python	main/generation_platform/fastapi/cli/check/ignore-bytecode-python.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-ignore-bytecode-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-ignore-unrendered-text	api_generation/fastapi_cli/check_outputs[text-ignore-unrendered-text].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-ignore-unrendered-text	api_generation/fastapi_cli/check_outputs[text-ignore-unrendered-text].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-ignore-unrendered-text	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-ignore-unrendered-text	main/generation_platform/fastapi/cli/check/ignore-unrendered-text.txt
-text-ignore-unrendered-text	main/generation_platform/fastapi/cli/no-warning.txt
+text-ignore-unrendered-text	main/generation_platform/fastapi/cli/check/ignore-unrendered-text.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-ignore-unrendered-text	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-latin-1	api_generation/fastapi_cli/check_outputs[text-latin-1].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-latin-1	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-latin-1	main/generation_platform/fastapi/cli/check/latin-1.txt
-text-latin-1	main/generation_platform/fastapi/cli/no-warning.txt
+text-latin-1	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-leftover-manifest	api_generation/fastapi_cli/check_outputs[text-leftover-manifest].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-leftover-manifest	api_generation/fastapi_cli/check_outputs[text-leftover-manifest].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-leftover-manifest	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-leftover-manifest	main/generation_platform/fastapi/cli/check/leftover-manifest.txt
-text-leftover-manifest	main/generation_platform/fastapi/cli/no-warning.txt
+text-leftover-manifest	main/generation_platform/fastapi/cli/check/leftover-manifest.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-leftover-manifest	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-lf	api_generation/fastapi_cli/check_outputs[text-lf].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-lf	api_generation/fastapi_cli/check_outputs[text-lf].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-lf	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-lf	main/generation_platform/fastapi/cli/check/lf.txt
-text-lf	main/generation_platform/fastapi/cli/no-warning.txt
+text-lf	main/generation_platform/fastapi/cli/check/lf.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-lf	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-missing-marker	api_generation/fastapi_cli/check_outputs[text-missing-marker].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-missing-marker	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-missing-marker	main/generation_platform/fastapi/cli/check/missing-marker.txt
-text-missing-marker	main/generation_platform/fastapi/cli/no-warning.txt
+text-missing-marker	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-missing-model	api_generation/fastapi_cli/check_outputs[text-missing-model].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-missing-model	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-missing-model	main/generation_platform/fastapi/cli/check/missing-model.txt
-text-missing-model	main/generation_platform/fastapi/cli/no-warning.txt
+text-missing-model	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-missing-readme	api_generation/fastapi_cli/check_outputs[text-missing-readme].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-missing-readme	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-missing-readme	main/generation_platform/fastapi/cli/check/missing-readme.txt
-text-missing-readme	main/generation_platform/fastapi/cli/no-warning.txt
+text-missing-readme	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-missing-root	api_generation/fastapi_cli/check_outputs[text-missing-root].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-missing-root	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-missing-root	main/generation_platform/fastapi/cli/check/missing-root.txt
-text-missing-root	main/generation_platform/fastapi/cli/no-warning.txt
+text-missing-root	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-models-in-package	api_generation/fastapi_cli/check_outputs[text-models-in-package].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-models-in-package	api_generation/fastapi_cli/check_outputs[text-models-in-package].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-models-in-package	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-models-in-package	main/generation_platform/fastapi/cli/check/models-in-package.txt
-text-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt
+text-models-in-package	main/generation_platform/fastapi/cli/check/models-in-package.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-models-in-package-changed	api_generation/fastapi_cli/check_outputs[text-models-in-package-changed].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-models-in-package-changed	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-models-in-package-changed	main/generation_platform/fastapi/cli/check/models-in-package-changed.txt
-text-models-in-package-changed	main/generation_platform/fastapi/cli/no-warning.txt
+text-models-in-package-changed	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-models-in-package-stale	api_generation/fastapi_cli/check_outputs[text-models-in-package-stale].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-models-in-package-stale	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-models-in-package-stale	main/generation_platform/fastapi/cli/check/models-in-package-stale.txt
-text-models-in-package-stale	main/generation_platform/fastapi/cli/no-warning.txt
+text-models-in-package-stale	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-modular	api_generation/fastapi_cli/check_outputs[text-modular].2/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 text-modular	api_generation/fastapi_cli/check_outputs[text-modular]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 text-modular	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-modular	main/generation_platform/fastapi/cli/check/modular.txt
-text-modular	main/generation_platform/fastapi/cli/no-warning.txt
+text-modular	main/generation_platform/fastapi/cli/check/modular.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-modular	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-modular-extra	api_generation/fastapi_cli/check_outputs[text-modular-extra]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 text-modular-extra	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-modular-extra	main/generation_platform/fastapi/cli/check/modular-extra.txt
-text-modular-extra	main/generation_platform/fastapi/cli/no-warning.txt
+text-modular-extra	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-modular-missing	api_generation/fastapi_cli/check_outputs[text-modular-missing]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 text-modular-missing	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-modular-missing	main/generation_platform/fastapi/cli/check/modular-missing.txt
-text-modular-missing	main/generation_platform/fastapi/cli/no-warning.txt
+text-modular-missing	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-modular-models-in-package	api_generation/fastapi_cli/check_outputs[text-modular-models-in-package]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 text-modular-models-in-package	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-modular-models-in-package	main/generation_platform/fastapi/cli/check/modular-models-in-package.txt
-text-modular-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt
+text-modular-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-nested-cwd	api_generation/fastapi_cli/check_outputs[text-nested-cwd].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-nested-cwd	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-nested-cwd	main/generation_platform/fastapi/cli/check/nested-cwd.txt
-text-nested-cwd	main/generation_platform/fastapi/cli/no-warning.txt
+text-nested-cwd	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-non-text-python	api_generation/fastapi_cli/check_outputs[text-non-text-python].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-non-text-python	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-non-text-python	main/generation_platform/fastapi/cli/no-warning.txt
+text-non-text-python	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-non-text-readme	api_generation/fastapi_cli/check_outputs[text-non-text-readme].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-non-text-readme	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-non-text-readme	main/generation_platform/fastapi/cli/no-warning.txt
+text-non-text-readme	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-package-in-models	api_generation/fastapi_cli/check_outputs[text-package-in-models].2/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 text-package-in-models	api_generation/fastapi_cli/check_outputs[text-package-in-models]/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 text-package-in-models	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-package-in-models	main/generation_platform/fastapi/cli/check/package-in-models.txt
-text-package-in-models	main/generation_platform/fastapi/cli/no-warning.txt
+text-package-in-models	main/generation_platform/fastapi/cli/check/package-in-models.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-package-in-models	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-package-in-models-changed	api_generation/fastapi_cli/check_outputs[text-package-in-models-changed]/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 text-package-in-models-changed	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-package-in-models-changed	main/generation_platform/fastapi/cli/check/package-in-models-changed.txt
-text-package-in-models-changed	main/generation_platform/fastapi/cli/no-warning.txt
+text-package-in-models-changed	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-package-in-models-services	api_generation/fastapi_cli/check_outputs[text-package-in-models-services].2/	= api_generation/fastapi_cli/check_outputs[json-package-in-models-services].2/
 text-package-in-models-services	api_generation/fastapi_cli/check_outputs[text-package-in-models-services]/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 text-package-in-models-services	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-package-in-models-services	main/generation_platform/fastapi/cli/check/package-in-models-services.txt
-text-package-in-models-services	main/generation_platform/fastapi/cli/no-warning.txt
+text-package-in-models-services	main/generation_platform/fastapi/cli/check/package-in-models-services.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-package-in-models-services	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-stale	api_generation/fastapi_cli/check_outputs[text-stale].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-stale	main/generation_platform/fastapi/cli/check-unchanged.txt
 text-stale	main/generation_platform/fastapi/cli/check/stale.txt
-text-stale	main/generation_platform/fastapi/cli/no-warning.txt
+text-stale	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-stale-regenerated	api_generation/fastapi_cli/check_outputs[text-stale-regenerated].2.py	= api_generation/fastapi_cli/check_outputs[json-stale-regenerated].2.py
 text-stale-regenerated	api_generation/fastapi_cli/check_outputs[text-stale-regenerated].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-stale-regenerated	main/generation_platform/fastapi/cli/check-unchanged.txt
@@ -286,13 +286,13 @@ text-stale-regenerated	main/generation_platform/fastapi/cli/leftover-warning.txt
 text-suffixless-models-in-package	api_generation/fastapi_cli/check_outputs[text-suffixless-models-in-package]	= api_generation/fastapi_cli/check_outputs[json-suffixless-models-in-package]
 text-suffixless-models-in-package	api_generation/fastapi_cli/check_outputs[text-suffixless-models-in-package].2	= api_generation/fastapi_cli/check_outputs[json-suffixless-models-in-package].2
 text-suffixless-models-in-package	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-suffixless-models-in-package	main/generation_platform/fastapi/cli/check/suffixless-models-in-package.txt
-text-suffixless-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt
+text-suffixless-models-in-package	main/generation_platform/fastapi/cli/check/suffixless-models-in-package.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-suffixless-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-unchanged	api_generation/fastapi_cli/check_outputs[text-unchanged].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-unchanged	api_generation/fastapi_cli/check_outputs[text-unchanged].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-unchanged	main/generation_platform/fastapi/cli/check-unchanged.txt
-text-unchanged	main/generation_platform/fastapi/cli/check/unchanged.txt
-text-unchanged	main/generation_platform/fastapi/cli/no-warning.txt
+text-unchanged	main/generation_platform/fastapi/cli/check/unchanged.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+text-unchanged	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_check_read_only]
 json-models-in-package	api_generation/fastapi_cli/check_read_only[json-models-in-package].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 json-models-in-package	api_generation/fastapi_cli/check_read_only[json-models-in-package].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
@@ -305,13 +305,13 @@ json-unchanged	api_generation/fastapi_cli/check_read_only[json-unchanged].py	= m
 json-unchanged	main/generation_platform/fastapi/cli/check/unchanged.json
 text-models-in-package	api_generation/fastapi_cli/check_read_only[text-models-in-package].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-models-in-package	api_generation/fastapi_cli/check_read_only[text-models-in-package].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
-text-models-in-package	main/generation_platform/fastapi/cli/check/unchanged.txt
+text-models-in-package	main/generation_platform/fastapi/cli/check/unchanged.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-package-in-models	api_generation/fastapi_cli/check_read_only[text-package-in-models].2/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
 text-package-in-models	api_generation/fastapi_cli/check_read_only[text-package-in-models]/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
-text-package-in-models	main/generation_platform/fastapi/cli/check/unchanged.txt
+text-package-in-models	main/generation_platform/fastapi/cli/check/unchanged.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 text-unchanged	api_generation/fastapi_cli/check_read_only[text-unchanged].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 text-unchanged	api_generation/fastapi_cli/check_read_only[text-unchanged].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
-text-unchanged	main/generation_platform/fastapi/cli/check/unchanged.txt
+text-unchanged	main/generation_platform/fastapi/cli/check/unchanged.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_config_values]
 loaded	main/generation_platform/fastapi/cli/configured.txt
 options	api_generation/fastapi_cli/config_values[options].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
@@ -324,10 +324,10 @@ diff	main/generation_platform/fastapi/cli/kept/pyproject-target.toml.txt
 lock-in-server-output	main/generation_platform/fastapi/cli/kept/pyproject-target.toml.txt
 watch	main/generation_platform/fastapi/cli/kept/pyproject-target.toml.txt
 [test_fastapi_cli_disable_warnings]
-disabled	main/formatter_policy/no_warning.txt
-shown	main/formatter_policy/warning.txt
+disabled	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+shown	main/formatter_policy/warning.txt	= main/migration_warnings/default.txt
 [test_fastapi_cli_failures]
-	main/generation_platform/fastapi/cli/json/error-empty.txt
+	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 	main/generation_platform/fastapi/cli/unresolved.txt
 [test_fastapi_cli_generate]
 	api_generation/fastapi_cli/generate.2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
@@ -346,30 +346,30 @@ absolute	api_generation/fastapi_cli/generation_json[absolute]/	= api_generation/
 absolute	main/generation_platform/fastapi/cli/check/unchanged.json
 absolute	main/generation_platform/fastapi/cli/dependencies-modular.txt
 absolute	main/generation_platform/fastapi/cli/json/modular.txt
-absolute	main/generation_platform/fastapi/cli/no-warning.txt
+absolute	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 carriage-return-header	api_generation/fastapi_cli/generation_json[carriage-return-header].2.py
 carriage-return-header	api_generation/fastapi_cli/generation_json[carriage-return-header].py	= api_generation/fastapi_cli/generation_json[carriage-return-header].2.py
 carriage-return-header	main/generation_platform/fastapi/cli/check/unchanged.json
 carriage-return-header	main/generation_platform/fastapi/cli/dependencies-json-carriage-return-header.txt
 carriage-return-header	main/generation_platform/fastapi/cli/json/carriage-return-header.txt
-carriage-return-header	main/generation_platform/fastapi/cli/no-warning.txt
+carriage-return-header	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 default	api_generation/fastapi_cli/generation_json[default].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 default	api_generation/fastapi_cli/generation_json[default].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 default	main/generation_platform/fastapi/cli/check/unchanged.json
 default	main/generation_platform/fastapi/cli/dependencies.txt
 default	main/generation_platform/fastapi/cli/json/check/sibling.txt
-default	main/generation_platform/fastapi/cli/no-warning.txt
+default	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 default	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 default	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 empty-models	main/generation_platform/fastapi/cli/check/unchanged.json
 empty-models	main/generation_platform/fastapi/cli/dependencies-empty-models.txt
 empty-models	main/generation_platform/fastapi/cli/json/check/empty-models.txt
-empty-models	main/generation_platform/fastapi/cli/no-warning.txt
+empty-models	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 foreign	api_generation/fastapi_cli/generation_json[foreign].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 foreign	api_generation/fastapi_cli/generation_json[foreign].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 foreign	main/generation_platform/fastapi/cli/check/unchanged.json
 foreign	main/generation_platform/fastapi/cli/dependencies.txt
-foreign	main/generation_platform/fastapi/cli/no-warning.txt
+foreign	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 foreign	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 foreign	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 latin-1	api_generation/fastapi_cli/generation_json[latin-1].2.py
@@ -377,47 +377,47 @@ latin-1	api_generation/fastapi_cli/generation_json[latin-1].py	= api_generation/
 latin-1	main/generation_platform/fastapi/cli/check/unchanged.json
 latin-1	main/generation_platform/fastapi/cli/dependencies-json-carriage-return-header.txt
 latin-1	main/generation_platform/fastapi/cli/json/latin-1.txt
-latin-1	main/generation_platform/fastapi/cli/no-warning.txt
+latin-1	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 leftover-manifest	api_generation/fastapi_cli/generation_json[leftover-manifest].2/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 leftover-manifest	api_generation/fastapi_cli/generation_json[leftover-manifest]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 leftover-manifest	main/generation_platform/fastapi/cli/check/unchanged.json
 leftover-manifest	main/generation_platform/fastapi/cli/dependencies-modular.txt
 leftover-manifest	main/generation_platform/fastapi/cli/json/modular.txt
-leftover-manifest	main/generation_platform/fastapi/cli/no-warning.txt
+leftover-manifest	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock].2/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 metadata-lock	api_generation/fastapi_cli/generation_json[metadata-lock]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 metadata-lock	main/generation_platform/fastapi/cli/check/unchanged.json
 metadata-lock	main/generation_platform/fastapi/cli/dependencies-modular.txt
 metadata-lock	main/generation_platform/fastapi/cli/json/modular.txt
-metadata-lock	main/generation_platform/fastapi/cli/json/published/api.lock.txt
+metadata-lock	main/generation_platform/fastapi/cli/json/published/api.lock.txt	= http/remote_lock_empty.txt
 metadata-lock	main/generation_platform/fastapi/cli/json/published/metadata.json.txt
-metadata-lock	main/generation_platform/fastapi/cli/no-warning.txt
+metadata-lock	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 mixed-paths	api_generation/fastapi_cli/generation_json[mixed-paths].2/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 mixed-paths	api_generation/fastapi_cli/generation_json[mixed-paths]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 mixed-paths	main/generation_platform/fastapi/cli/check/unchanged.json
 mixed-paths	main/generation_platform/fastapi/cli/dependencies-modular.txt
 mixed-paths	main/generation_platform/fastapi/cli/json/modular.txt
-mixed-paths	main/generation_platform/fastapi/cli/no-warning.txt
+mixed-paths	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 models-in-package	api_generation/fastapi_cli/generation_json[models-in-package].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 models-in-package	api_generation/fastapi_cli/generation_json[models-in-package].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 models-in-package	main/generation_platform/fastapi/cli/check/unchanged.json
 models-in-package	main/generation_platform/fastapi/cli/dependencies.txt
 models-in-package	main/generation_platform/fastapi/cli/json/check/models-in-package.txt
 models-in-package	main/generation_platform/fastapi/cli/json/models-in-package.txt
-models-in-package	main/generation_platform/fastapi/cli/no-warning.txt
+models-in-package	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 modular	api_generation/fastapi_cli/generation_json[modular].2/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 modular	api_generation/fastapi_cli/generation_json[modular]/	= api_generation/fastapi_cli/check_outputs[json-modular].2/
 modular	main/generation_platform/fastapi/cli/check/unchanged.json
 modular	main/generation_platform/fastapi/cli/dependencies-modular.txt
 modular	main/generation_platform/fastapi/cli/json/check/modular.txt
 modular	main/generation_platform/fastapi/cli/json/modular.txt
-modular	main/generation_platform/fastapi/cli/no-warning.txt
+modular	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 nested-output	api_generation/fastapi_cli/generation_json[nested-output].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 nested-output	api_generation/fastapi_cli/generation_json[nested-output].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 nested-output	main/generation_platform/fastapi/cli/check/unchanged.json
 nested-output	main/generation_platform/fastapi/cli/dependencies-json-nested-output.txt
 nested-output	main/generation_platform/fastapi/cli/json/check/nested-output.txt
-nested-output	main/generation_platform/fastapi/cli/no-warning.txt
+nested-output	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 nested-output	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 nested-output	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 package-in-models	api_generation/fastapi_cli/generation_json[package-in-models].2/	= api_generation/fastapi_cli/check_outputs[json-package-in-models].2/
@@ -426,13 +426,13 @@ package-in-models	main/generation_platform/fastapi/cli/check/unchanged-models-se
 package-in-models	main/generation_platform/fastapi/cli/dependencies-models-server.txt
 package-in-models	main/generation_platform/fastapi/cli/json/check/package-in-models.txt
 package-in-models	main/generation_platform/fastapi/cli/json/package-in-models.txt
-package-in-models	main/generation_platform/fastapi/cli/no-warning.txt
+package-in-models	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 separate-parents	api_generation/fastapi_cli/generation_json[separate-parents].2.py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 separate-parents	api_generation/fastapi_cli/generation_json[separate-parents].py	= main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 separate-parents	main/generation_platform/fastapi/cli/check/unchanged.json
 separate-parents	main/generation_platform/fastapi/cli/dependencies-json-separate-parents.txt
 separate-parents	main/generation_platform/fastapi/cli/json/check/separate-parents.txt
-separate-parents	main/generation_platform/fastapi/cli/no-warning.txt
+separate-parents	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 separate-parents	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 separate-parents	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 stale	api_generation/fastapi_cli/generation_json[stale].2.py	= api_generation/fastapi_cli/check_outputs[json-stale-regenerated].2.py
@@ -445,14 +445,14 @@ suffixless-model	api_generation/fastapi_cli/generation_json[suffixless-model].2
 suffixless-model	main/generation_platform/fastapi/cli/check/unchanged.json
 suffixless-model	main/generation_platform/fastapi/cli/dependencies.txt
 suffixless-model	main/generation_platform/fastapi/cli/json/check/suffixless-model.txt
-suffixless-model	main/generation_platform/fastapi/cli/no-warning.txt
+suffixless-model	main/generation_platform/fastapi/cli/no-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 suffixless-model	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 suffixless-model	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
 warning	api_generation/fastapi_cli/generation_json[warning].2.py
 warning	api_generation/fastapi_cli/generation_json[warning].py	= api_generation/fastapi_cli/generation_json[warning].2.py
 warning	main/generation_platform/fastapi/cli/check/unchanged.json
 warning	main/generation_platform/fastapi/cli/dependencies-json-warning.txt
-warning	main/generation_platform/fastapi/cli/documentation-warning.txt
+warning	main/generation_platform/fastapi/cli/documentation-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_ignore_pyproject]
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 [test_fastapi_cli_implementation_stubs]
@@ -487,7 +487,7 @@ json-form-baseline	main/generation_platform/fastapi/cli/input-diff/form-baseline
 json-unchanged	main/generation_platform/fastapi/cli/input-diff/unchanged.json
 text-changed	main/generation_platform/fastapi/cli/input-diff/changed.txt
 text-form-baseline	main/generation_platform/fastapi/cli/input-diff/form-baseline.txt
-text-unchanged	main/generation_platform/fastapi/cli/input-diff/unchanged.txt
+text-unchanged	main/generation_platform/fastapi/cli/input-diff/unchanged.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_input_diff_model_name_map_warnings]
 	main/generation_platform/fastapi/cli/input-diff/changed.txt
 	main/generation_platform/fastapi/cli/input-diff/model-name-map-warnings.txt
@@ -550,11 +550,11 @@ formats	main/generation_platform/fastapi/cli/model-dependencies/formats.py
 header-text	main/generation_platform/fastapi/cli/model-dependencies/header-text.py
 type-aliases	main/generation_platform/fastapi/cli/model-dependencies/type-aliases.py
 [test_fastapi_cli_model_error_context]
-json-class-name	main/generation_platform/fastapi/cli/json/error-empty.txt
-json-encoding	main/generation_platform/fastapi/cli/json/error-empty.txt
-json-lock	main/generation_platform/fastapi/cli/json/error-empty.txt
-json-output-parent	main/generation_platform/fastapi/cli/json/error-empty.txt
-json-publication	main/generation_platform/fastapi/cli/json/error-empty.txt
+json-class-name	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+json-encoding	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+json-lock	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+json-output-parent	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+json-publication	main/generation_platform/fastapi/cli/json/error-empty.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_fastapi_cli_model_option_warning]
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py
@@ -632,7 +632,7 @@ omitted	main/generation_platform/generate/nothing-written.txt
 dependency-format	main/generation_platform/fastapi/cli/removed-options/files.txt
 diagnostics-json	main/generation_platform/fastapi/cli/removed-options/files.txt
 [test_fastapi_cli_run_commands]
-flat	main/generation_platform/fastapi/cli/run-commands/server.txt
+flat	main/generation_platform/fastapi/cli/run-commands/server.txt	= main/generation_platform/fastapi/cli/dependencies.txt
 nested	main/generation_platform/fastapi/cli/run-commands/app-server.txt
 src	main/generation_platform/fastapi/cli/run-commands/src-app-server.txt
 src-top-level	main/generation_platform/fastapi/cli/run-commands/src-server.txt
@@ -647,10 +647,10 @@ suffixless-models-module-arguments2	main/generation_platform/fastapi/cli/service
 user-module-arguments0	main/generation_platform/fastapi/cli/services-module/user-module.txt
 [test_fastapi_cli_services_owner_in_place]
 bom-app/server-bom	main/generation_platform/fastapi/cli/services-owner-in-place/bom.txt
-legacy-docstring-app/server-legacy-docstring	main/generation_platform/fastapi/cli/services-owner-in-place/legacy-docstring.txt
-main-deleted-app/server-main.py	main/generation_platform/fastapi/cli/services-owner-in-place/main-deleted.txt
+legacy-docstring-app/server-legacy-docstring	main/generation_platform/fastapi/cli/services-owner-in-place/legacy-docstring.txt	= main/generation_platform/fastapi/cli/services-owner-in-place/bom.txt
+main-deleted-app/server-main.py	main/generation_platform/fastapi/cli/services-owner-in-place/main-deleted.txt	= main/generation_platform/fastapi/cli/services-owner-in-place/bom.txt
 other-directory-app/srv-None	main/generation_platform/fastapi/cli/services-owner-in-place/other-directory.txt
-unknown-owner-app/server-unknown-owner	main/generation_platform/fastapi/cli/services-owner-in-place/unknown-owner.txt
+unknown-owner-app/server-unknown-owner	main/generation_platform/fastapi/cli/services-owner-in-place/unknown-owner.txt	= main/generation_platform/fastapi/cli/services-owner-in-place/bom.txt
 [test_fastapi_cli_services_taken_over]
 import-root	main/generation_platform/fastapi/cli/services-taken-over/src-app-server.txt
 named-gone	main/generation_platform/fastapi/cli/services-taken-over/app-server.txt
@@ -672,7 +672,7 @@ target-module	main/generation_platform/fastapi/cli/shadowed-modules/target-modul
 	main/generation_platform/fastapi/cli/timestamp-services.py
 [test_fastapi_cli_shared_parent_jobs]
 existing-stub	main/generation_platform/fastapi/cli/shared-parent-jobs-stub.txt
-other-document	main/generation_platform/fastapi/cli/shared-parent-documents.txt
+other-document	main/generation_platform/fastapi/cli/shared-parent-documents.txt	= main/generation_platform/fastapi/cli/shared-parent-jobs.txt
 other-tags	main/generation_platform/fastapi/cli/shared-parent-tags.txt
 same-document	main/generation_platform/fastapi/cli/shared-parent-jobs.txt
 [test_fastapi_cli_shared_parent_later_job]

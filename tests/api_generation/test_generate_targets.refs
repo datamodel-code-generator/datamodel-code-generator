@@ -36,8 +36,8 @@ models.py	main/generation_platform/generate/lock-write.txt
 None	main/generation_platform/generate/nothing-written.txt
 models.py	main/generation_platform/generate/nothing-written.txt
 [test_generate_server_warnings]
-None	main/generation_platform/generate/documentation-warning.txt
-models.py	main/generation_platform/generate/documentation-warning.txt
+None	main/generation_platform/generate/documentation-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+models.py	main/generation_platform/generate/documentation-warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_generate_server_without_output]
 	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel//*.py
 	main/generation_platform/generate/memory-written.txt

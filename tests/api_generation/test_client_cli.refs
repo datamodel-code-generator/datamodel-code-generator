@@ -127,7 +127,7 @@ target-2-dataclass-arguments4	main/generation_platform/client/cli/pydantic-depen
 target-2-msgspec-arguments3	api_generation/client_cli/pydantic_dependency[target-2-msgspec-arguments3].py
 target-2-msgspec-arguments3	main/generation_platform/client/cli/pydantic-dependency/target-2-msgspec.txt
 target-2-typed-dict-arguments5	api_generation/client_cli/pydantic_dependency[target-2-typed-dict-arguments5].py
-target-2-typed-dict-arguments5	main/generation_platform/client/cli/pydantic-dependency/target-2-typed-dict.txt
+target-2-typed-dict-arguments5	main/generation_platform/client/cli/pydantic-dependency/target-2-typed-dict.txt	= main/generation_platform/client/cli/pydantic-dependency/target-2-dataclass.txt
 target-2.14-arguments1	api_generation/client_cli/pydantic_dependency[target-2.14-arguments1].py	= main/generation_platform/client/cli/options/models.py
 target-2.14-arguments1	main/generation_platform/client/cli/pydantic-dependency/target-2.14.txt
 target-2.14-missing-arguments0	api_generation/client_cli/pydantic_dependency[target-2.14-missing-arguments0].py	= main/generation_platform/client/cli/missing-sentinel-models.py

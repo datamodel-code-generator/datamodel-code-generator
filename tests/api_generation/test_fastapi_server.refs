@@ -8,7 +8,7 @@
 	docs/client-howto/notice.txt
 	docs/client-howto/oauth.txt
 	docs/client-howto/options.txt
-	docs/client-howto/pytest.txt
+	docs/client-howto/pytest.txt	= docs/tutorial/pytest.txt
 	docs/client-howto/responses.txt
 	docs/client-howto/retries.txt
 	docs/client-howto/signing.txt
@@ -28,7 +28,7 @@ tutorial	docs/tutorial/pytest.txt
 	docs/tutorial/call.txt
 	docs/tutorial/call_async.txt
 	docs/tutorial/client-files.txt
-	docs/tutorial/client-notice.txt
+	docs/tutorial/client-notice.txt	= docs/client-howto/notice.txt
 [test_fastapi_entrypoint]
 	main/generation_platform/fastapi/servers/entrypoint.txt
 	main/generation_platform/fastapi/servers/packages/entrypoint//*.py
@@ -202,7 +202,7 @@ pets-pets-missing	main/generation_platform/codecs/pydantic/pets-missing.txt
 pets-pets-noalias	main/generation_platform/codecs/pydantic/pets-noalias.txt
 pets-pets-noalias-forbid	main/generation_platform/codecs/pydantic/pets-noalias-forbid.txt
 pets-pets-paths-scope	main/generation_platform/codecs/pydantic/pets-paths-scope.txt
-pets-pets-schemas-scope	main/generation_platform/codecs/pydantic/pets-schemas-scope.txt
+pets-pets-schemas-scope	main/generation_platform/codecs/pydantic/pets-schemas-scope.txt	= main/generation_platform/codecs/pydantic/pets-paths-scope.txt
 pets-pets-serialization	main/generation_platform/codecs/pydantic/pets-serialization.txt
 pets-pets-strict	main/generation_platform/codecs/pydantic/pets-strict.txt
 pets-pets-variants	main/generation_platform/codecs/pydantic/pets-variants.txt

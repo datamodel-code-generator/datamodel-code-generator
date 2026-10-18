@@ -1,3 +1,0 @@
-mypy pets: clean
-pyright pets: clean
-ty pets: clean
