@@ -87,6 +87,7 @@ __all__ = [
     "uncollected_items",
     "unit_digest",
     "unrecorded_files",
+    "unrecorded_files_message",
     "write_files",
 ]
 
@@ -1365,6 +1366,16 @@ def duplicate_storages_message(groups: Sequence[Sequence[str]], unrecorded: Coll
     if any(sum(name not in unrecorded for name in group) > 1 for group in groups):
         lines.append("Fix: python scripts/fix_expected.py --deduplicate && git add -A tests")
     return "\n".join(lines)
+
+
+def unrecorded_files_message(names: Sequence[str]) -> str:
+    """Explain expected files that no line stores and no stored tree holds: a test records each, or it is deleted."""
+    paths = [f"tests/data/expected/{name}" for name in names]
+    fix = (
+        "Fix: if a test compares it, run that test (pytest '<test file>::<test>') and git add -A tests; "
+        f"otherwise git rm {' '.join(paths)}"
+    )
+    return "\n".join([*(f"{path} is not used by any test: no .refs line records it." for path in paths), fix])
 
 
 INPUT_TREES = (

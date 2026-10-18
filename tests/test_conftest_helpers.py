@@ -3019,6 +3019,13 @@ def test_stored_expected_outputs_are_unique() -> None:
         pytest.fail(units.duplicate_storages_message(groups, unrecorded), pytrace=False)  # pragma: no cover
 
 
+def test_expected_files_are_recorded() -> None:
+    """Every file below tests/data/expected is stored by a ``.refs`` line or belongs to a stored tree."""
+    index = units.RefsIndex(Path(__file__).parent)
+    if unrecorded := units.unrecorded_files(index.all_lines(), index.expected_root):
+        pytest.fail(units.unrecorded_files_message(unrecorded), pytrace=False)  # pragma: no cover
+
+
 def test_test_inputs_are_unique() -> None:
     """Every input below tests/data is stored once: a file, or a tree that tests read as a whole."""
     if groups := units.input_duplicates(Path(__file__).parent / "data"):
@@ -3119,6 +3126,13 @@ def test_unrecorded_expected_files_are_units(tmp_path: Path) -> None:
     unrecorded = units.unrecorded_files(lines, expected)
     assert unrecorded == ["lone.py", "m/copy.txt", "tree/notes.txt"]
     assert units.duplicates(lines, expected, unrecorded) == [["m/a.txt", "m/copy.txt", "tree/notes.txt"]]
+    assert units.unrecorded_files_message(unrecorded) == (
+        "tests/data/expected/lone.py is not used by any test: no .refs line records it.\n"
+        "tests/data/expected/m/copy.txt is not used by any test: no .refs line records it.\n"
+        "tests/data/expected/tree/notes.txt is not used by any test: no .refs line records it.\n"
+        "Fix: if a test compares it, run that test (pytest '<test file>::<test>') and git add -A tests; otherwise "
+        "git rm tests/data/expected/lone.py tests/data/expected/m/copy.txt tests/data/expected/tree/notes.txt"
+    )
 
 
 @pytest.mark.parametrize("option", ["--apply", "--from-ci", "--repair", "--deduplicate"])
