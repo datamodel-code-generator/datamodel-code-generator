@@ -253,7 +253,9 @@ Typing customization:
                         merge into one Enum when there are two or more and all
                         hold values of one JSON type, otherwise each branch is
                         typed as written, and a schema with one enum value is
-                        typed Literal[...] instead of a one-member Enum
+                        typed Literal[...] instead of a one-member Enum,
+                        except one with `nullable: true` and a value other
+                        than null, which is read as written
   --use-specialized-enum, --no-use-specialized-enum
                         Use specialized Enum class (StrEnum, IntEnum).
                         Requires --target-python-version 3.11+

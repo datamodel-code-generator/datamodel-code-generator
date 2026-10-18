@@ -878,9 +878,10 @@ def _single_value_enum_as_const(
 
     The values of instance data keywords, extensions other than x-propertyNames, links, security requirements and
     servers hold no schemas and stay as written. Those words are names, not keywords, in maps of named entries such
-    as properties, $defs, responses, webhooks, channels or the component maps. Each schema read so that holds a const
-    is marked, so that the const branches the option reads are known wherever the parser copies them to. Unchanged
-    parts are shared, so cached documents stay intact.
+    as properties, $defs, responses, webhooks, channels or the component maps. A schema with nullable true beside a
+    value other than null keeps its enum, since a const does not carry nullable. Each schema read so that holds a
+    const is marked, so that the const branches the option reads are known wherever the parser copies them to.
+    Unchanged parts are shared, so cached documents stay intact.
     """
     if isinstance(value, list):
         items = [_single_value_enum_as_const(item, named_entry_maps) for item in value]
@@ -896,7 +897,12 @@ def _single_value_enum_as_const(
     result = {**value, **changed} if changed else value
     if entries != "object":
         return result
-    if isinstance(enum := value.get("enum"), list) and len(enum) == 1 and "const" not in value:
+    if (
+        isinstance(enum := value.get("enum"), list)
+        and len(enum) == 1
+        and "const" not in value
+        and (enum[0] is None or value.get("nullable") is not True)
+    ):
         result = {
             ("const" if key == "enum" else key): enum[0] if key == "enum" else item for key, item in result.items()
         }

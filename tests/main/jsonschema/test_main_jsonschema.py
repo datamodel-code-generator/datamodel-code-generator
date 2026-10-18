@@ -9299,13 +9299,14 @@ oneOf/anyOf branches of single-value enums, as Rust's schemars writes documented
 become one Enum with branch titles as member names when there are two or more and all hold values
 of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
 value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
-schema with one enum value is typed `Literal[...]` instead of a one-member Enum. The option reads
-`const` branches the same way, which without it merge into one Enum in those cases too. Instance
-data such as `default` and `examples`, extension values (`x-...` except `x-propertyNames`), links
-and servers stay as written, so a schema kept under an extension key, such as one referenced as
-`headers.yaml#/x-rate`, is read as written too. A document parsed with draft-04 schema features,
-which have no `const`, is kept, and Avro, Protocol Buffers, XML Schema and GraphQL inputs are not
-changed.""",
+schema with one enum value is typed `Literal[...]` instead of a one-member Enum, except one with
+`nullable: true` and a value other than `null`, which keeps its enum and is read as written. The
+option reads `const` branches the same way, which without it merge into one Enum in those cases
+too. Instance data such as `default` and `examples`, extension values (`x-...` except
+`x-propertyNames`), links and servers stay as written, so a schema kept under an extension
+key, such as one referenced as `headers.yaml#/x-rate`, is read as written too. A document parsed
+with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol Buffers, XML
+Schema and GraphQL inputs are not changed.""",
     input_schema="jsonschema/single_value_enum_as_const/schema.json",
     cli_args=["--use-single-value-enum-as-const"],
     model_outputs={
@@ -9324,13 +9325,14 @@ def test_main_jsonschema_single_value_enum_as_const(output_file: Path) -> None:
     become one Enum with branch titles as member names when there are two or more and all hold values
     of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
     value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
-    schema with one enum value is typed `Literal[...]` instead of a one-member Enum. The option reads
-    `const` branches the same way, which without it merge into one Enum in those cases too. Instance
-    data such as `default` and `examples`, extension values (`x-...` except `x-propertyNames`), links
-    and servers stay as written, so a schema kept under an extension key, such as one referenced as
-    `headers.yaml#/x-rate`, is read as written too. A document parsed with draft-04 schema features,
-    which have no `const`, is kept, and Avro, Protocol Buffers, XML Schema and GraphQL inputs are not
-    changed.
+    schema with one enum value is typed `Literal[...]` instead of a one-member Enum, except one with
+    `nullable: true` and a value other than `null`, which keeps its enum and is read as written. The
+    option reads `const` branches the same way, which without it merge into one Enum in those cases
+    too. Instance data such as `default` and `examples`, extension values (`x-...` except
+    `x-propertyNames`), links and servers stay as written, so a schema kept under an extension
+    key, such as one referenced as `headers.yaml#/x-rate`, is read as written too. A document parsed
+    with draft-04 schema features, which have no `const`, is kept, and Avro, Protocol Buffers, XML
+    Schema and GraphQL inputs are not changed.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "schema.json",
@@ -9399,6 +9401,30 @@ def test_main_jsonschema_single_value_enum_as_const_matches_const(
         assert_func=assert_file_content,
         expected_file=expected_file,
         extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
+    )
+
+
+@pytest.mark.parametrize("mode_args", [[], ["--strict-nullable"]], ids=["default", "strict-nullable"])
+@pytest.mark.parametrize("option_args", [["--use-single-value-enum-as-const"], []], ids=["option", "without-option"])
+def test_main_jsonschema_single_value_enum_as_const_null_forms(
+    mode_args: list[str], option_args: list[str], output_file: Path
+) -> None:
+    """Read only the one-value enum with nullable true as written among the forms that write null.
+
+    A type list, a null branch and the x-nullable extension do not keep the enum.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "single_value_enum_as_const" / "null_forms.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            *mode_args,
+            *option_args,
+        ],
     )
 
 

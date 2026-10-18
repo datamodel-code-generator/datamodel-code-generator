@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: Nullable one-value enum branches
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Choice:
+      type: object
+      properties:
+        one_of:
+          oneOf:
+            - {type: string, enum: [a], nullable: true}
+            - {type: string, enum: [b]}
+        any_of:
+          anyOf:
+            - {type: string, enum: [a], nullable: true}
+            - {type: string, enum: [b]}
+            - {type: string, enum: [c]}
+        both_nullable:
+          oneOf:
+            - {type: string, enum: [a], nullable: true}
+            - {type: string, enum: [b], nullable: true}
+        null_value:
+          oneOf:
+            - {enum: [null], nullable: true}
+            - {type: string, enum: [b]}
+            - {type: string, enum: [c]}
+      required: [one_of, any_of, both_nullable, null_value]

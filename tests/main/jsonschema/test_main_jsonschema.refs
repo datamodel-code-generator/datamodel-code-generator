@@ -6822,6 +6822,11 @@ written-as-const-pydantic-v2	main/jsonschema/single_value_enum_as_const/pydantic
 [test_main_jsonschema_single_value_enum_as_const_mixed_drafts]
 option	main/jsonschema/single_value_enum_as_const/mixed_drafts//*.py
 without-option	main/jsonschema/single_value_enum_as_const/mixed_drafts//*.py
+[test_main_jsonschema_single_value_enum_as_const_null_forms]
+option-default	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[option-default].py
+option-strict-nullable	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[option-strict-nullable].py
+without-option-default	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[without-option-default].py
+without-option-strict-nullable	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[without-option-strict-nullable].py
 [test_main_jsonschema_special_enum]
 	main/jsonschema/special_enum.py
 [test_main_jsonschema_special_enum_empty_enum_field_name]
