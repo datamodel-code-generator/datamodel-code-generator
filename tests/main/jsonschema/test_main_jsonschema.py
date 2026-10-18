@@ -29552,14 +29552,9 @@ def test_additional_pattern_intersections(
                 except ValidationError:
                     result["python"] = "rejected"
             records.append(result)
-    runtime_expected = (
-        ADDITIONAL_PATTERN_EXPECTED / "pydantic20"
-        if case in {"minimum_number", "minimum_shared"} and PYDANTIC_VERSION.split(".")[:2] == ["2", "0"]
-        else ADDITIONAL_PATTERN_EXPECTED
-    )
     assert_output(
         json.dumps(records, indent=2),
-        runtime_expected
+        ADDITIONAL_PATTERN_EXPECTED
         / record.get("runtime_names", {}).get(
             f"{enabled}_{field_constraints}", f"{case}_{enabled}_{field_constraints}_runtime.txt"
         ),
@@ -29666,14 +29661,10 @@ def test_undeclared_required(
                 except ValidationError:
                     result["json"] = "rejected"
             results.append(result)
-    runtime_expected = (
-        UNDECLARED_REQUIRED_EXPECTED / "pydantic20"
-        if not enabled and "objects" in case and (PYDANTIC_VERSION.split(".")[:2] == ["2", "0"])
-        else UNDECLARED_REQUIRED_EXPECTED
-    )
     assert_output(
         json.dumps(results, indent=2),
-        runtime_expected / record.get("runtime_names", {}).get(str(enabled), f"{case}_{enabled}_runtime.txt"),
+        UNDECLARED_REQUIRED_EXPECTED
+        / record.get("runtime_names", {}).get(str(enabled), f"{case}_{enabled}_runtime.txt"),
     )
 
 
