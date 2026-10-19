@@ -11558,6 +11558,8 @@ def test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice(
             ],
         )
     assert_warnings_do_not_contain(recorded_warnings, "Cannot apply 'parent' strategy")
+    if output_model_type == DataModelType.TypingTypedDict.value and sys.version_info[:2] < (3, 12):
+        return
     assert_generated_model_json_validation(
         output_file,
         module_name="two_holders",

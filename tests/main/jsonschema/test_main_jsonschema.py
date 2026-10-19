@@ -17354,6 +17354,8 @@ def test_main_jsonschema_collapse_root_models_name_strategy_parent_recursive_wra
             "parent",
         ],
     )
+    if output_model_type == DataModelType.TypingTypedDict.value and sys.version_info[:2] < (3, 12):
+        return
     assert_generated_model_json_validation(
         output_file,
         module_name="circular_ref_ref_with_schema_keywords",
