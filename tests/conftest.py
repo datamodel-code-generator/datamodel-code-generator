@@ -243,9 +243,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks."""
-    if not config.getoption("codspeed", default=False):
-        for name in CHECK_AREA_ENVS:
-            os.environ.setdefault(name, "1")
+    check_areas = () if config.getoption("codspeed", default=False) else CHECK_AREA_ENVS
+    for name in check_areas:
+        os.environ.setdefault(name, "1")
     config.addinivalue_line(
         "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "

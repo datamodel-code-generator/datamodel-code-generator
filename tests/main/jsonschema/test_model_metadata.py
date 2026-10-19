@@ -202,17 +202,11 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
             super().parse_raw_obj(name, json.loads(json.dumps(raw)), path)
 
     report_path = tmp_path / "checks.jsonl"
-    match flag:
-        case "check":
-            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, "1")
-        case "report":
-            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, f"report:{report_path}")
-        case "off":
-            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, "0")
-        case "fallback":
-            monkeypatch.delenv(CHECK_SCHEMA_LOCATIONS_ENV, raising=False)
-        case "invalid":
-            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, "report:")
+    values = {"check": "1", "report": f"report:{report_path}", "off": "0", "invalid": "report:"}
+    if (value := values.get(flag)) is None:
+        monkeypatch.delenv(CHECK_SCHEMA_LOCATIONS_ENV, raising=False)
+    else:
+        monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, value)
     parser = RewritingParser(OPEN_API_DATA_PATH / "schema_location_alias.yaml", formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(Error, match=f"^{CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: Owner "):
