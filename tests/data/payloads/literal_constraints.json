@@ -1,0 +1,42 @@
+{
+  "valid": {
+    "size": "mm",
+    "named": "bb",
+    "level": 3,
+    "step": 4.5,
+    "maybe": "bb",
+    "kept": "aa",
+    "fixed": "abc",
+    "number_const": 5,
+    "codes": ["bb"],
+    "branch": "bb",
+    "consts": "ccc",
+    "branch_consts": "bb",
+    "mixed": 5,
+    "size_ref": "lll",
+    "level_ref": 2,
+    "narrowed_kept": "bb",
+    "pet": {"kind": 2},
+    "pet_ref": {"kind": 3}
+  },
+  "invalid": {
+    "size": "s",
+    "named": "ccc",
+    "level": 1,
+    "step": 0.5,
+    "maybe": "a",
+    "none_met": "a",
+    "fixed_violated": "a",
+    "number_const": 4,
+    "codes": ["a"],
+    "branch": "a",
+    "consts": "a",
+    "branch_consts": "a",
+    "mixed": 1,
+    "size_ref": "s",
+    "level_ref": 1,
+    "narrowed_kept": "ccc",
+    "pet": {"kind": 1},
+    "pet_ref": {"kind": 1}
+  }
+}

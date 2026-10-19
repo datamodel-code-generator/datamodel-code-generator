@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LiteralConstraints",
+  "type": "object",
+  "properties": {
+    "size": {"type": "string", "enum": ["s", "mm", "lll"], "minLength": 2},
+    "named": {"type": "string", "enum": ["a", "bb", "ccc"], "maxLength": 2, "x-enum-varnames": ["A", "B", "C"]},
+    "level": {"type": "integer", "enum": [1, 2, 3, 4], "minimum": 2, "exclusiveMaximum": 4},
+    "step": {"type": "number", "enum": [0.5, 1.5, 3, 4.5], "multipleOf": 1.5},
+    "maybe": {"type": ["string", "null"], "enum": ["a", "bb", null], "minLength": 2},
+    "kept": {"type": "string", "enum": ["aa", "bb"], "minLength": 2},
+    "none_met": {"type": "string", "enum": ["a", "b"], "minLength": 2},
+    "fixed": {"type": "string", "const": "abc", "minLength": 1},
+    "fixed_violated": {"type": "string", "const": "a", "minLength": 2},
+    "number_const": {"type": "integer", "const": 5, "minimum": 1},
+    "codes": {"type": "array", "items": {"type": "string", "enum": ["a", "bb", "ccc"], "minLength": 2}},
+    "branch": {"anyOf": [{"type": "string", "enum": ["a", "bb"], "minLength": 2}, {"type": "integer"}]},
+    "consts": {"type": "string", "oneOf": [{"const": "a"}, {"const": "bb"}, {"const": "ccc"}], "minLength": 2},
+    "branch_consts": {"anyOf": [{"const": "a", "minLength": 2}, {"const": "bb"}, {"const": "ccc"}]},
+    "mixed": {"enum": ["a", "bb", 1, 5, true, null], "minLength": 2, "minimum": 2},
+    "size_ref": {"$ref": "#/$defs/Size"},
+    "level_ref": {"$ref": "#/$defs/Level"},
+    "narrowed": {"type": "string", "enum": ["a", "bb"], "const": "a", "minLength": 2},
+    "narrowed_kept": {"type": "string", "enum": ["a", "bb", "ccc"], "const": "bb", "minLength": 2},
+    "pet": {"type": "object", "properties": {"kind": {"type": "integer", "enum": [1, 2, 3], "minimum": 2}}},
+    "pet_ref": {"$ref": "#/$defs/Pet"}
+  },
+  "$defs": {
+    "Size": {"type": "string", "enum": ["s", "mm", "lll"], "minLength": 2},
+    "Level": {"type": "integer", "enum": [1, 2, 3], "minimum": 2},
+    "Pet": {"type": "object", "properties": {"kind": {"type": "integer", "enum": [2, 3]}}}
+  }
+}

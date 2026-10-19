@@ -1,3 +1,2 @@
 msgspec.Meta does not take max_length on timedelta; StringConstraintsOnEmittedTypes.wait is generated without this constraint.
 msgspec.Meta does not take max_length on Decimal; StringConstraintsOnEmittedTypes.amount is generated without this constraint.
-msgspec.Meta does not take max_length on Literal['box']; StringConstraintsOnEmittedTypes.kind is generated without this constraint.

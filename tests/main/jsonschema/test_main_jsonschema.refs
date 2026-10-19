@@ -7225,6 +7225,34 @@ subclass-no-specialized	main/jsonschema/integer_enum_null/subclass_no_specialize
 3.14-True-True	main/jsonschema/keep_model_order_field_references_native_deferred.py
 [test_main_leading_underscore_class_name_default_unchanged]
 	main/jsonschema/leading_underscore_class_name_default_unchanged.py
+[test_main_literal_constraints]
+dataclass	main/jsonschema/literal_constraints.py
+dataclass	main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+default	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[default].py
+default	main/jsonschema/main_jsonschema/main_literal_constraints[default].rejected.txt
+default	main/jsonschema/main_jsonschema/main_literal_constraints[default].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+field_constraints	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[field_constraints].py
+field_constraints	main/jsonschema/main_jsonschema/main_literal_constraints[field_constraints].rejected.txt
+field_constraints	main/jsonschema/main_jsonschema/main_literal_constraints[field_constraints].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+literal	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[literal].py
+literal	main/jsonschema/main_jsonschema/main_literal_constraints[literal].rejected.txt
+literal	main/jsonschema/main_jsonschema/main_literal_constraints[literal].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+literal_field_constraints	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[literal_field_constraints].py
+literal_field_constraints	main/jsonschema/main_jsonschema/main_literal_constraints[literal_field_constraints].rejected.txt
+literal_field_constraints	main/jsonschema/main_jsonschema/main_literal_constraints[literal_field_constraints].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+msgspec	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[msgspec].py
+msgspec	main/jsonschema/main_jsonschema/main_literal_constraints[msgspec].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+pydantic_dataclass	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[pydantic_dataclass].py
+pydantic_dataclass	main/jsonschema/main_jsonschema/main_literal_constraints[pydantic_dataclass].rejected.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[field_constraints].rejected.txt
+pydantic_dataclass	main/jsonschema/main_jsonschema/main_literal_constraints[pydantic_dataclass].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+typed_dict	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[typed_dict].py
+typed_dict	main/jsonschema/main_jsonschema/main_literal_constraints[typed_dict].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+use_annotated	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[use_annotated].py
+use_annotated	main/jsonschema/main_jsonschema/main_literal_constraints[use_annotated].rejected.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[field_constraints].rejected.txt
+use_annotated	main/jsonschema/main_jsonschema/main_literal_constraints[use_annotated].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+[test_main_literal_constraints_undecided]
+default	main/jsonschema/literal_constraints_undecided.py
+literal	main/jsonschema/literal_constraints_undecided.py	= main/jsonschema/literal_constraints_undecided~main_literal_constraints_undecided[literal].py
 [test_main_local_directory_path_absolute_root_id_refs]
 	main/jsonschema/path_absolute_root_id_refs//*.py
 [test_main_lookaround_anyof_nullable_pydantic_v2]

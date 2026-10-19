@@ -2342,11 +2342,11 @@ def _model_shape(model: DataModel, shapes: _ModelShapes) -> _ModelShape:
     masks: dict[str, str] = {}
     for reference in references:
         masks.setdefault(reference.short_name, f"<{len(masks)}>")
-    rendered, imports = model._render_dedup_key("M")  # noqa: SLF001
+    rendered, imports, *written = model._render_dedup_key("M")  # noqa: SLF001
     masked = _string_or_identifier_pattern(rendered, shapes.target_python_version).sub(
         lambda match: masks.get(name, name) if (name := match[1]) else match[0], rendered
     )
-    key = (type(model), masked, imports, len(references))
+    key = (type(model), masked, imports, len(references), *written)
     shapes.memo[model] = shape = ((*key, *tags) if (tags := shapes.union_tags.get(model)) else key), references
     return shape
 

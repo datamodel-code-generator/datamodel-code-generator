@@ -50,6 +50,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
+from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._graph_ids import ModelKey, identity_of, model_key_of
@@ -103,6 +104,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "insert_field",
     "move_model",
     "note_changed_models",
+    "record_values_as_written",
     "redirect_model_reference_users",
     "redirect_reference_users",
     "register_model",
@@ -1280,6 +1282,15 @@ class GenerationStore:  # noqa: PLR0904
         ):
             return model_id
         return None
+
+    @staticmethod
+    def record_values_as_written(owner: DataModel | DataType, values: Sequence[Any]) -> None:
+        """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of.
+
+        Duplicate models compare them besides their rendering (``DataModel._render_dedup_key``), so models the
+        literal check narrows to the same values stay apart as they were written. Nothing the store derives reads them.
+        """
+        owner.__dict__[VALUES_AS_WRITTEN_KEY] = tuple(values)
 
     def note_changed_models(self, *models: object) -> None:
         """Record ``models`` again at the next refresh, after their types changed outside the store.

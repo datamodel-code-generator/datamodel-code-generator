@@ -168,12 +168,14 @@ def intersect_constraint(keyword: str, first: Any, second: Any) -> Any:
     return intersect_multiple_of(first, second)
 
 
-def warn_unsatisfiable(where: str, keywords: Iterable[str]) -> None:
+def warn_unsatisfiable(
+    where: str, keywords: Iterable[str], parts: str = "the referenced or inherited schema and its own keywords"
+) -> None:
     """Warn that no value satisfies every part of a schema, whose generated code keeps its earlier form."""
     names = ", ".join(f"`{keyword}`" for keyword in keywords)
     warn(
-        f"{where}: no value satisfies every part of this schema (the referenced or inherited schema and its own "
-        f"keywords), since no value meets all of their {names}; the generated code keeps its earlier {names}.",
+        f"{where}: no value satisfies every part of this schema ({parts}), since no value meets all of their "
+        f"{names}; the generated code keeps its earlier {names}.",
         stacklevel=3,
     )
 

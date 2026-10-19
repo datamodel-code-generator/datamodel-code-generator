@@ -93,6 +93,7 @@ _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
 _REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
+_VALUES_AS_WRITTEN_KEY = _applicability.VALUES_AS_WRITTEN_KEY
 _RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
 
 
@@ -634,9 +635,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 object.__setattr__(new_obj, field_name, copied_value)
         new_obj._set_runtime_expression_imports(self.runtime_expression_imports)
         new_obj._set_forward_reference(self._is_forward_reference)
-        for key in (_REFERENCE_NULL_DATA_TYPE_KEY, _NULL_STRIPPED_DATA_TYPE_KEY):
+        for key in (_REFERENCE_NULL_DATA_TYPE_KEY, _NULL_STRIPPED_DATA_TYPE_KEY, _VALUES_AS_WRITTEN_KEY):
             if key in self.__dict__:
-                new_obj.__dict__[key] = True
+                new_obj.__dict__[key] = self.__dict__[key]
         if (enum_member_literal_reference := self._enum_member_literal_reference) is not None:
             new_obj._set_enum_member_literal_reference(enum_member_literal_reference)
 

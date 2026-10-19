@@ -3,7 +3,6 @@ msgspec.Meta does not take ge on str; NumberConstraintsOnDeclaredNumbers.label i
 msgspec.Meta does not take ge on str; NumberConstraintsOnDeclaredNumbers.day is generated without this constraint.
 msgspec.Meta does not take multiple_of on str; NumberConstraintsOnDeclaredNumbers.clock is generated without this constraint.
 msgspec.Meta does not take le on Literal['a', 'b']; NumberConstraintsOnDeclaredNumbers.code is generated without this constraint.
-msgspec.Meta does not take ge on Literal[3]; NumberConstraintsOnDeclaredNumbers.level is generated without this constraint.
 msgspec.Meta does not take ge on Any; NumberConstraintsOnDeclaredNumbers.any_value is generated without this constraint.
 msgspec.Meta does not take ge on int | str; NumberConstraintsOnDeclaredNumbers.count_or_label is generated without this constraint.
 msgspec.Meta does not take ge on bool; NumberConstraintsOnDeclaredNumbers.flag is generated without this constraint.

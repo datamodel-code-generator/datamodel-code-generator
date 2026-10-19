@@ -10,10 +10,7 @@
     ]
   },
   {
-    "accepted": true,
-    "value": [
-      "a"
-    ]
+    "accepted": false
   },
   {
     "accepted": false

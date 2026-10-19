@@ -61,6 +61,7 @@ IMPORT_CACHE_NEUTRAL_MUTATION_METHODS = frozenset({
     "defer_refresh",
     "discard_derived_facts",
     "note_changed_models",
+    "record_values_as_written",
     "register_model",
 })
 GENERATION_MODEL_LIST_MUTATION_METHODS = frozenset({

@@ -4,8 +4,7 @@
     "value": 2
   },
   {
-    "accepted": true,
-    "value": 1
+    "accepted": false
   },
   {
     "accepted": false

@@ -9,7 +9,6 @@ from pydantic import RootModel, conint
 
 
 class Root(IntEnum):
-    integer_1 = 1
     integer_2 = 2
 
 

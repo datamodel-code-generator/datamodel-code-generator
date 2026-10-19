@@ -52,6 +52,7 @@ from datamodel_code_generator.types import (
     NONE,
     DataType,
     _create_context_data_type,
+    _is_value_literal,
     chain_as_tuple,
     merge_normalized_constraint,
     normalize_integer_constraint,
@@ -1034,6 +1035,23 @@ class DataModelField(DataModelFieldBase):
         )
         return untaken, inexact
 
+    def _literal_decided_meta_keywords(self, data: dict[str, Any]) -> frozenset[str]:
+        """Return the constraints the values of a const's or an enum's ``Literal`` decide, which it leaves out silently.
+
+        The parser keeps only the values that meet them (``_applicability.literal_check``), or warns that none does.
+        """
+        if not _is_value_literal(base := self._annotated_base_data_type()):
+            return frozenset()
+        decided = _applicability.literal_check(
+            base.literals,
+            {
+                schema: data[meta]
+                for meta, schema in _applicability.META_SCHEMA_KEYWORDS.items()
+                if schema in _applicability.LITERAL_DECIDABLE_KEYWORDS and data.get(meta) is not None
+            },
+        )[0]
+        return frozenset(meta for meta, schema in _applicability.META_SCHEMA_KEYWORDS.items() if schema in decided)
+
     def _union_leaves(
         self,
         member: DataType,
@@ -1241,7 +1259,7 @@ class DataModelField(DataModelFieldBase):
         if self.use_annotated:
             declared = self._get_declared_meta_data()
             untaken, inexact = self._dropped_meta_keywords(declared)
-            if untaken:
+            if untaken and (untaken := untaken - self._literal_decided_meta_keywords(declared)):
                 reasons.append(
                     f"msgspec.Meta does not take {', '.join(sorted(untaken))} on "
                     f"{self._annotated_base_data_type().type_hint}"

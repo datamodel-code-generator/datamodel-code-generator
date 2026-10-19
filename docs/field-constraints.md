@@ -217,7 +217,7 @@ any of its constraints, also with a warning. The `Literal` of a `const` takes th
 `{"type": "string", "const": "box", "maxLength": 5}` keeps `max_length`, while a `const` without `type` keeps none of
 them. A `--type-overrides` type decides again the keywords the replaced type left out: an override to `str` takes back
 such a length without a warning. `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept
-on the Python type, such as `pattern` on `bytes` or `minLength` on the `Literal` of a `const`.
+on the Python type, such as `pattern` on `bytes` or on the `Literal` of a `const`.
 
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
@@ -260,6 +260,45 @@ class Model(BaseModel):
     count: int | None = None
     tags: list[str] | None = Field(None, min_length=1)
     at: AwareDatetime | None = None
+```
+
+---
+
+## 🎯 Constraints beside a `const` or an `enum`
+
+The values of a `const` or an `enum` are checked against the `minLength`, `maxLength`, `minimum`, `maximum`,
+`exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` beside them that the field does not write itself, and a value
+that does not meet them is left out: an Enum class or the `Literal` of an enum keeps only the values the schema
+admits, with their `x-enum-varnames`, `x-enum-names` and `x-enum-descriptions`. The consts of a `oneOf` or `anyOf`
+are checked against their own constraints and those beside the `oneOf` or `anyOf`. A keyword of another JSON type, such
+as `minimum` beside a string, is met, as is every keyword by `null`; no bound is met by NaN, and `multipleOf` is
+checked on the decimal text of the values. `pattern` is not checked, nor a `multipleOf` that is not positive or beside a value
+that is not finite.
+
+When no value meets them, the schema admits no value: the values stay as written, with a warning. A field that writes
+the keyword as a `Field()` argument beside the `Literal`, the `const` of a Pydantic model with `--field-constraints` or
+`--use-annotated` or the `Literal` of a root model, keeps its values as written, since Pydantic checks the keyword.
+`msgspec.Struct` leaves out the keywords the values decide without a warning.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "size": {"type": "string", "enum": ["s", "mm", "lll"], "minLength": 2},
+    "level": {"type": "integer", "enum": [1, 2, 3], "minimum": 2}
+  }
+}
+```
+
+```python
+class Size(Enum):
+    mm = "mm"
+    lll = "lll"
+
+
+class Level(IntEnum):
+    integer_2 = 2
+    integer_3 = 3
 ```
 
 ---

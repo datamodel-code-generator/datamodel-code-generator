@@ -1,0 +1,15 @@
+title: LiteralConstraintsUndecided
+type: object
+properties:
+  zero_step:
+    type: number
+    enum: [0, 1.5, 3]
+    multipleOf: 0
+  infinite:
+    type: number
+    enum: [.inf, 3, 4]
+    multipleOf: 3
+  not_a_number:
+    type: number
+    enum: [.nan, 3, 4]
+    maximum: 3

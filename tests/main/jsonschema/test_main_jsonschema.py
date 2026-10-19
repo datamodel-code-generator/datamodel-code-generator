@@ -6556,6 +6556,87 @@ def test_main_string_constraints_on_emitted_types(output_file: Path, extra_args:
     assert_output("\n".join(rejected) + "\n", name="rejected")
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--field-constraints"], id="field_constraints"),
+        pytest.param(["--use-annotated"], id="use_annotated"),
+        pytest.param(["--enum-field-as-literal", "all"], id="literal"),
+        pytest.param(["--enum-field-as-literal", "all", "--field-constraints"], id="literal_field_constraints"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], id="pydantic_dataclass"),
+        pytest.param(["--output-model-type", "dataclasses.dataclass"], id="dataclass"),
+        pytest.param(["--output-model-type", "typing.TypedDict"], id="typed_dict"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+    ],
+)
+def test_main_literal_constraints(output_file: Path, extra_args: list[str]) -> None:
+    """Test a const or an enum keeps only the values that meet the constraints beside it that its field leaves out.
+
+    Lengths, bounds and ``multipleOf`` decide each value, at a property, a root, an item, an anyOf branch and the
+    consts of a oneOf or anyOf (their own constraints and the parent's), with ``x-enum-varnames`` kept beside their
+    values and a null member kept. A const or an enum none of whose values meets them stays as written with the
+    unsatisfiable warning, also when its field writes the keyword, and so does an enum whose const fails them. A field
+    that writes the keyword beside the ``Literal`` keeps its values and the keyword, and msgspec, which checks no
+    keyword on a ``Literal``, warns about none. Enums and models the check narrows to the same values stay apart as
+    written.
+    """
+    name = "literal_constraints"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{warning.message}\n"
+            for warning in recorded_warnings
+            if "no value satisfies" in str(warning.message) or "is generated without" in str(warning.message)
+        ),
+        name="warnings",
+    )
+    if not any(model_type.startswith("pydantic") for model_type in extra_args) and "--output-model-type" in extra_args:
+        return
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "LiteralConstraints") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", name="rejected")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="default"), pytest.param(["--enum-field-as-literal", "all"], id="literal")],
+)
+def test_main_literal_constraints_undecided(output_file: Path, extra_args: list[str]) -> None:
+    """Test an enum keeps every value for a multipleOf the check cannot decide, and IEEE bounds drop NaN.
+
+    A divisor that is not positive, or a value that is not finite, leaves ``multipleOf`` as before.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "literal_constraints_undecided.yaml",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"],
+        force_exec_validation=True,
+    )
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.parametrize(
     ("expected_file", "extra_args"),

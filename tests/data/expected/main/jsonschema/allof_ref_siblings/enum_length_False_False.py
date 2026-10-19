@@ -9,7 +9,6 @@ from pydantic import RootModel, constr
 
 
 class Root(Enum):
-    a = 'a'
     bb = 'bb'
 
 

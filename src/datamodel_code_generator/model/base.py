@@ -14,7 +14,7 @@ from collections import OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from functools import cached_property, lru_cache
-from itertools import accumulate, takewhile
+from itertools import accumulate, chain, takewhile
 from pathlib import Path
 from threading import RLock
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
@@ -24,6 +24,7 @@ from pydantic import ConfigDict, Field
 from typing_extensions import Self, override
 
 from datamodel_code_generator import Error, cached_path_exists
+from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._requirements import backport_path, python_target_meets
@@ -2491,10 +2492,24 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return result
 
     def _render_dedup_key(self, class_name: str | None) -> tuple[Any, ...]:
-        """Render the hashable deduplication key for a class name without caching it."""
+        """Render the hashable deduplication key for a class name without caching it.
+
+        The key ends with the values as written of the enum or the Literals the model holds only some values of
+        (``GenerationStore.record_values_as_written``), so models stay apart as their schemas were written.
+        """
         if self.IS_ROOT_MODEL:
             self.finalize_sequence_interface()
-        return tuple(to_hashable(v) for v in (self.render(class_name=class_name), self.imports))
+        key = tuple(to_hashable(v) for v in (self.render(class_name=class_name), self.imports))
+        return (*key, to_hashable(written)) if (written := self._written_values_by_position()) else key
+
+    def _written_values_by_position(self) -> tuple[tuple[int, tuple[Any, ...]], ...]:
+        """Return the values as written that the model and the types of its fields keep, by their position."""
+        holders = chain((self,), (data_type for field in self.fields for data_type in field.data_type.all_data_types))
+        return tuple(
+            (position, values)
+            for position, holder in enumerate(holders)
+            if (values := holder.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None
+        )
 
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
         """Yield the Pydantic constructs that the model's rendering writes, each with the field that writes it.

@@ -17,9 +17,10 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-all-of-root-format-kinds`` (``all_of_root_keyword_kinds``): an ``allOf`` root merged with constraints keeps
   the keywords of the kinds its format names, silently, before the field split decides the declared ones by the
   emitted type.
-* ``legacy-undeclared-keywords-off-literal`` (``undeclared_keywords_taken``; G03a part A2 removes it): the
-  ``Literal`` of a ``const`` or an ``enum`` takes no keyword of a kind its schema does not declare, though it takes
-  those of its values' type for a declared one.
+* ``legacy-undeclared-keywords-off-literal`` (``undeclared_keywords_taken``): the ``Literal`` of a ``const`` or an
+  ``enum`` takes no keyword of a kind its schema does not declare, though it takes those of its values' type for a
+  declared one. The literal check (``literal_check``) decides such a keyword on the values where it can, so the row
+  keeps only the keywords it cannot decide, such as ``pattern``, off the field.
 * ``legacy-override-keeps-string-keywords`` (``overridden_declared_constraints``; G03b removes it):
   ``--type-overrides`` decides the string keywords a field left out again, but keeps those the replaced type took
   whatever the override type takes.
@@ -34,7 +35,10 @@ builds the public tables of ``DataTypeManager`` from it while it is imported, an
 
 from __future__ import annotations
 
+import operator
 from dataclasses import dataclass, replace
+from fractions import Fraction
+from math import isfinite
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final
 
@@ -43,7 +47,7 @@ from typing_extensions import final
 from datamodel_code_generator._requirements import pydantic_target_meets
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -55,6 +59,7 @@ __all__ = [
     "LENGTH_KEYWORDS",
     "LENGTH_KEYWORD_ORDER",
     "LENGTH_META_KEYWORDS",
+    "LITERAL_DECIDABLE_KEYWORDS",
     "META_SCHEMA_KEYWORDS",
     "MSGSPEC_OUTPUT",
     "NO_KEYWORDS",
@@ -79,6 +84,7 @@ __all__ = [
     "keyword_kinds",
     "length_reading",
     "listed_type_keywords",
+    "literal_check",
     "literal_number_keywords",
     "member_keywords",
     "meta_keywords",
@@ -120,6 +126,11 @@ PROPERTY_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({"maxProperties", "mi
 TYPE_DEPENDENT_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
 """The keywords whose meaning depends on the type of the value; a type the generator cannot classify takes them all."""
 NO_KEYWORDS: Final[frozenset[str]] = frozenset()
+LITERAL_DECIDABLE_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | LENGTH_KEYWORDS
+"""The keywords a literal check decides on the values of a ``const`` or an ``enum`` (``literal_check``)."""
+
+VALUES_AS_WRITTEN_KEY: Final = "_values_as_written"
+"""The key under which a type, model or schema holding only the values a literal check admits keeps them as written."""
 
 _KEYWORD_KINDS: Final[tuple[tuple[frozenset[str], frozenset[str]], ...]] = (
     (frozenset({"string"}), STRING_KEYWORDS),
@@ -421,9 +432,9 @@ def untaken_values(values: Mapping[str, Any], untaken: frozenset[str]) -> dict[s
 def undeclared_keywords_taken(taken: frozenset[str], *, value_literal: bool) -> frozenset[str]:
     """Return the keywords of the kinds a schema does not declare that its field writes: those the emitted type takes.
 
-    Row ``legacy-undeclared-keywords-off-literal`` (G03a part A2 removes it): the ``Literal`` of a ``const`` or an
-    ``enum`` (``value_literal``) takes none of them, so an untyped ``{"const": "a", "minLength": 1}`` writes no
-    ``min_length``, though Pydantic checks it on the ``Literal`` of a string and a declared string writes it.
+    Row ``legacy-undeclared-keywords-off-literal``: the ``Literal`` of a ``const`` or an ``enum`` (``value_literal``)
+    takes none of them, so an untyped ``{"const": "a", "pattern": "^a"}`` writes no ``pattern``, though Pydantic
+    checks it on the ``Literal`` of a string and a declared string writes it; the literal check decides the others.
     """
     return NO_KEYWORDS if value_literal else taken
 
@@ -599,3 +610,48 @@ def untaken_minimums(untaken: Iterable[str], taken_by_minimum: Iterable[tuple[st
     for minimum, taken in taken_by_minimum:
         minimums.update({key: minimum for key in keys if key in taken and key not in minimums})
     return minimums
+
+
+_BOUND_CHECKS: Final[Mapping[str, Callable[[float, float], bool]]] = MappingProxyType({
+    "minimum": operator.ge,
+    "maximum": operator.le,
+    "exclusiveMinimum": operator.gt,
+    "exclusiveMaximum": operator.lt,
+})
+
+
+def _meets_length(value: object, keyword: str, limit: float) -> bool:
+    """Return whether a JSON value meets a length keyword, counting the code points of a string."""
+    if not isinstance(value, str):
+        return True
+    return len(value) >= limit if keyword == "minLength" else len(value) <= limit
+
+
+def _meets(value: object, keyword: str, limit: float) -> bool | None:
+    """Return whether a JSON value meets a keyword with the limit, or None when the check cannot decide it.
+
+    A keyword of a kind that does not apply to the value's JSON type is met, as is every keyword by null (JSON Schema).
+    The bounds compare a number by IEEE rules, so NaN meets none; a ``bool`` is no number. ``multipleOf`` is decided on
+    the decimal text of the values, and not for a divisor that is not positive and finite or a value that is not finite.
+    """
+    if keyword in LENGTH_KEYWORDS:
+        return _meets_length(value, keyword, limit)
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return True
+    if (check := _BOUND_CHECKS.get(keyword)) is not None:
+        return check(value, limit)
+    if not (isfinite(limit) and limit > 0 and isfinite(value)):
+        return None
+    return (Fraction(str(value)) / Fraction(str(limit))).denominator == 1
+
+
+def literal_check(
+    values: Sequence[object], constraints: Mapping[str, float]
+) -> tuple[tuple[str, ...], tuple[bool, ...]]:
+    """Return the keywords of ``constraints`` the check decides on every value, and whether each value meets them all.
+
+    ``constraints`` holds keywords of ``LITERAL_DECIDABLE_KEYWORDS`` with their limits, in the order to report them.
+    """
+    met = {keyword: tuple(_meets(value, keyword, limit) for value in values) for keyword, limit in constraints.items()}
+    decided = tuple(keyword for keyword, results in met.items() if None not in results)
+    return decided, tuple(all(met[keyword][index] for keyword in decided) for index in range(len(values)))
