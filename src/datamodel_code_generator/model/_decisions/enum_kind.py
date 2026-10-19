@@ -17,10 +17,11 @@ without asking ``enum_as_literal``, so ``--enum-field-as-literal all`` leaves th
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Literal, TypeAlias, final
+from math import isnan
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable, Mapping
 
 __all__ = [
     "EnumBase",
@@ -33,6 +34,7 @@ __all__ = [
     "enum_as_literal",
     "is_literal_kind",
     "is_tag_kind",
+    "keeps_member_value",
     "literal_value_kind",
 ]
 
@@ -46,21 +48,24 @@ EnumBase: TypeAlias = Literal["Enum", "IntEnum", "StrEnum"]
 
 EnumKindRule: TypeAlias = Literal[
     "enum",
+    "enum-value-base-changes-a-member",
+    "int-enum",
     "str-enum",
-    "legacy-int-type-without-value-check",
-    "legacy-subclass-type-without-member-check",
+    "subclass-value-type",
     "legacy-inherited-first-base-class",
     "legacy-inherited-specialized-without-member-check",
 ]
 """The rows of ``decide_enum_kind``.
 
-* ``enum``: a plain ``Enum``.
+* ``enum``: a plain ``Enum``: no value base is asked for, or the schema type has no value type.
+* ``enum-value-base-changes-a-member``: a plain ``Enum``, since the value base asked for would change or refuse a
+  member value (``T(v) != v``, NaN equal to itself; ``bytes`` keeps no JSON value), as ``1.5`` or ``'x'`` beside an
+  integer type would.
+* ``int-enum``: an ``IntEnum`` for an integer type whose members ``int`` keeps (ints, bools and integral floats).
 * ``str-enum``: a ``StrEnum`` for a string type whose members are all str, on a target Python that has it. Like an
   ``IntEnum``, it subclasses its value type already, so ``--use-subclass-enum`` adds no value type base.
-* ``legacy-int-type-without-value-check``: an ``IntEnum`` for an integer type, whatever its members are, so a member
-  ``1.5`` equals the member ``1`` and a member ``'x'`` fails at import.
-* ``legacy-subclass-type-without-member-check``: under ``--use-subclass-enum``, a plain ``Enum`` that also subclasses
-  the value type of the schema type (``class A(str, Enum)``), whatever its members are.
+* ``subclass-value-type``: under ``--use-subclass-enum``, a plain ``Enum`` that also subclasses the value type of the
+  schema type (``class A(str, Enum)``), which keeps every member.
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a
@@ -90,9 +95,11 @@ class EnumKind:
 
 
 _ENUM = EnumKind(base="Enum", subclasses_value_type=False, rule="enum")
+_MEMBER_CHANGING_ENUM = EnumKind(base="Enum", subclasses_value_type=False, rule="enum-value-base-changes-a-member")
+_INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="int-enum")
 _STR_ENUM = EnumKind(base="StrEnum", subclasses_value_type=False, rule="str-enum")
-_INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="legacy-int-type-without-value-check")
-_SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="legacy-subclass-type-without-member-check")
+_SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="subclass-value-type")
+_VALUE_TYPES: Final[Mapping[str, Callable[[Any], object]]] = {"int": int, "float": float, "str": str}
 _INHERITED = EnumKind(base=None, subclasses_value_type=False, rule="legacy-inherited-first-base-class")
 _INHERITED_SPECIALIZED = EnumKind(
     base=None, subclasses_value_type=False, rule="legacy-inherited-specialized-without-member-check"
@@ -116,18 +123,35 @@ def decide_enum_kind(  # noqa: PLR0913
     ``float``, ``bytes`` or ``str``, or None for any other type), its member ``values``, the options and whether the
     target Python has ``StrEnum``. A merged enum reads only ``first_specialized``, which tells that the first enum it
     extends is an ``IntEnum`` or a ``StrEnum``. An ``IntEnum`` or ``StrEnum`` subclasses its value type already, so
-    only a plain ``Enum`` takes the value type base of ``--use-subclass-enum``.
+    only a plain ``Enum`` takes the value type base of ``--use-subclass-enum``. Any value base is taken only when it
+    keeps every member value (``keeps_member_value``).
     """
     if origin == "merged":
         return _INHERITED_SPECIALIZED if first_specialized else _INHERITED
-    if use_specialized_enum:
-        if value_type == "int":
-            return _INT_ENUM
-        if value_type == "str" and has_strenum and all(isinstance(value, str) for value in values):
-            return _STR_ENUM
-    if use_subclass_enum and value_type is not None:
-        return _SUBCLASS_ENUM
-    return _ENUM
+    specialized = use_specialized_enum and (value_type == "int" or (value_type == "str" and has_strenum))
+    if value_type is None or not (specialized or use_subclass_enum):
+        return _ENUM
+    if not all(keeps_member_value(value_type, value) for value in values):
+        return _MEMBER_CHANGING_ENUM
+    if specialized:
+        return _INT_ENUM if value_type == "int" else _STR_ENUM
+    return _SUBCLASS_ENUM
+
+
+def keeps_member_value(value_type: str, value: object, /) -> bool:
+    """Return whether a member of an enum whose class subclasses the value type keeps its value as written.
+
+    The value type ``T`` keeps ``v`` when ``T(v) == v``, NaN being equal to itself: ``int`` keeps ints, bools and
+    integral floats, ``float`` any number, ``str`` only strings, and ``bytes`` no JSON value.
+    """
+    if value_type == "float" and isinstance(value, float) and isnan(value):
+        return True
+    if (construct := _VALUE_TYPES.get(value_type)) is None:
+        return False
+    try:
+        return construct(value) == value
+    except (TypeError, ValueError, OverflowError):
+        return False
 
 
 def enum_as_literal(

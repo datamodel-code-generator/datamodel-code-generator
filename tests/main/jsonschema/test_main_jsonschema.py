@@ -6768,6 +6768,41 @@ def test_main_jsonschema_specialized_enums_disabled(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "output_model",
+    [
+        pytest.param("pydantic_v2.BaseModel", id="pydantic-v2"),
+        pytest.param("dataclasses.dataclass", id="dataclasses"),
+    ],
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--use-subclass-enum"], id="subclass"),
+        pytest.param(["--use-subclass-enum", "--no-use-specialized-enum"], id="subclass-unspecialized"),
+        pytest.param(["--target-python-version", "3.11"], id="py311"),
+        pytest.param(["--target-python-version", "3.11", "--use-subclass-enum"], id="py311-subclass"),
+        pytest.param(["--preset", "standard-py314-20261017", "--target-python-version", "3.14"], id="preset"),
+    ],
+)
+def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Give an enum class a value base (IntEnum, StrEnum, ``(T, Enum)``) only when it keeps every member value.
+
+    Up to 0.86.0 the base came from the schema type alone: const branches ``[1, 'a']`` or ``[1, 2.5]`` were an
+    IntEnum (``'a'`` failed at import, ``2.5`` became ``2``), ``['a', 1]`` under --use-subclass-enum a ``(str, Enum)``
+    holding ``'1'``, and a ``format: byte`` enum a ``(bytes, Enum)`` that failed at import. Members that the base
+    keeps, as ``1.0`` in an IntEnum or ``1`` in a ``(float, Enum)``, keep it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--empty-enum-field-name"],
     option_description="""Name for empty string enum field values.
@@ -24271,6 +24306,18 @@ def test_main_jsonschema_non_finite_enum_members(output_model: str, output_file:
         input_file_type="jsonschema",
         extra_args=["--output-model-type", output_model],
         importable_module_name="generated_non_finite_enum_members",
+        importable_module_attribute="Model",
+    )
+
+
+def test_main_jsonschema_non_finite_enum_members_subclass(output_file: Path) -> None:
+    """Keep the float base of non-finite number enums under --use-subclass-enum: float keeps inf and NaN as written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "non_finite_enum_members.yaml",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--use-subclass-enum"],
+        importable_module_name="generated_non_finite_enum_members_subclass",
         importable_module_attribute="Model",
     )
 

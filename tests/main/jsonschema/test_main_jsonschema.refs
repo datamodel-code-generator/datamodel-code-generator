@@ -6166,6 +6166,19 @@ legacy-option	main/jsonschema/enum_member_typed_defaults.py
 	main/jsonschema/jsonschema_enum_object_values.py
 [test_main_jsonschema_enum_root_literal]
 	main/jsonschema/root_in_enum.py
+[test_main_jsonschema_enum_value_base_kinds]
+default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
+default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py
+preset-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-dataclasses].py
+preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-pydantic-v2].py
+py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
+py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py
+py311-subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-dataclasses].py
+py311-subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-pydantic-v2].py
+subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-dataclasses].py
+subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-pydantic-v2].py
+subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-dataclasses].py
+subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-pydantic-v2].py
 [test_main_jsonschema_external_discriminator]
 msgspec.Struct-discriminator_with_external_reference_msgspec.py	main/jsonschema/discriminator_with_external_reference_msgspec.py
 pydantic_v2.BaseModel-discriminator_with_external_reference.py	main/jsonschema/discriminator_with_external_reference.py
@@ -6495,6 +6508,8 @@ msgspec.Struct	main/jsonschema/main_jsonschema/non_finite_enum_members[msgspec.S
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/non_finite_enum_members[pydantic_v2.dataclass].py
 typing.TypedDict	main/jsonschema/main_jsonschema/non_finite_enum_members[typing.TypedDict].py
+[test_main_jsonschema_non_finite_enum_members_subclass]
+	main/jsonschema/main_jsonschema/non_finite_enum_members_subclass.py
 [test_main_jsonschema_non_finite_number_values]
 	main/jsonschema/non_finite_number_values.py
 [test_main_jsonschema_non_finite_number_values_remaining_backends]

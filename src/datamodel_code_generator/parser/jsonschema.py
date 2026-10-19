@@ -12225,11 +12225,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the enum class of the schema subclasses a value type, whose members cannot be None.
 
         Such a class needs one ``type`` other than ``string``, which rejects null unless ``nullable`` allows it, so the
-        enum drops the null it lists and is not nullable, except that an enum of only null stays that None. The
-        ``use_subclass_enum`` check is a no-op for the built-in ``_get_enum_model_class``; it stays for parser
-        subclasses that return its old second value.
+        enum drops the null it lists and is not nullable, except that an enum of only null stays that None. The class
+        is the one of the members other than null, which a value base must keep. The ``use_subclass_enum`` check is a
+        no-op for the built-in ``_get_enum_model_class``; it stays for parser subclasses that return its old second
+        value.
         """
-        enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), obj.enum)
+        enum_cls, type_ = self._get_enum_model_class(
+            self._get_enum_type(obj), [value for value in obj.enum if value is not None]
+        )
         return enum_cls is not Enum or (self.use_subclass_enum and type_ in SUBCLASS_BASE_CLASSES)
 
     def _extra_template_data_for_reference(self, reference: Reference) -> defaultdict[str, dict[str, Any]] | None:

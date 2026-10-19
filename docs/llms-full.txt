@@ -60571,8 +60571,11 @@ build a JSON Schema dict and call `_parse_file` without `_read_document`, so doc
 **L1.** `_parse_schema_obj` dispatches each schema object: a `$ref` with sibling keywords is merged
 (`_merge_ref_with_schema`), then `parse_array`, `parse_all_of`, `parse_one_of` or `parse_any_of` (both through
 `parse_combined_schema`), `parse_object`, `parse_enum` or `parse_root_type`. A oneOf/anyOf of constants can become a
-synthetic enum (`_extract_const_enum_from_combined`). Names come from `ModelResolver.add`. Each model records the
-location of the schema object it is built from on its `Reference` (`_record_schema_object`). Every use of a reference
+synthetic enum (`_extract_const_enum_from_combined`). An enum class takes a value base (`IntEnum`, `StrEnum`,
+`--use-subclass-enum`'s `(T, Enum)`) only when that base keeps every member value (`T(v) == v`, NaN equal to itself),
+and is a plain `Enum` otherwise (`model/_decisions/enum_kind.py:decide_enum_kind`). Names come from
+`ModelResolver.add`. Each model records the location of the schema object it is built from on its `Reference`
+(`_record_schema_object`). Every use of a reference
 gets a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base classes; inherited
 fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only captured here
 (`field.extras["discriminator"]`). Field construction already decides const handling: `DataModelFieldBase.__init__`
@@ -60844,7 +60847,7 @@ concrete backends.
 | Decision | Pure core | Adapters |
 | --- | --- | --- |
 | whether a type's rendered hint, or the annotation a field writes around it, includes None | `model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, `field_renders_none` | `types.py:DataType.admits_none`; `model/base.py:DataModelFieldBase._field_null_source`; writes: `types.py:DataType._materialize_render_state` (see L7) |
-| which class an enum is written as (`Enum`, `IntEnum`, `StrEnum`, a value type base); today's kinds kept as named `legacy-*` rows | `model/_decisions/enum_kind.py`: `decide_enum_kind` | `parser/jsonschema.py:JsonSchemaParser._get_enum_model_class` (schema enums, also those merged from `const` branches and those of the converted formats); `parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`; `parser/base.py:Parser.__extract_inherited_enum` (L5); classes: `model/enum.py:_enum_class` |
+| which class an enum is written as: a value base (`IntEnum`, `StrEnum`, `(T, Enum)`) only when it keeps every member value, else `Enum`; merged enums keep today's kinds as named `legacy-*` rows | `model/_decisions/enum_kind.py`: `decide_enum_kind` | `parser/jsonschema.py:JsonSchemaParser._get_enum_model_class` (schema enums, also those merged from `const` branches and those of the converted formats); `parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`; `parser/base.py:Parser.__extract_inherited_enum` (L5); classes: `model/enum.py:_enum_class` |
 | whether an enum is written as a `Literal` | `model/_decisions/enum_kind.py`: `enum_as_literal` | `should_parse_enum_as_literal` of `parser/jsonschema.py:JsonSchemaParser` and `parser/graphql.py:GraphQLParser`; legacy bypass: the enum branch of `parser/jsonschema.py:JsonSchemaParser.parse_array_fields` (a `type` list holding `array`) writes an Enum class without asking, so `--enum-field-as-literal all` leaves it a class |
 | the kind of a const or enum value, and whether a `Literal` or a msgspec tag holds it | `model/_decisions/enum_kind.py`: `literal_value_kind`, `is_literal_kind`, `is_tag_kind` | `parser/jsonschema.py`: `_partition_enum_values`, `_get_const_data_type`, `_get_single_literal_value`, `_get_tagged_union_value`, `_extract_const_enum_from_combined`; `parser/base.py`: `Parser._get_enum_discriminator_literal`, `_msgspec_enum_clashes`, `_msgspec_null_enum_message`; not yet: `model/base.py:DataModelFieldBase._process_const_as_literal`, which moves with the decision on const defaults and nullability |
 
