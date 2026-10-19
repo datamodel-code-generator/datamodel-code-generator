@@ -82,8 +82,11 @@ KEYED_MUTATORS = frozenset({"pop", "setdefault"})
 SETATTR_FUNCTIONS = frozenset({"setattr", "object.__setattr__"})
 
 PARSER_HOOK_METHODS = frozenset({
+    "add_literal_validation",
+    "add_sequence_interface",
     "apply_discriminator_tag",
     "assign_forward_reference_fields",
+    "enable_identity_hash",
     "enable_model_keyword_only",
     "enable_structured_default_validation",
     "finalize_required_inherited_field",
@@ -101,7 +104,11 @@ PARSER_HOOK_METHODS = frozenset({
     "unbind_fields",
     "unconstrain_union_members",
 })
-"""Model, field and data-type methods that parser passes call by name and that change model state."""
+"""Model, field and data-type methods that parser passes call by name and that change model state.
+
+The checker also scans every model method these reach through calls (any receiver, any depth), except construction,
+reference bookkeeping and render entry points.
+"""
 
 RENDER_STATE_WRITERS = frozenset({
     "_apply_nullable_from_reference",
@@ -115,17 +122,26 @@ RENDER_STATE_WRITERS = frozenset({
 CONSTRUCTION_METHODS = frozenset({
     "__deepcopy__",
     "__init__",
-    "__post_init__",
     "class_name",
     "copy_deep",
     "create_base_class_model",
     "create_reuse_model",
     "create_typed_extra_field",
-    "model_post_init",
+    "get_data_type",
     "register_reference",
     "unregister_reference",
 })
 """Methods parser code calls that build objects, keep reverse-reference bookkeeping or implement ``class_name``."""
+
+RENDER_ENTRY_POINTS = {
+    "get_dedup_key": "renders a model to compare duplicates; its writes are caches, which the cache rules report",
+    "prepare_module_code": "plans schema-validator module code at IMPORTS into a cache, which the cache rules report",
+    "render": "renders a model's text; render-time writes move into the field render plans (RP14a)",
+    "render_module_code": "renders a module's code at L7; render-time writes move into the field render plans (RP14a)",
+}
+"""Render-time entry points that parser passes call; they are not hooks, and the hook closure stops at them."""
+
+DYNAMIC_ATTRIBUTE_FUNCTIONS = frozenset({"getattr", "hasattr"})
 
 PARSER_STATE_OWNERS = frozenset({"ModuleContext", "Parser"})
 """Owners whose rows describe parser run state; the model-list rules cover their lists."""
@@ -145,6 +161,9 @@ ROW_ENUMS = {
     "access": frozenset({"Access"}),
 }
 WRITE_KINDS = frozenset({"FACT", "PRESENTATION"})
+FREEZE_ORDER = ("B1", "B2", "RENDER")
+PLAN_FACTS = ("RenderFact.PLANS",)
+RENDERED_NULLABILITY = ("Fact.NULLABLE",)
 ITEM_ATTRIBUTE = re.compile(r'(\w+)\["([^"]+)"\]')
 BARE_TOML_KEY = re.compile(r"[A-Za-z0-9_-]+")
 TOML_TABLE = re.compile(r'\[("(?:[^"\\]|\\.)*")\.("(?:[^"\\]|\\.)*")\]')
@@ -153,7 +172,8 @@ ALLOWLIST_HEADER = """\
 # Writes that bypass GenerationStore, as scripts/check_generation_store_usage.py finds them.
 # Tables are ["path"."function"] with target = count; no line numbers, so unrelated edits do not move entries.
 # Generated once by `python scripts/check_generation_store_usage.py --write-allowlist`; later changes only remove
-# entries or lower counts. A new write fails the check, and so does an entry that no longer matches.
+# entries or lower counts, and a refactor that moves a write renames its entry without raising the total.
+# A new write fails the check, and so does an entry that no longer matches.
 """
 
 
@@ -290,7 +310,51 @@ def _member(value: str) -> str:
     return value.partition(".")[2]
 
 
-def _make_row(values: dict[str, object]) -> FactRow:
+def _load_freeze_points(tree: ast.Module, enums: dict[str, tuple[str, ...]]) -> dict[str, str]:
+    if not isinstance(table := _module_assignment(tree, "RENDER_FACT_FREEZE_POINTS"), ast.Dict):
+        msg = "RENDER_FACT_FREEZE_POINTS must be a literal dict"
+        raise TypeError(msg)
+    points: dict[str, str] = {}
+    for key, value in zip(table.keys, table.values, strict=True):
+        fact = _row_value(key, "facts", enums) if key is not None else None
+        point = _row_value(value, "frozen_at", enums) if isinstance(fact, str) else None
+        if not (isinstance(fact, str) and fact.startswith("RenderFact.") and isinstance(point, str)):
+            msg = "RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members"
+            raise TypeError(msg)
+        points[_member(fact)] = _member(point)
+    if missing := sorted(set(enums.get("RenderFact", ())) - points.keys()):
+        msg = f"RENDER_FACT_FREEZE_POINTS misses {', '.join(missing)}"
+        raise ValueError(msg)
+    return points
+
+
+def _expected_frozen_at(row: FactRow, freeze_points: dict[str, str]) -> str | None:
+    """Return the latest freeze point among the row's facts; rendered nullability is written at B2."""
+    if row.kind not in WRITE_KINDS:
+        return None
+    points = [freeze_points[_member(fact)] if fact.startswith("RenderFact.") else "B1" for fact in row.facts] or ["B1"]
+    if row.facts == RENDERED_NULLABILITY and row.final_after == "RENDER":
+        points.append("B2")
+    return max(points, key=FREEZE_ORDER.index)
+
+
+def _row_problem(row: FactRow, freeze_points: dict[str, str]) -> str | None:
+    enums = {fact.partition(".")[0] for fact in row.facts}
+    problem = None
+    if row.kind == "BOOKKEEPING" and (row.facts or row.store_ops):
+        problem = "bookkeeping rows name no facts and no store operations"
+    elif row.kind == "FACT" and "Fact" not in enums and row.facts != PLAN_FACTS:
+        problem = "fact rows name a Fact; only plan rows name RenderFact.PLANS alone"
+    elif row.kind == "PRESENTATION" and "Fact" in enums and row.facts != RENDERED_NULLABILITY:
+        problem = "presentation rows name RenderFacts; only rendered nullability names Fact.NULLABLE"
+    elif row.kind == "CACHE" and "Fact" in enums:
+        problem = "cache rows name no Fact"
+    elif row.frozen_at != (expected := _expected_frozen_at(row, freeze_points)):
+        problem = f"frozen_at must be {expected}, the latest freeze point among its facts"
+    return problem
+
+
+def _make_row(values: dict[str, object], freeze_points: dict[str, str]) -> FactRow:
     frozen_at = values["frozen_at"]
     row = FactRow(
         owner=_string(values["owner"], "owner"),
@@ -302,8 +366,8 @@ def _make_row(values: dict[str, object]) -> FactRow:
         store_ops=_strings(values["store_ops"], "store_ops"),
         access=_member(_string(values["access"], "access")),
     )
-    if row.kind == "BOOKKEEPING" and row.facts:
-        msg = f"bookkeeping row {row.owner}.{row.attribute} must not name facts"
+    if problem := _row_problem(row, freeze_points):
+        msg = f"row {row.owner}.{row.attribute}: {problem}"
         raise ValueError(msg)
     if (row.access == "ITEM") != (row.item is not None):
         msg = f'row {row.owner}.{row.attribute}: write a dict entry as name["key"] with access=Access.ITEM'
@@ -325,6 +389,7 @@ def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
     tree = ast.parse(facts_module.read_text(), filename=str(facts_module))
     enums = _enum_members(tree)
     names, defaults = _row_fields(tree)
+    freeze_points = _load_freeze_points(tree, enums)
     if not isinstance(table := _module_assignment(tree, "ATTRIBUTE_FACTS"), ast.Tuple):
         msg = "ATTRIBUTE_FACTS must be a literal tuple"
         raise TypeError(msg)
@@ -341,7 +406,9 @@ def load_attribute_facts(path: Path | None = None) -> tuple[FactRow, ...]:
         if missing := [name for name in names if name not in arguments and name not in defaults]:
             msg = f"ATTRIBUTE_FACTS row {ast.unparse(entry)} misses {', '.join(missing)}"
             raise TypeError(msg)
-        row = _make_row({name: _row_value(arguments.get(name) or defaults[name], name, enums) for name in names})
+        row = _make_row(
+            {name: _row_value(arguments.get(name) or defaults[name], name, enums) for name in names}, freeze_points
+        )
         if (row.owner, row.attribute) in seen:
             msg = f"ATTRIBUTE_FACTS has two rows for {row.owner}.{row.attribute}"
             raise ValueError(msg)
@@ -446,7 +513,7 @@ def _key_text(node: ast.AST | None) -> str:
     match node:
         case ast.Constant(value=str() as text):
             return text
-        case ast.Name(id=name) | ast.Attribute(attr=name):
+        case ast.Name(id=name) | ast.Attribute(attr=name) if name.isupper():
             return name
         case ast.Slice():
             return ":"
@@ -459,6 +526,18 @@ def _item_target(attribute: str, method: str, key: ast.AST | None, *, entry: boo
     if not method or entry:
         return f"{attribute}[{text}].{method}()" if method else f"{attribute}[{text}]"
     return f"{attribute}.{method}({text})" if key is not None else f"{attribute}.{method}()"
+
+
+def _bound_targets(target: ast.AST) -> Iterator[ast.AST]:
+    """Yield the targets an assignment binds, looking into tuple, list and starred targets only."""
+    match target:
+        case ast.Tuple(elts=items) | ast.List(elts=items):
+            for item in items:
+                yield from _bound_targets(item)
+        case ast.Starred(value=starred):
+            yield from _bound_targets(starred)
+        case _:
+            yield target
 
 
 def _indexed_object(node: ast.expr) -> tuple[ast.expr, ast.AST | None]:
@@ -600,8 +679,46 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        """Check augmented assignment targets."""
-        self._check_target(node.target)
+        """Check augmented assignment targets, including in-place operators on aliases and ``__dict__``."""
+        operator = ast.unparse(node).removeprefix(ast.unparse(node.target)).split()[0]
+        match node.target:
+            case ast.Name(id=name) if (aliased := self._state.aliases.get(name)) is not None:
+                if aliased == "__dict__":
+                    self._report_dict_key(node, "...", f"__dict__ {operator}", computed=True)
+                else:
+                    self._check_container_write(node, aliased, f"{aliased} {operator}", None)
+            case ast.Attribute(attr="__dict__", value=receiver) if not self._excluded(receiver):
+                self._report_dict_key(node, "...", f"__dict__ {operator}", computed=True)
+            case ast.Name():
+                self._unbind(node.target)
+            case _:
+                self._check_target(node.target)
+        self.generic_visit(node)
+
+    def visit_For(self, node: ast.For | ast.AsyncFor) -> None:
+        """Forget what the loop target named before."""
+        self._unbind(node.target)
+        self.generic_visit(node)
+
+    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
+        """Forget what the loop target named before."""
+        self.visit_For(node)
+
+    def visit_withitem(self, node: ast.withitem) -> None:
+        """Forget what a ``with ... as`` target named before."""
+        if node.optional_vars is not None:
+            self._unbind(node.optional_vars)
+        self.generic_visit(node)
+
+    def visit_comprehension(self, node: ast.comprehension) -> None:
+        """Forget what a comprehension target named before."""
+        self._unbind(node.target)
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        """Forget what an ``except ... as`` name named before."""
+        if node.name:
+            self._unbind(ast.Name(id=node.name))
         self.generic_visit(node)
 
     def visit_Delete(self, node: ast.Delete) -> None:
@@ -681,15 +798,15 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
                 if not self._excluded(receiver):
                     self._report_dict_entry(node, method, key, entry=entry)
             case ast.Attribute(attr=attribute, value=receiver) if not self._excluded(receiver):
-                self._check_container_write(node, attribute, method, key, entry=entry)
+                self._check_container_write(node, attribute, _item_target(attribute, method, key, entry=entry), key)
             case ast.Name(id=name) if (aliased := self._state.aliases.get(name)) is not None:
                 if aliased == "__dict__":
                     self._report_dict_entry(node, method, key, entry=entry)
                 else:
-                    self._check_container_write(node, aliased, method, key, entry=entry)
+                    self._check_container_write(node, aliased, _item_target(aliased, method, key, entry=entry), key)
 
     def _check_legacy_assignment(self, target: ast.AST) -> bool:
-        if not self._checks_fact_writes or (isinstance(target, ast.Attribute) and self._excluded(target.value)):
+        if not self._checks_fact_writes:
             return False
         if owner := _sequence_owner(target):
             helper = self._sequence_helper(owner, "assign")
@@ -713,10 +830,7 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
         elif self._checks_fact_writes and (rows := GUARDS.attributes.get(attribute)):
             self._add(node, attribute, _write_message(attribute, rows))
 
-    def _check_container_write(
-        self, node: ast.AST, attribute: str, method: str, key: ast.AST | None, *, entry: bool = False
-    ) -> None:
-        target = _item_target(attribute, method, key, entry=entry)
+    def _check_container_write(self, node: ast.AST, attribute: str, target: str, key: ast.AST | None) -> None:
         if rows := GUARDS.caches.get(attribute):
             self._add(node, target, _cache_message(target, rows))
         elif self._checks_fact_writes and attribute in GUARDS.containers:
@@ -724,12 +838,13 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
             self._add(node, target, _write_message(target, (item,) if item else GUARDS.attributes[attribute]))
 
     def _report_dict_entry(self, node: ast.AST, method: str, key: ast.AST | None, *, entry: bool = False) -> None:
-        computed = (isinstance(key, ast.Name) and not key.id.isupper()) or (key is None and bool(method))
+        computed = _key_text(key) == "..."
         target = _item_target("__dict__", method, key, entry=entry)
         self._report_dict_key(node, _key_text(key), target, computed=computed)
 
     def _report_dict_key(self, node: ast.AST, key: str, target: str, *, computed: bool = False) -> None:
-        self.dict_keys_written.add(key)
+        if not computed:
+            self.dict_keys_written.add(key)
         rows = () if computed else GUARDS.dict_keys.get(key, ())
         if rows and all(row.kind == "BOOKKEEPING" for row in rows):
             return
@@ -743,12 +858,17 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
             message = _write_message(target, rows)
         self._add(node, target, message)
 
+    def _unbind(self, target: ast.AST) -> None:
+        for node in _bound_targets(target):
+            if isinstance(node, ast.Name):
+                self._state.aliases.pop(node.id, None)
+                self._state.schema_names.discard(node.id)
+
     def _record_binding(self, target: ast.AST, value: ast.expr) -> None:
+        self._unbind(target)
         if not isinstance(target, ast.Name):
             return
         state = self._state
-        state.aliases.pop(target.id, None)
-        state.schema_names.discard(target.id)
         if _is_schema_object_value(value, state.schema_names):
             state.schema_names.add(target.id)
             return
@@ -835,60 +955,104 @@ def _setattr_aliases(tree: ast.Module) -> frozenset[str]:
     )
 
 
-def _functions(trees: Iterable[ast.Module]) -> Iterator[ast.FunctionDef | ast.AsyncFunctionDef]:
-    for tree in trees:
+FunctionNode: TypeAlias = ast.FunctionDef | ast.AsyncFunctionDef
+ModelFunctions: TypeAlias = dict[str, list[tuple[Path, FunctionNode]]]
+
+
+def _parse_files(paths: Iterable[Path]) -> list[tuple[Path, ast.Module]]:
+    return [(path, ast.parse(path.read_text(), filename=str(path))) for path in iter_python_files(paths)]
+
+
+def _default_model_paths() -> list[Path]:
+    return [ROOT / target for target in DEFAULT_TARGETS[1:]]
+
+
+def _functions_by_name(modules: Iterable[tuple[Path, ast.Module]]) -> ModelFunctions:
+    functions: ModelFunctions = {}
+    seen: set[Path] = set()
+    for path, tree in modules:
+        if (resolved := path.resolve()) in seen:
+            continue
+        seen.add(resolved)
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                yield node
+                functions.setdefault(node.name, []).append((path, node))
+    return functions
 
 
-def hook_names(trees: Iterable[ast.Module]) -> frozenset[str]:
-    """Return the hook methods and the model helpers they call on ``self`` or ``cls``."""
-    functions = list(_functions(trees))
-    roots = PARSER_HOOK_METHODS | RENDER_STATE_WRITERS
-    defined = {function.name for function in functions}
-    helpers = {
-        call.func.attr
-        for function in functions
-        if function.name in roots
-        for call in ast.walk(function)
-        if isinstance(call, ast.Call)
-        and isinstance(call.func, ast.Attribute)
-        and isinstance(call.func.value, ast.Name)
-        and call.func.value.id in {"self", "cls"}
-        and call.func.attr in defined
-        and call.func.attr not in REFERENCE_METHODS
-    }
-    return roots | helpers
+def _called_names(node: ast.AST) -> Iterator[str]:
+    """Yield the names ``node`` calls, and the attribute names it reads through ``getattr``/``hasattr``."""
+    for call in ast.walk(node):
+        if not isinstance(call, ast.Call):
+            continue
+        match call.func:
+            case ast.Attribute(attr=name) | ast.Name(id=name) if name not in DYNAMIC_ATTRIBUTE_FUNCTIONS:
+                yield name
+            case ast.Name():
+                if (
+                    len(call.args) > 1
+                    and isinstance(call.args[1], ast.Constant)
+                    and isinstance(call.args[1].value, str)
+                ):
+                    yield call.args[1].value
+
+
+def _call_closure(roots: Iterable[str], functions: ModelFunctions) -> frozenset[str]:
+    """Return ``roots`` and every model function they reach through calls, stopping at excluded methods."""
+    stop = CONSTRUCTION_METHODS | REFERENCE_METHODS | RENDER_ENTRY_POINTS.keys()
+    reached: set[str] = set()
+    pending = list(roots)
+    while pending:
+        if (name := pending.pop()) in reached:
+            continue
+        reached.add(name)
+        pending.extend(
+            called
+            for _, function in functions.get(name, ())
+            for called in _called_names(function)
+            if called in functions and called not in stop
+        )
+    return frozenset(reached)
+
+
+def hook_names(modules: Iterable[tuple[Path, ast.Module]]) -> frozenset[str]:
+    """Return the hook methods and every model function they reach through calls."""
+    return _call_closure(PARSER_HOOK_METHODS | RENDER_STATE_WRITERS, _functions_by_name(modules))
+
+
+def _writes_only_hooks_see(path: Path, function: FunctionNode) -> bool:
+    counts = []
+    for hooks in (frozenset(), frozenset({function.name})):
+        visitor = GenerationStoreUsageVisitor(path, "model", hooks=hooks)
+        visitor.visit(function)
+        counts.append(len(visitor.violations))
+    return counts[1] > counts[0]
 
 
 def unlisted_parser_hooks(
     parser_paths: Iterable[Path] | None = None, model_paths: Iterable[Path] | None = None
 ) -> list[str]:
-    """Return model methods that parser code calls by name and that write facts, but that no hook list names."""
-    parser_files = iter_python_files(parser_paths or [ROOT / DEFAULT_TARGET])
-    model_files = iter_python_files(model_paths or [ROOT / target for target in DEFAULT_TARGETS[1:]])
-    called = {
-        node.func.attr
-        for path in parser_files
-        for node in ast.walk(ast.parse(path.read_text(), filename=str(path)))
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
-    }
-    model_trees = [(path, ast.parse(path.read_text(), filename=str(path))) for path in model_files]
-    listed = hook_names(tree for _, tree in model_trees) | CONSTRUCTION_METHODS | REFERENCE_METHODS
-    unlisted: set[str] = set()
-    for path, tree in model_trees:
-        for function in _functions([tree]):
-            if function.name not in called or function.name in listed:
-                continue
-            counts = []
-            for hooks in (frozenset(), frozenset({function.name})):
-                visitor = GenerationStoreUsageVisitor(path, "model", hooks=hooks)
-                visitor.visit(function)
-                counts.append(len(visitor.violations))
-            if counts[1] > counts[0]:
-                unlisted.add(function.name)
-    return sorted(unlisted)
+    """Return model methods that parser code calls and that reach a fact write no hook list covers."""
+    called = {name for _, tree in _parse_files(parser_paths or [ROOT / DEFAULT_TARGET]) for name in _called_names(tree)}
+    functions = _functions_by_name(_parse_files(model_paths or _default_model_paths()))
+    hooks = _call_closure(PARSER_HOOK_METHODS | RENDER_STATE_WRITERS, functions)
+    exempt = hooks | CONSTRUCTION_METHODS | REFERENCE_METHODS | RENDER_ENTRY_POINTS.keys()
+    return sorted(
+        name
+        for name in called & functions.keys() - exempt
+        if any(
+            _writes_only_hooks_see(path, function)
+            for reached in _call_closure([name], functions) - hooks
+            for path, function in functions[reached]
+        )
+    )
+
+
+def undefined_listed_names(model_paths: Iterable[Path] | None = None) -> list[str]:
+    """Return names in the hook, construction and render-entry lists that no model module defines."""
+    functions = _functions_by_name(_parse_files(model_paths or _default_model_paths()))
+    listed = PARSER_HOOK_METHODS | RENDER_STATE_WRITERS | CONSTRUCTION_METHODS | RENDER_ENTRY_POINTS.keys()
+    return sorted(listed - functions.keys())
 
 
 @dataclass(frozen=True)
@@ -906,9 +1070,12 @@ class ScanResult:
 
 
 def scan_files(files: Iterable[tuple[Path, Scope]]) -> ScanResult:
-    """Scan explicitly scoped files; hooks are the ones defined in the ``model`` files among them."""
+    """Scan explicitly scoped files; hooks come from every model module and the ``model`` files among them."""
     parsed = [(path, scope, ast.parse(path.read_text(), filename=str(path))) for path, scope in files]
-    hooks = hook_names(tree for _, scope, tree in parsed if scope == "model")
+    hooks = hook_names([
+        *_parse_files(_default_model_paths()),
+        *((path, tree) for path, scope, tree in parsed if scope == "model"),
+    ])
     violations: list[Violation] = []
     dict_keys_written: set[str] = set()
     for path, scope, tree in parsed:
@@ -1071,17 +1238,26 @@ def _declared_attributes(node: ast.ClassDef) -> Iterator[tuple[str, ast.AST]]:
                 not name.isupper() and "ClassVar" not in _annotation_names(annotation)
             ):
                 yield name, statement
-            case ast.FunctionDef(name="__init__"):
-                for child in ast.walk(statement):
-                    targets: list[ast.expr] = []
-                    match child:
-                        case ast.Assign(targets=assigned):
-                            targets = assigned
-                        case ast.AnnAssign(target=annotated):
-                            targets = [annotated]
-                    for target in targets:
-                        if isinstance(target, ast.Attribute) and _attribute_chain(target.value) == ("self",):
-                            yield target.attr, target
+            case ast.FunctionDef() | ast.AsyncFunctionDef():
+                yield from _self_attribute_writes(statement)
+
+
+def _self_attribute_writes(function: FunctionNode) -> Iterator[tuple[str, ast.AST]]:
+    """Yield the attributes a method sets on ``self`` by assignment or by ``setattr`` with a literal name."""
+    for child in ast.walk(function):
+        targets: list[ast.AST] = []
+        match child:
+            case ast.Assign(targets=assigned):
+                targets = [node for target in assigned for node in _bound_targets(target)]
+            case ast.AnnAssign(target=annotated) | ast.AugAssign(target=annotated):
+                targets = [annotated]
+            case ast.Call(func=func, args=[ast.Name(id="self"), ast.Constant(value=str() as name), *_]) if (
+                ".".join(_attribute_chain(func)) in SETATTR_FUNCTIONS
+            ):
+                yield name, child
+        for target in targets:
+            if isinstance(target, ast.Attribute) and _attribute_chain(target.value) == ("self",):
+                yield target.attr, target
 
 
 def _class_members(node: ast.ClassDef) -> set[str]:
@@ -1154,7 +1330,17 @@ def check_default_targets(*, allowlist: Counter[StoreKey] | None = None) -> tupl
     """Check the default targets and the table; also return the scan for ``--write-allowlist``."""
     scan = scan_paths(ROOT / target for target in DEFAULT_TARGETS)
     violations = apply_allowlist(scan, load_allowlist() if allowlist is None else allowlist)
-    return [*table_problems(dict_keys_written=scan.dict_keys_written), *violations], scan
+    checker = Path(__file__)
+    hook_problems = [
+        Violation(checker, 0, 0, f"{name} is called by parser code and writes facts; add it to {lists}", lists, name)
+        for name in unlisted_parser_hooks()
+        if (lists := "PARSER_HOOK_METHODS")
+    ]
+    hook_problems.extend(
+        Violation(checker, 0, 0, f"{name} is listed but no model module defines it; remove it", "hook lists", name)
+        for name in undefined_listed_names()
+    )
+    return [*table_problems(dict_keys_written=scan.dict_keys_written), *hook_problems, *violations], scan
 
 
 def write_allowlist(found: Counter[StoreKey], path: Path | None = None) -> list[StoreKey]:

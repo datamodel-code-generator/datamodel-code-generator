@@ -248,9 +248,12 @@ count. The list only shrinks:
   until you remove it or lower its count. `python
   scripts/check_generation_store_usage.py --write-allowlist` does that for you;
   it refuses to add entries or raise counts.
+- A refactor that moves a write to another function renames its entry by
+  hand (path, function or target) without raising the total count.
 - A new attribute on `DataType`, a field or a model needs a row in
-  `ATTRIBUTE_FACTS`; a model method that parser code calls and that writes a
-  fact needs an entry in `PARSER_HOOK_METHODS` of the checker.
+  `ATTRIBUTE_FACTS`; a model method that parser code calls and that reaches a
+  fact write needs an entry in `PARSER_HOOK_METHODS` of the checker, or in
+  `CONSTRUCTION_METHODS` or `RENDER_ENTRY_POINTS` with a reason.
 
 If a new mutation helper is needed, add the method to
 `GENERATION_STORE_MUTATION_METHODS`, name it in the `store_ops` of the rows it

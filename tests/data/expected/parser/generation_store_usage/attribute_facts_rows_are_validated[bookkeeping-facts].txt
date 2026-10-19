@@ -1,1 +1,1 @@
-ValueError: bookkeeping row DataType.parent must not name facts
+ValueError: row DataType.parent: bookkeeping rows name no facts and no store operations

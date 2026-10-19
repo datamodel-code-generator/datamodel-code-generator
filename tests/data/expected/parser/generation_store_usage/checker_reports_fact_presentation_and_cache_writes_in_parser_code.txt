@@ -19,11 +19,11 @@
 23 write _dedup_key_cache.clear(): _dedup_key_cache.clear() caches state on a mutable DataModel; keep derived values in a per-parse store memo
 24 write __dict__["_forced_field_assignment"]: __dict__["_forced_field_assignment"] changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
 26 write __dict__["_unknown"]: __dict__["_unknown"] is a __dict__ entry that _facts.py ATTRIBUTE_FACTS does not classify
-27 write __dict__[name]: __dict__[name] writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
+27 write __dict__[...]: __dict__[...] writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 28 write __dict__[_IMPORTS_CACHE_KEY]: __dict__[_IMPORTS_CACHE_KEY] caches state on a mutable DataModel; keep derived values in a per-parse store memo
 29 write __dict__.update(): __dict__.update() writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 31 write __dict__.setdefault("_forced_field_assignment"): __dict__.setdefault("_forced_field_assignment") changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
-33 write _dedup_key_cache[name]: _dedup_key_cache[name] caches state on a mutable DataModel; keep derived values in a per-parse store memo
+33 write _dedup_key_cache[...]: _dedup_key_cache[...] caches state on a mutable DataModel; keep derived values in a per-parse store memo
 35 write extras["description"]: extras["description"] changes Fact.METADATA outside GenerationStore operations
 36 write reference.path: use GenerationStore API instead of assigning reference.path
 37 write required: required changes Fact.REQUIRED outside GenerationStore operations

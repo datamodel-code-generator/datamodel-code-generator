@@ -1,1 +1,1 @@
-(FactRow(owner='Reference', attribute='name', kind='FACT', facts=(), final_after='PARSE', frozen_at=None, store_ops=('rename_model',), access='ATTRIBUTE'),)
+(FactRow(owner='Reference', attribute='name', kind='PRESENTATION', facts=('RenderFact.QUOTING',), final_after='PARSE', frozen_at='B2', store_ops=('rename_model',), access='ATTRIBUTE'),)

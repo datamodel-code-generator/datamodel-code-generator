@@ -28,23 +28,29 @@ from enum import Enum
 
 class Phase(Enum):
     PARSE = 0
+    RENDER = 9
 
 
 class FactKind(Enum):
     FACT = "fact"
+    PRESENTATION = "presentation"
+    CACHE = "cache"
     BOOKKEEPING = "bookkeeping"
 
 
 class Fact(Enum):
     FIELD_TYPES = "field_types"
+    NULLABLE = "nullable"
 
 
 class RenderFact(Enum):
     QUOTING = "quoting"
+    PLANS = "plans"
 
 
 class FreezePoint(Enum):
     B1 = "facts-final"
+    B2 = "render-ready"
 
 
 class Access(Enum):
@@ -63,8 +69,11 @@ class AttributeFact:
     access: Access = Access.ATTRIBUTE
 
 
+RENDER_FACT_FREEZE_POINTS = {freeze}
+
 {table}
 """
+VALID_FREEZE = "{RenderFact.QUOTING: FreezePoint.B2, RenderFact.PLANS: FreezePoint.B1}"
 VALID_ROW = 'AttributeFact("DataType", "type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1)'
 
 
@@ -210,10 +219,11 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 64, "PRESENTATION": 54, "BOOKKEEPING": 15, "CACHE": 19})
+        Counter({"FACT": 65, "PRESENTATION": 56, "BOOKKEEPING": 15, "CACHE": 19})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
+        "BaseModel",
         "ConstraintsBase",
         "DataClass",
         "DataModel",
@@ -223,6 +233,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "ModuleContext",
         "Parser",
         "Reference",
+        "RootModel",
         "TemplateBase",
         "TypedDict",
         "_RenderedDataModelField",
@@ -342,12 +353,111 @@ class Parser:
 
     assert _findings(violations) == snapshot([
         (
+            5,
+            "Parser.method",
+            "results",
+            "use GenerationStore.register_model() instead of assigning results",
+        ),
+        (
             17,
             "Parser.method",
             "nullable",
             "nullable changes Fact.NULLABLE outside GenerationStore operations",
-        )
+        ),
     ])
+
+
+def test_checker_reports_model_list_writes_on_parser_self(tmp_path: Path) -> None:
+    """The direct-mutation rules apply to ``self`` too, as before the fact table."""
+    checker = _load_checker()
+    source = tmp_path / "self_writes.py"
+    source.write_text(
+        """
+class P:
+    def m(self, model):
+        self.results = []
+        self.results[:] = []
+        self.fields = []
+        self.data_type = None
+        self.reference = None
+        self.base_classes = []
+        self.models = []
+        del self.results[0]
+""",
+    )
+
+    violations = checker.check_paths([source])
+
+    assert [(violation.line, violation.target) for violation in violations] == snapshot([
+        (4, "results"),
+        (5, "results"),
+        (6, "fields"),
+        (7, "data_type"),
+        (8, "reference"),
+        (9, "base_classes"),
+        (10, "models"),
+        (11, "results"),
+    ])
+
+
+def test_checker_forgets_skipped_names_when_they_are_rebound(tmp_path: Path) -> None:
+    """A rebound schema-object name is checked again; in-place operators on aliases and ``__dict__`` are writes."""
+    checker = _load_checker()
+    source = tmp_path / "rebound.py"
+    source.write_text(
+        """
+def loop(obj: JsonSchemaObject, items):
+    for obj in items:
+        obj.required = True
+
+
+def context(obj: JsonSchemaObject, manager):
+    with manager as obj:
+        obj.required = True
+
+
+def comprehension(obj: JsonSchemaObject, items):
+    [obj for obj in items]
+    obj.required = True
+
+
+def handler(obj: JsonSchemaObject):
+    try:
+        pass
+    except ValueError as obj:
+        obj.required = True
+
+
+def unpacking(obj: JsonSchemaObject, pair):
+    obj, other = pair
+    obj.required = True
+
+
+def augmented(obj: JsonSchemaObject, field):
+    obj += field
+    obj.required = True
+
+
+async def asynchronous(obj: JsonSchemaObject, items):
+    async for obj in items:
+        obj.required = True
+
+
+def in_place(field, model):
+    values = field.__dict__
+    values |= {}
+    model.__dict__ |= {}
+    cache = model._dedup_key_cache
+    cache |= {}
+    extras = field.extras
+    extras |= {}
+    field.extras["kept"] = values
+""",
+    )
+
+    violations = checker.check_paths([source])
+
+    assert_output(_report(violations))
 
 
 def test_checker_scans_model_hooks_helpers_and_caches(tmp_path: Path) -> None:
@@ -360,15 +470,27 @@ from functools import cached_property
 
 
 class Field:
-    def process_const(self):
+    def process_const(self, other):
         self.nullable = True
         self._helper()
         self.replace_data_type(None)
         self.fields[:] = []
         self.parent.children
+        other.relay()
+        self.render()
+        self.create_reuse_model()
 
     def _helper(self):
         self.default = 1
+
+    def relay(self):
+        deeper(self)
+
+    def render(self):
+        self.required = False
+
+    def create_reuse_model(self):
+        self.required = False
 
     def unrelated(self):
         self.nullable = False
@@ -383,6 +505,10 @@ class Field:
 
     async def refresh_field_config(self):
         self.extras["kw_only"] = True
+
+
+def deeper(field):
+    field.alias = "alias"
 """,
     )
 
@@ -511,9 +637,19 @@ GenerationStore usage violations found:
     [
         pytest.param(f"ATTRIBUTE_FACTS = ({VALID_ROW},)", id="assigned"),
         pytest.param(
-            "ATTRIBUTE_FACTS: tuple = ("
-            'AttributeFact("Reference", "name", FactKind.FACT, (), Phase.PARSE, None, store_ops=("rename_model",)),)',
+            "ATTRIBUTE_FACTS: tuple = (AttributeFact('Reference', 'name', FactKind.PRESENTATION, "
+            "(RenderFact.QUOTING,), Phase.PARSE, FreezePoint.B2, store_ops=('rename_model',)),)",
             id="annotated",
+        ),
+        pytest.param(
+            "ATTRIBUTE_FACTS = ("
+            "AttributeFact('Parser', '_plans', FactKind.FACT, (RenderFact.PLANS,), Phase.PARSE, FreezePoint.B1), "
+            "AttributeFact('DataType', 'is_optional', FactKind.FACT, (Fact.NULLABLE,), Phase.RENDER, FreezePoint.B2), "
+            "AttributeFact('DataType', '_NULL', FactKind.PRESENTATION, (Fact.NULLABLE,), Phase.RENDER, "
+            "FreezePoint.B2), "
+            "AttributeFact('DataModel', '_PLAN', FactKind.CACHE, (RenderFact.QUOTING,), Phase.PARSE, None), "
+            "AttributeFact('DataType', 'flag', FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1))",
+            id="kind-exceptions",
         ),
         pytest.param(f"ATTRIBUTE_FACTS = [{VALID_ROW}]", id="list"),
         pytest.param("OTHER = ()", id="missing"),
@@ -541,18 +677,43 @@ GenerationStore usage violations found:
             id="bookkeeping-facts",
         ),
         pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataModelFieldBase', 'extras', FactKind.FACT, (), Phase.PARSE, None, "
-            "access=Access.ITEM),)",
+            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'parent', FactKind.BOOKKEEPING, (), Phase.PARSE, None, "
+            "store_ops=('set_fields',)),)",
+            id="bookkeeping-store-ops",
+        ),
+        pytest.param(
+            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'type', FactKind.FACT, (RenderFact.QUOTING,), Phase.PARSE, "
+            "FreezePoint.B2),)",
+            id="fact-without-fact",
+        ),
+        pytest.param(
+            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'alias', FactKind.PRESENTATION, (Fact.FIELD_TYPES,), "
+            "Phase.PARSE, FreezePoint.B1),)",
+            id="presentation-with-fact",
+        ),
+        pytest.param(
+            "ATTRIBUTE_FACTS = (AttributeFact('DataType', '_MEMO', FactKind.CACHE, (Fact.FIELD_TYPES,), Phase.PARSE, "
+            "None),)",
+            id="cache-with-fact",
+        ),
+        pytest.param(
+            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'alias', FactKind.PRESENTATION, (RenderFact.QUOTING,), "
+            "Phase.PARSE, FreezePoint.B1),)",
+            id="frozen-too-early",
+        ),
+        pytest.param(
+            "ATTRIBUTE_FACTS = (AttributeFact('DataModelFieldBase', 'extras', FactKind.FACT, (Fact.FIELD_TYPES,), "
+            "Phase.PARSE, FreezePoint.B1, access=Access.ITEM),)",
             id="item-without-key",
         ),
         pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataModelFieldBase', 'extras[\"k\"]', FactKind.FACT, (), "
-            "Phase.PARSE, None),)",
+            "ATTRIBUTE_FACTS = (AttributeFact('DataModelFieldBase', 'extras[\"k\"]', FactKind.FACT, "
+            "(Fact.FIELD_TYPES,), Phase.PARSE, FreezePoint.B1),)",
             id="key-without-item",
         ),
         pytest.param(
-            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'type', FactKind.FACT, (), Phase.PARSE, None, "
-            "store_ops=('write_directly',)),)",
+            "ATTRIBUTE_FACTS = (AttributeFact('DataType', 'type', FactKind.FACT, (Fact.FIELD_TYPES,), Phase.PARSE, "
+            "FreezePoint.B1, store_ops=('write_directly',)),)",
             id="unknown-store-op",
         ),
         pytest.param(f"ATTRIBUTE_FACTS = ({VALID_ROW}, {VALID_ROW})", id="duplicate"),
@@ -562,7 +723,7 @@ def test_attribute_facts_rows_are_validated(tmp_path: Path, table: str) -> None:
     """The checker reads only literal rows and rejects contradictory ones."""
     checker = _load_checker()
     facts_module = tmp_path / "_facts.py"
-    facts_module.write_text(FACTS_TEMPLATE.format(table=table))
+    facts_module.write_text(FACTS_TEMPLATE.format(table=table, freeze=VALID_FREEZE))
 
     try:
         outcome = repr(checker.load_attribute_facts(facts_module))
@@ -570,6 +731,37 @@ def test_attribute_facts_rows_are_validated(tmp_path: Path, table: str) -> None:
         outcome = f"{type(error).__name__}: {error}"
 
     assert_output(f"{outcome}\n")
+
+
+@pytest.mark.parametrize(
+    "freeze",
+    [
+        pytest.param("[]", id="not-a-dict"),
+        pytest.param("{RenderFact.QUOTING: FreezePoint.B2}", id="missing-entry"),
+        pytest.param("{Fact.FIELD_TYPES: FreezePoint.B1, RenderFact.PLANS: FreezePoint.B1}", id="fact-key"),
+        pytest.param("{RenderFact.QUOTING: None, RenderFact.PLANS: FreezePoint.B1}", id="no-freeze-point"),
+        pytest.param("{**OTHER, RenderFact.PLANS: FreezePoint.B1}", id="unpacked"),
+    ],
+)
+def test_render_fact_freeze_points_are_validated(tmp_path: Path, freeze: str, request: pytest.FixtureRequest) -> None:
+    """Every render fact needs a literal freeze point, from which the rows' ``frozen_at`` follows."""
+    checker = _load_checker()
+    facts_module = tmp_path / "_facts.py"
+    facts_module.write_text(FACTS_TEMPLATE.format(table=f"ATTRIBUTE_FACTS = ({VALID_ROW},)", freeze=freeze))
+
+    with pytest.raises((TypeError, ValueError)) as error:
+        checker.load_attribute_facts(facts_module)
+
+    assert (
+        f"{type(error.value).__name__}: {error.value}"
+        == snapshot({
+            "not-a-dict": "TypeError: RENDER_FACT_FREEZE_POINTS must be a literal dict",
+            "missing-entry": "ValueError: RENDER_FACT_FREEZE_POINTS misses PLANS",
+            "fact-key": "TypeError: RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members",
+            "no-freeze-point": "TypeError: RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members",
+            "unpacked": "TypeError: RENDER_FACT_FREEZE_POINTS maps RenderFact members to FreezePoint members",
+        })[request.node.callspec.id]
+    )
 
 
 def test_attribute_facts_module_needs_the_row_class(tmp_path: Path) -> None:
@@ -610,7 +802,11 @@ class DataModel:
         self.fresh.attribute = 3
 
     def method(self):
-        return None
+        self.later = 1
+        setattr(self, "dynamic", 2)
+        self.first, self.second = 1, 2
+        self.covered += 1
+        self.__dict__["key"] = 1
 
 
 class Child(Base):
@@ -645,7 +841,7 @@ class Other(typing.NamedTuple):
 
     assert _findings(problems) == snapshot([
         (
-            26,
+            30,
             "Child",
             "extra",
             "Child.extra has no ATTRIBUTE_FACTS row in src/datamodel_code_generator/parser/_facts.py",
@@ -661,6 +857,30 @@ class Other(typing.NamedTuple):
             "DataModel",
             "annotated",
             "DataModel.annotated has no ATTRIBUTE_FACTS row in src/datamodel_code_generator/parser/_facts.py",
+        ),
+        (
+            22,
+            "DataModel",
+            "later",
+            "DataModel.later has no ATTRIBUTE_FACTS row in src/datamodel_code_generator/parser/_facts.py",
+        ),
+        (
+            24,
+            "DataModel",
+            "first",
+            "DataModel.first has no ATTRIBUTE_FACTS row in src/datamodel_code_generator/parser/_facts.py",
+        ),
+        (
+            24,
+            "DataModel",
+            "second",
+            "DataModel.second has no ATTRIBUTE_FACTS row in src/datamodel_code_generator/parser/_facts.py",
+        ),
+        (
+            23,
+            "DataModel",
+            "dynamic",
+            "DataModel.dynamic has no ATTRIBUTE_FACTS row in src/datamodel_code_generator/parser/_facts.py",
         ),
         (
             0,
@@ -681,7 +901,18 @@ def test_unlisted_parser_hooks_are_reported(tmp_path: Path) -> None:
     """A model method that parser code calls and that writes a fact must be listed as a hook."""
     checker = _load_checker()
     parser_source = tmp_path / "parser.py"
-    parser_source.write_text("def run(model):\n    model.new_hook()\n    model.harmless()\n    model.process_const()\n")
+    parser_source.write_text(
+        """
+def run(model):
+    model.new_hook()
+    model.harmless()
+    model.process_const()
+    model.render()
+    model.indirect()
+    if hasattr(model, "probe"):
+        getattr(model, "dynamic_hook")()
+"""
+    )
     model_source = tmp_path / "model.py"
     model_source.write_text(
         """
@@ -697,10 +928,48 @@ class Model:
 
     def unused(self):
         self.required = False
+
+    def render(self):
+        self.required = False
+
+    def indirect(self):
+        self._writes_later()
+
+    def _writes_later(self):
+        self.required = False
+
+    def probe(self):
+        self.required = False
+
+    def dynamic_hook(self):
+        self.required = False
 """,
     )
 
-    assert checker.unlisted_parser_hooks([parser_source], [model_source]) == snapshot(["new_hook"])
+    assert checker.unlisted_parser_hooks([parser_source], [model_source]) == snapshot([
+        "dynamic_hook",
+        "indirect",
+        "new_hook",
+        "probe",
+    ])
+    listed = (
+        checker.PARSER_HOOK_METHODS
+        | checker.RENDER_STATE_WRITERS
+        | checker.CONSTRUCTION_METHODS
+        | checker.RENDER_ENTRY_POINTS.keys()
+    )
+    assert checker.undefined_listed_names([model_source]) == sorted(listed - {"process_const", "render"})
+    assert checker.undefined_listed_names() == []
+
+
+def test_one_model_file_checks_against_the_whole_hook_set() -> None:
+    """Checking a single model module uses every model module's hooks, so its entries are neither new nor stale."""
+    checker = _load_checker()
+    model_root = checker.ROOT / "src" / "datamodel_code_generator" / "model"
+
+    violations = checker.check_paths([model_root / "pydantic_v2" / "root_model.py", model_root / "msgspec.py"])
+
+    assert [violation.format() for violation in violations] == snapshot([])
 
 
 def test_checked_scopes_follow_the_source_layout(tmp_path: Path) -> None:

@@ -72,7 +72,16 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
 })
-_FACTS_ALLOWED_ROOTS: Final = frozenset({*sys.stdlib_module_names, "typing_extensions"})
+_LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
+    "facts": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "the attribute-to-fact table is read by checkers without the package: import only the standard library "
+            "and typing_extensions"
+        ),
+    ),
+}
+"""Leaf layers: the modules (with their submodules) each may import, and the reason shown on a violation."""
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
     "enum.py",
@@ -546,7 +555,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         dynamic_target = None
         if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
             dynamic_target = self._resolved_dynamic_target(node, self._resolved_string(argument))
-        if dynamic_target and self.layer == "facts":
+        if dynamic_target and self.layer in _LEAF_LAYER_IMPORTS:
             self._check_import(node, dynamic_target)
         elif (
             dynamic_target
@@ -989,15 +998,10 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         return False
 
     def _check_import(self, node: ast.AST, target: str) -> None:
-        if self.layer == "facts":
-            if target.partition(".")[0] not in _FACTS_ALLOWED_ROOTS:
-                self._add(
-                    node,
-                    "facts-import",
-                    target,
-                    "the attribute-to-fact table is read by checkers without the package: import only the standard "
-                    "library and typing_extensions",
-                )
+        if (leaf := _LEAF_LAYER_IMPORTS.get(self.layer)) is not None:
+            allowed, reason = leaf
+            if not any(target == module or target.startswith(f"{module}.") for module in allowed):
+                self._add(node, f"{self.layer}-import", target, reason)
             return
         if self.layer == "reference" and _is_reference_backend_import(target):
             self._add(
