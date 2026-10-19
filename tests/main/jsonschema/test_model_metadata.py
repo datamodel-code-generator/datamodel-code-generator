@@ -240,7 +240,7 @@ def test_schema_location_of_fields_a_schema_object_subclass_adds(tmp_path: Path)
         SCHEMA_OBJECT_TYPE = ExtensionSchema
 
         def parse_object(self, name: str, obj: JsonSchemaObject, path: list[str], *args: Any, **kwargs: Any) -> Any:
-            for index, child in enumerate(cast(ExtensionSchema, obj).children):
+            for index, child in enumerate(cast("ExtensionSchema", obj).children):
                 super().parse_object(f"{name}Child{index}", child, [*path, "children", str(index)])
             return super().parse_object(name, obj, path, *args, **kwargs)
 
