@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator import Error
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model.pydantic_v2.base_model import (
@@ -49,6 +51,7 @@ class RootModel(BaseModel):
     SUPPORTS_ARBITRARY_TYPES_ALLOWED: ClassVar[bool] = False
 
     @classmethod
+    @override
     def _uses_builtin_hash_implementation(cls) -> bool:
         """Recognize the builtin root without a reverse import from BaseModel."""
         return cls is RootModel
@@ -232,6 +235,7 @@ class RootModel(BaseModel):
         self._additional_imports = [imp for imp in self._additional_imports if imp != IMPORT_CONFIG_DICT]
         self.clear_imports_cache()
 
+    @override
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Write ``Any`` in the generic: Pydantic builds it without this model's config, and aliases stay named."""
         self._set_internal_template_data(key=_STRING_PATTERN_ALIAS_REACHED_TEMPLATE_DATA_KEY, value=True)
@@ -255,6 +259,7 @@ class RootModel(BaseModel):
             self._set_internal_template_data(key, value)
         self.clear_imports_cache()
 
+    @override
     def finalize_sequence_interface(self) -> None:
         """Refresh helpers once final root types and reference aliases are available."""
         if _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY not in self._internal_template_data:
@@ -286,6 +291,7 @@ class RootModel(BaseModel):
         self._set_internal_template_data(_SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY, item_type)
         self._set_internal_template_data(_SEQUENCE_SLICE_TYPE_TEMPLATE_DATA_KEY, slice_type)
 
+    @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render the RootModel and validate custom sequence templates when needed."""
         use_custom_template = self._uses_custom_root_template

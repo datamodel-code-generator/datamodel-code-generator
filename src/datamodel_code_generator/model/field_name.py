@@ -5,6 +5,8 @@ from __future__ import annotations
 from keyword import iskeyword
 from typing import Final
 
+from typing_extensions import override
+
 from datamodel_code_generator.reference import FieldNameResolver
 
 PYDANTIC_BASE_MODEL_ATTRIBUTES: Final = frozenset({
@@ -133,12 +135,13 @@ PYDANTIC_BASE_MODEL_ATTRIBUTES: Final = frozenset({
 class PydanticFieldNameResolver(FieldNameResolver):
     """Resolve field names according to Pydantic BaseModel ownership rules."""
 
+    @override
     def get_valid_name(
         self,
         name: str,
         excludes: set[str] | None = None,
-        ignore_snake_case_field: bool = False,  # noqa: FBT001, FBT002
-        upper_camel: bool = False,  # noqa: FBT001, FBT002
+        ignore_snake_case_field: bool = False,
+        upper_camel: bool = False,
     ) -> str:
         """Convert a name to a valid Pydantic field name."""
         if (
@@ -172,7 +175,8 @@ class PydanticFieldNameResolver(FieldNameResolver):
             return None
         return name if self._validate_field_name(name) else None
 
-    def _validate_field_name(self, field_name: str) -> bool:  # noqa: PLR6301
+    @override
+    def _validate_field_name(self, field_name: str) -> bool:
         """Check whether a field would shadow a Pydantic BaseModel attribute."""
         return field_name not in PYDANTIC_BASE_MODEL_ATTRIBUTES
 
@@ -182,7 +186,8 @@ class MsgspecFieldNameResolver(FieldNameResolver):
 
     FIELD_ASSIGNMENT_HELPER = "field"
 
-    def _validate_field_name(self, field_name: str) -> bool:  # noqa: PLR6301
+    @override
+    def _validate_field_name(self, field_name: str) -> bool:
         return field_name != "field"
 
 

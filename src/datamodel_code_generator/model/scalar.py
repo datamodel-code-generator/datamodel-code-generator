@@ -8,6 +8,8 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator.imports import (
     IMPORT_TYPE_ALIAS,
     IMPORT_TYPE_ALIAS_TYPE,
@@ -92,6 +94,7 @@ class _DataTypeScalarBase(TypeAliasBase):
             treat_dot_as_module=treat_dot_as_module,
         )
 
+    @override
     def _builtin_template_data(self) -> dict[str, Any]:
         """Serialize public scalar aliases before built-in templates emit them."""
         template_data = super()._builtin_template_data()

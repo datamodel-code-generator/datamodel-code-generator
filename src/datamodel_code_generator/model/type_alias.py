@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_TYPE_ALIAS,
@@ -29,6 +31,7 @@ class TypeAliasBase(DataModel):
     FIELD_DOCSTRING_INDENT: ClassVar[int] = 0
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get imports including Annotated if needed."""
         imports = super().imports
