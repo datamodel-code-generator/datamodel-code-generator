@@ -6620,6 +6620,49 @@ def test_main_literal_constraints(output_file: Path, extra_args: list[str]) -> N
 
 @pytest.mark.parametrize(
     "extra_args",
+    [
+        pytest.param(["--field-constraints"], id="field_constraints"),
+        pytest.param(["--use-annotated"], id="use_annotated"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], id="pydantic_dataclass"),
+    ],
+)
+def test_main_nullable_enum_literal_length(output_file: Path, extra_args: list[str]) -> None:
+    """Test the Literal of a nullable enum keeps the length keywords Pydantic checks on it, and every value.
+
+    A union takes what its members other than ``None`` take, so the root writes ``min_length`` and warns about nothing.
+    """
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "nullable_enum_literal_length.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *extra_args,
+                *("--enum-field-as-literal", "all", "--formatters", "builtin", "--disable-timestamp"),
+                *("--target-python-version", "3.10"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if "does not take" in str(warning.message)),
+        name="warnings",
+    )
+    with _generated_model(output_file, "nullable_enum_literal_length", "Status") as model:
+        validate = _model_json_validator(model)
+        outcomes = []
+        for value in ("bb", None, "a", "c"):
+            outcome = "rejected"
+            with suppress(ValidationError):
+                validate(json.dumps(value))
+                outcome = "accepted"
+            outcomes.append(f"{value!r}: {outcome}")
+    assert_output("\n".join(outcomes) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
     [pytest.param([], id="default"), pytest.param(["--enum-field-as-literal", "all"], id="literal")],
 )
 def test_main_literal_constraints_undecided(output_file: Path, extra_args: list[str]) -> None:

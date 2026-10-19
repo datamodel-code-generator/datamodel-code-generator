@@ -1,0 +1,4 @@
+'bb': accepted
+None: accepted
+'a': rejected
+'c': rejected

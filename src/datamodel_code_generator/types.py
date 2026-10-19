@@ -1605,11 +1605,12 @@ class DataTypeManager(ABC):
     ) -> frozenset[str]:
         """Return the type-dependent keywords that every member of an emitted type takes in this output model.
 
-        The ``Literal`` of a const or an enum takes what every value other than ``None`` takes as an instance of its
-        type, as a ``Literal`` annotation does. With ``number_values`` the keywords that a number value of the type
-        meets are returned instead: those a member takes, as a number validates as that member, where the ``Literal``
-        of a const or an enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number keywords, and an
-        explicit ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches.
+        A union takes what every member other than ``None`` takes, as a union annotation does, and the ``Literal`` of a
+        const or an enum takes what every value other than ``None`` takes as an instance of its type, as a ``Literal``
+        annotation does. With ``number_values`` the keywords that a number value of the type meets are returned
+        instead: those a member takes, as a number validates as that member, where the ``Literal`` of a const or an
+        enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number keywords, and an explicit
+        ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches.
         """
         if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
             return keywords
@@ -1623,6 +1624,7 @@ class DataTypeManager(ABC):
                         target_model_version=target_model_version,
                     )
                     for member in data_type.data_types
+                    if member.type != NONE or member.data_types
                 ),
                 number_values=number_values,
             )
