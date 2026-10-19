@@ -52,6 +52,16 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser._graph_ids import ModelKey, identity_of, model_key_of
+from datamodel_code_generator.parser._holders import (
+    KNOWN_PARENT_MISMATCHES,
+    ChildList,
+    FieldKey,
+    HolderEdge,
+    NodeKey,
+    ParentMismatch,
+    node_in_cycle,
+    parent_is_holder,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
@@ -197,6 +207,74 @@ class GenerationFacts:
     def order_key(self, data_type_id: DataTypeId) -> tuple[int, DataTypeId]:
         """Return the position of an occurrence in a full rebuild's traversal order."""
         return self.parse_order(self.data_type_facts[data_type_id].owner_model), data_type_id
+
+    @property
+    def holders_by_node(self) -> dict[NodeKey, tuple[HolderEdge, ...]]:
+        """The holders of every recorded node, by node in the order a full rebuild's traversal first reaches them."""
+        holders = _HolderIndex(self)
+        node_keys = dict.fromkeys(NodeKey(id(fact.data_type)) for fact in self._facts_in_order())
+        return {node_key: holders.holders_of(node_key) for node_key in node_keys}
+
+    @property
+    def child_list_owners(self) -> dict[int, dict[NodeKey, list[tuple[int, DataTypeId]]]]:
+        """The ``order_key`` of every recorded occurrence of each node that holds a list, by the ``id`` of the list.
+
+        Lists and nodes come in the order a full rebuild's traversal first reaches them.
+        """
+        owners: dict[int, dict[NodeKey, list[tuple[int, DataTypeId]]]] = {}
+        for fact in self._facts_in_order():
+            owners.setdefault(id(fact.data_type.data_types), {}).setdefault(NodeKey(id(fact.data_type)), []).append(
+                self.order_key(fact.id)
+            )
+        return owners
+
+    @property
+    def child_lists(self) -> dict[int, ChildList]:
+        """The lists of ``child_list_owners`` that more than one node holds."""
+        return {
+            list_id: ChildList(list_id, tuple(owners))
+            for list_id, owners in self.child_list_owners.items()
+            if len(owners) > 1
+        }
+
+    def _facts_in_order(self) -> list[DataTypeFact]:
+        return sorted(self.data_type_facts.values(), key=lambda fact: self.order_key(fact.id))
+
+
+@final
+class _HolderIndex:
+    """The holders of the nodes that a facts snapshot records, read from the models the first time they are asked for.
+
+    The edges of a model are walked from the model as the store recorded it, so the index is read right after the
+    refresh that recorded the facts.
+    """
+
+    __slots__ = ("_facts", "_holder_by_id")
+
+    def __init__(self, facts: GenerationFacts) -> None:
+        """Read the holders of ``facts`` on demand."""
+        self._facts = facts
+        self._holder_by_id: dict[DataTypeId, HolderEdge] = {}
+
+    def holders_of(self, node_key: NodeKey) -> tuple[HolderEdge, ...]:
+        """Return the holder of every recorded occurrence of a node in ``order_key`` order.
+
+        An edge repeats when its holder is shared too.
+        """
+        facts = self._facts
+        if (data_type_ids := facts.shared_data_type_fact_ids.get(node_key)) is None:
+            return (self._holder(facts.data_type_fact_by_object[node_key].id),)
+        return tuple(self._holder(data_type_id) for data_type_id in sorted(data_type_ids, key=facts.order_key))
+
+    def _holder(self, data_type_id: DataTypeId) -> HolderEdge:
+        if (holder := self._holder_by_id.get(data_type_id)) is not None:
+            return holder
+        facts = self._facts
+        model_id = facts.data_type_facts[data_type_id].owner_model
+        self._holder_by_id.update(
+            zip(facts.data_types_by_model[model_id], _holder_edges(facts.model_facts[model_id]), strict=True)
+        )
+        return self._holder_by_id[data_type_id]
 
 
 @dataclass(frozen=True, slots=True)
@@ -613,6 +691,27 @@ class GenerationIndexBuilder:
         model_ids.remove(model_id)
         if len(model_ids) == 1:
             owners[base_class_id] = model_ids[0]
+
+
+def _holder_edges(model_fact: ModelFact) -> list[HolderEdge]:
+    """Return the holder of every data type occurrence of a model, in the order the store records the occurrences."""
+    model = model_fact.model
+    edges: list[HolderEdge] = []
+    for field_ in model.fields:
+        _collect_holder_edges(field_.data_type, HolderEdge(FieldKey(id(field_)), "field", None), edges)
+    model_key = model_key_of(model_fact.reference)
+    for base_index, base_class in enumerate(model.base_classes):
+        _collect_holder_edges(base_class, HolderEdge(model_key, "base", base_index), edges)
+    return edges
+
+
+def _collect_holder_edges(data_type: DataType, holder: HolderEdge, edges: list[HolderEdge]) -> None:
+    edges.append(holder)
+    node_key = NodeKey(id(data_type))
+    for index, nested_data_type in enumerate(data_type.data_types):
+        _collect_holder_edges(nested_data_type, HolderEdge(node_key, "nested", index), edges)
+    if data_type.dict_key:
+        _collect_holder_edges(data_type.dict_key, HolderEdge(node_key, "dict_key", None), edges)
 
 
 def _data_type_fact(data_type_id: DataTypeId, model_id: ModelId, occurrence: DataTypeOccurrence) -> DataTypeFact:
@@ -1220,8 +1319,11 @@ class GenerationStore:  # noqa: PLR0904
         if not self._dirty:
             return
 
-        if self._reference_copies is None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
-            self._reference_copies = _ReferenceCopies(mode)
+        recorded_model_ids: Iterable[ModelId] | None = None
+        if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
+            if self._reference_copies is None:
+                self._reference_copies = _ReferenceCopies(mode)
+            recorded_model_ids = self._check_no_data_type_cycles(mode)
         if self._rebuild_required:
             result = GenerationIndexBuilder(self.model_key).build(
                 self.models,
@@ -1255,12 +1357,85 @@ class GenerationStore:  # noqa: PLR0904
         self._renamed_model_ids.clear()
         self._facts_version += 1
         self._dirty = False
+        if mode is not None:
+            self._check_parents_are_holders(
+                mode, self._facts.model_facts if recorded_model_ids is None else recorded_model_ids
+            )
         if scope := self._active_root_collapse_reference_scope:
             if scope.initialized:
                 scope.invalidate()
             elif scope.enabled:
                 scope.initialized = True
                 scope.enabled = len(self._facts.data_type_fact_by_object) == len(self._facts.data_type_facts)
+
+    def _check_no_data_type_cycles(self, mode: CheckMode) -> Iterable[ModelId] | None:
+        """Report a data type that contains itself in a model this refresh records.
+
+        The check runs before the refresh walks the trees, which would not end on a cycle. Return the ids the
+        recorded models have after the refresh, or None when it records every model.
+        """
+        if self._rebuild_required:
+            models: Iterable[DataModel] = self.models
+            recorded_model_ids: Iterable[ModelId] | None = None
+        else:
+            appended = self.models[len(self.models) - len(self._appended_model_ids) :]
+            models = chain(appended, (self._facts.model_facts[model_id].model for model_id in self._changed_model_ids))
+            recorded_model_ids = (
+                *range(self._next_model_id, self._next_model_id + len(appended)),
+                *self._changed_model_ids,
+            )
+        finished: set[int] = set()
+        for model in models:
+            roots = chain((field_.data_type for field_ in model.fields), model.base_classes)
+            if (node := node_in_cycle(roots, finished)) is not None:
+                mode.violation(
+                    Error,
+                    f"a data type of {model.class_name} contains itself",
+                    model=model.class_name,
+                    type=type(node).__name__,
+                )
+        return recorded_model_ids
+
+    def _check_parents_are_holders(self, mode: CheckMode, model_ids: Iterable[ModelId]) -> None:
+        """Report a node of the models with ``model_ids`` whose ``parent`` is not one of its recorded holders.
+
+        A mismatch that `KNOWN_PARENT_MISMATCHES` lists is left alone.
+        """
+        facts = self._facts
+        holders = _HolderIndex(facts)
+        checked: set[int] = set()
+        for model_id in model_ids:
+            model_fact = facts.model_facts[model_id]
+            for data_type_id in facts.data_types_by_model[model_id]:
+                fact = facts.data_type_facts[data_type_id]
+                if (node_key := id(fact.data_type)) in checked:
+                    continue
+                checked.add(node_key)
+                parent = fact.data_type.parent
+                if parent_is_holder(parent, holders.holders_of(NodeKey(node_key))):
+                    continue
+                if (mismatch := self._parent_mismatch(parent)) in KNOWN_PARENT_MISMATCHES:
+                    continue
+                mode.violation(
+                    Error,
+                    f"a {fact.role} data type of {model_fact.class_name} has a {mismatch} as its parent, which "
+                    "does not hold it",
+                    model=model_fact.class_name,
+                    role=fact.role,
+                    parent=mismatch,
+                )
+
+    def _parent_mismatch(self, parent: object) -> ParentMismatch:
+        """Return what kind of object ``parent`` is, for a data type that ``parent`` does not hold."""
+        from datamodel_code_generator.model.base import (  # noqa: PLC0415
+            DataModelFieldBase as RuntimeDataModelFieldBase,
+        )
+
+        if not isinstance(parent, RuntimeDataModelFieldBase):
+            return "data type"
+        if (model := parent.parent) is not None and self._tracked_model_id(model) is not None:
+            return "recorded field"
+        return "dropped field"
 
     def discard_derived_facts(self) -> None:
         """Release cached dependency facts while preserving stable model identities."""

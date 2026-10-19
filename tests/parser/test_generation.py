@@ -26,6 +26,7 @@ from datamodel_code_generator.model.typed_dict import TypedDict
 from datamodel_code_generator.parser.generation import (
     GENERATION_STORE_MUTATION_METHODS,
     DataTypeFact,
+    GenerationIndexBuilder,
     GenerationStore,
     _GenerationModelList,
     set_model_base_classes,
@@ -1880,6 +1881,39 @@ def test_generation_store_indexes_each_shared_base_class_owner_once() -> None:
 
     assert isinstance(owner_ids, list)
     assert [facts.model_facts[model_id].model for model_id in owner_ids] == [first_model, second_model]
+
+
+def test_generation_store_holder_order_after_an_incremental_refresh_matches_a_full_rebuild() -> None:
+    """Holders of a shared node and owners of a shared list keep the order a full rebuild traverses them in."""
+    shared_leaf = DataType(type="int")
+    shared_list = [DataType(type="str")]
+    first = _base_model(
+        "First",
+        [
+            DataModelField(name="x", data_type=DataType(data_types=[shared_leaf])),
+            DataModelField(name="y", data_type=DataType(data_types=shared_list)),
+        ],
+    )
+    second = _base_model(
+        "Second",
+        [
+            DataModelField(name="z", data_type=DataType(data_types=[shared_leaf])),
+            DataModelField(name="w", data_type=DataType(data_types=shared_list)),
+        ],
+    )
+    store = GenerationStore()
+    store.register_model(first)
+    store.register_model(second)
+    store.current_facts()
+
+    store.replace_field_type(first.fields[0], DataType(data_types=[shared_leaf]))
+    store.replace_field_type(first.fields[1], DataType(data_types=shared_list))
+    incremental = store.current_facts()
+    full = GenerationIndexBuilder(store.model_key).build(store.models, previous_model_ids_by_object={}, next_model_id=0)
+
+    assert incremental.holders_by_node == full.facts.holders_by_node
+    assert incremental.child_lists == full.facts.child_lists
+    assert incremental.child_list_owners == full.facts.child_list_owners
 
 
 def test_generation_store_rebuilds_every_fact_after_a_failed_refresh() -> None:
