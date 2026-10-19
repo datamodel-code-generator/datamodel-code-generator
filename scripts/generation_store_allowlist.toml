@@ -257,12 +257,6 @@ use_default_with_required = 1
 ["src/datamodel_code_generator/parser/base.py"."Parser.__import_enum_member_literal_classes"]
 enum_member_literals = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser.__import_removed_reuse_canonicals"]
-alias = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__import_renamed_types"]
-alias = 1
-
 ["src/datamodel_code_generator/parser/base.py"."Parser.__init__"]
 results = 1
 
@@ -306,6 +300,9 @@ required = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__set_reference_default_value_to_field"]
 default = 1
+
+["src/datamodel_code_generator/parser/base.py"."Parser.__set_reference_expression"]
+alias = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__update_type_aliases"]
 alias = 1

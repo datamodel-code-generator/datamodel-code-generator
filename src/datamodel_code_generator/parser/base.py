@@ -4376,6 +4376,38 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         return expression
 
+    def __set_reference_expression(  # noqa: PLR0913
+        self,
+        data_type: DataType,
+        current_module_name: str,
+        target_full_name: str,
+        imports: Imports,
+        scoped_model_resolver: ModelResolver,
+        *,
+        same_module: bool,
+        init: bool,
+        internal_modules: set[ModulePath],
+    ) -> None:
+        """Write how a data type names its reference in the current module.
+
+        A model the module emits is written by its class name; any other is imported, and written by the expression
+        the import gives when that is not the class name.
+        """
+        data_type.alias = (
+            None
+            if same_module
+            else self.__register_reference_import(
+                cast("Reference", data_type.reference),
+                current_module_name,
+                target_full_name,
+                imports,
+                scoped_model_resolver,
+                init=init,
+                internal_modules=internal_modules,
+                base_class=isinstance(data_type, BaseClassDataType),
+            )
+        )
+
     def __import_removed_reuse_canonicals(
         self,
         contexts: list[ModuleContext],
@@ -4406,19 +4438,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         continue
                     ctx.imports.remove(stale_import)
                     reference = cast("Reference", data_type.reference)
-                    data_type.alias = (
-                        None
-                        if reference.path in model_paths
-                        else self.__register_reference_import(
-                            reference,
-                            _get_model_module_name(model, model_path_to_module_name),
-                            _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
-                            ctx.imports,
-                            ctx.scoped_model_resolver,
-                            init=ctx.is_init,
-                            internal_modules=internal_modules,
-                            base_class=isinstance(data_type, BaseClassDataType),
-                        )
+                    self.__set_reference_expression(
+                        data_type,
+                        _get_model_module_name(model, model_path_to_module_name),
+                        _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
+                        ctx.imports,
+                        ctx.scoped_model_resolver,
+                        same_module=reference.path in model_paths,
+                        init=ctx.is_init,
+                        internal_modules=internal_modules,
                     )
 
     def __import_renamed_types(
@@ -4454,15 +4482,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 ctx.imports.remove(import_)
             ctx.scoped_model_resolver.delete_names({import_.binding_name for *_, import_ in stale_users})
             for data_type, reference, model, _ in stale_users:
-                data_type.alias = self.__register_reference_import(
-                    reference,
+                self.__set_reference_expression(
+                    data_type,
                     _get_model_module_name(model, model_path_to_module_name),
                     _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
                     ctx.imports,
                     ctx.scoped_model_resolver,
+                    same_module=False,
                     init=ctx.is_init,
                     internal_modules=internal_modules,
-                    base_class=isinstance(data_type, BaseClassDataType),
                 )
 
     def __import_enum_member_literal_classes(
