@@ -102,6 +102,8 @@ openapi/api.yaml	yaml_fast_constructor/parity.txt
 openapi/api_constrained.yaml	yaml_fast_constructor/parity.txt
 openapi/api_multiline_docstrings.yaml	yaml_fast_constructor/parity.txt
 openapi/api_ordered_required_fields.yaml	yaml_fast_constructor/parity.txt
+openapi/api_scope_external_boolean_schema/openapi.yaml	yaml_fast_constructor/parity.txt
+openapi/api_scope_external_boolean_schema/schemas/other.yaml	yaml_fast_constructor/parity.txt
 openapi/api_scope_parameter_type_aliases.yaml	yaml_fast_constructor/parity.txt
 openapi/api_scope_parameter_type_aliases_mixed.yaml	yaml_fast_constructor/parity.txt
 openapi/api_scope_path_names.yaml	yaml_fast_constructor/parity.txt
