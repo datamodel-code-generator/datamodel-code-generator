@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import operator
 import sys
+from functools import reduce
 from typing import TYPE_CHECKING, Any
 
 import msgspec
 import pytest
+import yaml
 from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
 from pydantic import TypeAdapter, ValidationError
@@ -171,3 +174,35 @@ def test_object_maps_released_pattern_properties_hook(tmp_path: Path) -> None:
     )
     parser = ReleasedHookParser(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN])
     assert_output(parser.parse())
+
+
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_object_map_bodies(output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str) -> None:
+    """Build the models of object-kind request and response bodies in the paths scope as definitions are built."""
+    input_path = OPEN_API_DATA_PATH / "object_map_bodies.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--formatters", "builtin", "--output-model-type", output_model_type, "--openapi-scopes", "paths"],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
+    document = yaml.safe_load(input_path.read_text())
+    verdicts: list[str] = []
+    for model_name, payloads in json.loads((PAYLOADS / "object_map_bodies.json").read_text()).items():
+        validator = Draft202012Validator(reduce(operator.getitem, payloads["schema"], document))
+        for payload in payloads["valid"]:
+            validator.validate(payload)
+        for payload in payloads["invalid"]:
+            with pytest.raises(SchemaValidationError):
+                validator.validate(payload)
+        with _generated_model(output_file, "object_map_bodies_model", model_name) as model:
+            verdicts.extend(
+                f"{model_name} {kind} {json.dumps(payload)}: {_verdict(model, output_model_type, payload)}\n"
+                for kind in ("valid", "invalid")
+                for payload in payloads[kind]
+            )
+    assert_output("".join(verdicts), name="payloads")

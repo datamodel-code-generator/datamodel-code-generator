@@ -12644,12 +12644,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     else self._get_format_data_type(type_, obj.format or "default")
                 )
 
-    def _parse_object_model(self, name: str, obj: JsonSchemaObject, path: list[str]) -> None:
+    def _parse_object_model(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType:
         """Parse an object into its model; a type array with other types makes a root model of their union."""
         if obj.has_multiple_types and isinstance(obj.type, list):
-            self._parse_multiple_types_with_properties(name, obj, obj.type, path)
-        else:
-            self.parse_object(name, obj, path)
+            return self._parse_multiple_types_with_properties(name, obj, obj.type, path)
+        return self.parse_object(name, obj, path)
+
+    def _parse_object_kind_schema(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType | None:
+        """Parse an object-kind schema into its model as a definition is parsed; ``None`` for other schemas."""
+        if obj.properties or self._should_parse_object_with_schema_validators(obj):
+            return self._parse_object_model(name, obj, path)
+        if obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False):
+            return self.parse_root_type(name, obj, path)
+        if obj.type == "object":
+            return self.parse_object(name, obj, path)
+        if obj.propertyNames is False:
+            return self.parse_root_type(name, obj, path)
+        return None
 
     def _parse_multiple_types_with_properties(
         self,
@@ -12657,7 +12668,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         type_list: list[str],
         path: list[str],
-    ) -> None:
+    ) -> DataType:
         """Parse a schema with multiple types including object with properties."""
         data_types: list[DataType] = []
 
@@ -12698,6 +12709,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             custom_base_class_name=name,
             default=obj.default if obj.has_default else UNDEFINED,
         )
+        return self.data_type(reference=reference)
 
     def _enum_positions_outside_const(self, obj: JsonSchemaObject) -> set[int]:
         """Return the positions of the enum values that the const beside them excludes, when it admits one of them.
@@ -14223,23 +14235,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 data_type = self.parse_root_type(name, obj, path)
                 if isinstance(data_type, EmptyDataType) and obj.properties:
                     self.parse_object(name, obj, path)  # pragma: no cover
-        elif obj.properties:
-            self._parse_object_model(name, obj, path)
-        elif obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False):
-            self.parse_root_type(name, obj, path)
-        elif obj.type == "object":
-            self.parse_object(name, obj, path)
-        elif obj.propertyNames is False:
-            self.parse_root_type(name, obj, path)
-        elif (
-            obj.enum
-            and not self.ignore_enum_constraints
-            and not self._reads_enum_as_const(obj)
-            and not self.should_parse_enum_as_literal(obj, property_name=name)
-        ):
-            self.parse_enum(name, self._definition_enum(obj), path)
-        else:
-            self.parse_root_type(name, obj, path)
+        elif self._parse_object_kind_schema(name, obj, path) is None:
+            if (
+                obj.enum
+                and not self.ignore_enum_constraints
+                and not self._reads_enum_as_const(obj)
+                and not self.should_parse_enum_as_literal(obj, property_name=name)
+            ):
+                self.parse_enum(name, self._definition_enum(obj), path)
+            else:
+                self.parse_root_type(name, obj, path)
         self.parse_ref(obj, path)
 
     def _get_context_source_path_parts(self) -> Iterator[tuple[Source, list[str]]]:

@@ -1,0 +1,10 @@
+ClosedPatternsPostRequest valid {}: accepted
+ClosedPatternsPostRequest valid {"a1": 1, "a2": 2}: accepted
+ClosedPatternsPostRequest invalid {"a1": "x"}: rejected (int_parsing)
+ClosedPatternsPostRequest invalid {"b": 1}: accepted
+ClosedPatternsPostResponse valid {"a1": 1}: accepted
+ClosedPatternsPostResponse valid {"a1": 1, "b": "x"}: rejected (int_parsing)
+ClosedPatternsPostResponse invalid {"a1": "x"}: rejected (int_parsing)
+KeyNamesPostRequest valid {"ab": "x"}: accepted
+KeyNamesPostRequest invalid {"Ab": "x"}: accepted
+KeyNamesPostRequest invalid {"ab": 1}: rejected (string_type)

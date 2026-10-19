@@ -785,7 +785,7 @@ class OpenAPIParser(JsonSchemaParser):
             if isinstance(data_type, EmptyDataType) and obj.properties:
                 self.parse_object(name, obj, path)
         elif obj.is_object:
-            data_type = self.parse_object(name, obj, path)
+            data_type = self._parse_object_kind_schema(name, obj, path) or self.parse_object(name, obj, path)
         elif obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(obj):
             data_type = self.parse_enum(name, self._definition_enum(obj), path)
         elif obj.ref:  # pragma: no cover

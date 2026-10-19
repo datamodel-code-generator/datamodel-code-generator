@@ -11,6 +11,22 @@ pydantic_v2.dataclass	main/jsonschema/object_maps/nullable_object_maps[pydantic_
 pydantic_v2.dataclass	main/jsonschema/object_maps/nullable_object_maps[pydantic_v2.dataclass].py
 typing.TypedDict	main/jsonschema/object_maps/nullable_object_maps[typing.TypedDict].payloads.txt	= main/jsonschema/object_maps/nullable_object_maps[dataclasses.dataclass].payloads.txt
 typing.TypedDict	main/jsonschema/object_maps/nullable_object_maps[typing.TypedDict].py
+[test_object_map_bodies]
+dataclasses.dataclass	main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].payloads.txt	= main/jsonschema/object_maps/object_map_bodies[typing.TypedDict].payloads.txt
+dataclasses.dataclass	main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].py	= main/jsonschema/object_maps/object_map_bodies[msgspec.Struct].py
+dataclasses.dataclass	main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].warnings.txt
+msgspec.Struct	main/jsonschema/object_maps/object_map_bodies[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/object_maps/object_map_bodies[msgspec.Struct].py
+msgspec.Struct	main/jsonschema/object_maps/object_map_bodies[msgspec.Struct].warnings.txt	= main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].warnings.txt
+pydantic_v2.BaseModel	main/jsonschema/object_maps/object_map_bodies[pydantic_v2.BaseModel].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/object_maps/object_map_bodies[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/jsonschema/object_maps/object_map_bodies[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].warnings.txt
+pydantic_v2.dataclass	main/jsonschema/object_maps/object_map_bodies[pydantic_v2.dataclass].payloads.txt	= main/jsonschema/object_maps/object_map_bodies[pydantic_v2.BaseModel].payloads.txt
+pydantic_v2.dataclass	main/jsonschema/object_maps/object_map_bodies[pydantic_v2.dataclass].py
+pydantic_v2.dataclass	main/jsonschema/object_maps/object_map_bodies[pydantic_v2.dataclass].warnings.txt	= main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].warnings.txt
+typing.TypedDict	main/jsonschema/object_maps/object_map_bodies[typing.TypedDict].payloads.txt
+typing.TypedDict	main/jsonschema/object_maps/object_map_bodies[typing.TypedDict].py	= main/jsonschema/object_maps/object_map_bodies[msgspec.Struct].py
+typing.TypedDict	main/jsonschema/object_maps/object_map_bodies[typing.TypedDict].warnings.txt	= main/jsonschema/object_maps/object_map_bodies[dataclasses.dataclass].warnings.txt
 [test_object_maps]
 annotated-dataclasses.dataclass-nullable_maps	main/jsonschema/object_maps/object_maps[annotated-dataclasses.dataclass-nullable_maps].payloads.txt
 annotated-dataclasses.dataclass-nullable_maps	main/jsonschema/object_maps/object_maps[annotated-dataclasses.dataclass-nullable_maps].py
