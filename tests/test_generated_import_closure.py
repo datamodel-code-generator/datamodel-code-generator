@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import ast
 import builtins
+import math
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -67,18 +68,26 @@ STALE_FAILURE_MESSAGE = (
     "allowlist only shrinks and stays exact."
 )
 
-Use = tuple[str, bool, "int | None"]
+Use = tuple[str, bool, "int | None", "int | None"]
 
 
 @dataclass(eq=False)
 class _Scope:
-    """Names bound in one Python scope and the names loaded in it, with the import-time clock of each load."""
+    """Names bound in one Python scope and the names loaded in it, with the import-time clock of each load.
+
+    ``history`` lists, for each name, the clock ticks at which the scope binds it (``True``) or deletes it (``False``).
+    ``deferred_names`` are module names that a function body binds through ``global``, which exist only once it runs.
+    ``entry_deferred`` is the deferral depth at which a class body runs, so its own loads follow execution order.
+    """
 
     kind: str
     parent: _Scope | None
     names: set[str] = field(default_factory=set)
     type_checking_names: set[str] = field(default_factory=set)
     declared_global: set[str] = field(default_factory=set)
+    history: dict[str, list[tuple[int, bool]]] = field(default_factory=dict)
+    deferred_names: set[str] = field(default_factory=set)
+    entry_deferred: int = 0
     uses: list[Use] = field(default_factory=list)
     star_import: bool = False
 
@@ -104,7 +113,6 @@ class _Collector(ast.NodeVisitor):
         self.imported_as: dict[str, str] = {}
         self.clock = 0
         self.deferred = 0
-        self.module_bound_at: dict[str, int] = {}
 
     def _tick(self) -> int:
         self.clock += 1
@@ -116,21 +124,26 @@ class _Collector(ast.NodeVisitor):
         return self.imported_as.get(name, name) if isinstance(node, ast.Name) else name
 
     def _use(self, name: str, *, in_type: bool) -> None:
-        self.scope.uses.append((name, in_type, None if self.deferred else self._tick()))
+        tick = self._tick()
+        in_order = self.scope.kind == "class" and self.deferred == self.scope.entry_deferred
+        self.scope.uses.append((name, in_type, None if self.deferred else tick, tick if in_order else None))
 
-    def _bind(self, name: str, scope: _Scope | None = None) -> None:
+    def _bind(self, name: str, scope: _Scope | None = None, *, delete: bool = False) -> None:
         target = scope or self.scope
         if name in target.declared_global:
             target = self.module
         if target is self.module and self.under_type_checking:
             target.type_checking_names.add(name)
             return
+        if target is self.module and self.deferred:
+            if not delete:
+                target.deferred_names.add(name)
+            return
         target.names.add(name)
-        if target is self.module:
-            self.module_bound_at.setdefault(name, self._tick())
+        target.history.setdefault(name, []).append((self._tick(), not delete))
 
     def _enter(self, kind: str) -> _Scope:
-        self.scope = _Scope(kind, self.scope)
+        self.scope = _Scope(kind, self.scope, entry_deferred=self.deferred)
         self.scopes.append(self.scope)
         return self.scope
 
@@ -157,7 +170,7 @@ class _Collector(ast.NodeVisitor):
         if isinstance(node.ctx, ast.Load):
             self._use(node.id, in_type=self.in_type)
         else:
-            self._bind(node.id)
+            self._bind(node.id, delete=isinstance(node.ctx, ast.Del))
 
     def visit_Constant(self, node: ast.Constant) -> None:
         if not (self.in_type and isinstance(node.value, str)):
@@ -398,19 +411,31 @@ def _exported_names(module: ast.Module) -> list[str]:
     return exported
 
 
+def _bound_at(scope: _Scope, name: str, clock: float) -> bool:
+    """Return whether a scope holds a name at a clock tick: its last binding or deletion before then is a binding."""
+    states = [bound for tick, bound in scope.history.get(name, ()) if tick < clock]
+    return bool(states) and states[-1]
+
+
 def _resolves(collector: _Collector, scope: _Scope, use: Use) -> bool:
     """Return whether a loaded name is bound where Python looks it up, by the time the module loads it."""
-    name, in_type, clock = use
+    name, in_type, clock, local_clock = use
     module = collector.module
     current: _Scope | None = module if name in scope.declared_global else scope
     while current is not None and current is not module:
+        if current is scope and current.kind == "class" and local_clock is not None and name in current.names:
+            if _bound_at(current, name, local_clock):
+                return True
+            break
         if (current is scope or current.kind != "class") and name in current.names:
             return True
         current = current.parent
     if name in ALWAYS_BOUND or module.star_import:
         return True
-    if name in module.names:
-        return clock is None or collector.module_bound_at[name] < clock
+    if clock is None and name in module.deferred_names:
+        return True
+    if name in module.history:
+        return _bound_at(module, name, math.inf if clock is None else clock)
     return in_type and clock is None and name in module.type_checking_names
 
 
@@ -419,7 +444,7 @@ def unbound_names(module: ast.Module) -> set[str]:
     collector = _Collector()
     collector.visit(module)
     if "__getattr__" not in collector.module.names:
-        collector.module.uses.extend((name, False, None) for name in _exported_names(module))
+        collector.module.uses.extend((name, False, None, None) for name in _exported_names(module))
     return {use[0] for scope in collector.scopes for use in scope.uses if not _resolves(collector, scope, use)}
 
 
@@ -431,6 +456,19 @@ UNBOUND_NAME_CASES = [
     pytest.param(
         "def set_it():\n    global late\n    late = 1\n\n\ndef get_it():\n    return late\n", set(), id="global"
     ),
+    pytest.param("class C:\n    x = Later\n    Later = 1\n", {"Later"}, id="class-body-loads-before-binding"),
+    pytest.param("class C:\n    x = 1\n    y = x\n", set(), id="class-body-loads-after-binding"),
+    pytest.param(
+        "Later = 1\n\n\nclass C:\n    x = Later\n    Later = 2\n", set(), id="class-body-falls-back-to-module"
+    ),
+    pytest.param(
+        "def f():\n    global Later\n    Later = 1\n\n\nclass C(Later): ...\n", {"Later"}, id="deferred-global-write"
+    ),
+    pytest.param("value = 1\ndel value\nprint(value)\n", {"value"}, id="del-removes-binding"),
+    pytest.param("value = 1\ndel value\nvalue = 2\nprint(value)\n", set(), id="rebinding-after-del"),
+    pytest.param("value = 1\ndel value\n\n\ndef f():\n    return value\n", {"value"}, id="deferred-load-after-del"),
+    pytest.param("value = 1\n\n\ndef f():\n    global value\n    del value\n", set(), id="deferred-global-del"),
+    pytest.param("def f(a):\n    del a\n", set(), id="del-in-function"),
     pytest.param("x: 'not valid(' = 1\n", {"'not valid('"}, id="unparsable-forward-reference"),
     pytest.param("def f():\n    missing.count += 1\n", {"missing"}, id="attribute-augmented-assignment"),
     pytest.param("def f():\n    missing.count: int\n", {"missing"}, id="attribute-annotation-without-value"),
