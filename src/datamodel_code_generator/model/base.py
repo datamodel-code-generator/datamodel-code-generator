@@ -17,7 +17,7 @@ from functools import cached_property, lru_cache
 from itertools import accumulate, takewhile
 from pathlib import Path
 from threading import RLock
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeAlias, TypeVar, cast
 from warnings import warn
 
 from pydantic import ConfigDict, Field
@@ -519,28 +519,34 @@ class ConstraintsBase(_BaseModel):
     @staticmethod
     def merge_constraints(a: ConstraintsBaseT | None, b: ConstraintsBaseT | None) -> ConstraintsBaseT | None:
         """Merge two constraint objects, with b taking precedence over a."""
-        constraints_class = None
-        if isinstance(a, ConstraintsBase):  # pragma: no cover
-            root_type_field_constraints = {k: v for k, v in a.model_dump(by_alias=True).items() if v is not None}
-            constraints_class = a.__class__
-        else:
-            root_type_field_constraints = {}  # pragma: no cover
+        return _overlay_constraints(a, b, class_from="first-constraints")
 
-        if isinstance(b, ConstraintsBase):  # pragma: no cover
-            model_field_constraints = {k: v for k, v in b.model_dump(by_alias=True).items() if v is not None}
-            constraints_class = constraints_class or b.__class__
-        else:
-            model_field_constraints = {}
 
-        if constraints_class is None or not issubclass(constraints_class, ConstraintsBase):  # pragma: no cover
-            return None
+_ConstraintsClassRow: TypeAlias = Literal["first-given", "first-constraints"]
+"""Which argument of ``_overlay_constraints`` gives the class of the result."""
 
-        return constraints_class.model_validate(
-            {
-                **root_type_field_constraints,
-                **model_field_constraints,
-            },
-        )
+
+def _overlay_constraints(
+    base: ConstraintsBaseT | None, overriding: ConstraintsBaseT | None, *, class_from: _ConstraintsClassRow
+) -> ConstraintsBaseT | None:
+    """Overlay the constraint values ``overriding`` sets on those ``base`` sets; a value left unset keeps the other's.
+
+    The result takes the class of an argument by row: ``first-given`` that of the first argument given (an inherited
+    field copy), ``first-constraints`` that of the first ``ConstraintsBase`` (collapsing a root model, and the public
+    ``ConstraintsBase.merge_constraints``). A class that is no ``ConstraintsBase`` gives no constraints.
+    """
+    if class_from == "first-given":
+        constraints_class = type(base or overriding)
+    else:
+        constraints_class = type(base) if isinstance(base, ConstraintsBase) else type(overriding)
+    values = {
+        key: value
+        for constraints in (base, overriding)
+        if isinstance(constraints, ConstraintsBase)
+        for key, value in constraints.model_dump(by_alias=True).items()
+        if value is not None
+    }
+    return constraints_class.model_validate(values) if issubclass(constraints_class, ConstraintsBase) else None
 
 
 class DataModelFieldBase(_BaseModel):  # noqa: PLR0904

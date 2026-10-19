@@ -49,6 +49,19 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
+from datamodel_code_generator._constraint_applicability import (
+    NO_KEYWORDS,
+    NUMBER_KEYWORD_ORDER,
+    NUMBER_KEYWORDS,
+    PROPERTY_COUNT_KEYWORDS,
+    STRING_KEYWORD_ORDER,
+    all_of_root_keyword_kinds,
+    constrained_type_keyword_order,
+    declared_keywords,
+    holds_number_format,
+    keyword_kinds,
+    number_keywords_taken,
+)
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
@@ -152,9 +165,6 @@ from datamodel_code_generator.reference import (
 )
 from datamodel_code_generator.types import (
     ANY,
-    NUMBER_KEYWORDS,
-    SEQUENCE_KEYWORDS,
-    STRING_KEYWORDS,
     DataType,
     EmptyDataType,
     FloatConstraint,
@@ -221,17 +231,6 @@ def _update_false_schema_refs(
 
 
 _MIN_UNION_VARIANT_LITERAL_VALUES = 2
-_NUMBER_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = (
-    "minimum",
-    "maximum",
-    "multipleOf",
-    "exclusiveMaximum",
-    "exclusiveMinimum",
-)
-_VALUE_STRING_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = ("pattern", "minLength", "maxLength")
-_ARRAY_CONSTRAINT_KEYS = frozenset({"maxItems", "minItems", "uniqueItems"})
-_NO_CONSTRAINT_KEYWORDS: frozenset[str] = frozenset()
-_DECLARED_STRING_CONSTRAINT_KEYWORDS: frozenset[str] = STRING_KEYWORDS | {"minItems", "maxItems"}
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 _INHERITED_NESTED_SCHEMA_FIELDS = (
     "items",
@@ -246,7 +245,6 @@ _INHERITED_NESTED_SCHEMA_FIELDS = (
 )
 _INHERITED_POSITIONAL_SCHEMA_FIELDS = frozenset({"items", "prefixItems"})
 _INHERITED_SCHEMA_MAP_FIELDS = frozenset({"patternProperties", "properties"})
-_INHERITED_PROPERTY_COUNT_CONSTRAINT_FIELDS = frozenset({"maxProperties", "minProperties"})
 _ALLOF_BOUND_CONSTRAINT_FIELDS = frozenset({
     "minimum",
     "maximum",
@@ -256,7 +254,7 @@ _ALLOF_BOUND_CONSTRAINT_FIELDS = frozenset({
     "maxLength",
     "minItems",
     "maxItems",
-    *_INHERITED_PROPERTY_COUNT_CONSTRAINT_FIELDS,
+    *PROPERTY_COUNT_KEYWORDS,
 })
 _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS = frozenset({"contains", "maxContains", "minContains"})
 _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY = "_raw_schema_explicit_field_extras"
@@ -282,12 +280,6 @@ _INHERITED_TYPE_SHAPE_FIELDS = frozenset({
     "unevaluatedItems",
     "unevaluatedProperties",
 })
-_INHERITED_CONSTRAINT_TYPE_FIELDS: tuple[tuple[frozenset[str], frozenset[str]], ...] = (
-    (frozenset({"string"}), frozenset(_VALUE_STRING_CONSTRAINT_KEYS)),
-    (frozenset({"integer", "number"}), frozenset(_NUMBER_CONSTRAINT_KEYS)),
-    (frozenset({"array"}), _ARRAY_CONSTRAINT_KEYS),
-    (frozenset({"object"}), _INHERITED_PROPERTY_COUNT_CONSTRAINT_FIELDS),
-)
 _INHERITED_CONTAINER_TYPE_FIELDS: tuple[tuple[frozenset[str], frozenset[str]], ...] = (
     (
         frozenset({"array"}),
@@ -578,26 +570,6 @@ def _qualified_python_type_import(qualified_name: str) -> Import:
     return _QUALIFIED_PYTHON_TYPE_IMPORT_ALIASES.get(qualified_name) or Import.from_full_path(qualified_name)
 
 
-_STRING_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = (
-    "pattern",
-    "minLength",
-    "maxLength",
-    "minItems",
-    "maxItems",
-)
-_BYTES_CONSTRAINT_KEYS: tuple[JsonSchemaConstraintKey, ...] = ("minLength", "maxLength")
-_NUMBER_CONSTRAINT_TYPES = frozenset({
-    Types.int32,
-    Types.int64,
-    Types.integer,
-    Types.float,
-    Types.double,
-    Types.number,
-    Types.time,
-    Types.decimal,
-})
-_NUMBER_STRING_FORMAT_TYPES = _NUMBER_CONSTRAINT_TYPES - {Types.time}
-
 # Keep this in sync with _traverse_schema_objects(). Only schemas that did not
 # explicitly receive one of these fields can skip the child traversal below.
 _SCHEMA_OBJECT_CHILD_FIELDS = frozenset({
@@ -621,18 +593,9 @@ def _get_data_type_constraint_kwargs(
     obj: JsonSchemaObject,
     type_: Types,
 ) -> dict[str, JsonSchemaConstraintValue]:
-    match type_:
-        case number_type if number_type in _NUMBER_CONSTRAINT_TYPES:
-            keys = _NUMBER_CONSTRAINT_KEYS
-        case Types.string:
-            keys = _STRING_CONSTRAINT_KEYS
-        case Types.binary:
-            keys = _BYTES_CONSTRAINT_KEYS
-        case _:
-            return {}
     return {
         key: value.value if isinstance(value, UnionIntFloat) else value
-        for key in keys
+        for key in constrained_type_keyword_order(type_.name)
         if (value := getattr(obj, key, None)) is not None
     }
 
@@ -2223,9 +2186,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         match schema_type:
             case "integer" | "number":
-                constraint_fields = _NUMBER_CONSTRAINT_KEYS
+                constraint_fields = NUMBER_KEYWORD_ORDER
             case "string":
-                constraint_fields = _VALUE_STRING_CONSTRAINT_KEYS
+                constraint_fields = STRING_KEYWORD_ORDER
             case _:
                 return False
         return any(field in obj.model_fields_set for field in constraint_fields)
@@ -2240,7 +2203,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     (type_, format_) in self.type_mappings
                     or (type_ == "string" and format_ in self._data_formats["string"])
                 )
-                and self._get_type_with_mappings(type_, format_) in _NUMBER_STRING_FORMAT_TYPES
+                and holds_number_format(self._get_type_with_mappings(type_, format_).name)
             )
             for type_ in types
         )
@@ -2252,12 +2215,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         which are written as their length bounds.
         """
         if (types := obj.type) is None:
-            return _NO_CONSTRAINT_KEYWORDS
+            return NO_KEYWORDS
         types = (types,) if isinstance(types, str) else types
-        return frozenset().union(
-            NUMBER_KEYWORDS if self._accepts_number_constraints(obj, types) else _NO_CONSTRAINT_KEYWORDS,
-            _DECLARED_STRING_CONSTRAINT_KEYWORDS if "string" in types else _NO_CONSTRAINT_KEYWORDS,
-            SEQUENCE_KEYWORDS if "array" in types else _NO_CONSTRAINT_KEYWORDS,
+        return declared_keywords(
+            numbers=self._accepts_number_constraints(obj, types), string="string" in types, array="array" in types
         )
 
     def _get_constraint_values(self, obj: JsonSchemaObject, data_type: DataType | None = None) -> dict[str, Any]:
@@ -2283,14 +2244,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
             and not declared.isdisjoint(NUMBER_KEYWORDS)
         ):
-            declared = (declared - NUMBER_KEYWORDS) | (
+            declared = number_keywords_taken(
+                declared,
                 self.data_type_manager.constraint_keywords(
                     data_type,
                     self.target_python_version.version_key,
                     number_values=True,
                     target_model_version=self.target_pydantic_version,
-                )
-                & NUMBER_KEYWORDS
+                ),
             )
         if values.keys() <= declared:
             return values
@@ -2318,7 +2279,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if not self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS or not (
             missing := {
                 key: value
-                for key in _NUMBER_CONSTRAINT_KEYS
+                for key in NUMBER_KEYWORD_ORDER
                 if key not in constraints and (value := getattr(obj, key)) is not None
             }
         ):
@@ -5491,7 +5452,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and all(not item.type or _numeric_type_domain(item.type) is not None for item in items)
             and any("integer" in (_numeric_type_domain(item.type or "") or ()) for item in items)
         ):
-            for field in _NUMBER_CONSTRAINT_KEYS:
+            for field in NUMBER_KEYWORD_ORDER:
                 base_dict.pop(field, None)
 
     def _build_allof_type(  # noqa: PLR0911, PLR0912, PLR0913, PLR0915, PLR0917
@@ -5951,7 +5912,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ignored_keys = {
             *JsonSchemaObject.__constraint_fields__,
             *_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
-            *_INHERITED_PROPERTY_COUNT_CONSTRAINT_FIELDS,
+            *PROPERTY_COUNT_KEYWORDS,
             "default",
             "deprecated",
             "description",
@@ -6065,12 +6026,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _get_inherited_constraint_fields(self, schema: JsonSchemaObject) -> frozenset[str]:  # noqa: PLR6301
         """Return top-level validation constraints that need type-compatible placement."""
-        fields = {
-            field
-            for _, fields in _INHERITED_CONSTRAINT_TYPE_FIELDS
-            for field in fields
-            if field in schema.model_fields_set
-        }
+        fields = {field for _, fields in keyword_kinds() for field in fields if field in schema.model_fields_set}
         if schema.extras.keys() & _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS:
             fields.add(JsonSchemaObject.__extra_key__)
         return frozenset(fields)
@@ -6090,7 +6046,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             (
                 compatible_types
                 for compatible_types, fields in (
-                    *_INHERITED_CONSTRAINT_TYPE_FIELDS,
+                    *keyword_kinds(),
                     *_INHERITED_CONTAINER_TYPE_FIELDS,
                 )
                 if field in fields
@@ -6150,7 +6106,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> dict[str, Any]:
         """Avoid applying schema constraints to incompatible Python value types."""
         result = child
-        for compatible_types, constraint_fields in _INHERITED_CONSTRAINT_TYPE_FIELDS:
+        for compatible_types, constraint_fields in keyword_kinds():
             if parent_types and parent_types <= compatible_types:
                 continue
             for field in constraint_fields & child.keys():
@@ -6439,7 +6395,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or schema.enum
             or "const" in schema.extras
             or schema.extras.keys() & _INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS
-            or schema.model_fields_set & _INHERITED_PROPERTY_COUNT_CONSTRAINT_FIELDS
+            or schema.model_fields_set & PROPERTY_COUNT_KEYWORDS
         ):
             return True
         for field_name in _INHERITED_NESTED_SCHEMA_FIELDS:
@@ -7728,39 +7684,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 schema_type = next((item for item in schema_type if item != "null"), None)
             if isinstance(schema_type, str):
                 constraint_types = frozenset({schema_type})
-                if (format_ := merged_dict.get("format")) and (
-                    format_ in self._data_formats.get(schema_type, {}) or (schema_type, format_) in self.type_mappings
+                if (
+                    (format_ := merged_dict.get("format"))
+                    and (
+                        format_ in self._data_formats.get(schema_type, {})
+                        or (schema_type, format_) in self.type_mappings
+                    )
+                    and (
+                        kinds := all_of_root_keyword_kinds(
+                            schema_type, self._get_type_with_mappings(schema_type, format_).name
+                        )
+                    )
+                    is not None
                 ):
-                    mapped_type = self._get_type_with_mappings(schema_type, format_)
-                    if schema_type == "string" and mapped_type in {
-                        Types.date,
-                        Types.date_time,
-                        Types.date_time_local,
-                        Types.time,
-                        Types.timedelta,
-                        Types.uuid,
-                        Types.uuid1,
-                        Types.uuid2,
-                        Types.uuid3,
-                        Types.uuid4,
-                        Types.uuid5,
-                        Types.ipv4,
-                        Types.ipv6,
-                        Types.ipv4_network,
-                        Types.ipv6_network,
-                    }:
-                        constraint_types = frozenset()
-                    elif mapped_type in _NUMBER_CONSTRAINT_TYPES:
-                        constraint_types = frozenset({"number"})
-                    elif mapped_type in {
-                        Types.string,
-                        Types.byte,
-                        Types.binary,
-                        Types.password,
-                        Types.email,
-                        Types.hostname,
-                    }:
-                        constraint_types = frozenset({"string"})
+                    constraint_types = kinds
                 merged_dict = self._drop_incompatible_inherited_constraints(merged_dict, constraint_types)
             merged_schema = self.SCHEMA_OBJECT_TYPE.model_validate(merged_dict)
 
@@ -11534,10 +11471,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Keep shared numeric bounds on fields whose branches all support those bounds."""
         return (
             self.field_constraints
-            and bool(self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS)
+            and self._output_model_context.writes_constrained_types
             and isinstance(obj.type, list)
             and all(type_ in {"integer", "number", "null"} for type_ in obj.type)
-            and all(getattr(obj, key) is None for key in ("minItems", "maxItems", *_VALUE_STRING_CONSTRAINT_KEYS))
+            and all(getattr(obj, key) is None for key in ("minItems", "maxItems", *STRING_KEYWORD_ORDER))
         )
 
     def _parse_constrained_type_union(self, name: str, obj: JsonSchemaObject, path: list[str]) -> DataType | None:
@@ -11555,7 +11492,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._get_inherited_constraint_fields(obj) or obj.propertyNames is not None
         ):
             return None
-        if self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS:
+        if self._output_model_context.writes_constrained_types:
             if "array" not in obj.type and "object" not in obj.type:
                 return None
         elif not self._output_model_context.supports_annotated_constraints:
@@ -12092,7 +12029,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.field_constraints
             and self._output_model_context.supports_internal_annotated_constraints
             and (
-                self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS
+                self._output_model_context.writes_constrained_types
                 or self._output_model_context.supports_annotated_constraints
             )
             and self._get_inherited_constraint_fields(obj)

@@ -137,6 +137,7 @@ class OutputModelContext:
         "supports_annotated_constraints",
         "supports_boolean_literals",
         "supports_internal_annotated_constraints",
+        "writes_constrained_types",
     )
 
     def __init__(  # noqa: PLR0913
@@ -150,6 +151,7 @@ class OutputModelContext:
         requires_tagged_union_discriminator: bool,
         requires_additional_properties_reference_classes: bool,
         decodes_mixed_enum_values: bool = True,
+        writes_constrained_types: bool = False,
     ) -> None:
         """Initialize capabilities with the established keyword signature."""
         self._data_model_type = data_model_type
@@ -160,6 +162,7 @@ class OutputModelContext:
         self.requires_tagged_union_discriminator = requires_tagged_union_discriminator
         self.requires_additional_properties_reference_classes = requires_additional_properties_reference_classes
         self.decodes_mixed_enum_values = decodes_mixed_enum_values
+        self.writes_constrained_types = writes_constrained_types
 
     @classmethod
     def from_generation_types(  # noqa: PLR0913
@@ -197,6 +200,7 @@ class OutputModelContext:
                 data_model_type.REQUIRES_ADDITIONAL_PROPERTIES_REFERENCE_CLASSES
             ),
             decodes_mixed_enum_values=data_model_type._DECODES_MIXED_ENUM_VALUES,  # noqa: SLF001
+            writes_constrained_types=data_type_manager_type._WRITES_CONSTRAINED_TYPES,  # noqa: SLF001
         )
 
     def resolve_nested_constrained_model_type(self) -> type[DataModel]:

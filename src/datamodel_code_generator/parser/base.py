@@ -54,6 +54,12 @@ from datamodel_code_generator import (
     cached_path_exists,
 )
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode, read_check_flags
+from datamodel_code_generator._constraint_applicability import (
+    TAG_LITERAL_UNTAKEN_KEYWORD,
+    overridden_number_constraints,
+    resplit_overridden_constraints,
+    untaken_minimums,
+)
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._internal_utils import (
     HashableComparable,
@@ -101,6 +107,7 @@ from datamodel_code_generator.model.base import (
     DataModel,
     DataModelFieldBase,
     _find_base_classes,
+    _overlay_constraints,
     _refresh_custom_template_paths,
     _set_nested_model_default_factory_order,
     c3_merge,
@@ -150,7 +157,6 @@ from datamodel_code_generator.reference import (
 from datamodel_code_generator.types import (
     ANY,
     NONE,
-    NUMBER_KEYWORDS,
     DataType,
     DataTypeManager,
     DefaultValueDescriptor,
@@ -1814,21 +1820,6 @@ def _merge_data_type_modifiers(
         new_type.kwargs[name] = deepcopy(value)
 
 
-def _intersect_constraints(
-    inherited: ConstraintsBase | None,
-    overriding: ConstraintsBase | None,
-) -> ConstraintsBase | None:
-    """Overlay a partial field's constraints on its inherited field constraints."""
-    constraints_class = type(inherited or overriding)
-    if not issubclass(constraints_class, ConstraintsBase):
-        return None  # pragma: no cover
-    inherited_values = inherited.model_dump(by_alias=True, exclude_none=True) if inherited else {}
-    overriding_values = overriding.model_dump(by_alias=True, exclude_none=True) if overriding else {}
-    merged_values = inherited_values.copy()
-    merged_values.update(overriding_values)
-    return constraints_class.model_validate(merged_values)
-
-
 def _apply_inherited_field_nullability(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
@@ -1905,9 +1896,8 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913, PLR0915
             copied_field.serialization_alias = field.serialization_alias
             copied_field.use_serialization_alias = field.use_serialization_alias
             if partial_merge_mode != AllOfMergeMode.NoMerge:
-                copied_field.constraints = _intersect_constraints(
-                    inherited_field.constraints,
-                    field.constraints,
+                copied_field.constraints = _overlay_constraints(
+                    inherited_field.constraints, field.constraints, class_from="first-given"
                 )
                 copied_field.extras.update(deepcopy(field.extras))
                 copied_field.read_only = inherited_field.read_only or field.read_only
@@ -2664,7 +2654,7 @@ def _discriminator_tag_constraints(field: DataModelFieldBase) -> tuple[Constrain
     if not field.SUPPORTS_FIELD_CONSTRAINTS or not isinstance(constraints := field.constraints, ConstraintsBase):
         return None
     values = constraints.model_dump(by_alias=True, exclude_unset=True)
-    if (pattern := values.pop("pattern", None)) is None:
+    if (pattern := values.pop(TAG_LITERAL_UNTAKEN_KEYWORD, None)) is None:
         return None
     return constraints, values, pattern
 
@@ -6978,26 +6968,27 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if value is not None
         }
         declared_numbers = (
-            {
-                **{key: value for key, value in values.items() if key in NUMBER_KEYWORDS and key not in type_dependent},
-                **field.pop_untaken_constraints(),
-            }
+            overridden_number_constraints(
+                values, type_dependent=type_dependent, untaken=field.pop_untaken_constraints()
+            )
             if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
             else {}
         )
-        if not (decided := {**type_dependent, **declared_numbers}):
+        if not type_dependent and not declared_numbers:
             return
         target = self.target_python_version.version_key
-        keywords = self.data_type_manager.type_constraint_keywords(path, target)
-        number_keywords = self.data_type_manager.type_constraint_keywords(
-            path, target, number_values=True, target_model_version=self.target_pydantic_version
+        values, untaken = resplit_overridden_constraints(
+            values,
+            type_dependent=type_dependent,
+            declared=declared_numbers,
+            taken=self.data_type_manager.type_constraint_keywords(path, target),
+            declared_taken=self.data_type_manager.type_constraint_keywords(
+                path, target, number_values=True, target_model_version=self.target_pydantic_version
+            ),
         )
-        values = {key: value for key, value in values.items() if key not in decided}
-        values.update({key: value for key, value in type_dependent.items() if key in keywords})
-        values.update({key: value for key, value in declared_numbers.items() if key in number_keywords})
         self._mark_untaken_constraints(
             field,
-            {key: value for key, value in declared_numbers.items() if key not in number_keywords},
+            untaken,
             lambda minimum: self.data_type_manager.type_constraint_keywords(
                 path, target, number_values=True, target_model_version=minimum
             ),
@@ -7016,17 +7007,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         if not untaken:
             return
-        minimums: dict[str, str] = {}
-        for minimum in sorted(
-            {
-                REQUIREMENTS[construct].minimum
-                for construct, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()
-            },
-            key=_pydantic_version_key,
-        ):
-            taken = keywords_for(minimum)
-            minimums.update({key: minimum for key in untaken if key in taken and key not in minimums})
-        field.record_untaken_constraints(untaken, minimums)
+        field.record_untaken_constraints(
+            untaken,
+            untaken_minimums(
+                untaken,
+                (
+                    (minimum, keywords_for(minimum))
+                    for minimum in sorted(
+                        {
+                            REQUIREMENTS[construct].minimum
+                            for construct, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()
+                        },
+                        key=_pydantic_version_key,
+                    )
+                ),
+            ),
+        )
 
     @staticmethod
     def _append_model_import(model: DataModel, import_: Import) -> None:

@@ -27,6 +27,7 @@ Layer: TypeAlias = Literal[
     "shared-model",
     "target",
     "requirements",
+    "constraints",
     "checks",
     "shared",
 ]
@@ -96,6 +97,19 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator.enums"}),
         (
             "the requirement table is a leaf: import only the standard library, typing_extensions and "
+            "datamodel_code_generator.enums"
+        ),
+    ),
+    "constraints": (
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._requirements",
+            "datamodel_code_generator.enums",
+        }),
+        (
+            "the constraint applicability table is a leaf that types.py reads while it is imported: import only the "
+            "standard library, typing_extensions, datamodel_code_generator._requirements and "
             "datamodel_code_generator.enums"
         ),
     ),
@@ -296,6 +310,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "shared-model": "datamodel_code_generator.model.shared_fixture",
             "target": "datamodel_code_generator.target_fixture",
             "requirements": "datamodel_code_generator.requirements_fixture",
+            "constraints": "datamodel_code_generator.constraints_fixture",
             "checks": "datamodel_code_generator.checks_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
@@ -577,7 +592,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             self._check_import(
                 node,
                 target
-                if self.layer in {"reference", "target", "requirements"} or alias.name.startswith("_")
+                if self.layer in {"reference", "target", "requirements", "constraints"} or alias.name.startswith("_")
                 else module,
             )
 
@@ -1150,6 +1165,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "reference"
         case ("_requirements.py",):
             layer = "requirements"
+        case ("_constraint_applicability.py",):
+            layer = "constraints"
         case ("_checks.py",):
             layer = "checks"
         case ("_client" | "_fastapi", *_):

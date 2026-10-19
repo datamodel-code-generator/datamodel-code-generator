@@ -10,12 +10,12 @@ from ast import literal_eval
 from fractions import Fraction
 from functools import wraps
 from math import ceil, floor, isfinite
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
 from typing_extensions import override
 
 from datamodel_code_generator import Error
+from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -46,11 +46,7 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType
 from datamodel_code_generator.types import (
-    LENGTH_KEYWORDS,
     NONE,
-    NUMBER_KEYWORDS,
-    SEQUENCE_KEYWORDS,
-    STRING_KEYWORDS,
     DataType,
     _create_context_data_type,
     chain_as_tuple,
@@ -71,17 +67,6 @@ UNSET = _UNSET()
 
 
 _ANNOTATED_CONSTRAINTS_CONTEXT: object = object()
-_META_SCHEMA_KEYWORDS: Mapping[str, str] = MappingProxyType({
-    "gt": "exclusiveMinimum",
-    "ge": "minimum",
-    "lt": "exclusiveMaximum",
-    "le": "maximum",
-    "multiple_of": "multipleOf",
-    "min_length": "minLength",
-    "max_length": "maxLength",
-    "pattern": "pattern",
-})
-_LENGTH_META_KEYWORDS: frozenset[str] = frozenset({"min_length", "max_length"})
 _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
 
 
@@ -1009,16 +994,20 @@ class DataModelField(DataModelFieldBase):
         Numbers take bounds, sized types take lengths and str takes a pattern, as the msgspec type table lists;
         a mapping takes lengths, a fixed tuple and a union take none, and an unclassified type keeps them all.
         """
-        if data_type.is_dict or data_type.is_mapping:
-            return _LENGTH_META_KEYWORDS
-        if data_type.is_tuple or self._data_type_is_plain_union(data_type):
-            return frozenset()
+        if (
+            keywords := _applicability.shape_meta_keywords(
+                mapping=data_type.is_dict or data_type.is_mapping,
+                unconstrained=data_type.is_tuple or self._data_type_is_plain_union(data_type),
+            )
+        ) is not None:
+            return keywords
         if len(data_type.data_types) == 1 and not (
             data_type.type or data_type.reference or data_type.python_type or self._data_type_has_container(data_type)
         ):
             return self._meta_keywords(data_type.data_types[0])
-        keywords = DataTypeManager.constraint_keywords(data_type, self.target_version_key(data_type))
-        return frozenset(meta for meta, schema in _META_SCHEMA_KEYWORDS.items() if schema in keywords)
+        return _applicability.meta_keywords(
+            DataTypeManager.constraint_keywords(data_type, self.target_version_key(data_type))
+        )
 
     def _get_meta_data(self) -> tuple[dict[str, Any], frozenset[str]]:
         """Return the Meta(...) keyword data that msgspec takes on the type, and the constraints it leaves out."""
@@ -1034,7 +1023,9 @@ class DataModelField(DataModelFieldBase):
         msgspec checks `multiple_of` on a float by its floating-point remainder, so a divisor a float only
         approximates, such as 0.01, rejects its own multiples.
         """
-        if not (constrained := {k for k, v in data.items() if v is not None and k in _META_SCHEMA_KEYWORDS}):
+        if not (
+            constrained := {k for k, v in data.items() if v is not None and k in _applicability.META_SCHEMA_KEYWORDS}
+        ):
             return frozenset(), False
         untaken = frozenset(constrained - self._meta_keywords(self._annotated_base_data_type()))
         inexact = (
@@ -1071,7 +1062,9 @@ class DataModelField(DataModelFieldBase):
             seen |= {id(source)}
             if alias_field.use_annotated:
                 meta = alias_field._get_meta_data()[0]  # noqa: SLF001
-                constraints += tuple((k, v) for k, v in meta.items() if v is not None and k in _META_SCHEMA_KEYWORDS)
+                constraints += tuple(
+                    (k, v) for k, v in meta.items() if v is not None and k in _applicability.META_SCHEMA_KEYWORDS
+                )
             if alias_field._field_has_top_level_none() or self._data_type_is_plain_union(alias_field.data_type):  # noqa: SLF001
                 members = self._non_none_members(alias_field.data_type)
                 for inner in members:
@@ -1473,20 +1466,10 @@ class DataTypeManager(_DataTypeManager):
 
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
-    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
-        "int": NUMBER_KEYWORDS,
-        "float": NUMBER_KEYWORDS,
-        "str": STRING_KEYWORDS,
-        "bytes": LENGTH_KEYWORDS,
-        "bytearray": LENGTH_KEYWORDS,
-        "list": SEQUENCE_KEYWORDS,
-        "set": SEQUENCE_KEYWORDS,
-        "frozenset": SEQUENCE_KEYWORDS,
-        "tuple": SEQUENCE_KEYWORDS,
-    })
-    ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = False
-    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = False
-    LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = False
+    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = _applicability.MSGSPEC_OUTPUT.type_keywords
+    ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.annotation_unions_take
+    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.fixed_tuples_take_length
+    LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.literals_take
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)

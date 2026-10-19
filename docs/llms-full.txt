@@ -60852,13 +60852,16 @@ step 3 applies.
 `model/_decisions/` over the immutable facts it reads, passed by keyword (or as a frozen record); the adapter that
 reads those facts is the only code that reads the live objects, and callers are to go through it (readers of the
 stored `is_optional` move in a later step). `scripts/check_architecture_boundaries.py` keeps the package free of
-concrete backends.
+concrete backends. A table that `types.py` reads while it is imported is a top-level leaf instead, as the model package
+imports `types.py`: `_requirements.py` and `_constraint_applicability.py`.
 
 | Decision | Pure core | Adapters |
 | --- | --- | --- |
 | whether a type's rendered hint, or the annotation a field writes around it, includes None | `model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, `field_renders_none` | `types.py:DataType.admits_none`; `model/base.py:DataModelFieldBase._field_null_source`; writes: `types.py:DataType._materialize_render_state` (see L7) |
 | which class an enum is written as: a value base (`IntEnum`, `StrEnum`, `(T, Enum)`) only when it keeps every member value, else `Enum`; merged enums keep today's kinds as named `legacy-*` rows, and msgspec keeps the 0.86.0 base where it could not decode that `Enum` (`legacy-msgspec-decodable-value-base`, until G16 decides msgspec Enums; capability `DataModel._DECODES_MIXED_ENUM_VALUES` through `model/output.py:OutputModelContext.decodes_mixed_enum_values`) | `model/_decisions/enum_kind.py`: `decide_enum_kind` | `parser/jsonschema.py:JsonSchemaParser._get_enum_model_class` (schema enums, also those merged from `const` branches and those of the converted formats); `parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`; `parser/base.py:Parser.__extract_inherited_enum` (L5); classes: `model/enum.py:_enum_class` |
 | whether an enum is written as a `Literal` | `model/_decisions/enum_kind.py`: `enum_as_literal` | `should_parse_enum_as_literal` of `parser/jsonschema.py:JsonSchemaParser` and `parser/graphql.py:GraphQLParser`; legacy bypass: the enum branch of `parser/jsonschema.py:JsonSchemaParser.parse_array_fields` (a `type` list holding `array`) writes an Enum class without asking, so `--enum-field-as-literal all` leaves it a class |
+| which constraint keywords each emitted type takes in each output model, which keywords a declared schema type holds (a string reads `minItems`/`maxItems` as its lengths), which JSON kind each keyword applies to, the `con*` and `msgspec.Meta` arguments, the classes that enforce a zero bound and the bytes that carry their lengths; rows `legacy-declared-string-keywords-kept`, `legacy-consumed-at-object-property`, `legacy-all-of-root-format-kinds` keep today's disagreeing sites | `_constraint_applicability.py`: the `OutputKeywords` rows `BASE_OUTPUT`, `PYDANTIC_OUTPUT`, `MSGSPEC_OUTPUT`; `listed_type_keywords`, `unlisted_type_keywords`, `shape_keywords`, `member_keywords`, `literal_number_keywords`, `declared_keywords`, `number_keywords_taken`, `keyword_kinds`, `all_of_root_keyword_kinds`, `constrained_type_keyword_order`, `shape_meta_keywords`, `meta_keywords`, `resplit_overridden_constraints`, `untaken_minimums` | `types.py:DataTypeManager.constraint_keywords` and `type_constraint_keywords` (its `CONSTRAINT_KEYWORDS`, `NUMBER_VALUE_TYPES`, `TARGET_NUMBER_KEYWORDS`, `CONSTRAINED_TYPE_CONSUMED_KEYS` and the flags, the keyword groups of `types.py` and the `con*` filters of `model/pydantic_v2/types.py` read the rows); `parser/jsonschema.py:JsonSchemaParser`: `_get_constraint_values`, `_declared_constraint_keywords`, `_untaken_number_constraints`, `_drop_incompatible_inherited_constraints`, the format step of `_handle_allof_root_model_with_constraints`; `parser/base.py:Parser._decide_overridden_constraints` and `_mark_untaken_constraints`, the tag keyword of `_discriminator_tag_constraints`; `model/msgspec.py:DataModelField._meta_keywords`; capability `DataTypeManager._WRITES_CONSTRAINED_TYPES` through `model/output.py:OutputModelContext.writes_constrained_types`; not yet: the zero-bound step of `JsonSchemaParser._get_data_type` and the render-time drops (`DataModelFieldBase._can_apply_constraints`, the AnyUrl and `None` drops of `model/pydantic_base.py`) |
+| how the constraints of two fields overlay (the overriding values win): the class of the result comes from the first given argument (inherited field copies) or the first `ConstraintsBase` (collapsing root models, `ConstraintsBase.merge_constraints`) | `model/base.py:_overlay_constraints`, rows `first-given` and `first-constraints` | `parser/base.py:_copy_resolved_inherited_field`; `parser/base.py:Parser.__collapse_root_models_in_scope` through `ConstraintsBase.merge_constraints` |
 | the kind of a const or enum value, and whether a `Literal` or a msgspec tag holds it | `model/_decisions/enum_kind.py`: `literal_value_kind`, `is_literal_kind`, `is_tag_kind` | `parser/jsonschema.py`: `_partition_enum_values`, `_get_const_data_type`, `_get_single_literal_value`, `_get_tagged_union_value`, `_extract_const_enum_from_combined`; `parser/base.py`: `Parser._get_enum_discriminator_literal`, `_msgspec_enum_clashes`, `_msgspec_null_enum_message`; not yet: `model/base.py:DataModelFieldBase._process_const_as_literal`, which moves with the decision on const defaults and nullability |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
@@ -61008,15 +61011,19 @@ paths:
   instead of comparing versions. Not yet rows: the Pydantic target that `base_config.implied_target_settings` implies
   for server and client targets, the Python minimum of `_api_generation`, the PEP 695 placeholder check of the
   built-in formatter, and the per-version type backports of `_python_type_import_registry`.
+- Which constraint keywords each type takes is one static table in `_constraint_applicability.py` (see One home per
+  decision): the public tables of `DataTypeManager` and its Pydantic and msgspec subclasses, and the keyword groups
+  `types.py` exports, are views of its rows.
 
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
 backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
-input-model, reference, model-composition, output-model, shared-model, schema graph, requirement-table, and debug check
-flag files are classified explicitly. The composition root may select concrete backends, while shared-model modules must
-remain neutral: they cannot import a concrete backend or resolve one through `sys.modules`, including module-name
-constants and aliases. The requirement table may import only the standard library, `typing_extensions` and `enums`,
-`_checks.py`, which every layer reads for the debug check flags, only the standard library and `typing_extensions`, and
-the schema graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. This keeps
+input-model, reference, model-composition, output-model, shared-model, schema graph, requirement-table,
+constraint-table, and debug check flag files are classified explicitly. The composition root may select concrete
+backends, while shared-model modules must remain neutral: they cannot import a concrete backend or resolve one through
+`sys.modules`, including module-name constants and aliases. The requirement table may import only the standard library,
+`typing_extensions` and `enums`, the constraint table only those and the requirement table, `_checks.py`, which every
+layer reads for the debug check flags, only the standard library and `typing_extensions`, and the schema graph
+(`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. This keeps
 backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral module
 registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
 backend policy therefore cannot hide in the shared layer. Its legacy allowlist is keyed by file, enclosing symbol, rule,

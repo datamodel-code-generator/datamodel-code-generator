@@ -49,6 +49,7 @@ from pydantic import (
 from pydantic_core import core_schema
 from typing_extensions import TypeIs, assert_never, override
 
+from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator import imports as generator_imports
 from datamodel_code_generator._format_types import (
     DateClassType,
@@ -56,7 +57,6 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
     IMPORT_ABC_MAPPING,
@@ -1271,7 +1271,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return whether this DataType represents a union of multiple types."""
         return len(self.data_types) > 1
 
-    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = frozenset()
+    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = _applicability.NO_KEYWORDS
     """Schema keywords that the type writes itself, which a field of the type leaves out of its constraints."""
 
     # Historical conversion policy retained for direct DataType users and
@@ -1396,20 +1396,14 @@ def _create_context_data_type(  # noqa: PLR0913, PLR0917
     return context_data_type
 
 
-NUMBER_KEYWORDS: frozenset[str] = frozenset({
-    "minimum",
-    "maximum",
-    "exclusiveMinimum",
-    "exclusiveMaximum",
-    "multipleOf",
-})
-NUMBER_BOUND_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS - {"multipleOf"}
-LENGTH_KEYWORDS: frozenset[str] = frozenset({"minLength", "maxLength"})
-STRING_KEYWORDS: frozenset[str] = LENGTH_KEYWORDS | {"pattern"}
-ARRAY_KEYWORDS: frozenset[str] = frozenset({"minItems", "maxItems", "uniqueItems"})
-SEQUENCE_KEYWORDS: frozenset[str] = ARRAY_KEYWORDS | LENGTH_KEYWORDS
-TYPE_DEPENDENT_KEYWORDS: frozenset[str] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
-_NO_KEYWORDS: frozenset[str] = frozenset()
+NUMBER_KEYWORDS: frozenset[str] = _applicability.NUMBER_KEYWORDS
+NUMBER_BOUND_KEYWORDS: frozenset[str] = _applicability.NUMBER_BOUND_KEYWORDS
+LENGTH_KEYWORDS: frozenset[str] = _applicability.LENGTH_KEYWORDS
+STRING_KEYWORDS: frozenset[str] = _applicability.STRING_KEYWORDS
+ARRAY_KEYWORDS: frozenset[str] = _applicability.ARRAY_KEYWORDS
+SEQUENCE_KEYWORDS: frozenset[str] = _applicability.SEQUENCE_KEYWORDS
+TYPE_DEPENDENT_KEYWORDS: frozenset[str] = _applicability.TYPE_DEPENDENT_KEYWORDS
+_NO_KEYWORDS: frozenset[str] = _applicability.NO_KEYWORDS
 _UNION_PATHS: frozenset[str] = frozenset({"typing.Union", "typing.Optional", UNION, OPTIONAL})
 _QUALIFIER_PATHS: frozenset[str] = frozenset({"typing.Annotated", "typing.Final", IMPORT_ANNOTATED.import_, "Final"})
 _LITERAL_VALUE_TYPE_PATHS: Mapping[type, str] = MappingProxyType({
@@ -1475,47 +1469,25 @@ class DataTypeManager(ABC):
         r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*"
         r"([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$"
     )
-    CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = {}
+    CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
+        _applicability.BASE_OUTPUT.zero_bound_classes
+    )
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     DEFAULT_VALUE_DESCRIPTORS: ClassVar[Mapping[tuple[str | None, str], DefaultValueDescriptor]] = MappingProxyType({})
-    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
-        "int": NUMBER_KEYWORDS,
-        "float": NUMBER_KEYWORDS,
-        "decimal.Decimal": NUMBER_KEYWORDS,
-        "datetime.timedelta": NUMBER_BOUND_KEYWORDS,
-        "datetime.datetime": NUMBER_BOUND_KEYWORDS,
-        "datetime.time": NUMBER_BOUND_KEYWORDS,
-        "str": STRING_KEYWORDS,
-        "bytes": STRING_KEYWORDS,
-        "list": SEQUENCE_KEYWORDS,
-        "set": SEQUENCE_KEYWORDS,
-        "frozenset": SEQUENCE_KEYWORDS,
-        "tuple": SEQUENCE_KEYWORDS,
-        "collections.deque": SEQUENCE_KEYWORDS,
-        "collections.abc.Sized": SEQUENCE_KEYWORDS,
-        "collections.abc.Iterable": SEQUENCE_KEYWORDS,
-        "collections.abc.Generator": SEQUENCE_KEYWORDS,
-        "collections.abc.ByteString": STRING_KEYWORDS,
-        "typing.AnyStr": STRING_KEYWORDS,
-    })
+    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = _applicability.BASE_OUTPUT.type_keywords
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (generator_imports,)
-    NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = frozenset({
-        "bool",
-        "object",
-        "typing.Any",
-        "typing.Hashable",
-        "collections.abc.Hashable",
-        "enum.IntEnum",
-        "enum.IntFlag",
-        *(f"typing.Supports{name}" for name in ("Abs", "Complex", "Float", "Index", "Int", "Round")),
-    })
+    NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _applicability.BASE_OUTPUT.number_value_types
     """Known types that a number is a value of, which check the number keywords of a number schema on it."""
-    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = MappingProxyType({})
+    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = (
+        _applicability.BASE_OUTPUT.target_number_keywords
+    )
     """Number keywords a type takes once the target version of the output model has a construct, by the type's path."""
-    ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
-    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = True
-    LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = True
+    ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.annotation_unions_take
+    FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.BASE_OUTPUT.fixed_tuples_take_length
+    LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.literals_take
+    _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.BASE_OUTPUT.writes_constrained_types
+    """Whether the type manager writes scalar constraints into ``con*`` types (``OutputKeywords``)."""
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -1604,17 +1576,17 @@ class DataTypeManager(ABC):
     @staticmethod
     def _shape_constraint_keywords(data_type: DataType) -> frozenset[str] | None:
         """Return the keywords a container or a referenced model takes, or None for any other type."""
-        if data_type.is_dict or data_type.is_mapping:
-            return _NO_KEYWORDS
-        if any((
-            data_type.is_list,
-            data_type.is_set,
-            data_type.is_frozen_set,
-            data_type.is_sequence,
-            data_type.is_tuple,
-        )):
-            return SEQUENCE_KEYWORDS
-        return TYPE_DEPENDENT_KEYWORDS if data_type.reference else None
+        return _applicability.shape_keywords(
+            mapping=data_type.is_dict or data_type.is_mapping,
+            sequence=any((
+                data_type.is_list,
+                data_type.is_set,
+                data_type.is_frozen_set,
+                data_type.is_sequence,
+                data_type.is_tuple,
+            )),
+            reference=bool(data_type.reference),
+        )
 
     @classmethod
     def constraint_keywords(
@@ -1635,8 +1607,8 @@ class DataTypeManager(ABC):
         if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
             return keywords
         if data_type.data_types:
-            return (frozenset.union if number_values else frozenset.intersection)(
-                *(
+            return _applicability.member_keywords(
+                (
                     cls.constraint_keywords(
                         member,
                         target_version,
@@ -1644,13 +1616,13 @@ class DataTypeManager(ABC):
                         target_model_version=target_model_version,
                     )
                     for member in data_type.data_types
-                )
+                ),
+                number_values=number_values,
             )
         if number_values and data_type.literals and not data_type.type and data_type.import_ is None:
-            return (
-                NUMBER_KEYWORDS
-                if cls.LITERALS_TAKE_CONSTRAINTS and any(type(value) is not str for value in data_type.literals)
-                else _NO_KEYWORDS
+            return _applicability.literal_number_keywords(
+                literals_take=cls.LITERALS_TAKE_CONSTRAINTS,
+                has_non_string_value=any(type(value) is not str for value in data_type.literals),
             )
         if data_type.python_type is None:
             import_ = data_type.import_
@@ -1711,38 +1683,30 @@ class DataTypeManager(ABC):
             )
         elif base is not expression and path in _QUALIFIER_PATHS:
             members = python_type_expr_arguments(expression)[:1]
-        combine = frozenset.union if number_values else frozenset.intersection
         if members is not None:
-            return (
-                combine(
-                    *(
-                        cls._annotation_constraint_keywords(
-                            member,
-                            target_version,
-                            number_values=number_values,
-                            target_model_version=target_model_version,
-                        )
-                        for member in members
+            return _applicability.member_keywords(
+                (
+                    cls._annotation_constraint_keywords(
+                        member,
+                        target_version,
+                        number_values=number_values,
+                        target_model_version=target_model_version,
                     )
-                )
-                if members
-                else _NO_KEYWORDS
+                    for member in members
+                ),
+                number_values=number_values,
             )
         if path == "typing.Literal" and base is not expression:
             if not cls.LITERALS_TAKE_CONSTRAINTS:
                 return _NO_KEYWORDS
-            value_paths = set(cls._literal_value_paths(expression))
-            return (
-                combine(
-                    *(
-                        cls.type_constraint_keywords(value, target_version, number_values=number_values)
-                        if value or not number_values
-                        else TYPE_DEPENDENT_KEYWORDS
-                        for value in value_paths
-                    )
-                )
-                if value_paths
-                else _NO_KEYWORDS
+            return _applicability.member_keywords(
+                (
+                    cls.type_constraint_keywords(value, target_version, number_values=number_values)
+                    if value or not number_values
+                    else TYPE_DEPENDENT_KEYWORDS
+                    for value in set(cls._literal_value_paths(expression))
+                ),
+                number_values=number_values,
             )
         if (
             path == "tuple"
@@ -1794,22 +1758,24 @@ class DataTypeManager(ABC):
         ``TARGET_NUMBER_KEYWORDS`` also those an explicit ``target_model_version`` reaches.
         """
         path = _standard_type_path(path, target_version)
-        if number_values:
-            if path in cls.NUMBER_VALUE_TYPES:
-                return NUMBER_KEYWORDS
-            if (added := cls.TARGET_NUMBER_KEYWORDS.get(path)) is not None and pydantic_target_meets(
-                added[0], target_model_version
-            ):
-                return cls.CONSTRAINT_KEYWORDS.get(path, _NO_KEYWORDS) | added[1]
-        if (keywords := cls.CONSTRAINT_KEYWORDS.get(path)) is not None:
+        if (
+            keywords := _applicability.listed_type_keywords(
+                path,
+                type_keywords=cls.CONSTRAINT_KEYWORDS,
+                number_value_types=cls.NUMBER_VALUE_TYPES,
+                target_number_keywords=cls.TARGET_NUMBER_KEYWORDS,
+                number_values=number_values,
+                target_model_version=target_model_version,
+            )
+        ) is not None:
             return keywords
         if not path or any(path in _import_paths(module) for module in cls.KNOWN_TYPE_IMPORTS):
-            return _NO_KEYWORDS
+            return _applicability.unlisted_type_keywords(known=True)
         from datamodel_code_generator._python_type_import_registry import (  # noqa: PLC0415
             is_known_python_type_path,
         )
 
-        return _NO_KEYWORDS if is_known_python_type_path(path, target_version) else TYPE_DEPENDENT_KEYWORDS
+        return _applicability.unlisted_type_keywords(known=is_known_python_type_path(path, target_version))
 
     def get_data_type_from_full_path(self, full_path: str, is_custom_type: bool) -> DataType:  # noqa: FBT001
         """Create a DataType from a fully qualified Python path."""

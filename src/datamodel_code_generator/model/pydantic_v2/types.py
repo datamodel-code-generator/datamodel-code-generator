@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
+from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
@@ -82,10 +83,6 @@ from datamodel_code_generator.python_literal import PythonCode, represent_python
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
     DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
-    LENGTH_KEYWORDS,
-    NUMBER_BOUND_KEYWORDS,
-    NUMBER_KEYWORDS,
-    STRING_KEYWORDS,
     DataType,
     StrictTypes,
     Types,
@@ -184,19 +181,13 @@ def strict_type_map_factory(data_type: type[DataType]) -> dict[StrictTypes, Data
     }
 
 
-number_kwargs: tuple[str, ...] = (
-    "minimum",
-    "maximum",
-    "multipleOf",
-    "exclusiveMaximum",
-    "exclusiveMinimum",
-)
+number_kwargs: tuple[str, ...] = _applicability.NUMBER_KEYWORD_ORDER
 
-string_kwargs: tuple[str, ...] = ("pattern", "minLength", "maxLength", "minItems", "maxItems")
+string_kwargs: tuple[str, ...] = _applicability.STRING_LENGTH_KEYWORD_ORDER
 _ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
 _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
 
-bytes_kwargs: tuple[str, ...] = ("minLength", "maxLength")
+bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 
 escape_characters = str.maketrans({
     "'": r"\'",
@@ -220,64 +211,21 @@ def _get_regex_literal(pattern: str) -> str:
     return PythonCode(raw_literal, pattern)
 
 
-def _constraint_keywords(keywords: frozenset[str], *imports: Import) -> dict[str, frozenset[str]]:
-    """Map the import paths of Pydantic types to the type-dependent keywords they take."""
-    return {f"{import_.from_}.{import_.import_}": keywords for import_ in imports}
-
-
 class _PydanticDataTypeManager(_DataTypeManagerBase):
     """Base data type manager for Pydantic models with constrained types."""
 
     PATTERN_KEY: ClassVar[str] = "pattern"
     HOSTNAME_REGEX: ClassVar[str] = HOSTNAME_REGEX
-    CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = {
-        "PositiveInt": ("exclusiveMinimum",),
-        "NegativeInt": ("exclusiveMaximum",),
-        "NonNegativeInt": ("minimum",),
-        "NonPositiveInt": ("maximum",),
-        "PositiveFloat": ("exclusiveMinimum",),
-        "NegativeFloat": ("exclusiveMaximum",),
-        "NonNegativeFloat": ("minimum",),
-        "NonPositiveFloat": ("maximum",),
-    }
-    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = MappingProxyType({
-        **_DataTypeManagerBase.CONSTRAINT_KEYWORDS,
-        **_constraint_keywords(
-            NUMBER_KEYWORDS,
-            IMPORT_CONINT,
-            IMPORT_CONFLOAT,
-            IMPORT_CONDECIMAL,
-            IMPORT_STRICT_INT,
-            IMPORT_STRICT_FLOAT,
-            IMPORT_POSITIVE_INT,
-            IMPORT_NEGATIVE_INT,
-            IMPORT_NON_NEGATIVE_INT,
-            IMPORT_NON_POSITIVE_INT,
-            IMPORT_POSITIVE_FLOAT,
-            IMPORT_NEGATIVE_FLOAT,
-            IMPORT_NON_NEGATIVE_FLOAT,
-            IMPORT_NON_POSITIVE_FLOAT,
-        ),
-        **_constraint_keywords(
-            NUMBER_BOUND_KEYWORDS,
-            IMPORT_AWARE_DATETIME,
-            IMPORT_NAIVE_DATETIME,
-            IMPORT_PAST_DATETIME,
-            IMPORT_FUTURE_DATETIME,
-        ),
-        **_constraint_keywords(STRING_KEYWORDS, IMPORT_CONSTR, IMPORT_STRICT_STR, IMPORT_STRICT_BYTES),
-        **_constraint_keywords(LENGTH_KEYWORDS, IMPORT_CONBYTES, IMPORT_EMAIL_STR, IMPORT_SECRET_STR),
-    })
+    CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
+        _applicability.PYDANTIC_OUTPUT.zero_bound_classes
+    )
+    CONSTRAINT_KEYWORDS: ClassVar[Mapping[str, frozenset[str]]] = _applicability.PYDANTIC_OUTPUT.type_keywords
     KNOWN_TYPE_IMPORTS: ClassVar[tuple[ModuleType, ...]] = (*_DataTypeManagerBase.KNOWN_TYPE_IMPORTS, pydantic_imports)
-    NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _DataTypeManagerBase.NUMBER_VALUE_TYPES | {
-        f"{IMPORT_STRICT_BOOL.from_}.{IMPORT_STRICT_BOOL.import_}"
-    }
-    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = MappingProxyType({
-        f"{IMPORT_TIMEDELTA.from_}.{IMPORT_TIMEDELTA.import_}": (
-            "pydantic.timedelta_multiple_of",
-            frozenset({"multipleOf"}),
-        ),
-    })
+    NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _applicability.PYDANTIC_OUTPUT.number_value_types
+    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = (
+        _applicability.PYDANTIC_OUTPUT.target_number_keywords
+    )
+    _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.PYDANTIC_OUTPUT.writes_constrained_types
     DEFAULT_VALUE_DESCRIPTORS = MappingProxyType({
         (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_): DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
         (IMPORT_CONDECIMAL.from_, IMPORT_CONDECIMAL.import_): CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -600,7 +548,7 @@ class EncodedBytesDataType(PydanticV2DataType):
     ``EncodedBytes``. Pydantic checks them so from 2.10 on.
     """
 
-    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = frozenset({"minLength", "maxLength"})
+    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = _applicability.BASE64_BYTES_CARRIED_KEYWORDS
     annotated_bytes: ClassVar[bool] = True
 
     def _binding(self, name: str) -> str:

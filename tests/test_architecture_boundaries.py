@@ -43,6 +43,7 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
         (FIXTURE_ROOT / "shared" / "forbidden.py", "shared"),
         (FIXTURE_ROOT / "target" / "forbidden.py", "target"),
         (FIXTURE_ROOT / "requirements" / "forbidden.py", "requirements"),
+        (FIXTURE_ROOT / "constraints" / "forbidden.py", "constraints"),
         (FIXTURE_ROOT / "checks" / "forbidden.py", "checks"),
     ]
     violations = check_architecture_boundaries.check_files(files, allowlist={})
@@ -77,7 +78,7 @@ def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(
 
 
 def test_architecture_boundary_source_classification() -> None:
-    """Keep the ownership of entrypoint, model, schema graph, requirement-table and check flag files explicit."""
+    """Keep entrypoint, model, schema graph, requirement, constraint-table and check flag ownership explicit."""
     source_root = ROOT / "src" / "datamodel_code_generator"
     paths = (
         source_root / "__init__.py",
@@ -96,6 +97,7 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "_api_generation.py",
         source_root / "_target_config.py",
         source_root / "_requirements.py",
+        source_root / "_constraint_applicability.py",
         source_root / "_checks.py",
         source_root / "types.py",
     )

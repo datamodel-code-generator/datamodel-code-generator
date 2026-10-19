@@ -14,5 +14,6 @@ model/_decisions/enum_kind.py: shared-model
 _api_generation.py: target
 _target_config.py: target
 _requirements.py: requirements
+_constraint_applicability.py: constraints
 _checks.py: checks
 types.py: shared

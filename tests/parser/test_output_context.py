@@ -22,12 +22,12 @@ from datamodel_code_generator.reference import Reference
 if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
 
-_OUTPUT_CAPABILITIES: dict[DataModelType, tuple[bool, bool, bool, bool]] = {
-    DataModelType.PydanticV2BaseModel: (True, True, False, False),
-    DataModelType.PydanticV2Dataclass: (True, True, False, False),
-    DataModelType.DataclassesDataclass: (False, True, False, False),
-    DataModelType.TypingTypedDict: (False, True, False, True),
-    DataModelType.MsgspecStruct: (True, False, True, False),
+_OUTPUT_CAPABILITIES: dict[DataModelType, tuple[bool, bool, bool, bool, bool]] = {
+    DataModelType.PydanticV2BaseModel: (True, True, False, False, True),
+    DataModelType.PydanticV2Dataclass: (True, True, False, False, True),
+    DataModelType.DataclassesDataclass: (False, True, False, False, False),
+    DataModelType.TypingTypedDict: (False, True, False, True, False),
+    DataModelType.MsgspecStruct: (True, False, True, False, False),
 }
 
 
@@ -61,7 +61,7 @@ def test_parser_output_context_import_preserves_model_context_identity() -> None
 @pytest.mark.allow_direct_assert
 def test_output_capabilities_for_standard_generation_types(
     output_model_type: DataModelType,
-    expected_capabilities: tuple[bool, bool, bool, bool],
+    expected_capabilities: tuple[bool, bool, bool, bool, bool],
     target_python_version: PythonVersion,
 ) -> None:
     """Resolve stable capabilities for every canonical output target."""
@@ -79,6 +79,7 @@ def test_output_capabilities_for_standard_generation_types(
         supports_boolean_literals,
         requires_tagged_union_discriminator,
         requires_additional_properties_reference_classes,
+        writes_constrained_types,
     ) = expected_capabilities
 
     assert context.supports_annotated_constraints is supports_annotated_constraints
@@ -86,6 +87,7 @@ def test_output_capabilities_for_standard_generation_types(
     assert context.supports_boolean_literals is supports_boolean_literals
     assert context.requires_tagged_union_discriminator is requires_tagged_union_discriminator
     assert context.requires_additional_properties_reference_classes is requires_additional_properties_reference_classes
+    assert context.writes_constrained_types is writes_constrained_types
     if not supports_annotated_constraints:
         return
 
