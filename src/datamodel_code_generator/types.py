@@ -47,7 +47,7 @@ from pydantic import (
     field_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import TypeIs, assert_never
+from typing_extensions import TypeIs, assert_never, override
 
 from datamodel_code_generator import imports as generator_imports
 from datamodel_code_generator._format_types import (
@@ -601,6 +601,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     _exclude_fields: ClassVar[set[str]] = {"parent", "children"}
     _pass_fields: ClassVar[set[str]] = {"parent", "children", "data_types", "reference"}
 
+    @override
     def __deepcopy__(self, memo: dict[int, Any] | None = None) -> DataType:
         """Create a deep copy handling circular references in parent/children fields."""
         if memo is None:

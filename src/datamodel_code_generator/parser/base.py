@@ -37,7 +37,7 @@ from urllib.parse import ParseResult
 from warnings import warn
 
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import Unpack
+from typing_extensions import Unpack, final
 
 from datamodel_code_generator import (
     AllExportsCollisionStrategy,
@@ -129,10 +129,14 @@ from datamodel_code_generator.python_literal import (
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     _UNMATCHED_MODEL_NAME_KEYS_REPORTED,
+    SCHEMA_LOCATION_CONFLICT_KEY,
+    SCHEMA_LOCATION_INDEX,
     ModelResolver,
     ModelType,
     Reference,
+    SchemaLocationIndex,
     _source_path,
+    location_of,
     split_module_name,
 )
 from datamodel_code_generator.types import (
@@ -195,7 +199,7 @@ _DEFERRED_INHERITED_TYPE_KEY: Final = "_deferred_inherited_type"
 _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
 _TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
-_SOURCE_REFERENCE_PATH_KEY: Final = "_source_reference_path"
+_CHECK_SCHEMA_LOCATIONS_ENV: Final = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
 _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM: Final = "2.10"
 
@@ -2098,6 +2102,7 @@ def _union_tags(model: DataModel) -> tuple[HashableComparable, ...]:
     )
 
 
+@final
 @dataclass(slots=True)
 class _ModelShapes:
     """The shapes of models memoized for one comparison pass, and the union tags the pass compares as well.
@@ -3265,6 +3270,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _collapses_list_item_root_models: ClassVar[bool] = True
     _http_fetch_session: _HTTPFetchSession | None = None
     _dropped_constraint_fields: DroppedConstraintFields = frozenset()
+    _schema_location_index: SchemaLocationIndex | None = None
 
     @property
     def run_context(self) -> ParserRunContext:
@@ -3487,6 +3493,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.generation_store, self.results = self._generation_store_factory()
         self._merged_copies: set[DataModel] = set()
         self.model_metadata: ModelMetadata | None = None
+        self.model_metadata_identities: tuple[str, ...] = ()
         self.generated_class_names: tuple[tuple[str, str], ...] = ()
         self.invalid_dotted_stdout_repair_modules: tuple[ModulePath, ...] = ()
         self.generated_model_inventory: tuple[str, ...] | None = None
@@ -8892,20 +8899,24 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         }
 
     @classmethod
-    def _model_metadata(
-        cls,
-        model: DataModel,
-        module: ModulePath,
-        source_reference_paths: Mapping[DataModel, str],
-    ) -> GeneratedModelMetadata:
-        source_ref = redact_reference(source_reference_paths[model])
+    def _model_metadata(cls, model: DataModel, module: ModulePath, identity: str) -> GeneratedModelMetadata:
+        """Describe a generated model by the JSON Pointer location of the schema object it is built from.
+
+        A model without a location (GraphQL input, or a schema object a custom parser built) keeps its reference path.
+        """
         title = model.extra_template_data.get("title")
+        if (location := location_of(model.reference)) is None:
+            source_ref = redact_reference(identity)
+            source_path = _source_path_from_reference_path(source_ref)
+        else:
+            source_ref = redact_reference(str(location))
+            source_path = list(location.tokens)
         return {
             "class_name": model.class_name,
             "name": model.name,
             "module": _module_name_from_module_path(module),
             "source_ref": source_ref,
-            "source_path": _source_path_from_reference_path(source_ref),
+            "source_path": source_path,
             "title": title if isinstance(title, str) else None,
             "fields": [cls._field_metadata(field, is_root_model=model.IS_ROOT_MODEL) for field in model.fields],
         }
@@ -8914,17 +8925,31 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _build_model_metadata(
         cls,
         contexts: list[ModuleContext],
-        source_reference_paths: Mapping[DataModel, str],
-    ) -> ModelMetadata:
-        return {
-            "version": 1,
-            "models": [
-                cls._model_metadata(model, ctx.module, source_reference_paths)
-                for ctx in contexts
-                for model in ctx.models
-                if model in source_reference_paths
-            ],
-        }
+        model_identities: Mapping[DataModel, str],
+    ) -> tuple[ModelMetadata, tuple[str, ...]]:
+        """Return the metadata of the emitted models and, in the same order, their redacted identity paths."""
+        models = [(model, ctx.module) for ctx in contexts for model in ctx.models if model in model_identities]
+        return (
+            {
+                "version": 1,
+                "models": [cls._model_metadata(model, module, model_identities[model]) for model, module in models],
+            },
+            tuple(redact_reference(model_identities[model]) for model, _ in models),
+        )
+
+    def _check_schema_locations(self) -> None:
+        """Raise when a model parsed from a JSON document has no schema location (the copy step lost it).
+
+        A model whose Reference several schema objects reach has none by rule and is not reported.
+        """
+        if missing := [
+            model
+            for model in self.results
+            if location_of(model.reference) is None and not model.reference.__dict__.get(SCHEMA_LOCATION_CONFLICT_KEY)
+        ]:
+            names = ", ".join(f"{model.class_name} ({redact_reference(model.reference.path)})" for model in missing)
+            msg = f"{_CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: {names}"
+            raise Error(msg)
 
     def _close_http_fetch_session(self) -> None:
         """Close and discard the parser-scoped HTTP session without masking parser results."""
@@ -8947,6 +8972,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.generation_store._dispose(self.model_resolver.references.values())  # noqa: SLF001
         self.model_resolver.references.clear()
         self._reset_local_source_cache()
+        self._schema_location_index = None
 
     def dispose(self) -> None:
         """Release parser-owned resources after a facade-managed run."""
@@ -8983,16 +9009,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         collect_model_metadata: bool = False,  # noqa: FBT001, FBT002
     ) -> str | dict[tuple[str, ...], Result]:
         """Parse schema and generate code, returning single file or module dict."""
-        return self.__prepare_parse(
-            with_import=with_import,
-            format_=format_,
-            settings_path=settings_path,
-            disable_future_imports=disable_future_imports,
-            all_exports_scope=all_exports_scope,
-            all_exports_collision_strategy=all_exports_collision_strategy,
-            module_split_mode=module_split_mode,
-            collect_model_metadata=collect_model_metadata,
-        )
+        token = SCHEMA_LOCATION_INDEX.set(self._schema_location_index)
+        try:
+            return self.__prepare_parse(
+                with_import=with_import,
+                format_=format_,
+                settings_path=settings_path,
+                disable_future_imports=disable_future_imports,
+                all_exports_scope=all_exports_scope,
+                all_exports_collision_strategy=all_exports_collision_strategy,
+                module_split_mode=module_split_mode,
+                collect_model_metadata=collect_model_metadata,
+            )
+        finally:
+            SCHEMA_LOCATION_INDEX.reset(token)
 
     def __prepare_parse(  # noqa: PLR0913
         self,
@@ -9021,6 +9051,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.parse_raw()
         finally:
             self._close_http_fetch_session()
+        if self._schema_location_index is not None and os.environ.get(_CHECK_SCHEMA_LOCATIONS_ENV) == "1":
+            self._check_schema_locations()
         self._typed_map_value_reference_ids = self.model_resolver.settle_yielding_names()
         if (changes := self.model_resolver.yielding_name_changes) and self._names_have_class_keyed_options(changes):
             self.yielding_names_to_assign = tuple(self.model_resolver.final_yielding_names.items())
@@ -9046,13 +9078,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 None if self.keep_model_order else _runtime_validation_reference_paths(self.results, same_module=True)
             ),
         )
-        source_reference_paths: Mapping[DataModel, str] | None = (
-            {
-                model: model.__dict__.get(_SOURCE_REFERENCE_PATH_KEY, model.reference.path)
-                for model in sorted_data_models.values()
-            }
-            if collect_model_metadata
-            else None
+        model_identities: Mapping[DataModel, str] | None = (
+            {model: model.reference.path for model in sorted_data_models.values()} if collect_model_metadata else None
         )
         sort_base_classes_for_mro(sorted_data_models, self.generation_store)
 
@@ -9114,7 +9141,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_path_to_module_name=model_path_to_module_name,
             require_update_action_models=require_update_action_models,
             sorted_data_models=sorted_data_models,
-            source_reference_paths=source_reference_paths,
+            model_identities=model_identities,
             config=config,
         )
 
@@ -9128,7 +9155,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_path_to_module_name: dict[str, str],
         require_update_action_models: list[str],
         sorted_data_models: SortedDataModels,
-        source_reference_paths: Mapping[DataModel, str] | None,
+        model_identities: Mapping[DataModel, str] | None,
         config: ParseConfig,
     ) -> str | dict[tuple[str, ...], Result]:
         """Process every module into one shared result mapping before rendering."""
@@ -9215,7 +9242,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             results,
             contexts=contexts,
             sorted_data_models=sorted_data_models,
-            source_reference_paths=source_reference_paths,
+            model_identities=model_identities,
             config=config,
             forwarder_map=forwarder_map,
             require_update_action_models=require_update_action_models,
@@ -9412,7 +9439,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         contexts: list[ModuleContext],
         sorted_data_models: SortedDataModels,
-        source_reference_paths: Mapping[DataModel, str] | None,
+        model_identities: Mapping[DataModel, str] | None,
         config: ParseConfig,
         forwarder_map: ForwarderMap,
         require_update_action_models: list[str],
@@ -9443,10 +9470,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         self._inspect_invalid_dotted_stdout(contexts, sorted_data_models, config, results)
 
-        if source_reference_paths is not None:
-            self.model_metadata = self._build_model_metadata(contexts, source_reference_paths)
+        if model_identities is not None:
+            self.model_metadata, self.model_metadata_identities = self._build_model_metadata(contexts, model_identities)
         else:
-            self.model_metadata = None
+            self.model_metadata, self.model_metadata_identities = None, ()
 
         if [*results] == [("__init__.py",)]:
             single_result = results["__init__.py",]

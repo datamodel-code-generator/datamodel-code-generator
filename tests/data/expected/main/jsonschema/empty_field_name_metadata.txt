@@ -106,10 +106,10 @@
       "class_name": "ReadWriteEmptyRequest",
       "name": "ReadWriteEmptyRequest",
       "module": "",
-      "source_ref": "empty_field_name.json#/$defs/ReadWriteEmptyRequest",
+      "source_ref": "empty_field_name.json#/$defs/ReadWriteEmpty",
       "source_path": [
         "$defs",
-        "ReadWriteEmptyRequest"
+        "ReadWriteEmpty"
       ],
       "title": null,
       "fields": [
@@ -133,10 +133,10 @@
       "class_name": "ReadWriteEmptyResponse",
       "name": "ReadWriteEmptyResponse",
       "module": "",
-      "source_ref": "empty_field_name.json#/$defs/ReadWriteEmptyResponse",
+      "source_ref": "empty_field_name.json#/$defs/ReadWriteEmpty",
       "source_path": [
         "$defs",
-        "ReadWriteEmptyResponse"
+        "ReadWriteEmpty"
       ],
       "title": null,
       "fields": [

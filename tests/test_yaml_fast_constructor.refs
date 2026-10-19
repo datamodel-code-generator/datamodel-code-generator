@@ -16,6 +16,7 @@ asyncapi/non_finite_embedded_schemas.yaml	yaml_fast_constructor/parity.txt
 asyncapi/protobuf-local-import.yaml	yaml_fast_constructor/parity.txt
 asyncapi/protobuf-schema-format.yaml	yaml_fast_constructor/parity.txt
 asyncapi/schema-format-v2.yaml	yaml_fast_constructor/parity.txt
+asyncapi/schema_location.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/v3.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/written_as_const/v2.yaml	yaml_fast_constructor/parity.txt
@@ -359,6 +360,8 @@ openapi/schema_intersection/discriminator_narrowing_inline.yaml	yaml_fast_constr
 openapi/schema_intersection/ref_siblings_oas30.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/ref_siblings_oas31.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/rw.yaml	yaml_fast_constructor/parity.txt
+openapi/schema_location.yaml	yaml_fast_constructor/parity.txt
+openapi/schema_location_alias.yaml	yaml_fast_constructor/parity.txt
 openapi/serialization_aliases_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/serialize_as_any.yaml	yaml_fast_constructor/parity.txt
 openapi/shadowed_imports.yaml	yaml_fast_constructor/parity.txt

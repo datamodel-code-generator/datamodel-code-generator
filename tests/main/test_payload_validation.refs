@@ -671,6 +671,7 @@ jsonschema/schema_intersection/root_members.json	payloads/native_numeric_empty_e
 jsonschema/schema_intersection/unsat_enum_extend.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_forms.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_two_enum_refs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_location/ext.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_metadata.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_not_boolean_false.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_property_count_cross_module/external_core_unique_parent.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1478,6 +1479,15 @@ openapi/schema_intersection/ref_siblings_oas31.yaml::components.schemas.Q	payloa
 openapi/schema_intersection/ref_siblings_oas31.yaml::components.schemas.Quantity	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/rw.yaml::components.schemas.Id	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/rw.yaml::components.schemas.Secret	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.Foo/Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.PetRequest	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.Tilde~Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::paths./pets/{id}.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.A	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.B	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/serialize_as_any.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_imports.yaml::components.schemas.marketingOptIn	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2214,6 +2224,7 @@ jsonschema/schema_intersection/root_members.json	payloads/native_numeric_empty_e
 jsonschema/schema_intersection/unsat_enum_extend.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_forms.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_two_enum_refs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_location/ext.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_metadata.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_not_boolean_false.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_property_count_cross_module/external_core_unique_parent.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3016,6 +3027,15 @@ openapi/schema_intersection/ref_siblings_oas31.yaml::components.schemas.Q	payloa
 openapi/schema_intersection/ref_siblings_oas31.yaml::components.schemas.Quantity	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/rw.yaml::components.schemas.Id	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/rw.yaml::components.schemas.Secret	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.Foo/Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.PetRequest	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::components.schemas.Tilde~Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location.yaml::paths./pets/{id}.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.A	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.B	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_location_alias.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/serialize_as_any.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_imports.yaml::components.schemas.marketingOptIn	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/shadowed_imports_base_and_fields.yaml::components.schemas.BaseItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

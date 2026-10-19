@@ -8,6 +8,8 @@ from __future__ import annotations
 import keyword
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -201,6 +203,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
 
         self._lookaround_regex_engine_checked = False
 
+    @override
     def orders_required_assignments_before_defaults(self) -> bool:
         """Order required ``= Field(...)`` fields first only for an explicit target that needs it.
 
@@ -209,7 +212,8 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """
         return explicit_model_target_supports(self, PYDANTIC_V2_DATACLASS_SIGNATURE_ORDER_MINIMUM)
 
-    def keeps_assignment_with_required_fields(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301
+    @override
+    def keeps_assignment_with_required_fields(self, field: DataModelFieldBase) -> bool:
         """Keep a required field that only its alias makes an assignment before the fields with defaults.
 
         Targets before Pydantic 2.4 write a non-identifier alias of an ``Annotated`` field as an assignment,
@@ -217,10 +221,12 @@ class DataClass(_DataclassReuseMixin, DataModel):
         """
         return getattr(field, "assigned_only_for_alias", False)
 
-    def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:  # noqa: PLR6301
+    @override
+    def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:
         """Return whether ``dataclass.jinja2`` writes an assignment for the field."""
         return _has_pydantic_dataclass_field_assignment(field)
 
+    @override
     def class_attribute_hides_named_type(
         self, field: DataModelFieldBase, *, assigned: bool, resolved_late: bool, as_string: bool
     ) -> bool:
@@ -242,12 +248,14 @@ class DataClass(_DataclassReuseMixin, DataModel):
             field, assigned=assigned, resolved_late=resolved_late, as_string=as_string
         ) or (resolved_late and bool(self.dataclass_arguments.get("slots")))
 
+    @override
     def assigns_forward_reference_field(
         self, field: DataModelFieldBase, positions: Mapping[str, int], index: int
     ) -> bool:
         """Leave ``Annotated`` for a field that names a later model when the target predates Pydantic 2.11."""
         return assigns_forward_reference_field(self, field, positions, index)
 
+    @override
     def assign_forward_reference_fields(self, positions: Mapping[str, int], index: int) -> bool:
         """Write fields that name a later model by assignment, keeping required fields before defaults."""
         if not super().assign_forward_reference_fields(positions, index):
@@ -268,6 +276,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
             self._select_python_regex_engine()
 
     @classmethod
+    @override
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
         """Select Python's regex engine in every dataclass that reaches a string pattern type alias.
 
@@ -295,11 +304,13 @@ class DataClass(_DataclassReuseMixin, DataModel):
         self.clear_imports_cache()
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Return model imports, ensuring the lookaround regex engine config is applied."""
         self._apply_lookaround_regex_engine()
         return super().imports
 
+    @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render the dataclass, ensuring the lookaround regex engine config is applied."""
         self._apply_lookaround_regex_engine()
@@ -318,10 +329,12 @@ class _PydanticDataclassField(DataModelFieldV2):
     })
     _ALIASES_REQUIRE_ASSIGNMENT: ClassVar[bool] = False
 
-    def _alias_generator_renames(self, name: str) -> bool:  # noqa: ARG002, PLR6301
+    @override
+    def _alias_generator_renames(self, name: str) -> bool:
         """Return False: the dataclass template renders no alias generator."""
         return False
 
+    @override
     def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:
         """Use dataclass-safe factories for mutable schema defaults."""
         data, default_factory = super()._get_field_data_and_default_factory()
@@ -334,6 +347,7 @@ class _PydanticDataclassField(DataModelFieldV2):
                 pass
         return data, default_factory
 
+    @override
     def _get_constructor_default_info(self) -> tuple[bool, bool]:
         """Return constructor-default semantics from structured field state."""
         if self.is_class_var:
@@ -397,6 +411,7 @@ class _PydanticDataclassField(DataModelFieldV2):
         default_argument = f"default={self.represented_default}" if self.use_default_kwarg else self.represented_default
         return self._render_field_call((default_argument, *plan.arguments))
 
+    @override
     def _has_field_statement(self) -> bool:
         """Include Field imports for forced assignments and mutable default factories."""
         if self.is_class_var:
@@ -409,6 +424,7 @@ class _PydanticDataclassField(DataModelFieldV2):
             return False
         return isinstance(self.default, (list, dict, set))
 
+    @override
     def _get_field_render_plan(self) -> _PydanticFieldRenderPlan:
         """Include a forced required assignment in every rendered Field() view."""
         plan = super()._get_field_render_plan()
@@ -424,6 +440,7 @@ class _PydanticDataclassField(DataModelFieldV2):
         return self.use_annotated and self._requires_dataclass_field_assignment(plan)
 
     @property
+    @override
     def annotated(self) -> str | None:
         """Keep assignments visible to legacy dataclass templates."""
         if self._requires_unannotated_dataclass_assignment:
@@ -431,12 +448,14 @@ class _PydanticDataclassField(DataModelFieldV2):
         return super().annotated
 
     @property
+    @override
     def field(self) -> str | None:
         """Render dataclass-visible metadata on the assignment when required."""
         if self._requires_unannotated_dataclass_assignment:
             return self.dataclass_field
         return super().field
 
+    @override
     def _rendered_field_values(self) -> tuple[str | None, str | None]:
         """Keep built-in rendering consistent with the public field properties."""
         plan = self._get_field_render_plan()
@@ -444,11 +463,13 @@ class _PydanticDataclassField(DataModelFieldV2):
             return self._render_dataclass_field(plan), None
         return self._rendered_field_values_from_plan(plan)
 
+    @override
     def _get_default_factory_for_optional_nested_model(self) -> str | None:
         """Get a factory for an optional nested Pydantic dataclass."""
         return _nested_model_default_factory(self, DataClass)
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Drop Annotated when dataclass metadata moves to the assignment."""
         imports = super().imports

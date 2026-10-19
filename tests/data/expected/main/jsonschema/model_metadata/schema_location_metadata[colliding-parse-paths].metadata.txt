@@ -1,0 +1,294 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "MapState1",
+      "name": "MapState1",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json/0#-datamodel-code-generator-#-object-#-special-#",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "mapViewMode",
+          "alias": "mapViewMode",
+          "original_name": "mapViewMode",
+          "type": "Literal['MODE_2D']",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "MapState2",
+      "name": "MapState2",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json/1#-datamodel-code-generator-#-object-#-special-#",
+      "source_path": null,
+      "title": null,
+      "fields": [
+        {
+          "name": "latitude",
+          "alias": "latitude",
+          "original_name": "latitude",
+          "type": "Latitude",
+          "required": true
+        },
+        {
+          "name": "longitude",
+          "alias": "longitude",
+          "original_name": "longitude",
+          "type": "Longitude",
+          "required": true
+        },
+        {
+          "name": "zoom",
+          "alias": "zoom",
+          "original_name": "zoom",
+          "type": "Zoom | None",
+          "required": false
+        },
+        {
+          "name": "bearing",
+          "alias": "bearing",
+          "original_name": "bearing",
+          "type": "Bearing | None",
+          "required": false
+        },
+        {
+          "name": "pitch",
+          "alias": "pitch",
+          "original_name": "pitch",
+          "type": "Pitch",
+          "required": true
+        },
+        {
+          "name": "dragRotate",
+          "alias": "dragRotate",
+          "original_name": "dragRotate",
+          "type": "DragRotate | None",
+          "required": false
+        },
+        {
+          "name": "mapSplitMode",
+          "alias": "mapSplitMode",
+          "original_name": "mapSplitMode",
+          "type": "Literal['SWIPE_COMPARE']",
+          "required": true
+        },
+        {
+          "name": "isSplit",
+          "alias": "isSplit",
+          "original_name": "isSplit",
+          "type": "Literal[True]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "MapState3",
+      "name": "MapState3",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#",
+      "source_path": [],
+      "title": "MapState",
+      "fields": []
+    },
+    {
+      "class_name": "MapState4",
+      "name": "MapState4",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#-datamodel-code-generator-#-union_model-0-#-special-#",
+      "source_path": null,
+      "title": "MapState",
+      "fields": []
+    },
+    {
+      "class_name": "MapState5",
+      "name": "MapState5",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#-datamodel-code-generator-#-union_model-1-#-special-#",
+      "source_path": null,
+      "title": "MapState",
+      "fields": []
+    },
+    {
+      "class_name": "MapState6",
+      "name": "MapState6",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#-datamodel-code-generator-#-union_model-2-#-special-#",
+      "source_path": null,
+      "title": "MapState",
+      "fields": []
+    },
+    {
+      "class_name": "MapState7",
+      "name": "MapState7",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#-datamodel-code-generator-#-union_model-3-#-special-#",
+      "source_path": null,
+      "title": "MapState",
+      "fields": []
+    },
+    {
+      "class_name": "MapState",
+      "name": "MapState",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#",
+      "source_path": [],
+      "title": "MapState",
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "MapState4 | MapState5 | MapState6 | MapState7",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Bearing",
+      "name": "Bearing",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#/allOf/0/anyOf/0/properties/bearing",
+      "source_path": [
+        "allOf",
+        "0",
+        "anyOf",
+        "0",
+        "properties",
+        "bearing"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "float",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "DragRotate",
+      "name": "DragRotate",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#/allOf/0/anyOf/0/properties/dragRotate",
+      "source_path": [
+        "allOf",
+        "0",
+        "anyOf",
+        "0",
+        "properties",
+        "dragRotate"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "bool",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Latitude",
+      "name": "Latitude",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#/allOf/0/anyOf/0/properties/latitude",
+      "source_path": [
+        "allOf",
+        "0",
+        "anyOf",
+        "0",
+        "properties",
+        "latitude"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "confloat(ge=-90.0, le=90.0)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Longitude",
+      "name": "Longitude",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#/allOf/0/anyOf/0/properties/longitude",
+      "source_path": [
+        "allOf",
+        "0",
+        "anyOf",
+        "0",
+        "properties",
+        "longitude"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "confloat(ge=-180.0, le=180.0)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Pitch",
+      "name": "Pitch",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#/allOf/0/anyOf/0/properties/pitch",
+      "source_path": [
+        "allOf",
+        "0",
+        "anyOf",
+        "0",
+        "properties",
+        "pitch"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "confloat(ge=0.0, lt=90.0)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Zoom",
+      "name": "Zoom",
+      "module": "",
+      "source_ref": "all_of_any_of_base_class_ref.json#/allOf/0/anyOf/0/properties/zoom",
+      "source_path": [
+        "allOf",
+        "0",
+        "anyOf",
+        "0",
+        "properties",
+        "zoom"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "confloat(ge=0.0, le=25.0)",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

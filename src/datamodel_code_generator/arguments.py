@@ -331,7 +331,10 @@ base_options.add_argument(
 base_options.add_argument(
     "--emit-model-metadata",
     type=Path,
-    help="Write a separate JSON map from source schema references to generated models and fields.",
+    help=(
+        "Write a separate JSON map from generated models and fields to the JSON Pointer locations of their source "
+        "schemas; module and class name identify a model."
+    ),
 )
 base_options.add_argument(
     "--output-model-type",

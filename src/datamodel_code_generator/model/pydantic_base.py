@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional
 
 from pydantic import Field as _Field
+from typing_extensions import override
 
 from datamodel_code_generator import cached_path_exists
 from datamodel_code_generator.model import (
@@ -88,6 +89,7 @@ class DataModelField(DataModelFieldBase):
         return self._get_effective_default_factory() is not None
 
     @property
+    @override
     def dropped_constraints_warning(self) -> str | None:
         """Return a warning naming the constraints this field is generated without, if any.
 
@@ -117,6 +119,7 @@ class DataModelField(DataModelFieldBase):
         return self._generated_without_constraints("; ".join(reasons), count) if reasons else None
 
     @property
+    @override
     def method(self) -> str | None:
         """Get the validation method name."""
         return self.validator
@@ -128,6 +131,7 @@ class DataModelField(DataModelFieldBase):
         # TODO refactor this method for other validation logic
 
     @property
+    @override
     def field(self) -> str | None:
         """For backwards compatibility."""
         return self._get_field_render_plan().assignment
@@ -246,12 +250,14 @@ class DataModelField(DataModelFieldBase):
         """
         return _nested_model_default_factory(self, BaseModelBase)
 
+    @override
     def _has_default_for_nested_model_factory(self) -> bool:
         """Preserve optional None defaults retained by Pydantic model templates."""
         if self.default is None and self.data_type.is_optional:
             return True
         return super()._has_default_for_nested_model_factory()
 
+    @override
     def enable_structured_default_validation(self) -> bool:
         """Enable Pydantic validation for a structured default exactly once."""
         if self.extras.get("validate_default") is True:
@@ -402,16 +408,19 @@ class DataModelField(DataModelFieldBase):
             default_factory=default_factory,
         )
 
+    @override
     def __str__(self) -> str:
         """Return Field() call with all constraints and metadata."""
         return self._get_field_render_plan().rendered
 
     @property
+    @override
     def is_class_var(self) -> bool:
         """Check if this field is a ClassVar."""
         return self.extras.get("x-is-classvar") is True
 
     @property
+    @override
     def type_hint(self) -> str:
         """Get the type hint including ClassVar if applicable."""
         if self.is_class_var:
@@ -419,6 +428,7 @@ class DataModelField(DataModelFieldBase):
         return super().type_hint
 
     @property
+    @override
     def annotated(self) -> str | None:
         """Get the Annotated type hint if use_annotated is enabled."""
         if not self.use_annotated or self.is_class_var:
@@ -428,6 +438,7 @@ class DataModelField(DataModelFieldBase):
         return f"Annotated[{self.type_hint}, {field}]"
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get all required imports including Field if needed.
 
@@ -488,6 +499,7 @@ class BaseModelBase(DataModel, ABC):
         )
 
     @cached_property
+    @override
     def template_file_path(self) -> Path:
         """Get the template file path with backward compatibility support."""
         # This property is for Backward compatibility
