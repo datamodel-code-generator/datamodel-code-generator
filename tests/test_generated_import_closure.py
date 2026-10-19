@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import ast
 import builtins
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -78,7 +79,6 @@ class _Scope:
     names: set[str] = field(default_factory=set)
     type_checking_names: set[str] = field(default_factory=set)
     declared_global: set[str] = field(default_factory=set)
-    declared_nonlocal: set[str] = field(default_factory=set)
     uses: list[Use] = field(default_factory=list)
     star_import: bool = False
 
@@ -120,8 +120,6 @@ class _Collector(ast.NodeVisitor):
 
     def _bind(self, name: str, scope: _Scope | None = None) -> None:
         target = scope or self.scope
-        if name in target.declared_nonlocal:
-            return
         if name in target.declared_global:
             target = self.module
         if target is self.module and self.under_type_checking:
@@ -242,9 +240,6 @@ class _Collector(ast.NodeVisitor):
 
     def visit_Global(self, node: ast.Global) -> None:
         self.scope.declared_global.update(node.names)
-
-    def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
-        self.scope.declared_nonlocal.update(node.names)
 
     def visit_If(self, node: ast.If) -> None:
         self._visit_as(node.test, in_type=False)
@@ -426,6 +421,50 @@ def unbound_names(module: ast.Module) -> set[str]:
     if "__getattr__" not in collector.module.names:
         collector.module.uses.extend((name, False, None) for name in _exported_names(module))
     return {use[0] for scope in collector.scopes for use in scope.uses if not _resolves(collector, scope, use)}
+
+
+PEP_695 = pytest.mark.skipif(sys.version_info < (3, 12), reason="PEP 695 syntax needs Python 3.12 or later")
+UNBOUND_NAME_CASES = [
+    pytest.param(
+        "def outer():\n    n = 1\n\n    def inner():\n        nonlocal n\n        n = 2\n", set(), id="nonlocal"
+    ),
+    pytest.param(
+        "def set_it():\n    global late\n    late = 1\n\n\ndef get_it():\n    return late\n", set(), id="global"
+    ),
+    pytest.param("x: 'not valid(' = 1\n", {"'not valid('"}, id="unparsable-forward-reference"),
+    pytest.param("def f():\n    missing.count += 1\n", {"missing"}, id="attribute-augmented-assignment"),
+    pytest.param("def f():\n    missing.count: int\n", {"missing"}, id="attribute-annotation-without-value"),
+    pytest.param(
+        "async def f(items):\n    async for item in missing:\n        print(item)\n", {"missing"}, id="async-for"
+    ),
+    pytest.param("from os import *\nprint(path)\n", set(), id="star-import"),
+    pytest.param(
+        "def f(v):\n    match v:\n        case [first, *rest]:\n            return rest\n", set(), id="match-star"
+    ),
+    pytest.param(
+        "def f(v):\n    match v:\n        case {'a': 1, **rest}:\n            return rest\n", set(), id="match-mapping"
+    ),
+    pytest.param("values = [x for x in range(3) if (last := x)]\nprint(last)\n", set(), id="walrus-in-comprehension"),
+    pytest.param(
+        "def f[T](x: T, y: Missing) -> T: ...\n\n\nvalue: T = None\n",
+        {"Missing", "T"},
+        marks=PEP_695,
+        id="generic-function",
+    ),
+    pytest.param(
+        "class C[T](list[T]):\n    def m(self, x: T, y: Missing) -> T: ...\n\n\nvalue: T = None\n",
+        {"Missing", "T"},
+        marks=PEP_695,
+        id="generic-class",
+    ),
+]
+
+
+@pytest.mark.allow_direct_assert("checks the scope rules of the audit on small modules")
+@pytest.mark.parametrize(("source", "expected"), UNBOUND_NAME_CASES)
+def test_unbound_names_follow_python_scope_rules(source: str, expected: set[str]) -> None:
+    """Each construct binds or loads names the way Python scopes do."""
+    assert unbound_names(ast.parse(source)) == expected
 
 
 @pytest.mark.allow_direct_assert("audits stored modules against the shrink-only unbound name allowlist")
