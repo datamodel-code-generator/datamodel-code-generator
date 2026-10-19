@@ -59,6 +59,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
@@ -575,6 +576,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = False
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = None
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = False
+
+    if TYPE_CHECKING:
+
+        def _pydantic_constructs(self) -> tuple[PydanticConstruct, ...]:
+            """Return the Pydantic constructs that this field's rendering writes; only Pydantic fields define it.
+
+            A generation collects them only for a model type that Pydantic reads, whose fields are Pydantic fields.
+            """
+            ...
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -2027,6 +2037,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """Whether the output decodes an Enum whose values are not all str or all int (msgspec does not)."""
     _DECODES_VALUE_UNIONS: ClassVar[bool] = True
     """Whether the output decodes a union of any value types (msgspec decodes unions of some kinds only)."""
+    _READ_BY_PYDANTIC: ClassVar[bool] = False
+    """Whether Pydantic builds the output, so that a run states the Pydantic release its constructs need."""
+    _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = None
+    """The construct that the model's own form writes where Pydantic reads it, such as a ``type`` statement."""
+    _CONFIG_KEYS_WITHOUT_REQUIREMENT: ClassVar[Callable[[], tuple[str, ...]]] = staticmethod(tuple)
+    """The config keys that the model can write without a row in ``_requirements.py``, for the debug check."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
@@ -2477,6 +2493,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if self.IS_ROOT_MODEL:
             self.finalize_sequence_interface()
         return tuple(to_hashable(v) for v in (self.render(class_name=class_name), self.imports))
+
+    def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
+        """Yield the Pydantic constructs that the model's rendering writes, each with the field that writes it.
+
+        The field is None for a construct of the model itself, and for the fields of a root model or an alias.
+        """
+        if self._PYDANTIC_FORM is not None:
+            yield self._PYDANTIC_FORM, None
+        names_fields = not self.IS_ROOT_MODEL and not self.IS_ALIAS
+        for field in self.fields:
+            for construct in field._pydantic_constructs():  # noqa: SLF001
+                yield construct, field.name if names_fields else None
 
     def create_reuse_model(self, base_ref: Reference) -> Self:
         """Create inherited model with empty fields pointing to base reference."""

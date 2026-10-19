@@ -6799,7 +6799,7 @@ OpenAPI, the generator detects this syntax statically and sets `regex_engine="py
 the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
 the installed pydantic-core or on the Python running the generator, and it is the same for every
 `--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
-whatever the target. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
+whatever the target, and the generation warns when the target is older. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
 with `--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 
@@ -6836,7 +6836,9 @@ compiles it like a string pattern, so the rules also apply to it with `--target-
 unset or older target the model keeps the default engine for its other patterns, and a `bytes` pattern that the Rust
 engine rejects fails at import on Pydantic 2.14. Pydantic 2.12 also compiles the pattern of a `bytes | MISSING`
 field (`--use-missing-sentinel`), so such a pattern fails at import there too. A union that has a string member
-beside `bytes`, such as `str | bytes`, follows the string rules for every target.
+beside `bytes`, such as `str | bytes`, follows the string rules for every target. With a target older than `2.14`
+the generation warns about every `bytes` pattern it writes (see
+[Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
 example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they
@@ -8228,7 +8230,8 @@ class Pet:
 
 Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
 `datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
-run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases. `2`
+means Pydantic 2.0.3 or later: generated code is not checked on 2.0.0 to 2.0.2.
 
 When the target is unset:
 
@@ -8237,7 +8240,7 @@ When the target is unset:
   Only an explicit `2.11`, `2.12` or `2.14` emits `validate_by_name=True`.
 - **`--use-missing-sentinel`** keeps the experimental `pydantic.experimental.missing_sentinel` import, as with `2.12`.
 
-| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12`, `2.14` |
+| Generated form | `2` (Pydantic 2.0.3+) | Unset, `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
 | `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
@@ -8248,6 +8251,34 @@ When the target is unset:
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
 | `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
+
+Some constructs have no older form and are written for every target. When the target is older than the release that
+accepts and applies such a construct, the generation warns once, for the output it writes, with the release the
+generated models need and the models and fields that need it:
+
+```text
+UserWarning: The generated models need pydantic>=2.5, newer than the target Pydantic version 2: regex_engine needs 2.5
+(Model).
+```
+
+The warning does not change the output or the exit status. An unset target, which stands for the newest release,
+never warns, and `2.14` has nothing to warn about.
+
+| Written for every target | Needs Pydantic | Written when |
+| --- | --- | --- |
+| `Field(union_mode=...)` | 2.2; 2.0 and 2.1 ignore it | `--union-mode` on a union field |
+| `coerce_numbers_to_str` config key | 2.4; older releases ignore it | `config` in `--extra-template-data` |
+| `regex_engine` config key | 2.5; older releases ignore it | a pattern needs Python's regex engine, or `config` in `--extra-template-data` |
+| `use_attribute_docstrings` config key | 2.7; older releases ignore it | `--use-attribute-docstrings`, or `config` in `--extra-template-data` |
+| A pattern compiled with `re.compile` | 2.8 | the combined `pattern` facets of XML Schema input |
+| A `type` statement | 2.10 | `--use-type-alias` and the other aliases of `pydantic_v2.BaseModel` output with `--target-python-version 3.12` or later |
+| A `TypeAliasType` alias of a model or alias | 2.10 | `--use-type-alias` with `pydantic_v2.BaseModel` before Python 3.12 (`pydantic_v2.dataclass` writes `Alias: TypeAlias = Model`) |
+| `validate_by_name`, `validate_by_alias` and `serialize_by_alias` config keys | 2.11; older releases ignore them | `config` in `--extra-template-data` (`--allow-population-by-field-name` follows the target) |
+| A pattern on `bytes` | 2.14; 2.11 to 2.13 ignore it and older releases reject it at import | `--use-annotated` or `--field-constraints` with `format: binary` and `pattern` |
+
+The warning reads what the built-in templates write: a custom template that writes other constructs is not covered,
+and neither is a key of a `pydantic_v2.dataclass` config that has no row above. Regex syntax that only newer
+versions of the Rust engine accept, such as `\b{start}`, which Pydantic 2.0 to 2.4 rejects, is not covered either.
 
 | Config key naming | Unset, `2` | `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
@@ -28075,7 +28106,7 @@ Output never depends on the Pydantic installed with datamodel-code-generator.
 
 - **unset**: the newest supported feature forms, the same as `2.12`; config key naming is unchanged and keeps
   `populate_by_name=True` like `2`, and `--use-missing-sentinel` keeps the experimental `MISSING` import
-- **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
+- **2**: Pydantic 2.0.3+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
   `json_schema_extra` for deprecated fields, and dictionary-key models defined first
 - **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
   `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
@@ -28085,6 +28116,9 @@ Output never depends on the Pydantic installed with datamodel-code-generator.
   `bytes` patterns the Rust engine rejects, which Pydantic compiles from 2.14 on, and required
   `pydantic_v2.dataclass` fields written as `= Field(...)` placed before the fields with defaults of the same
   class, the order `inspect.signature` needs on Pydantic 2.13+
+
+Constructs that have no older form, such as `regex_engine` or a `type` statement, are written for every target;
+when the target is older than the release they need, the generation warns once with that release.
 
 See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.
 
@@ -59661,7 +59695,10 @@ every generated-code boundary is keyed on `--target-pydantic-version`, and the r
 `_requirements.py` holds the minimum of each boundary that the parsers and the model backends check, with what an unset
 target means for it; the `2.14` target that server and client targets imply when none is set is still written in
 `base_config.py`. Leaving the option unset gives the newest supported feature forms, while config key naming keeps its
-existing rule (`populate_by_name` unless the target is `2.11` or later); `2` means Pydantic 2.0+ compatible forms.
+existing rule (`populate_by_name` unless the target is `2.11` or later); `2` means Pydantic 2.0.3+ compatible forms.
+The constructs written for every target without an older form also have a row there, and the generation warns when
+they need a newer Pydantic than the target (see
+[Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 Raising DCG's runtime floor therefore cannot change generated output.
 
 | Area | Classification and current effect | Follow-up test responsibility |
@@ -59670,7 +59707,7 @@ Raising DCG's runtime floor therefore cannot change generated output.
 | Dataclass alias, 2.4 boundary | Generated-code compatibility: targets before 2.4 (`2`) use the `DataModelFieldBackport` alias fallback, which emits `Field` assignments with validation and serialization aliases for non-identifier aliases. | Generate alias cases on the new DCG runtime and execute them separately on supported consumer versions before removing fallback behavior. |
 | `deprecated` / `json_schema_extra`, 2.7 boundary | Generated-code compatibility: targets before 2.7 (`2`) emit `deprecated` in `json_schema_extra`; unset, `2.11`, `2.12` and `2.14` emit `Field(deprecated=...)`. | Check emitted metadata and execute/schema-inspect generated models in consumer environments. |
 | `regex_engine`, 2.5 boundary | Generated-code compatibility: the emitter adds `python-re` for pattern syntax no pydantic-core release supports, such as lookaround and backreferences, detected statically (see [Regular Expression Patterns](jsonschema.md#regular-expression-patterns)) for every target, and for `bytes` patterns only with an explicit `2.14` target, the first release that compiles them. Old generated models may still reject those expressions at runtime. | Retain regex pattern generation and consumer-runtime validation/known exclusions, independent of the DCG runtime floor. |
-| Compiled alias patterns, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) keep string patterns that need Python's regex engine in type aliases and set `regex_engine="python-re"` on every generated model that reaches the alias, directly or through other models; a bare alias or a hand-written model then needs caller-side config. Unset, `2.11`, `2.12` and `2.14` emit compiled `re.compile(...)` patterns in the alias. XSD combined patterns stay compiled for every target. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
+| Compiled alias patterns, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) keep string patterns that need Python's regex engine in type aliases and set `regex_engine="python-re"` on every generated model that reaches the alias, directly or through other models; a bare alias or a hand-written model then needs caller-side config. Unset, `2.11`, `2.12` and `2.14` emit compiled `re.compile(...)` patterns in the alias. XSD combined patterns stay compiled for every target, and the generation warns that they need 2.8 when the target is older. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
 | RootModel, dictionary keys, forward references, 2.8 boundary | Generated-code compatibility: targets before 2.8 (`2`) sort models used as dictionary keys before their users; unset, `2.11`, `2.12` and `2.14` keep schema order. | Retain recursive RootModel and dictionary-key import/execution cases across generator and consumer environments. |
 | `StringConstraints`, 2.1 boundary | Generated-code compatibility: targets before 2.1 (`2`) emit `Annotated[str, Field(...)]` for constrained strings with `--use-annotated`; unset, `2.11`, `2.12` and `2.14` emit `StringConstraints`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
 | Dataclass reference aliases, 2.10 boundary | Generated-code compatibility: targets before 2.10 (`2`) emit `Alias: TypeAlias = Model` for `pydantic_v2.dataclass` aliases of models; unset, `2.11`, `2.12` and `2.14` emit `TypeAliasType`. | Generate both forms on every DCG runtime and execute them on supported consumer versions. |
@@ -60953,6 +60990,7 @@ imports `types.py`: `_requirements.py` and `_constraint_applicability.py`.
 | discriminator tags: which value tags a union variant (L1 branch literals, L5 tag fields, L6 redeclared tag fields), which field holds the tag property, which schemas a mapping path names, how tags are told apart, and the `tag` and `tag_field` of a msgspec Struct; today's disagreements are named `legacy-*` rows, each deleted by its fix: a `const` or one-member Enum value of any kind as a tag (`legacy-value-of-any-kind`), the L6 redeclared tag field read only as a one-value `Literal` (`legacy-literal-only`), `1 == True` at L5 and L6 but not at L1 (`legacy-python-equality`), the redeclared tag field picked in string-hash order when both its names are tag fields (`legacy-hash-order`), msgspec `tag_field` by Python name without `--use-msgspec-tagged-unions` (`legacy-python-name`), the L1 tag property replacing a declared one (`legacy-literal-property-replaces-declared`), a mapping key compared as written (`legacy-raw-mapping-key`), and the wider mapping-path keys of the msgspec layout prediction (`legacy-any-key`) | `model/_decisions/tag_value.py`: `field_tag`, `variant_tags`, `tag_field_matches`, `redeclared_tag_field`, `mapped_tags` (`mapping_path_keys`, `schema_path_keys`), `tag_key` (`same_tag`, `same_tags`, `distinct_tags`), `union_tag_values`, `tagged_union_discriminator`, `struct_tag_field`, `struct_tag_conflicts`, `struct_tag_clash`, `struct_tag_options`, `struct_discriminator_tag`, `enum_tag_literal` | `parser/base.py`: `_get_discriminator_field_value` with `_FieldTagFacts`, `_variant_tags` with `_VariantTagFacts` (`_get_discriminator_values`, `_get_union_discriminator_values`), `_tag_field_matches`, `_get_mapping_discriminator_values`, `Parser._get_enum_discriminator_literal`, read by L3 `_union_tags`, L4 `Parser.__find_possible_tag_names`, L5 `Parser.__apply_discriminator_type`, `_discriminator_variants_are_valid` and L6 `_tag_discriminator_unions`, `_tag_fields_of_tagged_bases`, `_msgspec_refused_structs`; `parser/jsonschema.py:JsonSchemaParser._get_single_literal_value` with `_SchemaTagFacts`, `_get_union_variant_literal_values`, `_get_tagged_union_field_values`, `_set_tagged_union_discriminator` (L1); `model/msgspec.py:Struct._tag_options`, `Struct.discriminator_tag`; not here: tag defaults and nullability (next row) and tag patterns (`_drop_discriminator_tag_patterns`) |
 | the type a const takes, and the default, required and nullability of a field fixed to one value: by its `const`, by one `Literal` under `--use-one-literal-as-default`, or as a discriminator tag (an optional tag is its field's default where Pydantic rejects one, a tag whose type L5 writes is required); today's disagreements are named `legacy-*` rows, each deleted by its fix: a required or defaulted const drops the null its schema admits (`legacy-const-drops-null`, #4873), an optional const that no `Literal` holds is not nullable either (`legacy-const-without-literal-not-null`), a msgspec const is never nullable and takes no default (`legacy-msgspec-const-not-null`), and a one-literal default drops the null of a `type` list that a tag keeps (`legacy-one-literal-drops-type-null`) | `model/_decisions/literal_default.py`: `decide_literal_default`, `const_type` | `model/base.py:DataModelFieldBase._process_const_as_literal` (the `process_const` hook of the Pydantic, dataclass and TypedDict fields: L1, and L5 `__collapse_root_models` again), `model/msgspec.py:DataModelField.process_const`; `parser/base.py` (L5): `Parser.__set_one_literal_on_default`, `Parser.__set_tag_literal_default` for the tags fields hold (also those nested choices give a union) and those `Parser.__apply_discriminator_type` writes (default from `_get_single_discriminator_default`); `parser/jsonschema.py:JsonSchemaParser._get_const_data_type` (L1, which returns the const type before the null a `type` list or `nullable` adds); writes: `model/base.py:_apply_literal_default`; not routed: the tag field `__apply_discriminator_type` appends is built required and takes no default under `--force-optional`, where a tag whose type it writes does |
 | the type of an object map: one dict with the key type of its patterns or `propertyNames` and the union of the value types of its key classes, the null and the other types of its type array (an L1 builder over raw keywords of the map object, not a pure core); an `additionalProperties` schema that asserts something admits the keys outside the patterns, which makes the keys those of `propertyNames` or `str`, except for msgspec, which keeps its 0.86.0 type until G16 decides msgspec union fallbacks (capability `DataModel._DECODES_VALUE_UNIONS` through `model/output.py:OutputModelContext.decodes_value_unions`) | `parser/jsonschema.py:JsonSchemaParser._parse_object_map` | the map positions of `parser/jsonschema.py`: the object branch and the type-array tail of `_parse_schema_item_shape`, the map branches of `_parse_root_type_with_context`, the dict root of `parse_object` (`_get_additional_properties_root_field`, whose counts read the object's own keywords; where schema validators check the patterns its dict is `dict[<propertyNames key or str>, Any]`); the dict is built by the public hooks `parse_pattern_properties` and `parse_property_names`, `_parse_additional_properties_map` and `_parse_nullable_map`; a dict that is the only member of a type array of object and null, built by `_get_data_type`, is the type itself (`_get_type_array_data_type`) |
+| the Pydantic release that generated models need above an explicit target, which a generation states once, as a `UserWarning`, for the output it keeps | `_requirements.py`: `pydantic_floor`, `pydantic_floor_message` over the rows (`label`, `config_key`; `CONFIG_KEY_REQUIREMENTS` is a view of them) | constructs: `_pydantic_constructs` of `model/base.py:DataModel` and `DataModelFieldBase`, `model/type_alias.py`, and `model/pydantic_v2/base_model.py` (`DataModelField`, `BaseModel`) and `dataclass.py:DataClass`, whose config keys come from `_rendered_config_items` (`BaseModel`, `RootModel`, `DataClass`), the items the renderer, the imports and the alias decisions read too; record: `parser/base.py:Parser.__record_pydantic_floor` at the end of L6, into `pydantic_floors_recorded`; statement: `__init__.py:_parse_generation`, for the parse it keeps |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it
@@ -61564,6 +61602,7 @@ and fails the test for a write of the package that the allowlist does not list.
 | `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, and the generation store never meets two Reference objects that share a model key, a copy and its original ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
+| `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
 
 A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
 a row to this table, and keeps tests that run it on and off.

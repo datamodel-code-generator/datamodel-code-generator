@@ -588,12 +588,13 @@ model_options.add_argument(
     help="Oldest Pydantic version the generated code must support. "
     "Unset: the newest supported feature forms, with populate_by_name config like '2' "
     "and the experimental MISSING import like '2.12'. "
-    "'2': Pydantic 2.0+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). "
+    "'2': Pydantic 2.0.3+ compatible (uses populate_by_name; patterns that need Python's regex engine need 2.5+). "
     "'2.11': Pydantic 2.11+ (uses validate_by_name). "
     "'2.12': Pydantic 2.12+ (supports MISSING sentinel). "
     "'2.14': Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's regex engine; "
     "pydantic_v2.dataclass writes required Field(...) fields before the fields with defaults of the same class; "
-    "a number schema keeps multipleOf on a timedelta).",
+    "a number schema keeps multipleOf on a timedelta). "
+    "Constructs without an older form are written for every target, with a warning naming the Pydantic they need.",
     choices=[v.value for v in TargetPydanticVersion],
     default=None,
 )

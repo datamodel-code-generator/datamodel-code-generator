@@ -229,7 +229,7 @@ OpenAPI, the generator detects this syntax statically and sets `regex_engine="py
 the pattern. The decision depends only on the pattern text and `--target-python-version`. It does not depend on
 the installed pydantic-core or on the Python running the generator, and it is the same for every
 `--target-pydantic-version`. `regex_engine` needs Pydantic 2.5: on Pydantic 2.0 to 2.4 such a model fails at import
-whatever the target. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
+whatever the target, and the generation warns when the target is older. A pattern in a type alias has no model that owns it, so the alias carries a compiled pattern, or,
 with `--target-pydantic-version 2`, every generated model that reaches the alias selects the engine (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 
@@ -266,7 +266,9 @@ compiles it like a string pattern, so the rules also apply to it with `--target-
 unset or older target the model keeps the default engine for its other patterns, and a `bytes` pattern that the Rust
 engine rejects fails at import on Pydantic 2.14. Pydantic 2.12 also compiles the pattern of a `bytes | MISSING`
 field (`--use-missing-sentinel`), so such a pattern fails at import there too. A union that has a string member
-beside `bytes`, such as `str | bytes`, follows the string rules for every target.
+beside `bytes`, such as `str | bytes`, follows the string rules for every target. With a target older than `2.14`
+the generation warns about every `bytes` pattern it writes (see
+[Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
 example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they

@@ -18,6 +18,7 @@ class TypeAlias(TypeAliasTypeBackport):
     """Avoid named reference aliases that Pydantic before 2.10 cannot resolve."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "PydanticV2TypeAlias.jinja2"
+    _WRITES_REFERENCE_ALIAS_TYPE: ClassVar[bool] = False
 
     @cached_property
     @override
@@ -37,10 +38,6 @@ class TypeAlias(TypeAliasTypeBackport):
     def imports(self) -> tuple[Import, ...]:
         """Import the alias syntax selected by the compatibility template."""
         imports = super().imports
-        if (
-            self.fields
-            and self.fields[0].data_type.reference
-            and self.template_file_path.name != TypeAliasTypeBackport.TEMPLATE_FILE_PATH
-        ):
+        if self._aliases_reference() and self.template_file_path.name != TypeAliasTypeBackport.TEMPLATE_FILE_PATH:
             return (*(value for value in imports if value != IMPORT_TYPE_ALIAS_TYPE), IMPORT_TYPE_ALIAS)
         return imports

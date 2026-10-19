@@ -22,6 +22,7 @@ from datamodel_code_generator.python_literal import represent_untrusted_public_t
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.model import DataModelFieldBase
     from datamodel_code_generator.reference import Reference
 
@@ -126,3 +127,4 @@ class DataTypeScalarTypeStatement(_DataTypeScalarBase):
     TEMPLATE_FILE_PATH: ClassVar[str] = "ScalarTypeStatement.jinja2"
     BASE_CLASS: ClassVar[str] = ""
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
+    _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = "pydantic.type_statement"

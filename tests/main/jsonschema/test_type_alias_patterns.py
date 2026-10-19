@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect
 import json
 import sys
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -134,14 +135,23 @@ def test_type_alias_lookaround(
     as a dataclass whose first base does not carry the config, or as a ``RootModel``, which then names no
     alias in its generic. Each target validates the same payloads.
     """
-    run_main_and_assert(
-        input_path=LOOKAROUND_SCHEMAS / f"{fixture}.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=f"{_expected(variant, target_pydantic_version)}.py",
-        extra_args=["--disable-timestamp", *args, *target_pydantic_args(target_pydantic_version)],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=LOOKAROUND_SCHEMAS / f"{fixture}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=f"{_expected(variant, target_pydantic_version)}.py",
+            extra_args=["--disable-timestamp", *args, *target_pydantic_args(target_pydantic_version)],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
     module_name = f"type_alias_lookaround_{variant}"
     with _generated_model(output_file, module_name, MODEL_NAME):
@@ -153,22 +163,31 @@ def test_type_alias_lookaround(
 @pytest.mark.parametrize("target_pydantic_version", ALIAS_PATTERN_TARGETS)
 def test_type_alias_lookaround_reuse_scope_tree(output_dir: Path, target_pydantic_version: str | None) -> None:
     """A lookaround alias moved to the shared module validates and its users import."""
-    run_main_and_assert(
-        input_path=LOOKAROUND_SCHEMAS / "tree",
-        output_path=output_dir,
-        input_file_type="jsonschema",
-        expected_directory=EXPECTED_JSON_SCHEMA_PATH / _expected("tree", target_pydantic_version),
-        extra_args=[
-            "--use-type-alias",
-            "--reuse-model",
-            "--reuse-scope",
-            "tree",
-            "--disable-timestamp",
-            *target_pydantic_args(target_pydantic_version),
-        ],
-        runtime_validation_module="schema_a",
-        runtime_validation_model_name="Model",
-        runtime_validation_data={"code": "abc"},
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=LOOKAROUND_SCHEMAS / "tree",
+            output_path=output_dir,
+            input_file_type="jsonschema",
+            expected_directory=EXPECTED_JSON_SCHEMA_PATH / _expected("tree", target_pydantic_version),
+            extra_args=[
+                "--use-type-alias",
+                "--reuse-model",
+                "--reuse-scope",
+                "tree",
+                "--disable-timestamp",
+                *target_pydantic_args(target_pydantic_version),
+            ],
+            runtime_validation_module="schema_a",
+            runtime_validation_model_name="Model",
+            runtime_validation_data={"code": "abc"},
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
     with _generated_model(output_dir / "shared.py", "type_alias_lookaround_tree_shared", "Code"):
         results = _validation_results(

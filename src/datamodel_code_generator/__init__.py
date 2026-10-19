@@ -2626,8 +2626,10 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         python_type_expressions=python_type_expressions,
         openapi_parser_factory=openapi_parser_factory,
     )
+    from datamodel_code_generator.parser.base import pydantic_floors_recorded  # noqa: PLC0415
+
     # Phase 4: initial parse, disposal, and the complete retry flow share the output cwd.
-    with chdir(output_context_path if use_output_cwd else None):  # noqa: PLR1702
+    with chdir(output_context_path if use_output_cwd else None), pydantic_floors_recorded() as floors:  # noqa: PLR1702
         try:
             results = _parse_with_disposal(
                 input_,
@@ -2740,6 +2742,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 parser, results, data_model_types, defer_formatting, extra_template_data = untyped_parse
         model_metadata, model_identities = parser.model_metadata, parser.model_metadata_identities
         parser.record_dropped_constraints()
+        pydantic_floor = floors.of(parser)
         class_names = parser.generated_class_names
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
             legacy_inventory = parser.generated_model_inventory
@@ -2824,6 +2827,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                             retry_parser.model_metadata_identities,
                         )
                         retry_parser.record_dropped_constraints()
+                        pydantic_floor = floors.of(retry_parser)
                         class_names = retry_parser.generated_class_names
                         data_model_types = retry_data_model_types
                         defer_formatting = retry_defer_formatting
@@ -2843,6 +2847,19 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     from datamodel_code_generator._naming_hint import record_class_names  # noqa: PLC0415
 
     record_class_names(class_names)
+    if pydantic_floor is not None:
+        from datamodel_code_generator._requirements import pydantic_floor_message  # noqa: PLC0415
+
+        warnings.warn(
+            pydantic_floor_message(
+                pydantic_floor,
+                target_from="--use-missing-sentinel"
+                if config.use_missing_sentinel and pydantic_floor.target == TargetPydanticVersion.V2_12.value
+                else None,
+            ),
+            UserWarning,
+            stacklevel=2,
+        )
     return results, model_metadata, model_identities, data_model_types, defer_formatting
 
 

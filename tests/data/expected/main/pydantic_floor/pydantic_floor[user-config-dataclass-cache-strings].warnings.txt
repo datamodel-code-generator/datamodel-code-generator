@@ -1,0 +1,1 @@
+The generated models need pydantic>=2.7, newer than the target Pydantic version 2: cache_strings needs 2.7 (Model).

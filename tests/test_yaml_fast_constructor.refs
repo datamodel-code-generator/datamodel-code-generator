@@ -293,6 +293,7 @@ openapi/non_operations_and_security.yaml	yaml_fast_constructor/parity.txt
 openapi/null_only_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_31.yaml	yaml_fast_constructor/parity.txt
+openapi/nullable_map_parameters_lookaround.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_all_of_duplicate.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_class_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_collapse_roots.yaml	yaml_fast_constructor/parity.txt

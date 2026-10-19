@@ -1,0 +1,1 @@
+The generated models need pydantic>=2.7, newer than the target Pydantic version 2: use_attribute_docstrings needs 2.7 (c.Code, b.Code, b.Value and 3 more); regex_engine needs 2.5 (c.Code, b.Code, a.Code0 and 2 more); Field(union_mode=...) needs 2.2 (b.Value.value).

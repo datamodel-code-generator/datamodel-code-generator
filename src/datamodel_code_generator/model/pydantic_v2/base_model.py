@@ -20,7 +20,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
-from datamodel_code_generator._requirements import REQUIREMENTS
+from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
@@ -107,6 +107,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.pydantic_v2._schema_runtime_validation import (
         SchemaRuntimeValidationModulePlan,
@@ -462,6 +463,26 @@ def _template_config_items(extra_template_data: Mapping[str, Any]) -> list[tuple
     return _safe_config_dict_items(config) if (config := extra_template_data.get("config")) else []
 
 
+def _config_constructs(config_items: Iterable[tuple[str, str]]) -> Iterator[tuple[PydanticConstruct, str | None]]:
+    """Yield the row of every key of a rendered config, as a construct of the model that renders it."""
+    for key, _ in config_items:
+        if (row := CONFIG_KEY_REQUIREMENTS.get(key)) is not None:
+            yield cast("PydanticConstruct", row.construct), None
+
+
+def _config_keys_without_requirement() -> tuple[str, ...]:
+    """Return the keys of the installed Pydantic's ``ConfigDict`` that have no row: user config writes any of them."""
+    from pydantic import ConfigDict as PydanticConfigDict  # noqa: PLC0415
+
+    return tuple(
+        sorted(
+            key
+            for key in PydanticConfigDict.__required_keys__ | PydanticConfigDict.__optional_keys__
+            if key not in CONFIG_KEY_REQUIREMENTS
+        )
+    )
+
+
 def _import_rendered_alias_generator(model: DataModel, config_items: Iterable[tuple[str, str]]) -> None:
     """Import the known alias generator that the model's rendered config items name.
 
@@ -671,6 +692,26 @@ class DataModelField(_PydanticBaseDataModelField):
     can_have_extra_keys: ClassVar[bool] = False
     _PYDANTIC_EXTRA_FIELD_NAME: ClassVar[str] = "__pydantic_extra__"
     _PYDANTIC_EXTRA_PLAIN_ANNOTATION_KEY: ClassVar[str] = "pydantic_extra_plain_annotation"
+
+    @override
+    def _pydantic_constructs(self) -> tuple[PydanticConstruct, ...]:
+        """Return the Pydantic constructs that the field's ``Field()`` data and constrained types write."""
+        data, _ = self._get_field_data_and_default_factory()
+        constructs: list[PydanticConstruct] = []
+        if "union_mode" in data:
+            constructs.append("pydantic.union_mode")
+        if isinstance(pattern := data.get("pattern"), PythonRuntimeExpression) or any(
+            isinstance((data_type.kwargs or {}).get("pattern"), PythonRuntimeExpression)
+            for data_type in self.data_type.all_data_types
+        ):
+            constructs.append("pydantic.compiled_pattern")
+        if (
+            pattern is not None
+            and _pattern_data_type(self.data_type, includes_bytes=False) is None
+            and _pattern_data_type(self.data_type, includes_bytes=True) is not None
+        ):
+            constructs.append("pydantic.bytes_pattern")
+        return tuple(constructs)
 
     @property
     @override
@@ -1096,10 +1137,15 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
     Otherwise a ``bytes`` member is left out of a union, whose string members Pydantic constrains on every
     release.
     """
+    return _pattern_data_type(data_type, includes_bytes=model_target_meets(model, "pydantic.bytes_pattern"))
+
+
+def _pattern_data_type(data_type: DataType, *, includes_bytes: bool) -> DataType | None:
+    """Return the member a ``pattern`` constrains: a string type, else, with ``includes_bytes``, a ``bytes`` type."""
     if (
         (type_name := data_type.type) in _STRING_PATTERN_TYPES
         or getattr(data_type, "annotated_string", False)
-        or (type_name in _BYTES_PATTERN_TYPES and model_target_meets(model, "pydantic.bytes_pattern"))
+        or (type_name in _BYTES_PATTERN_TYPES and includes_bytes)
     ):
         return data_type
     if (
@@ -1110,7 +1156,7 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
         return None
     string_type: DataType | None = None
     for member in members:
-        if _string_pattern_data_type(member, model) is member:
+        if _pattern_data_type(member, includes_bytes=includes_bytes) is member:
             string_type = string_type or member
         elif member.type not in _BYTES_PATTERN_TYPES:
             return None
@@ -1470,6 +1516,8 @@ class BaseModel(BaseModelBase):
     _PROPERTY_COUNT_VALIDATION_BASE_MARKER: ClassVar[str] = "_property_count_validation_base"
     BASE_CLASS: ClassVar[str] = "pydantic.BaseModel"
     BASE_CLASS_NAME: ClassVar[str] = "BaseModel"
+    _READ_BY_PYDANTIC: ClassVar[bool] = True
+    _CONFIG_KEYS_WITHOUT_REQUIREMENT = staticmethod(_config_keys_without_requirement)
     BASE_CLASS_ALIAS: ClassVar[str] = "_BaseModel"
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
     FIELD_NAME_MODEL_TYPE: ClassVar[ModelType] = ModelType.PYDANTIC
@@ -1840,6 +1888,12 @@ class BaseModel(BaseModelBase):
             )
         items.update(self._rendered_config_items())
         return items
+
+    @override
+    def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
+        """Also yield the rows of the keys that the rendered ``model_config`` writes."""
+        yield from super()._pydantic_constructs()
+        yield from _config_constructs(self._rendered_config_items())
 
     def _set_config(self, config_parameters: dict[str, Any]) -> None:
         """Store the ConfigDict rendered as ``model_config``."""

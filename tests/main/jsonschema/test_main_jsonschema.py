@@ -18968,14 +18968,23 @@ def test_main_lookaround_anyof_nullable_target_pydantic_version(
     ``RootModel`` written for ``BaseModel`` carries its own config, so it is the same for every target.
     Each parameter runs on the Pydantic releases that can import its output.
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=["--output-model-type", output_model_type, *target_pydantic_args(target_pydantic_version)],
-        force_exec_validation=True,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "lookaround_anyof_nullable.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=["--output-model-type", output_model_type, *target_pydantic_args(target_pydantic_version)],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
     assert_generated_model_json_validation(
         output_file,
@@ -19277,15 +19286,24 @@ def test_main_rust_unsupported_pattern_bytes(
     """
     compiles_bytes_patterns = installed_pydantic_runs_target(TargetPydanticVersion.V2_14.value)
     runs = compiles_bytes_patterns == (target_pydantic_version == TargetPydanticVersion.V2_14.value)
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / schema,
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[*args, *target_pydantic_args(target_pydantic_version)],
-        force_exec_validation=True,
-        skip_code_validation=not runs,
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / schema,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[*args, *target_pydantic_args(target_pydantic_version)],
+            force_exec_validation=True,
+            skip_code_validation=not runs,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
     if runs:
         valid_json, invalid_json, attribute_path, attribute_value = payloads
@@ -19325,18 +19343,27 @@ def test_main_rust_unsupported_syntax(target_pydantic_version: str, output_file:
     Escaped characters and character class members never trigger it, and neither does syntax newer
     pydantic-core releases accept. The target Pydantic version does not change the decision.
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_syntax.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="rust_unsupported_syntax_pydantic_v2.py",
-        extra_args=[
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--target-pydantic-version",
-            target_pydantic_version,
-        ],
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_syntax.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file="rust_unsupported_syntax_pydantic_v2.py",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--target-pydantic-version",
+                target_pydantic_version,
+            ],
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
     )
     for model_name, valid, invalid in (
         ("Backreference", "aa", "ab"),

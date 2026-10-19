@@ -4660,7 +4660,7 @@ Output never depends on the Pydantic installed with datamodel-code-generator.
 
 - **unset**: the newest supported feature forms, the same as `2.12`; config key naming is unchanged and keeps
   `populate_by_name=True` like `2`, and `--use-missing-sentinel` keeps the experimental `MISSING` import
-- **2**: Pydantic 2.0+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
+- **2**: Pydantic 2.0.3+ compatible forms, such as `populate_by_name=True`, `Field(...)` string constraints,
   `json_schema_extra` for deprecated fields, and dictionary-key models defined first
 - **2.11**: Pydantic 2.11+ forms, such as `validate_by_name=True`, `StringConstraints`,
   `Field(deprecated=True)`, and `TypeAliasType` dataclass aliases
@@ -4670,6 +4670,9 @@ Output never depends on the Pydantic installed with datamodel-code-generator.
   `bytes` patterns the Rust engine rejects, which Pydantic compiles from 2.14 on, and required
   `pydantic_v2.dataclass` fields written as `= Field(...)` placed before the fields with defaults of the same
   class, the order `inspect.signature` needs on Pydantic 2.13+
+
+Constructs that have no older form, such as `regex_engine` or a `type` statement, are written for every target;
+when the target is older than the release they need, the generation warns once with that release.
 
 See [Output Model Types](../output-model-types.md#targeting-a-pydantic-version) for every affected form.""",
     input_schema="jsonschema/person.json",

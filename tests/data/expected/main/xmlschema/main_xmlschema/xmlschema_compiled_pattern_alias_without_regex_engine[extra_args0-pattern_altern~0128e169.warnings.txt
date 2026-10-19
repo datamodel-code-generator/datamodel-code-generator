@@ -1,0 +1,1 @@
+The generated models need pydantic>=2.8, newer than the target Pydantic version 2: a pattern compiled with re.compile needs 2.8 (Token).

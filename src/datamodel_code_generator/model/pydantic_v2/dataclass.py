@@ -30,7 +30,9 @@ from datamodel_code_generator.model.pydantic_v2._output_context import (
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
+    _config_constructs,
     _config_dict_items,
+    _config_keys_without_requirement,
     _import_rendered_alias_generator,
     _model_references,
     _template_config_items,
@@ -97,10 +99,11 @@ def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldB
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator import DataclassArguments
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model.pydantic_base import _PydanticFieldRenderPlan
     from datamodel_code_generator.reference import Reference
@@ -126,6 +129,8 @@ class DataClass(_DataclassReuseMixin, DataModel):
     REQUIRES_RUNTIME_IMPORTS_WITH_RUFF_CHECK: ClassVar[bool] = True
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
+    _READ_BY_PYDANTIC: ClassVar[bool] = True
+    _CONFIG_KEYS_WITHOUT_REQUIREMENT = staticmethod(_config_keys_without_requirement)
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES = staticmethod(_includes_dict_key_reference_classes)
@@ -312,6 +317,12 @@ class DataClass(_DataclassReuseMixin, DataModel):
             ),
             {},
         )
+
+    @override
+    def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
+        """Also yield the rows of the keys that the rendered dataclass config writes."""
+        yield from super()._pydantic_constructs()
+        yield from _config_constructs(self._rendered_config_items())
 
     def _select_python_regex_engine(self) -> None:
         """Set ``regex_engine`` in the dataclass config."""

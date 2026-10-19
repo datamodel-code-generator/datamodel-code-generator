@@ -43,6 +43,9 @@ class CheckArea(Enum):
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations."""
 
+    GENERATED_CODE_REQUIREMENTS = "DATAMODEL_CODE_GENERATOR_CHECK_GENERATED_CODE_REQUIREMENTS"
+    """Every Pydantic ``ConfigDict`` key that the generator can write has a row in ``_requirements.py``."""
+
 
 @final
 @dataclass(frozen=True, slots=True)

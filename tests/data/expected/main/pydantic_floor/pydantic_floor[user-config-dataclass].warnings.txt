@@ -1,0 +1,1 @@
+The generated models need pydantic>=2.11, newer than the target Pydantic version 2: validate_by_name needs 2.11 (Model); validate_by_alias needs 2.11 (Model); serialize_by_alias needs 2.11 (Model); use_attribute_docstrings needs 2.7 (Model); coerce_numbers_to_str needs 2.4 (Model).

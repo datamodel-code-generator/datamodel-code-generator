@@ -255,7 +255,7 @@ class TargetPydanticVersion(Enum):
     An unset target emits the newest supported feature forms and keeps the populate_by_name config naming of V2,
     and the experimental MISSING import of V2_12.
 
-    V2: Generate code compatible with Pydantic 2.0+ (uses populate_by_name).
+    V2: Generate code compatible with Pydantic 2.0.3+ (uses populate_by_name).
     V2_11: Generate code for Pydantic 2.11+ (uses validate_by_name).
     V2_12: Generate code for Pydantic 2.12+ (supports MISSING sentinel).
     V2_14: Generate code for Pydantic 2.14+ (imports MISSING from pydantic; bytes patterns can select Python's

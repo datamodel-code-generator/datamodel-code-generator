@@ -96,7 +96,7 @@ def get_data_model_types(  # noqa: PLR0912, PLR0913, PLR0917
             from .pydantic_v2 import dataclass as pydantic_v2_dataclass  # noqa: PLC0415
 
             type_alias_class, scalar_class, union_class = get_auxiliary_model_types()
-            if not pydantic_target_meets("pydantic.dataclass_type_alias", target_pydantic_version):
+            if not pydantic_target_meets("pydantic.model_type_alias", target_pydantic_version):
                 from .pydantic_v2.type_alias import TypeAlias as CompatibleTypeAlias  # noqa: PLC0415
 
                 type_alias_class = CompatibleTypeAlias

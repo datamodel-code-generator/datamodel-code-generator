@@ -303,6 +303,7 @@ and fails the test for a write of the package that the allowlist does not list.
 | `MODEL_GRAPH` | collapsing root models stops before an inlining that would make a data type contain itself, and the generation store never meets two Reference objects that share a model key, a copy and its original ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`; [Generation Store](architecture.md#generation-store)) |
 | `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
+| `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
 
 A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
 a row to this table, and keeps tests that run it on and off.

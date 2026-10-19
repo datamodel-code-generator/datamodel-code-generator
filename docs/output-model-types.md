@@ -82,7 +82,8 @@ class Pet:
 
 Pydantic output depends only on the inputs and options, never on the Pydantic version installed next to
 `datamodel-codegen`. Use `--target-pydantic-version` to choose the oldest Pydantic release the generated code must
-run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases.
+run on. Pass `--target-pydantic-version 2` when the generated code must also run on older Pydantic 2 releases. `2`
+means Pydantic 2.0.3 or later: generated code is not checked on 2.0.0 to 2.0.2.
 
 When the target is unset:
 
@@ -91,7 +92,7 @@ When the target is unset:
   Only an explicit `2.11`, `2.12` or `2.14` emits `validate_by_name=True`.
 - **`--use-missing-sentinel`** keeps the experimental `pydantic.experimental.missing_sentinel` import, as with `2.12`.
 
-| Generated form | `2` (Pydantic 2.0+) | Unset, `2.11`, `2.12`, `2.14` |
+| Generated form | `2` (Pydantic 2.0.3+) | Unset, `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |
 | Constrained strings with `--use-annotated` (2.1+) | `Annotated[str, Field(...)]` | `Annotated[str, StringConstraints(...)]` |
 | `pydantic_v2.dataclass` aliases that are not identifiers (2.4+) | `Field(validation_alias=..., serialization_alias=...)` assignment | `Field(alias=...)` |
@@ -102,6 +103,34 @@ When the target is unset:
 | `pydantic_v2.dataclass` aliases of other models (2.10+) | `Alias: TypeAlias = Model` | `Alias = TypeAliasType("Alias", Model)` |
 | Explicit aliases naming a `BaseModel` attribute (2.10+) | Rejected when the attribute starts with `model_` | Rejected only when it starts with `model_validate` or `model_dump` |
 | `--use-annotated` fields whose type is defined later in the module (2.11+) | `name: Type = Field(...)` assignment | `name: Annotated[Type, Field(...)]` |
+
+Some constructs have no older form and are written for every target. When the target is older than the release that
+accepts and applies such a construct, the generation warns once, for the output it writes, with the release the
+generated models need and the models and fields that need it:
+
+```text
+UserWarning: The generated models need pydantic>=2.5, newer than the target Pydantic version 2: regex_engine needs 2.5
+(Model).
+```
+
+The warning does not change the output or the exit status. An unset target, which stands for the newest release,
+never warns, and `2.14` has nothing to warn about.
+
+| Written for every target | Needs Pydantic | Written when |
+| --- | --- | --- |
+| `Field(union_mode=...)` | 2.2; 2.0 and 2.1 ignore it | `--union-mode` on a union field |
+| `coerce_numbers_to_str` config key | 2.4; older releases ignore it | `config` in `--extra-template-data` |
+| `regex_engine` config key | 2.5; older releases ignore it | a pattern needs Python's regex engine, or `config` in `--extra-template-data` |
+| `use_attribute_docstrings` config key | 2.7; older releases ignore it | `--use-attribute-docstrings`, or `config` in `--extra-template-data` |
+| A pattern compiled with `re.compile` | 2.8 | the combined `pattern` facets of XML Schema input |
+| A `type` statement | 2.10 | `--use-type-alias` and the other aliases of `pydantic_v2.BaseModel` output with `--target-python-version 3.12` or later |
+| A `TypeAliasType` alias of a model or alias | 2.10 | `--use-type-alias` with `pydantic_v2.BaseModel` before Python 3.12 (`pydantic_v2.dataclass` writes `Alias: TypeAlias = Model`) |
+| `validate_by_name`, `validate_by_alias` and `serialize_by_alias` config keys | 2.11; older releases ignore them | `config` in `--extra-template-data` (`--allow-population-by-field-name` follows the target) |
+| A pattern on `bytes` | 2.14; 2.11 to 2.13 ignore it and older releases reject it at import | `--use-annotated` or `--field-constraints` with `format: binary` and `pattern` |
+
+The warning reads what the built-in templates write: a custom template that writes other constructs is not covered,
+and neither is a key of a `pydantic_v2.dataclass` config that has no row above. Regex syntax that only newer
+versions of the Rust engine accept, such as `\b{start}`, which Pydantic 2.0 to 2.4 rejects, is not covered either.
 
 | Config key naming | Unset, `2` | `2.11`, `2.12`, `2.14` |
 | --- | --- | --- |

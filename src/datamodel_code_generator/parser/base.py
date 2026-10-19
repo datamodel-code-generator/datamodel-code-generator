@@ -35,6 +35,7 @@ from typing import (
 )
 from urllib.parse import ParseResult
 from warnings import warn
+from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import Unpack, final
@@ -68,7 +69,12 @@ from datamodel_code_generator._internal_utils import (
 from datamodel_code_generator._naming_hint import collecting_class_names
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
-from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets, python_target_meets
+from datamodel_code_generator._requirements import (
+    REQUIREMENTS,
+    pydantic_floor,
+    pydantic_target_meets,
+    python_target_meets,
+)
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -189,6 +195,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Generator, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._format_types import Formatter, PythonVersion
+    from datamodel_code_generator._requirements import PydanticConstruct, PydanticFloor
     from datamodel_code_generator._types import ParserConfigDict
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter
@@ -433,6 +440,45 @@ def dropped_constraints_recorded() -> Generator[DroppedConstraints]:
         yield record
     finally:
         _DROPPED_CONSTRAINTS.reset(token)
+
+
+@final
+class PydanticFloors:
+    """The Pydantic floor that each parse of a generation records, so that the generation states its kept parse's."""
+
+    __slots__ = ("_floors",)
+
+    def __init__(self) -> None:
+        """Start with no parse recorded."""
+        self._floors: WeakKeyDictionary[Parser[Any, Any], PydanticFloor] = WeakKeyDictionary()
+
+    def record(self, parser: Parser[Any, Any], floor: PydanticFloor | None) -> None:
+        """Record the floor of the models that ``parser`` emitted, None when they need nothing above the target."""
+        if floor is None:
+            self._floors.pop(parser, None)
+        else:
+            self._floors[parser] = floor
+
+    def of(self, parser: Parser[Any, Any]) -> PydanticFloor | None:
+        """Return the floor that ``parser`` recorded, or None."""
+        return self._floors.get(parser)
+
+
+_PYDANTIC_FLOORS: ContextVar[PydanticFloors | None] = ContextVar("pydantic_floors", default=None)
+
+
+@contextlib.contextmanager
+def pydantic_floors_recorded() -> Generator[PydanticFloors]:
+    """Record the Pydantic floors of the parses run inside, for the generation to state the one of the parse it keeps.
+
+    A parse a generation discards, such as a compatibility retry it does not take, is never read.
+    """
+    record = PydanticFloors()
+    token = _PYDANTIC_FLOORS.set(record)
+    try:
+        yield record
+    finally:
+        _PYDANTIC_FLOORS.reset(token)
 
 
 def _module_key(
@@ -6198,6 +6244,37 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             1,
         )
 
+    def __record_pydantic_floor(self, contexts: Sequence[ModuleContext]) -> None:
+        """Record the Pydantic release that the emitted models need above the explicit target, for the generation.
+
+        Every fact the constructs read is final here, after the last writer before rendering. A model or field owns
+        each construct, named with its module when the parse writes more than one. Output that Pydantic does not
+        build has no floor to state.
+        """
+        if (mode := check_mode(CheckArea.GENERATED_CODE_REQUIREMENTS)) is not None and (
+            unlisted := self.data_model_type._CONFIG_KEYS_WITHOUT_REQUIREMENT()  # noqa: SLF001
+        ):
+            mode.violation(Error, f"config keys without a row in _requirements.py: {', '.join(unlisted)}")
+        if (record := _PYDANTIC_FLOORS.get()) is None or self.target_pydantic_version is None:
+            return
+        if not self.data_model_type._READ_BY_PYDANTIC:  # noqa: SLF001
+            record.record(self, None)
+            return
+        used: list[tuple[PydanticConstruct, str]] = []
+        for ctx in contexts:
+            prefix = (
+                f"{module_name}."
+                if len(contexts) > 1 and (module_name := _module_name_from_module_path(ctx.module))
+                else ""
+            )
+            for model in ctx.models:
+                owner = f"{prefix}{model.class_name}"
+                used.extend(
+                    (construct, owner if field_name is None else f"{owner}.{field_name}")
+                    for construct, field_name in model._pydantic_constructs()  # noqa: SLF001
+                )
+        record.record(self, pydantic_floor(self.target_pydantic_version, used))
+
     def record_dropped_constraints(self) -> None:
         """Record this parse's dropped-constraint warnings as those of the generation that returns its models."""
         if (record := _DROPPED_CONSTRAINTS.get()) is not None:
@@ -9655,6 +9732,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.__warn_about_msgspec_decoding(contexts)
             if self.use_default_factory_for_optional_nested_models:
                 self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
+            self.__record_pydantic_floor(contexts)
 
         root_init: ModulePath = ("__init__.py",)
         if root_init not in results:
