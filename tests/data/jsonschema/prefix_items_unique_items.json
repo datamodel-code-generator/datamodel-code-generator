@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PrefixItemsUniqueItems",
+  "type": "object",
+  "properties": {
+    "closed": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "items": false,
+      "minItems": 2,
+      "uniqueItems": true
+    },
+    "explicit": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true
+    },
+    "kept_list": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "string"}],
+      "items": false,
+      "minItems": 2,
+      "uniqueItems": true
+    }
+  }
+}

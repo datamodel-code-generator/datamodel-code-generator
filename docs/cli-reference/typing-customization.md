@@ -5181,7 +5181,11 @@ are optional.
 Generate tuple types for arrays with items array syntax.
 
 When `--use-tuple-for-fixed-items` is enabled and an array has `items` as an array
-with `minItems == maxItems == len(items)`, generate a tuple type instead of a list.
+whose length its bounds fix, such as `minItems == maxItems == len(items)` or `additionalItems: false`
+with `minItems == len(items)`, generate a tuple type instead of a list. When bounds other than equal
+`minItems` and `maxItems` fix the length, the list stays if its item schemas (the allowed positions
+and the `additionalItems` schema) accept the same values, compared without annotations and `x-` keys,
+with a `$ref` read as its target and `type: [T]` as `type: T`.
 
 !!! tip "Usage"
 
@@ -6118,7 +6122,9 @@ Generate set types for arrays with uniqueItems constraint.
 
 The `--use-unique-items-as-set` flag generates Python set types instead of
 list types for JSON Schema arrays that have the uniqueItems constraint set
-to true, enforcing uniqueness at the type level.
+to true, enforcing uniqueness at the type level. An array written as a tuple
+keeps its positions and stays a tuple; a warning names the field generated
+without uniqueness, unless `--generate-schema-validators` checks it.
 
 !!! tip "Usage"
 

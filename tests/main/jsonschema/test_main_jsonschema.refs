@@ -6425,6 +6425,9 @@ pydantic-dataclass-subclass	payloads/field_type_collision_runtime/runtime.txt	= 
 [test_main_jsonschema_integer_fractional_constraints]
 constraint_args0-generated_integer_fractional_constraints-integer_fractional_constraints.py	main/jsonschema/integer_fractional_constraints.py
 constraint_args1-generated_integer_fractional_field_constraints-integer_fractional_constraints_field_constraints.py	main/jsonschema/integer_fractional_constraints_field_constraints.py
+[test_main_jsonschema_items_array_additional_items_false]
+msgspec.Struct	main/jsonschema/main_jsonschema/items_array_additional_items_false[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/items_array_additional_items_false[pydantic_v2.BaseModel].py
 [test_main_jsonschema_items_array_tuple]
 	main/jsonschema/items_array_tuple.py
 [test_main_jsonschema_items_array_tuple_allof_keeps_legacy_list]
@@ -6608,6 +6611,10 @@ reuse-model	main/jsonschema/nullable_map_value_reuse.py
 [test_main_jsonschema_prefix_items]
 msgspec.Struct-prefix_items_msgspec.py	main/jsonschema/prefix_items_msgspec.py
 pydantic_v2.BaseModel-prefix_items.py	main/jsonschema/prefix_items.py
+[test_main_jsonschema_prefix_items_closed_length]
+allof-merge-mode-none	main/jsonschema/main_jsonschema/prefix_items_closed_length[allof-merge-mode-none].py	= main/jsonschema/main_jsonschema/prefix_items_closed_length[pydantic_v2.BaseModel].py
+msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_closed_length[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_closed_length[pydantic_v2.BaseModel].py
 [test_main_jsonschema_prefix_items_fixed_any_tail_schema]
 	main/jsonschema/prefix_items_fixed_any_tail_schema.py
 [test_main_jsonschema_prefix_items_fixed_tail_schema]
@@ -6620,6 +6627,13 @@ pydantic_v2.BaseModel-prefix_items.py	main/jsonschema/prefix_items.py
 	main/jsonschema/prefix_items_items_schema.py
 [test_main_jsonschema_prefix_items_no_tuple]
 	main/jsonschema/prefix_items_no_tuple.py
+[test_main_jsonschema_prefix_items_unique_items]
+msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct].py
+msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct].warnings.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unique_items[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unique_items[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct].warnings.txt
+schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators].py
+schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_prefix_items_with_false_schema]
 	main/jsonschema/prefix_items_with_false_schema.py
 [test_main_jsonschema_prefix_items_with_true_schema]

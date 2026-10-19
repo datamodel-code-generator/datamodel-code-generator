@@ -1,0 +1,2 @@
+--use-unique-items-as-set writes a uniqueItems array as a set, which would lose the positions of tuple[str, int]; PrefixItemsUniqueItems.closed is generated without this constraint.
+--use-unique-items-as-set writes a uniqueItems array as a set, which would lose the positions of tuple[str, int]; PrefixItemsUniqueItems.explicit is generated without this constraint.

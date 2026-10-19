@@ -77,13 +77,15 @@ class Person(BaseModel):
 
 JSON Schema's [`prefixItems`](https://json-schema.org/understanding-json-schema/reference/array.html#tuple-validation) syntax lets you describe heterogeneous arrays.
 
-When:
-
-- `prefixItems` is present
-- no `items` are specified
-- `minItems`/`maxItems` match the number of prefix entries
-
-datamodel-code-generator emits precise tuple annotations.
+When the length bounds of a `prefixItems` array fix its length, datamodel-code-generator emits precise tuple
+annotations: for example with equal `minItems` and `maxItems`, or with `items: false` (or `unevaluatedItems: false`)
+and a `minItems` equal to the number of prefix entries. Positions beyond the prefix entries take the `items` schema.
+When bounds other than equal `minItems` and `maxItems` fix the length, the array stays a list with its length
+constraints if the list's item schemas (the allowed positions and the `items` schema) accept the same values; that
+list is exact as well. They are compared without annotations (`title`, `description`, `examples`, `example`,
+`default`, `deprecated`, `readOnly`, `writeOnly`, `$comment`) and `x-` keys, with a `$ref` entry read as its target
+and `type: [T]` read as `type: T`. A tuple cannot hold `uniqueItems`: with `--use-unique-items-as-set` it stays a
+tuple and a warning names the field generated without uniqueness, unless `--generate-schema-validators` checks it.
 
 ### Example
 

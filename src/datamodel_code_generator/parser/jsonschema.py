@@ -15,7 +15,7 @@ from contextlib import contextmanager, suppress
 from copy import copy
 from dataclasses import dataclass
 from fractions import Fraction
-from functools import cached_property, lru_cache, wraps
+from functools import cached_property, lru_cache, partial, wraps
 from itertools import chain, starmap
 from math import gcd, lcm
 from operator import is_not
@@ -67,6 +67,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
+from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import DefaultPutDict
 from datamodel_code_generator._source import (
@@ -241,6 +242,18 @@ def _update_false_schema_refs(
 
 _MIN_UNION_VARIANT_LITERAL_VALUES = 2
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
+_ANNOTATION_KEYWORDS = frozenset({
+    "$comment",
+    "default",
+    "deprecated",
+    "description",
+    "example",
+    "examples",
+    "readOnly",
+    "title",
+    "writeOnly",
+})
+_NON_ASSERTING_KEYWORDS = _ANNOTATION_KEYWORDS | {"contentEncoding", "contentMediaType", "contentSchema", "format"}
 _INHERITED_NESTED_SCHEMA_FIELDS = (
     "items",
     "additionalItems",
@@ -397,6 +410,54 @@ def _locate(obj: _SchemaT, location: SchemaLocation | None) -> _SchemaT:
     """Give a schema object that a copy step created the location of the schema object it stands for, if it has one."""
     obj.__dict__[SCHEMA_LOCATION_KEY] = location
     return obj
+
+
+def _dump_without_keywords(schema: JsonSchemaObject, keywords: Container[str]) -> dict[str, Any]:
+    """Dump the keywords a schema object sets, leaving out ``keywords`` also among its extension keywords."""
+    schema_dict = schema.model_dump(exclude_unset=True, by_alias=True)
+    for key in [key for key in schema_dict if key in keywords]:
+        del schema_dict[key]
+    if isinstance(extras := schema_dict.get(JsonSchemaObject.__extra_key__), dict):
+        if meaningful_extras := {key: value for key, value in extras.items() if key not in keywords}:
+            schema_dict[JsonSchemaObject.__extra_key__] = meaningful_extras
+        else:
+            schema_dict.pop(JsonSchemaObject.__extra_key__, None)
+    return schema_dict
+
+
+def _validation_keywords(
+    value: dict[str, Any] | bool,  # ruff: ignore[boolean-type-hint-positional-argument]
+    canonical_ref: Callable[[str], str],
+) -> object:
+    """Return the keywords of a dumped schema that decide what it accepts, to compare schemas by what they accept.
+
+    Keywords that only annotate (meta-data, ``format``, content, ``$comment``) and ``x-`` extension keys are left out at
+    every level, ``true`` reads as ``{}``, a ``type`` list as its sorted members (one member as that type) and every
+    ``$ref`` as its canonical reference key.
+    """
+    if isinstance(value, bool):
+        return {} if value else False
+
+    def schema_value(member: object) -> object:
+        return _validation_keywords(member, canonical_ref) if isinstance(member, (dict, bool)) else member
+
+    keywords: dict[str, Any] = {}
+    extras = value.get(JsonSchemaObject.__extra_key__)
+    for key, item in {**(extras if isinstance(extras, dict) else {}), **value}.items():
+        if key in _NON_ASSERTING_KEYWORDS or key == JsonSchemaObject.__extra_key__ or key.startswith("x-"):
+            continue
+        if key == "$ref" and isinstance(item, str):
+            keywords[key] = canonical_ref(item)
+        elif key == "type" and isinstance(item, list):
+            types = sorted({str(member) for member in item})
+            keywords[key] = types[0] if len(types) == 1 else types
+        elif key in SCHEMA_VALUE_KEYS:
+            keywords[key] = [schema_value(member) for member in item] if isinstance(item, list) else schema_value(item)
+        elif key in SCHEMA_MAP_KEYS and isinstance(item, dict):
+            keywords[key] = {name: schema_value(member) for name, member in item.items()}
+        else:
+            keywords[key] = item
+    return keywords
 
 
 def _locate_dump(obj: JsonSchemaObject, data: dict[str, Any]) -> dict[str, Any]:
@@ -2346,15 +2407,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
         """Check if an array field represents a fixed-length tuple."""
-        if obj.prefixItems is not None and (obj.items is None or obj.items is False):
-            if any(item is False for item in obj.prefixItems):
-                return False
-            return obj.minItems == obj.maxItems == len(obj.prefixItems)
-        if self.use_tuple_for_fixed_items and isinstance(obj.items, list) and obj.prefixItems is None:
-            if any(item is False for item in obj.items):
-                return False
-            return obj.minItems == obj.maxItems == len(obj.items)
-        return self._get_fixed_length_homogeneous_tuple_length(obj) is not None
+        return (
+            self._get_fixed_positional_items(obj) is not None
+            or self._get_fixed_length_homogeneous_tuple_length(obj) is not None
+        )
 
     def _get_fixed_length_homogeneous_tuple_length(self, obj: JsonSchemaObject) -> int | None:
         """Return the length of an opted-in homogeneous fixed-length tuple."""
@@ -2367,39 +2423,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (tuple_length := obj.minItems) is None or tuple_length != obj.maxItems or tuple_length < 0:
             return None
         return tuple_length
-
-    @classmethod
-    def _get_fixed_length_prefix_tuple_items(cls, obj: JsonSchemaObject) -> list[JsonSchemaObject | bool] | None:
-        """Return positional item schemas for fixed-length prefixItems arrays."""
-        if (
-            obj.prefixItems is None
-            or obj.minItems is None
-            or obj.maxItems is None
-            or obj.minItems != obj.maxItems
-            or obj.minItems < 0
-        ):  # pragma: no cover
-            return None
-
-        tuple_length = obj.minItems
-        prefix_items = obj.prefixItems
-        if any(item is False for item in prefix_items[:tuple_length]):  # pragma: no cover
-            return None
-
-        items = [*prefix_items[:tuple_length]]
-        if len(items) == tuple_length:
-            return items
-
-        if isinstance(obj.items, (JsonSchemaObject, bool)):
-            tail_item: JsonSchemaObject | bool = obj.items
-        elif isinstance(obj.unevaluatedItems, (JsonSchemaObject, bool)):
-            tail_item = obj.unevaluatedItems
-        else:
-            tail_item = True
-        if tail_item is False:  # pragma: no cover
-            return None
-
-        items.extend(tail_item for _ in range(tuple_length - len(items)))
-        return items
 
     @classmethod
     def _get_schemas_before_false(
@@ -2424,7 +2447,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     return True
         return None
 
-    def _get_array_item_schemas(  # noqa: PLR0911
+    def _get_array_item_schemas(
         self,
         obj: JsonSchemaObject,
         *,
@@ -2432,14 +2455,32 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         force_prefix_items: bool = False,
     ) -> tuple[list[JsonSchemaObject | bool], bool, bool, int | None]:
         """Return item schemas plus tuple/constraint flags and homogeneous tuple length."""
-        if (
-            obj.prefixItems is not None
-            and obj.minItems is not None
-            and obj.minItems == obj.maxItems
-            and (fixed_items := self._get_fixed_length_prefix_tuple_items(obj)) is not None
-        ):
+        if (fixed_items := self._get_fixed_positional_items(obj)) is not None:
             return fixed_items, True, True, None
+        if (
+            isinstance(item_schema := obj.items, JsonSchemaObject)
+            and (tuple_item_count := self._get_fixed_length_homogeneous_tuple_length(obj)) is not None
+        ):
+            return [item_schema] if tuple_item_count else [], True, True, tuple_item_count
+        return (
+            self._get_list_item_schemas(
+                obj,
+                include_true_tail_schema=include_true_tail_schema,
+                force_prefix_items=force_prefix_items,
+            ),
+            False,
+            False,
+            None,
+        )
 
+    def _get_list_item_schemas(
+        self,
+        obj: JsonSchemaObject,
+        *,
+        include_true_tail_schema: bool = False,
+        force_prefix_items: bool = False,
+    ) -> list[JsonSchemaObject | bool]:
+        """Return the item schemas whose union the list form of an array holds; none means any item."""
         if obj.prefixItems is not None and (force_prefix_items or self._has_prefix_items_tail_schema_or_boolean(obj)):
             items, has_false_schema = self._get_schemas_before_false(obj.prefixItems)
             if (
@@ -2454,17 +2495,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 is not None
             ):
                 items.append(tail_schema)
-            return items, False, False, None
+            return items
 
         match obj.items:
             case JsonSchemaObject() as item_schema:
-                if (tuple_item_count := self._get_fixed_length_homogeneous_tuple_length(obj)) is not None:
-                    return [item_schema] if tuple_item_count else [], True, True, tuple_item_count
-                return [item_schema], False, False, None
+                return [item_schema]
             case list() as item_schemas:
                 items, has_false_schema = self._get_schemas_before_false(item_schemas)
-                if self._is_fixed_length_tuple(obj):
-                    return items, True, True, None
                 if (
                     not has_false_schema
                     and (
@@ -2476,15 +2513,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     is not None
                 ):
                     items.append(tail_schema)
-                return items, False, False, None
+                return items
 
         match obj.unevaluatedItems:
             case JsonSchemaObject() as item_schema:
-                return [item_schema], False, False, None
+                return [item_schema]
             case True if include_true_tail_schema:
-                return [True], False, False, None
+                return [True]
 
-        return [], False, False, None
+        return []
 
     @classmethod
     def _get_property_count_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
@@ -2618,6 +2655,78 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             constraints["maxItems"] = min(max_items)
         return constraints
 
+    @classmethod
+    def _get_effective_array_length(cls, obj: JsonSchemaObject) -> int | None:
+        """Return the length that the effective length bounds fix, the bounds the length constraints come from."""
+        derived = cls._get_array_items_constraints(obj)
+        min_items = derived.get("minItems", obj.minItems)
+        return min_items if min_items is not None and min_items == derived.get("maxItems", obj.maxItems) else None
+
+    def _get_fixed_positional_items(
+        self,
+        obj: JsonSchemaObject,
+        canonical_ref: Callable[[str], str] | None = None,
+    ) -> list[JsonSchemaObject | bool] | None:
+        """Return the positions of a positional array written as a tuple, or None when it is written as a list.
+
+        Equal explicit ``minItems`` and ``maxItems`` make a tuple. Otherwise the effective length bounds must fix the
+        length, and the tuple is written only where the list form would lose positions: a list is kept when its items
+        and every allowed position accept the same values, so the list and its length constraints are exact.
+        ``canonical_ref`` reads the ``$ref`` values of ``obj``; by default they belong to the document being parsed.
+        """
+        if obj.prefixItems is not None:
+            positional_key, positions = "prefixItems", obj.prefixItems
+            explicit = obj.minItems is not None and obj.minItems == obj.maxItems
+        elif self.use_tuple_for_fixed_items and isinstance(obj.items, list):
+            positional_key, positions = "items", obj.items
+            explicit = obj.minItems == obj.maxItems == len(obj.items)
+        else:
+            return None
+        length = obj.minItems if explicit else self._get_effective_array_length(obj)
+        if length is None or length < 0:
+            return None
+        tail = cast("JsonSchemaObject | bool", self._get_inherited_positional_tail(obj, positional_key))
+        items = [*positions[:length], *(tail for _ in range(length - len(positions)))]
+        if any(item is False for item in items):
+            return None
+        if explicit:
+            return items
+        read_ref = canonical_ref or self.model_resolver.resolve_ref
+        first, *others = (
+            self._get_position_validation_keywords(schema, read_ref)
+            for schema in [*items, *(self._get_list_item_schemas(obj) or [True])]
+        )
+        return None if all(other == first for other in others) else items
+
+    def _get_position_validation_keywords(
+        self,
+        schema: JsonSchemaObject | bool,  # ruff: ignore[boolean-type-hint-positional-argument]
+        canonical_ref: Callable[[str], str],
+    ) -> object:
+        """Return the keywords that decide what a position accepts, following a position that is only a ``$ref``.
+
+        A target that an external reference mapping imports, a missing target and a cycle stay the reference key.
+        """
+        keywords = _validation_keywords(
+            schema.model_dump(exclude_unset=True, by_alias=True) if isinstance(schema, JsonSchemaObject) else schema,
+            canonical_ref,
+        )
+        followed: set[str] = set()
+        while (
+            isinstance(keywords, dict)
+            and keywords.keys() == {"$ref"}
+            and (ref := keywords["$ref"]) not in followed
+            and self._resolve_external_ref_mapping(ref) is None
+            and self._ref_schema_exists(ref)
+        ):
+            followed.add(ref)
+            target = self._load_inherited_schema_object(ref)
+            keywords = _validation_keywords(
+                False if target.is_boolean_schema_false else target.model_dump(exclude_unset=True, by_alias=True),
+                partial(self._resolve_inherited_child_ref, parent_ref=ref),
+            )
+        return keywords
+
     def _get_array_constraints(self, obj: JsonSchemaObject, data_type: DataType) -> dict[str, Any]:
         """Return direct and boolean-schema array constraints."""
         constraints = self._get_constraint_values(obj, data_type)
@@ -2646,12 +2755,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _suppress_array_length_constraints(self, constraints: dict[str, Any] | None, obj: JsonSchemaObject) -> None:
         if not constraints:
             return
-        fixed_prefix_tuple_items = (
-            self._get_fixed_length_prefix_tuple_items(obj)
-            if obj.prefixItems is not None and obj.minItems is not None and obj.minItems == obj.maxItems
-            else None
-        )
-        if self._is_fixed_length_tuple(obj) or fixed_prefix_tuple_items is not None:
+        if self._is_fixed_length_tuple(obj):
             constraints.pop("minItems", None)
             constraints.pop("maxItems", None)
 
@@ -5959,39 +6063,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         schema: JsonSchemaObject,
     ) -> dict[str, Any]:
         """Return only keywords that can change an inherited property's type shape."""
-        schema_dict = schema.model_dump(exclude_unset=True, by_alias=True)
-        ignored_keys = {
-            *JsonSchemaObject.__constraint_fields__,
-            *_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
-            *PROPERTY_COUNT_KEYWORDS,
-            "default",
-            "deprecated",
-            "description",
-            "example",
-            "examples",
-            "$comment",
-            "nullable",
-            "readOnly",
-            "title",
-            "writeOnly",
-        }
-        for key in ignored_keys:
-            schema_dict.pop(key, None)
-        if isinstance(extras := schema_dict.get(JsonSchemaObject.__extra_key__), dict):
-            if meaningful_extras := {key: value for key, value in extras.items() if key not in ignored_keys}:
-                schema_dict[JsonSchemaObject.__extra_key__] = meaningful_extras
-            else:
-                schema_dict.pop(JsonSchemaObject.__extra_key__, None)
-        return schema_dict
+        return _dump_without_keywords(
+            schema,
+            {
+                *JsonSchemaObject.__constraint_fields__,
+                *_INHERITED_ARRAY_EXTRA_CONSTRAINT_FIELDS,
+                *PROPERTY_COUNT_KEYWORDS,
+                *_ANNOTATION_KEYWORDS,
+                "nullable",
+            },
+        )
 
-    def _get_inherited_type_shape(self, schema: JsonSchemaObject) -> dict[str, Any]:  # noqa: PLR6301
-        """Return structural schema keywords without inherited value restrictions."""
+    def _get_inherited_type_shape(
+        self,
+        schema: JsonSchemaObject,
+        canonical_ref: Callable[[str], str],
+    ) -> dict[str, Any]:
+        """Return structural schema keywords without inherited value restrictions; a tuple keeps its length.
+
+        ``canonical_ref`` reads the ``$ref`` values of ``schema`` in the document that defines it.
+        """
         schema_dict = schema.model_dump(exclude_unset=True, by_alias=True)
         shape = {key: value for key, value in schema_dict.items() if key in _INHERITED_TYPE_SHAPE_FIELDS}
         positional_items = schema.prefixItems or (schema.items if isinstance(schema.items, list) else None)
         if positional_items and schema.minItems == schema.maxItems == len(positional_items):
             shape["minItems"] = schema.minItems
             shape["maxItems"] = schema.maxItems
+        elif (fixed_items := self._get_fixed_positional_items(schema, canonical_ref)) is not None:
+            shape["minItems"] = shape["maxItems"] = len(fixed_items)
         return shape
 
     def _get_inherited_schema_types(  # noqa: PLR0912
@@ -6702,7 +6801,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             next_active,
             refs_resolved=effective_refs_resolved,
         )
-        parent_shape = self._get_inherited_type_shape(effective_parent)
+        parent_shape = self._get_inherited_type_shape(
+            effective_parent,
+            str if effective_refs_resolved else partial(self._resolve_inherited_child_ref, parent_ref=effective_ref),
+        )
         if not effective_refs_resolved:
             self._resolve_schema_refs_in_place(parent_shape, effective_ref)
         child_obj = self.SCHEMA_OBJECT_TYPE.model_validate(child)

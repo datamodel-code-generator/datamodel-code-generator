@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PrefixItemsClosedLength",
+  "type": "object",
+  "properties": {
+    "closed_by_items_false": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "items": false,
+      "minItems": 2
+    },
+    "closed_by_unevaluated_items_false": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "unevaluatedItems": false,
+      "minItems": 2
+    },
+    "closed_by_false_position": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}, false],
+      "minItems": 2
+    },
+    "closed_below_max_items": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 5
+    },
+    "closed_nullable": {
+      "type": ["array", "null"],
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "items": false,
+      "minItems": 2
+    },
+    "closed_by_contains": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "contains": true,
+      "minContains": 2,
+      "maxContains": 2
+    },
+    "closed_by_contains_beyond_positions": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}],
+      "contains": {},
+      "minContains": 3,
+      "maxContains": 3
+    },
+    "closed_to_one_position": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "contains": {},
+      "maxContains": 1
+    },
+    "closed_before_other_positions": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "string"}, {"type": "integer"}],
+      "items": false,
+      "maxItems": 2,
+      "contains": {},
+      "minContains": 2
+    },
+    "kept_one_schema": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "string"}],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_one_schema_apart_from_annotations": {
+      "type": "array",
+      "prefixItems": [{"type": "string", "description": "first", "$comment": "first position"}, {"type": "string"}],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_one_position": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}],
+      "items": false,
+      "minItems": 1
+    },
+    "kept_one_schema_with_tail": {
+      "type": "array",
+      "prefixItems": [{"type": "string", "x-position": "first"}],
+      "items": {"type": "string", "x-position": "first"},
+      "contains": {},
+      "minContains": 3,
+      "maxContains": 3
+    },
+    "kept_variable_length": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "items": false,
+      "minItems": 1
+    },
+    "closed_by_type_list": {
+      "type": "array",
+      "prefixItems": [{"type": ["string", "null"]}, {"type": "string"}],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_apart_from_extension_keys": {
+      "type": "array",
+      "prefixItems": [{"type": "string", "x-order": 1}, {"type": "string"}],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_ref_and_equal_inline": {
+      "type": "array",
+      "prefixItems": [{"$ref": "#/$defs/Name"}, {"type": "string", "maxLength": 5}],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_type_list_of_one": {
+      "type": "array",
+      "prefixItems": [{"type": ["string"]}, {"type": "string"}],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_ref_to_root_with_extension_key": {
+      "type": "array",
+      "prefixItems": [{"$ref": "#/$defs/Tagged"}, {"type": "integer"}],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_nested_items": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "array", "items": {"type": "string", "title": "Tag"}},
+        {"type": "array", "items": {"type": "string"}}
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_nested_any_of": {
+      "type": "array",
+      "prefixItems": [
+        {"anyOf": [{"type": "string"}, {"type": "integer", "description": "A count."}]},
+        {"anyOf": [{"type": "string"}, {"type": "integer"}]}
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "kept_nested_dependent_schemas": {
+      "type": "array",
+      "prefixItems": [
+        {"type": "object", "dependentSchemas": {"a": {"type": "object", "required": ["b"], "description": "Needs b."}}},
+        {"type": "object", "dependentSchemas": {"a": {"type": "object", "required": ["b"]}}}
+      ],
+      "items": false,
+      "minItems": 2
+    },
+    "explicit_one_schema": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "string"}],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "inherited": {"$ref": "#/$defs/Child"}
+  },
+  "$defs": {
+    "Name": {"type": "string", "maxLength": 5, "description": "A name."},
+    "Tagged": {"type": "integer", "x-kind": "tag"},
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "closed": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "items": false,
+          "minItems": 2
+        }
+      }
+    },
+    "Child": {
+      "allOf": [
+        {"$ref": "#/$defs/Parent"},
+        {"type": "object", "properties": {"closed": {"type": "array", "prefixItems": [{"type": "string", "maxLength": 3}]}}}
+      ]
+    }
+  }
+}

@@ -1275,6 +1275,23 @@ def _clear_model_imports_cache(models: Iterable[DataModel]) -> None:
         model.clear_imports_cache()
 
 
+def _declares_unique_items(field: DataModelFieldBase) -> bool:
+    """Return whether a field declares ``uniqueItems: true``."""
+    match field.constraints:
+        case ConstraintsBase(unique_items=True) | {"uniqueItems": True}:
+            return True
+    return False
+
+
+def _unique_items_tuple(data_type: DataType) -> DataType | None:
+    """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set."""
+    if data_type.is_tuple:
+        return data_type
+    if data_type.is_list or data_type.is_set or data_type.is_frozen_set:
+        return None
+    return next((found for nested in data_type.data_types if (found := _unique_items_tuple(nested)) is not None), None)
+
+
 def _clear_model_imports_cache_if_retained(model: DataModel, *, can_retain_cache: bool) -> None:
     """Clear a changed built-in model without invoking external cache hooks."""
     if can_retain_cache and type(model).__module__.startswith(_MODEL_MODULE_PREFIX):
@@ -5059,14 +5076,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         changed = False
         for model in models:
             for model_field in model.fields:
-                if not self.use_unique_items_as_set:
+                if not self.use_unique_items_as_set or not _declares_unique_items(model_field):
                     continue
-
-                match model_field.constraints:
-                    case ConstraintsBase(unique_items=True) | {"uniqueItems": True}:
-                        pass
-                    case _:
-                        continue
                 set_data_type = self._create_set_from_list(model_field.data_type)
                 if set_data_type:  # pragma: no cover
                     # Check if default list elements are hashable before converting type
@@ -6133,10 +6144,30 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for ctx in contexts:
             for model in ctx.models:
                 for field in model.fields:
-                    if (message := field.dropped_constraints_warning) is not None:
+                    if message := " ".join(
+                        filter(None, (field.dropped_constraints_warning, self.__tuple_unique_items_warning(field)))
+                    ):
                         warn(message, stacklevel=2)
                         fields.add((ctx.module, message))
         self._dropped_constraint_fields = frozenset(fields)
+
+    def __tuple_unique_items_warning(self, field: DataModelFieldBase) -> str | None:
+        """Return a warning for a unique array written as a tuple, which --use-unique-items-as-set cannot make a set.
+
+        Runtime schema validators check uniqueItems on tuples too, so nothing is left out with them.
+        """
+        if (
+            not self.use_unique_items_as_set
+            or self.generate_schema_validators
+            or not _declares_unique_items(field)
+            or (tuple_type := _unique_items_tuple(field.data_type)) is None
+        ):
+            return None
+        return field._generated_without_constraints(  # ruff: ignore[private-member-access]
+            f"--use-unique-items-as-set writes a uniqueItems array as a set, which would lose the positions of "
+            f"{tuple_type.type_hint}",
+            1,
+        )
 
     def record_dropped_constraints(self) -> None:
         """Record this parse's dropped-constraint warnings as those of the generation that returns its models."""

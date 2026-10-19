@@ -13033,6 +13033,88 @@ def test_main_jsonschema_prefix_items_no_tuple(min_version: str, output_file: Pa
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("pydantic_v2.BaseModel", ["--allof-merge-mode", "none"], id="allof-merge-mode-none"),
+    ],
+)
+def test_main_jsonschema_prefix_items_closed_length(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write prefixItems arrays whose closed tail fixes their length as tuples.
+
+    Up to 0.86.0 only equal ``minItems`` and ``maxItems`` made a tuple. A length fixed by ``items: false``,
+    ``unevaluatedItems: false``, a ``false`` position or ``contains`` gave a list with length constraints, such as
+    ``list[str | int]``, which accepts items in the wrong positions. Such a list stays only where it is exact: its
+    items and every allowed position accept the same values. Under --allof-merge-mode none a child that narrows a
+    position of such a tuple keeps its length and stays a tuple (#4977).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_closed_length.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--generate-schema-validators", "--formatters", "builtin"],
+            id="schema-validators",
+        ),
+    ],
+)
+def test_main_jsonschema_prefix_items_unique_items(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Warn that a uniqueItems tuple is generated without uniqueness under --use-unique-items-as-set.
+
+    The option writes a uniqueItems list as a set, which a tuple cannot be without losing its positions, so a closed or
+    explicitly fixed tuple keeps its positions and the warning names it. Schema validators check uniqueness on the
+    tuple at runtime, so they need no warning.
+    """
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_unique_items.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model, "--use-unique-items-as-set", *extra_args],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{warning.message}\n" for warning in recorded_warnings if "is generated without" in str(warning.message)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_jsonschema_items_array_additional_items_false(output_model: str, output_file: Path) -> None:
+    """Write draft-07 ``items`` lists whose length bounds fix their length as tuples under --use-tuple-for-fixed-items.
+
+    Up to 0.86.0 only ``minItems`` and ``maxItems`` equal to the number of positions made a tuple, so
+    ``additionalItems: false``, a ``false`` position or bounds above or below the positions gave a list that accepts
+    items in the wrong positions or rejects valid ones. A list stays where its items and every allowed position have
+    one schema.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "items_array_additional_items_false.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--use-tuple-for-fixed-items"],
+        force_exec_validation=True,
+    )
+
+
 @freeze_time("2019-07-26")
 @pytest.mark.skipif(
     int(black.__version__.split(".")[0]) < 24,
@@ -13043,7 +13125,11 @@ def test_main_jsonschema_prefix_items_no_tuple(min_version: str, output_file: Pa
     option_description="""Generate tuple types for arrays with items array syntax.
 
 When `--use-tuple-for-fixed-items` is enabled and an array has `items` as an array
-with `minItems == maxItems == len(items)`, generate a tuple type instead of a list.""",
+whose length its bounds fix, such as `minItems == maxItems == len(items)` or `additionalItems: false`
+with `minItems == len(items)`, generate a tuple type instead of a list. When bounds other than equal
+`minItems` and `maxItems` fix the length, the list stays if its item schemas (the allowed positions
+and the `additionalItems` schema) accept the same values, compared without annotations and `x-` keys,
+with a `$ref` read as its target and `type: [T]` as `type: T`.""",
     input_schema="jsonschema/items_array_tuple.json",
     cli_args=["--use-tuple-for-fixed-items"],
     golden_output="jsonschema/items_array_tuple.py",
@@ -13052,7 +13138,11 @@ def test_main_jsonschema_items_array_tuple(min_version: str, output_file: Path) 
     """Generate tuple types for arrays with items array syntax.
 
     When `--use-tuple-for-fixed-items` is enabled and an array has `items` as an array
-    with `minItems == maxItems == len(items)`, generate a tuple type instead of a list.
+    whose length its bounds fix, such as `minItems == maxItems == len(items)` or `additionalItems: false`
+    with `minItems == len(items)`, generate a tuple type instead of a list. When bounds other than equal
+    `minItems` and `maxItems` fix the length, the list stays if its item schemas (the allowed positions
+    and the `additionalItems` schema) accept the same values, compared without annotations and `x-` keys,
+    with a `$ref` read as its target and `type: [T]` as `type: T`.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "items_array_tuple.json",
