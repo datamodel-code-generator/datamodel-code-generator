@@ -1,0 +1,12 @@
+{
+  "during": {
+    "DataType": true,
+    "DataModelFieldBase": true,
+    "DataModel": true
+  },
+  "after": {
+    "DataType": false,
+    "DataModelFieldBase": false,
+    "DataModel": false
+  }
+}

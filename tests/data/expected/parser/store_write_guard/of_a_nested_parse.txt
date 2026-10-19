@@ -1,0 +1,2 @@
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "description", "operation": "=", "key": null, "scope": "Parser._process_single_module", "phase": "MODULES"}
+{"writer": "test_store_write_guard.py", "owner": "BaseModel", "attribute": "keyword_only", "operation": "=", "key": null, "scope": "Parser._process_single_module", "phase": "MODULES"}

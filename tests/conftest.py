@@ -12,6 +12,7 @@ import re
 import shlex
 import socket
 import sys
+import tempfile
 import time
 from collections import Counter
 from collections.abc import Callable, Generator, Mapping, Sequence
@@ -82,7 +83,9 @@ CHECK_SCHEMA_LOCATIONS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
 CHECK_MODEL_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
 CHECK_SCHEMA_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
 CHECK_AREA_ENVS = (CHECK_SCHEMA_LOCATIONS_ENV, CHECK_MODEL_GRAPH_ENV, CHECK_SCHEMA_GRAPH_ENV)
-"""The variable of every debug check area (`CheckArea` in `datamodel_code_generator/_checks.py`)."""
+"""The variable of every debug check area (`CheckArea` in `datamodel_code_generator/_checks.py`) set to `1`."""
+CHECK_STORE_WRITES_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
+"""The debug check area that reports into a file during each test, which `StoreWritesCheck` checks after the test."""
 BUILTIN_FORMATTER_VALUE = "builtin"
 TARGET_PYTHON = (3, 11)
 TARGET_TEST_ROOTS = (Path(__file__).parent / "api_generation", Path(__file__).parent / "model_codecs")
@@ -245,9 +248,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 def pytest_configure(config: pytest.Config) -> None:
     """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks."""
-    check_areas = () if config.getoption("codspeed", default=False) else CHECK_AREA_ENVS
-    for name in check_areas:
+    benchmarks = config.getoption("codspeed", default=False)
+    for name in () if benchmarks else CHECK_AREA_ENVS:
         os.environ.setdefault(name, "1")
+    if not benchmarks and CHECK_STORE_WRITES_ENV not in os.environ:
+        config.pluginmanager.register(StoreWritesCheck(), "store-writes-check")
     config.addinivalue_line(
         "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "
@@ -460,6 +465,47 @@ def select_test_shard(
     selected = set(select_shard({item.nodeid: measured.get(item.nodeid, fallback) for item in items}, index, total))
     config.hook.pytest_deselected(items=[item for item in items if item.nodeid not in selected])
     return [item for item in items if item.nodeid in selected]
+
+
+class StoreWritesCheck:
+    """Fail a test whose generations write model facts outside store operations where the allowlist does not say so.
+
+    During each test, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES` reports into a file of this test process (so pytest
+    workers and the generator runs that tests start share nothing); after the test,
+    `scripts/check_generation_store_usage.py` names each write of the package as its scan names findings, and the test
+    fails for a write that `scripts/generation_store_allowlist.toml` does not list.
+    """
+
+    def __init__(self) -> None:
+        """Create the report file and read the allowlist once."""
+        from scripts import check_generation_store_usage
+
+        handle, name = tempfile.mkstemp(prefix="dcg-store-writes-", suffix=".jsonl")
+        os.close(handle)
+        self.report = Path(name)
+        self.checker = check_generation_store_usage
+        self.allowlist = check_generation_store_usage.load_allowlist()
+        self.witnesses = check_generation_store_usage.load_witnesses()
+
+    @pytest.hookimpl(tryfirst=True)
+    def pytest_runtest_setup(self) -> None:
+        """Report the writes of the test into this process's file."""
+        os.environ[CHECK_STORE_WRITES_ENV] = f"report:{self.report}"
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_runtest_teardown(self) -> Generator[None, None, None]:
+        """Fail the test for the writes of the package that the allowlist does not list."""
+        try:
+            yield
+        finally:
+            os.environ.pop(CHECK_STORE_WRITES_ENV, None)
+            lines = self.report.read_text(encoding="utf-8").splitlines()
+            self.report.write_text("", encoding="utf-8")
+        self.checker.check_runtime_writes(lines, allowlist=self.allowlist, witnesses=self.witnesses)
+
+    def pytest_unconfigure(self) -> None:
+        """Remove the report file."""
+        self.report.unlink()
 
 
 class SlowTestOrdering:

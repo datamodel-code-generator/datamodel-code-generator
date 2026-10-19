@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from collections import Counter
 from pathlib import Path
@@ -92,13 +93,21 @@ def _findings(violations: Iterable[Any]) -> list[tuple[int, str, str, str]]:
     return [(item.line, item.function, item.target, item.message) for item in violations]
 
 
-def _toml_counts(text: str) -> Counter[tuple[str, str, str]]:
-    return Counter({
-        (source, function, target): count
+def _toml_entries(text: str) -> dict[tuple[str, str, str], int | str]:
+    return {
+        (source, function, target): value
         for source, functions in tomllib.loads(text).items()
         for function, targets in functions.items()
-        for target, count in targets.items()
-    })
+        for target, value in targets.items()
+    }
+
+
+def _toml_counts(text: str) -> Counter[tuple[str, str, str]]:
+    return Counter({key: value for key, value in _toml_entries(text).items() if isinstance(value, int)})
+
+
+def _toml_witnesses(text: str) -> dict[tuple[str, str, str], str]:
+    return {key: value for key, value in _toml_entries(text).items() if isinstance(value, str)}
 
 
 def _report(violations: Iterable[Any]) -> str:
@@ -125,7 +134,166 @@ def test_generation_sources_match_the_allowlist() -> None:
     assert [violation.format() for violation in violations] == snapshot([])
     assert scan.counts == checker.load_allowlist()
     assert _toml_counts((checker.ROOT / checker.DEFAULT_ALLOWLIST).read_text()) == scan.counts
+    assert _toml_witnesses((checker.ROOT / checker.DEFAULT_ALLOWLIST).read_text()) == checker.load_witnesses()
     assert checker.unlisted_parser_hooks() == snapshot([])
+
+
+def test_runtime_allowlist_entries_are_written_by_their_witnesses() -> None:
+    """Every write only the runtime guard sees is still made by its witness, so the entries only shrink."""
+    checker = _load_checker()
+
+    assert [violation.format() for violation in checker.witness_problems()] == snapshot([])
+
+
+def test_witness_problems_report_stale_entries_and_broken_witnesses() -> None:
+    """An entry its witness no longer writes is stale; a witness that fails stops the check."""
+    checker = _load_checker()
+    witness = "--input tests/data/jsonschema/person.json --input-file-type jsonschema"
+    stale = {("src/datamodel_code_generator/parser/base.py", "Parser.__gone", "required"): witness}
+
+    violations = checker.witness_problems(stale)
+    with pytest.raises(RuntimeError) as error:
+        checker.witness_problems({**stale, ("src/a.py", "f", "required"): "--input missing.json"})
+
+    assert [violation.format() for violation in violations] == snapshot([
+        (
+            "src/datamodel_code_generator/parser/base.py:0:0: stale allowlist entry 'required': its witness '--input "
+            "tests/data/jsonschema/person.json --input-file-type jsonschema' no longer writes it; remove it from "
+            "scripts/generation_store_allowlist.toml (in Parser.__gone)"
+        )
+    ])
+    assert str(error.value) == snapshot("the witnesses could not run: witness '--input missing.json' fails")
+
+
+def test_default_check_rejects_witnesses_for_writes_the_scan_finds() -> None:
+    """A write the scan finds is listed with its count; a witness for it fails the check."""
+    checker = _load_checker()
+    scanned = min(checker.load_allowlist())
+
+    violations, _ = checker.check_default_targets(witnesses={scanned: "--input any.json"})
+
+    assert [(violation.key, violation.message) for violation in violations] == [
+        (
+            scanned,
+            (
+                f"the scan finds {scanned[2]!r}; list it with its count {checker.load_allowlist()[scanned]} instead "
+                "of a witness"
+            ),
+        )
+    ]
+
+
+def test_runtime_writes_are_named_as_the_scan_names_them() -> None:
+    """A reported attribute write of the package gets the key of the scan finding at its line."""
+    checker = _load_checker()
+    scan = checker.scan_paths(checker.ROOT / target for target in checker.DEFAULT_TARGETS)
+    attribute_writes = [violation for violation in scan.violations if violation.target.isidentifier()]
+    lines = [
+        json.dumps({
+            "area": "STORE_WRITES",
+            "message": f"write {index}",
+            "path": violation.key[0],
+            "line": violation.line,
+            "attribute": violation.target,
+            "operation": "=",
+            "key": None,
+        })
+        for index, violation in enumerate(attribute_writes)
+    ]
+    other_area = json.dumps({"area": "SCHEMA_LOCATIONS", "message": "models without a schema location"})
+    outside = json.dumps({"area": "STORE_WRITES", "path": "/tmp/custom_parser.py", "line": 1})
+
+    writes = checker.runtime_writes([*lines, other_area, outside])
+
+    assert len(attribute_writes) > 100
+    assert [write.key for write in writes] == [violation.key for violation in attribute_writes]
+    assert checker.runtime_problems(lines) == []
+    checker.check_runtime_writes(lines)
+    with pytest.raises(AssertionError) as error:
+        checker.check_runtime_writes(lines[:1], allowlist=Counter(), witnesses={})
+    assert str(error.value).splitlines() == [
+        (
+            f"write 0; route it through a GenerationStore operation (scripts/generation_store_allowlist.toml does not "
+            f"list {attribute_writes[0].target!r} of {attribute_writes[0].function} in {attribute_writes[0].key[0]})"
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ("attribute", "operation", "key"),
+    [
+        ("required", "=", None),
+        ("fields", "=", None),
+        ("fields", "__iadd__", None),
+        ("fields", "__setitem__", "slice"),
+        ("fields", "__delitem__", "index"),
+        ("fields", "pop", "index"),
+        ("fields", "append", None),
+        ("data_types", "__imul__", None),
+        ("data_types", "__setitem__", "slice"),
+        ("data_types", "__setitem__", "index"),
+        ("data_types", "__delitem__", "index"),
+        ("data_types", "pop", "index"),
+        ("data_types", "pop", None),
+        ("data_types", "sort", None),
+    ],
+)
+def test_runtime_targets_follow_the_scan(attribute: str, operation: str, key: str | None, tmp_path: Path) -> None:
+    """A list or attribute write the runtime guard reports gets the target the scan gives the same write."""
+    checker = _load_checker()
+    statement = {
+        "=": f"owner.{attribute} = []",
+        "__iadd__": f"owner.{attribute} += []",
+        "__imul__": f"owner.{attribute} *= 2",
+        "__setitem__": f"owner.{attribute}[{':' if key == 'slice' else 'index'}] = []",
+        "__delitem__": f"del owner.{attribute}[index]",
+        "pop": f"owner.{attribute}.pop({'index' if key else ''})",
+    }.get(operation, f"owner.{attribute}.{operation}()")
+    source = tmp_path / "writes.py"
+    source.write_text(f"def write(owner, index):\n    {statement}\n")
+
+    scanned = [violation.target for violation in checker.scan_paths([source]).violations]
+
+    assert scanned == [checker.runtime_target(attribute, operation, key)]
+
+
+def test_function_at_names_lines_as_the_scan_names_functions(tmp_path: Path) -> None:
+    """Writes in methods, nested functions, lambdas and module code are named as the scan names their findings."""
+    checker = _load_checker()
+    source = tmp_path / "nested.py"
+    source.write_text(
+        """
+field.required = True
+
+
+class Pass:
+    def run(self, field):
+        field.required = True
+
+        def inner():
+            field.required = False
+
+        apply = lambda: setattr(field, "required", True)
+        return inner, apply
+
+    class Nested:
+        async def later(self, field):
+            field.required = True
+""",
+    )
+
+    violations = checker.scan_paths([source]).violations
+
+    assert [(violation.line, violation.function) for violation in violations] == snapshot([
+        (2, "<module>"),
+        (7, "Pass.run"),
+        (10, "Pass.run.inner"),
+        (12, "Pass.run"),
+        (17, "Pass.Nested.later"),
+    ])
+    assert [checker.function_at(source, violation.line) for violation in violations] == [
+        violation.function for violation in violations
+    ]
 
 
 def test_checker_uses_generation_store_api_surface() -> None:
@@ -613,8 +781,9 @@ def test_allowlist_file_round_trip(tmp_path: Path) -> None:
         ("src/a.py", "Parser.__pass", 'extras["kw_only"]'): 1,
         ("src/b.py", "<module>", "__dict__[it's]"): 1,
     })
+    witnesses = {("src/a.py", "Parser.__pass", "default"): '--type-overrides \'{"A.b": "builtins.int"}\''}
     allowlist = tmp_path / "allowlist.toml"
-    allowlist.write_text(checker.format_allowlist(counts))
+    allowlist.write_text(checker.format_allowlist(counts, witnesses))
     invalid = tmp_path / "invalid.toml"
     invalid.write_text('["src/a.py"."f"]\nrequired = 0\n')
     errors = []
@@ -627,15 +796,25 @@ def test_allowlist_file_round_trip(tmp_path: Path) -> None:
         checker.load_allowlist(invalid)
 
     assert checker.load_allowlist(allowlist) == counts
+    assert checker.load_witnesses(allowlist) == witnesses
+    assert checker.load_witnesses(tmp_path / "missing.toml") == {}
     assert _toml_counts(allowlist.read_text()) == counts
+    assert _toml_witnesses(allowlist.read_text()) == witnesses
     assert errors == snapshot([
         "TypeError: allowlist count of src/a.py f required must be a positive integer",
-        'ValueError: allowlist line 1 is not a ["path"."function"] table or a target = count entry: required = 1',
-        'ValueError: allowlist line 2 is not a ["path"."function"] table or a target = count entry: required: 1',
+        (
+            'ValueError: allowlist line 1 is not a ["path"."function"] table, a target = count or a target = '
+            '"witness" entry: required = 1'
+        ),
+        (
+            'ValueError: allowlist line 2 is not a ["path"."function"] table, a target = count or a target = '
+            '"witness" entry: required: 1'
+        ),
     ])
     assert checker.load_allowlist(tmp_path / "missing.toml") == Counter()
-    assert allowlist.read_text().splitlines()[-6:] == snapshot([
+    assert allowlist.read_text().splitlines()[-7:] == snapshot([
         '["src/a.py"."Parser.__pass"]',
+        'default = "--type-overrides \'{\\"A.b\\": \\"builtins.int\\"}\'"',
         "'extras[\"kw_only\"]' = 1",
         "required = 2",
         "",
@@ -646,7 +825,7 @@ def test_allowlist_file_round_trip(tmp_path: Path) -> None:
 
 
 def test_write_allowlist_never_adds_entries(tmp_path: Path) -> None:
-    """The write mode creates the file once and afterwards may only lower it."""
+    """The write mode creates the file once and afterwards may only lower it, or turn a witness into a count."""
     checker = _load_checker()
     allowlist = tmp_path / "allowlist.toml"
     first = Counter({("src/a.py", "f", "required"): 2, ("src/a.py", "f", "default"): 1})
@@ -658,6 +837,19 @@ def test_write_allowlist_never_adds_entries(tmp_path: Path) -> None:
 
     assert (created, grown, unchanged, lowered) == snapshot(([], [("src/a.py", "g", "alias")], True, []))
     assert checker.load_allowlist(allowlist) == Counter({("src/a.py", "f", "required"): 1})
+
+    witnessed = {("src/a.py", "g", "alias"): "--input a.json", ("src/a.py", "h", "alias"): "--input b.json"}
+    allowlist.write_text(checker.format_allowlist(checker.load_allowlist(allowlist), witnessed))
+    moved = checker.write_allowlist(
+        Counter({("src/a.py", "f", "required"): 1, ("src/a.py", "g", "alias"): 2}), allowlist
+    )
+
+    assert moved == []
+    assert checker.load_allowlist(allowlist) == Counter({
+        ("src/a.py", "f", "required"): 1,
+        ("src/a.py", "g", "alias"): 2,
+    })
+    assert checker.load_witnesses(allowlist) == {("src/a.py", "h", "alias"): "--input b.json"}
 
 
 def test_cli_checks_paths_and_writes_the_allowlist(

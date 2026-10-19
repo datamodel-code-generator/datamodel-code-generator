@@ -363,7 +363,6 @@ ini_options.assert_helper_direct_assert_exempt_files = [
 [tool.coverage]
 run.omit = [
   "*/_types/*",
-  "*/datamodel_code_generator/parser/_facts.py",                  # read by scripts/check_generation_store_usage.py; no importer until EN4
   "tests/api_generation/scenarios/client_auth_values.py",
   "tests/api_generation/scenarios/client_bodies.py",
   "tests/api_generation/scenarios/client_body_replay.py",

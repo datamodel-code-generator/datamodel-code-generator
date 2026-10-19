@@ -37,6 +37,9 @@ class CheckArea(Enum):
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did."""
 
+    STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
+    """After L1, data types, fields and models change their facts only inside store operations."""
+
 
 @final
 @dataclass(frozen=True, slots=True)

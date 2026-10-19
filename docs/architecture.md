@@ -485,6 +485,32 @@ The checker does not follow these forms, so they must not be used for model writ
 `obj.extras.__setitem__(key, value)` and other dunder calls, unbound method calls such as `list.append(obj.fields,
 field)`, and `functools.partial(setattr, obj)`.
 
+The runtime write guard (`parser/_finality.py`, `DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`) checks the same rule
+while the generator runs, for writes the scan cannot follow. `Parser.parse` arms it at the end of L1: `DataType`,
+`DataModelFieldBase` and `DataModel` get a `__setattr__` guard for the fact and presentation attributes of
+`ATTRIBUTE_FACTS`, the lists those attributes hold become guarded copies (shared where the originals were shared; they
+are not `list` exactly and outlive the parse, acting as plain lists afterwards), each store operation named in a row's
+`store_ops` runs in a write scope, and the drivers of `parser/base.py` open pass scopes (`pass_scope(name, phase)`:
+`_build_module_structure` in STRUCTURE, the head of `__process_modules` in PLAN, each `_process_single_module` in
+MODULES, the tail up to `_finalize_modules` in CROSS_MODULE, the warnings and factory metadata after it in IMPORTS and
+`__render_modules` in RENDER; before them, SETTLE; inert without an armed guard). A write outside every store
+operation is reported once per line and parse with the line that wrote it, the parser method running and the pass
+scope and phase; the construction of an object (its `__init__` and what that calls) writes freely. Any store operation
+accepts any guarded write, and the phase is not checked: which operation and phase may write which attribute is left
+to the finality checks. With the area off nothing is installed. The guard does
+not see writes through `object.__setattr__`, through `__dict__`, into dict attributes, or into a list an object got
+outside a store operation after L1.
+
+The test suite runs the guard in every test (`tests/conftest.py:StoreWritesCheck`): it reports into a file of the test
+process, and after each test the checker names each write of the package by the function that contains the reported
+line and by the target the scan gives that write (`runtime_writes`), and the test fails for a write the allowlist
+does not list. Most writes the guard sees are findings of the scan. A write only the guard sees (a method the hook
+closure does not reach, a write made inside a helper the scan stops at) has an entry whose value is its witness, the
+`datamodel-codegen` arguments of one run that makes it; `python scripts/check_generation_store_usage.py --witnesses`
+(and the test suite) run them, and an entry whose witness no longer writes it is stale. The entries only shrink, like
+the counted ones. When the scan learns to find a write a witness covers, the witness becomes a count entry
+(`--write-allowlist` makes that move); it is the only move that may raise the counted total.
+
 Current behaviour that a decision reading the index must allow for:
 
 - Only parsers call `register_model`. Models created after parsing (reuse subclasses, the merged inherited Enum, the
@@ -498,7 +524,8 @@ Current behaviour that a decision reading the index must allow for:
   `__replace_duplicate_name_in_module`) do not go through `rename_model`.
 - Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
   function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
-  to module imports (`ModuleContext.imports`), or writes in model methods that the hook closure does not reach.
+  to module imports (`ModuleContext.imports`), or writes in model methods that the hook closure does not reach; the
+  runtime guard sees the last kind, and the allowlist lists them with a witness.
 - Dedup keys (`DataModel.get_dedup_key`), model shapes and imports caches are separate caches, not store facts.
 
 ### Placement Guide

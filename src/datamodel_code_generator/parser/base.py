@@ -131,6 +131,8 @@ from datamodel_code_generator.model.output import (
     prepare_output_model_config,
 )
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
+from datamodel_code_generator.parser._facts import Phase
+from datamodel_code_generator.parser._finality import arm_store_write_guard, pass_scope, store_write_guard
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, set_model_base_classes
@@ -9275,7 +9277,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Parse schema and generate code, returning single file or module dict."""
         token = SCHEMA_GRAPH.set(self._schema_graph)
         try:
-            with read_check_flags():
+            with read_check_flags(), store_write_guard(self, Error):
                 return self.__prepare_parse(
                     with_import=with_import,
                     format_=format_,
@@ -9318,6 +9320,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._close_http_fetch_session()
         if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
             self._check_schema_locations(mode)
+        arm_store_write_guard(self.generation_store, "Parser.__prepare_parse")
         self._typed_map_value_reference_ids = self.model_resolver.settle_yielding_names()
         if (changes := self.model_resolver.yielding_name_changes) and self._names_have_class_keyed_options(changes):
             self.yielding_names_to_assign = tuple(self.model_resolver.final_yielding_names.items())
@@ -9348,14 +9351,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         sort_base_classes_for_mro(sorted_data_models, self.generation_store)
 
-        (
-            module_models,
-            internal_modules,
-            forwarder_map,
-            _path_mapping,
-            model_to_module_models,
-            model_path_to_module_name,
-        ) = self._build_module_structure(sorted_data_models, require_update_action_models, module_split_mode)
+        with pass_scope("Parser._build_module_structure", Phase.STRUCTURE):
+            (
+                module_models,
+                internal_modules,
+                forwarder_map,
+                _path_mapping,
+                model_to_module_models,
+                model_path_to_module_name,
+            ) = self._build_module_structure(sorted_data_models, require_update_action_models, module_split_mode)
 
         if format_:
             match self.formatters:
@@ -9410,7 +9414,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             config=config,
         )
 
-    def __process_modules(  # noqa: PLR0913
+    def __process_modules(  # noqa: PLR0913, PLR0915
         self,
         module_models: ModuleModels,
         *,
@@ -9435,20 +9439,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._removed_reuse_users.clear()
         self._renamed_types.clear()
         self._replaced_root_models.clear()
-        self.__flatten_conflicting_base_layouts(module_models)
+        with pass_scope("Parser.__process_modules", Phase.PLAN):
+            self.__flatten_conflicting_base_layouts(module_models)
 
-        if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
-            for _, models in module_models:
-                for model in models:
-                    for field in model.fields:
-                        field.unconstrain_union_members()
-                self.generation_store.note_changed_models(*models)
+            if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                for _, models in module_models:
+                    for model in models:
+                        for field in model.fields:
+                            field.unconstrain_union_members()
+                    self.generation_store.note_changed_models(*models)
 
-        if self.collapse_root_models:
-            self.__set_circular_root_model_paths(
-                module_models,
-                require_dict_key_edge=not self.run_context.preserve_circular_root_models,
-            )
+            if self.collapse_root_models:
+                self.__set_circular_root_model_paths(
+                    module_models,
+                    require_dict_key_edge=not self.run_context.preserve_circular_root_models,
+                )
         self._emitting_module_lists = (
             [(_module_name_from_module_path(module_), models) for module_, models in module_models]
             if self.collapse_root_models and self.collapse_root_models_name_strategy is not None
@@ -9460,51 +9465,54 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         for position, (module_, models) in enumerate(module_models, 1):
             self._defers_tagged_unions = position < len(module_models)
-            ctx = self._process_single_module(
-                module_,
-                models,
-                results,
-                config,
-                internal_modules,
-                model_path_to_module_name,
-                require_update_action_models,
-                unused_models,
-            )
+            with pass_scope("Parser._process_single_module", Phase.MODULES):
+                ctx = self._process_single_module(
+                    module_,
+                    models,
+                    results,
+                    config,
+                    internal_modules,
+                    model_path_to_module_name,
+                    require_update_action_models,
+                    unused_models,
+                )
             module_to_import[module_] = ctx.imports
             contexts.append(ctx)
 
-        if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
-            all_models = [model for ctx in contexts for model in ctx.models]
-            self.__fix_tag_opt_out_field_ordering(_tag_fields_of_tagged_bases(all_models), all_models)
-        self.__import_removed_reuse_canonicals(
-            contexts,
-            internal_modules=internal_modules,
-            model_path_to_module_name=model_path_to_module_name,
-        )
-        self.__import_renamed_types(
-            contexts,
-            internal_modules=internal_modules,
-            model_path_to_module_name=model_path_to_module_name,
-        )
-        self.__import_enum_member_literal_classes(
-            contexts,
-            internal_modules=internal_modules,
-            model_path_to_module_name=model_path_to_module_name,
-        )
-        self._finalize_modules(contexts, unused_models, model_to_module_models, module_to_import)
-        if collecting_class_names():
-            self.generated_class_names = tuple(
-                (model.class_name, model.duplicate_class_name) for ctx in contexts for model in ctx.models
+        with pass_scope("Parser.__process_modules", Phase.CROSS_MODULE):
+            if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
+                all_models = [model for ctx in contexts for model in ctx.models]
+                self.__fix_tag_opt_out_field_ordering(_tag_fields_of_tagged_bases(all_models), all_models)
+            self.__import_removed_reuse_canonicals(
+                contexts,
+                internal_modules=internal_modules,
+                model_path_to_module_name=model_path_to_module_name,
             )
-        if self.typed_nullable_maps or self.run_context.untyped_nullable_maps:
-            self.__record_model_placement(contexts, bool(internal_modules))
-        self._check_model_inheritance(contexts)
-        self.__warn_about_dropped_constraints(contexts)
-        self.__warn_about_decimal_defaults()
-        self.__warn_about_variant_discriminator_tags()
-        self.__warn_about_msgspec_decoding(contexts)
-        if self.use_default_factory_for_optional_nested_models:
-            self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
+            self.__import_renamed_types(
+                contexts,
+                internal_modules=internal_modules,
+                model_path_to_module_name=model_path_to_module_name,
+            )
+            self.__import_enum_member_literal_classes(
+                contexts,
+                internal_modules=internal_modules,
+                model_path_to_module_name=model_path_to_module_name,
+            )
+            self._finalize_modules(contexts, unused_models, model_to_module_models, module_to_import)
+        with pass_scope("Parser.__process_modules", Phase.IMPORTS):
+            if collecting_class_names():
+                self.generated_class_names = tuple(
+                    (model.class_name, model.duplicate_class_name) for ctx in contexts for model in ctx.models
+                )
+            if self.typed_nullable_maps or self.run_context.untyped_nullable_maps:
+                self.__record_model_placement(contexts, bool(internal_modules))
+            self._check_model_inheritance(contexts)
+            self.__warn_about_dropped_constraints(contexts)
+            self.__warn_about_decimal_defaults()
+            self.__warn_about_variant_discriminator_tags()
+            self.__warn_about_msgspec_decoding(contexts)
+            if self.use_default_factory_for_optional_nested_models:
+                self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
 
         root_init: ModulePath = ("__init__.py",)
         if root_init not in results:
@@ -9512,15 +9520,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if len(top_level_dirs) > 1:
                 results[root_init] = Result(body="")
 
-        return self.__render_modules(
-            results,
-            contexts=contexts,
-            sorted_data_models=sorted_data_models,
-            model_identities=model_identities,
-            config=config,
-            forwarder_map=forwarder_map,
-            require_update_action_models=require_update_action_models,
-        )
+        with pass_scope("Parser.__render_modules", Phase.RENDER):
+            return self.__render_modules(
+                results,
+                contexts=contexts,
+                sorted_data_models=sorted_data_models,
+                model_identities=model_identities,
+                config=config,
+                forwarder_map=forwarder_map,
+                require_update_action_models=require_update_action_models,
+            )
 
     def __flatten_conflicting_base_layouts(self, module_models: ModuleModels) -> None:
         """Make the models whose generated bases the output cannot combine declare every field without them.

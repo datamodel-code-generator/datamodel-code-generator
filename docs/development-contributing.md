@@ -255,6 +255,18 @@ count. The list only shrinks:
   fact write needs an entry in `PARSER_HOOK_METHODS` of the checker, or in
   `CONSTRUCTION_METHODS` or `RENDER_ENTRY_POINTS` with a reason.
 
+The runtime write guard (the `STORE_WRITES` debug check below) sees the same
+writes while the generator runs, also where the scan cannot follow them. Every
+test runs it, and a test fails when its generations write outside a store
+operation at a place the allowlist does not list. A write that only the guard
+sees is listed with a witness instead of a count: `target = "arguments"`, the
+`datamodel-codegen` arguments of one run that makes the write.
+`python scripts/check_generation_store_usage.py --witnesses` runs every witness
+and reports the entries whose witness no longer makes their write; remove those.
+Witness entries are never added for new writes either. When the scan learns to
+find a write that a witness covers, `--write-allowlist` turns the witness into a
+count entry; that move is the only one that may raise the counted total.
+
 If a new mutation helper is needed, add the method to
 `GENERATION_STORE_MUTATION_METHODS`, name it in the `store_ops` of the rows it
 writes, and update the checker tests so contributors get an actionable message.
@@ -279,11 +291,17 @@ wins: `0` runs the tests without that area and `report:<path>` collects the viol
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 
+`STORE_WRITES` is the exception: today's code still writes outside store operations at the places
+`scripts/generation_store_allowlist.toml` lists, so `1` would stop every generation. Unless you set the variable,
+`tests/conftest.py` (`StoreWritesCheck`) sets it to `report:<file>` during each test, with one file per test process,
+and fails the test for a write of the package that the allowlist does not list.
+
 | Area | Checks |
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
 | `MODEL_GRAPH` | collapsing root models never reaches the recursion limit: it stops before an inlining that would make a data type contain itself ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`) |
 | `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
+| `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
 
 A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
 a row to this table, and keeps tests that run it on and off.

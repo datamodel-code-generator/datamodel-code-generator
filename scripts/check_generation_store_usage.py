@@ -4,8 +4,8 @@ The checker reads two tables with ``ast``, so it never imports the package: the 
 (``GENERATION_STORE_MUTATION_METHODS`` in ``parser/generation.py``) and the attribute-to-fact table
 (``ATTRIBUTE_FACTS`` in ``parser/_facts.py``). It scans
 
-* ``parser/`` (except the store itself) for writes of fact and presentation attributes, list and dict mutators on
-  them, and direct reference and model-list mutations;
+* ``parser/`` (except the store and its runtime write guard) for writes of fact and presentation attributes, list
+  and dict mutators on them, and direct reference and model-list mutations;
 * the parser-facing hooks of ``model/`` and ``types.py`` (``PARSER_HOOK_METHODS``, ``RENDER_STATE_WRITERS`` and the
   helpers they call on ``self`` or ``cls``) for the same writes, including writes to ``self``;
 * all three for caches kept on model objects: ``__dict__`` entries, cache attributes and ``cached_property``.
@@ -13,6 +13,13 @@ The checker reads two tables with ``ast``, so it never imports the package: the 
 Every finding is keyed by (path, function, target) without line numbers. ``scripts/generation_store_allowlist.toml``
 lists the findings that existed when the checker learned them; a new finding fails, and so does an entry that no
 longer matches (the list only shrinks). ``--write-allowlist`` creates the file, or lowers it after writes were routed.
+
+The same list serves the runtime write guard (``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES``, ``parser/_finality.py``),
+which reports writes by file and line: ``runtime_writes`` names them as the scan does, and ``runtime_problems`` returns
+the writes of the package that the list does not name. A write only the guard sees has an entry whose value is its
+witness, the arguments of one ``datamodel-codegen`` run that makes it; ``--witnesses`` runs them and reports the
+entries whose witness no longer writes them. When the scan learns to find such a write, ``--write-allowlist`` turns its
+witness into a count entry, the only move that may raise the counted total.
 """
 
 from __future__ import annotations
@@ -21,10 +28,12 @@ import argparse
 import ast
 import json
 import re
+import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 if TYPE_CHECKING:
@@ -36,9 +45,11 @@ SOURCE_ROOT = Path("src/datamodel_code_generator")
 DEFAULT_TARGET = SOURCE_ROOT / "parser"
 DEFAULT_TARGETS = (DEFAULT_TARGET, SOURCE_ROOT / "model", SOURCE_ROOT / "types.py")
 GENERATION_STORE_MODULE = SOURCE_ROOT / "parser" / "generation.py"
+WRITE_GUARD_MODULE = SOURCE_ROOT / "parser" / "_finality.py"
 FACTS_MODULE = SOURCE_ROOT / "parser" / "_facts.py"
 DECLARATION_MODULES = (SOURCE_ROOT / "types.py", SOURCE_ROOT / "reference.py", SOURCE_ROOT / "model")
 DEFAULT_ALLOWLIST = Path("scripts/generation_store_allowlist.toml")
+STORE_WRITES_VARIABLE = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
 ALLOWLIST_PATH = DEFAULT_ALLOWLIST
 COMPILED_TEMPLATE_DIRECTORY = "_compiled_templates"
 
@@ -62,6 +73,7 @@ REFERENCE_METHODS = frozenset(
         "set_reference_path",
     },
 )
+SEQUENCE_OWNERS = frozenset({"base_classes", "fields"})
 SEQUENCE_MUTATORS = frozenset({"append", "clear", "extend", "insert", "pop", "remove", "reverse", "sort"})
 CONTAINER_MUTATORS = frozenset({
     "add",
@@ -168,10 +180,13 @@ RENDERED_NULLABILITY = ("Fact.NULLABLE",)
 ITEM_ATTRIBUTE = re.compile(r'(\w+)\["([^"]+)"\]')
 BARE_TOML_KEY = re.compile(r"[A-Za-z0-9_-]+")
 TOML_TABLE = re.compile(r'\[("(?:[^"\\]|\\.)*")\.("(?:[^"\\]|\\.)*")\]')
-TOML_ENTRY = re.compile(r'([A-Za-z0-9_-]+|\'[^\']*\'|"(?:[^"\\]|\\.)*") = (\S+)')
+TOML_ENTRY = re.compile(r'([A-Za-z0-9_-]+|\'[^\']*\'|"(?:[^"\\]|\\.)*") = ("(?:[^"\\]|\\.)*"|\S+)')
 ALLOWLIST_HEADER = """\
 # Writes that bypass GenerationStore, as scripts/check_generation_store_usage.py finds them.
 # Tables are ["path"."function"] with target = count; no line numbers, so unrelated edits do not move entries.
+# A target = "arguments" entry is a write that only the runtime guard (DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES)
+# sees; its witness is the datamodel-codegen arguments of one run that makes it (`--witnesses` runs them all). When the
+# scan learns to find such a write, its witness becomes a count entry, the only move that may raise the counted total.
 # Generated once by `python scripts/check_generation_store_usage.py --write-allowlist`; later changes only remove
 # entries or lower counts, and a refactor that moves a write renames its entry without raising the total.
 # A new write fails the check, and so does an entry that no longer matches.
@@ -503,7 +518,7 @@ def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
 
 
 def _sequence_owner(node: ast.AST) -> SequenceOwner | None:
-    if isinstance(node, ast.Attribute) and node.attr in {"base_classes", "fields", *MODEL_COLLECTION_ATTRIBUTES}:
+    if isinstance(node, ast.Attribute) and node.attr in SEQUENCE_OWNERS | MODEL_COLLECTION_ATTRIBUTES:
         return node.attr
     if isinstance(node, ast.Subscript):
         return _sequence_owner(node.value)
@@ -948,18 +963,16 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
 
 
 def iter_python_files(paths: Iterable[Path]) -> list[Path]:
-    """Return checked Python files below ``paths``."""
+    """Return checked Python files below ``paths``, without the store and its runtime write guard."""
     files: list[Path] = []
     for path in paths:
         if path.is_dir():
             files.extend(sorted(path.rglob("*.py")))
         elif path.suffix == ".py":
             files.append(path)
-    generation_store_module = (ROOT / GENERATION_STORE_MODULE).resolve()
+    store_modules = {(ROOT / GENERATION_STORE_MODULE).resolve(), (ROOT / WRITE_GUARD_MODULE).resolve()}
     return [
-        path
-        for path in files
-        if path.resolve() != generation_store_module and COMPILED_TEMPLATE_DIRECTORY not in path.parts
+        path for path in files if path.resolve() not in store_modules and COMPILED_TEMPLATE_DIRECTORY not in path.parts
     ]
 
 
@@ -1126,9 +1139,8 @@ def _toml_string(text: str) -> str:
     return text[1:-1] if text.startswith("'") else json.loads(text) if text.startswith('"') else text
 
 
-def parse_allowlist(text: str) -> Counter[StoreKey]:
-    """Parse the TOML subset ``format_allowlist`` writes, with the standard library of every supported Python."""
-    counts: Counter[StoreKey] = Counter()
+def _allowlist_entries(text: str) -> Iterator[tuple[StoreKey, int | str]]:
+    """Yield each entry of the allowlist with its count, or with its witness when only the runtime guard sees it."""
     section: tuple[str, str] | None = None
     for number, line in enumerate(text.splitlines(), start=1):
         if not (stripped := line.strip()) or stripped.startswith("#"):
@@ -1137,14 +1149,29 @@ def parse_allowlist(text: str) -> Counter[StoreKey]:
             section = (_toml_string(table.group(1)), _toml_string(table.group(2)))
             continue
         if (entry := TOML_ENTRY.fullmatch(stripped)) is None or section is None:
-            msg = f'allowlist line {number} is not a ["path"."function"] table or a target = count entry: {line}'
+            msg = (
+                f'allowlist line {number} is not a ["path"."function"] table, a target = count or a '
+                f'target = "witness" entry: {line}'
+            )
             raise ValueError(msg)
-        target, count = _toml_string(entry.group(1)), entry.group(2)
-        if not count.isdigit() or int(count) < 1:
+        target, value = _toml_string(entry.group(1)), entry.group(2)
+        if value.startswith('"'):
+            yield (*section, target), _toml_string(value)
+        elif not value.isdigit() or int(value) < 1:
             msg = f"allowlist count of {section[0]} {section[1]} {target} must be a positive integer"
             raise TypeError(msg)
-        counts[(*section, target)] = int(count)
-    return counts
+        else:
+            yield (*section, target), int(value)
+
+
+def parse_allowlist(text: str) -> Counter[StoreKey]:
+    """Parse the counted entries of the TOML subset ``format_allowlist`` writes, with the standard library only."""
+    return Counter({key: value for key, value in _allowlist_entries(text) if isinstance(value, int)})
+
+
+def parse_witnesses(text: str) -> dict[StoreKey, str]:
+    """Parse the entries that only the runtime guard sees, with their witness arguments."""
+    return {key: value for key, value in _allowlist_entries(text) if isinstance(value, str)}
 
 
 def load_allowlist(path: Path | None = None) -> Counter[StoreKey]:
@@ -1153,21 +1180,28 @@ def load_allowlist(path: Path | None = None) -> Counter[StoreKey]:
     return parse_allowlist(allowlist_path.read_text()) if allowlist_path.exists() else Counter()
 
 
+def load_witnesses(path: Path | None = None) -> dict[StoreKey, str]:
+    """Read the entries that only the runtime guard sees, with their witness arguments."""
+    allowlist_path = path or ROOT / ALLOWLIST_PATH
+    return parse_witnesses(allowlist_path.read_text()) if allowlist_path.exists() else {}
+
+
 def _toml_key(key: str) -> str:
     if BARE_TOML_KEY.fullmatch(key):
         return key
     return f"'{key}'" if "'" not in key else json.dumps(key)
 
 
-def format_allowlist(counts: Counter[StoreKey]) -> str:
-    """Return the allowlist file text for ``counts``."""
+def format_allowlist(counts: Counter[StoreKey], witnesses: dict[StoreKey, str] | None = None) -> str:
+    """Return the allowlist file text for ``counts`` and the ``witnesses`` of the writes only the runtime guard sees."""
+    entries: dict[StoreKey, int | str] = {**counts, **(witnesses or {})}
     lines = [ALLOWLIST_HEADER.rstrip("\n")]
     section: tuple[str, str] | None = None
-    for (source, function, target), count in sorted(counts.items()):
+    for (source, function, target), value in sorted(entries.items()):
         if section != (source, function):
             section = (source, function)
             lines.extend(("", f'["{source}"."{function}"]'))
-        lines.append(f"{_toml_key(target)} = {count}")
+        lines.append(f"{_toml_key(target)} = {json.dumps(value) if isinstance(value, str) else value}")
     return "\n".join(lines) + "\n"
 
 
@@ -1353,10 +1387,13 @@ def table_problems(
     return problems
 
 
-def check_default_targets(*, allowlist: Counter[StoreKey] | None = None) -> tuple[list[Violation], ScanResult]:
+def check_default_targets(
+    *, allowlist: Counter[StoreKey] | None = None, witnesses: dict[StoreKey, str] | None = None
+) -> tuple[list[Violation], ScanResult]:
     """Check the default targets and the table; also return the scan for ``--write-allowlist``.
 
     Every allowlist entry under the default targets must match, including entries of files that were deleted or renamed.
+    A write the scan finds is listed with its count, never with a witness.
     """
     scan = scan_paths(ROOT / target for target in DEFAULT_TARGETS)
     active = load_allowlist() if allowlist is None else allowlist
@@ -1377,18 +1414,183 @@ def check_default_targets(*, allowlist: Counter[StoreKey] | None = None) -> tupl
         Violation(checker, 0, 0, f"{name} is listed but no model module defines it; remove it", "hook lists", name)
         for name in undefined_listed_names()
     )
+    found = scan.counts
+    violations.extend(
+        Violation(
+            Path(source),
+            0,
+            0,
+            f"the scan finds {target!r}; list it with its count {found[source, function, target]} instead of a witness",
+            function,
+            target,
+        )
+        for source, function, target in sorted(load_witnesses() if witnesses is None else witnesses)
+        if found[source, function, target]
+    )
     return [*table_problems(dict_keys_written=scan.dict_keys_written), *hook_problems, *violations], scan
 
 
 def write_allowlist(found: Counter[StoreKey], path: Path | None = None) -> list[StoreKey]:
-    """Write ``found`` as the allowlist and return no keys, or return the keys an existing allowlist would gain."""
+    """Write ``found`` as the allowlist and return no keys, or return the keys an existing allowlist would gain.
+
+    A witness entry whose write the scan now finds becomes a count entry; that move is the only way a count may rise.
+    """
     allowlist_path = path or ROOT / ALLOWLIST_PATH
+    witnesses = load_witnesses(allowlist_path)
     if allowlist_path.exists():
         current = load_allowlist(allowlist_path)
-        if grown := sorted(key for key, count in found.items() if count > current[key]):
+        if grown := sorted(key for key, count in found.items() if count > current[key] and key not in witnesses):
             return grown
-    allowlist_path.write_text(format_allowlist(found))
+    kept = {key: witness for key, witness in witnesses.items() if not found[key]}
+    allowlist_path.write_text(format_allowlist(found, kept))
     return []
+
+
+@dataclass(frozen=True)
+class RuntimeWrite:
+    """A write the runtime guard reported, keyed as the scan keys its findings."""
+
+    key: StoreKey
+    message: str
+
+
+_FUNCTION_SPANS: dict[Path, list[tuple[int, int, str]]] = {}
+_FUNCTIONS_AT: dict[tuple[Path, int], str] = {}
+
+
+def _function_spans(path: Path) -> list[tuple[int, int, str]]:
+    """Return the line span and qualified name of every function in ``path``, named as the visitor names them."""
+    if (spans := _FUNCTION_SPANS.get(path)) is None:
+        spans = _FUNCTION_SPANS[path] = []
+        pending: list[tuple[ast.AST, tuple[str, ...]]] = [
+            (ast.parse(path.read_text(encoding="utf-8"), filename=str(path)), ())
+        ]
+        while pending:
+            node, names = pending.pop()
+            for child in ast.iter_child_nodes(node):
+                match child:
+                    case ast.FunctionDef(name=name) | ast.AsyncFunctionDef(name=name):
+                        spans.append((child.lineno, child.end_lineno or child.lineno, ".".join((*names, name))))
+                        pending.append((child, (*names, name)))
+                    case ast.ClassDef(name=name):
+                        pending.append((child, (*names, name)))
+                    case _:
+                        pending.append((child, names))
+    return spans
+
+
+def function_at(path: Path, line: int) -> str:
+    """Return the qualified name of the innermost function of ``path`` that contains ``line``, or ``<module>``."""
+    if (name := _FUNCTIONS_AT.get((path, line))) is None:
+        enclosing = [(start, name) for start, end, name in _function_spans(path) if start <= line <= end]
+        name = _FUNCTIONS_AT[path, line] = max(enclosing)[1] if enclosing else "<module>"
+    return name
+
+
+def runtime_target(attribute: str, operation: str, key: str | None) -> str:
+    """Return the target the scan gives a write that the runtime guard reports as an operation on an attribute."""
+    sequence = attribute in SEQUENCE_OWNERS
+    if operation in {"=", "__iadd__", "__imul__"} or (sequence and operation in {"__setitem__", "__delitem__"}):
+        return attribute
+    if operation in {"__setitem__", "__delitem__"}:
+        return f"{attribute}[:]" if key == "slice" else f"{attribute}[...]"
+    if operation == "pop" and key is not None and not sequence:
+        return f"{attribute}.pop(...)"
+    return f"{attribute}.{operation}()"
+
+
+def runtime_writes(lines: Iterable[str]) -> list[RuntimeWrite]:
+    """Return the writes of the package in runtime guard report lines, each keyed as the scan keys its findings."""
+    writes: list[RuntimeWrite] = []
+    for line in lines:
+        report = json.loads(line)
+        if report.get("area") != "STORE_WRITES" or not (source := report["path"]).startswith(
+            f"{SOURCE_ROOT.as_posix()}/"
+        ):
+            continue
+        target = runtime_target(report["attribute"], report["operation"], report["key"])
+        writes.append(RuntimeWrite((source, function_at(ROOT / source, report["line"]), target), report["message"]))
+    return writes
+
+
+def runtime_problems(
+    lines: Iterable[str],
+    *,
+    allowlist: Counter[StoreKey] | None = None,
+    witnesses: dict[StoreKey, str] | None = None,
+) -> list[str]:
+    """Return the messages of the package's runtime writes that the allowlist does not list, each once."""
+    counts = load_allowlist() if allowlist is None else allowlist
+    known = load_witnesses() if witnesses is None else witnesses
+    problems = {
+        write.key: write.message for write in runtime_writes(lines) if not counts[write.key] and write.key not in known
+    }
+    return [
+        f"{message}; route it through a GenerationStore operation ({ALLOWLIST_PATH.as_posix()} does not list "
+        f"{target!r} of {function} in {source})"
+        for (source, function, target), message in problems.items()
+    ]
+
+
+def check_runtime_writes(
+    lines: Iterable[str], *, allowlist: Counter[StoreKey] | None = None, witnesses: dict[StoreKey, str] | None = None
+) -> None:
+    """Raise ``AssertionError`` with the messages of the package's runtime writes that the allowlist does not list."""
+    if problems := runtime_problems(lines, allowlist=allowlist, witnesses=witnesses):
+        raise AssertionError("\n".join(problems))
+
+
+WITNESS_RUNNER = """\
+import json, os, shlex, sys
+from datamodel_code_generator.__main__ import main
+for witness, output, report in json.loads(sys.argv[1]):
+    os.environ[sys.argv[2]] = f"report:{report}"
+    if main([*shlex.split(witness), "--output", output]):
+        raise SystemExit(f"witness {witness!r} fails")
+"""
+"""Runs every witness in one interpreter, each with its own output and report file."""
+
+
+def witness_problems(witnesses: dict[StoreKey, str] | None = None) -> list[Violation]:
+    """Run each witness with the runtime guard reporting and return the entries whose witness no longer writes them."""
+    entries = load_witnesses() if witnesses is None else witnesses
+    runs = sorted(set(entries.values()))
+    with TemporaryDirectory() as directory:
+        reports = [Path(directory) / f"writes-{index}.jsonl" for index in range(len(runs))]
+        jobs = [
+            (arguments, str(Path(directory) / f"output-{index}"), str(report))
+            for index, (arguments, report) in enumerate(zip(runs, reports, strict=True))
+        ]
+        run = subprocess.run(
+            [sys.executable, "-c", WITNESS_RUNNER, json.dumps(jobs), STORE_WRITES_VARIABLE],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if run.returncode:
+            last_line = (run.stderr.strip().splitlines() or [f"exit status {run.returncode}"])[-1]
+            msg = f"the witnesses could not run: {last_line}"
+            raise RuntimeError(msg)
+        written = {
+            arguments: {write.key for write in runtime_writes(report.read_text(encoding="utf-8").splitlines())}
+            if report.exists()
+            else set()
+            for arguments, report in zip(runs, reports, strict=True)
+        }
+    return [
+        Violation(
+            Path(key[0]),
+            0,
+            0,
+            f"stale allowlist entry {key[2]!r}: its witness {arguments!r} no longer writes it; remove it from "
+            f"{ALLOWLIST_PATH.as_posix()}",
+            key[1],
+            key[2],
+        )
+        for key, arguments in sorted(entries.items())
+        if key not in written[arguments]
+    ]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1400,9 +1602,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="create the allowlist from the default targets, or lower it after writes were routed; never adds entries",
     )
+    parser.add_argument(
+        "--witnesses",
+        action="store_true",
+        help="run the witness of every entry only the runtime guard sees and report those it no longer writes",
+    )
     args = parser.parse_args(argv)
 
-    if args.paths:
+    if args.witnesses:
+        violations = witness_problems()
+    elif args.paths:
         violations = check_paths(args.paths)
     else:
         violations, scan = check_default_targets()

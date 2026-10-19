@@ -1,5 +1,8 @@
 # Writes that bypass GenerationStore, as scripts/check_generation_store_usage.py finds them.
 # Tables are ["path"."function"] with target = count; no line numbers, so unrelated edits do not move entries.
+# A target = "arguments" entry is a write that only the runtime guard (DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES)
+# sees; its witness is the datamodel-codegen arguments of one run that makes it (`--witnesses` runs them all). When the
+# scan learns to find such a write, its witness becomes a count entry, the only move that may raise the counted total.
 # Generated once by `python scripts/check_generation_store_usage.py --write-allowlist`; later changes only remove
 # entries or lower counts, and a refactor that moves a write renames its entry without raising the total.
 # A new write fails the check, and so does an entry that no longer matches.
@@ -31,6 +34,9 @@ use_annotated = 1
 ["src/datamodel_code_generator/model/base.py"."DataModel.clear_imports_cache"]
 '__dict__.pop(_IMPORTS_CACHE_KEY)' = 1
 '__dict__.pop(_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY)' = 1
+
+["src/datamodel_code_generator/model/base.py"."DataModel.create_reuse_model"]
+reused_reference = "--input tests/data/json/duplicate_models.json --input-file-type json --output-model-type pydantic_v2.BaseModel --reuse-model"
 
 ["src/datamodel_code_generator/model/base.py"."DataModel.finalize_required_inherited_field"]
 'extras.pop("default_factory")' = 1
@@ -94,6 +100,9 @@ nullable = 3
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.record_untaken_constraints"]
 '__dict__[_UNTAKEN_CONSTRAINTS_KEY]' = 1
 
+["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.replace_data_type"]
+data_type = "--input tests/data/openapi/const.yaml --input-file-type openapi --output-model-type pydantic_v2.BaseModel --collapse-root-models"
+
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.self_reference"]
 '__dict__["_self_reference_cache"]' = 2
 
@@ -123,6 +132,9 @@ nullable = 3
 
 ["src/datamodel_code_generator/model/dataclass.py"."DataClass.unbind_fields"]
 '__dict__[_UNBOUND_FIELD_KEY]' = 1
+
+["src/datamodel_code_generator/model/dataclass.py"."_DataclassReuseMixin.create_reuse_model"]
+reused_reference = "--input tests/data/jsonschema/reuse_scope_tree --input-file-type jsonschema --output-model-type dataclasses.dataclass --reuse-model --reuse-scope tree"
 
 ["src/datamodel_code_generator/model/enum.py"."Enum._coerced_member_index"]
 '@cached_property' = 1
@@ -161,24 +173,45 @@ nullable = 1
 ["src/datamodel_code_generator/model/msgspec.py"."Struct.apply_discriminator_tag"]
 'extras["is_classvar"]' = 1
 
+["src/datamodel_code_generator/model/msgspec.py"."Struct.create_base_class_model"]
+base_classes = "--input tests/data/jsonschema/use_generic_base_class_simple.json --input-file-type jsonschema --output-model-type msgspec.Struct --use-generic-base-class --allow-population-by-field-name --enable-faux-immutability"
+
 ["src/datamodel_code_generator/model/pydantic_base.py"."BaseModelBase.template_file_path"]
 '@cached_property' = 1
 
 ["src/datamodel_code_generator/model/pydantic_base.py"."DataModelField.enable_structured_default_validation"]
 'extras["validate_default"]' = 1
 
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._add_schema_runtime_validation_helper_imports"]
+'_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
+
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._get_schema_runtime_validation_module_plan"]
 '__dict__[_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY]' = 3
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._neutralize_generic_extra_config_for_runtime_root_models"]
+'_additional_imports.append()' = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel._set_config"]
 '_additional_imports.append()' = 1
 'extra_template_data["config"]' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.create_base_class_model"]
+_additional_imports = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
+base_classes = "--input tests/data/jsonschema/schema_validators_property_count_root_collapse.json --input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --collapse-root-models --generate-schema-validators --use-generic-base-class --extra-fields forbid --enable-faux-immutability"
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.invalidate_module_code_cache"]
 '__dict__.pop(_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY)' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."BaseModel.invalidate_render_caches"]
 '__dict__.pop(_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY)' = 1
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."_copy_alias_data_type"]
+data_types = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
+dict_key = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
+kwargs = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
+
+["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."_prepare_field_python_pattern"]
+extras = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
 
 ["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass.__init__"]
 _lookaround_regex_engine_checked = 1
@@ -196,6 +229,9 @@ fields = 1
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._keep_string_pattern_aliases_out_of_bases"]
 '_additional_imports.append()' = 1
 
+["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._sync_config_items"]
+_additional_imports = "--input tests/data/openapi/not_real_string.json --input-file-type openapi --collapse-root-models"
+
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel.add_literal_validation"]
 '_additional_imports.extend()' = 2
 _literal_values = 1
@@ -209,6 +245,9 @@ _requires_literal_validation = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/type_alias.py"."TypeAlias.template_file_path"]
 '@cached_property' = 1
+
+["src/datamodel_code_generator/model/typed_dict.py"."TypedDict.create_reuse_model"]
+use_total_false_for_typed_dict = "--input tests/data/jsonschema/reuse_model_inline_definitions.json --input-file-type jsonschema --output-model-type typing.TypedDict --reuse-model --target-python-version 3.11 --use-total-false-for-typed-dict"
 
 ["src/datamodel_code_generator/parser/avro.py"."AvroParser._finalize_structured_imports"]
 default = 1
@@ -514,6 +553,14 @@ is_optional = 3
 '__dict__[_NULL_STRIPPED_DATA_TYPE_KEY]' = 1
 is_optional = 1
 
+["src/datamodel_code_generator/types.py"."DataType.replace_reference"]
+reference = "--input tests/data/openapi/not_real_string.json --input-file-type openapi --collapse-root-models"
+
 ["src/datamodel_code_generator/types.py"."DataType.swap_with"]
 data_type = 1
 data_types = 1
+
+["src/datamodel_code_generator/types.py"."DataTypeManager.copy_data_type"]
+data_types = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
+enum_member_literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
+literals = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"
