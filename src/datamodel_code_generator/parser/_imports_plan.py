@@ -4,8 +4,11 @@ Every write to the imports of a generated module (``ModuleContext.imports``) and
 (``Parser.imports``) goes through ``ModuleImportLedger``. The ledger applies the operation to the live ``Imports`` at
 once, so a pass reads what it read before, and keeps it as an entry together with its producer: the pass that asked
 for it, and the model and field it was asked for. The live ``Imports`` is the materialization of its entries, which
-``replay`` rebuilds; a view that keeps the entries of some producers only, such as the imports a module writes beside
-the names it binds, is the replay of those entries.
+``replay`` rebuilds. The imports a module writes can be fewer than the names it binds: ``ModuleImportLedger.rendered``
+subtracts from a copy of the live ``Imports`` what the entries wrote of their models' unrendered imports
+(``DataModel._unrendered_imports``), counted as the difference between the replay of the entries and their replay
+without those imports. The copy keeps the order of the module lines and the imports written outside the ledger, which a
+replay of some entries only would reorder or lose.
 
 Code that the parser hands the live ``Imports`` (``DataModel.resolve_module_import_conflicts``) runs inside
 ``ModuleImportLedger.external``, which records what it changed as removals, additions and aliases of import keys.
@@ -20,10 +23,17 @@ Named legacy rows, imports decided where the ledger does not see them:
   drops the ``ConfigDict`` import of a RootModel when the model renders, after its module's import text is built, so
   the module imports hold the model's imports as ``Parser._finalize_modules`` collected them. It goes when the model
   config is decided before rendering.
+* ``legacy.enum-member-import-bindings``: an Enum's ``imports`` keep the imports of its member declarations (pydantic's
+  ``Field`` for described members), which the class never renders. The module binds their names, so class names
+  (``Parser.__replace_duplicate_name_in_module``, ``Parser._flatten_invalid_modules``) and reuse keys
+  (``DataModel._render_dedup_key``, ``Parser._stdout_model_fingerprint``) stay as in 0.86.0, and ``rendered`` leaves
+  them out of the import block. It goes when an option lets the module bind only what it writes (G09's naming
+  rules, #4802).
 """
 
 from __future__ import annotations
 
+from collections import Counter
 from contextlib import contextmanager
 from dataclasses import dataclass
 from itertools import chain, repeat
@@ -293,6 +303,36 @@ def _bound_aliases(imports: Imports) -> dict[str | None, dict[str, str]]:
     return {module: aliases for module, aliases in imports.alias.items() if aliases}
 
 
+_storage_key = Imports._storage_key  # ruff: ignore[private-member-access]
+
+
+def _without_unrendered(entry: LedgerEntry) -> LedgerEntry:
+    """Return the entry without the unrendered imports of its model, or the entry itself when its model has none."""
+    operation, model = entry.operation, entry.producer.model
+    if model is None or not isinstance(operation, Added | Removed):
+        return entry
+    if not (unrendered := model._unrendered_imports()):  # ruff: ignore[private-member-access]
+        return entry
+    left = Counter(map(_storage_key, unrendered))
+    kept: list[Import] = []
+    for import_ in operation.imports:
+        if left[key := _storage_key(import_)] > 0:
+            left[key] -= 1
+        else:
+            kept.append(import_)
+    return LedgerEntry(type(operation)(tuple(kept)), entry.producer)
+
+
+def _copy(imports: Imports) -> Imports:
+    """Return a copy of the imports that writes the same lines in the same order."""
+    copy = Imports(imports.use_exact)
+    copy.update((module, set(names)) for module, names in imports.items())
+    copy.counter.update(imports.counter)
+    copy.alias.update((module, dict(aliases)) for module, aliases in imports.alias.items())
+    copy.reference_paths.update(imports.reference_paths)
+    return copy
+
+
 @final
 class ModuleImportLedger:
     """The writes to every module's imports and to the shared imports, kept per ``Imports`` in the order made."""
@@ -361,6 +401,22 @@ class ModuleImportLedger:
             self._entries_of(imports).extend(
                 LedgerEntry(operation, producer) for operation in before.operations_to(_KeyState.of(imports))
             )
+
+    def rendered(self, imports: Imports) -> Imports:
+        """Return the imports the module writes: the live imports without what the entries wrote of unrendered imports.
+
+        Without such entries this is the live ``Imports`` itself.
+        """
+        entries = self._entries_of(imports)
+        reduced = [_without_unrendered(entry) for entry in entries]
+        if all(entry is reduced_entry for entry, reduced_entry in zip(entries, reduced, strict=True)):
+            return imports
+        written = replay(entries, use_exact=imports.use_exact).counter
+        kept = replay(reduced, use_exact=imports.use_exact).counter
+        view = _copy(imports)
+        for key, count in written.items():
+            view.remove(repeat(_key_import(key), min(count, imports.counter.get(key, 0)) - kept.get(key, 0)))
+        return view
 
     def differences(self, imports: Imports) -> tuple[str, ...]:
         """Name the parts of the imports that differ from the replay of their entries."""

@@ -250,6 +250,15 @@ class Enum(DataModel):
         """Get imports excluding Any."""
         return tuple(i for i in super().imports if i != IMPORT_ANY)
 
+    @override
+    def _unrendered_imports(self) -> tuple[Import, ...]:
+        """Return the imports of the member declarations, which render as ``name = value`` with docstrings.
+
+        ``imports`` keeps them, so the module binds their names (``legacy.enum-member-import-bindings`` in
+        ``parser/_imports_plan.py``).
+        """
+        return tuple(i for f in self.fields for i in f.imports if i != IMPORT_ANY)
+
 
 class StrEnum(Enum):
     """String enumeration type."""

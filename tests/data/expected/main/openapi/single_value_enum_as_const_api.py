@@ -7,7 +7,7 @@ from __future__ import annotations
 from enum import Enum, IntEnum
 from typing import Literal
 
-from pydantic import BaseModel, Field, RootModel, constr
+from pydantic import BaseModel, RootModel, constr
 from typing_extensions import TypeAliasType
 
 

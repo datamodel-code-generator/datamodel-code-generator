@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Job",
+  "type": "object",
+  "properties": {
+    "status": {"$ref": "#/$defs/Status"},
+    "status_copy": {"$ref": "#/$defs/StatusCopy"},
+    "level": {"$ref": "#/$defs/Level"},
+    "shadow": {"$ref": "#/$defs/Shadow"},
+    "field": {"$ref": "#/$defs/Field"}
+  },
+  "$defs": {
+    "Status": {
+      "type": "string",
+      "enum": ["queued", "running"],
+      "x-enum-descriptions": ["Waiting to run.", "Running now."]
+    },
+    "StatusCopy": {
+      "type": "string",
+      "enum": ["queued", "running"]
+    },
+    "Level": {
+      "oneOf": [
+        {"type": "integer", "const": 1, "description": "Low."},
+        {"type": "integer", "const": 2, "description": "High."}
+      ]
+    },
+    "Shadow": {
+      "type": "string",
+      "enum": ["Field", "other"],
+      "x-enum-descriptions": ["Named like pydantic's Field.", "Another member."]
+    },
+    "Field": {
+      "type": "object",
+      "properties": {"name": {"type": "string"}}
+    }
+  }
+}

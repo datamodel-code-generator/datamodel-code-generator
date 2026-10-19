@@ -9171,7 +9171,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         if ctx.models:
             if config.with_import:
-                import_parts = [s for s in [module_future_imports_str, str(self.imports), str(ctx.imports)] if s]
+                module_imports = self._import_ledger.rendered(ctx.imports)
+                import_parts = [s for s in [module_future_imports_str, str(self.imports), str(module_imports)] if s]
                 result += [*import_parts, "\n"]
 
             if export_imports:

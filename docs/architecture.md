@@ -350,8 +350,13 @@ and `__import_renamed_types` (reuse and renames in a later module, including the
 **Module imports.** The passes from L1 to L7 write the imports of a module (`ModuleContext.imports`) and the imports
 all modules share (`Parser.imports`) only through `parser/_imports_plan.py:ModuleImportLedger`, which applies each write to
 the live `Imports` at once and keeps it as an entry with its producer: the pass (`ImportPass`), and the model and
-field it wrote for. The live `Imports` is the replay of its entries (`replay`), and a view that keeps the entries of
-some producers only is the replay of those. The output model's `resolve_module_import_conflicts` gets the live
+field it wrote for. The live `Imports` is the replay of its entries (`replay`). The import block that
+`_generate_module_output` writes is `ModuleImportLedger.rendered`: a copy of the live `Imports` minus what the entries
+wrote of their models' unrendered imports (`DataModel._unrendered_imports`), counted as the difference between the
+replay of the entries and their replay without those imports, so the module lines keep their order and imports
+written outside the ledger stay. The named row `legacy.enum-member-import-bindings` uses it: an Enum's `imports` keep
+the imports of its member declarations (pydantic's `Field` for described members), so the module binds their names
+for class names and reuse keys as in 0.86.0, while the import block leaves them out. The output model's `resolve_module_import_conflicts` gets the live
 `Imports`; `ModuleImportLedger.external` records what it changed. `DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`
 compares each module's imports with the replay of their entries when the import text is written, so a write that
 bypasses the ledger fails the check, which the test suite turns on.

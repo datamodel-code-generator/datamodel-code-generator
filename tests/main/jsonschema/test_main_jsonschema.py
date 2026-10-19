@@ -10358,6 +10358,34 @@ def test_main_jsonschema_anyof_const_enum_descriptions(output_file: Path) -> Non
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="pydantic-v2"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-inline-field-description"],
+            id="pydantic-v2-inline-description",
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic-v2-dataclass"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--reuse-model"], id="pydantic-v2-reuse-model"),
+    ],
+)
+def test_main_jsonschema_enum_member_descriptions(extra_args: list[str], output_file: Path) -> None:
+    """Write only the imports an enum class renders, which never include ``Field`` for described members.
+
+    Up to 0.86.0 an enum whose members had descriptions (``x-enum-descriptions`` or described ``const`` branches)
+    imported pydantic's ``Field``, which nothing in the module used. The module still binds the name, as in 0.86.0:
+    the model named ``Field`` stays ``FieldModel``, and ``--reuse-model`` keeps ``StatusCopy`` apart from ``Status``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_member_descriptions.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=extra_args,
+        force_exec_validation=True,
+    )
+
+
 def test_main_jsonschema_anyof_const_enum_nested_literal(output_file: Path) -> None:
     """Test nested anyOf const with --enum-field-as-literal all."""
     run_main_and_assert(

@@ -2628,6 +2628,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self.__dict__[self._IMPORTS_CACHE_KEY] = imports
         return imports
 
+    def _unrendered_imports(self) -> tuple[Import, ...]:  # ruff: ignore[no-self-use]
+        """Return the part of ``imports`` that the class statement does not render.
+
+        The module binds their names, so names and reuse decisions read them, but its import block leaves them out.
+        """
+        return ()
+
     def field_binds_class_attribute(self, field: DataModelFieldBase) -> bool:
         """Return whether the class body assigns a field call or a default to the field's name."""
         return bool(field.field) or type(self).FIELD_ASSIGNMENT_CHECKER(field)
