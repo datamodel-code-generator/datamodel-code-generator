@@ -1289,13 +1289,11 @@ def _should_skip_exec(extra_arguments: Sequence[str] | None, *, force_exec: bool
 
     Args:
         extra_arguments: CLI arguments passed to the test.
-        force_exec: If True, skip version mismatch check and allow exec on current Python version.
-            This only works when target version <= runtime version (older target on newer runtime).
+        force_exec: If True, import the output whenever the target is not newer than the runtime.
+            An unset target is the generator's default, the oldest supported version.
             When target > runtime, compile will be skipped entirely regardless of this flag.
     """
-    if (target_version := _parse_target_version(extra_arguments)) is None:
-        return True
-    if not force_exec and target_version != sys.version_info[:2]:
+    if not force_exec and _parse_target_version(extra_arguments) != sys.version_info[:2]:
         return True
     return _get_argument_value(extra_arguments, "--base-class") is not None
 
@@ -1342,6 +1340,7 @@ def _generated_output_import_code(output_path: Path) -> str:
         f"""
         import importlib.util
         import sys
+        import warnings
         from pathlib import Path
 
         imported_packages = []
@@ -1402,14 +1401,18 @@ def _generated_output_import_code(output_path: Path) -> str:
 
 
         output_path = Path({str(output_path.absolute())!r})
-        if output_path.is_file():
-            _import_file(output_path, "_datamodel_codegen_generated_output")
-        elif (output_path / "__init__.py").exists():
-            _import_package(output_path.parent, output_path.name)
-        else:
-            for directory in output_path.iterdir():
-                if directory.is_dir() and (directory / "__init__.py").exists():
-                    _import_package(output_path, directory.name)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", "Field name .* shadows an attribute in parent", UserWarning)
+            warnings.filterwarnings("ignore", "Field .* conflicts with protected namespace", UserWarning)
+            warnings.filterwarnings("ignore", "The `MISSING` sentinel is no longer experimental", DeprecationWarning)
+            if output_path.is_file():
+                _import_file(output_path, "_datamodel_codegen_generated_output")
+            elif (output_path / "__init__.py").exists():
+                _import_package(output_path.parent, output_path.name)
+            else:
+                for directory in output_path.iterdir():
+                    if directory.is_dir() and (directory / "__init__.py").exists():
+                        _import_package(output_path, directory.name)
         """
     )
 
