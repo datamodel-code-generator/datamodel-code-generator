@@ -609,10 +609,28 @@ def _module_name_from_module_path(module: ModulePath) -> str:
 
 
 class _RenamedType(NamedTuple):
-    """A type's class name before a later module renamed it, and the path its imports were added under."""
+    """A class name a type had before a rename, and the path imports of that name were added under."""
 
     class_name: str
     import_path: str
+
+
+def _stale_renamed_import(
+    imports: Imports, data_type: DataType, renamed_types: Sequence[_RenamedType]
+) -> Import | None:
+    """Return the import of a module that still names a data type's type by one of the names it had before."""
+    return next(
+        (
+            import_
+            for renamed_type in renamed_types
+            if (import_ := imports.reference_paths.get(renamed_type.import_path)) is not None
+            and (
+                import_.import_ == renamed_type.class_name
+                or (data_type.alias or "").endswith(f".{renamed_type.class_name}")
+            )
+        ),
+        None,
+    )
 
 
 class _KeepModelOrderDeps(NamedTuple):
@@ -3442,7 +3460,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._deferred_tagged_unions: list[_DiscriminatorUnion] = []
         self._defers_tagged_unions = False
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
-        self._renamed_types: dict[str, _RenamedType] = {}
+        self._renamed_types: dict[str, list[_RenamedType]] = {}
         self._replaced_root_models: dict[int, DataModel] = {}
         self._emitting_module_names: dict[int, str] = {}
         self._emitting_module_lists: list[tuple[str, list[DataModel]]] = []
@@ -4488,9 +4506,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         A field of the type's module can hide the type, which then gets a new name after modules that come first
         built their imports of it, and the ``parent`` strategy of root-model collapse gives an inner model the name
-        and path of the root model it replaces. The stale import is the one added under the type's path before the
-        rename. It releases the name it binds for the new one, found by name, as neither the import of a package
-        ``__init__`` nor a ``from .`` path leads back to the path it was added under.
+        and path of the root model it replaces. Every name the type had is recorded, as a module processed between two
+        renames imported the name in between. The stale import is the one added under the type's path at that name.
+        It releases the name it binds for the new one, found by name, as neither the import of a package ``__init__``
+        nor a ``from .`` path leads back to the path it was added under.
         """
         if not (renamed := self._renamed_types):
             return
@@ -4502,13 +4521,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for model in members
                 for data_type in model.all_data_types
                 if (reference := data_type.reference) is not None
-                and (renamed_type := renamed.get(reference.path)) is not None
+                and (renamed_types := renamed.get(reference.path)) is not None
                 and reference.path not in model_paths
-                and (import_ := ctx.imports.reference_paths.get(renamed_type.import_path)) is not None
-                and (
-                    import_.import_ == renamed_type.class_name
-                    or (data_type.alias or "").endswith(f".{renamed_type.class_name}")
-                )
+                and (import_ := _stale_renamed_import(ctx.imports, data_type, renamed_types)) is not None
             ]
             if not stale_users:
                 continue
@@ -5616,7 +5631,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._replaced_root_models[id(root_model)] = root_model
         model_path_to_module_name[inner_model.path] = inner_module_name
         if inner_model.class_name != old_class_name:
-            self._renamed_types.setdefault(inner_model.path, _RenamedType(old_class_name, old_path))
+            self._renamed_types.setdefault(inner_model.path, []).append(_RenamedType(old_class_name, old_path))
 
     def __import_collapsed_inner_models(  # noqa: PLR0913
         self,
@@ -6311,8 +6326,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         source = cast("DataModel", colliding_reference.source)
                         resolver.exclude_names.add(cast("str", field_name))
                         new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
-                        self._renamed_types.setdefault(
-                            colliding_reference.path, _RenamedType(source.class_name, colliding_reference.path)
+                        self._renamed_types.setdefault(colliding_reference.path, []).append(
+                            _RenamedType(source.class_name, colliding_reference.path)
                         )
                         source.class_name = new_class_name
                         all_class_names.add(new_class_name)
@@ -6432,7 +6447,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             for name in _family_field_names(_model_family(user, derived_models))
         )
-        self._renamed_types.setdefault(reference.path, _RenamedType(source.class_name, reference.path))
+        self._renamed_types.setdefault(reference.path, []).append(_RenamedType(source.class_name, reference.path))
         source.class_name = resolver.add(["type"], source.class_name).name
         class_names.add(source.class_name)
 

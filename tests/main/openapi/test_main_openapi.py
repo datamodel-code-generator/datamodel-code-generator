@@ -11631,6 +11631,15 @@ def test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice(
             id="inherited-beside-holder",
         ),
         pytest.param(
+            "renamed_again_in_inner_module.yaml",
+            ["--field-type-collision-strategy", "rename-type"],
+            "y",
+            "Second",
+            {"w": {"x": "1"}},
+            {"w": {"x": 1}},
+            id="renamed-again-in-inner-module",
+        ),
+        pytest.param(
             "reused_inner_in_cycle.yaml",
             ["--reuse-model"],
             "a",
@@ -11656,7 +11665,8 @@ def test_main_openapi_collapse_root_models_name_strategy_modular(
     The holder imports the inner model as it would for a direct reference, drops its import of the wrapper, and under
     the parent strategy the inner model takes the wrapper's name in its own module and replaces the wrapper, which
     from then on is no member of its module: a model there that inherits from the inner model imports it. The module
-    of the inner model is the one whose model list holds it, also when reuse put it there.
+    of the inner model is the one whose model list holds it, also when reuse put it there. A module that imported the
+    inner model under the wrapper's name imports it again when the inner model's own module renames it once more.
     """
     run_main_and_assert(
         input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / input_name,

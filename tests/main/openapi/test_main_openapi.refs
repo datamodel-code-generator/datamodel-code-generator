@@ -828,6 +828,8 @@ inherited-in-wrapper-module-last-child	main/openapi/main_openapi/collapse_root_m
 inherited-in-wrapper-module-last-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-in-wrapper-module-last-parent]/
 inner-in-other-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-child]/
 inner-in-other-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-parent]/
+renamed-again-in-inner-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[renamed-again-in-inner-module-child]/
+renamed-again-in-inner-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[renamed-again-in-inner-module-parent]/
 reused-inner-in-cycle-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[reused-inner-in-cycle-child]/
 reused-inner-in-cycle-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[reused-inner-in-cycle-parent]/
 same-class-name-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[same-class-name-child]/
