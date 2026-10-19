@@ -23,7 +23,7 @@ import json
 import re
 import sys
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
@@ -111,13 +111,14 @@ reference bookkeeping and render entry points.
 """
 
 RENDER_STATE_WRITERS = frozenset({
-    "_apply_nullable_from_reference",
+    "_materialize_render_state",
     "_normalize_data_type_import_state",
     "_render_ordered_union_type_hint",
     "_render_union_type_hint",
     "_strip_null",
 })
-"""Private helpers that write rendered state when a pass reads ``type_hint`` or collects imports."""
+"""Private helpers that write rendered state, or reach its one writer, when a pass reads ``type_hint`` or collects
+imports."""
 
 CONSTRUCTION_METHODS = frozenset({
     "__deepcopy__",
@@ -593,10 +594,18 @@ def _cache_message(target: str, rows: Iterable[FactRow]) -> str:
     return f"{target} caches state on a mutable {owners}; keep derived values in a per-parse store memo"
 
 
+@dataclass(frozen=True)
+class _Alias:
+    """A local name for a guarded container, or for one entry of it (``key``)."""
+
+    attribute: str
+    key: ast.AST | None = None
+
+
 @dataclass
 class _FunctionState:
     schema_names: set[str] = field(default_factory=set)
-    aliases: dict[str, str] = field(default_factory=dict)
+    aliases: dict[str, _Alias] = field(default_factory=dict)
 
 
 class GenerationStoreUsageVisitor(ast.NodeVisitor):
@@ -682,11 +691,13 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
         """Check augmented assignment targets, including in-place operators on aliases and ``__dict__``."""
         operator = ast.unparse(node).removeprefix(ast.unparse(node.target)).split()[0]
         match node.target:
-            case ast.Name(id=name) if (aliased := self._state.aliases.get(name)) is not None:
-                if aliased == "__dict__":
-                    self._report_dict_key(node, "...", f"__dict__ {operator}", computed=True)
+            case ast.Name(id=name) if (alias := self._state.aliases.get(name)) is not None:
+                written = alias.attribute if alias.key is None else _item_target(alias.attribute, "", alias.key)
+                if alias.attribute == "__dict__":
+                    key = _key_text(alias.key)
+                    self._report_dict_key(node, key, f"{written} {operator}", computed=key == "...")
                 else:
-                    self._check_container_write(node, aliased, f"{aliased} {operator}", None)
+                    self._check_container_write(node, alias.attribute, f"{written} {operator}", alias.key)
             case ast.Attribute(attr="__dict__", value=receiver) if not self._excluded(receiver):
                 self._report_dict_key(node, "...", f"__dict__ {operator}", computed=True)
             case ast.Name():
@@ -799,11 +810,14 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
                     self._report_dict_entry(node, method, key, entry=entry)
             case ast.Attribute(attr=attribute, value=receiver) if not self._excluded(receiver):
                 self._check_container_write(node, attribute, _item_target(attribute, method, key, entry=entry), key)
-            case ast.Name(id=name) if (aliased := self._state.aliases.get(name)) is not None:
-                if aliased == "__dict__":
+            case ast.Name(id=name) if (alias := self._state.aliases.get(name)) is not None:
+                if alias.key is not None:
+                    key, entry = alias.key, bool(method)
+                if alias.attribute == "__dict__":
                     self._report_dict_entry(node, method, key, entry=entry)
                 else:
-                    self._check_container_write(node, aliased, _item_target(aliased, method, key, entry=entry), key)
+                    target = _item_target(alias.attribute, method, key, entry=entry)
+                    self._check_container_write(node, alias.attribute, target, key)
 
     def _check_legacy_assignment(self, target: ast.AST) -> bool:
         if not self._checks_fact_writes:
@@ -865,19 +879,32 @@ class GenerationStoreUsageVisitor(ast.NodeVisitor):
                 self._state.schema_names.discard(node.id)
 
     def _record_binding(self, target: ast.AST, value: ast.expr) -> None:
+        schema = _is_schema_object_value(value, self._state.schema_names)
+        alias = None if schema else self._alias_of(value)
         self._unbind(target)
         if not isinstance(target, ast.Name):
             return
-        state = self._state
-        if _is_schema_object_value(value, state.schema_names):
-            state.schema_names.add(target.id)
-            return
+        if schema:
+            self._state.schema_names.add(target.id)
+        elif alias is not None:
+            self._state.aliases[target.id] = alias
+
+    def _alias_of(self, value: ast.expr) -> _Alias | None:
+        """Return the guarded container, or the entry of one, that ``value`` names, following existing aliases."""
         match value:
+            case ast.Name(id=name):
+                return self._state.aliases.get(name)
+            case ast.Subscript():
+                container, key = _indexed_object(value)
+                if (alias := self._alias_of(container)) is None:
+                    return None
+                return alias if alias.key is not None else _Alias(alias.attribute, key)
             case (
                 ast.Attribute(attr=attribute, value=receiver)
                 | ast.Call(func=ast.Name(id="getattr"), args=[receiver, ast.Constant(value=str() as attribute), *_])
             ) if self._is_guarded_container(attribute, receiver):
-                state.aliases[target.id] = attribute
+                return _Alias(attribute)
+        return None
 
     def _is_guarded_container(self, attribute: str, receiver: ast.expr) -> bool:
         return not self._excluded(receiver) and (
@@ -1327,9 +1354,19 @@ def table_problems(
 
 
 def check_default_targets(*, allowlist: Counter[StoreKey] | None = None) -> tuple[list[Violation], ScanResult]:
-    """Check the default targets and the table; also return the scan for ``--write-allowlist``."""
+    """Check the default targets and the table; also return the scan for ``--write-allowlist``.
+
+    Every allowlist entry under the default targets must match, including entries of files that were deleted or renamed.
+    """
     scan = scan_paths(ROOT / target for target in DEFAULT_TARGETS)
-    violations = apply_allowlist(scan, load_allowlist() if allowlist is None else allowlist)
+    active = load_allowlist() if allowlist is None else allowlist
+    targets = tuple(target.as_posix() for target in DEFAULT_TARGETS)
+    entry_paths = {
+        source
+        for source, _, _ in active
+        if any(source == target or source.startswith(f"{target}/") for target in targets)
+    }
+    violations = apply_allowlist(replace(scan, scanned_paths=scan.scanned_paths | entry_paths), active)
     checker = Path(__file__)
     hook_problems = [
         Violation(checker, 0, 0, f"{name} is called by parser code and writes facts; add it to {lists}", lists, name)

@@ -485,8 +485,7 @@ Current behaviour that a decision reading the index must allow for:
   `__replace_duplicate_name_in_module`) do not go through `rename_model`.
 - Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
   function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
-  to module imports (`ModuleContext.imports`), or writes in model methods that neither the hook lists nor their
-  direct helpers reach.
+  to module imports (`ModuleContext.imports`), or writes in model methods that the hook closure does not reach.
 - Dedup keys (`DataModel.get_dedup_key`), model shapes and imports caches are separate caches, not store facts.
 
 ### Placement Guide

@@ -887,9 +887,6 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         None,
         access=Access.DICT_KEY,
     ),
-    AttributeFact(
-        "DataModel", "_SOURCE_REFERENCE_PATH_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
-    ),
     AttributeFact("DataModel", "path", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY),
     AttributeFact(
         "DataModel", "_uses_custom_root_template", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
@@ -957,7 +954,13 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("Reference", "source", FactKind.BOOKKEEPING, (), Phase.MODULES, None),
     AttributeFact("Reference", "children", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.CONTAINER),
     AttributeFact(
-        "Reference", "_SOURCE_REFERENCE_PATH_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+        "Reference", "SCHEMA_LOCATION_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+    ),
+    AttributeFact(
+        "Reference", "SCHEMA_LOCATION_CONFLICT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+    ),
+    AttributeFact(
+        "Reference", "SCHEMA_OWNER_FRAMES_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(
         "Parser",

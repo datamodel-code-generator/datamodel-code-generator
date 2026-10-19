@@ -62,9 +62,6 @@ _field_name_bindings = 1
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._merge_untaken_constraints"]
 '__dict__[...]' = 1
 
-["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._normalize_data_type_import_state"]
-is_optional = 1
-
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._process_const_as_literal"]
 const = 1
 default = 1
@@ -405,7 +402,6 @@ constraints = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_flatten_union_members"]
 data_types = 1
-is_optional = 3
 
 ["src/datamodel_code_generator/parser/base.py"."_merge_data_type_modifiers"]
 is_dict = 1
@@ -496,19 +492,13 @@ target_python_version = 1
 ["src/datamodel_code_generator/types.py"."DataType.__deepcopy__"]
 '__dict__[...]' = 1
 
-["src/datamodel_code_generator/types.py"."DataType._apply_nullable_from_reference"]
-'__dict__[_REFERENCE_NULL_DATA_TYPE_KEY]' = 1
-is_optional = 1
-
 ["src/datamodel_code_generator/types.py"."DataType._join_union_member_type_hints"]
 '__dict__[_RENDERED_UNION_MEMBERS_KEY]' = 1
 
-["src/datamodel_code_generator/types.py"."DataType._render_ordered_union_type_hint"]
+["src/datamodel_code_generator/types.py"."DataType._materialize_render_state"]
+'__dict__[_REFERENCE_NULL_DATA_TYPE_KEY]' = 1
 import_ = 1
-
-["src/datamodel_code_generator/types.py"."DataType._render_union_type_hint"]
-import_ = 1
-is_optional = 2
+is_optional = 3
 
 ["src/datamodel_code_generator/types.py"."DataType._set_enum_member_literal_reference"]
 '__dict__[_ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY]' = 1

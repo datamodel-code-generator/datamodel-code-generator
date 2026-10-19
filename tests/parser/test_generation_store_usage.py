@@ -219,7 +219,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 65, "PRESENTATION": 56, "BOOKKEEPING": 15, "CACHE": 19})
+        Counter({"FACT": 65, "PRESENTATION": 56, "BOOKKEEPING": 16, "CACHE": 19})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
@@ -301,7 +301,7 @@ def write(field, data_type, model, name, broken: "not valid("):
     data_type.use_generic_container = True
     model._dedup_key_cache.clear()
     field.__dict__["_forced_field_assignment"] = True
-    field.__dict__[_SOURCE_REFERENCE_PATH_KEY] = "bookkeeping"
+    field.__dict__[SCHEMA_OWNER_FRAMES_KEY] = "bookkeeping"
     field.__dict__["_unknown"] = 1
     field.__dict__[name] = 1
     vars(field)[_IMPORTS_CACHE_KEY] = ()
@@ -458,6 +458,65 @@ def in_place(field, model):
     violations = checker.check_paths([source])
 
     assert_output(_report(violations))
+
+
+def test_checker_follows_aliases_through_rebinding_and_entries(tmp_path: Path) -> None:
+    """A name bound to an alias, or to an entry of a guarded container, writes that container."""
+    checker = _load_checker()
+    source = tmp_path / "aliases.py"
+    source.write_text(
+        """
+def chained(field, model):
+    extras = field.extras
+    copied = extras
+    copied.clear()
+    config = model._internal_template_data["config"]
+    config.update({})
+    config["regex_engine"] = "python-re"
+    nested = config
+    nested |= {}
+    values = field.__dict__
+    entry = values["_forced_field_assignment"]
+    entry.update({})
+    computed = values[field.name]
+    computed |= {}
+    cache = getattr(model, "_dedup_key_cache")
+    cache = cache
+    cache.clear()
+    extras = extras["discriminator"]
+    extras.update({})
+    rebound = copied
+    rebound = []
+    rebound.clear()
+""",
+    )
+
+    violations = checker.check_paths([source])
+
+    assert_output(_report(violations))
+
+
+def test_default_check_reports_entries_of_missing_files() -> None:
+    """An allowlist entry of a deleted or renamed file under the default targets fails; other paths are not checked."""
+    checker = _load_checker()
+    allowlist = checker.load_allowlist() + Counter({
+        ("src/datamodel_code_generator/parser/gone.py", "write", "required"): 1,
+        ("src/datamodel_code_generator/model", "write", "required"): 1,
+        ("elsewhere/parser.py", "write", "required"): 1,
+    })
+
+    violations, _ = checker.check_default_targets(allowlist=allowlist)
+
+    assert [(violation.key, violation.message.split(":")[0]) for violation in violations] == snapshot([
+        (
+            ("src/datamodel_code_generator/model", "write", "required"),
+            "stale allowlist entry 'required'",
+        ),
+        (
+            ("src/datamodel_code_generator/parser/gone.py", "write", "required"),
+            "stale allowlist entry 'required'",
+        ),
+    ])
 
 
 def test_checker_scans_model_hooks_helpers_and_caches(tmp_path: Path) -> None:
