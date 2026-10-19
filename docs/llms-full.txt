@@ -60553,9 +60553,9 @@ relative to `src/datamodel_code_generator/`; names are given as `file:function` 
 | L7 rendering | `parser/base.py:Parser.__render_modules`, `parser/base.py:Parser._generate_module_output`, `model/base.py:DataModel.render` | Module code, templates or compiled renderers, exports. |
 | L8 formatting and output | `format.py:CodeFormatter`, `__init__.py:_format_deferred_output`, `__init__.py:generate` | Format module bodies and write or return the result. |
 
-`__init__.py:_parse_generation` may run L0–L8 again with a fresh parser (root-model collapse recursion retry, yielding
-names that class-keyed options name, untyped nullable maps, invalid dotted stdout modules). These are retries around
-the whole pipeline, not passes inside it.
+`__init__.py:_parse_generation` may run L0–L8 again with a fresh parser (root-model collapse that stops before a
+data type cycle, yielding names that class-keyed options name, untyped nullable maps, invalid dotted stdout
+modules). These are retries around the whole pipeline, not passes inside it.
 
 **L0.** `_load_source_dict` calls `_read_document`, which keeps the document as written and, under
 `--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write, except beside `nullable: true`
@@ -60616,7 +60616,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | prepare | `__extract_inherited_enum` | field-less models with Enum bases | replaces the model by a new Enum with the same `Reference`, of the class of its first Enum base (`decide_enum_kind`) |
 | process | `__set_reference_default_value_to_field` | defaults of referenced models | field defaults |
 | process | `__reuse_model` | rendered model text and union tags of this module's models | replaces duplicates by empty subclasses (users in this module redirected) or removes them (Enums, `--collapse-reuse-models`: users in every module redirected) |
-| process | `__collapse_root_models` | root models referenced from this module (any module), circular paths from L4, the module of each inner model (found by identity in the live module lists) | inlines root types, merges constraints, calls `process_const()` again, redirects references to a root model's inner model and imports it where this module does not emit it, renames (the `parent` strategy names the inner model of any module after the root it replaces, decided at the root's first holder; from then on the root is no member of its module for `__change_from_import` and `__import_renamed_types`), marks unused roots |
+| process | `__collapse_root_models` | root models referenced from this module (any module), circular paths from L4, the module of each inner model (found by identity in the live module lists) | inlines root types, merges constraints, calls `process_const()` again, redirects references to a root model's inner model and imports it where this module does not emit it, renames (the `parent` strategy names the inner model of any module after the root it replaces, decided at the root's first holder; from then on the root is no member of its module for `__change_from_import` and `__import_renamed_types`), marks unused roots; inlining a root's tree under a data type that the tree reaches would make that data type contain itself, so collapse raises `_CollapseRootModelsRecursionError` before it and `_parse_generation` parses again with every circular root model kept named (a `RecursionError` in collapse takes the same retry and is a `MODEL_GRAPH` check violation) |
 | process | `__set_default_enum_member` | defaults vs Enum members | defaults |
 | process | `__sort_models` | `--keep-model-order` | model order |
 | process | `__change_field_name` | field names vs type names | field names, class names of referenced types (any module) |
@@ -61403,6 +61403,7 @@ measure performance outside pytest with the variables unset as well.
 | Area | Checks |
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
+| `MODEL_GRAPH` | collapsing root models never reaches the recursion limit: it stops before an inlining that would make a data type contain itself ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`) |
 
 A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
 a row to this table, and keeps tests that run it on and off.

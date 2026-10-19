@@ -282,6 +282,7 @@ measure performance outside pytest with the variables unset as well.
 | Area | Checks |
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
+| `MODEL_GRAPH` | collapsing root models never reaches the recursion limit: it stops before an inlining that would make a data type contain itself ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`) |
 
 A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
 a row to this table, and keeps tests that run it on and off.

@@ -12,7 +12,7 @@ import pytest
 from pydantic import BaseModel as PydanticBaseModel
 
 import datamodel_code_generator._internal_utils as internal_utils
-from datamodel_code_generator import AllOfMergeMode, _CollapseRootModelsRecursionError
+from datamodel_code_generator import AllOfMergeMode
 from datamodel_code_generator.enums import CollapseRootModelsNameStrategy
 from datamodel_code_generator.imports import Import, Imports
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -1992,33 +1992,6 @@ def test_root_dict_key_reference_paths_ignores_primitive_keys(parser_fixture: C)
     )
 
     assert not parser_fixture._Parser__root_dict_key_reference_paths(model)
-
-
-def test_process_module_models_wraps_root_collapse_recursion(
-    parser_fixture: C,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """An abnormal root-collapse recursion crosses the parser boundary as the retry sentinel."""
-    recursion_error = RecursionError("root collapse recursion")
-
-    def raise_recursion(*_: Any, **__: Any) -> None:
-        raise recursion_error
-
-    monkeypatch.setattr(Parser, "_Parser__collapse_root_models", raise_recursion)
-
-    with pytest.raises(_CollapseRootModelsRecursionError) as exc_info:
-        parser_fixture._Parser__process_module_models(
-            [],
-            unused_models=[],
-            imports=Imports(),
-            scoped_model_resolver=parser_fixture.model_resolver,
-            model_path_to_module_name={},
-            require_update_action_models=[],
-            use_deferred_annotations=False,
-            can_retain_cache=False,
-        )
-
-    assert isinstance(exc_info.value.__cause__, RecursionError)
 
 
 def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:

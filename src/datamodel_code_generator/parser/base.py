@@ -1144,6 +1144,13 @@ def _contains_model_reference(data_type: DataType) -> bool:
     return False
 
 
+def _reaches_data_type(data_type: DataType, target: DataType) -> bool:
+    """Return whether target is data_type or lies under it, through nested data types and dict keys."""
+    reached: set[int] = set()
+    data_type.walk(lambda _: None, reached)
+    return id(target) in reached
+
+
 def _needs_validate_default(data_type: DataType) -> bool:
     """Check if a field needs validate_default=True to coerce defaults into model instances."""
     resolved = _unwrap_type_alias(data_type)
@@ -5586,6 +5593,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     model_field.inherit_untaken_constraints(
                         root_type_field, whole_type=isinstance(field_, self.data_model_field_type)
                     )
+                    if isinstance(owner := data_type.parent, DataType) and _reaches_data_type(copied_data_type, owner):
+                        msg = (
+                            f"Inlining {root_type_model.class_name} into {model.class_name} would make a data type "
+                            "contain itself"
+                        )
+                        raise _CollapseRootModelsRecursionError(msg)
                     with replacement_context:
                         for d in copied_data_type.all_data_types:
                             _register_data_type_import(
@@ -8542,7 +8555,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 is_init=is_init,
                 internal_modules=internal_modules,
             )
+        except _CollapseRootModelsRecursionError:
+            raise
         except RecursionError as exc:
+            if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
+                mode.violation(
+                    Error, "collapsing root models reached the recursion limit instead of stopping at a cycle"
+                )
             raise _CollapseRootModelsRecursionError from exc
         self.__set_default_enum_member(models, can_retain_cache=can_retain_cache)
         self.__sort_models(models, imports, use_deferred_annotations=use_deferred_annotations)

@@ -61,6 +61,7 @@ from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import (
+    CHECK_MODEL_GRAPH_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -233,6 +234,57 @@ def test_collapse_root_models_retry_preserves_circular_schema_output(mocker: Moc
         f"{cast('str', result)}\n",
         EXPECTED_MAIN_PATH / "jsonschema" / "jsonschema_collapse_root_models_self_reference.py",
     )
+
+
+@pytest.mark.abnormal_path(
+    "only inputs whose inlined types nest deeper than the recursion limit reach it (a ring of ~500 root models): "
+    "too slow and stack-dependent for a stored-output test"
+)
+@pytest.mark.parametrize("flag", ["check", "report", "off", "off_every_parse"])
+def test_collapse_root_models_recursion_limit_is_a_model_graph_violation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """Retry a collapse that reaches the recursion limit, which the model graph check reports.
+
+    The check (`1`, as the test suite sets it) raises; `report:<path>` appends the violation to the file as a JSON line
+    and retries, as the check off (`0`) does. When the retry reaches the limit too, its RecursionError is the error.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    collapse = JsonSchemaParser._Parser__collapse_root_models
+    reached_limit = False
+
+    def collapse_past_the_recursion_limit(parser: JsonSchemaParser, *args: Any, **kwargs: Any) -> None:
+        nonlocal reached_limit
+        if not reached_limit or flag == "off_every_parse":
+            reached_limit = True
+            message = "collapse recursed too deep"
+            raise RecursionError(message)
+        collapse(parser, *args, **kwargs)
+
+    monkeypatch.setattr(JsonSchemaParser, "_Parser__collapse_root_models", collapse_past_the_recursion_limit)
+    report_path = tmp_path / "checks.jsonl"
+    check_values = {"check": "1", "report": f"report:{report_path}", "off": "0", "off_every_parse": "0"}
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, check_values[flag])
+    source = JSON_SCHEMA_DATA_PATH / "collapse_root_models_self_reference.json"
+    options: dict[str, Any] = {
+        "collapse_root_models": True,
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+    }
+    if flag == "check":
+        with pytest.raises(
+            Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: collapsing root models reached the recursion limit"
+        ):
+            generate(source, input_file_type=InputFileType.JsonSchema, **options)
+        return
+    if flag == "off_every_parse":
+        with pytest.raises(RecursionError, match=r"^collapse recursed too deep$"):
+            generate(source, input_file_type=InputFileType.JsonSchema, **options)
+        return
+    assert_output(cast("str", generate(source, input_file_type=InputFileType.JsonSchema, **options)))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
 def test_parser_collects_empty_model_metadata() -> None:

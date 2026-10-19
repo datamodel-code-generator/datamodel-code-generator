@@ -31,6 +31,9 @@ class CheckArea(Enum):
     SCHEMA_LOCATIONS = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
     """Every model parsed from a JSON document has a schema location at the end of L1."""
 
+    MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
+    """Collapsing root models never reaches the recursion limit: it stops before an inlining that closes a cycle."""
+
 
 @final
 @dataclass(frozen=True, slots=True)

@@ -17192,7 +17192,7 @@ def test_main_jsonschema_nullable_root_reuse_keeps_class_base(output_file: Path)
 
 
 def test_main_jsonschema_collapse_root_models_dict_key_self_reference_retries_once(output_file: Path) -> None:
-    """Keep fallback-only circular root models named, including property-name references."""
+    """Keep self-referencing root models named without a retry, including property-name references."""
     with warnings.catch_warnings(record=True) as warning_records:
         warnings.simplefilter("always", DanglingRefWarning)
         run_main_and_assert(
@@ -17212,7 +17212,7 @@ def test_main_jsonschema_collapse_root_models_dict_key_self_reference_retries_on
 
 
 def test_main_jsonschema_collapse_root_models_parse_warning_emitted_once(output_file: Path) -> None:
-    """Do not repeat raw-parse warnings when circular root collapsing retries."""
+    """Emit a raw-parse warning once when collapsing the root models of a self-referencing schema."""
     warning_message = "Boolean schemas are not supported in Draft 4"
     with warnings.catch_warnings(record=True) as warning_records:
         warnings.simplefilter("always", UserWarning)
@@ -17274,6 +17274,30 @@ def test_main_jsonschema_collapse_root_models_nested_cycle_and_empty(output_file
         assert_func=assert_file_content,
         extra_args=[
             "--collapse-root-models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_collapse_root_models_stops_before_a_data_type_cycle(output_file: Path) -> None:
+    """Keep circular root models named when inlining one would make a data type contain itself.
+
+    Inlining A and B into each other's lists would put a list inside itself, so collapsing stops before it and parses
+    again with every circular root model kept named. The test suite sets `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH=1`,
+    which fails the run if collapsing reaches the recursion limit instead.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_alias_cycle.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--collapse-root-models",
+            "--target-python-version",
+            "3.10",
             "--disable-timestamp",
             "--formatters",
             "builtin",
