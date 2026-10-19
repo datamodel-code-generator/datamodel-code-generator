@@ -306,6 +306,7 @@ ini_options.filterwarnings = [
   "ignore:^.*Default formatters will change to builtin.*:FutureWarning",
   "ignore:^.*Field name `name` is duplicated on Pet.*",
   "ignore:^.* has a required field after a field with a default.*:UserWarning",
+  "ignore:^.*one dict type cannot express this object, since it .*:UserWarning",
   "ignore:^.*format of 'unknown-type' not understood for 'string' - using default.*",
   "ignore:^.*is empty or not a dict. Skipping this file.*:UserWarning",
   """\

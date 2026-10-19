@@ -1,0 +1,74 @@
+{
+  "valid": {
+    "values": null,
+    "patterns": null,
+    "names": null,
+    "plain": null,
+    "valueItems": [
+      null,
+      {
+        "x": 1
+      }
+    ],
+    "patternItems": [
+      null,
+      {
+        "a1": 1
+      }
+    ],
+    "nameValues": {
+      "k": null,
+      "l": {
+        "a": 1
+      }
+    },
+    "plainValues": {
+      "k": null
+    },
+    "patternRoot": null,
+    "combined": {
+      "x": 1
+    },
+    "combinedItems": [
+      "s",
+      {
+        "x": 1
+      }
+    ],
+    "branchNullable": null,
+    "combinedRoot": {
+      "a1": 1
+    },
+    "trueBranch": null,
+    "refBranch": {
+      "x": 1
+    }
+  },
+  "invalid": [
+    {
+      "patternItems": [
+        {
+          "b": 1
+        }
+      ]
+    },
+    {
+      "values": {
+        "x": "s"
+      }
+    },
+    {
+      "combined": {
+        "x": "s"
+      }
+    },
+    {
+      "branchNullable": {
+        "x": "s"
+      }
+    },
+    {
+      "combinedRoot": "s"
+    }
+  ]
+}

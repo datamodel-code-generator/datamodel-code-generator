@@ -206,7 +206,7 @@ base_classes = "--input tests/data/jsonschema/schema_validators_property_count_r
 '__dict__.pop(_SCHEMA_RUNTIME_VALIDATION_MODULE_PLAN_CACHE_KEY)' = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/base_model.py"."_copy_alias_data_type"]
-data_types = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
+data_types = "--input tests/data/openapi/nullable_map_value_types.yaml --input-file-type openapi --output-model-type pydantic_v2.dataclass --openapi-scopes schemas api --use-typed-nullable-map-values --disable-timestamp --formatters builtin"
 dict_key = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
 kwargs = "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias --use-annotated"
 

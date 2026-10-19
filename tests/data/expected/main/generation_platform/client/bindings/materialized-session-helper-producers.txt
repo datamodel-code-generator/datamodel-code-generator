@@ -1,16 +1,21 @@
 # materialized-session-helper-producers
 render pydantic_v2.BaseModel default
+  warning UserWarning: session-helper-producers.json#/components/schemas/Values/properties/pattern: one dict type cannot express this object, since it allows keys that match no pattern; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.
   models.py
   model_bindings.py pydantic_v2_BaseModel/default
 render pydantic_v2.dataclass default
+  warning UserWarning: session-helper-producers.json#/components/schemas/Values/properties/pattern: one dict type cannot express this object, since it allows keys that match no pattern; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.
   models.py
   model_bindings.py pydantic_v2_dataclass/default
 render dataclasses.dataclass default
+  warning UserWarning: session-helper-producers.json#/components/schemas/Values/properties/pattern: one dict type cannot express this object, since it allows keys that match no pattern; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.
   models.py
   model_bindings.py dataclasses_dataclass/default
 render typing.TypedDict default
+  warning UserWarning: session-helper-producers.json#/components/schemas/Values/properties/pattern: one dict type cannot express this object, since it allows keys that match no pattern; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.
   models.py
   model_bindings.py typing_TypedDict/default
 render msgspec.Struct default
+  warning UserWarning: session-helper-producers.json#/components/schemas/Values/properties/pattern: one dict type cannot express this object, since it allows keys that match no pattern; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.
   models.py
   model_bindings.py msgspec_Struct/default

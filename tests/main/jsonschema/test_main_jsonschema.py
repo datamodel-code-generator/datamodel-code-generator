@@ -29643,30 +29643,39 @@ def test_type_union_constraints(name: str, constraints: bool, entry: str, output
     input_path = TYPE_UNION_INPUTS / f"{name}.json"
     expected_file = TYPE_UNION_CASES[name].get(f"{name}_{int(constraints)}.py", f"{name}_{int(constraints)}.py")
     expected_file = f"type_union_constraints/{expected_file}"
-    if entry == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="jsonschema",
-            extra_args=[
-                "--custom-file-header",
-                "# Type-specific union constraints",
-                *(["--field-constraints"] if constraints else []),
-            ],
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-        )
-    elif entry == "api":
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.JsonSchema,
-            custom_file_header="# Type-specific union constraints",
-            field_constraints=constraints,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-        )
     schema = json.loads(input_path.read_text())
+    with (
+        pytest.warns(UserWarning, match="is generated without this constraint")
+        if not constraints and TYPE_UNION_CASES[name].get("dropped_property_counts")
+        else nullcontext()
+    ):
+        if entry == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="jsonschema",
+                extra_args=[
+                    "--custom-file-header",
+                    "# Type-specific union constraints",
+                    *(["--field-constraints"] if constraints else []),
+                ],
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+            )
+        elif entry == "api":
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.JsonSchema,
+                custom_file_header="# Type-specific union constraints",
+                field_constraints=constraints,
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+            )
+        else:
+            dynamic_model = generate_dynamic_models(
+                schema, config=GenerateConfig(field_constraints=constraints), cache_size=0
+            )["Root"]
     Draft202012Validator.check_schema(schema)
     validator = Draft202012Validator(schema)
     payloads = json.loads((TYPE_UNION_PAYLOADS / TYPE_UNION_CASES[name].get("payload", f"{name}.json")).read_text())
@@ -29677,9 +29686,7 @@ def test_type_union_constraints(name: str, constraints: bool, entry: str, output
     runtime_name = f"{name}_native.txt" if constraints else f"{name}_0_runtime.txt"
     runtime_path = TYPE_UNION_EXPECTED / TYPE_UNION_CASES[name].get(runtime_name, runtime_name)
     context = (
-        nullcontext(
-            generate_dynamic_models(schema, config=GenerateConfig(field_constraints=constraints), cache_size=0)["Root"]
-        )
+        nullcontext(dynamic_model)
         if entry == "dynamic"
         else _generated_model(output_file, "type_union_constraints", "Root")
     )
@@ -29772,33 +29779,38 @@ def test_type_union_pattern_properties(output_file: Path, entrypoint: str, *, sc
     """Retain pattern value types and scalar alternatives through existing object parsing."""
     source = TYPE_UNION_INPUTS / "pattern_properties.json"
     expected = f"type_union_constraints/pattern_properties_{int(schema_validators)}.py"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=source,
-            output_path=output_file,
-            input_file_type="jsonschema",
-            extra_args=[
-                "--disable-timestamp",
-                "--field-constraints",
-                "--formatters",
-                "builtin",
-                *(["--generate-schema-validators"] if schema_validators else []),
-            ],
-            assert_func=assert_file_content,
-            expected_file=expected,
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=source,
-            output_path=output_file,
-            input_file_type=InputFileType.JsonSchema,
-            disable_timestamp=True,
-            field_constraints=True,
-            generate_schema_validators=schema_validators,
-            formatters=[Formatter.BUILTIN],
-            assert_func=assert_file_content,
-            expected_file=expected,
-        )
+    with (
+        nullcontext()
+        if schema_validators
+        else pytest.warns(UserWarning, match=r"min_length on .*; Root\.value is generated without this constraint")
+    ):
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=source,
+                output_path=output_file,
+                input_file_type="jsonschema",
+                extra_args=[
+                    "--disable-timestamp",
+                    "--field-constraints",
+                    "--formatters",
+                    "builtin",
+                    *(["--generate-schema-validators"] if schema_validators else []),
+                ],
+                assert_func=assert_file_content,
+                expected_file=expected,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=source,
+                output_path=output_file,
+                input_file_type=InputFileType.JsonSchema,
+                disable_timestamp=True,
+                field_constraints=True,
+                generate_schema_validators=schema_validators,
+                formatters=[Formatter.BUILTIN],
+                assert_func=assert_file_content,
+                expected_file=expected,
+            )
     payload = json.loads((TYPE_UNION_PAYLOADS / "pattern_properties.json").read_text())
     native = Draft202012Validator(json.loads(source.read_text()))
     for valid in payload["valid"]:

@@ -1,0 +1,6 @@
+valid: accepted
+invalid patternItems: accepted
+invalid values: rejected (int_parsing)
+invalid combined: rejected (string_type)
+invalid branchNullable: rejected (string_type)
+invalid combinedRoot: rejected (int_parsing)

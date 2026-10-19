@@ -24,6 +24,6 @@ class Root(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    value: (
-        dict[constr(pattern=r'^x'), Value] | dict[constr(pattern=r'x$'), Value1] | None
-    ) = Field(None, title='Root')
+    value: dict[constr(pattern=r'^x|x$'), Value | Value1] | None = Field(
+        None, title='Root'
+    )

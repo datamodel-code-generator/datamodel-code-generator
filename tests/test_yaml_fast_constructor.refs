@@ -312,6 +312,7 @@ openapi/nullable_map_value_reuse_component.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_reuse_modules.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_stdout.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_types.yaml	yaml_fast_constructor/parity.txt
+openapi/nullable_object_maps.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_required_annotated.yaml	yaml_fast_constructor/parity.txt
 openapi/oas_response_reference.yaml	yaml_fast_constructor/parity.txt
 openapi/oneof.yaml	yaml_fast_constructor/parity.txt

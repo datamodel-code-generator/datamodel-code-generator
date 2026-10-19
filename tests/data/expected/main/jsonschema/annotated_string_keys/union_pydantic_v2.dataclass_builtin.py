@@ -11,7 +11,4 @@ from pydantic.dataclasses import dataclass
 
 @dataclass
 class SomeSpec:
-    services: (
-        dict[Annotated[str, StringConstraints(pattern=r'^s_')], str]
-        | dict[Annotated[str, StringConstraints(pattern=r'^i_')], int]
-    )
+    services: dict[Annotated[str, StringConstraints(pattern=r'^s_|^i_')], str | int]

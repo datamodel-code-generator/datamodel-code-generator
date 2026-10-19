@@ -9,7 +9,5 @@ from typing import Any
 from pydantic import RootModel, constr
 
 
-class Model(
-    RootModel[dict[constr(pattern=r'^x-'), Any] | dict[constr(pattern=r'^name'), str]]
-):
-    root: dict[constr(pattern=r'^x-'), Any] | dict[constr(pattern=r'^name'), str]
+class Model(RootModel[dict[constr(pattern=r'^x-|^name'), Any]]):
+    root: dict[constr(pattern=r'^x-|^name'), Any]

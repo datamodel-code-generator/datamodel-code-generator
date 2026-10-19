@@ -2,7 +2,7 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_additional_pattern_intersections]
 builtin-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py
-builtin-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+builtin-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 builtin-api-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 builtin-api-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 builtin-api-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -70,7 +70,7 @@ builtin-api-False-True-prefix_suffix_custom	main/jsonschema/additional_pattern_i
 builtin-api-False-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_builtin.py
 builtin-api-False-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_runtime.txt
 builtin-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py
-builtin-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+builtin-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 builtin-api-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 builtin-api-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 builtin-api-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -138,7 +138,7 @@ builtin-api-True-True-prefix_suffix_custom	main/jsonschema/additional_pattern_in
 builtin-api-True-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_builtin.py
 builtin-api-True-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_runtime.txt
 builtin-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py
-builtin-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+builtin-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 builtin-cli-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 builtin-cli-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 builtin-cli-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -206,7 +206,7 @@ builtin-cli-False-True-prefix_suffix_custom	main/jsonschema/additional_pattern_i
 builtin-cli-False-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_builtin.py
 builtin-cli-False-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_runtime.txt
 builtin-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py
-builtin-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+builtin-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 builtin-cli-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 builtin-cli-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 builtin-cli-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -275,7 +275,7 @@ builtin-cli-True-True-suffix_prefix	main/jsonschema/additional_pattern_intersect
 builtin-cli-True-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_runtime.txt
 external-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py	?
 external-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin_black23.py	?
-external-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+external-api-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 external-api-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-api-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-api-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -355,7 +355,7 @@ external-api-False-True-suffix_prefix	main/jsonschema/additional_pattern_interse
 external-api-False-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_runtime.txt
 external-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py	?
 external-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin_black23.py	?
-external-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+external-api-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 external-api-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-api-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-api-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -435,7 +435,7 @@ external-api-True-True-suffix_prefix	main/jsonschema/additional_pattern_intersec
 external-api-True-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_runtime.txt
 external-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py	?
 external-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin_black23.py	?
-external-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+external-cli-False-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 external-cli-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-cli-False-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-cli-False-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -515,7 +515,7 @@ external-cli-False-True-suffix_prefix	main/jsonschema/additional_pattern_interse
 external-cli-False-True-suffix_prefix	main/jsonschema/additional_pattern_intersections/suffix_prefix_True_False_runtime.txt
 external-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin.py	?
 external-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_builtin_black23.py	?
-external-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt
+external-cli-True-False-anchored_disjoint	main/jsonschema/additional_pattern_intersections/anchored_disjoint_False_False_runtime.txt	= main/jsonschema/additional_pattern_intersections/anchored_disjoint_True_False_runtime.txt
 external-cli-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_builtin.py
 external-cli-True-False-boolean	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
 external-cli-True-False-boolean_custom	main/jsonschema/additional_pattern_intersections/boolean_False_False_runtime.txt
@@ -10767,7 +10767,7 @@ builtin-api-False-boolean_declared_schema	main/jsonschema/pattern_intersections/
 builtin-api-False-boolean_declared_schema	main/jsonschema/pattern_intersections/boolean_declared_schema_disabled_runtime.txt
 builtin-api-False-closed_objects	main/jsonschema/pattern_intersections/closed_objects_disabled.py
 builtin-api-False-closed_objects	main/jsonschema/pattern_intersections/closed_objects_disabled_runtime.txt
-builtin-api-False-complex	main/jsonschema/pattern_intersections/complex_disabled_builtin.py
+builtin-api-False-complex	main/jsonschema/pattern_intersections/complex_disabled_builtin.py	= main/jsonschema/pattern_intersections/complex_disabled.py
 builtin-api-False-complex	main/jsonschema/pattern_intersections/complex_disabled_runtime.txt
 builtin-api-False-constrained_objects	main/jsonschema/pattern_intersections/constrained_objects_disabled.py
 builtin-api-False-constrained_objects	main/jsonschema/pattern_intersections/constrained_objects_disabled_runtime.txt
@@ -10895,7 +10895,7 @@ builtin-cli-False-boolean_declared_schema	main/jsonschema/pattern_intersections/
 builtin-cli-False-boolean_declared_schema	main/jsonschema/pattern_intersections/boolean_declared_schema_disabled_runtime.txt
 builtin-cli-False-closed_objects	main/jsonschema/pattern_intersections/closed_objects_disabled.py
 builtin-cli-False-closed_objects	main/jsonschema/pattern_intersections/closed_objects_disabled_runtime.txt
-builtin-cli-False-complex	main/jsonschema/pattern_intersections/complex_disabled_builtin.py
+builtin-cli-False-complex	main/jsonschema/pattern_intersections/complex_disabled_builtin.py	= main/jsonschema/pattern_intersections/complex_disabled.py
 builtin-cli-False-complex	main/jsonschema/pattern_intersections/complex_disabled_runtime.txt
 builtin-cli-False-constrained_objects	main/jsonschema/pattern_intersections/constrained_objects_disabled.py
 builtin-cli-False-constrained_objects	main/jsonschema/pattern_intersections/constrained_objects_disabled_runtime.txt
@@ -12625,16 +12625,16 @@ api-False-both_root	main/jsonschema/type_union_constraints/both_root_native.txt
 api-False-enum_field	main/jsonschema/type_union_constraints/enum_field_0.py
 api-False-enum_field	main/jsonschema/type_union_constraints/enum_field_native.txt
 api-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0.py
-api-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0_runtime.txt
+api-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_count_root_0_runtime.txt
 api-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_root_native.txt
 api-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_0.py
 api-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_0_runtime.txt
 api-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_native.txt
 api-False-keys_field	main/jsonschema/type_union_constraints/keys_field_0.py
-api-False-keys_field	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt
+api-False-keys_field	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_root_native.txt
 api-False-keys_field	main/jsonschema/type_union_constraints/keys_root_native.txt
 api-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0.py
-api-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt
+api-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_root_native.txt
 api-False-keys_root	main/jsonschema/type_union_constraints/keys_root_native.txt
 api-False-modeled_field	main/jsonschema/type_union_constraints/modeled_field_0.py
 api-False-modeled_field	main/jsonschema/type_union_constraints/modeled_root_0_runtime.txt	= main/jsonschema/compound_property_names/boolean_true_runtime.txt
@@ -12799,16 +12799,16 @@ cli-False-both_root	main/jsonschema/type_union_constraints/both_root_native.txt
 cli-False-enum_field	main/jsonschema/type_union_constraints/enum_field_0.py
 cli-False-enum_field	main/jsonschema/type_union_constraints/enum_field_native.txt
 cli-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0.py
-cli-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0_runtime.txt
+cli-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_count_root_0_runtime.txt
 cli-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_root_native.txt
 cli-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_0.py
 cli-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_0_runtime.txt
 cli-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_native.txt
 cli-False-keys_field	main/jsonschema/type_union_constraints/keys_field_0.py
-cli-False-keys_field	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt
+cli-False-keys_field	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_root_native.txt
 cli-False-keys_field	main/jsonschema/type_union_constraints/keys_root_native.txt
 cli-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0.py
-cli-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt
+cli-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_root_native.txt
 cli-False-keys_root	main/jsonschema/type_union_constraints/keys_root_native.txt
 cli-False-modeled_field	main/jsonschema/type_union_constraints/modeled_field_0.py
 cli-False-modeled_field	main/jsonschema/type_union_constraints/modeled_root_0_runtime.txt	= main/jsonschema/compound_property_names/boolean_true_runtime.txt
@@ -12965,13 +12965,13 @@ dynamic-False-array_minimum_root	main/jsonschema/type_union_constraints/modeled_
 dynamic-False-both_field	main/jsonschema/type_union_constraints/both_root_native.txt
 dynamic-False-both_root	main/jsonschema/type_union_constraints/both_root_native.txt
 dynamic-False-enum_field	main/jsonschema/type_union_constraints/enum_field_native.txt
-dynamic-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0_runtime.txt
+dynamic-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_field_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_count_root_0_runtime.txt
 dynamic-False-keys_count_field	main/jsonschema/type_union_constraints/keys_count_root_native.txt
 dynamic-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_0_runtime.txt
 dynamic-False-keys_count_root	main/jsonschema/type_union_constraints/keys_count_root_native.txt
-dynamic-False-keys_field	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt
+dynamic-False-keys_field	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_root_native.txt
 dynamic-False-keys_field	main/jsonschema/type_union_constraints/keys_root_native.txt
-dynamic-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt
+dynamic-False-keys_root	main/jsonschema/type_union_constraints/keys_root_0_runtime.txt	= main/jsonschema/type_union_constraints/keys_root_native.txt
 dynamic-False-keys_root	main/jsonschema/type_union_constraints/keys_root_native.txt
 dynamic-False-modeled_field	main/jsonschema/type_union_constraints/modeled_root_0_runtime.txt	= main/jsonschema/compound_property_names/boolean_true_runtime.txt
 dynamic-False-modeled_field	main/jsonschema/type_union_constraints/modeled_root_native.txt
@@ -13193,7 +13193,7 @@ external-api-False-objects	main/jsonschema/undeclared_required/objects_False_bui
 external-api-False-objects	main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-api-False-open	main/jsonschema/undeclared_required/custom_open_False_runtime.txt
 external-api-False-open	main/jsonschema/undeclared_required/open_False_builtin.py	= main/jsonschema/undeclared_required/optional_open_False_builtin.py
-external-api-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_external.py	?
+external-api-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_external.py	?	= main/jsonschema/undeclared_required/optional_objects_False_builtin.py
 external-api-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_external_black23.py	?
 external-api-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_runtime.txt	= main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-api-False-optional_open	main/jsonschema/undeclared_required/custom_open_False_runtime.txt
@@ -13255,7 +13255,7 @@ external-cli-False-objects	main/jsonschema/undeclared_required/objects_False_bui
 external-cli-False-objects	main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-cli-False-open	main/jsonschema/undeclared_required/custom_open_False_runtime.txt
 external-cli-False-open	main/jsonschema/undeclared_required/open_False_builtin.py	= main/jsonschema/undeclared_required/optional_open_False_builtin.py
-external-cli-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_external.py	?
+external-cli-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_external.py	?	= main/jsonschema/undeclared_required/optional_objects_False_builtin.py
 external-cli-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_external_black23.py	?
 external-cli-False-optional_objects	main/jsonschema/undeclared_required/optional_objects_False_runtime.txt	= main/jsonschema/undeclared_required/objects_False_runtime.txt
 external-cli-False-optional_open	main/jsonschema/undeclared_required/custom_open_False_runtime.txt

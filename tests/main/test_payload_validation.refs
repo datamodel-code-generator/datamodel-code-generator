@@ -1389,6 +1389,8 @@ openapi/nullable_map_value_types.yaml::components.schemas.Rounds	payloads/native
 openapi/nullable_map_value_types.yaml::components.schemas.Scores	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_types.yaml::components.schemas.Seasons	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_types.yaml::paths./scores.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_object_maps.yaml::components.schemas.IntegerMap	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_object_maps.yaml::components.schemas.TrueBranch	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_required_annotated.yaml::components.schemas.Person	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oas_response_reference.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oas_response_reference.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2950,6 +2952,8 @@ openapi/nullable_map_value_types.yaml::components.schemas.Rounds	payloads/native
 openapi/nullable_map_value_types.yaml::components.schemas.Scores	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_types.yaml::components.schemas.Seasons	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_map_value_types.yaml::paths./scores.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_object_maps.yaml::components.schemas.IntegerMap	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/nullable_object_maps.yaml::components.schemas.TrueBranch	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/nullable_required_annotated.yaml::components.schemas.Person	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oas_response_reference.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/oas_response_reference.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

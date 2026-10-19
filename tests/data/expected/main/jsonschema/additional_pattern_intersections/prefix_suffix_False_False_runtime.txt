@@ -60,7 +60,21 @@
   },
   {
     "native": true,
-    "json": "rejected",
-    "python": "rejected"
+    "json": {
+      "x": {
+        "a": 1
+      },
+      "y": {
+        "b": 2
+      }
+    },
+    "python": {
+      "x": {
+        "a": 1
+      },
+      "y": {
+        "b": 2
+      }
+    }
   }
 ]

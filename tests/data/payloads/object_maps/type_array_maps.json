@@ -1,0 +1,59 @@
+{
+  "valid": {
+    "pStringOrPatterns": "s",
+    "rStringOrPatterns": "s",
+    "iStringOrPatterns": [
+      "s",
+      {
+        "x1": 1
+      }
+    ],
+    "mStringOrPatterns": {
+      "k": "s"
+    },
+    "pStringOrNames": "s",
+    "rStringOrNames": "s",
+    "iStringOrNames": [
+      "s",
+      null,
+      {
+        "a": 1
+      }
+    ],
+    "mStringOrNames": {
+      "k": "s"
+    },
+    "pArrayOrNamesCount": [
+      1
+    ],
+    "rArrayOrNamesCount": [
+      1
+    ],
+    "iArrayOrNamesCount": [
+      [
+        1
+      ],
+      null,
+      {
+        "a": 1
+      }
+    ],
+    "mArrayOrNamesCount": {
+      "k": [
+        1
+      ]
+    }
+  },
+  "invalid": [
+    {
+      "pStringOrPatterns": {
+        "x1": "s"
+      }
+    },
+    {
+      "rStringOrNames": {
+        "b": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+valid: accepted
+invalid pNullableCount: rejected (too_short)
+invalid rNullableCount: rejected (too_long)
+invalid pNullableOpenCount: rejected (too_short)
+invalid rPatternCount: rejected (too_short)

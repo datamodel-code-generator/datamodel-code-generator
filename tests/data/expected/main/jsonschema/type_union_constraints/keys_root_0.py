@@ -7,5 +7,5 @@ from typing import Any
 from pydantic import Field, RootModel, constr
 
 
-class Root(RootModel[dict[constr(pattern=r'^a'), Any]]):
-    root: dict[constr(pattern=r'^a'), Any] = Field(..., title='Root')
+class Root(RootModel[dict[constr(pattern=r'^a'), Any] | list[Any]]):
+    root: dict[constr(pattern=r'^a'), Any] | list[Any] = Field(..., title='Root')

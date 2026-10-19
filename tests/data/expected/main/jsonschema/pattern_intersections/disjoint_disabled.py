@@ -20,9 +20,5 @@ class Root2(BaseModel):
     b: int
 
 
-class Root(
-    RootModel[dict[constr(pattern=r'^a'), Root1] | dict[constr(pattern=r'^b'), Root2]]
-):
-    root: dict[constr(pattern=r'^a'), Root1] | dict[constr(pattern=r'^b'), Root2] = (
-        Field(..., title='Root')
-    )
+class Root(RootModel[dict[constr(pattern=r'^a|^b'), Root1 | Root2]]):
+    root: dict[constr(pattern=r'^a|^b'), Root1 | Root2] = Field(..., title='Root')

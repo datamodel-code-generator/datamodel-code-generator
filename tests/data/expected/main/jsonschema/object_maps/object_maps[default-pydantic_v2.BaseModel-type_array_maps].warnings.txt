@@ -1,0 +1,2 @@
+Pydantic does not take min_length on dict[constr(pattern=r'^a'), Any] | list[Any] | None; ArrayOrNamesCount is generated without this constraint.
+Pydantic does not take min_length on dict[constr(pattern=r'^a'), Any] | list[Any] | None; Model.pArrayOrNamesCount is generated without this constraint.

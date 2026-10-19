@@ -63,9 +63,12 @@
     "keys_field_native.txt": "keys_root_native.txt",
     "keys_field_0_runtime.txt": "keys_root_0_runtime.txt"
   },
-  "keys_count_root": {},
+  "keys_count_root": {
+    "dropped_property_counts": true
+  },
   "keys_count_field": {
-    "keys_count_field_native.txt": "keys_count_root_native.txt"
+    "keys_count_field_native.txt": "keys_count_root_native.txt",
+    "dropped_property_counts": true
   },
   "nullable_only_root": {
     "nullable_only_root_0_runtime.txt": "nullable_only_root_native.txt"

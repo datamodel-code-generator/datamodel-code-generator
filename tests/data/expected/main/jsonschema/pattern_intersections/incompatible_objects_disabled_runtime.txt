@@ -17,6 +17,13 @@
   },
   {
     "schema_valid": true,
-    "generated": "rejected"
+    "generated": {
+      "xa": {
+        "a": 1
+      },
+      "ax": {
+        "a": "a"
+      }
+    }
   }
 ]

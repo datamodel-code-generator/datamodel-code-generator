@@ -1,0 +1,526 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pClosedOne": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rClosedOne": {
+      "$ref": "#/$defs/ClosedOne"
+    },
+    "pClosedSame": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rClosedSame": {
+      "$ref": "#/$defs/ClosedSame"
+    },
+    "pClosedTwo": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rClosedTwo": {
+      "$ref": "#/$defs/ClosedTwo"
+    },
+    "pOpenTwo": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "string"
+        }
+      }
+    },
+    "rOpenTwo": {
+      "$ref": "#/$defs/OpenTwo"
+    },
+    "pOverlap": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "b$": {
+          "type": "integer",
+          "maximum": 9
+        }
+      },
+      "additionalProperties": false
+    },
+    "rOverlap": {
+      "$ref": "#/$defs/Overlap"
+    },
+    "pAnyMember": {
+      "type": "object",
+      "patternProperties": {
+        "^a": true,
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rAnyMember": {
+      "$ref": "#/$defs/AnyMember"
+    },
+    "pAnnotatedSame": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer",
+          "description": "An a count."
+        },
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rAnnotatedSame": {
+      "$ref": "#/$defs/AnnotatedSame"
+    },
+    "pTrueEmpty": {
+      "type": "object",
+      "patternProperties": {
+        "^a": true,
+        "^b": {}
+      },
+      "additionalProperties": false
+    },
+    "rTrueEmpty": {
+      "$ref": "#/$defs/TrueEmpty"
+    },
+    "pNamesTwo": {
+      "type": "object",
+      "propertyNames": {
+        "maxLength": 3
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rNamesTwo": {
+      "$ref": "#/$defs/NamesTwo"
+    },
+    "iClosedOne": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mClosedOne": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iClosedSame": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mClosedSame": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iClosedTwo": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mClosedTwo": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iOpenTwo": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "mOpenTwo": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "iOverlap": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "b$": {
+            "type": "integer",
+            "maximum": 9
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mOverlap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "b$": {
+            "type": "integer",
+            "maximum": 9
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iAnyMember": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": true,
+          "^b": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mAnyMember": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": true,
+          "^b": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iAnnotatedSame": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer",
+            "description": "An a count."
+          },
+          "^b": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mAnnotatedSame": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer",
+            "description": "An a count."
+          },
+          "^b": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iTrueEmpty": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": true,
+          "^b": {}
+        },
+        "additionalProperties": false
+      }
+    },
+    "mTrueEmpty": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": true,
+          "^b": {}
+        },
+        "additionalProperties": false
+      }
+    },
+    "iNamesTwo": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {
+          "maxLength": 3
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mNamesTwo": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "maxLength": 3
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          },
+          "^b": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "pClosedOne",
+    "rClosedOne",
+    "pClosedSame",
+    "rClosedSame",
+    "pClosedTwo",
+    "rClosedTwo",
+    "pOpenTwo",
+    "rOpenTwo",
+    "pOverlap",
+    "rOverlap",
+    "pAnyMember",
+    "rAnyMember",
+    "pAnnotatedSame",
+    "rAnnotatedSame",
+    "pTrueEmpty",
+    "rTrueEmpty",
+    "pNamesTwo",
+    "rNamesTwo"
+  ],
+  "$defs": {
+    "ClosedOne": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ClosedSame": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ClosedTwo": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OpenTwo": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "string"
+        }
+      }
+    },
+    "Overlap": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "b$": {
+          "type": "integer",
+          "maximum": 9
+        }
+      },
+      "additionalProperties": false
+    },
+    "AnyMember": {
+      "type": "object",
+      "patternProperties": {
+        "^a": true,
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AnnotatedSame": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer",
+          "description": "An a count."
+        },
+        "^b": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TrueEmpty": {
+      "type": "object",
+      "patternProperties": {
+        "^a": true,
+        "^b": {}
+      },
+      "additionalProperties": false
+    },
+    "NamesTwo": {
+      "type": "object",
+      "propertyNames": {
+        "maxLength": 3
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        },
+        "^b": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pStringOrPatterns": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rStringOrPatterns": {
+      "$ref": "#/$defs/StringOrPatterns"
+    },
+    "pStringOrNames": {
+      "type": [
+        "object",
+        "string",
+        "null"
+      ],
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "rStringOrNames": {
+      "$ref": "#/$defs/StringOrNames"
+    },
+    "pArrayOrNamesCount": {
+      "type": [
+        "object",
+        "array",
+        "null"
+      ],
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "minProperties": 1
+    },
+    "rArrayOrNamesCount": {
+      "$ref": "#/$defs/ArrayOrNamesCount"
+    },
+    "iStringOrPatterns": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "string"
+        ],
+        "patternProperties": {
+          "^x": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mStringOrPatterns": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "string"
+        ],
+        "patternProperties": {
+          "^x": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iStringOrNames": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "string",
+          "null"
+        ],
+        "propertyNames": {
+          "pattern": "^a"
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "mStringOrNames": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "string",
+          "null"
+        ],
+        "propertyNames": {
+          "pattern": "^a"
+        },
+        "additionalProperties": {
+          "type": "integer"
+        }
+      }
+    },
+    "iArrayOrNamesCount": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "array",
+          "null"
+        ],
+        "propertyNames": {
+          "pattern": "^a"
+        },
+        "minProperties": 1
+      }
+    },
+    "mArrayOrNamesCount": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "array",
+          "null"
+        ],
+        "propertyNames": {
+          "pattern": "^a"
+        },
+        "minProperties": 1
+      }
+    }
+  },
+  "required": [
+    "pStringOrPatterns",
+    "rStringOrPatterns",
+    "pStringOrNames",
+    "rStringOrNames",
+    "pArrayOrNamesCount",
+    "rArrayOrNamesCount"
+  ],
+  "$defs": {
+    "StringOrPatterns": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "patternProperties": {
+        "^x": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StringOrNames": {
+      "type": [
+        "object",
+        "string",
+        "null"
+      ],
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "ArrayOrNamesCount": {
+      "type": [
+        "object",
+        "array",
+        "null"
+      ],
+      "propertyNames": {
+        "pattern": "^a"
+      },
+      "minProperties": 1
+    }
+  }
+}

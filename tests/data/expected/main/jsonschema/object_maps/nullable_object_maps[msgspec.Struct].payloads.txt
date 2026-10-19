@@ -1,0 +1,6 @@
+valid: accepted
+invalid patternItems: accepted
+invalid values: rejected
+invalid combined: rejected
+invalid branchNullable: rejected
+invalid combinedRoot: rejected

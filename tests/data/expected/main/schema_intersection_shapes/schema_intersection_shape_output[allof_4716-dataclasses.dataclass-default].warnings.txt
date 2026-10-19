@@ -1,0 +1,1 @@
+allof_4716.json#/properties/pp: one dict type cannot express this object, since it allows keys that match no pattern and gives the keys of its patterns different value schemas; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.

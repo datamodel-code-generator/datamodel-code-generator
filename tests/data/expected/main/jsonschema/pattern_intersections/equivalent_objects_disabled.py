@@ -13,9 +13,5 @@ class Root1(BaseModel):
     a: int
 
 
-class Root(
-    RootModel[dict[constr(pattern=r'^x'), Root1] | dict[constr(pattern=r'x$'), Root1]]
-):
-    root: dict[constr(pattern=r'^x'), Root1] | dict[constr(pattern=r'x$'), Root1] = (
-        Field(..., title='Root')
-    )
+class Root(RootModel[dict[constr(pattern=r'^x|x$'), Root1]]):
+    root: dict[constr(pattern=r'^x|x$'), Root1] = Field(..., title='Root')
