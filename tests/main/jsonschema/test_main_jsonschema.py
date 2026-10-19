@@ -13185,7 +13185,9 @@ def test_main_jsonschema_prefix_items_unique_items(output_model: str, extra_args
         )
     assert_output(
         "".join(
-            f"{warning.message}\n" for warning in recorded_warnings if "is generated without" in str(warning.message)
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recorded_warnings)
+            if "is generated without" in message
         ),
         name="warnings",
     )
@@ -29715,6 +29717,7 @@ def test_type_union_constraints(name: str, constraints: bool, entry: str, output
     expected_file = TYPE_UNION_CASES[name].get(f"{name}_{int(constraints)}.py", f"{name}_{int(constraints)}.py")
     expected_file = f"type_union_constraints/{expected_file}"
     schema = json.loads(input_path.read_text())
+    dynamic_model: Any = None
     with (
         pytest.warns(UserWarning, match="is generated without this constraint")
         if not constraints and TYPE_UNION_CASES[name].get("dropped_property_counts")

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import TYPE_CHECKING, Any
 
 import msgspec
@@ -30,7 +31,12 @@ OUTPUT_MODEL_TYPES = (
     "pydantic_v2.BaseModel",
     "pydantic_v2.dataclass",
     "dataclasses.dataclass",
-    "typing.TypedDict",
+    pytest.param(
+        "typing.TypedDict",
+        marks=pytest.mark.skipif(
+            sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
+        ),
+    ),
     "msgspec.Struct",
 )
 OPTION_SETS = {

@@ -2719,6 +2719,8 @@ def test_import_overrides_on_a_target_without_shared_imports(output_file: Path) 
             "3.14",
             "--import-overrides",
             '{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}',
+            "--formatters",
+            "builtin",
         ],
         skip_code_validation=True,
     )

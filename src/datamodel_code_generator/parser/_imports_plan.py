@@ -44,7 +44,7 @@ from typing_extensions import final
 from datamodel_code_generator.imports import Import, Imports
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Iterator, Mapping
+    from collections.abc import Collection, Generator, Iterable, Iterator, Mapping
 
     from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
 
@@ -392,7 +392,7 @@ class ModuleImportLedger:
         return future
 
     @contextmanager
-    def external(self, imports: Imports, producer: ImportProducer) -> Iterator[None]:
+    def external(self, imports: Imports, producer: ImportProducer) -> Generator[None, None, None]:
         """Record what code the block hands the live imports to changes in them, as removals, additions and aliases."""
         before = _KeyState.of(imports)
         try:
