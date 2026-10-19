@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional  # noqa: UP035
 
 from pydantic import BaseModel as _BaseModel
 from pydantic import ConfigDict as _PydanticConfigDict
+from typing_extensions import override
 
 from datamodel_code_generator.enums import UnionMode
 from datamodel_code_generator.model.base import declare_resolve_reference_action_capabilities
@@ -58,6 +59,7 @@ class ConfigDict(_BaseModel):
     use_attribute_docstrings: Optional[bool] = None  # noqa: UP045
     json_schema_extra: Optional[Dict[str, Any]] = None  # noqa: UP006, UP045
 
+    @override
     def dict(self, **kwargs: Any) -> dict[str, Any]:  # ty: ignore[invalid-type-form]
         """Return dict for templates."""
         return self.model_dump(**kwargs)

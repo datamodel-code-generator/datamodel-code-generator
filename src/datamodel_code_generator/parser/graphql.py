@@ -14,7 +14,7 @@ from typing import (
     cast,
 )
 
-from typing_extensions import Unpack
+from typing_extensions import Unpack, override
 
 from datamodel_code_generator import (
     InputFileType,
@@ -22,6 +22,7 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
 from datamodel_code_generator.model.enum import SUBCLASS_BASE_CLASSES, EnumMemberValue, _enum_class
@@ -88,6 +89,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
     raw_obj: graphql.GraphQLSchema
 
     @cached_property
+    @override
     def schema_features(self) -> JsonSchemaFeatures:
         """Get schema features for GraphQL (uses default JSON Schema features)."""
         from datamodel_code_generator.enums import JsonSchemaVersion  # noqa: PLC0415
@@ -320,7 +322,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             values=enum_object.values,
             use_specialized_enum=self.use_specialized_enum,
             use_subclass_enum=self.use_subclass_enum,
-            has_strenum=self.target_python_version.has_strenum,
+            has_strenum=python_target_meets("python.strenum", self.target_python_version.version_key),
         )
         enum = _enum_class(kind)(
             reference=self.references[enum_object.name],
@@ -510,6 +512,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
         self.generation_store.register_model(data_model_type)
 
+    @override
     def parse_raw(self) -> None:
         """Parse the raw GraphQL schema and generate all data models."""
         self.all_graphql_objects = {}

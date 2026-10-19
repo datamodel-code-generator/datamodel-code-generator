@@ -18,7 +18,7 @@ from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
 from warnings import warn
 
-from pydantic import Field, StrictBool, ValidationError
+from pydantic import Field, StrictBool, ValidationError, model_validator
 from typing_extensions import Unpack
 
 from datamodel_code_generator import (
@@ -34,9 +34,12 @@ from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
     JsonSchemaParser,
+    _locate,
+    _located,
+    _source_location,
     get_model_by_path,
 )
-from datamodel_code_generator.reference import FieldNameResolver, is_url, snake_to_upper_camel
+from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
 from datamodel_code_generator.types import (
     DataType,
     EmptyDataType,
@@ -47,11 +50,14 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from urllib.parse import ParseResult
 
+    from pydantic import ValidatorFunctionWrapHandler
+
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._types import OpenAPIParserConfigDict
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures
+    from datamodel_code_generator.reference import SchemaLocation
 
 
 RE_APPLICATION_JSON_PATTERN: Pattern[str] = re.compile(r"^application/.*json$")
@@ -104,6 +110,20 @@ class MediaObject(BaseModel):
     example: YamlValue = None
     examples: Optional[Union[str, ReferenceObject, ExampleObject]] = None  # noqa: UP007, UP045
 
+    @model_validator(mode="wrap")
+    @classmethod
+    def _take_schema_location(cls, values: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+        """Give the media type object the location of the document object it is validated from."""
+        result = handler(values)
+        if isinstance(values, dict) and (location := _source_location(values)):
+            result.__dict__[SCHEMA_LOCATION_KEY] = location
+        return result
+
+    @property
+    def schema_location(self) -> SchemaLocation | None:
+        """Return the location of the media type object in its document."""
+        return self.__dict__.get(SCHEMA_LOCATION_KEY)
+
 
 MediaSchema = JsonSchemaObject | ReferenceObject | bool
 RawSchema = dict[str, YamlValue] | StrictBool
@@ -111,10 +131,14 @@ RawSchema = dict[str, YamlValue] | StrictBool
 
 @dataclass(frozen=True)
 class MediaSchemaSource:
-    """Schema extracted from a parsed OpenAPI media type object."""
+    """Schema extracted from a parsed OpenAPI media type object.
+
+    ``location`` locates a boolean schema, whose value cannot carry its location.
+    """
 
     schema: MediaSchema
     from_item_schema: bool = False
+    location: SchemaLocation | None = None
 
 
 @dataclass(frozen=True)
@@ -310,12 +334,8 @@ class OpenAPIParser(JsonSchemaParser):
                 stacklevel=2,
             )
         if OpenAPIScope.Schemas in self.open_api_scopes:
-            for obj_name, raw_obj in schemas.items():
-                self.parse_raw_obj(
-                    obj_name,
-                    raw_obj,
-                    [*path_parts, "#/components", "schemas", obj_name],
-                )
+            for obj_name in schemas:
+                self._parse_raw_member(obj_name, schemas, obj_name, [*path_parts, "#/components", "schemas", obj_name])
         if OpenAPIScope.Paths in self.open_api_scopes:
             # Resolve $ref in global parameter list
             global_parameters = [
@@ -354,14 +374,14 @@ class OpenAPIParser(JsonSchemaParser):
                         "content",
                         media_type,
                     ]
-                    self.parse_raw_obj(
-                        body_name,
-                        media_schema.schema,
-                        self._media_schema_path(
-                            media_path if media_schema.from_item_schema else [*media_path, "schema"],
-                            from_item_schema=media_schema.from_item_schema,
-                        ),
+                    schema_path = self._media_schema_path(
+                        media_path if media_schema.from_item_schema else [*media_path, "schema"],
+                        from_item_schema=media_schema.from_item_schema,
                     )
+                    if media_schema.from_item_schema:
+                        self.parse_raw_obj(body_name, media_schema.schema, schema_path)
+                    else:
+                        self._parse_raw_member(body_name, media_obj, "schema", schema_path)
 
     def _insert_info_version_constant(self, body: str, info_version: str) -> str:  # noqa: PLR6301
         constant = f"OPENAPI_INFO_VERSION = {info_version!r}"
@@ -581,10 +601,12 @@ class OpenAPIParser(JsonSchemaParser):
         name: str,
         schema: MediaSchema,
         path: list[str],
+        *,
+        location: SchemaLocation | None = None,
     ) -> DataType:
-        """Parse a schema object or resolve a reference to get DataType."""
+        """Parse a schema object or resolve a reference to get DataType; ``location`` locates a boolean schema."""
         if isinstance(schema, bool):
-            return self.parse_schema(name, self._validate_schema_object(schema, path), path)
+            return self.parse_schema(name, _locate(self._validate_schema_object(schema, path), location), path)
         if isinstance(schema, JsonSchemaObject):
             return self.parse_schema(name, schema, path)
         self.resolve_ref(schema.ref)
@@ -600,12 +622,18 @@ class OpenAPIParser(JsonSchemaParser):
         return JsonSchemaObject.model_validate({"type": "array", "items": raw_item_schema})
 
     def _get_media_schema(self, media_obj: MediaObject) -> MediaSchemaSource | None:
-        """Return the schema represented by an OpenAPI media type object."""
+        """Return the schema represented by an OpenAPI media type object.
+
+        The array that represents an ``itemSchema`` stands for the media type object that holds it.
+        """
+        location = media_obj.schema_location
         if media_obj.schema_ is not None:
-            return MediaSchemaSource(media_obj.schema_)
+            return MediaSchemaSource(media_obj.schema_, location=location and location.child("schema"))
         if media_obj.itemSchema is None or not self.schema_features.media_item_schema:
             return None
-        return MediaSchemaSource(self._array_schema_from_media_item_schema(media_obj.itemSchema), from_item_schema=True)
+        return MediaSchemaSource(
+            _locate(self._array_schema_from_media_item_schema(media_obj.itemSchema), location), from_item_schema=True
+        )
 
     def _get_raw_media_schema(self, media_obj: object) -> RawMediaSchemaSource | None:
         """Return raw schema data from an OpenAPI media type object.
@@ -621,12 +649,18 @@ class OpenAPIParser(JsonSchemaParser):
         if "schema_" in raw_media_obj.model_fields_set:
             if raw_media_obj.schema_ is None:
                 return None
-            return RawMediaSchemaSource(raw_media_obj.schema_)
+            return RawMediaSchemaSource(cast("dict[str, RawSchema]", media_obj)["schema"])
         if "itemSchema" not in raw_media_obj.model_fields_set or not self.schema_features.media_item_schema:
             return None
         if raw_media_obj.itemSchema is None:
             return None
-        return RawMediaSchemaSource({"type": "array", "items": raw_media_obj.itemSchema}, from_item_schema=True)
+        return RawMediaSchemaSource(
+            _located(
+                {"type": "array", "items": cast("dict[str, RawSchema]", media_obj)["itemSchema"]},
+                self._raw_location(media_obj),
+            ),
+            from_item_schema=True,
+        )
 
     def _media_schema_path(self, path: list[str], *, from_item_schema: bool) -> list[str]:  # noqa: PLR6301
         """Return the resolver path for a media schema."""
@@ -719,7 +753,7 @@ class OpenAPIParser(JsonSchemaParser):
                         if operation is raw_operation:
                             operation = operation.copy()
                         operation["security"] = security
-                    self.parse_operation(operation, [*path, operation_name])
+                    self.parse_operation(operation, [*path, operation_name], location=self._raw_location(raw_operation))
 
     def _parameter_key(self, parameter: Any) -> tuple[str, str] | None:
         """Return the OpenAPI identity used for operation-level parameter overrides."""
@@ -770,7 +804,9 @@ class OpenAPIParser(JsonSchemaParser):
             if media_schema is None:
                 continue
             schema_path = self._media_schema_path([*path, media_type], from_item_schema=media_schema.from_item_schema)
-            data_type = self._parse_schema_or_ref(name, media_schema.schema, schema_path)
+            data_type = self._parse_schema_or_ref(
+                name, media_schema.schema, schema_path, location=media_schema.location
+            )
             data_types[media_type] = data_type
         return data_types
 
@@ -802,7 +838,9 @@ class OpenAPIParser(JsonSchemaParser):
                 if media_schema is None:
                     continue
                 schema_path = self._media_schema_path(response_path, from_item_schema=media_schema.from_item_schema)
-                data_type = self._parse_schema_or_ref(response_name, media_schema.schema, schema_path)
+                data_type = self._parse_schema_or_ref(
+                    response_name, media_schema.schema, schema_path, location=media_schema.location
+                )
                 data_types[status_code][content_type] = data_type  # ty: ignore[invalid-assignment]
 
         return data_types
@@ -828,8 +866,10 @@ class OpenAPIParser(JsonSchemaParser):
         name: str,
         parameters: list[ReferenceObject | ParameterObject],
         path: list[str],
+        *,
+        location: SchemaLocation | None = None,
     ) -> DataType | None:
-        """Parse all operation parameters into a data model."""
+        """Parse all operation parameters into a data model located at the operation object."""
         fields: list[DataModelFieldBase] = []
         field_schemas: list[tuple[JsonSchemaObject, list[str]]] = []
         exclude_field_names: set[str] = set()
@@ -902,7 +942,7 @@ class OpenAPIParser(JsonSchemaParser):
                         from_item_schema=schema_result.from_item_schema,
                     )
                     object_schema = (
-                        self._validate_schema_object(schema_result.schema, schema_path)
+                        _locate(self._validate_schema_object(schema_result.schema, schema_path), schema_result.location)
                         if isinstance(schema_result.schema, bool)
                         else self.resolve_object(schema_result.schema, JsonSchemaObject)
                     )
@@ -965,6 +1005,7 @@ class OpenAPIParser(JsonSchemaParser):
                 dataclass_arguments=self.dataclass_arguments,
             )
             self.generation_store.register_model(model)
+            self._record_schema_location(reference, location)
             if not self._types_nullable_map_values:
                 self._parameter_models.append((model, tuple(self.model_resolver.current_root)))
             return self.data_type(reference=reference)
@@ -975,8 +1016,14 @@ class OpenAPIParser(JsonSchemaParser):
         self,
         raw_operation: dict[str, Any],
         path: list[str],
+        *,
+        location: SchemaLocation | None = None,
     ) -> None:
-        """Parse an OpenAPI operation including parameters, request body, and responses."""
+        """Parse an OpenAPI operation including parameters, request body, and responses.
+
+        ``location`` is the operation object in its document; the operation may be a copy that carries path-level
+        parameters or the global security requirement.
+        """
         operation = Operation.model_validate(raw_operation)
         path_name, method = path[-2:]
         if self.use_operation_id_as_name:
@@ -994,6 +1041,7 @@ class OpenAPIParser(JsonSchemaParser):
             ),
             operation.parameters,
             [*path, "parameters"],
+            location=location,
         )
         if operation.requestBody:
             if isinstance(operation.requestBody, ReferenceObject):

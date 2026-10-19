@@ -9,6 +9,10 @@ from __future__ import annotations
 
 from enum import Enum
 from functools import cached_property
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datamodel_code_generator._requirements import PythonConstruct
 
 
 class DatetimeClassType(Enum):
@@ -45,30 +49,16 @@ class PythonVersion(Enum):
         major, minor = self.value.split(".")
         return int(major), int(minor)
 
-    @cached_property
-    def _is_py_310_or_later(self) -> bool:  # pragma: no cover
-        return True  # 3.10+ always true since minimum is PY_310
+    def _meets(self, construct: PythonConstruct) -> bool:
+        """Return whether this target has a construct of the requirement table."""
+        from datamodel_code_generator._requirements import python_target_meets  # noqa: PLC0415
 
-    @cached_property
-    def _is_py_311_or_later(self) -> bool:  # pragma: no cover
-        return self.version_key >= (3, 11)
-
-    @cached_property
-    def _is_py_312_or_later(self) -> bool:  # pragma: no cover
-        return self.version_key >= (3, 12)
-
-    @cached_property
-    def _is_py_313_or_later(self) -> bool:
-        return self.version_key >= (3, 13)
-
-    @cached_property
-    def _is_py_314_or_later(self) -> bool:
-        return self.version_key >= (3, 14)
+        return python_target_meets(construct, self.version_key)
 
     @property
     def has_union_operator(self) -> bool:  # pragma: no cover
         """Check if Python version supports the union operator (|)."""
-        return self._is_py_310_or_later
+        return self._meets("python.union_operator")
 
     @property
     def has_type_alias(self) -> bool:  # pragma: no cover
@@ -80,17 +70,17 @@ class PythonVersion(Enum):
         from datamodel_code_generator.deprecations import warn_deprecated  # noqa: PLC0415
 
         warn_deprecated("python-api.python-version-has-type-alias", stacklevel=2)
-        return self._is_py_310_or_later
+        return self._meets("python.type_alias_annotation")
 
     @property
     def has_typed_dict_non_required(self) -> bool:
         """Check if Python version supports TypedDict NotRequired."""
-        return self._is_py_311_or_later
+        return self._meets("python.typed_dict_not_required")
 
     @property
     def has_typed_dict_read_only(self) -> bool:
         """Check if Python version supports TypedDict ReadOnly (PEP 705)."""
-        return self._is_py_313_or_later
+        return self._meets("python.typed_dict_read_only")
 
     @property
     def has_typed_dict_closed(self) -> bool:
@@ -98,32 +88,32 @@ class PythonVersion(Enum):
 
         PEP 728 is part of Python 3.15. Earlier targets import TypedDict from typing_extensions.
         """
-        return self.version_key >= (3, 15)
+        return self._meets("python.typed_dict_closed")
 
     @property
     def has_kw_only_dataclass(self) -> bool:
         """Check if Python version supports kw_only in dataclasses."""
-        return self._is_py_310_or_later
+        return self._meets("python.kw_only_dataclass")
 
     @property
     def has_type_statement(self) -> bool:
         """Check if Python version supports type statements."""
-        return self._is_py_312_or_later
+        return self._meets("python.type_statement")
 
     @property
     def has_string_arguments_in_builtin_generics(self) -> bool:
         """Check if ``typing`` resolves a quoted name inside ``list[...]`` and other builtin generics (3.11+)."""
-        return self._is_py_311_or_later
+        return self._meets("python.builtin_generic_strings")
 
     @property
     def has_native_deferred_annotations(self) -> bool:
         """Check if Python version has native deferred annotations (Python 3.14+)."""
-        return self._is_py_314_or_later
+        return self._meets("python.deferred_annotations")
 
     @property
     def has_strenum(self) -> bool:
         """Check if Python version supports StrEnum."""
-        return self._is_py_311_or_later
+        return self._meets("python.strenum")
 
 
 PythonVersionMin = PythonVersion.PY_310

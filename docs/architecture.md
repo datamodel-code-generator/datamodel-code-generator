@@ -245,19 +245,21 @@ the whole pipeline, not passes inside it.
 **L0.** `_load_source_dict` calls `_read_document`, which keeps the document as written and, under
 `--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write, except beside `nullable: true`
 when the value is not null (`_single_value_enum_as_const`, which skips instance-data keywords and extension keys other
-than `x-propertyNames` through `_document_child_entries`).
-`_parse_file` then calls `_prepare_schema_resources`, which indexes `$id` and anchors and rewrites `$ref`s that resolve
-through an embedded `$id`. Referenced documents go through the same two steps when `resolve_ref` loads them. OpenAPI
-parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of operations in
-`_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers) build a JSON
-Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
+than `x-propertyNames` through `_document_child_entries`). `_parse_file` then calls `_prepare_schema_resources`, which
+indexes `$id` and anchors, rewrites `$ref`s that resolve through an embedded `$id`, and indexes the location of every
+object of the prepared document (`_index_document`, see [Metadata Output](#metadata-output)). Referenced documents go
+through the same steps when `resolve_ref` loads them.
+OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
+operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
+build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
 
 **L1.** `_parse_schema_obj` dispatches each schema object: a `$ref` with sibling keywords is merged
 (`_merge_ref_with_schema`), then `parse_array`, `parse_all_of`, `parse_one_of` or `parse_any_of` (both through
 `parse_combined_schema`), `parse_object`, `parse_enum` or `parse_root_type`. A oneOf/anyOf of constants can become a
-synthetic enum (`_extract_const_enum_from_combined`). Names come from `ModelResolver.add`. Every use of a reference gets
-a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base classes; inherited fields
-whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only captured here
+synthetic enum (`_extract_const_enum_from_combined`). Names come from `ModelResolver.add`. Each model records the
+location of the schema object it is built from on its `Reference` (`_record_schema_object`). Every use of a reference
+gets a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base classes; inherited
+fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only captured here
 (`field.extras["discriminator"]`). Field construction already decides const handling: `DataModelFieldBase.__init__`
 calls `process_const()`. Dataclass-like models (`dataclasses`, Pydantic dataclasses, msgspec Structs) sort their
 fields when they are built, by `DataModel.FIELD_CONSTRUCTION_ORDER_KEY`. The key reads only facts known then: on a
@@ -386,6 +388,7 @@ collapse replacing a member of a shared list.
 ### Fact Finality
 
 "Final after" names the last pass that can still change the fact. A decision that reads the fact belongs after it.
+`parser/_facts.py` holds the same information per attribute (`final_after`, `frozen_at`) for the checkers.
 
 | Fact | Final after |
 | --- | --- |
@@ -404,6 +407,7 @@ collapse replacing a member of a shared list.
 | applied type overrides | end of the L5 loop |
 | root-model collapse | end of the L5 loop (circular paths: the L4 snapshot, not recomputed) |
 | class names and reference paths | L6 `__change_imported_model_name` |
+| schema location of a model (`reference.py:location_of`, kept on the `Reference` object, not keyed by its path) | end of L1 |
 | module membership | L6 unused-model removal |
 | field aliases | the model's own L5 `__rename_fields_hiding_types`; validated in L6 |
 | names written in annotations, module imports except future imports | end of `_finalize_modules` |
@@ -426,9 +430,47 @@ incrementally for appended and changed models or with a full rebuild.
 
 The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_MUTATION_METHODS`, for example
 `replace_field_type`, `replace_nested_data_type`, `set_fields`, `set_base_classes`, `update_model_reference` and
-`redirect_reference_users`. `scripts/check_generation_store_usage.py` (with
-`tests/parser/test_generation_store_usage.py`) rejects direct writes to `.data_type`, `.fields`, `.base_classes` and
-`.reference` and list mutators on model collections, in `parser/` only.
+`redirect_reference_users`.
+
+`parser/_facts.py` says which attribute holds which fact. `ATTRIBUTE_FACTS` has one row per owner class and attribute,
+`__dict__` key, dict entry (`extras["kw_only"]`) or cached property, with its kind (`fact`, `presentation`, `cache` or
+`bookkeeping`), the `Fact` and `RenderFact` members a write changes, the store operations allowed to write it, the
+`Phase` whose passes write it last today and its freeze point: the latest freeze point among its facts (every `Fact`
+at B1, every `RenderFact` at its `RENDER_FACT_FREEZE_POINTS` entry), after which nothing may write it once the pass
+pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
+Bookkeeping rows name no fact and no store operation. The module docstring lists the three allowed exceptions to the
+kind rules (plan rows, rendered nullability, the schema-validator plan cache). The module imports only the standard
+library and `typing_extensions` (`scripts/check_architecture_boundaries.py` registers it as the `facts` leaf layer), so
+the checkers can read it without importing the package.
+
+`scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads that table and
+`GENERATION_STORE_MUTATION_METHODS` with `ast` and reports every write that does not go through a store operation:
+
+- in `parser/`: writes of fact and presentation attributes of model-graph classes (assignment, `del`, augmented
+  assignment, `setattr` and `object.__setattr__` with a literal name, item writes and list, dict and set mutators,
+  also through a local alias), `__dict__` writes, the direct `.data_type`, `.fields`, `.base_classes` and
+  `.reference` writes, list mutators on model collections and `Reference.children` reads. A `setattr` with a
+  computed name is reported too. Writes to the parser itself (`self`) and to schema objects (parameters annotated
+  `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from them) are not model
+  writes;
+- in `model/` and `types.py`: the same writes inside the parser-facing hooks (`PARSER_HOOK_METHODS`), the private
+  helpers that write rendered state when a pass reads `type_hint` or collects imports (`RENDER_STATE_WRITERS`), and
+  every model function these reach through calls on any receiver, at any depth, including writes to `self`. The
+  closure stops at construction (`CONSTRUCTION_METHODS`), reference bookkeeping (`REFERENCE_METHODS`) and render
+  entry points (`RENDER_ENTRY_POINTS`, each with its reason);
+- in all three: caches kept on model objects: `__dict__` entries, cache attributes and `cached_property`.
+
+Every finding is keyed by path, function and target, without line numbers, and
+`scripts/generation_store_allowlist.toml` holds the findings that existed when the checker learned them, with a count
+each. A new finding fails, and so does an entry that no longer matches, so the list only shrinks: a change that routes
+a write through the store removes its entry. The checker also fails when a model-graph class sets an attribute (in
+any method) without a row, when a row names nothing the sources declare or write, when a model method that parser
+code calls (directly, or by name through `getattr`/`hasattr`) reaches a fact write that no hook covers, and when a
+hook, construction or render-entry list names a function that no model module defines.
+
+The checker does not follow these forms, so they must not be used for model writes: `obj.__setattr__("name", value)`,
+`obj.extras.__setitem__(key, value)` and other dunder calls, unbound method calls such as `list.append(obj.fields,
+field)`, and `functools.partial(setattr, obj)`.
 
 Current behaviour that a decision reading the index must allow for:
 
@@ -441,7 +483,9 @@ Current behaviour that a decision reading the index must allow for:
   `__assign_forward_reference_fields` change models this way.
 - Renames through the `class_name` setter (`__change_field_name`, `__rename_named_type`,
   `__replace_duplicate_name_in_module`) do not go through `rename_model`.
-- Writes to `data_types` and `dict_key`, and writes in `model/` and `types.py`, are outside the checker's scope.
+- Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
+  function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
+  to module imports (`ModuleContext.imports`), or writes in model methods that the hook closure does not reach.
 - Dedup keys (`DataModel.get_dedup_key`), model shapes and imports caches are separate caches, not store facts.
 
 ### Placement Guide
@@ -468,7 +512,9 @@ Procedure for a new decision:
 | type overrides | after the module loop |
 | bases including the generic base class | L6, after `__apply_generic_base_class` |
 | class names | L6, after `__change_imported_model_name` |
+| where a model comes from in its document | after L1, through `location_of(model.reference)`, never from `Reference.path` or a parse path |
 | imports or names written in annotations | end of `_finalize_modules`, or at render |
+| the target Python or Pydantic version a generated construct needs | any pass: read its row in `_requirements.py` (`python_target_meets`, `pydantic_target_meets`, or `model_target_meets` for the target recorded on a Pydantic model); a new construct gets a row instead of a version comparison |
 
 A decision that changes field order, defaults or required state must also run before constructor ordering reads them
 (L5 `__fix_constructor_field_ordering`, L6 `__fix_tag_opt_out_field_ordering`); when that conflicts with a row above,
@@ -497,7 +543,10 @@ copy-on-write rewrites (`_single_value_enum_as_const`, `_rewrite_schema_resource
 `_resolve_unparsed_json_pointer`, which loads the source again as a fresh dict. `--use-single-value-enum-as-const` has
 such a mark: its L0 walk marks every schema object that holds a `const` after the rewrite, written or rewritten, with
 `x-datamodel-code-generator-read-as-const`, and L1 `_extract_const_enum_from_combined` reads it as `read_as_const`. That
-it survives each of these steps is not verified.
+it survives each of these steps is not verified. The schema location of [Metadata Output](#metadata-output) is a mark
+of the same kind that each of these steps carries; the test suite checks with
+`DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS=1` only that every model has one at the end of L1, not that it is the
+right one.
 
 ### Case Notes
 
@@ -615,12 +664,20 @@ paths:
   narrowly allowlisted until they can be migrated without changing the public `ParserConfig` surface.
 - Entry points project source and reference settings into a frozen `ParserSourceContext` attached to their lightweight,
   already-validated config; direct parser APIs retain typed configuration and validation.
+- What generated code requires of its target is one frozen table in `_requirements.py`: each construct's library and
+  minimum version, what an unset Pydantic target means for it, and the `typing_extensions` backport an older Python
+  target imports. The version gates of the parsers and the model backends, `PythonVersion.has_*`, the StrEnum gates of
+  presets and the CLI, the Pydantic checks of server and client targets, and the backport import constants read it
+  instead of comparing versions. Not yet rows: the Pydantic target that `base_config.implied_target_settings` implies
+  for server and client targets, the Python minimum of `_api_generation`, the PEP 695 placeholder check of the
+  built-in formatter, and the per-version type backports of `_python_type_import_registry`.
 
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
 backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
-input-model, reference, model-composition, output-model, and shared-model files are classified explicitly. The
-composition root may select concrete backends, while shared-model modules must remain neutral: they cannot import a
-concrete backend or resolve one through `sys.modules`, including module-name constants and aliases. This keeps
+input-model, reference, model-composition, output-model, shared-model, and requirement-table files are classified
+explicitly. The composition root may select concrete backends, while shared-model modules must remain neutral: they
+cannot import a concrete backend or resolve one through `sys.modules`, including module-name constants and aliases.
+The requirement table may import only the standard library, `typing_extensions` and `enums`. This keeps
 backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral module
 registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
 backend policy therefore cannot hide in the shared layer. Its legacy allowlist is keyed by file, enclosing symbol, rule,
@@ -640,10 +697,55 @@ black, isort, ruff check, ruff format, and user-supplied custom formatters.
 
 ## Metadata Output
 
-When `--emit-model-metadata` is enabled, `Parser.parse()` records source-reference information while producing models.
-`generate()` then serializes the resulting payload through `model_metadata.py`. The JSON Schema for that payload is
-stored in `src/datamodel_code_generator/resources/model_metadata.schema.json` and exposed through
+When `--emit-model-metadata` is enabled, `Parser.parse()` describes each generated model by the location of the schema
+object it is built from. `generate()` then serializes the resulting payload through `model_metadata.py`. The JSON Schema
+for that payload is stored in `src/datamodel_code_generator/resources/model_metadata.schema.json` and exposed through
 `--output-format-json-schema model-metadata`.
+
+`source_ref` is the document as reference paths name it, `#`, and the RFC 6901 JSON Pointer of the schema object from
+that document's root (`~` as `~0`, `/` as `~1`, no percent-encoding): a JSON Pointer string, not a URI fragment, never
+relative to an `$id` and never a parse path. `source_path` holds the decoded tokens. Several models can share one
+location (read and write variants of one schema, models copied through a `$ref`, a combined class and its branch), so
+`module` and `class_name` identify a model. Converted inputs (Avro, XML Schema, Protocol Buffers, payloads AsyncAPI
+converts) point into the converted JSON Schema; a converted AsyncAPI payload is located at the payload it comes from.
+GraphQL has no JSON document, so its models keep their reference paths, as does a model that a custom parser builds
+from a copy of a schema object.
+
+The location is a fact recorded in L0 and L1:
+
+- **L0.** `_index_document` makes each loaded document a tree and indexes every JSON container of it by identity in
+  `SchemaLocationIndex` (`reference.py`). A container met at a second position (a PyYAML alias, an object an API dict
+  input shares, a mirror file served for several URLs) is copied for that position and its holders copy on write, so
+  the location does not depend on the YAML loader or the caller; a container that is its own ancestor keeps a back
+  edge to its copy. AsyncAPI indexes its document at load, and a converted payload schema is mounted at the payload's
+  location (`_mount_converted_schema`).
+- **Carrier.** `JsonSchemaObject.schema_location` lives in the object's `__dict__`, not in its fields: a wrap validator
+  takes it from the document object or from a located dump (`_LocatedDict`) the object is validated from, through the
+  index that `Parser.parse` publishes in a `ContextVar`. During a parse, `model_dump` returns located dumps whose schema
+  children remember their own sources. An object a copy step builds stands for one source object by rule: the use
+  site of a `$ref` with siblings, the union branch, the allOf holder, the holder of a synthetic enum or of an
+  `itemSchema` array, or the member property it normalizes. A dict a merge helper builds from two sources takes the
+  location of the side the helper lets win. A boolean schema, which cannot carry a location, takes it from its holder.
+- **Copy steps** the location survives, besides those under "Scope on schema objects": L0 unsharing,
+  `openapi.py:RawMediaObject` (the media object's own `schema` value is used), lists joined and dicts merged in
+  `_deep_merge`, `_merge_all_of_schema`, `_merge_property_schemas` and `_merge_inherited_type_shape_dict`, combined
+  classes in `_parse_object_common_part`, inherited normalizations in `_merge_properties_with_parent_constraints`,
+  array type-union branches, OpenAPI operation copies for path-level parameters and global `security` (the operation's
+  location is passed as an argument), the dangling-reference fallback (located at the missing target), and converted
+  AsyncAPI payloads.
+- **L1.** `_record_schema_object(reference, obj)` stores the location and the frames of the models being built on the
+  `Reference` object, so later changes of `Reference.path` (L3 `_internal` modules, L5 collapse renames) do not lose
+  it. The operation parameters model takes the operation's location; read and write variants take the base schema's.
+  `location_of(reference)` reads it. When two different schema objects reach one Reference because their parse paths
+  collide (the anyOf branches of several allOf members, #4853), either location could disagree with the model's
+  content, so the Reference keeps none and is marked as conflicting, and so does the class built for an allOf union
+  member from such a Reference; their metadata keeps the reference path, as a model without a location does.
+
+With `DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS=1`, which `tests/conftest.py` sets for the test suite, a parse of
+a JSON document raises at the end of L1 when a model has no location and is not marked as conflicting, so a copy step
+that loses a location fails in CI. The check sees only whether a location is present, not whether it is right. The
+recommender (`_recommend/_metrics.py`) matches classes by their internal identity paths, passed beside the metadata and
+never written, and describes their locations from the JSON Pointer tokens.
 
 ## Runtime Dynamic Models
 

@@ -213,7 +213,7 @@ The counts, presets and options come from your schema and the installed version.
 | Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans. They are never in the command. |
 | Not recommended | Options a rule argues against for this schema. |
 | Trial | The compared candidates with their class counts, problem names, median name length, and `unconstrained`: the fields dcg warns it generates without some of their constraints, counted per module in the generation each candidate keeps; `selected` marks the recommended one. |
-| Changes from the current configuration | The class names the recommended configuration changes from the configuration you run now, matched by schema location. |
+| Changes from the current configuration | The class names the recommended configuration changes from the configuration you run now, matched by the internal identity paths of their models. |
 | Your configuration | Options you set that differ from the rules, and a newer preset when you set an older one. Your values are kept. |
 | Notes | Assumptions, such as the target Python version used when you did not set one. |
 | Command / pyproject.toml | The same recommendation as a command and as configuration. |
@@ -325,10 +325,10 @@ shows what that one option changes in the recommended command. When the selected
 recommendation, the trial also generates the selected configuration without or with each option it needs for those
 lines; these rows are listed last and never selected.
 
-Classes are matched by schema location. The locations in the examples describe where a class comes from: the document
-path, then each inline step after `>` (a union branch reads `oneOf 0`, an array item `item`). They are not JSON
-Pointers and cannot be used as `--model-name-map` keys; `--emit-model-metadata` lists the class names and their
-source paths.
+Classes are matched by the internal identity paths of their models, which stay the same across configurations and are
+never written; the reports call this matching by schema location. The locations in the examples are described from
+the JSON Pointer that `--emit-model-metadata` writes as `source_ref`: the named schema or operation, then each inline
+step after `>` (a property reads as its name, a union branch `oneOf 0`, an array item `item`).
 
 A candidate whose generation fails is listed as rejected with a one-line reason and never selected. If every
 candidate fails, the options are the rules' recommendation alone. The candidates share the parsed input and fetch each

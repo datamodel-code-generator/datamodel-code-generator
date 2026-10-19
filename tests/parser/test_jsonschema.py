@@ -54,7 +54,6 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
-    _SOURCE_REFERENCE_PATH_KEY,
     SPECIAL_PATH_FORMAT,
     Parser,
     Source,
@@ -68,7 +67,6 @@ from datamodel_code_generator.parser.jsonschema import (
     Types,
     _get_json_value_type,
     _get_union_variant_name,
-    _get_unique_rw_model_variant_source_path,
     _json_literal_may_accept_container,
     _json_literal_values_equal,
     _json_schema_type_may_accept_container,
@@ -5388,43 +5386,8 @@ def test_request_response_schema_graph_helper_edges(tmp_path: Path) -> None:
     assert parser._get_inline_property_names(inline_properties) == frozenset({"direct", "nested"})
 
 
-def test_request_response_variant_source_path_collision_fallbacks() -> None:
-    """Variant metadata paths remain unique for unrelated names and repeated source collisions."""
-    assert (
-        _get_unique_rw_model_variant_source_path(
-            "#/$defs/ChildRequest",
-            "ChildRequest",
-            "RenamedRequest",
-            collides_with_source=True,
-        )
-        == "#/$defs/RenamedRequest"
-    )
-
-    parser = JsonSchemaParser(
-        "",
-        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.RequestResponse,
-    )
-    parser.raw_obj = {
-        "$defs": {
-            "Child": {},
-            "ChildRequest": {},
-            "ChildRequest1": {},
-        },
-    }
-    base_reference = parser.model_resolver.add(
-        ["#", "$defs", "Child"],
-        "Child",
-        class_name=True,
-        loaded=True,
-    )
-
-    request_reference = parser._get_rw_model_variant_reference(base_reference, "Request")
-
-    assert request_reference.__dict__[_SOURCE_REFERENCE_PATH_KEY] == "#/$defs/ChildRequest11"
-
-
-def test_request_response_variant_affix_keeps_numeric_suffix_and_unique_source_path() -> None:
-    """Variant affixes precede collision indexes and never reuse a source schema path."""
+def test_request_response_variant_affix_keeps_numeric_suffix() -> None:
+    """Variant affixes precede collision indexes."""
     parser = JsonSchemaParser(
         "",
         class_name_prefix="Api",
@@ -5451,11 +5414,6 @@ def test_request_response_variant_affix_keeps_numeric_suffix_and_unique_source_p
     assert base_reference.name == "ApiChildModel1"
     assert request_reference.name == "ApiChildRequestModel1"
     assert response_reference.name == "ApiChildResponseModel1"
-    source_paths = {
-        request_reference.__dict__[_SOURCE_REFERENCE_PATH_KEY],
-        response_reference.__dict__[_SOURCE_REFERENCE_PATH_KEY],
-    }
-    assert len(source_paths | {"#/$defs/ChildRequest", "#/$defs/ChildResponse"}) == 4
 
 
 def test_request_response_typed_dict_additional_properties_metadata_uses_variants() -> None:

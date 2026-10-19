@@ -8,6 +8,8 @@ from __future__ import annotations
 import keyword
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -70,7 +72,8 @@ class TypedDict(DataModel):
     SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = False
 
     @classmethod
-    def store_additional_properties_type(  # noqa: PLR0913
+    @override
+    def store_additional_properties_type(
         cls,
         extra_template_data: dict[str, Any],
         type_hint: str,
@@ -92,6 +95,7 @@ class TypedDict(DataModel):
             extra_template_data["additionalPropertiesImports"] = imports
 
     @classmethod
+    @override
     def resolve_module_import_conflicts(
         cls,
         models: Iterable[DataModel],
@@ -197,6 +201,7 @@ class TypedDict(DataModel):
         return self._use_typeddict_backport and self._has_pep728_kwargs
 
     @property
+    @override
     def base_class(self) -> str:
         """Get base class string with kwargs if needed.
 
@@ -210,6 +215,7 @@ class TypedDict(DataModel):
         return base
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get imports, using the TypedDict backport when required by the target version."""
         extra_item_imports = tuple(
@@ -222,6 +228,7 @@ class TypedDict(DataModel):
             return base_imports
         return (*(i for i in base_imports if i != IMPORT_TYPED_DICT), IMPORT_TYPED_DICT_BACKPORT)
 
+    @override
     def create_reuse_model(self, base_ref: Reference) -> TypedDict:
         """Create a reuse model while preserving total=False behavior."""
         reuse_model = super().create_reuse_model(base_ref)
@@ -249,6 +256,7 @@ class TypedDict(DataModel):
         for field in fields:
             yield field.model_copy(update={"use_field_description": False, "use_inline_field_description": False})
 
+    @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render TypedDict class with appropriate syntax."""
         use_custom_template = self._uses_custom_root_template
@@ -279,6 +287,7 @@ class DataModelField(DataModelFieldBase):
     DEFAULT_REQUIRED_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_REQUIRED,)
     DEFAULT_READ_ONLY_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_READ_ONLY,)
 
+    @override
     def process_const(self) -> None:
         """Process const field constraint using literal type."""
         self._process_const_as_literal()
@@ -290,6 +299,7 @@ class DataModelField(DataModelFieldBase):
         return (name if name is not None else "").translate(escape_characters)
 
     @property
+    @override
     def type_hint(self) -> str:
         """Get type hint with ReadOnly and/or key-requiredness wrapper if needed."""
         type_hint = super().type_hint
@@ -325,11 +335,13 @@ class DataModelField(DataModelFieldBase):
         return self.use_frozen_field and self.read_only and isinstance(self.parent, TypedDict)
 
     @property
+    @override
     def fall_back_to_nullable(self) -> bool:
         """Check if field should fall back to nullable."""
         return not self._is_optional_typed_dict_key
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get imports including key-requiredness and ReadOnly qualifiers."""
         base_imports = super().imports

@@ -44,7 +44,9 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Literal, SupportsIndex, TypeAlias, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, SupportsIndex, TypeAlias, TypeVar, final, overload
+
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
@@ -163,6 +165,7 @@ class DataTypeFact:
     reference: Reference | None
 
 
+@final
 @dataclass(slots=True)
 class GenerationFacts:
     """A complete snapshot of derived generation facts.
@@ -200,6 +203,7 @@ class GenerationBuildResult:
     next_data_type_id: int
 
 
+@final
 class _GenerationModelList(list["DataModel"]):
     """List-compatible model collection that invalidates generation facts."""
 
@@ -209,11 +213,13 @@ class _GenerationModelList(list["DataModel"]):
         self._invalidate = invalidate
         self._invalidate_append = invalidate_append
 
+    @override
     def append(self, item: Any) -> None:
         """Append a model and invalidate derived facts."""
         super().append(item)
         self._invalidate_append(item)
 
+    @override
     def extend(self, items: Iterable[Any]) -> None:
         """Extend the model list and invalidate derived facts."""
         try:
@@ -221,6 +227,7 @@ class _GenerationModelList(list["DataModel"]):
         finally:
             self._invalidate()
 
+    @override
     def insert(self, index: SupportsIndex, item: Any) -> None:
         """Insert a model and invalidate derived facts."""
         super().insert(index, item)
@@ -234,6 +241,7 @@ class _GenerationModelList(list["DataModel"]):
     def __setitem__(self, index: slice, item: Iterable[Any]) -> None:  # pragma: no cover
         pass
 
+    @override
     def __setitem__(
         self,
         index: SupportsIndex | slice,
@@ -250,31 +258,37 @@ class _GenerationModelList(list["DataModel"]):
     def __delitem__(self, index: slice) -> None:  # pragma: no cover
         pass
 
+    @override
     def __delitem__(self, index: SupportsIndex | slice) -> None:  # ty: ignore[invalid-method-override]
         super().__delitem__(index)
         self._invalidate()
 
+    @override
     def clear(self) -> None:
         """Remove all models and invalidate derived facts."""
         super().clear()
         self._invalidate()
 
+    @override
     def pop(self, index: SupportsIndex = -1) -> Any:
         """Remove and return a model while invalidating derived facts."""
         item = super().pop(index)
         self._invalidate()
         return item
 
+    @override
     def remove(self, item: Any) -> None:
         """Remove a model and invalidate derived facts."""
         super().remove(item)
         self._invalidate()
 
+    @override
     def reverse(self, /) -> None:
         """Reverse the model list and invalidate derived facts."""
         super().reverse()
         self._invalidate()
 
+    @override
     def sort(
         self,
         /,
@@ -291,6 +305,7 @@ class _GenerationModelList(list["DataModel"]):
         finally:
             self._invalidate()
 
+    @override
     def __iadd__(self, items: Iterable[Any], /) -> Self:
         """Extend the model list in place and invalidate derived facts."""
         try:
@@ -299,6 +314,7 @@ class _GenerationModelList(list["DataModel"]):
             self._invalidate()
         return self
 
+    @override
     def __imul__(self, value: SupportsIndex, /) -> Self:
         """Repeat the model list in place and invalidate derived facts."""
         super().__imul__(value)
@@ -612,6 +628,7 @@ def _model_fact(model_id: ModelId, parse_order: int, model: DataModel) -> ModelF
     )
 
 
+@final
 class GenerationIndex:
     """Query layer over the current generation facts."""
 

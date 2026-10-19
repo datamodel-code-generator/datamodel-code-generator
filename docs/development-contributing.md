@@ -231,10 +231,33 @@ helpers. Read dependency information through `GenerationIndex` queries instead
 of using `Reference.children` as a reverse index.
 
 The local pre-commit hook `generation-store-usage` runs
-`scripts/check_generation_store_usage.py` and rejects common parser mutations
-that bypass the store. If a new mutation helper is needed, add the method to
-`GENERATION_STORE_MUTATION_METHODS` and update the checker tests so contributors
-get an actionable message.
+`scripts/check_generation_store_usage.py`, which checks `parser/`, the
+parser-facing hooks in `model/` and `types.py`, and caches kept in the
+`__dict__` of data types, fields and models, against the attribute-to-fact
+table in `src/datamodel_code_generator/parser/_facts.py`. The hook runs when a
+parser file changes; after editing `model/`, `types.py` or the table, run the
+script yourself (the test suite runs it too).
+
+Writes that bypassed the store when the checker learned them are listed in
+`scripts/generation_store_allowlist.toml`, by path, function and target with a
+count. The list only shrinks:
+
+- A new write outside a store operation fails. Route it through a store
+  operation instead of adding an entry.
+- When you route a write, the entry no longer matches and the check fails
+  until you remove it or lower its count. `python
+  scripts/check_generation_store_usage.py --write-allowlist` does that for you;
+  it refuses to add entries or raise counts.
+- A refactor that moves a write to another function renames its entry by
+  hand (path, function or target) without raising the total count.
+- A new attribute on `DataType`, a field or a model needs a row in
+  `ATTRIBUTE_FACTS`; a model method that parser code calls and that reaches a
+  fact write needs an entry in `PARSER_HOOK_METHODS` of the checker, or in
+  `CONSTRUCTION_METHODS` or `RENDER_ENTRY_POINTS` with a reason.
+
+If a new mutation helper is needed, add the method to
+`GENERATION_STORE_MUTATION_METHODS`, name it in the `store_ops` of the rows it
+writes, and update the checker tests so contributors get an actionable message.
 
 ## Comparing output with a release
 

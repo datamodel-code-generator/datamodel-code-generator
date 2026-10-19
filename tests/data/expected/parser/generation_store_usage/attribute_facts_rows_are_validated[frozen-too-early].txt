@@ -1,0 +1,1 @@
+ValueError: row DataType.alias: frozen_at must be B2, the latest freeze point among its facts

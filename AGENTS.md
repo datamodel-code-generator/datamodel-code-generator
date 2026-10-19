@@ -31,5 +31,8 @@ becomes final and where a decision belongs.
   path.
 - Don't change nodes in place that other models share; replace them in each holder through the generation store's
   mutation APIs.
+- `scripts/check_generation_store_usage.py` checks fact writes against `parser/_facts.py`; its allowlist
+  `scripts/generation_store_allowlist.toml` only shrinks. Route a new write through the store instead of adding an
+  entry, and remove the entries of writes you route.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.

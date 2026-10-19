@@ -57,10 +57,10 @@ _GENERIC_NUMBER: Final = re.compile(
 )
 _STATUS_CODE: Final = re.compile(r"(?<![0-9])[1-5][0-9][0-9](?![0-9])")
 _SPECIAL: Final = re.compile(r"#-datamodel-code-generator-#-(\w+?)-#-special-#")
-_MARKER: Final = re.compile(r"#-datamodel-code-generator-#-(.+?)-#-special-#")
 _UNNAMED_KINDS: Final = frozenset({"object", "enum"})
-_BRANCH_KINDS: Final = ("oneOf", "anyOf", "allOf")
-_ITEM_KINDS: Final = frozenset({"array", "items"})
+_BRANCH_KEYWORDS: Final = frozenset({"oneOf", "anyOf", "allOf"})
+_ITEM_KEYWORDS: Final = frozenset({"items", "prefixItems", "additionalItems", "unevaluatedItems"})
+_NAMED_KEYWORDS: Final = frozenset({"properties", "patternProperties", "dependentSchemas", "definitions", "$defs"})
 _UNION_VARIANT: Final = re.compile(r"(?:^|/)(oneOf|anyOf)/(\d+)(/allOf)?$")
 _ROOT_REF: Final = re.compile(r"^(?:.*?\.(?:json|ya?ml))?#?/?")
 _TRAILING_DIGITS: Final = re.compile(r"\d+$")
@@ -155,8 +155,9 @@ def schema_vocabulary(document: Mapping[str, Any] | None) -> SchemaVocabulary:
 class NameRecord:
     """One generated class and the schema location it came from.
 
-    ``path`` is the benchmark's location key, which matches classes across generations. ``location`` describes the
-    same place for people (see ``readable_location``); it is not a JSON Pointer.
+    ``path`` is the benchmark's location key, which matches classes across generations; it is taken from the model's
+    internal identity path, never written. ``location`` describes the JSON Pointer of the class's schema for people
+    (see ``readable_location``).
     """
 
     name: str
@@ -165,47 +166,57 @@ class NameRecord:
     members: tuple[str, ...]
 
 
-def readable_location(raw: Sequence[str]) -> str:
+def readable_location(tokens: Sequence[str]) -> str:
     """Describe a class's schema location: the named schema or operation, then each inline step after ``>``.
 
-    The named schema is ``components/<section>/<key>``, ``definitions/<key>`` or ``$defs/<key>``, an operation its
-    path steps; anything else hangs off the ``(root)`` schema. dcg's internal path markers are left out; a union
-    branch reads ``oneOf 0`` and an array item ``item``. The ``properties`` and ``items`` steps of the schema are not
-    recorded in model metadata (#4843), so the result is a description, never a JSON Pointer.
+    The tokens are those of the JSON Pointer that ``--emit-model-metadata`` writes as ``source_path``. The named schema
+    is ``components/<section>/<key>``, ``definitions/<key>`` or ``$defs/<key>``, an operation ``paths/<path>/<method>``
+    or ``webhooks/<name>/<method>``; anything else hangs off the ``(root)`` schema. A property reads as its name, a
+    union branch as ``oneOf 0`` and an array item as ``item``.
     """
-    steps = [(_MARKER.sub("", part), _MARKER.findall(part)) for part in raw]
     split = 0
-    match [name for name, _ in steps[:1]]:
-        case ["components"]:
-            split = 3
+    match tokens[:1]:
+        case ["components" | "paths" | "webhooks"]:
+            split = _COMPONENT_DEPTH
         case ["definitions" | "$defs"]:
-            split = 2
-        case ["paths" | "webhooks"]:
-            split = next((index for index, (_, kinds) in enumerate(steps) if kinds), len(steps))
-    split = min(split, len(steps))
+            split = _DEFINITION_DEPTH
+    split = min(split, len(tokens))
     inline: list[str] = []
-    previous = steps[split - 1][1] if split else []
-    for name, kinds in steps[split:]:
-        branch = next((kind for kind in _BRANCH_KINDS if kind in previous), None)
-        if name.isdigit() and branch is not None:
-            inline.append(f"{branch} {name}")
-        elif name.isdigit() and _ITEM_KINDS.intersection(previous):
+    index = split
+    while index < len(tokens):
+        token, following = tokens[index], tokens[index + 1] if index + 1 < len(tokens) else None
+        step = 2
+        if following is not None and token in _NAMED_KEYWORDS:
+            inline.append(following)
+        elif following is not None and following.isdigit() and token in _BRANCH_KEYWORDS:
+            inline.append(f"{token} {following}")
+        elif token in _ITEM_KEYWORDS:
             inline.append("item")
-        elif name:
-            inline.append(name)
-        previous = kinds
-    return " > ".join(("/".join(name for name, _ in steps[:split]) or "(root)", *inline))
+            step = 2 if following is not None and following.isdigit() else 1
+        else:
+            inline.append(token)
+            step = 1
+        index += step
+    named = "/".join(
+        token.removeprefix("/") if position == 1 else token for position, token in enumerate(tokens[:split])
+    )
+    return " > ".join((named or "(root)", *inline))
 
 
-def name_records(metadata: ModelMetadata | None) -> tuple[NameRecord, ...]:
-    """Return the classes of a model metadata payload in generation order."""
+def _identity_steps(identity: str) -> list[str]:
+    """Return the steps of a model's identity path: its decoded pointer, or its parts after the document."""
+    _, separator, fragment = identity.partition("#")
+    if separator and fragment.startswith("/"):
+        return [part.replace("~1", "/").replace("~0", "~") for part in fragment[1:].split("/")]
+    return [part for part in _ROOT_REF.sub("", identity).split("/") if part]
+
+
+def name_records(metadata: ModelMetadata | None, identities: Sequence[str]) -> tuple[NameRecord, ...]:
+    """Return the classes of a model metadata payload in generation order, matched by their identity paths."""
     records: list[NameRecord] = []
-    for model in metadata["models"] if metadata is not None else ():
-        raw = model["source_path"] or []
-        if not raw and (reference := model["source_ref"]):
-            raw = [part for part in _ROOT_REF.sub("", reference).split("/") if part]
+    for model, identity in zip(metadata["models"] if metadata is not None else (), identities, strict=True):
         steps: list[str] = []
-        for part in raw:
+        for part in _identity_steps(identity):
             special = _SPECIAL.search(part)
             kind = () if special is None or special.group(1) in _UNNAMED_KINDS else (special.group(1),)
             steps.extend(step for step in (_SPECIAL.sub("", part), *kind) if step)
@@ -213,7 +224,7 @@ def name_records(metadata: ModelMetadata | None) -> tuple[NameRecord, ...]:
             NameRecord(
                 name=model["class_name"],
                 path="/".join(steps),
-                location=readable_location(raw),
+                location=readable_location(model["source_path"] or ()),
                 members=tuple(field["original_name"] or field["name"] for field in model["fields"]),
             )
         )
@@ -385,7 +396,7 @@ class NameChange:
 
 @dataclass(frozen=True, slots=True)
 class NameChanges:
-    """How class names differ between two generations, matched by schema location.
+    """How class names differ between two generations, matched by the identity paths of their models.
 
     Only locations with one class on both sides are matched; ``renumbered`` counts renames that change digits only.
     The examples come from the largest families of numbered names before, then by location.
@@ -431,8 +442,8 @@ def location_changes(before: Sequence[NameRecord], after: Sequence[NameRecord], 
 class NameStability:
     """How the class names of one configuration move between two versions of the input.
 
-    Classes are matched by schema location and, independently, by the set of their field names when that set is
-    unique on both sides and has at least two names.
+    Classes are matched by the identity paths of their models and, independently, by the set of their field names when
+    that set is unique on both sides and has at least two names.
     """
 
     fingerprints_matched: int

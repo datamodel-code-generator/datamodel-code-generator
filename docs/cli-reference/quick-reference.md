@@ -16,7 +16,7 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| [`--emit-model-metadata`](base-options.md#emit-model-metadata) | Write a separate JSON map from source schema references to the final generated m... |
+| [`--emit-model-metadata`](base-options.md#emit-model-metadata) | Write a separate JSON map from the final generated models, modules, fields, and ... |
 | [`--encoding`](base-options.md#encoding) | Specify character encoding for input and output files. |
 | [`--external-ref-mapping`](base-options.md#external-ref-mapping) | Map external `$ref` files to Python packages. |
 | [`--http-backend`](base-options.md#http-backend) | Select the HTTP client backend for remote schemas. |
@@ -345,7 +345,7 @@ All options sorted alphabetically:
 - [`--disable-timestamp`](template-customization.md#disable-timestamp) - Disable timestamp in generated file header for reproducible ...
 - [`--disable-warnings`](general-options.md#disable-warnings) - Suppress warning messages during code generation.
 - [`--duplicate-name-suffix`](model-customization.md#duplicate-name-suffix) - Customize suffix for duplicate model names.
-- [`--emit-model-metadata`](base-options.md#emit-model-metadata) - Write a separate JSON map from source schema references to t...
+- [`--emit-model-metadata`](base-options.md#emit-model-metadata) - Write a separate JSON map from the final generated models, m...
 - [`--empty-enum-field-name`](field-customization.md#empty-enum-field-name) - Name for empty string enum field values.
 - [`--enable-command-header`](template-customization.md#enable-command-header) - Include command-line options in file header for reproducibil...
 - [`--enable-faux-immutability`](model-customization.md#enable-faux-immutability) - Enable faux immutability in Pydantic models (frozen=True).
