@@ -587,7 +587,7 @@ def test_datatype_type_hint_without_container_flag_returns_inner_type() -> None:
         use_base_type_hint=False,
     )
     assert wrapped_type_hint == "str"
-    data_type._apply_nullable_from_reference()
+    data_type._materialize_render_state("reference-null")
     assert data_type.is_optional is False
 
 
@@ -644,7 +644,7 @@ def test_datatype_nullable_reference_keeps_alias_non_optional() -> None:
     )
     data_type = DataType(reference=reference)
 
-    data_type._apply_nullable_from_reference()
+    data_type._materialize_render_state("reference-null")
 
     assert data_type.is_optional is False
 

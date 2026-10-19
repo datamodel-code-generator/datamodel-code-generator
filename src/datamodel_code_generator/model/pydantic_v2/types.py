@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from typing_extensions import override
 
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
+from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATED,
     IMPORT_ANY,
@@ -77,11 +78,6 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_UUID4,
     IMPORT_UUID5,
 )
-from datamodel_code_generator.model.pydantic_v2.version import (
-    PYDANTIC_V2_STRING_CONSTRAINTS_MINIMUM,
-    PYDANTIC_V2_TIMEDELTA_MULTIPLE_OF_MINIMUM,
-    target_supports,
-)
 from datamodel_code_generator.python_literal import PythonCode, represent_python_value
 from datamodel_code_generator.types import (
     CONSTRAINED_DECIMAL_DEFAULT_VALUE_DESCRIPTOR,
@@ -102,6 +98,7 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
     from types import ModuleType
 
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.imports import Import
 
@@ -275,9 +272,9 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
     NUMBER_VALUE_TYPES: ClassVar[frozenset[str]] = _DataTypeManagerBase.NUMBER_VALUE_TYPES | {
         f"{IMPORT_STRICT_BOOL.from_}.{IMPORT_STRICT_BOOL.import_}"
     }
-    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[str, frozenset[str]]]] = MappingProxyType({
+    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = MappingProxyType({
         f"{IMPORT_TIMEDELTA.from_}.{IMPORT_TIMEDELTA.import_}": (
-            PYDANTIC_V2_TIMEDELTA_MULTIPLE_OF_MINIMUM,
+            "pydantic.timedelta_multiple_of",
             frozenset({"multipleOf"}),
         ),
     })
@@ -472,7 +469,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
 
                 constraint_import = (
                     IMPORT_STRING_CONSTRAINTS
-                    if target_supports(target_pydantic_version, PYDANTIC_V2_STRING_CONSTRAINTS_MINIMUM)
+                    if pydantic_target_meets("pydantic.string_constraints", target_pydantic_version)
                     else IMPORT_FIELD
                 )
                 data_type = AnnotatedStringDataType.from_import(constraint_import, kwargs=data_type_kwargs)

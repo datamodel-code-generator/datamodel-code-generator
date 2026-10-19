@@ -1,0 +1,29 @@
+6 write required: required changes Fact.REQUIRED outside GenerationStore operations
+7 write default: default changes Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION outside GenerationStore operations
+8 write alias: alias changes Fact.FIELD_ALIASES, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING outside GenerationStore operations
+9 write name: name changes Fact.FIELD_NAMES, RenderFact.CLASS_NAMES outside GenerationStore operations
+9 write type: type changes Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES outside GenerationStore operations
+10 write decorators: decorators changes RenderFact.MODULE_CODE outside GenerationStore operations
+11 write nullable: nullable changes Fact.NULLABLE outside GenerationStore operations
+12 write has_default: has_default changes Fact.DEFAULTS outside GenerationStore operations
+13 write setattr(...): setattr with a computed name may write any fact; name the attribute
+14 write extras["kw_only"]: extras["kw_only"] changes RenderFact.KEYWORD_ONLY outside GenerationStore operations
+15 write extras["title"]: extras["title"] changes Fact.METADATA outside GenerationStore operations
+16 write extras.pop("discriminator"): extras.pop("discriminator") changes Fact.DISCRIMINATOR_TAGS outside GenerationStore operations
+17 write _internal_template_data["config"]: _internal_template_data["config"] changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
+18 write _internal_template_data["config"].update(): _internal_template_data["config"].update() changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
+19 write data_types.append(): use GenerationStore.replace_nested_data_type() or set_nested_data_types() instead of writing data_types.append()
+20 write data_types[:]: use GenerationStore.replace_nested_data_type() or set_nested_data_types() instead of writing data_types[:]
+21 write class_name: use GenerationStore.rename_model() or update_model_reference() instead of writing class_name
+22 write use_generic_container: use_generic_container changes an option copied at construction outside GenerationStore operations
+23 write _dedup_key_cache.clear(): _dedup_key_cache.clear() caches state on a mutable DataModel; keep derived values in a per-parse store memo
+24 write __dict__["_forced_field_assignment"]: __dict__["_forced_field_assignment"] changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
+26 write __dict__["_unknown"]: __dict__["_unknown"] is a __dict__ entry that _facts.py ATTRIBUTE_FACTS does not classify
+27 write __dict__[...]: __dict__[...] writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
+28 write __dict__[_IMPORTS_CACHE_KEY]: __dict__[_IMPORTS_CACHE_KEY] caches state on a mutable DataModel; keep derived values in a per-parse store memo
+29 write __dict__.update(): __dict__.update() writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
+31 write __dict__.setdefault("_forced_field_assignment"): __dict__.setdefault("_forced_field_assignment") changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
+33 write _dedup_key_cache[...]: _dedup_key_cache[...] caches state on a mutable DataModel; keep derived values in a per-parse store memo
+35 write extras["description"]: extras["description"] changes Fact.METADATA outside GenerationStore operations
+36 write reference.path: use GenerationStore API instead of assigning reference.path
+37 write required: required changes Fact.REQUIRED outside GenerationStore operations

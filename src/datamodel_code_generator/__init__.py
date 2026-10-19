@@ -101,7 +101,6 @@ from datamodel_code_generator.enums import (
     TargetPydanticVersion,
     VersionMode,
     XMLSchemaVersion,
-    _is_pydantic_version_at_least,
 )
 
 # Pydantic 2.5 cannot build schemas from stdlib TypeAliasType on Python 3.12.
@@ -646,10 +645,13 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
         )
         raise Error(msg)
 
+    from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets  # noqa: PLC0415
+
+    minimum = TargetPydanticVersion(REQUIREMENTS["pydantic.experimental_missing_sentinel"].minimum)
     match target_version := config.target_pydantic_version:
         case None:
-            return config.model_copy(update={"target_pydantic_version": TargetPydanticVersion.V2_12})
-        case _ if _is_pydantic_version_at_least(target_version, TargetPydanticVersion.V2_12):
+            return config.model_copy(update={"target_pydantic_version": minimum})
+        case _ if pydantic_target_meets("pydantic.experimental_missing_sentinel", target_version):
             return config
         case _:
             target_version_value = (
@@ -657,7 +659,7 @@ def _apply_missing_sentinel_config(config: GenerateConfig) -> GenerateConfig:
             )
             msg = (
                 "`--use-missing-sentinel` requires "
-                f"`--target-pydantic-version {TargetPydanticVersion.V2_12.value}` or later; "
+                f"`--target-pydantic-version {minimum.value}` or later; "
                 f"got {target_version_value!r}"
             )
             raise Error(msg)

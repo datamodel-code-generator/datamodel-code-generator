@@ -20,6 +20,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
+from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
@@ -80,20 +81,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
 from datamodel_code_generator.model.pydantic_v2.types import EncodedBytesDataType
-from datamodel_code_generator.model.pydantic_v2.version import (
-    PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM,
-    PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM,
-    PYDANTIC_V2_BYTES_PATTERN_MINIMUM,
-    PYDANTIC_V2_COMPILED_PATTERN_MINIMUM,
-    PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM,
-    PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM,
-    PYDANTIC_V2_MISSING_MINIMUM,
-    PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM,
-    _includes_dict_key_reference_classes,
-    explicit_model_target_predates,
-    explicit_model_target_supports,
-    model_target_supports,
-)
+from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
     IndependentModelPatternPropertiesRule,
@@ -620,7 +608,7 @@ def _prepare_type_alias_field(
 
     A target that predates compiled patterns keeps string patterns: the models that use the alias select the engine.
     """
-    compiled = prepared if model_target_supports(field.parent, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM) else None
+    compiled = prepared if model_target_meets(field.parent, "pydantic.compiled_pattern") else None
     changed = compiled is not None and _prepare_field_python_pattern(field, None, compiled)
     if (data_type := _copy_alias_data_type(field.data_type, compiled, field)) is None:
         return changed
@@ -668,7 +656,7 @@ class DataModelField(_PydanticBaseDataModelField):
         Pydantic checks the lengths of bytes written as base64 text on that text only from 2.10 on.
         """
         messages = [super().dropped_constraints_warning]
-        if explicit_model_target_predates(self.parent, PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM) and (
+        if not model_target_meets(self.parent, "pydantic.encoded_bytes_length") and (
             lengths := sorted({
                 name
                 for data_type in self.data_type.all_data_types
@@ -676,10 +664,11 @@ class DataModelField(_PydanticBaseDataModelField):
                 for name in data_type.kwargs or ()
             })
         ):
+            minimum = REQUIREMENTS["pydantic.encoded_bytes_length"].minimum
             messages.append(
-                f"Pydantic before {PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM} does not check {', '.join(lengths)} on "
+                f"Pydantic before {minimum} does not check {', '.join(lengths)} on "
                 f"base64 text, so {self._constraint_owner} checks {'it' if len(lengths) == 1 else 'them'} only on "
-                f"Pydantic {PYDANTIC_V2_ENCODED_BYTES_LENGTH_MINIMUM} or later."
+                f"Pydantic {minimum} or later."
             )
         return " ".join(message for message in messages if message) or None
 
@@ -906,7 +895,7 @@ class DataModelField(_PydanticBaseDataModelField):
             k
             for k in data
             if k not in self._DEFAULT_FIELD_KEYS
-            and (k != "deprecated" or not model_target_supports(self.parent, PYDANTIC_V2_FIELD_DEPRECATED_MINIMUM))
+            and (k != "deprecated" or not model_target_meets(self.parent, "pydantic.field_deprecated"))
         )
         existing_json_schema_extra = data.get("json_schema_extra") or {}
         json_schema_extra = {
@@ -930,7 +919,7 @@ class DataModelField(_PydanticBaseDataModelField):
             return None
         pinned_alias: str | None = None
         if (
-            not model_target_supports(parent := self.parent, PYDANTIC_V2_ALIAS_GENERATORS_MINIMUM)
+            not model_target_meets(parent := self.parent, "pydantic.alias_generators")
             and isinstance(parent, BaseModel)
             and not parent.IS_ROOT_MODEL
         ):
@@ -971,7 +960,7 @@ class DataModelField(_PydanticBaseDataModelField):
 
     def _missing_sentinel_import(self) -> Import:
         """Import MISSING from pydantic for an explicit 2.14+ target; an unset target keeps the experimental path."""
-        if explicit_model_target_supports(self.parent, PYDANTIC_V2_MISSING_MINIMUM):
+        if model_target_meets(self.parent, "pydantic.missing_sentinel"):
             return IMPORT_PYDANTIC_MISSING
         return IMPORT_MISSING
 
@@ -1080,10 +1069,7 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
     if (
         (type_name := data_type.type) in _STRING_PATTERN_TYPES
         or getattr(data_type, "annotated_string", False)
-        or (
-            type_name in _BYTES_PATTERN_TYPES
-            and explicit_model_target_supports(model, PYDANTIC_V2_BYTES_PATTERN_MINIMUM)
-        )
+        or (type_name in _BYTES_PATTERN_TYPES and model_target_meets(model, "pydantic.bytes_pattern"))
     ):
         return data_type
     if (
@@ -1205,7 +1191,7 @@ def assigns_forward_reference_field(
     """
     return (
         field.use_annotated
-        and not model_target_supports(model, PYDANTIC_V2_ANNOTATED_FORWARD_REF_MINIMUM)
+        and not model_target_meets(model, "pydantic.annotated_forward_ref")
         and any(
             (reference := data_type.reference) is not None and positions.get(reference.path, -1) > index
             for data_type in field.data_type.all_data_types
@@ -1300,7 +1286,7 @@ def models_reaching_string_pattern_aliases(models: Iterable[DataModel]) -> set[i
         model
         for model in models
         if isinstance(model, TypeAliasBase)
-        and not model_target_supports(model, PYDANTIC_V2_COMPILED_PATTERN_MINIMUM)
+        and not model_target_meets(model, "pydantic.compiled_pattern")
         and has_lookaround_pattern(model.fields, include_compiled=False)
     ]
     if not pending:
@@ -1326,9 +1312,7 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
         return False
     model = cast("DataModel", field.parent)
     namespaces = (
-        ("model_validate", "model_dump")
-        if model_target_supports(model, PYDANTIC_V2_PROTECTED_NAMESPACES_MINIMUM)
-        else ("model_",)
+        ("model_validate", "model_dump") if model_target_meets(model, "pydantic.protected_namespaces") else ("model_",)
     )
     pending = [model]
     while pending:

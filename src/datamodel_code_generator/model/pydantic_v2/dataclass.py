@@ -41,13 +41,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONFIG_DICT,
     IMPORT_PYDANTIC_DATACLASS,
 )
-from datamodel_code_generator.model.pydantic_v2.version import (
-    PYDANTIC_V2_DATACLASS_OWN_NAME_MINIMUM,
-    PYDANTIC_V2_DATACLASS_SIGNATURE_ORDER_MINIMUM,
-    _includes_dict_key_reference_classes,
-    explicit_model_target_supports,
-    model_target_supports,
-)
+from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.python_literal import represent_python_value
 
 has_field_assignment = _dataclass_module.has_field_assignment
@@ -210,7 +204,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         Pydantic 2.13+ rejects a required field after a default in ``inspect.signature``. An unset or older
         target keeps the schema order, which positional construction follows on every release.
         """
-        return explicit_model_target_supports(self, PYDANTIC_V2_DATACLASS_SIGNATURE_ORDER_MINIMUM)
+        return model_target_meets(self, "pydantic.dataclass_signature_order")
 
     @override
     def keeps_assignment_with_required_fields(self, field: DataModelFieldBase) -> bool:
@@ -241,7 +235,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
                 (reference := data_type.reference) is not None and reference.path == self.path
                 for data_type in field.data_type.all_data_types
             )
-            and model_target_supports(self, PYDANTIC_V2_DATACLASS_OWN_NAME_MINIMUM)
+            and model_target_meets(self, "pydantic.dataclass_own_name")
         ):
             return False
         return super().class_attribute_hides_named_type(

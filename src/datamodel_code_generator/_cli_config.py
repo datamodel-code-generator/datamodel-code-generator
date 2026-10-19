@@ -381,12 +381,14 @@ def _get_config_class() -> type[Config]:
         @model_validator(mode="after")
         def validate_keyword_only(self: Self) -> Self:
             """Validate keyword-only compatibility with target Python version."""
+            from datamodel_code_generator._requirements import python_target_meets  # noqa: PLC0415
+
             output_model_type: DataModelType = self.output_model_type
             python_target: PythonVersion = self.target_python_version
             if (
                 self.keyword_only
                 and output_model_type == DataModelType.DataclassesDataclass
-                and not python_target.has_kw_only_dataclass
+                and not python_target_meets("python.kw_only_dataclass", python_target.version_key)
             ):
                 raise Error(self.__validate_keyword_only_err)  # pragma: no cover
             return self

@@ -62,6 +62,7 @@ from datamodel_code_generator._internal_utils import (
 from datamodel_code_generator._naming_hint import collecting_class_names
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
+from datamodel_code_generator._requirements import REQUIREMENTS, pydantic_target_meets, python_target_meets
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -78,7 +79,6 @@ from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import (
     DefaultValueType,
     StrictTypes,
-    _is_pydantic_version_at_least,
     _pydantic_version_key,
 )
 from datamodel_code_generator.imports import (
@@ -89,6 +89,7 @@ from datamodel_code_generator.imports import (
     Import,
     Imports,
 )
+from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model.base import (
     ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
     GENERIC_BASE_CLASS_NAME,
@@ -108,7 +109,14 @@ from datamodel_code_generator.model.base import (
     linearize_data_models,
     sort_data_models_for_mro,
 )
-from datamodel_code_generator.model.enum import Enum, IntEnum, Member, get_raw_enum_member_value
+from datamodel_code_generator.model.enum import (
+    Enum,
+    IntEnum,
+    Member,
+    StrEnum,
+    _enum_class,
+    get_raw_enum_member_value,
+)
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
 from datamodel_code_generator.model.output import (
     _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
@@ -201,7 +209,6 @@ _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
 _TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
-_TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM: Final = "2.10"
 
 
 @dataclass(frozen=True, slots=True)
@@ -2824,11 +2831,6 @@ def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[Data
             yield data_type
 
 
-def _msgspec_value_kind(value: object) -> str:
-    """Return ``str`` or ``int`` for an Enum or Literal value written as one, subclasses but not bool, else ``""``."""
-    return "str" if isinstance(value, str) else "int" if isinstance(value, int) and not isinstance(value, bool) else ""
-
-
 def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind and its written members of a union that msgspec decodes once its Enums are written as Literal.
 
@@ -2844,7 +2846,7 @@ def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumC
         for leaf, _, _ in _iter_discriminator_data_types((member,)):
             if isinstance(source := leaf.reference.source if leaf.reference else None, Enum):
                 if (
-                    kinds := {_msgspec_value_kind(get_raw_enum_member_value(field.default)) for field in source.fields}
+                    kinds := {literal_value_kind(get_raw_enum_member_value(field.default)) for field in source.fields}
                 ) in ({"str"}, {"int"}):
                     enums[kind := kinds.pop()].add(id(source))
                     names[kind][member.type_hint] = None
@@ -2852,7 +2854,7 @@ def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumC
                 if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
                     refused.add("str")
                 for kind in (
-                    {_msgspec_value_kind(literal) for literal in leaf.literals} or {leaf.type or ""}
+                    {literal_value_kind(literal) for literal in leaf.literals} or {leaf.type or ""}
                 ) & names.keys():
                     others.add(kind)
                     names[kind][member.type_hint] = None
@@ -2935,7 +2937,8 @@ def _msgspec_null_enum_message(model: Enum) -> str | None:
     """Describe an enum whose null member msgspec refuses, if the other members are all str or all int."""
     values = {field.name: get_raw_enum_member_value(field.default) for field in model.fields}
     if not (nulls := [name for name, value in values.items() if value is None]) or not (
-        (kinds := {type(value) for value in values.values() if value is not None}) <= {str} or kinds <= {int}
+        (kinds := {literal_value_kind(value) for value in values.values() if value is not None}) <= {"str"}
+        or kinds <= {"int"}
     ):
         return None
     member = f"its member {nulls[0]} = None"
@@ -3180,20 +3183,21 @@ def _only_groups_members(data_type: DataType) -> bool:
     )
 
 
-def _flatten_union_members(data_type: DataType) -> None:
+def _flatten_union_members(data_type: DataType, enclosing: tuple[DataType, ...] = ()) -> None:
     """Hoist grouped members and their ``None`` into the union, so ruff finds no nested or repeated member to rewrite.
 
     Ruff rewrites a union with a nested union or a repeated member into a ``|`` chain, which fails at runtime
-    once a member is a string.
+    once a member is a string. A member's ``None`` moves to its union and to each union that one is flattened into.
     """
     members: list[DataType] = []
+    unions = (data_type, *enclosing)
     for member in data_type.data_types:
         if member.is_optional:
-            member.is_optional = False
-            data_type.is_optional = True
+            member._materialize_render_state("null-moved-to-union")  # noqa: SLF001
+            for union in unions:
+                union._materialize_render_state("member-null")  # noqa: SLF001
         if _only_groups_members(member):
-            _flatten_union_members(member)
-            data_type.is_optional = data_type.is_optional or member.is_optional
+            _flatten_union_members(member, unions)
             members.extend(member.data_types)
         else:
             members.append(member)
@@ -4515,7 +4519,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if isinstance(source_model, Enum):
                     enums.append(source_model)
             if enums:
-                merged_enum = enums[0].__class__(
+                kind = decide_enum_kind("merged", first_specialized=isinstance(enums[0], (IntEnum, StrEnum)))
+                merged_enum = _enum_class(kind, enums[0].__class__)(
                     fields=[f for e in enums for f in e.fields],
                     description=model.description,
                     reference=model.reference,
@@ -4559,9 +4564,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return value
 
         member_value = member.value
-        if isinstance(member_value, (str, int, bool)):
-            return member_value
-        return value
+        return member_value if is_literal_kind(literal_value_kind(member_value)) else value
 
     def __set_force_optional_discriminator_literal_default(
         self,
@@ -6191,7 +6194,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not users:
             return False
         index = positions.get(model.path)
-        writes_strings = use_deferred_annotations and not self.target_python_version.has_native_deferred_annotations
+        writes_strings = use_deferred_annotations and not python_target_meets(
+            "python.deferred_annotations", self.target_python_version.version_key
+        )
         assigned = (
             model.field_binds_class_attribute(field)
             or (
@@ -6779,7 +6784,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
         minimums: dict[str, str] = {}
         for minimum in sorted(
-            {minimum for minimum, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()},
+            {
+                REQUIREMENTS[construct].minimum
+                for construct, _ in self.data_type_manager.TARGET_NUMBER_KEYWORDS.values()
+            },
             key=_pydantic_version_key,
         ):
             taken = keywords_for(minimum)
@@ -7714,7 +7722,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ) and self.data_model_type.REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS:
             return False
         return bool(
-            self.target_python_version.has_native_deferred_annotations or (with_import and not disable_future_imports)
+            python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
+            or (with_import and not disable_future_imports)
         )
 
     def _has_forward_references(self, models: list[DataModel]) -> bool:  # noqa: PLR6301
@@ -7759,7 +7768,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> str:
         """Return future imports required by a single generated module."""
         if not (
-            self.target_python_version.has_native_deferred_annotations
+            python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
             and self._requires_explicit_deferred_annotations(ctx.models, config)
         ):
             return future_imports_str
@@ -7789,7 +7798,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if (
             with_import
             and not disable_future_imports
-            and not self.target_python_version.has_native_deferred_annotations
+            and not python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
         ):
             self.imports.append(IMPORT_ANNOTATIONS)
 
@@ -8359,12 +8368,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             models,
             self.pydantic_v2_root_model_type,
             use_deferred_annotations=use_deferred_annotations,
-            defers_recursive_containers=(target := self.target_pydantic_version) is None
-            or _is_pydantic_version_at_least(target, _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM),
+            defers_recursive_containers=pydantic_target_meets(
+                "pydantic.type_alias_module_namespace", self.target_pydantic_version
+            ),
             generation_store=self.generation_store,
             can_retain_cache=can_retain_cache,
             hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
-            use_typing_generics=not self.target_python_version.has_string_arguments_in_builtin_generics,
+            use_typing_generics=not python_target_meets(
+                "python.builtin_generic_strings", self.target_python_version.version_key
+            ),
         )
         if not unused_models:
             live_models = models

@@ -20,7 +20,7 @@ from math import gcd, lcm
 from operator import is_not
 from pathlib import Path
 from string import digits
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, TypeVar, Union, cast
 from urllib.parse import ParseResult, unquote, urljoin, urlparse
 from warnings import warn
 
@@ -51,7 +51,8 @@ from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_s
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
-from datamodel_code_generator._shared_types import DefaultPutDict, LiteralType
+from datamodel_code_generator._requirements import python_target_meets
+from datamodel_code_generator._shared_types import DefaultPutDict
 from datamodel_code_generator._source import (
     YamlValue,
     _load_parser_source_data_from_path_bytes,
@@ -63,6 +64,13 @@ from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
+from datamodel_code_generator.model._decisions.enum_kind import (
+    decide_enum_kind,
+    enum_as_literal,
+    is_literal_kind,
+    is_tag_kind,
+    literal_value_kind,
+)
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     c3_merge,
@@ -71,11 +79,10 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import (
     NULL_ENUM_MEMBER_VALUE,
-    SPECIALIZED_ENUM_TYPE_MATCH,
     SUBCLASS_BASE_CLASSES,
     Enum,
     EnumMemberValue,
-    StrEnum,
+    _enum_class,
 )
 from datamodel_code_generator.model.output import OutputModelContext
 from datamodel_code_generator.model.runtime_validation import (
@@ -160,6 +167,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
+    from datamodel_code_generator.model._decisions.enum_kind import LiteralValueKind
 
 JsonSchemaLiteral = Union[bool, int, str]  # noqa: UP007
 JsonSchemaConstraintKey = Literal[
@@ -177,6 +185,13 @@ JsonSchemaConstraintKey = Literal[
 JsonSchemaConstraintValue = int | float | str | bool
 JsonSchemaDataTypeKwargValue = JsonSchemaConstraintValue
 TaggedUnionValue = Union[int, str]  # noqa: UP007
+_CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
+    "str": "string",
+    "bool": "boolean",
+    "int": "integer",
+    "float": "number",
+}
+"""The ``type`` a merged enum of const branches takes from the kind of the first const that has one."""
 _ARRAY_ITEMS_CONSTRAINT_FIELDS = frozenset({"items", "additionalItems", "prefixItems", "unevaluatedItems"})
 
 
@@ -700,13 +715,8 @@ def _strip_special_path_suffix(path: str) -> str:
 
 
 def _get_tagged_union_value(literal: JsonSchemaLiteral) -> TaggedUnionValue | None:
-    """Return a supported tagged-union value for a JSON Schema literal."""
-    match literal:
-        case bool():
-            return None
-        case int() | str():
-            return literal
-    return None  # pragma: no cover
+    """Return a supported tagged-union value for a JSON Schema literal (``is_tag_kind``)."""
+    return literal if is_tag_kind(literal_value_kind(literal)) else None
 
 
 def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_values: list[Any]) -> str | None:
@@ -2098,28 +2108,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         property_name: str | None = None,
         property_obj: JsonSchemaObject | None = None,
     ) -> bool:
-        """Determine if an enum should be parsed as a literal type.
+        """Determine if an enum should be parsed as a literal type (``enum_as_literal``).
 
         Priority (highest to lowest):
         1. x-enum-field-as-literal on the property schema
         2. enum_field_as_literal_map matching Model.field or field
         3. Global enum_field_as_literal setting
         """
-        # Check x-enum-field-as-literal on property or obj
-        target_obj = property_obj if property_obj is not None else obj
-        if target_obj.x_enum_field_as_literal is not None:
-            return target_obj.x_enum_field_as_literal
-
-        # Check enum_field_as_literal_map for matching keys
-        if property_name and self.enum_field_as_literal_map and property_name in self.enum_field_as_literal_map:
-            return self.enum_field_as_literal_map[property_name] == "literal"
-
-        # Fall back to global setting
-        if self.enum_field_as_literal == LiteralType.All:
-            return True
-        if self.enum_field_as_literal == LiteralType.One:
-            return len(obj.enum) == 1
-        return False
+        return enum_as_literal(
+            extension=(property_obj if property_obj is not None else obj).x_enum_field_as_literal,
+            mapped=self.enum_field_as_literal_map.get(property_name) if property_name else None,
+            setting=self.enum_field_as_literal.value if self.enum_field_as_literal else None,
+            member_count=len(obj.enum),
+        )
 
     @classmethod
     def _extract_const_enum_from_combined(  # noqa: PLR0912
@@ -2161,16 +2162,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 varnames.append(item.title)
             descriptions.append(item.description or "")
 
-            if inferred_type is None and const_value is not None:
-                match const_value:
-                    case str():
-                        inferred_type = "string"
-                    case bool():  # bool must come before int (bool is subclass of int)
-                        inferred_type = "boolean"
-                    case int():
-                        inferred_type = "integer"
-                    case float():
-                        inferred_type = "number"
+            if inferred_type is None:
+                inferred_type = _CONST_ENUM_TYPES.get(literal_value_kind(const_value))
 
         if not enum_values:  # pragma: no cover
             return None
@@ -2727,27 +2720,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.data_type_manager.get_data_type(Types.any)
 
     def _get_const_data_type(self, const: object) -> DataType:
-        """Return a DataType for a JSON Schema const value."""
-        if isinstance(const, bool):
-            if not self._output_model_context.supports_boolean_literals:
-                return self.data_type_manager.get_data_type(Types.boolean)
-            return self.data_type(literals=[const])
-        if isinstance(const, (int, str)):
+        """Return a DataType for a JSON Schema const value: its Literal (``is_literal_kind``) or its value's type."""
+        if is_literal_kind(
+            literal_value_kind(const), bool_literals=self._output_model_context.supports_boolean_literals
+        ):
             return self.data_type(literals=[const])
         return self._get_data_type_from_json_value(const)
 
     def _partition_enum_values(self, enum_values: list[Any]) -> tuple[list[JsonSchemaLiteral], list[object], bool]:
-        """Split enum values into literal and non-literal values."""
+        """Split enum values into literal (``is_literal_kind``) and non-literal values."""
         literal_values: list[JsonSchemaLiteral] = []
         non_literal_values: list[object] = []
         has_null = False
+        bool_literals = self._output_model_context.supports_boolean_literals
         for enum_value in enum_values:
-            if enum_value is None:
+            if (kind := literal_value_kind(enum_value)) == "none":
                 has_null = True
                 non_literal_values.append(enum_value)
-            elif isinstance(enum_value, bool) and not self._output_model_context.supports_boolean_literals:
-                non_literal_values.append(enum_value)
-            elif isinstance(enum_value, (bool, int, str)):
+            elif is_literal_kind(kind, bool_literals=bool_literals):
                 literal_values.append(enum_value)
             else:
                 non_literal_values.append(enum_value)
@@ -4424,8 +4414,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> JsonSchemaLiteral | None:
         if "const" in obj.extras:
             const = obj.extras["const"]
-            return const if isinstance(const, (bool, int, str)) else None
-        if len(obj.enum) == 1 and isinstance(obj.enum[0], (bool, int, str)):
+            return const if is_literal_kind(literal_value_kind(const)) else None
+        if len(obj.enum) == 1 and is_literal_kind(literal_value_kind(obj.enum[0])):
             return obj.enum[0]
         if obj.ref:
             seen_refs = seen_refs or set()
@@ -12211,20 +12201,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _get_enum_model_class(self, type_: Types | None, enum_values: list[Any]) -> tuple[type[Enum], Types | None]:
-        """Return the enum model class and remaining subtype for schema enum generation."""
-        if not (self.use_specialized_enum and type_ and (specialized_type := SPECIALIZED_ENUM_TYPE_MATCH.get(type_))):
-            return Enum, type_
+        """Return the enum model class and the schema type whose value type it also subclasses, else None.
 
-        match specialized_type:
-            case _ if specialized_type is StrEnum:
-                if not self.target_python_version.has_strenum or not all(
-                    isinstance(enum_value, str) for enum_value in enum_values
-                ):
-                    return Enum, type_
-            case _:
-                pass
-
-        return specialized_type, None
+        ``decide_enum_kind`` decides both. Up to 0.86.0 the second value was the schema type for every class that is
+        not specialized, whether or not the class subclasses it; callers still check ``use_subclass_enum`` for parser
+        subclasses that return that.
+        """
+        kind = decide_enum_kind(
+            "schema",
+            value_type=SUBCLASS_BASE_CLASSES.get(type_) if type_ else None,
+            values=enum_values,
+            use_specialized_enum=self.use_specialized_enum,
+            use_subclass_enum=self.use_subclass_enum,
+            has_strenum=python_target_meets("python.strenum", self.target_python_version.version_key),
+        )
+        return _enum_class(kind), type_ if kind.subclasses_value_type else None
 
     def _get_enum_type(self, obj: JsonSchemaObject) -> Types | None:
         """Return the type an enum class of the schema may specialize or subclass."""
@@ -12234,7 +12225,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the enum class of the schema subclasses a value type, whose members cannot be None.
 
         Such a class needs one ``type`` other than ``string``, which rejects null unless ``nullable`` allows it, so the
-        enum drops the null it lists and is not nullable, except that an enum of only null stays that None.
+        enum drops the null it lists and is not nullable, except that an enum of only null stays that None. The
+        ``use_subclass_enum`` check is a no-op for the built-in ``_get_enum_model_class``; it stays for parser
+        subclasses that return its old second value.
         """
         enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), obj.enum)
         return enum_cls is not Enum or (self.use_subclass_enum and type_ in SUBCLASS_BASE_CLASSES)
@@ -12383,6 +12376,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.data_type(reference=reference)
 
         def create_enum(reference_: Reference) -> DataType:
+            """Build the enum model; the ``use_subclass_enum`` check is kept for parser subclasses (see above)."""
             enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), enum_times)
             self._record_schema_object(reference_, obj)
 

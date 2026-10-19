@@ -296,7 +296,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | prepare | `__override_required_field` | inherited placeholders, base models (any module) | replaces placeholders by copies of inherited fields, required, defaults |
 | prepare | `__replace_unique_list_to_set` | `uniqueItems`, defaults | list to set (`_create_set_from_list`), set defaults |
 | prepare | `__change_from_import` | references to other modules | module imports, `data_type.alias` |
-| prepare | `__extract_inherited_enum` | field-less models with Enum bases | replaces the model by a new Enum with the same `Reference` |
+| prepare | `__extract_inherited_enum` | field-less models with Enum bases | replaces the model by a new Enum with the same `Reference`, of the class of its first Enum base (`decide_enum_kind`) |
 | process | `__set_reference_default_value_to_field` | defaults of referenced models | field defaults |
 | process | `__reuse_model` | rendered model text and union tags of this module's models | replaces duplicates by empty subclasses (users in this module redirected) or removes them (Enums, `--collapse-reuse-models`: users in every module redirected) |
 | process | `__collapse_root_models` | root models referenced from this module (any module), circular paths from L4 | inlines root types, merges constraints, calls `process_const()` again, renames, marks unused roots |
@@ -341,13 +341,15 @@ opt-out decided in L6).
 model and formats the body. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
 (`model/__init__.py:get_data_model_types`). Rendering is not read-only. Rendering a type hint or collecting a field's
-imports writes `is_optional`: `types.py:DataType._apply_nullable_from_reference` adds the None of a nullable model
-that the type names; `types.py:DataType._render_union_type_hint` makes a union optional when a member's hint includes
-None; `model/base.py:DataModelFieldBase._normalize_data_type_import_state`, which import collection runs, applies the
-first write and makes a union optional for a `null` member; and `parser/base.py:_flatten_union_members` (L5
-finalize) moves member nullability onto the union. Import collection already runs in L3 deduplication, so
-`is_optional` read before L7 depends on what ran first. A decision before L7 reads `types.py:DataType.admits_none`,
-which computes the rendered nullability without writing it.
+imports writes `is_optional` on shared nodes through `types.py:DataType._materialize_render_state` (msgspec's
+`_strip_null` writes it on its own copies): `type_hint` adds the None
+of a nullable model that the type names; `types.py:DataType._render_union_type_hint` makes a union optional when a
+member's hint includes None; `model/base.py:DataModelFieldBase._normalize_data_type_import_state`, which import
+collection runs, applies the first write and makes a union optional for a `null` member; and
+`parser/base.py:_flatten_union_members` (L5 finalize) moves member nullability onto the union. Import collection
+already runs in L3 deduplication, so `is_optional` read before L7 depends on what ran first. A decision before L7
+reads `types.py:DataType.admits_none`, which computes the rendered nullability with
+`model/_decisions/nullability.py:rendered_nullability` without writing it.
 
 ### Hidden Couplings
 
@@ -386,6 +388,7 @@ collapse replacing a member of a shared list.
 ### Fact Finality
 
 "Final after" names the last pass that can still change the fact. A decision that reads the fact belongs after it.
+`parser/_facts.py` holds the same information per attribute (`final_after`, `frozen_at`) for the checkers.
 
 | Fact | Final after |
 | --- | --- |
@@ -427,9 +430,47 @@ incrementally for appended and changed models or with a full rebuild.
 
 The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_MUTATION_METHODS`, for example
 `replace_field_type`, `replace_nested_data_type`, `set_fields`, `set_base_classes`, `update_model_reference` and
-`redirect_reference_users`. `scripts/check_generation_store_usage.py` (with
-`tests/parser/test_generation_store_usage.py`) rejects direct writes to `.data_type`, `.fields`, `.base_classes` and
-`.reference` and list mutators on model collections, in `parser/` only.
+`redirect_reference_users`.
+
+`parser/_facts.py` says which attribute holds which fact. `ATTRIBUTE_FACTS` has one row per owner class and attribute,
+`__dict__` key, dict entry (`extras["kw_only"]`) or cached property, with its kind (`fact`, `presentation`, `cache` or
+`bookkeeping`), the `Fact` and `RenderFact` members a write changes, the store operations allowed to write it, the
+`Phase` whose passes write it last today and its freeze point: the latest freeze point among its facts (every `Fact`
+at B1, every `RenderFact` at its `RENDER_FACT_FREEZE_POINTS` entry), after which nothing may write it once the pass
+pipeline is in place. The finality checks still check each `Fact` at B1 unless a pass declares an exception.
+Bookkeeping rows name no fact and no store operation. The module docstring lists the three allowed exceptions to the
+kind rules (plan rows, rendered nullability, the schema-validator plan cache). The module imports only the standard
+library and `typing_extensions` (`scripts/check_architecture_boundaries.py` registers it as the `facts` leaf layer), so
+the checkers can read it without importing the package.
+
+`scripts/check_generation_store_usage.py` (with `tests/parser/test_generation_store_usage.py`) reads that table and
+`GENERATION_STORE_MUTATION_METHODS` with `ast` and reports every write that does not go through a store operation:
+
+- in `parser/`: writes of fact and presentation attributes of model-graph classes (assignment, `del`, augmented
+  assignment, `setattr` and `object.__setattr__` with a literal name, item writes and list, dict and set mutators,
+  also through a local alias), `__dict__` writes, the direct `.data_type`, `.fields`, `.base_classes` and
+  `.reference` writes, list mutators on model collections and `Reference.children` reads. A `setattr` with a
+  computed name is reported too. Writes to the parser itself (`self`) and to schema objects (parameters annotated
+  `JsonSchemaObject`, and the copies and `SCHEMA_OBJECT_TYPE.model_validate` results made from them) are not model
+  writes;
+- in `model/` and `types.py`: the same writes inside the parser-facing hooks (`PARSER_HOOK_METHODS`), the private
+  helpers that write rendered state when a pass reads `type_hint` or collects imports (`RENDER_STATE_WRITERS`), and
+  every model function these reach through calls on any receiver, at any depth, including writes to `self`. The
+  closure stops at construction (`CONSTRUCTION_METHODS`), reference bookkeeping (`REFERENCE_METHODS`) and render
+  entry points (`RENDER_ENTRY_POINTS`, each with its reason);
+- in all three: caches kept on model objects: `__dict__` entries, cache attributes and `cached_property`.
+
+Every finding is keyed by path, function and target, without line numbers, and
+`scripts/generation_store_allowlist.toml` holds the findings that existed when the checker learned them, with a count
+each. A new finding fails, and so does an entry that no longer matches, so the list only shrinks: a change that routes
+a write through the store removes its entry. The checker also fails when a model-graph class sets an attribute (in
+any method) without a row, when a row names nothing the sources declare or write, when a model method that parser
+code calls (directly, or by name through `getattr`/`hasattr`) reaches a fact write that no hook covers, and when a
+hook, construction or render-entry list names a function that no model module defines.
+
+The checker does not follow these forms, so they must not be used for model writes: `obj.__setattr__("name", value)`,
+`obj.extras.__setitem__(key, value)` and other dunder calls, unbound method calls such as `list.append(obj.fields,
+field)`, and `functools.partial(setattr, obj)`.
 
 Current behaviour that a decision reading the index must allow for:
 
@@ -442,7 +483,9 @@ Current behaviour that a decision reading the index must allow for:
   `__assign_forward_reference_fields` change models this way.
 - Renames through the `class_name` setter (`__change_field_name`, `__rename_named_type`,
   `__replace_duplicate_name_in_module`) do not go through `rename_model`.
-- Writes to `data_types` and `dict_key`, and writes in `model/` and `types.py`, are outside the checker's scope.
+- Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
+  function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
+  to module imports (`ModuleContext.imports`), or writes in model methods that the hook closure does not reach.
 - Dedup keys (`DataModel.get_dedup_key`), model shapes and imports caches are separate caches, not store facts.
 
 ### Placement Guide
@@ -471,10 +514,24 @@ Procedure for a new decision:
 | class names | L6, after `__change_imported_model_name` |
 | where a model comes from in its document | after L1, through `location_of(model.reference)`, never from `Reference.path` or a parse path |
 | imports or names written in annotations | end of `_finalize_modules`, or at render |
+| the target Python or Pydantic version a generated construct needs | any pass: read its row in `_requirements.py` (`python_target_meets`, `pydantic_target_meets`, or `model_target_meets` for the target recorded on a Pydantic model); a new construct gets a row instead of a version comparison |
 
 A decision that changes field order, defaults or required state must also run before constructor ordering reads them
 (L5 `__fix_constructor_field_ordering`, L6 `__fix_tag_opt_out_field_ordering`); when that conflicts with a row above,
 step 3 applies.
+
+**One home per decision.** A decision that several passes or backends need is one pure function in
+`model/_decisions/` over the immutable facts it reads, passed by keyword (or as a frozen record); the adapter that
+reads those facts is the only code that reads the live objects, and callers are to go through it (readers of the
+stored `is_optional` move in a later step). `scripts/check_architecture_boundaries.py` keeps the package free of
+concrete backends.
+
+| Decision | Pure core | Adapters |
+| --- | --- | --- |
+| whether a type's rendered hint, or the annotation a field writes around it, includes None | `model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, `field_renders_none` | `types.py:DataType.admits_none`; `model/base.py:DataModelFieldBase._field_null_source`; writes: `types.py:DataType._materialize_render_state` (see L7) |
+| which class an enum is written as (`Enum`, `IntEnum`, `StrEnum`, a value type base); today's kinds kept as named `legacy-*` rows | `model/_decisions/enum_kind.py`: `decide_enum_kind` | `parser/jsonschema.py:JsonSchemaParser._get_enum_model_class` (schema enums, also those merged from `const` branches and those of the converted formats); `parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`; `parser/base.py:Parser.__extract_inherited_enum` (L5); classes: `model/enum.py:_enum_class` |
+| whether an enum is written as a `Literal` | `model/_decisions/enum_kind.py`: `enum_as_literal` | `should_parse_enum_as_literal` of `parser/jsonschema.py:JsonSchemaParser` and `parser/graphql.py:GraphQLParser`; legacy bypass: the enum branch of `parser/jsonschema.py:JsonSchemaParser.parse_array_fields` (a `type` list holding `array`) writes an Enum class without asking, so `--enum-field-as-literal all` leaves it a class |
+| the kind of a const or enum value, and whether a `Literal` or a msgspec tag holds it | `model/_decisions/enum_kind.py`: `literal_value_kind`, `is_literal_kind`, `is_tag_kind` | `parser/jsonschema.py`: `_partition_enum_values`, `_get_const_data_type`, `_get_single_literal_value`, `_get_tagged_union_value`, `_extract_const_enum_from_combined`; `parser/base.py`: `Parser._get_enum_discriminator_literal`, `_msgspec_enum_clashes`, `_msgspec_null_enum_message`; not yet: `model/base.py:DataModelFieldBase._process_const_as_literal`, which moves with the decision on const defaults and nullability |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it
@@ -607,15 +664,23 @@ paths:
   narrowly allowlisted until they can be migrated without changing the public `ParserConfig` surface.
 - Entry points project source and reference settings into a frozen `ParserSourceContext` attached to their lightweight,
   already-validated config; direct parser APIs retain typed configuration and validation.
+- What generated code requires of its target is one frozen table in `_requirements.py`: each construct's library and
+  minimum version, what an unset Pydantic target means for it, and the `typing_extensions` backport an older Python
+  target imports. The version gates of the parsers and the model backends, `PythonVersion.has_*`, the StrEnum gates of
+  presets and the CLI, the Pydantic checks of server and client targets, and the backport import constants read it
+  instead of comparing versions. Not yet rows: the Pydantic target that `base_config.implied_target_settings` implies
+  for server and client targets, the Python minimum of `_api_generation`, the PEP 695 placeholder check of the
+  built-in formatter, and the per-version type backports of `_python_type_import_registry`.
 
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
 backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
-input-model, reference, model-composition, output-model, and shared-model files are classified explicitly, and so is
-`_checks.py`, which reads the debug check flags for every layer and therefore imports only the standard library and
-`typing_extensions`. The composition root may select concrete backends, while shared-model modules must remain neutral:
-they cannot import a concrete backend or resolve one through `sys.modules`, including module-name constants and aliases.
-This keeps backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral
-module registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
+input-model, reference, model-composition, output-model, shared-model, requirement-table, and debug check flag files are
+classified explicitly. The composition root may select concrete backends, while shared-model modules must remain
+neutral: they cannot import a concrete backend or resolve one through `sys.modules`, including module-name constants and
+aliases. The requirement table may import only the standard library, `typing_extensions` and `enums`, and `_checks.py`,
+which every layer reads for the debug check flags, only the standard library and `typing_extensions`. This keeps
+backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral module
+registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
 backend policy therefore cannot hide in the shared layer. Its legacy allowlist is keyed by file, enclosing symbol, rule,
 and target; extra occurrences fail, and removed dependencies make stale entries fail so the exception cannot silently
 become permanent. The same check runs in pre-commit and pytest with actionable diagnostics.
