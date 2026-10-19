@@ -196,6 +196,7 @@ from datamodel_code_generator.types import (
     DataTypeManager,
     DefaultValueDescriptor,
     DefaultValueRecipe,
+    Types,
 )
 from datamodel_code_generator.util import camel_to_snake, record_watch_dependency
 
@@ -263,6 +264,37 @@ _FIELD_NAME_BINDINGS: Final = ImportProducer("field-name-bindings")
 _REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
 _SHADOWED_IMPORTS: Final = ImportProducer("shadowed-imports")
 _IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
+
+
+@dataclass(frozen=True, slots=True)
+class _ConstNarrowing:
+    """The const that admits one value of the enum a model is built from, read at each value typed by that model.
+
+    ``as_member`` says whether the value is typed ``Literal[<Enum>.<member>]``, which needs members equal to their
+    values and an output whose Literal holds enum members; a null const types the value None.
+    """
+
+    const: object
+    location: str
+    as_member: bool
+
+
+def _named_enum(source: DataModel) -> Enum | None:
+    """Return the enum a value typed by ``source`` names: ``source``, or the enum the root of a nullable enum types.
+
+    None when the root types no enum, as when its const already makes it a Literal.
+    """
+    if isinstance(source, Enum):
+        return source
+    return next(
+        (
+            nested_source
+            for root in source.fields[:1]
+            for nested in root.data_type.all_data_types
+            if nested.reference is not None and isinstance(nested_source := nested.reference.source, Enum)
+        ),
+        None,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -2084,10 +2116,23 @@ def _restore_inherited_field_names_for_unique_aliases(
     return False
 
 
+def _module_qualified_name(reference: Reference, model_path_to_module_name: Mapping[str, str]) -> str:
+    """Return the name of the referenced model qualified by its module, or its short name in the root module."""
+    module_name = _get_model_module_name(cast("DataModel", reference.source), model_path_to_module_name)
+    return f"{module_name}.{reference.short_name}" if module_name else reference.short_name
+
+
+def _annotated_reference(data_type: DataType) -> Reference | None:
+    """Return the type that the annotation of ``data_type`` names: its reference, or the enum of its enum members."""
+    return data_type.reference or data_type._enum_member_literal_reference  # noqa: SLF001
+
+
 def _named_reference(field: DataModelFieldBase, name: str | None) -> Reference | None:
     """Return the referenced type that the field's annotation names ``name``."""
     for data_type in field.data_type.all_data_types:
-        if (reference := data_type.reference) is not None and (data_type.alias or reference.short_name) == name:
+        if (reference := _annotated_reference(data_type)) is not None and (
+            data_type.alias or reference.short_name
+        ) == name:
             return reference
     return None
 
@@ -2099,7 +2144,7 @@ def _same_named_reference(model: DataModel, name: str | None, *, skips_aliases: 
             reference
             for field in model.fields
             for data_type in field.data_type.all_data_types
-            if (reference := data_type.reference) is not None
+            if (reference := _annotated_reference(data_type)) is not None
             and reference.short_name == name
             and not (skips_aliases and data_type.alias and data_type.alias != name)
         ),
@@ -2143,7 +2188,7 @@ def _hidden_type_names(model: DataModel) -> Collection[str | None]:
         reference.short_name
         for field in model.fields
         for data_type in field.data_type.all_data_types
-        if (reference := data_type.reference) is not None and not data_type.alias
+        if (reference := _annotated_reference(data_type)) is not None and not data_type.alias
     } & {field.name for field in model.fields if model.field_name_hides_types(field)}
 
 
@@ -3707,6 +3752,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         }
         self.reuse_model: bool = config.reuse_model
         self._typed_map_value_reference_ids: set[int] = set()
+        self._const_narrowed_references: list[tuple[Reference, _ConstNarrowing]] = []
+        self._const_narrowed_values: dict[int, tuple[DataType, _ConstNarrowing]] = {}
+        self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
         self.typed_nullable_map_reference_ids: set[int] = set()
@@ -4717,29 +4765,24 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         internal_modules: set[ModulePath],
         model_path_to_module_name: dict[str, str],
     ) -> None:
-        """Import enum classes that discriminator literals render outside the enum module."""
-        if not self.use_enum_values_in_discriminator:
-            return
+        """Name the enum class of each enum member literal as its module writes it, importing it from another module.
+
+        A literal of the enum's own module takes the enum's final name, which a type renamed for a field it hid
+        changes after the literal is made.
+        """
         for ctx in contexts:
             model_paths = {model.path for model in ctx.models}
             for model in ctx.models:
                 for data_type in model.all_data_types:
-                    match data_type._enum_member_literal_reference:  # noqa: SLF001
-                        case None:
-                            continue
-                        case reference if data_type.alias or reference.path in model_paths:
-                            continue
-                        case reference:
-                            pass
-
-                    enum_module_name = _get_model_module_name(
-                        cast("DataModel", reference.source), model_path_to_module_name
-                    )
+                    if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001
+                        continue
                     enum_class = (
-                        self.__register_reference_import(
+                        reference.short_name
+                        if reference.path in model_paths
+                        else self.__register_reference_import(
                             reference,
                             _get_model_module_name(model, model_path_to_module_name),
-                            f"{enum_module_name}.{reference.short_name}" if enum_module_name else reference.short_name,
+                            _module_qualified_name(reference, model_path_to_module_name),
                             ctx.imports,
                             ctx.scoped_model_resolver,
                             init=ctx.is_init,
@@ -4772,6 +4815,76 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     reference=model.reference,
                 )
                 cls._replace_model_in_list(models, model, merged_enum)
+
+    def __type_const_narrowed_values(
+        self,
+        models: list[DataModel],
+        imports: Imports,
+        *,
+        can_retain_cache: bool,
+    ) -> None:
+        """Type each value whose model is built from an enum that a const narrows by that const.
+
+        Runs once the referenced enum is final: after reuse and collapse redirect the value and after member and
+        discriminator names are settled. A value of a named enum whose root types no enum, as when its const already
+        makes it a Literal or None, keeps its type. The values that keep the enum type are warned about once msgspec
+        tags are final.
+        """
+        if not self._const_narrowed_values:
+            return
+        for model in models:
+            for field in model.fields:
+                for data_type in tuple(field.data_type.all_data_types):
+                    entry = self._const_narrowed_values.get(id(data_type))
+                    if entry is None or entry[0] is not data_type or data_type.reference is None:
+                        continue
+                    narrowing = entry[1]
+                    if (enum := _named_enum(cast("DataModel", data_type.reference.source))) is None:
+                        continue
+                    if (new_data_type := self.__const_narrowed_data_type(data_type, narrowing, enum)) is None:
+                        self._enum_admits_other_values.append((field, narrowing))
+                        continue
+                    self.generation_store.detach_data_type_ref(data_type)
+                    if data_type is field.data_type:
+                        self.generation_store.replace_field_type(field, new_data_type)
+                    elif (parent := cast("DataType", data_type.parent)).dict_key is data_type:
+                        self.generation_store.replace_nested_data_type(parent, data_type, new_data_type)
+                    else:
+                        self.generation_store.set_nested_data_types(
+                            parent, [new_data_type if nested is data_type else nested for nested in parent.data_types]
+                        )
+                    self._import_ledger.append(
+                        imports, new_data_type.imports, ImportProducer("const-narrowed-values", model, field)
+                    )
+                    _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
+    def __const_narrowed_data_type(
+        self, data_type: DataType, narrowing: _ConstNarrowing, enum: Enum
+    ) -> DataType | None:
+        """Return the type of a value narrowed to a const: None, ``Literal[<Enum>.<member>]``, or None to keep it."""
+        if narrowing.const is None:
+            return self.data_type_manager.get_data_type(Types.null)
+        if not narrowing.as_member or (member := enum.find_member(narrowing.const)) is None:
+            return None
+        new_data_type = self.data_type(
+            enum_member_literals=[(enum.reference.short_name, cast("str", member.field.name))],
+            is_optional=data_type.is_optional,
+        )
+        new_data_type._set_enum_member_literal_reference(enum.reference)  # noqa: SLF001
+        return new_data_type
+
+    def __warn_enums_admitting_other_values(self) -> None:
+        """Warn once per schema location that a value typed by its enum accepts the values its const excludes.
+
+        Runs once msgspec tags are final, as a field that becomes its struct's tag is no value and admits only its tag.
+        """
+        values = (narrowing for field, narrowing in self._enum_admits_other_values if not field.is_class_var)
+        for narrowing in {narrowing.location: narrowing for narrowing in values}.values():
+            warn(
+                f"The schema at {narrowing.location} admits only its const {narrowing.const!r} of its enum values, but "
+                "its values are typed as its enum class, which accepts the other values too.",
+                stacklevel=2,
+            )
 
     def _create_discriminator_data_type(
         self,
@@ -6571,7 +6684,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             reference.short_name
             for field in model.fields
             for data_type in field.data_type.all_data_types
-            if (reference := data_type.reference) is not None
+            if (reference := _annotated_reference(data_type)) is not None
         }
         return [
             field
@@ -6656,7 +6769,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             name
             for user in all_models
             if any(
-                (user_reference := data_type.reference) is not None and user_reference.path == reference.path
+                (user_reference := _annotated_reference(data_type)) is not None
+                and user_reference.path == reference.path
                 for data_type in user.all_data_types
             )
             for name in _family_field_names(_model_family(user, derived_models))
@@ -8788,6 +8902,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.__restore_inherited_field_names_for_unique_aliases(models)
         with fact_pass(decls.APPLY_DISCRIMINATOR_TYPE, models):
             self.__apply_discriminator_type(models, imports, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.TYPE_CONST_NARROWED_VALUES, models):
+            self.__type_const_narrowed_values(models, imports, can_retain_cache=can_retain_cache)
         with fact_pass(decls.SET_ONE_LITERAL_ON_DEFAULT, models):
             self.__set_one_literal_on_default(models, can_retain_cache=can_retain_cache)
         with fact_pass(decls.REFRESH_FIELD_CONFIG, models):
@@ -9607,6 +9723,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.parse_raw()
         finally:
             self._close_http_fetch_session()
+        self._const_narrowed_values = {
+            id(fact.data_type): (fact.data_type, narrowing)
+            for reference, narrowing in self._const_narrowed_references
+            for fact in self.generation_store.index.data_type_facts_for_reference(reference)
+            if fact.role != "base"
+        }
         if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
             self._check_schema_locations(mode)
         self.generation_store.enter_phase(Phase.SETTLE)
@@ -9790,6 +9912,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     opted_out = _tag_fields_of_tagged_bases(all_models)
                 with fact_pass(decls.FIX_TAG_OPT_OUT_FIELD_ORDERING, all_models):
                     self.__fix_tag_opt_out_field_ordering(opted_out, all_models)
+            with fact_pass(decls.WARN_ENUMS_ADMITTING_OTHER_VALUES):
+                self.__warn_enums_admitting_other_values()
             with fact_pass(decls.IMPORT_REMOVED_REUSE_CANONICALS):
                 self.__import_removed_reuse_canonicals(
                     contexts,

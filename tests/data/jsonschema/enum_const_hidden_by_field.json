@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "Counts": {"$ref": "#/$defs/Counts"}
+  },
+  "$defs": {
+    "Counts": {"type": "integer", "enum": [1, 2], "const": 2}
+  }
+}

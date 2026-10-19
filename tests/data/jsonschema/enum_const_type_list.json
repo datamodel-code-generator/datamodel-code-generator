@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TypeList",
+  "type": "object",
+  "properties": {
+    "listOrWord": {"type": ["array", "string"], "items": {"type": "string"}, "enum": ["y", "z"], "const": "y"}
+  }
+}

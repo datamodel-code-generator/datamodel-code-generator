@@ -251,6 +251,8 @@ def generate_payload_runtime(
     with warnings.catch_warnings(record=True) as captured:
         if warning_file:
             warnings.simplefilter("always", UserWarning)
+        else:
+            warnings.filterwarnings("ignore", r"The schema at .* admits only its const ", UserWarning)
         warnings.filterwarnings("always", _PYDANTIC_FLOOR_STATEMENT.pattern, UserWarning)
         return_code = _run_payload_codegen(_payload_codegen_args(case, input_path, output_path, backend))
     generated_model_cache.setdefault("floors", {})[cache_key] = _stated_floor(captured)

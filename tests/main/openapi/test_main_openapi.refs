@@ -1090,6 +1090,14 @@ msgspec.Struct-msgspec_empty_dict_default.py	main/openapi/msgspec_empty_dict_def
 pydantic_v2.BaseModel-pydantic_v2_empty_dict_default.py	main/openapi/pydantic_v2_empty_dict_default.py
 [test_main_openapi_empty_list_default]
 	main/openapi/pydantic_v2_empty_list_default.py
+[test_main_openapi_enum_const_positions]
+msgspec.Struct	main/openapi/main_openapi/enum_const_positions[msgspec.Struct].py
+msgspec.Struct	main/openapi/main_openapi/enum_const_positions[msgspec.Struct].warnings.txt
+pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_positions[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_positions[pydantic_v2.BaseModel].warnings.txt
+[test_main_openapi_enum_const_unsatisfiable]
+	main/openapi/main_openapi/enum_const_unsatisfiable.py
+	main/openapi/main_openapi/enum_const_unsatisfiable.warnings.txt
 [test_main_openapi_enum_literal_type_alias_property_ref]
 	main/openapi/enum_literal_type_alias_property_ref.py
 [test_main_openapi_enum_models_as_literal]

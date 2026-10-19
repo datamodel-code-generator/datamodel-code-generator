@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Legacy",
+  "type": "object",
+  "properties": {
+    "kind": {"type": "string", "enum": ["a", "b"], "const": "a"},
+    "kinds": {"type": "array", "items": {"type": "string", "enum": ["a", "b"], "const": "a"}}
+  }
+}

@@ -265,14 +265,18 @@ build a JSON Schema dict and call `_parse_file` without `_read_document`, so doc
 `parse_combined_schema`), `parse_object`, `parse_enum` or `parse_root_type`. A oneOf/anyOf of constants can become a
 synthetic enum (`_extract_const_enum_from_combined`). An enum class takes a value base (`IntEnum`, `StrEnum`,
 `--use-subclass-enum`'s `(T, Enum)`) only when that base keeps every member value (`T(v) == v`, NaN equal to itself),
-and is a plain `Enum` otherwise (`model/_decisions/enum_kind.py:decide_enum_kind`). An object map, an object without
-`properties` whose keys and values `patternProperties`, `propertyNames` or `additionalProperties` type, is built by one
-builder at every position (`_parse_object_map`): one dict whose value type is the union of the value types of its key
-classes, never a union of dicts. The dict itself admits the null of a type array of object and null, or of
-`nullable: true` under `--strict-nullable` as `_get_data_type` does for other types, so property counts stay on it, and
-the other types of a type array join it in a union. A `nullable` that `parse_combined_schema` copies from an anyOf or
-oneOf parent into a branch is marked on the branch, and the dict of that branch leaves it to the union. Names come from
-`ModelResolver.add`.
+and is a plain `Enum` otherwise (`model/_decisions/enum_kind.py:decide_enum_kind`). A `const` that admits some but not
+all values of the `enum` beside it leaves every enum class as written; `parse_enum` records the const for the model it
+builds (`_note_const_narrowing`), the end of L1 marks every value that names that model, and L5
+`__type_const_narrowed_values` types those values. A Literal enum route (`_enum_value_type`), a `propertyNames` key and
+a Literal root type keep only the admitted values (`_const_narrowed_enum`); a const equal to none of the values only
+warns. An object map, an object without `properties` whose keys and values `patternProperties`, `propertyNames` or
+`additionalProperties` type, is built by one builder at every position (`_parse_object_map`): one dict whose value type
+is the union of the value types of its key classes, never a union of dicts. The dict itself admits the null of a type
+array of object and null, or of `nullable: true` under `--strict-nullable` as `_get_data_type` does for other types, so
+property counts stay on it, and the other types of a type array join it in a union. A `nullable` that
+`parse_combined_schema` copies from an anyOf or oneOf parent into a branch is marked on the branch, and the dict of that
+branch leaves it to the union. Names come from `ModelResolver.add`.
 Each model records the location of the schema object it is built from on its `Reference` (`_record_schema_object`).
 Every use of a reference gets a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base
 classes; inherited fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only
@@ -322,6 +326,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `__change_field_name` | field names vs type names | field names, class names of referenced types (any module) |
 | process | `__restore_inherited_field_names_for_unique_aliases` | inherited field names | field names |
 | process | `__apply_discriminator_type` | captured discriminators, variant models (any module); tag values from `model/_decisions/tag_value.py`, tag defaults from `model/_decisions/literal_default.py` | tag field types, required and defaults on variants, appended tag fields, msgspec struct tags (possibly deferred to a later module) |
+| process | `__type_const_narrowed_values` | values marked at the end of L1 with the const that narrows the enum they name, the enum now named (after reuse and collapse), its members | types each value `Literal[<Enum>.<member>]` when the members equal their values and the output's Literal holds members, None for a null const; otherwise keeps the enum and warns once per schema location |
 | process | `__set_one_literal_on_default` | required one-literal fields; decision from `model/_decisions/literal_default.py` | default, required, nullable |
 | process | `refresh_field_config` (model) | field state | backend field config |
 | process | `__rename_fields_hiding_types` | same-named fields and types of the model family | field names or type names |
@@ -447,6 +452,7 @@ runs inside `fact_pass`.
 | MODULES | `change_field_name` | module | transform | CLASS_NAMES, FIELD_ALIASES, FIELD_NAMES | CLASS_NAMES, FIELD_NAMES |  |
 | MODULES | `restore_inherited_field_names_for_unique_aliases` | module | transform | FIELD_ALIASES, FIELD_NAMES | BASES, FIELD_ALIASES, FIELD_NAMES |  |
 | MODULES | `apply_discriminator_type` | module | transform | CONSTRAINTS, DEFAULTS, DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES, MODULE_IMPORTS, NULLABLE, REQUIRED | DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES | Writes the tag of each discriminated union into its variants, in any module. |
+| MODULES | `type_const_narrowed_values` | module | transform | FIELD_TYPES, MODULE_IMPORTS | FIELD_TYPES | Types each value by the const that narrows the enum it names. |
 | MODULES | `set_one_literal_on_default` | module | transform | DEFAULTS, NULLABLE, REQUIRED | FIELD_TYPES, REQUIRED | Runs when: use_one_literal_as_default. |
 | MODULES | `refresh_field_config` | module | transform | BACKEND_CONFIG | CONSTRAINTS, DEFAULTS, FIELD_ALIASES, NULLABLE, REQUIRED | Lets each model refresh its backend field configuration (model hook). |
 | MODULES | `rename_fields_hiding_types` | module | transform | CLASS_NAMES, FIELD_ALIASES, FIELD_NAMES | BASES, CLASS_NAMES, DEFAULTS, FIELD_NAMES, FIELD_SET, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED |  |
@@ -464,6 +470,7 @@ runs inside `fact_pass`.
 | MODULES | `clear_module_imports_cache` | module | bookkeeping | - | - | Runs when: the module cannot keep its imports cache. |
 | CROSS_MODULE | `tag_fields_of_tagged_bases` | global | transform | DISCRIMINATOR_TAGS, FIELD_SET | BASES, DISCRIMINATOR_TAGS, FIELD_SET | Tags the structs that declare the tag field of a tagged base, or opts them out of the tag. Runs when: msgspec. |
 | CROSS_MODULE | `fix_tag_opt_out_field_ordering` | global | repair | KEYWORD_ONLY | BASES, DEFAULTS, FIELD_SET, KEYWORD_ONLY, REQUIRED | Runs when: msgspec. Removed by PH2. |
+| CROSS_MODULE | `warn_enums_admitting_other_values` | global | check | - | DISCRIMINATOR_TAGS, FIELD_TYPES |  |
 | CROSS_MODULE | `import_removed_reuse_canonicals` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | MODELS_EXIST, MODULE_IMPORTS, MODULE_MEMBERSHIP | Removed by RP15b. |
 | CROSS_MODULE | `import_renamed_types` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | CLASS_NAMES, MODULE_IMPORTS | Removed by RP15b. |
 | CROSS_MODULE | `import_enum_member_literal_classes` | global | repair | FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | DEFAULTS, FIELD_TYPES, MODULE_IMPORTS | Removed by RP15b. |
@@ -844,6 +851,14 @@ right one.
   its patterns and rejected every other key, although the schema types them by `additionalProperties`. The builder
   now hands it the keyword; a schema that asserts something admits the other keys and joins the value union, and an
   absent, `true` or empty one keeps the keys of the patterns.
+- **[#4803](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4803)** (a `const` beside an
+  `enum`): the L1 enum route was taken before the const was read, and only fields that write a const as `Literal`
+  (`process_const` in `DataModelFieldBase.__init__`) narrowed the enum, so items, map values, union branches, msgspec
+  fields and definitions kept every value. Both keywords are raw facts, final when the schema object reaches its route,
+  so each route decides there: a value is typed as the const, and its enum class is still built as written, because
+  users import it; a model built for the schema object itself is built from a copy that keeps the admitted values. A
+  narrowed definition no longer deduplicates in L3 with an inline enum that lists every value, which then keeps a name
+  of its own.
 - **[#4822](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4822)** (missing `Any` import
   after collapse): same-module collapse shares the root type's `data_types` list between the root model and every site
   that inlined it. A later collapse that replaces a member calls `set_nested_data_types` on the member's `parent` (the

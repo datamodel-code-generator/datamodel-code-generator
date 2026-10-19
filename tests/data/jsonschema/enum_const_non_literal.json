@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NonLiteral",
+  "type": "object",
+  "properties": {
+    "floats": {"type": "array", "items": {"type": "number", "enum": [1.5, 2.5], "const": 1.5}},
+    "flags": {"type": "array", "items": {"type": "boolean", "enum": [true, false], "const": true}},
+    "shapes": {"type": "array", "items": {"enum": [{"k": 1}, {"k": 2}], "const": {"k": 1}}},
+    "nulls": {"type": "array", "items": {"enum": ["a", null], "const": null}},
+    "picked": {"$ref": "#/$defs/Picked"}
+  },
+  "$defs": {
+    "Picked": {"type": "number", "enum": [1.5, 2.5], "const": 2.5}
+  }
+}

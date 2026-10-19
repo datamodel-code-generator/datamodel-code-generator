@@ -1,0 +1,3 @@
+[
+  "The schema at input.json#/properties/flags/items admits only its const True of its enum values, but its values are typed as its enum class, which accepts the other values too."
+]

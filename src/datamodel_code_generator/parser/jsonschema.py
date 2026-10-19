@@ -150,6 +150,7 @@ from datamodel_code_generator.parser.base import (
     SPECIAL_PATH_FORMAT,
     Parser,
     Source,
+    _ConstNarrowing,
     _copy_data_model_field,  # noqa: F401  # Preserve the existing parser helper export.
     _copy_data_type,  # noqa: F401  # Preserve the existing parser helper export.
     _copy_resolved_inherited_field,  # noqa: F401  # Preserve the existing parser helper export.
@@ -799,6 +800,17 @@ def _strip_special_path_suffix(path: str) -> str:
     """Return a joined path without the special path markers its last segment ends with."""
     head, separator, last = path.rpartition("/")
     return f"{head}{separator}{last.partition(SPECIAL_PATH_MARKER)[0]}"
+
+
+_ENUM_ENTRY_FIELDS = ("x_enum_varnames", "x_enum_names", "x_enum_descriptions")
+
+
+def _enum_entries_skip_null(obj: JsonSchemaObject) -> bool:
+    """Return whether the x-enum entries of a schema are matched to its enum values without null.
+
+    The class of a string or nullable enum leaves out the null the enum lists, and its entries skip it too.
+    """
+    return None in obj.enum and (obj.type == "string" or bool(obj.nullable))
 
 
 def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_values: list[Any]) -> str | None:
@@ -2063,6 +2075,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             *self.field_extra_keys_without_x_prefix,
         }
         self._circular_ref_cache: dict[str, bool] = {}
+        self._unsatisfiable_const_locations: set[str] = set()
 
         if self.data_model_field_type.can_have_extra_keys:
             self.get_field_extra_key: Callable[[str], str] = lambda key: (
@@ -2916,9 +2929,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         return self.data_type_manager.get_data_type(Types.any)
 
+    def _const_is_literal(self, const: object) -> bool:
+        """Return whether the output model writes a JSON Schema const value as a Literal (``const_type``)."""
+        return const_type(const, bool_literals=self._output_model_context.supports_boolean_literals) == "literal"
+
+    def _const_type_is_exact(self, const: object) -> bool:
+        """Return whether the type of a const value admits that value only: its Literal, or None for null.
+
+        A float, an object or, where the output writes no boolean Literal, a boolean is typed by its value type.
+        """
+        return const is None or self._const_is_literal(const)
+
     def _get_const_data_type(self, const: object) -> DataType:
         """Return a DataType for a JSON Schema const value: its Literal (``const_type``) or its value's type."""
-        if const_type(const, bool_literals=self._output_model_context.supports_boolean_literals) == "literal":
+        if self._const_is_literal(const):
             return self.data_type(literals=[const])
         return self._get_data_type_from_json_value(const)
 
@@ -11407,7 +11431,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if property_names.ref:
             return self.get_ref_data_type(property_names.ref)
         if property_names.enum:
-            string_enums = [value for value in property_names.enum if isinstance(value, str)]
+            string_enums = [value for value in self._const_narrowed_enum(property_names).enum if isinstance(value, str)]
             if string_enums:
                 return self.data_type(literals=string_enums)
             return self.data_type_manager.get_data_type(Types.string)
@@ -11840,7 +11864,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._parse_object_map(name, item, path, get_special_path("object", path))
         if item.enum and not self.ignore_enum_constraints:
             if self.should_parse_enum_as_literal(item, property_name=name):
-                return self.parse_enum_as_literal(item)
+                return self._enum_value_type(item, self.parse_enum_as_literal(item))
             return self.parse_enum(name, item, get_special_path("enum", path), singular_name=singular_name)
         if shared_numeric_constraints:
             return self._get_data_type(item, localize_constraints=False)
@@ -12316,7 +12340,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             data_type = self._parse_object_map(name, obj, path, path)
         elif obj.enum and not self.ignore_enum_constraints:
             if self.should_parse_enum_as_literal(obj, property_name=name):
-                data_type = self.parse_enum_as_literal(obj)
+                data_type = self.parse_enum_as_literal(self._const_narrowed_enum(obj))
             else:  # pragma: no cover
                 data_type = self.parse_enum(name, obj, path)
         elif (typed_values := self._typed_nullable_map_value_schema(obj)) is not None:
@@ -12512,6 +12536,76 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             default=obj.default if obj.has_default else UNDEFINED,
         )
 
+    def _enum_positions_outside_const(self, obj: JsonSchemaObject) -> set[int]:
+        """Return the positions of the enum values that the const beside them excludes, when it admits one of them.
+
+        Draft-04 has no const keyword. A const equal to none of the values admits no value: the schema is read as
+        written, and a warning says so once per schema location.
+        """
+        if "const" not in obj.extras or not self.schema_features.const_support:
+            return set()
+        const = obj.extras["const"]
+        excluded = {position for position, value in enumerate(obj.enum) if not _json_literal_values_equal(const, value)}
+        if len(excluded) < len(obj.enum):
+            return excluded
+        if (location := redact_reference(str(obj.schema_location))) not in self._unsatisfiable_const_locations:
+            self._unsatisfiable_const_locations.add(location)
+            warn(
+                f"The schema at {location} admits no value: its const {const!r} is none of its enum values. It is "
+                "generated as written.",
+                stacklevel=2,
+            )
+        return set()
+
+    def _const_narrowed_enum(self, obj: JsonSchemaObject) -> JsonSchemaObject:
+        """Return a copy of an enum schema that keeps only the values its const admits, with their x-enum entries.
+
+        The schema itself when the const excludes no value. Each entry stays with its value, matched as ``parse_enum``
+        matches them.
+        """
+        if not (excluded := self._enum_positions_outside_const(obj)):
+            return obj
+        skip_null = _enum_entries_skip_null(obj)
+        entry_positions = (position for position, value in enumerate(obj.enum) if value is not None or not skip_null)
+        dropped = {index for index, position in enumerate(entry_positions) if position in excluded}
+        return obj.model_copy(
+            update={
+                "enum": [value for position, value in enumerate(obj.enum) if position not in excluded],
+                **{
+                    field: [entry for index, entry in enumerate(entries) if index not in dropped]
+                    for field in _ENUM_ENTRY_FIELDS
+                    if (entries := getattr(obj, field))
+                },
+            }
+        )
+
+    def _note_const_narrowing(self, reference: Reference, obj: JsonSchemaObject) -> None:
+        """Record the const that narrows the enum ``reference`` is built from, to type the values that name it.
+
+        The enum class keeps every value as written. A const whose type would admit other values, such as a float or
+        an object, leaves the values typed by the enum.
+        """
+        if not self._enum_positions_outside_const(obj) or not self._const_type_is_exact(const := obj.extras["const"]):
+            return
+        self._const_narrowed_references.append((
+            reference,
+            _ConstNarrowing(
+                const=const,
+                location=redact_reference(str(obj.schema_location)),
+                as_member=self._output_model_context.literal_holds_enum_members
+                and self._enum_class_has_value_base(obj),
+            ),
+        ))
+
+    def _enum_value_type(self, obj: JsonSchemaObject, enum_type: DataType) -> DataType:
+        """Return the type of a value whose enum a route wrote as the Literal ``enum_type``: the const's, if it narrows.
+
+        A const whose type would admit other values, such as a float or an object, keeps the enum type.
+        """
+        if self._enum_positions_outside_const(obj) and self._const_type_is_exact(const := obj.extras["const"]):
+            return self._get_const_data_type(const)
+        return enum_type
+
     def parse_enum_as_literal(self, obj: JsonSchemaObject) -> DataType:
         """Parse enum values as a Literal type."""
         literal_values, non_literal_values, has_null = self._partition_enum_values(obj.enum)
@@ -12608,7 +12702,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         named_values = obj.enum
         msgspec_null_alias = self.use_msgspec_nullable_enum_alias and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
-        if None in obj.enum and (obj.type == "string" or obj.nullable):
+        if _enum_entries_skip_null(obj):
             nullable: bool = True
             enum_times = named_values = [e for e in obj.enum if e is not None]
         elif None in obj.enum and (msgspec_null_alias or self._enum_class_has_value_base(obj)):
@@ -12741,6 +12835,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             model_type="enum",
         )
 
+        self._note_const_narrowing(reference, obj)
         if not nullable:
             return create_enum(reference)
 

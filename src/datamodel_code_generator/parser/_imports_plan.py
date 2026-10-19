@@ -72,6 +72,7 @@ ImportPass: TypeAlias = Literal[
     "change-from-import",
     "collapse-root-models",
     "discriminator",
+    "const-narrowed-values",
     "import-removed-reuse-canonicals",
     "import-renamed-types",
     "import-enum-member-literal-classes",
@@ -102,6 +103,7 @@ ImportPass: TypeAlias = Literal[
 * ``collapse-root-models``: ``__collapse_root_models_in_scope`` and ``__import_collapsed_inner_models`` (L5), the
   imports of inlined root types and of the inner models that holders are redirected to, without those of the roots.
 * ``discriminator``: ``__apply_discriminator_type`` (L5), the imports of tag fields.
+* ``const-narrowed-values``: ``__type_const_narrowed_values`` (L5), the imports of the types a const gives its values.
 * ``import-removed-reuse-canonicals``, ``import-renamed-types``, ``import-enum-member-literal-classes``: the L6
   repairs of the same names.
 * ``generic-base-class``: ``__apply_generic_base_class``, the generated base model instead of the output base class.

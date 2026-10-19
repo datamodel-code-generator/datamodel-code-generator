@@ -1201,6 +1201,50 @@ def test_main_openapi_nullable_enum_alias_ignored_by_pydantic(extra_args: list[s
     )
 
 
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_openapi_enum_const_positions(output_model: str, output_file: Path) -> None:
+    """Keep the enum classes of request and response bodies and of components as written beside a narrowing const.
+
+    A property is typed as the const where the output writes const as a Literal, and an item keeps its plain enum.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "enum_const_positions.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=["--output-model-type", output_model, "--openapi-scopes", "schemas", "paths"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+def test_main_openapi_enum_const_unsatisfiable(output_file: Path) -> None:
+    """Warn once about a response schema whose const is none of its enum values, though each operation reads it."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "enum_const_unsatisfiable.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "paths"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
 @pytest.mark.parametrize("order", ["base_later", "base_earlier"])
 def test_main_openapi_msgspec_tagged_unions_declaration_order(order: str, output_file: Path) -> None:
     """Tag variants and their base struct alike whichever of their unions the document declares first."""

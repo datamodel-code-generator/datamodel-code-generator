@@ -148,6 +148,10 @@ ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
 )
 EXCLUDED_CASES: dict[str, str] = {
+    "jsonschema/enum_const_unsatisfiable.json": (
+        "each const is none of its enum values, so no payload holds those properties; "
+        "test_main_jsonschema_enum_const_unsatisfiable pins its output and warnings"
+    ),
     "openapi/discriminator_pattern_mismatch.yaml::components.schemas.Cat": (
         "its const tag is outside its pattern, so the schema accepts no payload; "
         "test_main_openapi_discriminator_pattern_mismatch pins its source"

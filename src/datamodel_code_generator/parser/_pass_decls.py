@@ -439,6 +439,15 @@ APPLY_DISCRIMINATOR_TYPE = PassDecl(
     ),
     summary="Writes the tag of each discriminated union into its variants, in any module.",
 )
+TYPE_CONST_NARROWED_VALUES = PassDecl(
+    "type_const_narrowed_values",
+    Phase.MODULES,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES),
+    writes=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS),
+    summary="Types each value by the const that narrows the enum it names.",
+)
 SET_ONE_LITERAL_ON_DEFAULT = PassDecl(
     "set_one_literal_on_default",
     Phase.MODULES,
@@ -615,6 +624,13 @@ FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
     writes=_facts(RenderFact.KEYWORD_ONLY),
     removed_by="PH2",
     condition="msgspec",
+)
+WARN_ENUMS_ADMITTING_OTHER_VALUES = PassDecl(
+    "warn_enums_admitting_other_values",
+    Phase.CROSS_MODULE,
+    Scope.GLOBAL,
+    PassKind.CHECK,
+    reads=_facts(Fact.FIELD_TYPES, Fact.DISCRIMINATOR_TAGS),
 )
 IMPORT_REMOVED_REUSE_CANONICALS = PassDecl(
     "import_removed_reuse_canonicals",

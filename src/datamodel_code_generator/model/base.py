@@ -2043,6 +2043,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """The construct that the model's own form writes where Pydantic reads it, such as a ``type`` statement."""
     _CONFIG_KEYS_WITHOUT_REQUIREMENT: ClassVar[Callable[[], tuple[str, ...]]] = staticmethod(tuple)
     """The config keys that the model can write without a row in ``_requirements.py``, for the debug check."""
+    _LITERAL_HOLDS_ENUM_MEMBERS: ClassVar[bool] = True
+    """Whether the output validates a ``Literal`` of enum members (msgspec does not)."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False

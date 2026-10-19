@@ -7009,6 +7009,180 @@ def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: li
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param(output_model, extra_args, id=f"{args_id}-{model_id}")
+        for args_id, extra_args in (
+            ("default", []),
+            ("subclass-enum", ["--use-subclass-enum"]),
+            ("py311", ["--target-python-version", "3.11"]),
+            ("literal-one", ["--enum-field-as-literal", "one"]),
+            ("literal-all", ["--enum-field-as-literal", "all"]),
+        )
+        for model_id, output_model in (
+            ("pydantic-v2", "pydantic_v2.BaseModel"),
+            ("msgspec", "msgspec.Struct"),
+            ("dataclasses", "dataclasses.dataclass"),
+            ("typeddict", "typing.TypedDict"),
+        )
+        if args_id == "default"
+        or (args_id == "subclass-enum" and model_id in {"pydantic-v2", "dataclasses"})
+        or (args_id == "py311" and model_id == "pydantic-v2")
+        or (args_id.startswith("literal") and model_id in {"pydantic-v2", "msgspec"})
+    ],
+)
+def test_main_jsonschema_enum_const_positions(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Type a value by the const that admits some but not all values of the enum beside it.
+
+    Every enum class, of a property or a definition, keeps its values as written. A value it types (an item, a map
+    value, a union branch, a definition through ``$ref``) is ``Literal[<Enum>.<member>]`` when the members equal their
+    values (``IntEnum``, ``StrEnum``, ``--use-subclass-enum``), and None for a null const. A plain ``Enum``, and any
+    msgspec enum, keeps the enum type and warns once per schema location that the other values are accepted. Up to
+    0.86.0 these positions kept every value of the enum, except at the fields of models that write const as a Literal.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_const_positions.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model, *extra_args],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("strategy", ["rename-field", "rename-type"])
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass"])
+def test_main_jsonschema_enum_const_hidden_by_field(output_model: str, strategy: str, output_file: Path) -> None:
+    """Keep a field from hiding the enum that its ``Literal[<Enum>.<member>]`` names, as one typed by the enum.
+
+    The field or, with ``--field-type-collision-strategy rename-type``, the enum is renamed, and a standard dataclass
+    leaves the field unbound; a renamed enum is the one the Literal names.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_const_hidden_by_field.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--field-type-collision-strategy", strategy],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "enum_const_hidden_by_field", "Model") as model:
+        adapter = TypeAdapter(model)
+        assert_output(
+            "".join(
+                f"{adapter.dump_json(adapter.validate_python(payload)).decode()}\n" for payload in ({"Counts": 2}, {})
+            ),
+            name="values",
+        )
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_jsonschema_enum_const_type_list(output_model: str, output_file: Path) -> None:
+    """Keep the plain enum type of the enum branch of a type list holding array beside a narrowing const, and warn."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_const_type_list.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+def test_main_jsonschema_enum_const_discriminator_tag(output_file: Path) -> None:
+    """Do not warn about the msgspec tag that the const narrowing the enum of a discriminator becomes."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_const_discriminator_tag.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_jsonschema_enum_const_non_literal(output_model: str, output_file: Path) -> None:
+    """Keep the enum type of a value whose const the output writes as no Literal, as its value type would widen it.
+
+    Floats, objects and, for msgspec, booleans are no Literal values, while null is typed None. A boolean const types
+    its plain ``Enum`` value by the enum and warns. A definition keeps its values as written.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_const_non_literal.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_jsonschema_enum_const_unsatisfiable(output_model: str, output_file: Path) -> None:
+    """Warn that a schema whose const is none of its enum values admits no value, and generate it as written."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_const_unsatisfiable.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", output_model],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_jsonschema_enum_const_draft_04(output_model: str, output_file: Path) -> None:
+    """Keep the enum beside a const of a draft-04 document, which has no const keyword, as written."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_const_draft_04.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--empty-enum-field-name"],
     option_description="""Name for empty string enum field values.
