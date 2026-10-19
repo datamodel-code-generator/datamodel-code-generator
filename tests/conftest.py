@@ -252,7 +252,8 @@ def pytest_configure(config: pytest.Config) -> None:
     for name in () if benchmarks else CHECK_AREA_ENVS:
         os.environ.setdefault(name, "1")
     if not benchmarks and CHECK_STORE_WRITES_ENV not in os.environ:
-        config.pluginmanager.register(StoreWritesCheck(), "store-writes-check")
+        config.pluginmanager.register(store_writes_check := StoreWritesCheck(), "store-writes-check")
+        config.add_cleanup(store_writes_check.report.unlink)
     config.addinivalue_line(
         "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "
@@ -502,10 +503,6 @@ class StoreWritesCheck:
             lines = self.report.read_text(encoding="utf-8").splitlines()
             self.report.write_text("", encoding="utf-8")
         self.checker.check_runtime_writes(lines, allowlist=self.allowlist, witnesses=self.witnesses)
-
-    def pytest_unconfigure(self) -> None:
-        """Remove the report file."""
-        self.report.unlink()
 
 
 class SlowTestOrdering:
