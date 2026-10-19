@@ -11,6 +11,7 @@ model/pydantic_v2/base_model.py: output-model
 model/runtime_validation.py: shared-model
 model/_decisions/nullability.py: shared-model
 model/_decisions/enum_kind.py: shared-model
+model/_decisions/tag_value.py: shared-model
 _api_generation.py: target
 _target_config.py: target
 _requirements.py: requirements

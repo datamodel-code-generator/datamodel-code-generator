@@ -10314,6 +10314,16 @@ def test_main_jsonschema_oneof_const_enum_bool(output_file: Path) -> None:
     )
 
 
+def test_main_jsonschema_tagged_union_non_literal_const(output_file: Path) -> None:
+    """Tag msgspec Structs by the first property whose consts a ``Literal`` holds, skipping float consts."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "tagged_union_non_literal_const.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct"],
+    )
+
+
 def test_main_jsonschema_oneof_const_enum_float(output_file: Path) -> None:
     """Test oneOf with float const values."""
     run_main_and_assert(

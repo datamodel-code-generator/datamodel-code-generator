@@ -13,6 +13,7 @@ import re
 from collections import Counter, defaultdict, deque
 from contextlib import contextmanager, suppress
 from copy import copy
+from dataclasses import dataclass
 from fractions import Fraction
 from functools import cached_property, lru_cache, wraps
 from itertools import chain, starmap
@@ -31,7 +32,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Unpack, override
+from typing_extensions import Unpack, final, override
 
 from datamodel_code_generator import (
     AllOfClassHierarchy,
@@ -83,8 +84,14 @@ from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
     enum_as_literal,
     is_literal_kind,
-    is_tag_kind,
     literal_value_kind,
+)
+from datamodel_code_generator.model._decisions.tag_value import (
+    FieldTag,
+    distinct_tags,
+    field_tag,
+    tagged_union_discriminator,
+    union_tag_values,
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
@@ -651,8 +658,35 @@ def _get_discriminator_property_name(obj: JsonSchemaObject) -> str | None:
     return None
 
 
-def _literal_uniqueness_key(value: JsonSchemaLiteral) -> tuple[type[object], JsonSchemaLiteral]:
-    return type(value), value
+@final
+@dataclass(frozen=True, slots=True)
+class _SchemaTagFacts:
+    """The facts of a property schema that ``field_tag`` reads: its ``const``, its ``enum`` and its ``$ref``."""
+
+    parser: JsonSchemaParser
+    obj: JsonSchemaObject
+    seen_refs: set[str] | None
+
+    def has_const(self) -> bool:
+        """Return whether the schema has a ``const``, null included."""
+        return "const" in self.obj.extras
+
+    def const(self) -> Any:
+        """Return the schema's ``const``."""
+        return self.obj.extras["const"]
+
+    def literals(self) -> tuple[()]:  # noqa: PLR6301
+        """Return no ``Literal`` values: a schema has no ``Literal`` type."""
+        return ()
+
+    def enum_member(self) -> tuple[int, Any]:
+        """Return how many values the schema's ``enum`` holds, and the first one."""
+        return len(self.obj.enum), self.obj.enum[0] if self.obj.enum else None
+
+    def referenced_tag(self) -> FieldTag | None:
+        """Return the tag of the schema the ``$ref`` names."""
+        value = self.parser._get_referenced_single_literal_value(self.obj, self.seen_refs)  # noqa: SLF001
+        return None if value is None else FieldTag(value, "referenced-schema")
 
 
 def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None:
@@ -674,11 +708,6 @@ def _strip_special_path_suffix(path: str) -> str:
     """Return a joined path without the special path markers its last segment ends with."""
     head, separator, last = path.rpartition("/")
     return f"{head}{separator}{last.partition(SPECIAL_PATH_MARKER)[0]}"
-
-
-def _get_tagged_union_value(literal: JsonSchemaLiteral) -> TaggedUnionValue | None:
-    """Return a supported tagged-union value for a JSON Schema literal (``is_tag_kind``)."""
-    return literal if is_tag_kind(literal_value_kind(literal)) else None
 
 
 def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_values: list[Any]) -> str | None:
@@ -4374,19 +4403,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         seen_refs: set[str] | None = None,
     ) -> JsonSchemaLiteral | None:
-        if "const" in obj.extras:
-            const = obj.extras["const"]
-            return const if is_literal_kind(literal_value_kind(const)) else None
-        if len(obj.enum) == 1 and is_literal_kind(literal_value_kind(obj.enum[0])):
-            return obj.enum[0]
-        if obj.ref:
-            seen_refs = seen_refs or set()
-            resolved_ref = self.model_resolver.resolve_ref(obj.ref)
-            if self._resolve_external_ref_mapping(obj.ref) or resolved_ref in seen_refs:
-                return None
-            seen_refs.add(resolved_ref)
-            return self._get_single_literal_value(self._load_ref_schema_object(obj.ref), seen_refs)
-        return None
+        """Return the one value a property schema admits as a tag (``field_tag`` at ``schema``)."""
+        tag = field_tag("schema", _SchemaTagFacts(self, obj, seen_refs))
+        return None if tag is None else tag.value
+
+    def _get_referenced_single_literal_value(
+        self, obj: JsonSchemaObject, seen_refs: set[str] | None
+    ) -> JsonSchemaLiteral | None:
+        """Return the one value the schema a ``$ref`` names admits as a tag, following each reference once."""
+        if not obj.ref:
+            return None
+        seen_refs = seen_refs or set()
+        resolved_ref = self.model_resolver.resolve_ref(obj.ref)
+        if self._resolve_external_ref_mapping(obj.ref) or resolved_ref in seen_refs:
+            return None
+        seen_refs.add(resolved_ref)
+        return self._get_single_literal_value(self._load_ref_schema_object(obj.ref), seen_refs)
 
     def _get_union_variant_literal_values(
         self,
@@ -4415,8 +4447,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         if len(values) < (_MIN_UNION_VARIANT_LITERAL_VALUES if tag_keys is None else 1):
             return None
-        unique_values = {_literal_uniqueness_key(value) for value in values.values()}
-        return values if len(unique_values) == len(values) else None
+        return values if distinct_tags(values.values(), "type-and-value") else None
 
     def _iter_union_variant_literal_field_names(  # noqa: PLR6301
         self,
@@ -4596,30 +4627,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         combined_schemas: Sequence[JsonSchemaObject],
     ) -> tuple[str, dict[int, TaggedUnionValue]] | None:
-        """Return the shared required literal field and supported values for a tagged union."""
+        """Return the shared required literal field and the msgspec tags of the branches (``union_tag_values``)."""
         discriminator_schemas = [
             self._load_ref_schema_object(item.ref) if item.ref and item.ref_type == JSONReference.LOCAL else item
             for item in combined_schemas
         ]
         for field_name in self._iter_union_variant_literal_field_names(obj, discriminator_schemas):
-            if (literal_values := self._get_union_variant_literal_values(discriminator_schemas, field_name)) is None:
-                continue
-            if len(literal_values) != len(discriminator_schemas):
-                continue
-
-            tag_values: dict[int, TaggedUnionValue] = {}
-            for index, literal in literal_values.items():
-                match discriminator_schemas[index]:
-                    case JsonSchemaObject(required=required) if field_name in required:
-                        pass
-                    case _:
-                        break
-                if (tag_value := _get_tagged_union_value(literal)) is None:
-                    break
-                tag_values[index] = tag_value
-            else:
+            if (
+                literal_values := self._get_union_variant_literal_values(discriminator_schemas, field_name)
+            ) is not None and (
+                tag_values := union_tag_values(
+                    literal_values,
+                    branch_count=len(discriminator_schemas),
+                    required={index for index in literal_values if field_name in discriminator_schemas[index].required},
+                )
+            ) is not None:
                 return field_name, tag_values
-
         return None
 
     def _set_tagged_union_discriminator(
@@ -4630,12 +4653,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Set a discriminator extra when the output requires a tagged union."""
         if not (tag_data := self._get_tagged_union_field_values(obj, combined_schemas)):
             return
-        tag_field, _tag_values = tag_data
-        match obj.extras.get("discriminator"):
-            case dict() as discriminator:
-                obj.extras["discriminator"] = {**discriminator, "propertyName": tag_field}
-            case _:
-                obj.extras["discriminator"] = {"propertyName": tag_field}
+        obj.extras["discriminator"] = tagged_union_discriminator(
+            obj.extras.get("discriminator"), literal_property=tag_data[0]
+        )
 
     def _parse_combined_schema_items(  # noqa: PLR0913, PLR0917
         self,

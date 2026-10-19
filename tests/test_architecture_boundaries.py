@@ -94,6 +94,7 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "model" / "runtime_validation.py",
         source_root / "model" / "_decisions" / "nullability.py",
         source_root / "model" / "_decisions" / "enum_kind.py",
+        source_root / "model" / "_decisions" / "tag_value.py",
         source_root / "_api_generation.py",
         source_root / "_target_config.py",
         source_root / "_requirements.py",

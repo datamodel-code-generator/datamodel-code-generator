@@ -95,7 +95,23 @@ from datamodel_code_generator.imports import (
     Import,
     Imports,
 )
-from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, is_literal_kind, literal_value_kind
+from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, literal_value_kind
+from datamodel_code_generator.model._decisions.tag_value import (
+    enum_tag_literal,
+    field_tag,
+    mapped_tags,
+    mapping_path_keys,
+    redeclared_tag_field,
+    same_tag,
+    same_tags,
+    schema_path_keys,
+    struct_tag_clash,
+    struct_tag_conflicts,
+    struct_tag_field,
+    tag_field_matches,
+    tag_key,
+    variant_tags,
+)
 from datamodel_code_generator.model.base import (
     ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
     GENERIC_BASE_CLASS_NAME,
@@ -174,6 +190,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.http import _HTTPFetchSession
+    from datamodel_code_generator.model._decisions.tag_value import TagFieldMatch, VariantTagSource
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._scc import ModuleGraph
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
@@ -2287,87 +2304,61 @@ def _get_schema_path(model: DataModel | Reference) -> str:
     return _source_path((reused or model).path)
 
 
-def _mapping_path_keys(path: str) -> tuple[tuple[str, str], ...]:
-    """Return the keys a discriminator mapping path matches the path of a model by, or more of them.
-
-    ``_check_discriminator_mapping_paths`` matches a schema name, the part after ``#/``, a file name, or a path
-    relative to the document.
-    """
-    return (
-        ("name", path),
-        ("schema", path.rsplit("#/", maxsplit=1)[-1]),
-        ("file", path.rsplit("/", maxsplit=1)[-1]),
-        ("relative", path[path.find("/") + 1 :]),
+def _tag_field_matches(
+    field: DataModelFieldBase, match: TagFieldMatch, wanted: str, *, python_name: str | None = None
+) -> bool:
+    """Return whether a field holds the discriminator's property ``wanted`` (``tag_field_matches``)."""
+    return tag_field_matches(
+        match, wanted, name=field.name, original_name=field.original_name, alias=field.alias, python_name=python_name
     )
-
-
-def _schema_path_keys(model_path: str) -> tuple[tuple[str, str], ...]:
-    """Return the keys the path of a model matches a discriminator mapping path by."""
-    relative = model_path[: model_path.find("#")].lstrip("../")  # noqa: B005
-    return (
-        ("name", model_path.rsplit("/", 1)[-1]),
-        ("schema", model_path.rsplit("#/", maxsplit=1)[-1]),
-        ("file", model_path[:-1]),
-        ("relative", relative),
-        ("relative", "/".join(relative.split("/")[1:])),
-    )
-
-
-def _check_discriminator_mapping_paths(
-    model: DataModel | Reference,
-    mapping: dict[str, str],
-    discriminator_values: list[DiscriminatorValue],
-) -> None:
-    model_path = _get_schema_path(model)
-    for name, path in mapping.items():
-        if "/" not in path and "#" not in path:
-            if model_path.rsplit("/", 1)[-1] == path:
-                discriminator_values.append(name)
-            continue
-        if (model_path.split("#/")[-1] != path.split("#/")[-1]) and (
-            path.startswith("#/") or model_path[:-1] != path.split("/")[-1]
-        ):
-            t_path = path[str(path).find("/") + 1 :]
-            t_disc = model_path[: str(model_path).find("#")].lstrip("../")  # noqa: B005
-            t_disc_2 = "/".join(t_disc.split("/")[1:])
-            if t_path not in {t_disc, t_disc_2}:  # pragma: no branch
-                continue
-        discriminator_values.append(name)
 
 
 def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> DiscriminatorValue | None:
-    const_value = discriminator_field.extras.get("const")
-    if const_value is not None:
-        return const_value
-
-    literals = discriminator_field.data_type.literals
-    if len(literals) == 1:
-        return literals[0]
-
-    enum_source = discriminator_field.data_type.find_source(Enum)
-    if enum_source and len(enum_source.fields) == 1:
-        return get_raw_enum_member_value(enum_source.fields[0].default)
-    return None
+    """Return the one tag a variant's tag field holds (``field_tag``)."""
+    tag = field_tag("variant-field", _FieldTagFacts(discriminator_field))
+    return None if tag is None else tag.value
 
 
-def _get_source_field_name(field: DataModelFieldBase) -> str | None:
-    """Return the name the document gives the field."""
-    return field.original_name if field.original_name is not None else field.alias or field.name
+@final
+@dataclass(frozen=True, slots=True)
+class _FieldTagFacts:
+    """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the Enum its type names."""
+
+    field: DataModelFieldBase
+
+    def has_const(self) -> bool:
+        """Return whether the field has a ``const`` other than None."""
+        return self.field.extras.get("const") is not None
+
+    def const(self) -> Any:
+        """Return the field's ``const``."""
+        return self.field.extras.get("const")
+
+    def literals(self) -> list[DiscriminatorValue]:
+        """Return the values of the ``Literal`` the field's type is."""
+        return self.field.data_type.literals
+
+    def enum_member(self) -> tuple[int, Any]:
+        """Return how many members the Enum the field's type names has, and the first one's value."""
+        fields = enum_source.fields if (enum_source := self.field.data_type.find_source(Enum)) else []
+        return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
+
+    def referenced_tag(self) -> None:
+        """Return no tag: a field has no ``$ref`` of its own."""
 
 
 def _iter_discriminator_fields(
     fields: Iterable[DataModelFieldBase],
     field_name: str,
     *,
-    field_name_mode: Literal["original", "resolved", "either"] = "either",
+    field_name_mode: TagFieldMatch = "python-or-original-name",
 ) -> Iterator[tuple[DataModelFieldBase, DiscriminatorValue]]:
     """Yield the fields of the discriminator's name that carry one discriminator value, with that value."""
     for field in fields:
-        if field_name_mode == "original":
-            matches = _get_source_field_name(field) == field_name
-        else:
-            matches = field.name == field_name or (field_name_mode == "either" and field.original_name == field_name)
-        if matches and (value := _get_discriminator_field_value(field)) is not None:
+        if (
+            _tag_field_matches(field, field_name_mode, field_name)
+            and (value := _get_discriminator_field_value(field)) is not None
+        ):
             yield field, value
 
 
@@ -2375,7 +2366,7 @@ def _find_discriminator_value(
     fields: Iterable[DataModelFieldBase],
     field_name: str,
     *,
-    field_name_mode: Literal["original", "resolved", "either"] = "either",
+    field_name_mode: TagFieldMatch = "python-or-original-name",
 ) -> DiscriminatorValue | None:
     return next(
         (value for _, value in _iter_discriminator_fields(fields, field_name, field_name_mode=field_name_mode)), None
@@ -2388,30 +2379,23 @@ def _get_discriminator_values(
     mapping: dict[str, str],
     *,
     require_literal: bool = False,
-    field_name_mode: Literal["original", "resolved", "either"] = "either",
+    field_name_mode: TagFieldMatch = "python-or-original-name",
 ) -> list[DiscriminatorValue]:
-    if (
-        value := _find_discriminator_value(discriminator_model.fields, field_name, field_name_mode=field_name_mode)
-    ) is not None or (
-        value := _find_reused_discriminator_value(discriminator_model, field_name, field_name_mode=field_name_mode)
-    ) is not None:
-        return [value]
-
-    # Nested choices cannot be updated later, so also accept inherited literals.
-    if require_literal:
-        value = _find_discriminator_value(
-            discriminator_model.iter_all_fields(), field_name, field_name_mode=field_name_mode
-        )
-        return [] if value is None else [value]
-
-    return _get_union_discriminator_values(discriminator_model, field_name, mapping, field_name_mode=field_name_mode)
+    """Return the tags a union lists a variant by; one of a nested choice, never retagged, takes only its own tag."""
+    return _variant_tags(
+        "nested" if require_literal else "variant",
+        discriminator_model,
+        field_name,
+        mapping,
+        field_name_mode=field_name_mode,
+    )
 
 
 def _find_reused_discriminator_value(
     discriminator_model: DataModel,
     field_name: str,
     *,
-    field_name_mode: Literal["original", "resolved", "either"],
+    field_name_mode: TagFieldMatch,
 ) -> DiscriminatorValue | None:
     """Return the tag that the schema of a model gives it when reuse replaced it with an empty subclass.
 
@@ -2428,30 +2412,75 @@ def _get_union_discriminator_values(
     field_name: str,
     mapping: dict[str, str],
     *,
-    field_name_mode: Literal["original", "resolved", "either"],
+    field_name_mode: TagFieldMatch,
 ) -> list[DiscriminatorValue]:
     """Return the tags a union selects a variant by: mapping values, the tag of its own schema, else its name."""
-    if mapped := _get_mapping_discriminator_values(discriminator_model, mapping):
-        return mapped
-    if (
-        value := _find_reused_discriminator_value(discriminator_model, field_name, field_name_mode=field_name_mode)
-    ) is not None:
-        return [value]
-    return [_get_schema_path(discriminator_model).split("/")[-1]]
+    return _variant_tags("union", discriminator_model, field_name, mapping, field_name_mode=field_name_mode)
 
 
-def _get_mapping_discriminator_values(
-    discriminator_model: DataModel, mapping: dict[str, str]
+def _variant_tags(
+    source: VariantTagSource,
+    discriminator_model: DataModel,
+    field_name: str,
+    mapping: dict[str, str],
+    *,
+    field_name_mode: TagFieldMatch,
 ) -> list[DiscriminatorValue]:
-    """Return the mapping values that select a variant directly or through its base classes."""
-    discriminator_values: list[DiscriminatorValue] = []
+    """Return the tags of a variant (``variant_tags``) from its tag fields, the mapping and its schema path."""
+    return [*variant_tags(source, _VariantTagFacts(discriminator_model, field_name, mapping, field_name_mode)).values]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _VariantTagFacts:
+    """The facts of a variant that ``variant_tags`` reads, from its fields, the mapping and its schema path."""
+
+    model: DataModel
+    field_name: str
+    mapping: dict[str, str]
+    field_name_mode: TagFieldMatch
+
+    def own_tag(self) -> DiscriminatorValue | None:
+        """Return the tag of the variant's own tag field."""
+        return _find_discriminator_value(self.model.fields, self.field_name, field_name_mode=self.field_name_mode)
+
+    def reused_tag(self) -> DiscriminatorValue | None:
+        """Return the tag of the model reuse replaced with the variant."""
+        return _find_reused_discriminator_value(self.model, self.field_name, field_name_mode=self.field_name_mode)
+
+    def inherited_tag(self) -> DiscriminatorValue | None:
+        """Return the tag of a tag field the variant inherits."""
+        return _find_discriminator_value(
+            self.model.iter_all_fields(), self.field_name, field_name_mode=self.field_name_mode
+        )
+
+    def mapped_tags(self) -> list[str]:
+        """Return the mapping keys naming the variant or its bases."""
+        return _get_mapping_discriminator_values(self.model, self.mapping)
+
+    def path_segment(self) -> str:
+        """Return the last segment of the variant's schema path."""
+        return _get_schema_path(self.model).split("/")[-1]
+
+
+def _get_mapping_discriminator_values(discriminator_model: DataModel, mapping: dict[str, str]) -> list[str]:
+    """Return the mapping values that select a variant directly or through its base classes (``mapped_tags``)."""
     if not mapping:
-        return discriminator_values
-    _check_discriminator_mapping_paths(discriminator_model, mapping, discriminator_values)
-    if not discriminator_values:
-        for base_reference in filter(None, (base_class.reference for base_class in discriminator_model.base_classes)):
-            _check_discriminator_mapping_paths(base_reference, mapping, discriminator_values)
-    return discriminator_values
+        return []
+    return mapped_tags(
+        mapping,
+        schema_path=_get_schema_path(discriminator_model),
+        base_schema_paths=(
+            _get_schema_path(reference)
+            for base_class in discriminator_model.base_classes
+            if (reference := base_class.reference)
+        ),
+    )
+
+
+def _iter_mapping_discriminator_values(discriminator_model: DataModel, mapping: dict[str, str]) -> Iterator[str]:
+    """Yield the mapping values that select a variant, computed when the first one is asked for."""
+    yield from _get_mapping_discriminator_values(discriminator_model, mapping)
 
 
 _DiscriminatorTag: TypeAlias = tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]
@@ -2503,7 +2532,7 @@ def _has_related_instance_field(
     return any(
         id(field) not in tagged_fields
         and not field.extras.get("is_classvar")
-        and _get_source_field_name(field) == source_name
+        and _tag_field_matches(field, "source-name", source_name)
         for field in chain(
             (field for base_model in _find_base_classes(model) for field in base_model.iter_all_fields()),
             _iter_derived_fields(model, derived_models, set()),
@@ -2534,8 +2563,7 @@ def _tag_discriminator_unions(
             if names := [
                 model.class_name
                 for model, field, value in tags
-                if value is None
-                or any(mapped != value for mapped in _get_mapping_discriminator_values(model, mapping))
+                if struct_tag_conflicts(value, _iter_mapping_discriminator_values(model, mapping))
                 or any(
                     other is not field and (other.extras.get("is_classvar") or id(other) in tagged_fields)
                     for other in model.fields
@@ -2626,17 +2654,24 @@ def _tag_fields_of_tagged_bases(models: Iterable[DataModel]) -> list[DataModel]:
         if not (tag_fields := {tag[0] for base in bases if (tag := base.discriminator_tag) is not None}):
             return
         tagged_fields = [
-            (field, tag_field)
+            (field, tag_field, field_tag("legacy-literal-only", _FieldTagFacts(field)))
             for field in model.fields
             if not field.extras.get("is_classvar")
-            and (tag_field := next(iter({field.name, _get_source_field_name(field)} & tag_fields), None)) is not None
+            and (
+                tag_field := redeclared_tag_field(
+                    tag_fields, name=field.name, original_name=field.original_name, alias=field.alias
+                )
+            )
+            is not None
         ]
-        if any(len(field.data_type.literals) != 1 for field, _ in tagged_fields):
+        if len(tags := [(field, name, tag) for field, name, tag in tagged_fields if tag is not None]) != len(
+            tagged_fields
+        ):
             model.opt_out_of_inherited_tag()
             opted_out.append(model)
             return
-        for field, tag_field in tagged_fields:
-            model.apply_discriminator_tag(field, tag_field, field.data_type.literals[0])
+        for field, tag_field, tag in tags:
+            model.apply_discriminator_tag(field, tag_field, tag.value)
             _clear_model_imports_cache_if_retained(model, can_retain_cache=True)
 
     while pending:
@@ -2707,7 +2742,7 @@ def _iter_nested_discriminator_tag_fields(
     data_types: Iterable[DataType],
     field_name: str,
     *,
-    field_name_mode: Literal["original", "either"],
+    field_name_mode: Literal["source-name", "python-or-original-name"],
 ) -> Iterator[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]]:
     """Yield the tag fields of the variants that nested choices give a union, with their tag values.
 
@@ -2802,13 +2837,14 @@ def _msgspec_refused_structs(models: Iterable[object]) -> _MsgspecRefusal:
         return _NO_MSGSPEC_REFUSAL
     if len(tags := [tag for struct in structs if (tag := struct.discriminator_tag) is not None]) < len(structs):
         return structs, None
-    if len(tag_fields := [*dict.fromkeys(tag_field for tag_field, _ in tags)]) > 1:
-        return structs, f"are tagged by different fields {_format_tags(tag_fields)}"
-    if len({type(tag) for _, tag in tags}) > 1:
+    if (clash := struct_tag_clash(tags, "legacy-python-equality")) is None:
+        return _NO_MSGSPEC_REFUSAL
+    kind, values = clash
+    if kind == "tag-fields":
+        return structs, f"are tagged by different fields {_format_tags(values)}"
+    if kind == "tag-types":
         return structs, "mix int and str tags"
-    if shared := [tag for tag, count in Counter(tag for _, tag in tags).items() if count > 1]:
-        return structs, f"share the tag {_format_tags(shared)}"
-    return _NO_MSGSPEC_REFUSAL
+    return structs, f"share the tag {_format_tags(values)}"
 
 
 def _msgspec_refused_member_structs(data_types: Iterable[DataType]) -> _MsgspecRefusal:
@@ -3014,7 +3050,7 @@ def _discriminator_variants_are_valid(
     *,
     original_name: str | None = None,
 ) -> bool:
-    discriminator_value_owners: dict[DiscriminatorValue, int] = {}
+    discriminator_value_owners: dict[object, int] = {}
     for data_type, can_update_discriminator, owner in _iter_discriminator_data_types(data_types):
         if not data_type.reference and data_type.type == NONE:
             continue
@@ -3033,14 +3069,14 @@ def _discriminator_variants_are_valid(
             original_name if original_name is not None else field_name,
             mapping,
             require_literal=not can_update_discriminator,
-            field_name_mode="original" if original_name is not None else "either",
+            field_name_mode="source-name" if original_name is not None else "python-or-original-name",
         )
         if not discriminator_values:
             return False
-        for value in discriminator_values:
-            if (previous_owner := discriminator_value_owners.get(value)) is not None and previous_owner != owner:
+        for key in (tag_key(value, "legacy-python-equality") for value in discriminator_values):
+            if (previous_owner := discriminator_value_owners.get(key)) is not None and previous_owner != owner:
                 return False
-            discriminator_value_owners[value] = owner
+            discriminator_value_owners[key] = owner
     return True
 
 
@@ -3054,7 +3090,9 @@ def _get_enum_from_base(
         if not isinstance(base_model, DataModel) or not base_model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
             continue
         for base_field in base_model.fields:  # pragma: no branch
-            if base_field.name != field_name and (use_field_name or base_field.original_name != field_name):
+            if not _tag_field_matches(
+                base_field, "python-name" if use_field_name else "python-or-original-name", field_name
+            ):
                 continue
             if enum_from_base := base_field.data_type.find_source(Enum):  # pragma: no branch
                 return enum_from_base
@@ -4667,11 +4705,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     @staticmethod
     def _get_enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:
         member = enum_source.find_member(value, coerce_strings=True)
-        if not member:
-            return value
-
-        member_value = member.value
-        return member_value if is_literal_kind(literal_value_kind(member_value)) else value
+        return enum_tag_literal(value, member.value) if member else value
 
     def __set_force_optional_discriminator_literal_default(
         self,
@@ -4732,8 +4766,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 continue
             variant = cast("DataModel", data_type.reference.source)
             for variant_field in chain(variant.fields, variant.iter_all_fields()):
-                if property_name == variant_field.original_name or (
-                    variant_field.original_name is None and default_name == variant_field.name
+                if _tag_field_matches(
+                    variant_field, "original-or-unaliased-python-name", property_name, python_name=default_name
                 ):
                     variant_name = variant_field.name
                     break
@@ -4790,7 +4824,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     *_iter_nested_discriminator_tag_fields(
                         field.data_type.data_types,
                         property_name if field.SUPPORTS_DISCRIMINATOR else field_name,
-                        field_name_mode="original" if field.SUPPORTS_DISCRIMINATOR else "either",
+                        field_name_mode="source-name" if field.SUPPORTS_DISCRIMINATOR else "python-or-original-name",
                     )
                 ]
                 self.__set_nested_discriminator_literal_defaults(tag_fields, can_retain_cache=can_retain_cache)
@@ -4806,8 +4840,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 tags: list[_DiscriminatorTag] = []
                 union_name = model.class_name if self._is_root_model(model) else f"{model.class_name}.{field.name}"
                 collapsed_unions = self.__get_collapsed_unions(model, field)
-                field_name_mode: Literal["resolved", "either"] = (
-                    "resolved" if field.SUPPORTS_DISCRIMINATOR else "either"
+                field_name_mode: Literal["python-name", "python-or-original-name"] = (
+                    "python-name" if field.SUPPORTS_DISCRIMINATOR else "python-or-original-name"
                 )
                 has_reused_variant = any(
                     isinstance(source := data_type.reference.source, DataModel) and source.reused_reference is not None
@@ -4860,14 +4894,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         )
                     has_one_literal = False
                     for discriminator_field in discriminator_model.fields:
-                        if discriminator_field.name != field_name and (
-                            field.SUPPORTS_DISCRIMINATOR or discriminator_field.original_name != field_name
-                        ):
+                        if not _tag_field_matches(discriminator_field, field_name_mode, field_name):
                             continue
                         expected_value = discriminator_values[0] if discriminator_values else None
-                        if (
-                            len(literals := discriminator_field.data_type.literals) == 1
-                            and (literal := literals[0]) == expected_value
+                        if len(literals := discriminator_field.data_type.literals) == 1 and same_tag(
+                            literal := literals[0], expected_value, "legacy-python-equality"
                         ):
                             has_one_literal = True
                             tag_fields.append((discriminator_field, (literal,)))
@@ -4890,7 +4921,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             not tagged_unions
                             and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
                             and (const_value := discriminator_field.extras.get("const")) is not None
-                            and const_value == expected_value
+                            and same_tag(const_value, expected_value, "legacy-python-equality")
                         ):
                             has_one_literal = True
                             tags.append((discriminator_model, discriminator_field, const_value))
@@ -4985,10 +5016,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 _drop_discriminator_tag_patterns(tag_fields)
                 if not tags:
                     continue
+                tag_field = struct_tag_field(
+                    property_name=property_name, field_name=field_name, tagged_unions=tagged_unions
+                )
                 if tagged_unions:
-                    unions.append((model, tags, property_name, mapping))
+                    unions.append((model, tags, tag_field, mapping))
                 else:
-                    _apply_discriminator_tags(tags, field_name, can_retain_cache=can_retain_cache)
+                    _apply_discriminator_tags(tags, tag_field, can_retain_cache=can_retain_cache)
             has_imported_literal = any(import_ == IMPORT_LITERAL for import_ in imports)
             if has_imported_literal:  # pragma: no cover
                 imports.append(IMPORT_LITERAL)
@@ -5996,7 +6030,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         field_name: str,
         mapping: dict[str, str],
         values: list[DiscriminatorValue],
-        field_name_mode: Literal["original", "resolved", "either"],
+        field_name_mode: TagFieldMatch,
     ) -> None:
         """Remember the tags unions map a variant to, unless the variant declares its own tag.
 
@@ -6004,17 +6038,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         derived again from its mapping or the schema name.
         """
         if (recorded := self._variant_discriminator_tags.get(key := (id(variant), property_name))) is not None:
-            if (kept := set(values)) != set(recorded.kept):
+            if not same_tags(values, recorded.kept, "legacy-python-equality"):
                 recorded.others.setdefault(recorded.owner, recorded.kept)
                 recorded.kept, recorded.owner = values, union_name
-                recorded.others = {union: tags for union, tags in recorded.others.items() if set(tags) != kept}
-            elif (
-                set(
-                    tags := _get_union_discriminator_values(
-                        variant, field_name, mapping, field_name_mode=field_name_mode
-                    )
-                )
-                != kept
+                recorded.others = {
+                    union: tags
+                    for union, tags in recorded.others.items()
+                    if not same_tags(tags, values, "legacy-python-equality")
+                }
+            elif not same_tags(
+                tags := _get_union_discriminator_values(variant, field_name, mapping, field_name_mode=field_name_mode),
+                values,
+                "legacy-python-equality",
             ):
                 recorded.others.setdefault(union_name, tags)
             return
@@ -6070,7 +6105,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         field_name: str,
         mapping: dict[str, str],
         values: list[DiscriminatorValue],
-        field_name_mode: Literal["original", "resolved", "either"],
+        field_name_mode: TagFieldMatch,
     ) -> None:
         """Remember the tags a union maps a variant to when collapsed reuse replaced the model the union names.
 
@@ -6081,8 +6116,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if user is not data_type or reference is None or not isinstance(removed := reference.source, DataModel):
             return
         key = (id(variant), property_name)
-        if set(tags := _get_discriminator_values(removed, field_name, mapping, field_name_mode=field_name_mode)) != set(
-            values
+        if not same_tags(
+            tags := _get_discriminator_values(removed, field_name, mapping, field_name_mode=field_name_mode),
+            values,
+            "legacy-python-equality",
         ):
             self._variant_discriminator_tags.setdefault(
                 key, _VariantDiscriminatorTags(variant, property_name, values, union_name, {})
@@ -9639,13 +9676,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     listed[id(reference.source)].add(property_name)
                 if isinstance(mapping := discriminator.get("mapping"), dict):
                     for path in mapping.values():
-                        for key in _mapping_path_keys(str(path)):
+                        for key in mapping_path_keys(str(path), rule="legacy-any-key"):
                             mapped[key].add(property_name)
         variant_names: dict[int, set[str]] = {}
         for model in layout_models:
             property_names = set(listed.get(id(model), ()))
             for reference in (model.reference, *(base.reference for base in model.base_classes if base.reference)):
-                for key in _schema_path_keys(_get_schema_path(reference)):
+                for key in schema_path_keys(_get_schema_path(reference)):
                     property_names.update(mapped.get(key, ()))
             variant_names[id(model)] = {
                 name

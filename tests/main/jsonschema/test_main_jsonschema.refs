@@ -6893,6 +6893,8 @@ without-option-strict-nullable	main/jsonschema/main_jsonschema/single_value_enum
 	main/jsonschema/stdin_root_id_refs.py
 [test_main_jsonschema_subclass_enum]
 	main/jsonschema/subclass_enum.py
+[test_main_jsonschema_tagged_union_non_literal_const]
+	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]
 msgspec.Struct-time_delta_msgspec.py	main/jsonschema/time_delta_msgspec.py
 pydantic_v2.BaseModel-time_delta_pydantic_v2.py	main/jsonschema/time_delta_pydantic_v2.py

@@ -20,6 +20,7 @@ from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
+from datamodel_code_generator.model._decisions.tag_value import struct_discriminator_tag, struct_tag_options
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     BaseClassDataType,
@@ -498,16 +499,7 @@ class Struct(DataModel):
         self.add_base_class_kwarg("tag", "False")
 
     def _tag_options(self) -> tuple[Any, Any]:
-        """Return the tag and tag_field options of the struct, inheriting those of generated bases as msgspec does.
-
-        msgspec clears both for ``tag=False``, so that the structs inheriting from it are untagged too.
-        """
-        tag = tag_field = None
-        for base_class in reversed(self.base_classes):
-            if base_class.reference and isinstance(base := base_class.reference.source, Struct):
-                base_tag, base_tag_field = base._tag_options()  # noqa: SLF001
-                tag = tag if base_tag is None else base_tag
-                tag_field = tag_field if base_tag_field is None else base_tag_field
+        """Return the tag and tag_field options of the struct and its generated bases (``struct_tag_options``)."""
         options = self.extra_template_data.get("base_class_kwargs")
         options = {
             **(options if isinstance(options, dict) else {}),
@@ -517,18 +509,21 @@ class Struct(DataModel):
                 if key in {"tag", "tag_field"}
             },
         }
-        if (tag := tag if (own_tag := options.get("tag")) is None else own_tag) is False:
-            return None, None
-        return tag, tag_field if (own_tag_field := options.get("tag_field")) is None else own_tag_field
+        return struct_tag_options(
+            own_tag=options.get("tag"),
+            own_tag_field=options.get("tag_field"),
+            bases=[
+                base._tag_options()  # noqa: SLF001
+                for base_class in self.base_classes
+                if base_class.reference and isinstance(base := base_class.reference.source, Struct)
+            ],
+        )
 
     @property
     @override
     def discriminator_tag(self) -> tuple[Any, Any] | None:  # ty: ignore[invalid-property-type-override]
-        """Return the tag field and the tag msgspec tells the struct apart by in a union, or None if it is untagged."""
-        tag, tag_field = self._tag_options()
-        if tag is None and tag_field is None:
-            return None
-        return "type" if tag_field is None else tag_field, self.class_name if tag is None or tag is True else tag
+        """Return the tag field and the tag msgspec tells the struct apart by (``struct_discriminator_tag``)."""
+        return struct_discriminator_tag(*self._tag_options(), class_name=self.class_name)
 
     @override
     def has_keyword_only_definition(self) -> bool:
