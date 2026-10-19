@@ -126,6 +126,7 @@ from datamodel_code_generator.model.runtime_validation import (
     _is_internal_schema_runtime_validation,
     _make_internal_schema_runtime_validation,
 )
+from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
     DocumentId,
@@ -134,7 +135,6 @@ from datamodel_code_generator.parser._schema_graph import (
     SchemaGraphBuilder,
     walk_schema_resources,
 )
-from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
