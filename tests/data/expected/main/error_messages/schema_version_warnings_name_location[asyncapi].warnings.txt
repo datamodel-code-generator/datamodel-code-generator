@@ -1,0 +1,1 @@
+exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. Schema path: schema_location_strict_asyncapi.yaml#/components/schemas/a~1b

@@ -479,7 +479,9 @@ class ApiOpenAPIParser(OpenAPIParser):
                         if refs:
                             potential[local_ref] = refs
                 case _:
-                    self._validate_schema_object(schema, [document, "components", "schemas", name])
+                    self._validate_member(
+                        schema, [document, "components", "schemas", name], self._member_location(schemas, name)
+                    )
         for child, refs in potential.items():
             for parent in refs:
                 resolved = self.model_resolver.resolve_ref(parent)

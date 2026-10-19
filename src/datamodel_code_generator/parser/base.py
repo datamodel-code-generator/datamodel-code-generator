@@ -1308,6 +1308,12 @@ def add_model_path_to_list(
     return paths
 
 
+def _named_model_path(path: str, models: Mapping[str, DataModel]) -> str:
+    """Return how a message names the model at a reference path: its schema location, or the path without one."""
+    location = None if (model := models.get(path)) is None else location_of(model.reference)
+    return redact_reference(path if location is None else str(location))
+
+
 def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     unsorted_data_models: list[DataModel],
     sorted_data_models: SortedDataModels | None = None,
@@ -1455,9 +1461,10 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                 continue
 
             # unresolved
+            models_by_path = {**sorted_data_models, **{item.path: item for item in unresolved_references}}
             unresolved_classes = ", ".join(
-                f"[class: {redact_reference(item.path)} references: "
-                f"{frozenset(map(redact_reference, get_reference_classes(item)))}]"
+                f"[class: {_named_model_path(item.path, models_by_path)} references: "
+                f"{frozenset(_named_model_path(path, models_by_path) for path in get_reference_classes(item))}]"
                 for item in unresolved_references
             )
             msg = f"A Parser can not resolve classes: {unresolved_classes}."

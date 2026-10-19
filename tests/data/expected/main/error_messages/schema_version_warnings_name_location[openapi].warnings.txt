@@ -1,0 +1,3 @@
+Boolean schemas are not supported in this version. Schema path: schema_location_strict_openapi.yaml#/components/schemas/Flag
+null in type array (e.g., type: ["string", "null"]) is not supported in this schema version. Use nullable: true instead. Schema path: schema_location_strict_openapi.yaml#/components/schemas/a~1b
+prefixItems is not supported in this schema version. Use items as array for tuple validation. Schema path: schema_location_strict_openapi.yaml#/components/schemas/Pet/properties/tags

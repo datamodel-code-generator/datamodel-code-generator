@@ -80,16 +80,16 @@ ERROR_CASES: tuple[tuple[str, InputFileTypeLiteral, str], ...] = (
     (
         "pointer_through_scalar_openapi.yaml",
         "openapi",
-        "Error at schema path 'pointer_through_scalar_openapi.yaml/#/components/schemas/Name'",
+        "Error at schema path 'pointer_through_scalar_openapi.yaml#/components/schemas/Name'",
     ),
     (
         "pointer_through_scalar.json",
         "jsonschema",
-        "Error at schema path 'pointer_through_scalar.json/#/definitions/Name': ValidationError",
+        "Error at schema path 'pointer_through_scalar.json#/definitions/Name': ValidationError",
     ),
-    ("wrong_type_properties.json", "jsonschema", "Error at schema path 'wrong_type_properties.json'"),
-    ("required_as_string.json", "jsonschema", "Error at schema path 'required_as_string.json'"),
-    ("enum_as_dict.json", "jsonschema", "Error at schema path 'enum_as_dict.json'"),
+    ("wrong_type_properties.json", "jsonschema", "Error at schema path 'wrong_type_properties.json#'"),
+    ("required_as_string.json", "jsonschema", "Error at schema path 'required_as_string.json#'"),
+    ("enum_as_dict.json", "jsonschema", "Error at schema path 'enum_as_dict.json#'"),
     ("missing_external_ref.json", "jsonschema", "$ref file not found:"),
     ("malformed_external_ref.json", "jsonschema", "truncated_jsonschema.json"),
     ("empty_jsonschema.json", "jsonschema", "Models not found in the input data"),
@@ -956,6 +956,256 @@ def test_malformed_input_error_messages(
         expected_stderr_contains=expected_stderr_contains,
         output_should_not_exist=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "input_file_type", "extra_args", "expected_stderr_contains"),
+    [
+        pytest.param(
+            "schema_location_definition.json",
+            "jsonschema",
+            [],
+            "Error at schema path 'schema_location_definition.json#/definitions/a~1b~0c': ValidationError",
+            id="definition",
+        ),
+        pytest.param(
+            "schema_location_documents",
+            "jsonschema",
+            [],
+            "Error at schema path 'ext/invalid.json#/definitions/Invalid': ValidationError",
+            id="referenced-document",
+        ),
+        pytest.param(
+            "schema_location_ref_scalar.json",
+            "jsonschema",
+            [],
+            "Error at schema path 'schema_location_ref_scalar.json#/misc/a~1b': ValidationError",
+            id="ref-target-scalar-keeps-reference",
+        ),
+        pytest.param(
+            "schema_location_scalar_component.yaml",
+            "openapi",
+            [],
+            "Error at schema path 'schema_location_scalar_component.yaml#/components/schemas/a~1b': ValidationError",
+            id="scalar-component",
+        ),
+        pytest.param(
+            "schema_location_scalar_component.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'schema_location_scalar_component.yaml#/components/schemas/a~1b': ValidationError",
+            id="scalar-component-api",
+        ),
+        pytest.param(
+            "schema_location_request_body.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'schema_location_request_body.yaml"
+            "#/paths/~1pets~1{id}/post/requestBody/content/application~1json/schema': ValidationError",
+            id="request-body-api",
+        ),
+        pytest.param(
+            "schema_location_unsatisfiable_request_body.yaml",
+            "openapi",
+            ["--openapi-scopes", "paths"],
+            "Error at schema path 'schema_location_unsatisfiable_request_body.yaml"
+            "#/paths/~1pets~1{id}/post/requestBody/content/application~1json/schema/properties/value': "
+            "allOf contains a boolean false schema that makes the schema unsatisfiable",
+            id="unsatisfiable-request-body",
+        ),
+        pytest.param(
+            "schema_location_unsatisfiable_payload.yaml",
+            "asyncapi",
+            [],
+            "Error at schema path 'schema_location_unsatisfiable_payload.yaml"
+            "#/channels/user~1signup/messages/UserSignedUp/payload/properties/address': "
+            "allOf contains a boolean false schema that makes the schema unsatisfiable",
+            id="unsatisfiable-payload",
+        ),
+        pytest.param(
+            "schema_location_unresolved_class/api.yaml",
+            "openapi",
+            ["--external-ref-mapping", "common.yaml=mypackage.shared.models"],
+            "A Parser can not resolve classes: "
+            "[class: api.yaml#/components/schemas/UserResponse/properties/wrapper "
+            "references: frozenset({'common.yaml#'})], "
+            "[class: api.yaml#/components/schemas/UserResponse "
+            "references: frozenset({'api.yaml#/components/schemas/UserResponse/properties/wrapper'})].",
+            id="unresolved-class",
+        ),
+    ],
+)
+def test_schema_location_error_messages(
+    fixture_name: str,
+    input_file_type: InputFileTypeLiteral,
+    extra_args: list[str],
+    expected_stderr_contains: str,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Errors name the document and the JSON Pointer of the schema they reject, as model metadata does."""
+    run_main_and_assert(
+        input_path=MALFORMED_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=extra_args,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=expected_stderr_contains,
+        output_should_not_exist=True,
+    )
+
+
+def _object_with_ref(name: str) -> dict[str, YamlValue]:
+    return {"type": "object", "properties": {"value": {"$ref": f"#/$defs/{name}"}}}
+
+
+@pytest.mark.parametrize(
+    ("schema", "expected_location", "keyword"),
+    [
+        pytest.param(
+            {"type": "object", "properties": {"a/b": {"allOf": [{"type": "string"}, False]}}},
+            "#/properties/a~1b",
+            "allOf",
+            id="property-allof",
+        ),
+        pytest.param(
+            {
+                "type": "object",
+                "properties": {"values": {"type": "array", "items": {"allOf": [{"type": "string"}, False]}}},
+            },
+            "#/properties/values/items",
+            "allOf",
+            id="items-allof",
+        ),
+        pytest.param(
+            {
+                "$defs": {"Direct": {"allOf": [False, {"type": "object", "properties": {"name": {"type": "string"}}}]}},
+                **_object_with_ref("Direct"),
+            },
+            "#/$defs/Direct",
+            "allOf",
+            id="allof-direct",
+        ),
+        pytest.param(
+            {"$defs": {"Nested": {"allOf": [{"allOf": [False]}]}}, **_object_with_ref("Nested")},
+            "#/$defs/Nested/allOf/0",
+            "allOf",
+            id="allof-nested",
+        ),
+        pytest.param(
+            {"$defs": {"Never": False, "Single": {"allOf": [{"$ref": "#/$defs/Never"}]}}, **_object_with_ref("Single")},
+            "#/$defs/Single",
+            "allOf",
+            id="allof-single-ref",
+        ),
+        pytest.param(
+            {
+                "$defs": {
+                    "Never": False,
+                    "Member": {
+                        "allOf": [
+                            {"$ref": "#/$defs/Never"},
+                            {"type": "object", "properties": {"name": {"type": "string"}}},
+                        ]
+                    },
+                },
+                **_object_with_ref("Member"),
+            },
+            "#/$defs/Member",
+            "allOf",
+            id="allof-member-ref",
+        ),
+        pytest.param(
+            {
+                "$defs": {
+                    "Base": {"type": "object", "properties": {"id": {"type": "string"}}},
+                    "Never": False,
+                    "Merged": {"allOf": [{"$ref": "#/$defs/Base"}, {"$ref": "#/$defs/Never"}]},
+                },
+                **_object_with_ref("Merged"),
+            },
+            "#/$defs/Merged",
+            "allOf",
+            id="allof-merged-ref",
+        ),
+        pytest.param(
+            {
+                "$defs": {
+                    "Base": {"type": "string", "enum": ["a"]},
+                    "Narrowed": {"allOf": [{"$ref": "#/$defs/Base", "enum": ["b"]}]},
+                },
+                **_object_with_ref("Narrowed"),
+            },
+            "#/$defs/Narrowed",
+            "allOf",
+            id="allof-disjoint-literals",
+        ),
+        pytest.param(
+            {"type": "object", "properties": {"value": {"anyOf": [False, False]}}},
+            "#/properties/value",
+            "anyOf",
+            id="anyof-all-false",
+        ),
+    ],
+)
+def test_unsatisfiable_schema_error_names_location(
+    schema: dict[str, YamlValue],
+    expected_location: str,
+    keyword: str,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """An error about branches that leave no value names the schema that holds them."""
+    (input_path := output_file.parent / "schema.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            f"Error at schema path 'schema.json{expected_location}': "
+            f"{keyword} contains a boolean false schema that makes the schema unsatisfiable"
+        ),
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "input_file_type", "extra_args"),
+    [
+        pytest.param("schema_location_strict_draft4.json", "jsonschema", [], id="draft4"),
+        pytest.param("schema_location_strict_draft2020.json", "jsonschema", [], id="draft2020"),
+        pytest.param("schema_location_strict_openapi.yaml", "openapi", [], id="openapi"),
+        pytest.param("schema_location_strict_openapi.yaml", "openapi", ["--openapi-scopes", "api"], id="openapi-api"),
+        pytest.param("schema_location_strict_asyncapi.yaml", "asyncapi", [], id="asyncapi"),
+    ],
+)
+def test_schema_version_warnings_name_location(
+    fixture_name: str,
+    input_file_type: InputFileTypeLiteral,
+    extra_args: list[str],
+    output_file: Path,
+) -> None:
+    """Strict-mode warnings name the document and the JSON Pointer of the schema that uses the feature."""
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=MALFORMED_DATA_PATH / fixture_name,
+            output_path=output_file,
+            input_file_type=input_file_type,
+            extra_args=[
+                "--schema-version-mode",
+                "strict",
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+                *extra_args,
+            ],
+        )
+    messages = dict.fromkeys(str(record.message) for record in recorded if "Schema path:" in str(record.message))
+    assert_output("".join(f"{message}\n" for message in messages), name="warnings")
 
 
 @pytest.mark.parametrize(

@@ -354,6 +354,11 @@ def _source_location(values: object) -> SchemaLocation | None:
     )
 
 
+def _named_path(location: SchemaLocation | None, path: list[str]) -> list[str]:
+    """Return the path a message names: the schema location, or the parse path when the location is unknown."""
+    return path if location is None else [str(location)]
+
+
 def _locate(obj: _SchemaT, location: SchemaLocation | None) -> _SchemaT:
     """Give a schema object that a copy step created the location of the schema object it stands for, if it has one."""
     obj.__dict__[SCHEMA_LOCATION_KEY] = location
@@ -1840,6 +1845,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._loads_only_used_references = False
         self._dangling_refs: set[tuple[str, str]] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
+        self._held_value: tuple[YamlValue, SchemaLocation] | None = None
         self._model_frames: list[list[Reference | None]] = []
         self._dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]] = {}
         self._recursive_anchor_index: dict[tuple[str, ...], list[str]] = {}
@@ -5697,10 +5703,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             max_union_elements,
         )
 
-    def _raise_unsatisfiable_schema(self, path: list[str], keyword: str) -> None:  # noqa: PLR6301
+    def _raise_unsatisfiable_schema(  # noqa: PLR6301
+        self, obj: JsonSchemaObject, path: list[str], keyword: str
+    ) -> None:
+        """Reject the schema ``obj``, whose ``keyword`` branches leave no value it accepts."""
         raise SchemaParseError(
             message=f"{keyword} contains a boolean false schema that makes the schema unsatisfiable",
-            path=path,
+            path=_named_path(obj.schema_location, path),
         )
 
     def _build_lightweight_type(  # noqa: PLR0911, PLR0912
@@ -7784,7 +7793,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 continue
             resolved_item = self._load_ref_schema_object(item.ref) if item.ref else item
             if resolved_item.is_boolean_schema_false:
-                self._raise_unsatisfiable_schema([], "allOf")
+                self._raise_unsatisfiable_schema(obj, [], "allOf")
             resolved_items.append(resolved_item)
             if resolved_item.properties:
                 for prop_name, prop_schema in resolved_item.properties.items():
@@ -7813,7 +7822,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.SCHEMA_OBJECT_TYPE.model_validate(merged_schema)
 
     def _merge_all_of_root_validation_keywords(self, merged: dict[str, Any], sources: list[JsonSchemaObject]) -> None:
-        """Preserve literal and item intersections while materializing a value reference."""
+        """Preserve literal and item intersections while materializing a value reference.
+
+        ``merged`` stands for the last source: the allOf holder, or the node whose keywords win.
+        """
         literal_sets = [values for source in sources if (values := self._schema_literal_values(source)) is not None]
         if literal_sets:
             literal_values = [
@@ -7822,7 +7834,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if all(any(_json_literal_values_equal(value, other) for other in values) for values in literal_sets[1:])
             ]
             if not literal_values:
-                self._raise_unsatisfiable_schema([], "allOf")
+                self._raise_unsatisfiable_schema(sources[-1], [], "allOf")
             merged["enum"] = literal_values
         item_schemas = [source.items for source in sources if source.items is not None]
         if len(item_schemas) > 1:
@@ -8180,7 +8192,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             name, obj, path, combined_schemas, variant_names, variant_keys
         )
         if not parsed_schemas:
-            self._raise_unsatisfiable_schema(path, target_attribute_name)
+            self._raise_unsatisfiable_schema(obj, path, target_attribute_name)
         common_path_keyword = f"{target_attribute_name}Common"
         return [
             self._parse_object_common_part(
@@ -9799,13 +9811,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         for all_of_item in obj.allOf:
             if self._is_false_schema_item(all_of_item):
-                self._raise_unsatisfiable_schema(path, "allOf")
+                self._raise_unsatisfiable_schema(obj, path, "allOf")
             if not isinstance(all_of_item, JsonSchemaObject):  # pragma: no cover
                 continue
             if all_of_item.ref:  # $ref
                 ref_schema = self._load_ref_schema_object(all_of_item.ref)
                 if ref_schema.is_boolean_schema_false:
-                    self._raise_unsatisfiable_schema(path, "allOf")
+                    self._raise_unsatisfiable_schema(obj, path, "allOf")
 
                 if ref_schema.oneOf or ref_schema.anyOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
@@ -10150,7 +10162,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if referenced_schema is True:
             return self._build_all_of_ref_root_model(name, obj, path, ref_data_type)
         if referenced_schema is False:
-            self._raise_unsatisfiable_schema(path, "allOf")
+            self._raise_unsatisfiable_schema(obj, path, "allOf")
 
         if not (isinstance(referenced_schema, dict) and referenced_schema.get("enum")):
             return None
@@ -10250,7 +10262,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         """Parse allOf schema into a single data type with combined properties."""
         if self._contains_false_schema(obj.allOf):
-            self._raise_unsatisfiable_schema(path, "allOf")
+            self._raise_unsatisfiable_schema(obj, path, "allOf")
 
         single_ref_result = self._parse_all_of_single_ref(name, obj, path)
         if single_ref_result is not None:
@@ -11388,7 +11400,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.data_type(data_types=self.parse_one_of(name, item, get_special_path("oneOf", path)))
         if item.allOf:
             if self._contains_false_schema(item.allOf):
-                self._raise_unsatisfiable_schema(get_special_path("allOf", path), "allOf")
+                self._raise_unsatisfiable_schema(item, get_special_path("allOf", path), "allOf")
             all_of_items = [sub_item for sub_item in item.allOf if isinstance(sub_item, JsonSchemaObject)]
             if len(all_of_items) == 1 and len(all_of_items) != len(item.allOf) and not item.properties:
                 return self.parse_item(name, all_of_items[0], path, singular_name=singular_name, parent=parent)
@@ -13213,9 +13225,37 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         except Exception as e:
             raise SchemaParseError(
                 message=f"{type(e).__name__}: {e}",
-                path=path,
+                path=_named_path(self._schema_value_location(raw), path),
                 original_error=e,
             ) from e
+
+    def _schema_value_location(self, raw: object) -> SchemaLocation | None:
+        """Return the location of a raw schema value that a message names.
+
+        A JSON object has its own; any other value, such as a boolean schema, has the one its holder gives while the
+        code that read it from the holder handles it.
+        """
+        if isinstance(raw, dict):
+            return _source_location(raw)
+        return held[1] if (held := self._held_value) is not None and held[0] is raw else None
+
+    @contextmanager
+    def _value_held_at(self, raw: YamlValue, location: SchemaLocation | None) -> Generator[None, None, None]:
+        """Give a raw schema value that is not a JSON object the location of its holder while it is handled."""
+        if isinstance(raw, dict) or location is None:
+            yield
+            return
+        previous, self._held_value = self._held_value, (raw, location)
+        try:
+            yield
+        finally:
+            self._held_value = previous
+
+    def _validate_member(self, raw: YamlValue, path: list[str], location: SchemaLocation | None) -> JsonSchemaObject:
+        """Validate a raw schema read from its holder at ``location``; a boolean schema is located there."""
+        with self._value_held_at(raw, location):
+            obj = self._validate_schema_object(raw, path)
+        return _locate(obj, location) if isinstance(raw, bool) else obj
 
     def parse_raw_obj(
         self,
@@ -13238,8 +13278,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self, document: object, tokens: Sequence[str], target: YamlValue, path: list[str]
     ) -> JsonSchemaObject:
         """Validate the value a JSON pointer names in a document; a boolean schema is located by the pointer."""
-        obj = self._validate_schema_object(target, path)
-        return _locate(obj, self._member_location(document, *map(str, tokens))) if isinstance(target, bool) else obj
+        return self._validate_member(target, path, self._member_location(document, *map(str, tokens)))
 
     def _record_boolean_schema_location(self, raw: YamlValue, path: list[str], location: SchemaLocation | None) -> None:
         """Record ``location`` for the model parsed at ``path`` from a boolean schema, whose value cannot carry it."""
@@ -13252,7 +13291,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _parse_raw_at(self, name: str, raw: YamlValue, path: list[str], location: SchemaLocation | None) -> None:
         """Parse a raw schema; a boolean schema gets ``location``."""
-        self.parse_raw_obj(name, raw, path)
+        with self._value_held_at(raw, location):
+            self.parse_raw_obj(name, raw, path)
         self._record_boolean_schema_location(raw, path, location)
 
     def _parse_raw_member(self, name: str, holder: Mapping[str, YamlValue], key: str, path: list[str]) -> None:
@@ -13292,13 +13332,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if self.config.schema_version_mode != VersionMode.Strict:
             return
+        schema_path = redact_path(_named_path(self._schema_value_location(raw), path))
 
         # Check boolean schemas (Draft 6+)
         if isinstance(raw, bool):
             if not self.schema_features.boolean_schemas:
                 version_name = "Draft 4" if self.schema_features.id_field == "id" else "this version"
                 warn(
-                    f"Boolean schemas are not supported in {version_name}. Schema path: {redact_path(path)}",
+                    f"Boolean schemas are not supported in {version_name}. Schema path: {schema_path}",
                     stacklevel=3,
                 )
             return
@@ -13309,7 +13350,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if isinstance(type_value, list) and "null" in type_value and not self.schema_features.null_in_type_array:
             warn(
                 'null in type array (e.g., type: ["string", "null"]) is not supported '
-                f"in this schema version. Use nullable: true instead. Schema path: {redact_path(path)}",
+                f"in this schema version. Use nullable: true instead. Schema path: {schema_path}",
                 stacklevel=3,
             )
 
@@ -13321,13 +13362,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if isinstance(exclusive_min, bool):
                 warn(
                     f"exclusiveMinimum as boolean is Draft 4 style, but schema version uses numeric style. "
-                    f"Schema path: {redact_path(path)}",
+                    f"Schema path: {schema_path}",
                     stacklevel=3,
                 )
             if isinstance(exclusive_max, bool):
                 warn(
                     f"exclusiveMaximum as boolean is Draft 4 style, but schema version uses numeric style. "
-                    f"Schema path: {redact_path(path)}",
+                    f"Schema path: {schema_path}",
                     stacklevel=3,
                 )
         else:
@@ -13335,27 +13376,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if exclusive_min is not None and not isinstance(exclusive_min, bool):
                 warn(
                     f"exclusiveMinimum as number is Draft 6+ style, but schema version is Draft 4. "
-                    f"Schema path: {redact_path(path)}",
+                    f"Schema path: {schema_path}",
                     stacklevel=3,
                 )
             if exclusive_max is not None and not isinstance(exclusive_max, bool):
                 warn(
                     f"exclusiveMaximum as number is Draft 6+ style, but schema version is Draft 4. "
-                    f"Schema path: {redact_path(path)}",
+                    f"Schema path: {schema_path}",
                     stacklevel=3,
                 )
 
         if not self.schema_features.read_only_write_only:
             if raw.get("readOnly") is True:
                 warn(
-                    "readOnly is not supported in this schema version (Draft 7+ only). "
-                    f"Schema path: {redact_path(path)}",
+                    f"readOnly is not supported in this schema version (Draft 7+ only). Schema path: {schema_path}",
                     stacklevel=3,
                 )
             if raw.get("writeOnly") is True:
                 warn(
-                    "writeOnly is not supported in this schema version (Draft 7+ only). "
-                    f"Schema path: {redact_path(path)}",
+                    f"writeOnly is not supported in this schema version (Draft 7+ only). Schema path: {schema_path}",
                     stacklevel=3,
                 )
 
@@ -13371,12 +13410,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if self.config.schema_version_mode != VersionMode.Strict:
             return
+        schema_path = redact_path(_named_path(obj.schema_location, path))
 
         # Check prefixItems usage (Draft 2020-12+ only)
         if obj.prefixItems is not None and not self.schema_features.prefix_items:
             warn(
                 f"prefixItems is not supported in this schema version. "
-                f"Use items as array for tuple validation. Schema path: {redact_path(path)}",
+                f"Use items as array for tuple validation. Schema path: {schema_path}",
                 stacklevel=4,
             )
 
@@ -13384,7 +13424,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if isinstance(obj.items, list) and self.schema_features.prefix_items:
             warn_deprecated(
                 "schema.jsonschema-items-array",
-                details=f"Schema path: {redact_path(path)}",
+                details=f"Schema path: {schema_path}",
                 stacklevel=4,
             )
 
@@ -13887,9 +13927,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if (definition_path_key := tuple(definition_path)) in seen_definition_metadata_paths:
                         continue
                     seen_definition_metadata_paths.add(definition_path_key)
-                    obj = self._validate_schema_object(model, definition_path)
-                    if isinstance(model, bool):
-                        obj = _locate(obj, self._member_location(definitions, *definition_path[len(path_parts) + 1 :]))
+                    obj = self._validate_member(
+                        model,
+                        definition_path,
+                        self._member_location(definitions, *definition_path[len(path_parts) + 1 :]),
+                    )
                     validated_definition_objects[definition_path_key] = obj
                     self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(definition_path)), obj)
                     self.parse_id(obj, definition_path)
@@ -13915,12 +13957,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if reference is None:
                         reference = self.model_resolver.get(path)
                     if not reference or not reference.loaded:
-                        self._parse_raw_or_validated_obj(
-                            key,
-                            model,
-                            path,
-                            validated_definition_objects.get(tuple(path)),
-                        )
+                        with self._value_held_at(
+                            model, self._member_location(definitions, *path[len(path_parts) + 1 :])
+                        ):
+                            self._parse_raw_or_validated_obj(
+                                key,
+                                model,
+                                path,
+                                validated_definition_objects.get(tuple(path)),
+                            )
 
                 key = tuple(path_parts)
                 reserved_refs = set(self.reserved_refs.get(key) or [])

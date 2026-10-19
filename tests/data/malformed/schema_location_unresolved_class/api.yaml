@@ -1,0 +1,15 @@
+openapi: 3.0.3
+info:
+  title: Class that references a mapped document without a fragment
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        wrapper:
+          type: object
+          properties:
+            user:
+              $ref: common.yaml

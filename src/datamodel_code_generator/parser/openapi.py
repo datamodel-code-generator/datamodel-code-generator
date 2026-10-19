@@ -1188,9 +1188,10 @@ class OpenAPIParser(JsonSchemaParser):
                 case dict():
                     pass
                 case _:
-                    self._validate_schema_object(
+                    self._validate_member(
                         schema,
                         [*self.model_resolver.current_root, "#/components", "schemas", schema_name],
+                        self._member_location(schemas, schema_name),
                     )
                     continue  # pragma: no cover - validation always raises for non-schema values
             self._register_discriminator_schema(f"#/components/schemas/{schema_name}", schema)

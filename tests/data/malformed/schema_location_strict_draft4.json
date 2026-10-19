@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}]
+    },
+    "count": {"$ref": "#/definitions/Count"}
+  },
+  "definitions": {
+    "a/b~c": true,
+    "Count": {
+      "type": "integer",
+      "minimum": 0,
+      "exclusiveMinimum": 1,
+      "exclusiveMaximum": 10,
+      "readOnly": true,
+      "writeOnly": true
+    }
+  }
+}

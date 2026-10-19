@@ -1,0 +1,8 @@
+openapi: 3.0.3
+info:
+  title: Scalar component schema
+  version: '1.0'
+paths: {}
+components:
+  schemas:
+    a/b: scalar

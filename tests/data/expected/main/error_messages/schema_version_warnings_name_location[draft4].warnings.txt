@@ -1,0 +1,6 @@
+prefixItems is not supported in this schema version. Use items as array for tuple validation. Schema path: schema_location_strict_draft4.json#/properties/tags
+Boolean schemas are not supported in Draft 4. Schema path: schema_location_strict_draft4.json#/definitions/a~1b~0c
+exclusiveMinimum as number is Draft 6+ style, but schema version is Draft 4. Schema path: schema_location_strict_draft4.json#/definitions/Count
+exclusiveMaximum as number is Draft 6+ style, but schema version is Draft 4. Schema path: schema_location_strict_draft4.json#/definitions/Count
+readOnly is not supported in this schema version (Draft 7+ only). Schema path: schema_location_strict_draft4.json#/definitions/Count
+writeOnly is not supported in this schema version (Draft 7+ only). Schema path: schema_location_strict_draft4.json#/definitions/Count

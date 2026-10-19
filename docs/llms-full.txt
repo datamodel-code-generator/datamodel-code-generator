@@ -61121,6 +61121,14 @@ that loses a location fails in CI. The check sees only whether a location is pre
 recommender (`_recommend/_metrics.py`) matches classes by their internal identity paths, passed beside the metadata and
 never written, and describes their locations from the JSON Pointer tokens.
 
+Messages name the same location, as `document#pointer` with the document URL redacted: the `SchemaParseError` that
+`_validate_schema_object` raises for a schema value it cannot read, the unsatisfiable-schema errors
+(`_raise_unsatisfiable_schema` takes the schema whose `allOf` or `anyOf` leaves no value), the `Schema path:` warnings
+of `--schema-version-mode strict`, and "A Parser can not resolve classes" (`location_of` of each model). A value that
+is not a JSON object (a boolean schema, or a scalar where a schema belongs) takes the location of its holder from the
+code that reads it there (`_validate_member`, `_parse_raw_at`). Where no location is known (a copy a custom parser
+validates, a GraphQL model), a message keeps the parse path or reference it printed before.
+
 ## Runtime Dynamic Models
 
 `generate_dynamic_models()` uses the normal `generate()` API to produce code, executes that code in temporary modules,

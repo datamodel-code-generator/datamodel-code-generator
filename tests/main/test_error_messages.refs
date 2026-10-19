@@ -245,5 +245,16 @@ missing	main/malformed/parsed_missing_pointer.py
 warning	main/error_messages/remote_dangling_ref_omits_credentials_and_query[warning].py
 [test_remote_resource_ref_warning_omits_credentials_and_query]
 	main/error_messages/remote_resource_ref_warning_omits_credentials_and_query.py
+[test_schema_version_warnings_name_location]
+asyncapi	main/error_messages/schema_version_warnings_name_location[asyncapi].py
+asyncapi	main/error_messages/schema_version_warnings_name_location[asyncapi].warnings.txt
+draft2020	main/error_messages/schema_version_warnings_name_location[draft2020].py
+draft2020	main/error_messages/schema_version_warnings_name_location[draft2020].warnings.txt
+draft4	main/error_messages/schema_version_warnings_name_location[draft4].py
+draft4	main/error_messages/schema_version_warnings_name_location[draft4].warnings.txt
+openapi	main/error_messages/schema_version_warnings_name_location[openapi].py
+openapi	main/error_messages/schema_version_warnings_name_location[openapi].warnings.txt
+openapi-api	main/error_messages/schema_version_warnings_name_location[openapi-api].py	= main/error_messages/schema_version_warnings_name_location[openapi].py
+openapi-api	main/error_messages/schema_version_warnings_name_location[openapi-api].warnings.txt	= main/error_messages/schema_version_warnings_name_location[openapi].warnings.txt
 [test_symlinked_output_path_does_not_overwrite_input]
 	main/malformed/path_conflict_input.txt

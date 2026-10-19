@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "value": {
+      "$ref": "ext/invalid.json#/definitions/Invalid"
+    }
+  }
+}
