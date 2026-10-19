@@ -17,7 +17,7 @@ from decimal import Decimal
 from functools import cached_property
 from math import isfinite
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 from urllib.parse import ParseResult, unquote, urljoin
 
 from datamodel_code_generator import Error
@@ -98,7 +98,7 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, _source_path
+from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, SchemaLocation, _source_path
 from datamodel_code_generator.types import DataType, Types
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
@@ -293,11 +293,11 @@ class RecordingGenerationStore(GenerationStore):
 class _WalkedPathItem:
     """A path item under the walk: where the document spells it and the parameters its operations share."""
 
-    declaration: _Declaration
+    declaration: SchemaLocation
     raw: dict[str, YamlValue]
-    use_site: ApiDeclarationId
-    origin: _Declaration
-    shared: dict[int, _Declaration] | None = None
+    use_site: SchemaLocation
+    origin: SchemaLocation
+    shared: dict[int, SchemaLocation] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -324,14 +324,14 @@ class _WalkedOperation:
     """An operation as the target parser walked it, with the parameters in effect in their order."""
 
     raw: dict[str, YamlValue]
-    declaration: _Declaration
-    use_site: _Declaration
-    origin: _Declaration
+    declaration: SchemaLocation
+    use_site: SchemaLocation
+    origin: SchemaLocation
     item: _WalkedPathItem
     parent: int | None
     security: YamlValue
-    shared: dict[int, _Declaration]
-    parameters: list[tuple[_Declaration, _Declaration, dict[str, YamlValue]]]
+    shared: dict[int, SchemaLocation]
+    parameters: list[tuple[SchemaLocation, SchemaLocation, dict[str, YamlValue]]]
 
 
 class TargetApiOpenAPIParser(ApiOpenAPIParser):
@@ -349,23 +349,23 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Start with no acquisitions, walked operations or emitted modules."""
         self.serves_source = serves_source
         self.attempt = AttemptId(0)
-        self.acquisitions: dict[tuple[_Declaration, Projection], str] = {}
+        self.acquisitions: dict[tuple[SchemaLocation, Projection], str] = {}
         self.module_outputs: list[tuple[ModulePath, tuple[DataModel, ...], Result]] = []
         self.model_imports: set[str] = set()
         self.operations: list[_WalkedOperation] = []
-        self.resolutions: dict[_Declaration, tuple[_Declaration, dict[str, YamlValue]]] = {}
+        self.resolutions: dict[SchemaLocation, tuple[SchemaLocation, dict[str, YamlValue]]] = {}
         self.unions: dict[int, _Union] = {}
         self.copies: dict[int, tuple[DataModelFieldBase, DataModelFieldBase]] = {}
-        self.schema_records: dict[_Declaration, _SchemaRecord] = {}
-        self.schema_locations: dict[_Declaration, _SchemaNode] = {}
-        self.free_schemas: dict[_Declaration, JsonSchemaObject] = {}
+        self.schema_records: dict[SchemaLocation, _SchemaRecord] = {}
+        self.schema_locations: dict[SchemaLocation, _SchemaNode] = {}
+        self.free_schemas: dict[SchemaLocation, JsonSchemaObject] = {}
         self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
         self.record_documents: dict[str, SourceDocumentId] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
-        self._callback_origin: _Declaration | None = None
-        self._walked_schemas: list[tuple[int, _Declaration, YamlValue] | None] = []
+        self._callback_origin: SchemaLocation | None = None
+        self._walked_schemas: list[tuple[int, SchemaLocation, YamlValue] | None] = []
         super().__init__(source, config=config)
         self._reader = _Reader(
             self._api_documents,
@@ -435,8 +435,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Record the declaration a reference object resolves to."""
         target = super()._resolve_api_object(value, path)
         if target.value is not value:
-            self.resolutions[_declaration(self._declaration_id(path))] = (
-                _declaration(target.declaration),
+            self.resolutions[self._declaration_id(path)] = (
+                target.declaration,
                 target.value,
             )
         return target
@@ -444,17 +444,13 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     def _walk_path_item(
         self,
         target: Any,
-        use_site: ApiDeclarationId,
+        use_site: SchemaLocation,
         prefix: str,
         global_parameters: list[ApiParameterDeclaration],
     ) -> None:
         """Keep where the document spells the path item while its operations are walked."""
-        origin = (
-            _declaration(use_site)
-            if (callback := self._callback_origin) is None
-            else _child(callback, use_site.tokens[-1])
-        )
-        self._walked_items.append(_WalkedPathItem(_declaration(target.declaration), target.value, use_site, origin))
+        origin = use_site if (callback := self._callback_origin) is None else callback.child(use_site.tokens[-1])
+        self._walked_items.append(_WalkedPathItem(target.declaration, target.value, use_site, origin))
         super()._walk_path_item(target, use_site, prefix, global_parameters)
         self._walked_items.pop()
 
@@ -462,24 +458,23 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self,
         operation: dict[str, YamlValue],
         path: list[str],
-        use_site: ApiDeclarationId,
+        use_site: SchemaLocation,
         prefix: str,
         common: tuple[list[ApiParameterDeclaration], list[ApiParameterDeclaration]],
     ) -> None:
         """Record the operation before its parameters, callbacks and their operations are walked."""
         item = self._walked_items[-1]
         if (shared := item.shared) is None:
-            shared = item.shared = {id(entry.target): _declaration(entry.occurrence) for entry in common[0]}
+            shared = item.shared = {id(entry.target): entry.occurrence for entry in common[0]}
             shared.update(
-                (id(entry.target), _child(item.origin, "parameters", entry.occurrence.tokens[-1]))
-                for entry in common[1]
+                (id(entry.target), item.origin.child("parameters", entry.occurrence.tokens[-1])) for entry in common[1]
             )
         self.operations.append(
             _WalkedOperation(
                 operation,
-                _declaration(self._declaration_id(path)),
-                _declaration(use_site),
-                _child(item.origin, *use_site.tokens[len(item.use_site.tokens) :]),
+                self._declaration_id(path),
+                use_site,
+                item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
                 item,
                 self._walked_operations[-1] if self._walked_operations else None,
                 self._api_security,
@@ -497,21 +492,19 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             operation = self.operations[self._walked_operations[-1]]
             operation.parameters.append((
                 operation.shared.get(id(target))
-                or _child(operation.origin, "parameters", str(len(operation.parameters))),
-                _declaration(target.declaration),
+                or operation.origin.child("parameters", str(len(operation.parameters))),
+                target.declaration,
                 target.value,
             ))
         super()._walk_parameter(name, target, header=header, role=role)
 
-    def _walk_callback(
-        self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: ApiDeclarationId
-    ) -> None:
+    def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Keep where the document spells the callback while its path items are walked."""
         previous = self._callback_origin
         self._callback_origin = (
-            _child(self.operations[self._walked_operations[-1]].origin, "callbacks", path[-1])
+            self.operations[self._walked_operations[-1]].origin.child("callbacks", path[-1])
             if self._walked_operations
-            else _declaration(use_site)
+            else use_site
         )
         super()._walk_callback(raw, path, prefix, use_site)
         self._callback_origin = previous
@@ -535,9 +528,9 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         walked = self._walked_schemas
         if walked and (parent := walked[-1]) is not None:
             tokens = path[parent[0] :]
-            declaration, value = _child(parent[1], *tokens), _descend(parent[2], tokens)
+            declaration, value = parent[1].child(*tokens), _descend(parent[2], tokens)
         else:
-            declaration = _declaration(self._declaration_id(path))
+            declaration = self._declaration_id(path)
             value = self._reader.borrow(declaration)
         if self._reader.node(declaration, value) is not None and path[-1] == "additionalProperties":
             self.free_schemas.setdefault(declaration, obj)
@@ -629,16 +622,16 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         Once the schema is generated, its default, keywords, parts and text encoding are recorded as the
         documents spell them, since its model types do not say them.
         """
-        declaration = _declaration(declared := self._declaration_id(path))
+        declaration = self._declaration_id(path)
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(path)))
         super()._acquire_schema(name, raw, path, role=role)
         self._reader.node(declaration, raw)
         if declaration not in self.schema_records:
             self.schema_records[declaration] = self._reader.record(declaration, role, self._locate)
-        if declared not in self._declaration_types:
+        if declaration not in self._declaration_types:
             self._free(declaration, "value", raw, path)
 
-    def _free(self, declaration: _Declaration, projection: Projection, raw: YamlValue, path: list[str]) -> None:
+    def _free(self, declaration: SchemaLocation, projection: Projection, raw: YamlValue, path: list[str]) -> None:
         """Record the schema of a declaration that binds as the parser's model-free type, when no model holds it."""
         if (
             declaration not in self.free_schemas
@@ -646,17 +639,17 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         ):
             self.free_schemas[declaration] = self._validate_schema_object(raw, path)
 
-    def _locate(self, declaration: _Declaration) -> SourceLocation:
+    def _locate(self, declaration: SchemaLocation) -> SourceLocation:
         """Return a declaration's location, its document identified in the order the records first name them."""
         document = self.record_documents.setdefault(declaration.document, SourceDocumentId(len(self.record_documents)))
-        return SourceLocation(document, _escape(declaration.tokens), "schema")
+        return SourceLocation(document, declaration.pointer, "schema")
 
     def _acquire_item_schema(
         self, name: str, item: YamlValue, path: list[str], projected: YamlValue, *, role: SchemaRole
     ) -> None:
         """Record an item schema and its stream-array projection, even when they were already generated."""
         item_path = [*path, "itemSchema"]
-        declaration = _declaration(self._declaration_id(item_path))
+        declaration = self._declaration_id(item_path)
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(item_path)))
         self.acquisitions.setdefault(
             (declaration, "item_stream_array"),
@@ -745,23 +738,7 @@ def _imported_names(imports: Imports) -> Iterator[str]:
             yield from (f"{module}.{member}" for member in members)
 
 
-def _escape(tokens: tuple[str, ...]) -> str:
-    return "/" + "/".join(token.replace("~", "~0").replace("/", "~1") for token in tokens) if tokens else ""
-
-
-@dataclass(frozen=True, slots=True)
-class _Declaration:
-    """An API declaration: its document and the raw tokens of its JSON pointer."""
-
-    document: str
-    tokens: tuple[str, ...]
-
-
-def _declaration(value: _DeclarationLike) -> _Declaration:
-    return _Declaration(value.document, value.tokens)
-
-
-_Locate: TypeAlias = "Callable[[_Declaration], SourceLocation]"
+_Locate: TypeAlias = "Callable[[SchemaLocation], SourceLocation]"
 
 
 @dataclass(frozen=True, slots=True)
@@ -796,7 +773,7 @@ class _SchemaRecord:
     string: bool = False
     spelled: bool = False
     base64: bool = False
-    form: _Declaration | None = None
+    form: SchemaLocation | None = None
 
 
 def _media_kind(media: str) -> MediaKind | None:
@@ -894,10 +871,6 @@ def _schema_use(location: SourceLocation) -> TypeUseId:
         DeclarationId(replace(location, role="declaration")),
         "neutral",
     )
-
-
-def _child(declaration: _Declaration, *tokens: str) -> _Declaration:
-    return _Declaration(declaration.document, (*declaration.tokens, *tokens))
 
 
 def _mapping(value: object) -> dict[str, YamlValue]:
@@ -1006,7 +979,7 @@ def _freeze_argument(value: object) -> TypeArgument:
 
 
 def _facts(
-    raw: dict[str, YamlValue], keys: tuple[str, ...], declaration: _Declaration
+    raw: dict[str, YamlValue], keys: tuple[str, ...], declaration: SchemaLocation
 ) -> tuple[tuple[str, FrozenLiteral], ...]:
     facts: list[tuple[str, FrozenLiteral]] = []
     try:
@@ -1014,7 +987,7 @@ def _facts(
             if key in keys:
                 facts.append((key, _freeze_literal(value, set())))
     except _LiteralCycleError as error:
-        raise MetadataCycleError(declaration.document, _escape((*declaration.tokens, key, *error.tokens))) from error
+        raise MetadataCycleError(declaration.document, declaration.child(key, *error.tokens).pointer) from error
     return tuple(facts)
 
 
@@ -1142,10 +1115,7 @@ class _Binder:
         self.hints = _Hints(manager.data_type)
         self.projectors: dict[tuple[Direction, bool], _Projector] = {}
         self.finals: dict[tuple[int, Direction], Reference | None] = {}
-        self.declaration_types = {
-            _declaration(key): value
-            for key, value in parser._declaration_types.items()  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
-        }
+        self.declaration_types = dict(parser._declaration_types)  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
 
     def identity(self, node: object) -> GraphObjectId:
         if (identity := self.identities.get(id(node))) is None:
@@ -2128,7 +2098,7 @@ def _c3(sequences: tuple[tuple[SymbolId, ...], ...]) -> tuple[SymbolId, ...] | N
 class _ShapeError(Exception):
     """A schema whose values no builtin parameter or form encoding writes, at the location that says so."""
 
-    def __init__(self, declaration: _Declaration, message: str) -> None:
+    def __init__(self, declaration: SchemaLocation, message: str) -> None:
         super().__init__(message)
         self.declaration = declaration
 
@@ -2224,28 +2194,28 @@ class _SchemaLocations:
     A declaration the walk recorded no location of declares nothing; references resolve into the loaded documents.
     """
 
-    def __init__(self, nodes: dict[_Declaration, _SchemaNode], documents: Container[str]) -> None:
+    def __init__(self, nodes: dict[SchemaLocation, _SchemaNode], documents: Container[str]) -> None:
         self.nodes = nodes
         self.documents = documents
 
-    def node(self, declaration: _Declaration) -> _SchemaNode | None:
+    def node(self, declaration: SchemaLocation) -> _SchemaNode | None:
         """Return where a schema declares its members, None when the walk found no schema there."""
         return self.nodes.get(declaration)
 
-    def at(self, declaration: _Declaration) -> _SchemaNode:
+    def at(self, declaration: SchemaLocation) -> _SchemaNode:
         """Return where a schema declares its members, nothing when the walk found no schema there."""
         return self.node(declaration) or _LEAF
 
-    def target(self, declaration: _Declaration, ref: str) -> _Declaration | None:
+    def target(self, declaration: SchemaLocation, ref: str) -> SchemaLocation | None:
         """Return the declaration a reference names, or None when no loaded document has it."""
         document = (
             urljoin(declaration.document, ref.partition("#")[0]) if not ref.startswith("#") else declaration.document
         )
         if document not in self.documents or (tokens := _pointer_tokens(ref)) is None:
             return None
-        return _Declaration(document, tokens)
+        return SchemaLocation(document, tokens)
 
-    def resolve(self, declaration: _Declaration) -> tuple[_Declaration, _SchemaNode]:
+    def resolve(self, declaration: SchemaLocation) -> tuple[SchemaLocation, _SchemaNode]:
         """Follow a schema's reference chain, whatever keywords sit beside them, to the schema it leads to."""
         node = self.at(declaration)
         seen = {declaration}
@@ -2258,30 +2228,30 @@ class _SchemaLocations:
             declaration, node = target, self.at(target)
         return declaration, node
 
-    def property_location(self, schema: _Declaration, name: str, active: set[_Declaration]) -> _Declaration | None:
+    def property_location(
+        self, schema: SchemaLocation, name: str, active: set[SchemaLocation]
+    ) -> SchemaLocation | None:
         """Find the property declaration a field was generated from, through allOf branches and references."""
         if schema in active:
             return None
         active.add(schema)
         node = self.at(schema)
         if name in node.properties:
-            return _child(schema, "properties", name)
+            return schema.child("properties", name)
         for index, branch in reversed(list(enumerate(node.all_of))):
-            if branch != "other" and (
-                found := self.property_location(_child(schema, "allOf", str(index)), name, active)
-            ):
+            if branch != "other" and (found := self.property_location(schema.child("allOf", str(index)), name, active)):
                 return found
         if (
             len(schema.tokens) > 1
             and schema.tokens[-2] in {"anyOf", "oneOf"}
-            and name in self.at(parent := _Declaration(schema.document, schema.tokens[:-2])).properties
+            and name in self.at(parent := SchemaLocation(schema.document, schema.tokens[:-2])).properties
         ):
-            return _child(parent, "properties", name)
+            return parent.child("properties", name)
         if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
             return self.property_location(target, name, active)
         return None
 
-    def additional_owner(self, schema: _Declaration, active: set[_Declaration]) -> _Declaration | None:
+    def additional_owner(self, schema: SchemaLocation, active: set[SchemaLocation]) -> SchemaLocation | None:
         """Find the schema that says what a schema's other properties are, through allOf branches and references.
 
         A schema that says anything of its other properties itself hides what its branches and references say, and
@@ -2292,26 +2262,26 @@ class _SchemaLocations:
         if node.additional != "absent":
             return schema
         for index, branch in reversed(list(enumerate(node.all_of))):
-            if branch != "other" and (found := self.additional_owner(_child(schema, "allOf", str(index)), active)):
+            if branch != "other" and (found := self.additional_owner(schema.child("allOf", str(index)), active)):
                 return found
         if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
             return self.additional_owner(target, active)
         return None
 
-    def own_property(self, schema: _Declaration, name: str) -> bool:
+    def own_property(self, schema: SchemaLocation, name: str) -> bool:
         """Return whether a schema declares a property itself or in an inline allOf branch."""
         node = self.at(schema)
         return name in node.properties or any(
-            branch == "schema" and self.own_property(_child(schema, "allOf", str(index)), name)
+            branch == "schema" and self.own_property(schema.child("allOf", str(index)), name)
             for index, branch in enumerate(node.all_of)
         )
 
-    def required(self, schema: _Declaration, name: str, *, inherited: bool) -> bool:
+    def required(self, schema: SchemaLocation, name: str, *, inherited: bool) -> bool:
         """Return whether a schema requires a name itself, in an inline allOf branch, or through a reference."""
         node = self.at(schema)
         if name in node.required or any(
             (branch == "schema" or (inherited and branch == "reference"))
-            and self.required(_child(schema, "allOf", str(index)), name, inherited=inherited)
+            and self.required(schema.child("allOf", str(index)), name, inherited=inherited)
             for index, branch in enumerate(node.all_of)
         ):
             return True
@@ -2322,7 +2292,9 @@ class _SchemaLocations:
             and self.required(target, name, inherited=inherited)
         )
 
-    def properties(self, schema: _Declaration, active: set[_Declaration] | None = None) -> dict[str, _Declaration]:
+    def properties(
+        self, schema: SchemaLocation, active: set[SchemaLocation] | None = None
+    ) -> dict[str, SchemaLocation]:
         """Return a schema's properties in declaration order, allOf branches and references included.
 
         A schema that its own branches or references lead back to adds its properties once.
@@ -2332,15 +2304,15 @@ class _SchemaLocations:
             return {}
         active.add(schema)
         node = self.at(schema)
-        found: dict[str, _Declaration] = {}
+        found: dict[str, SchemaLocation] = {}
         if node.ref is not None and (target := self.target(schema, node.ref)) is not None:
             found.update(self.properties(target, active))
         for index in range(len(node.all_of)):
-            found.update(self.properties(_child(schema, "allOf", str(index)), active))
-        found.update((name, _child(schema, "properties", name)) for name in node.properties)
+            found.update(self.properties(schema.child("allOf", str(index)), active))
+        found.update((name, schema.child("properties", name)) for name in node.properties)
         return found
 
-    def members(self, schema: _Declaration) -> dict[str, _Declaration]:
+    def members(self, schema: SchemaLocation) -> dict[str, SchemaLocation]:
         """Return the property declaration of each name a schema declares, as its model's fields are located."""
         return {
             name: found
@@ -2359,7 +2331,7 @@ class _Reader(_SchemaLocations):
     def __init__(  # noqa: PLR0913
         self,
         documents: dict[str, dict[str, YamlValue]],
-        nodes: dict[_Declaration, _SchemaNode],
+        nodes: dict[SchemaLocation, _SchemaNode],
         *,
         versions: list[str],
         binary: frozenset[str],
@@ -2372,19 +2344,19 @@ class _Reader(_SchemaLocations):
         self.formats = binary
         self.encoded = encoded
         self.anchors = anchors
-        self.binaries: dict[_Declaration, _Declaration | None] = {}
-        self.encodings: dict[_Declaration, _Declaration | None] = {}
+        self.binaries: dict[SchemaLocation, SchemaLocation | None] = {}
+        self.encodings: dict[SchemaLocation, SchemaLocation | None] = {}
 
     @property
     def legacy(self) -> bool:
         """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
         return next(iter(self.versions), "").startswith("3.0")
 
-    def borrow(self, declaration: _Declaration, missing: YamlValue = None) -> YamlValue:
+    def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
         return _descend(self.loaded.get(declaration.document), declaration.tokens, missing)
 
-    def node(self, declaration: _Declaration, raw: YamlValue = _MISSING) -> _SchemaNode | None:
+    def node(self, declaration: SchemaLocation, raw: YamlValue = _MISSING) -> _SchemaNode | None:
         """Record and return where a loaded schema declares its members, None when its document lacks it."""
         if (node := self.nodes.get(declaration)) is not None:
             return node
@@ -2393,7 +2365,7 @@ class _Reader(_SchemaLocations):
         node = self.nodes[declaration] = _SchemaNode.of(value)
         return node
 
-    def whole(self, declaration: _Declaration) -> tuple[_Declaration, dict[str, YamlValue]]:
+    def whole(self, declaration: SchemaLocation) -> tuple[SchemaLocation, dict[str, YamlValue]]:
         """Follow a schema that is nothing but a reference to the schema it names, through such schemas.
 
         Identification keywords beside a reference say nothing of its values, and in OpenAPI 3.0 no sibling does.
@@ -2410,7 +2382,7 @@ class _Reader(_SchemaLocations):
             declaration, raw = target, _mapping(self.borrow(target))
         return declaration, raw
 
-    def record(self, declaration: _Declaration, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
+    def record(self, declaration: SchemaLocation, role: SchemaRole, locate: _Locate) -> _SchemaRecord:
         """Record what an acquired schema says that its model types do not, as the walk acquires it.
 
         A parameter's schema gives its default and keywords; a multipart schema how its members encode parts;
@@ -2450,7 +2422,7 @@ class _Reader(_SchemaLocations):
             form,
         )
 
-    def choices(self, declaration: _Declaration) -> list[_Declaration]:
+    def choices(self, declaration: SchemaLocation) -> list[SchemaLocation]:
         """Return the branches beside null of a schema that is a union, by anyOf or oneOf, and none of another schema.
 
         A schema that declares properties or combines schemas with allOf beside its union is no union of its branches.
@@ -2461,15 +2433,15 @@ class _Reader(_SchemaLocations):
         keyword, branches = next(
             ((key, value) for key in ("anyOf", "oneOf") if isinstance(value := raw.get(key), list)), ("", [])
         )
-        found = (_child(location, keyword, str(index)) for index in range(len(branches)))
+        found = (location.child(keyword, str(index)) for index in range(len(branches)))
         return [branch for branch in found if self.kinds(branch) != _NULL]
 
-    def nullable_branch(self, declaration: _Declaration) -> _Declaration | None:
+    def nullable_branch(self, declaration: SchemaLocation) -> SchemaLocation | None:
         """Return the one branch of a union of a schema and null alone that is not null, None for another schema."""
         found = self.choices(declaration)
         return found[0] if len(found) == 1 else None
 
-    def part(self, declaration: _Declaration, locate: _Locate) -> PartSchema:
+    def part(self, declaration: SchemaLocation, locate: _Locate) -> PartSchema:
         """Return how a multipart member's schema encodes its parts, reading an array's items at its resolved `items`.
 
         A string is binary by its binary format, or by a content media type without a content encoding. The member's
@@ -2479,7 +2451,7 @@ class _Reader(_SchemaLocations):
         own = SchemaSite(locate(declaration), locate(target))
         items: SchemaSite | None = None
         if repeated := _json_types(raw) - _NULL == _ARRAY:
-            items = SchemaSite(locate(found := _child(target, "items")), locate(self.whole(found)[0]))
+            items = SchemaSite(locate(found := target.child("items")), locate(self.whole(found)[0]))
             raw = self.whole(found)[1]
         types = _json_types(raw) - _NULL
         binary = raw.get("format") == "binary" or ("contentMediaType" in raw and "contentEncoding" not in raw)
@@ -2492,11 +2464,11 @@ class _Reader(_SchemaLocations):
             items=items,
         )
 
-    def parts(self, schema: _Declaration, locate: _Locate) -> _PartsRecord:
+    def parts(self, schema: SchemaLocation, locate: _Locate) -> _PartsRecord:
         """Return how a multipart body's schema encodes its parts: each property's, then any other property's."""
         location, raw = self.whole(schema)
         declared = raw.get("additionalProperties", True)
-        additional = _child(location, "additionalProperties")
+        additional = location.child("additionalProperties")
         extra: PartSchema | Literal["closed"] | None = None
         if declared is False:
             extra = "closed"
@@ -2515,24 +2487,24 @@ class _Reader(_SchemaLocations):
             None if binary is None else locate(binary),
         )
 
-    def binary(self, declaration: _Declaration) -> _Declaration | None:
+    def binary(self, declaration: SchemaLocation) -> SchemaLocation | None:
         """Return where the first string the models type as raw bytes sits in a schema's values, None without one.
 
         The walk follows references, combined branches, properties, items and other properties.
         """
         return self._reach(declaration, {}, self.formats, self.binaries)[0]
 
-    def base64(self, declaration: _Declaration) -> bool:
+    def base64(self, declaration: SchemaLocation) -> bool:
         """Return whether a schema's values hold a string the models type as bytes yet write as base64 text."""
         return bool(self.encoded) and self._reach(declaration, {}, self.encoded, self.encodings)[0] is not None
 
     def _reach(
         self,
-        declaration: _Declaration,
-        walked: dict[_Declaration, int],
+        declaration: SchemaLocation,
+        walked: dict[SchemaLocation, int],
         formats: frozenset[str],
-        known: dict[_Declaration, _Declaration | None],
-    ) -> tuple[_Declaration | None, int]:
+        known: dict[SchemaLocation, SchemaLocation | None],
+    ) -> tuple[SchemaLocation | None, int]:
         """Return the first string of the formats a schema reaches, and the earliest walked schema it leads back to.
 
         `walked` holds the schemas of the walk whose answer is pending, in their walk order. A schema that finds a
@@ -2564,7 +2536,7 @@ class _Reader(_SchemaLocations):
         """
         return _spelled(raw, formats) and "enum" not in raw and "const" not in raw
 
-    def _subschemas(self, declaration: _Declaration, raw: dict[str, YamlValue]) -> Iterator[_Declaration]:
+    def _subschemas(self, declaration: SchemaLocation, raw: dict[str, YamlValue]) -> Iterator[SchemaLocation]:
         """Yield the schemas a schema's values are made of: its references', then its branches', members' and items'."""
         for keyword in ("$ref", "$dynamicRef"):
             if isinstance(ref := raw.get(keyword), str):
@@ -2573,14 +2545,14 @@ class _Reader(_SchemaLocations):
             return
         for keyword in ("allOf", "anyOf", "oneOf", "prefixItems", "items"):
             if isinstance(branches := raw.get(keyword), list):
-                yield from (_child(declaration, keyword, str(index)) for index in range(len(branches)))
+                yield from (declaration.child(keyword, str(index)) for index in range(len(branches)))
         for keyword in ("properties", "patternProperties"):
-            yield from (_child(declaration, keyword, str(name)) for name in _mapping(raw.get(keyword)))
+            yield from (declaration.child(keyword, str(name)) for name in _mapping(raw.get(keyword)))
         for keyword in ("items", "additionalProperties"):
             if isinstance(raw.get(keyword), dict):
-                yield _child(declaration, keyword)
+                yield declaration.child(keyword)
 
-    def _referenced(self, declaration: _Declaration, ref: str, *, dynamic: bool) -> Iterator[_Declaration]:
+    def _referenced(self, declaration: SchemaLocation, ref: str, *, dynamic: bool) -> Iterator[SchemaLocation]:
         """Yield the schema a JSON pointer reference names, or each schema an anchor reference may lead to."""
         if (target := self.target(declaration, ref)) is not None:
             yield target
@@ -2588,7 +2560,7 @@ class _Reader(_SchemaLocations):
             anchored = self.anchors(declaration.document, ref, dynamic=dynamic)
             yield from filter(None, (self.target(declaration, location) for location in anchored))
 
-    def encoding(self, schema: _Declaration, locate: _Locate, *, members: bool) -> EncodingFacts:
+    def encoding(self, schema: SchemaLocation, locate: _Locate, *, members: bool) -> EncodingFacts:
         """Return how a schema's values are written as text: as one value, as form members, and member by member.
 
         Only a form's members, which its encodings can give a style, are written member by member, and only a form
@@ -2606,7 +2578,7 @@ class _Reader(_SchemaLocations):
             declared=declared,
         )
 
-    def extras(self, schema: _Declaration, locate: _Locate) -> tuple[KindSite | None, bool]:
+    def extras(self, schema: SchemaLocation, locate: _Locate) -> tuple[KindSite | None, bool]:
         """Return where an object schema types the values of its other properties, and whether it allows them itself.
 
         Both are its allOf branches' or references' when it says nothing of them. `true` allows them and types none,
@@ -2618,16 +2590,18 @@ class _Reader(_SchemaLocations):
         )
         said = "absent" if owner is None else self.at(owner).additional
         declared = said in {"schema", "other"}
-        if owner is None or said != "schema" or not self.borrow(found := _child(owner, "additionalProperties")):
+        if owner is None or said != "schema" or not self.borrow(found := owner.child("additionalProperties")):
             return None, declared
         return self.field(found, "", locate, (locate(schema), locate(resolved)), form=True).kind, declared
 
-    def resolved(self, declaration: _Declaration) -> tuple[dict[str, YamlValue], _Declaration]:
+    def resolved(self, declaration: SchemaLocation) -> tuple[dict[str, YamlValue], SchemaLocation]:
         """Follow a schema's references, whatever keywords sit beside them, to the schema they lead to."""
         location = self.resolve(declaration)[0]
         return _mapping(self.borrow(location)), location
 
-    def kinds(self, declaration: _Declaration, active: frozenset[_Declaration] = frozenset()) -> frozenset[str] | None:
+    def kinds(
+        self, declaration: SchemaLocation, active: frozenset[SchemaLocation] = frozenset()
+    ) -> frozenset[str] | None:
         """Return the JSON types a schema's values have, by its types, enum, const, and combined branches.
 
         A branch that leads back to a schema being read says nothing of its values.
@@ -2652,9 +2626,7 @@ class _Reader(_SchemaLocations):
             branches = value.get(keyword)
             if not isinstance(branches, list) or not branches:
                 continue
-            found_kinds = [
-                self.kinds(_child(declaration, keyword, str(index)), active) for index in range(len(branches))
-            ]
+            found_kinds = [self.kinds(declaration.child(keyword, str(index)), active) for index in range(len(branches))]
             if keyword == "allOf":
                 for found in found_kinds:
                     kinds = found if kinds is None else kinds if found is None else kinds & found
@@ -2663,7 +2635,7 @@ class _Reader(_SchemaLocations):
                 kinds = union if kinds is None else kinds & union
         return kinds
 
-    def shape(self, declaration: _Declaration, locate: _Locate, *, form: bool) -> TextShape:
+    def shape(self, declaration: SchemaLocation, locate: _Locate, *, form: bool) -> TextShape:
         """Return how a schema's values are written as one parameter value, or as the members of a URL-encoded form.
 
         A schema no builtin encoding writes keeps the members found before the problem.
@@ -2675,16 +2647,14 @@ class _Reader(_SchemaLocations):
             return TextShape("object", members=tuple(members), problem=(locate(error.declaration), str(error)))
 
     def _shape(
-        self, declaration: _Declaration, locate: _Locate, members: list[MemberShape], *, form: bool
+        self, declaration: SchemaLocation, locate: _Locate, members: list[MemberShape], *, form: bool
     ) -> TextShape:
         source = locate(declaration)
         value, resolved = self.resolved(declaration)
         location = locate(resolved)
         kinds = (self.kinds(resolved) or frozenset()) - _NULL
         if kinds == _ARRAY and not form:
-            return TextShape(
-                "array", KindSite(locate(_child(resolved, "items")), ((source, _ITEMS), (location, _ITEMS)))
-            )
+            return TextShape("array", KindSite(locate(resolved.child("items")), ((source, _ITEMS), (location, _ITEMS))))
         if kinds != _OBJECT:
             if form:
                 raise _ShapeError(resolved, _NOT_OBJECT)
@@ -2693,7 +2663,7 @@ class _Reader(_SchemaLocations):
             raise _ShapeError(resolved, _PATTERNS)
         properties = value.get("properties")
         members.extend(
-            self.field(_child(resolved, "properties", name), name, locate, (source, location), form=form)
+            self.field(resolved.child("properties", name), name, locate, (source, location), form=form)
             for name in (properties if isinstance(properties, dict) else {})
         )
         declared = value.get("additionalProperties", True)
@@ -2702,13 +2672,13 @@ class _Reader(_SchemaLocations):
             if declared is False
             else MemberShape("")
             if declared is True or declared == {}
-            else self.field(_child(resolved, "additionalProperties"), "", locate, (source, location), form=form)
+            else self.field(resolved.child("additionalProperties"), "", locate, (source, location), form=form)
         )
         return TextShape("object", members=tuple(members), additional=additional)
 
     def field(
         self,
-        declaration: _Declaration,
+        declaration: SchemaLocation,
         name: str,
         locate: _Locate,
         owners: tuple[SourceLocation, ...],
@@ -2724,7 +2694,7 @@ class _Reader(_SchemaLocations):
         location = locate(declaration)
         source = location
         if repeated := form and (self.kinds(declaration) or frozenset()) - _NULL == _ARRAY:
-            steps, source = _ITEMS, locate(_child(resolved, "items"))
+            steps, source = _ITEMS, locate(resolved.child("items"))
         leaves = ((location, steps), (locate(resolved), steps), *((owner, ("values", *steps)) for owner in owners))
         return MemberShape(name, KindSite(source, leaves), repeated=repeated)
 
@@ -2748,13 +2718,13 @@ class _Documents:
                 self.documents[document] = loaded[document]
         self.walked = tuple(self.documents)
 
-    def borrow(self, declaration: _Declaration, missing: YamlValue = None) -> YamlValue:
+    def borrow(self, declaration: SchemaLocation, missing: YamlValue = None) -> YamlValue:
         """Read a declaration from its loaded document, or `missing` when the document lacks it."""
         return _descend(self.documents.get(declaration.document), declaration.tokens, missing)
 
-    def location(self, declaration: _Declaration, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
+    def location(self, declaration: SchemaLocation, role: Literal["declaration", "use", "schema"]) -> SourceLocation:
         """Return a declaration's plain pointer location in its loaded document."""
-        return SourceLocation(self.ids[declaration.document], _escape(declaration.tokens), role)
+        return SourceLocation(self.ids[declaration.document], declaration.pointer, role)
 
 
 class _Models:
@@ -2777,22 +2747,21 @@ class _Models:
         self.output = output
         self.model_package = model_package
         self.projectors = {direction: binder.projector(direction) for direction in ("neutral", "request", "response")}
-        self.ignored = [
-            (_declaration(item.declaration), None if item.use_site is None else _declaration(item.use_site), item)
-            for item in parser.ignored_declarations
-        ]
+        self.ignored = [(item.declaration, item.use_site, item) for item in parser.ignored_declarations]
         self.ignored_declarations = {declaration for declaration, _, _ in self.ignored}
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
         self.uses: dict[TypeUseId, TypeUseBinding] = {}
         self.slots: dict[int, FieldSlot] = {}
         self.facts: dict[FieldSlot, ModelFieldFacts] = {}
-        self.locations: dict[SymbolId, _Declaration | None] = {}
-        self.contexts_by_field: dict[int, tuple[FieldKind, _Declaration | None, str | None, _FieldContext | None]] = {}
+        self.locations: dict[SymbolId, SchemaLocation | None] = {}
+        self.contexts_by_field: dict[
+            int, tuple[FieldKind, SchemaLocation | None, str | None, _FieldContext | None]
+        ] = {}
         self.alias_nulls: dict[SymbolId, bool | None] = {}
-        self.helpers: dict[_Declaration, list[TypeProjection]] = {}
+        self.helpers: dict[SchemaLocation, list[TypeProjection]] = {}
         self.variants = any(SPECIAL_PATH_MARKER + "read-write-" in key for key in self.parser.model_resolver.references)
 
-    def model_location(self, model: DataModel) -> _Declaration | None:
+    def model_location(self, model: DataModel) -> SchemaLocation | None:
         """Locate the schema a model was generated from, when its resolver key is a source pointer."""
         key = self.binder.keys.get(id(model.reference), model.reference.path)
         if (variant := key.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
@@ -2800,10 +2769,10 @@ class _Models:
         source, marker, special = key.partition(SPECIAL_PATH_MARKER)
         item = special.startswith("itemSchema-")
         tokens = (*(_pointer_tokens(source.rstrip("/")) or ()), *(("itemSchema",) if item else ()))
-        location = _Declaration(source.partition("#")[0], tokens)
+        location = SchemaLocation(source.partition("#")[0], tokens)
         return None if (marker and not item) or self.schemas.node(location) is None else location
 
-    def place(self, declaration: _Declaration, data_type: DataType, *, root: bool = False) -> list[SymbolId]:
+    def place(self, declaration: SchemaLocation, data_type: DataType, *, root: bool = False) -> list[SymbolId]:
         """Locate the unlocated inline models a schema's type refers to, through items, values and branches."""
         if (node := self.schemas.at(declaration)).has_ref:
             return []
@@ -2816,7 +2785,7 @@ class _Models:
                 placed.append(symbol)
             return placed
         for keyword, child in _children(node, data_type):
-            placed.extend(self.place(_child(declaration, *keyword), child))
+            placed.extend(self.place(declaration.child(*keyword), child))
         return placed
 
     def address(self, module: ModulePath, result: Result) -> ModelArtifactAddress:
@@ -2831,7 +2800,7 @@ class _Models:
         )
 
     def lightweight(
-        self, declaration: _Declaration, direction: Direction = "neutral", *, inline: bool = False
+        self, declaration: SchemaLocation, direction: Direction = "neutral", *, inline: bool = False
     ) -> TypeProjection:
         """Project a subschema that no model field holds: a referenced model, or the parser's model-free type."""
         parser = self.parser
@@ -2921,7 +2890,7 @@ class _Models:
         pending = [symbol for symbol, location in self.locations.items() if location is not None]
         while pending:
             model = self.binder.models[symbol := pending.pop(0)]
-            location = cast("_Declaration", self.locations[symbol])
+            location = cast("SchemaLocation", self.locations[symbol])
             if model.IS_ALIAS or model.IS_ROOT_MODEL:
                 for field in model.fields:
                     pending.extend(self.place(location, field.data_type, root=True))
@@ -2942,14 +2911,14 @@ class _Models:
 
     def context(
         self, model: DataModel, field: DataModelFieldBase
-    ) -> tuple[FieldKind, _Declaration | None, str | None, _FieldContext | None]:
+    ) -> tuple[FieldKind, SchemaLocation | None, str | None, _FieldContext | None]:
         """Return a field's member kind, property declaration, wire name and, for a property, its producer facts."""
         if (known := self.contexts_by_field.get(id(field))) is not None:
             return known
         location = self.locations.get(self.binder.symbols[id(model)])
         wire_name: str | None = _wire_name(field)
         kind: FieldKind = "property"
-        schema: _Declaration | None = None
+        schema: SchemaLocation | None = None
         if model.IS_ALIAS or model.IS_ROOT_MODEL:
             kind, wire_name, schema = "root_value", None, location
             if (
@@ -2958,10 +2927,10 @@ class _Models:
                 and node.additional not in {"absent", "false"}
                 and (field.data_type.is_dict or any(child.is_dict for child in field.data_type.data_types))
             ):
-                schema = _child(location, "additionalProperties")
+                schema = location.child("additionalProperties")
         elif field.name is not None and field.name == model.TYPED_EXTRA_FIELD_NAME:
             kind = "additional_properties"
-            schema = None if location is None else _child(location, "additionalProperties")
+            schema = None if location is None else location.child("additionalProperties")
         elif location is not None and wire_name is not None:
             schema = self.schemas.property_location(location, wire_name, set())
             if (field.data_type.literals or field.data_type.enum_member_literals) and (
@@ -3169,7 +3138,7 @@ class _SchemaUses(_Models):
 
     def projection(
         self,
-        declaration: _Declaration,
+        declaration: SchemaLocation,
         projection: Projection,
         direction: Direction,
         *,
@@ -3218,7 +3187,7 @@ class _SchemaUses(_Models):
         )
         return symbol if root is None or symbol is None else self.held(root, seen | {symbol})
 
-    def members_at(self, symbol: SymbolId, schema: _Declaration, direction: Direction) -> tuple[FieldUseBinding, ...]:
+    def members_at(self, symbol: SymbolId, schema: SchemaLocation, direction: Direction) -> tuple[FieldUseBinding, ...]:
         """Return a model's members anchored at the properties of the schema a use reads."""
         members: list[FieldUseBinding] = []
         resolved = self.schemas.resolve(schema)[0]
@@ -3229,11 +3198,11 @@ class _SchemaUses(_Models):
                 case "root_value" if member.schema is not None and member.schema.pointer.endswith(
                     "/additionalProperties"
                 ):
-                    found = _child(resolved, "additionalProperties")
+                    found = resolved.child("additionalProperties")
                 case "root_value":
                     found = resolved
                 case "additional_properties":
-                    found = _child(resolved, "additionalProperties")
+                    found = resolved.child("additionalProperties")
                 case _:
                     found = None
             if found is not None and (location := self.documents.location(found, "schema")) != member.schema:
@@ -3248,10 +3217,10 @@ class _SchemaUses(_Models):
         self,
         owner: OperationId | SourceLocation,
         role: TypeUseRole,
-        declaration: _Declaration,
-        use_site: _Declaration,
-        schema: _Declaration,
-        schema_use: _Declaration,
+        declaration: SchemaLocation,
+        use_site: SchemaLocation,
+        schema: SchemaLocation,
+        schema_use: SchemaLocation,
         *,
         projection: Projection = "value",
         location: str | None = None,
@@ -3302,12 +3271,12 @@ class _SchemaUses(_Models):
 
     def schema_uses(self) -> None:
         """Bind every schema declaration the models were generated from, then each declared property."""
-        declarations: dict[tuple[_Declaration, Projection], bool] = dict.fromkeys(self.parser.acquisitions, True)
+        declarations: dict[tuple[SchemaLocation, Projection], bool] = dict.fromkeys(self.parser.acquisitions, True)
         for key in self.parser.model_resolver.references:
             document, separator, _ = key.partition("#")
             if not separator or SPECIAL_PATH_MARKER in key or document not in self.documents.ids:
                 continue
-            declarations.setdefault((_Declaration(document, _pointer_tokens(key) or ()), "value"), False)
+            declarations.setdefault((SchemaLocation(document, _pointer_tokens(key) or ()), "value"), False)
         for (declaration, projection), acquired in declarations.items():
             source = self.documents.location(declaration, "schema")
             neutral = self.use(
@@ -3344,7 +3313,7 @@ class _SchemaUses(_Models):
     def directional(
         self,
         source: SourceLocation,
-        declaration: _Declaration,
+        declaration: SchemaLocation,
         projection: Projection,
         direction: Direction,
         neutral: TypeUseId,
@@ -3378,7 +3347,7 @@ class _SchemaUses(_Models):
             )
             if location is None or self.schemas.at(location).additional != "schema":
                 continue
-            declaration = _child(location, "additionalProperties")
+            declaration = location.child("additionalProperties")
             use = _schema_use(self.documents.location(declaration, "schema"))
             if (
                 use in self.uses
@@ -3403,12 +3372,12 @@ class _SchemaUses(_Models):
             use.schema_site,
         )
 
-    def nested(self, declaration: _Declaration, data_type: DataType, *, own: bool = True) -> None:
+    def nested(self, declaration: SchemaLocation, data_type: DataType, *, own: bool = True) -> None:
         """Collect the type a field holds at a schema below a model, items, values and branches included."""
         node = self.schemas.at(declaration)
         if not node.has_ref:
             for keyword, child in _children(node, data_type):
-                self.nested(_child(declaration, *keyword), child)
+                self.nested(declaration.child(*keyword), child)
         if not own:
             return
         projected = self.projectors["neutral"].project(data_type)
@@ -3419,7 +3388,7 @@ class _SchemaUses(_Models):
         if isinstance(value := projected.value, GeneratedSymbolType) and not node.has_ref:
             self.relocate(declaration, value.symbol)
 
-    def relocate(self, declaration: _Declaration, symbol: SymbolId) -> None:
+    def relocate(self, declaration: SchemaLocation, symbol: SymbolId) -> None:
         """Collect a model's property types at another schema it was generated from."""
         if self.locations.get(symbol) == declaration:
             return
@@ -3467,11 +3436,11 @@ class _Contracts(_SchemaUses):
         """Map the document identities the walk's records use to the attempt's."""
         return {provisional: self.documents.ids[uri] for uri, provisional in self.parser.record_documents.items()}
 
-    def record(self, schema: _Declaration) -> _SchemaRecord:
+    def record(self, schema: SchemaLocation) -> _SchemaRecord:
         """Return what the walk recorded of an acquired schema, located in the attempt's documents."""
         return cast("_SchemaRecord", _relocated(self.parser.schema_records.get(schema, _UNRECORDED), self.relocations))
 
-    def parts(self, schema: _Declaration, members: tuple[FieldUseBinding, ...]) -> PartFacts:
+    def parts(self, schema: SchemaLocation, members: tuple[FieldUseBinding, ...]) -> PartFacts:
         """Return how a multipart body's schema encodes the parts of its use's members, as the walk recorded it."""
         record = self.record(schema).parts or _UNDECLARED_PARTS
         declared = dict(record.members)
@@ -3485,7 +3454,7 @@ class _Contracts(_SchemaUses):
             record.extra,
         )
 
-    def declared(self, declaration: _Declaration, raw: YamlValue) -> tuple[_Declaration, dict[str, YamlValue]]:
+    def declared(self, declaration: SchemaLocation, raw: YamlValue) -> tuple[SchemaLocation, dict[str, YamlValue]]:
         """Return the object the target parser resolved a declaration to: itself, unless it is a reference."""
         return self.parser.resolutions.get(declaration) or (declaration, _mapping(raw))
 
@@ -3493,8 +3462,8 @@ class _Contracts(_SchemaUses):
         self,
         kind: Literal["link", "callback", "security_scheme"],
         name: str,
-        declaration: _Declaration,
-        use_site: _Declaration,
+        declaration: SchemaLocation,
+        use_site: SchemaLocation,
         raw: YamlValue,
     ) -> WireDeclaration:
         """Freeze link, callback and security scheme metadata with every reference edge it follows."""
@@ -3517,7 +3486,7 @@ class _Contracts(_SchemaUses):
             if document is None or noncanonical or (tokens := _pointer_tokens(ref)) is None:
                 references.append(SourceReference(source, ref, None, "invalid_pointer"))
                 break
-            target = _Declaration(document, tokens)
+            target = SchemaLocation(document, tokens)
             location = locate(target, "declaration")
             if target in seen:
                 references.append(SourceReference(source, ref, location, "cycle"))
@@ -3548,7 +3517,7 @@ class _Contracts(_SchemaUses):
         )
 
     def media_facts(
-        self, uses: tuple[TypeUseId, ...], schema: _Declaration, role: TypeUseRole, media: str
+        self, uses: tuple[TypeUseId, ...], schema: SchemaLocation, role: TypeUseRole, media: str
     ) -> tuple[TypeUseId, ...]:
         """Record what the walk recorded of the media's own schema keyword on its uses.
 
@@ -3588,7 +3557,7 @@ class _Contracts(_SchemaUses):
         binary = self.parser.data_type_manager.get_data_type(Types.binary)
         return self.binder.projector("neutral", inline=True).project(binary).value
 
-    def raw(self, schema: _Declaration, direction: Direction) -> tuple[tuple[bool, ...], bool]:
+    def raw(self, schema: SchemaLocation, direction: Direction) -> tuple[tuple[bool, ...], bool]:
         """Return whether each type the models type a schema's whole value as, null aside, is a raw binary string.
 
         Each alias and root model is read as the type it stands for, as the schema's wrappers leave it, and a string
@@ -3607,8 +3576,8 @@ class _Contracts(_SchemaUses):
     def media(  # noqa: PLR0913
         self,
         raw: YamlValue,
-        declaration: _Declaration,
-        use_site: _Declaration,
+        declaration: SchemaLocation,
+        use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
         *,
@@ -3620,10 +3589,10 @@ class _Contracts(_SchemaUses):
         values: list[WireDeclaration] = []
         for name, value in _mapping(raw).items():
             medium = _mapping(value)
-            media_declaration, media_use = _child(declaration, "content", name), _child(use_site, "content", name)
+            media_declaration, media_use = declaration.child("content", name), use_site.child("content", name)
             uses: list[TypeUseId] = []
             for keyword in ("schema", "itemSchema"):
-                schema = _child(media_declaration, keyword)
+                schema = media_declaration.child(keyword)
                 if keyword not in medium or (schema, "value") not in self.parser.acquisitions:
                     continue
                 projections: tuple[Projection, ...] = (
@@ -3640,7 +3609,7 @@ class _Contracts(_SchemaUses):
                                 declaration,
                                 use_site,
                                 schema,
-                                _child(media_use, keyword),
+                                media_use.child(keyword),
                                 projection=projection,
                                 name=parameter_name,
                                 location=parameter_location,
@@ -3655,15 +3624,15 @@ class _Contracts(_SchemaUses):
                     )
                 )
             encodings: list[WireDeclaration] = []
-            encoding_declaration = _child(media_declaration, "encoding")
+            encoding_declaration = media_declaration.child("encoding")
             if "encoding" in medium and encoding_declaration not in self.ignored_declarations:
                 header_role: TypeUseRole = (
                     "response_encoding_header" if role.startswith("response") else "request_encoding_header"
                 )
                 for property_name, encoding_value in _mapping(medium.get("encoding")).items():
                     encoding = _mapping(encoding_value)
-                    declared = _child(encoding_declaration, property_name)
-                    used = _child(media_use, "encoding", property_name)
+                    declared = encoding_declaration.child(property_name)
+                    used = media_use.child("encoding", property_name)
                     encodings.append(
                         WireDeclaration(
                             "encoding",
@@ -3673,8 +3642,8 @@ class _Contracts(_SchemaUses):
                             _facts(encoding, ("contentType", "style", "explode", "allowReserved"), declared),
                             children=self.headers(
                                 encoding.get("headers"),
-                                _child(declared, "headers"),
-                                _child(used, "headers"),
+                                declared.child("headers"),
+                                used.child("headers"),
                                 owner,
                                 header_role,
                                 status=status,
@@ -3697,9 +3666,9 @@ class _Contracts(_SchemaUses):
 
     def parameter(  # noqa: PLR0913
         self,
-        declared: _Declaration,
+        declared: SchemaLocation,
         value: dict[str, YamlValue],
-        use_site: _Declaration,
+        use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
         *,
@@ -3713,14 +3682,14 @@ class _Contracts(_SchemaUses):
         location = str(value["in"]) if "in" in value else None
         schemas: tuple[TypeUseId, ...] = ()
         if "schema" in value:
-            schema = _child(declared, "schema")
+            schema = declared.child("schema")
             use = self.use(
                 owner,
                 role,
                 declared,
                 use_site,
                 schema,
-                _child(use_site, "schema"),
+                use_site.child("schema"),
                 location=location,
                 name=wire_name,
                 status=status,
@@ -3763,8 +3732,8 @@ class _Contracts(_SchemaUses):
     def headers(  # noqa: PLR0913
         self,
         raw: YamlValue,
-        declaration: _Declaration,
-        use_site: _Declaration,
+        declaration: SchemaLocation,
+        use_site: SchemaLocation,
         owner: OperationId,
         role: TypeUseRole,
         *,
@@ -3773,8 +3742,8 @@ class _Contracts(_SchemaUses):
     ) -> tuple[WireDeclaration, ...]:
         return tuple(
             self.parameter(
-                *self.declared(_child(declaration, name), value),
-                _child(use_site, name),
+                *self.declared(declaration.child(name), value),
+                use_site.child(name),
                 owner,
                 role,
                 name=name,
@@ -3782,24 +3751,24 @@ class _Contracts(_SchemaUses):
                 media=media,
             )
             for name, value in _mapping(raw).items()
-            if _child(declaration, name) not in self.ignored_declarations
+            if declaration.child(name) not in self.ignored_declarations
         )
 
     def response(
-        self, raw: YamlValue, declaration: _Declaration, use_site: _Declaration, owner: OperationId, status: str
+        self, raw: YamlValue, declaration: SchemaLocation, use_site: SchemaLocation, owner: OperationId, status: str
     ) -> WireDeclaration:
         declared, value = self.declared(declaration, raw)
         content = self.media(value.get("content"), declared, use_site, owner, "response_body", status=status)
         headers = self.headers(
             value.get("headers"),
-            _child(declared, "headers"),
-            _child(use_site, "headers"),
+            declared.child("headers"),
+            use_site.child("headers"),
             owner,
             "response_header",
             status=status,
         )
         links = tuple(
-            self.metadata("link", name, _child(declared, "links", name), _child(use_site, "links", name), link)
+            self.metadata("link", name, declared.child("links", name), use_site.child("links", name), link)
             for name, link in _mapping(value.get("links")).items()
         )
         locate = self.documents.location
@@ -3832,7 +3801,7 @@ class _Contracts(_SchemaUses):
             locate(use_site, "use"),
             kind,
             parent,
-            locate(_Declaration(use_site.document, use_site.tokens[:-1]), "use") if parent is not None else None,
+            locate(SchemaLocation(use_site.document, use_site.tokens[:-1]), "use") if parent is not None else None,
         )
         placeholders = frozenset(path_placeholders(item.use_site.tokens[-1]))
         parameters = tuple(
@@ -3842,8 +3811,8 @@ class _Contracts(_SchemaUses):
         )
         body: WireDeclaration | None = None
         if "requestBody" in raw:
-            used = _child(use_site, "requestBody")
-            declared, value = self.declared(_child(declaration, "requestBody"), raw["requestBody"])
+            used = use_site.child("requestBody")
+            declared, value = self.declared(declaration.child("requestBody"), raw["requestBody"])
             body = WireDeclaration(
                 "request_body",
                 None,
@@ -3859,8 +3828,8 @@ class _Contracts(_SchemaUses):
         responses = tuple(
             self.response(
                 statuses[str(status)],
-                _child(declaration, "responses", str(status)),
-                _child(use_site, "responses", str(status)),
+                declaration.child("responses", str(status)),
+                use_site.child("responses", str(status)),
                 identity,
                 str(status),
             )
@@ -3870,13 +3839,13 @@ class _Contracts(_SchemaUses):
             self.metadata(
                 "callback",
                 name,
-                _child(declaration, "callbacks", name),
-                _child(use_site, "callbacks", name),
+                declaration.child("callbacks", name),
+                use_site.child("callbacks", name),
                 callback,
             )
             for name, callback in _mapping(raw.get("callbacks")).items()
         )
-        root = _Declaration(use_site.document, ())
+        root = SchemaLocation(use_site.document, ())
         facts = _facts(raw, _OPERATION_FACTS, declaration)
         if walked.security is not None and "security" not in raw:
             facts = (*facts, *_facts({"security": walked.security}, ("security",), root))
@@ -3922,7 +3891,7 @@ class _Contracts(_SchemaUses):
         for document in self.documents.walked:
             raw = self.documents.documents[document]
             for name, scheme in _mapping(_mapping(_mapping(raw).get("components")).get("securitySchemes")).items():
-                use = _Declaration(document, ("components", "securitySchemes", name))
+                use = SchemaLocation(document, ("components", "securitySchemes", name))
                 declarations.append(self.metadata("security_scheme", name, use, use, scheme))
         return tuple(declarations)
 
@@ -4021,17 +3990,5 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
-
-    class _DeclarationLike(Protocol):
-        """The declaration identity the API parser hands out."""
-
-        @property
-        def document(self) -> str:
-            """The declaring document."""
-
-        @property
-        def tokens(self) -> tuple[str, ...]:
-            """The raw JSON pointer tokens."""
-
-    from datamodel_code_generator.parser.openapi_scope import ApiDeclarationId, ApiParameterDeclaration, SchemaRole
+    from datamodel_code_generator.parser.openapi_scope import ApiParameterDeclaration, SchemaRole
     from datamodel_code_generator.reference import Reference

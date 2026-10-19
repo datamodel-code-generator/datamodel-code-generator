@@ -3,11 +3,12 @@
 from pathlib import Path
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.parser.openapi_media import encoding_media
-from datamodel_code_generator.parser._api_reference import ApiDeclarationId, ApiModelResolver
+from datamodel_code_generator.parser._api_reference import ApiModelResolver
 from datamodel_code_generator.parser.openapi_scope import ApiDeclarationFrame, ApiOpenAPIParser
+from datamodel_code_generator.reference import SchemaLocation
 
 raw: dict[str, YamlValue] = {1: "invalid key"}
-declaration = ApiDeclarationId("api.json", ("paths", 1))
+declaration = SchemaLocation("api.json", ("paths", 1))
 frame = ApiDeclarationFrame(declaration, {}, "RootGet", declaration, "body", "operation")
 frame.candidate_name = "mutated"
 ApiModelResolver().resolve_ref(1)

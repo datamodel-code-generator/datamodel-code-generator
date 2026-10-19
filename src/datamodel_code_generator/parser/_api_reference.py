@@ -17,7 +17,6 @@ from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     ModelResolver,
     Reference,
-    SchemaLocation,
 )
 
 _BAD_PERCENT = re.compile(r"%(?![0-9a-fA-F]{2})")
@@ -71,10 +70,6 @@ def canonical_ref(ref: str) -> str:
         return ref
     canonical = source.partition("#")[0] + "#" + pointer_fragment(tokens)
     return canonical + marker + generated
-
-
-ApiDeclarationId = SchemaLocation
-"""Identify an actual declaration independently of its generated Python name: its document and pointer tokens."""
 
 
 class ApiModelResolver(ModelResolver):

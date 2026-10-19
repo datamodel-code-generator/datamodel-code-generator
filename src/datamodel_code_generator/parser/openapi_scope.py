@@ -18,7 +18,6 @@ from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.config import OpenAPIParserConfig  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser._api_reference import (
-    ApiDeclarationId,
     ApiModelResolver,
     canonical_ref,
     check_pointer_interpretation,
@@ -32,7 +31,7 @@ from datamodel_code_generator.parser.openapi_media import (
     MediaOwner,
     encoding_media,
 )
-from datamodel_code_generator.reference import ModelResolver
+from datamodel_code_generator.reference import ModelResolver, SchemaLocation
 from datamodel_code_generator.types import DataType  # noqa: TC001 - Public annotations support get_type_hints().
 
 if TYPE_CHECKING:
@@ -64,14 +63,14 @@ SchemaRole: TypeAlias = Literal[
 class ApiDeclarationFrame:
     """Borrow declaration context only while the existing model engine processes it."""
 
-    declaration: ApiDeclarationId
+    declaration: SchemaLocation
     raw_document: dict[str, YamlValue]
     candidate_name: str
-    root_use_site: ApiDeclarationId
+    root_use_site: SchemaLocation
     role: SchemaRole
     phase: Literal["operation", "schema", "file"]
-    original_parameters: tuple[tuple[ApiDeclarationId, ...], ...] = ()
-    effective_parameters: tuple[ApiDeclarationId, ...] = ()
+    original_parameters: tuple[tuple[SchemaLocation, ...], ...] = ()
+    effective_parameters: tuple[SchemaLocation, ...] = ()
     engine_path: tuple[str, ...] = ()
     raw_schema: YamlValue = None
     validated_schema: JsonSchemaObject | None = None
@@ -84,7 +83,7 @@ class ApiDeclarationFrame:
 class _ApiObject:
     """Borrow a resolved object together with its actual declaration document."""
 
-    declaration: ApiDeclarationId
+    declaration: SchemaLocation
     document: dict[str, YamlValue]
     value: dict[str, YamlValue]
 
@@ -98,7 +97,7 @@ class _ApiObject:
 class ApiParameterDeclaration:
     """Keep the original array occurrence separate from its resolved declaration."""
 
-    occurrence: ApiDeclarationId
+    occurrence: SchemaLocation
     raw: dict[str, YamlValue]
     target: _ApiObject
     key: tuple[str, str]
@@ -109,8 +108,8 @@ class ApiParameterDeclaration:
 class ApiIgnoredDeclaration:
     """Describe an ignored source region without retaining its children or values."""
 
-    declaration: ApiDeclarationId
-    use_site: ApiDeclarationId | None
+    declaration: SchemaLocation
+    use_site: SchemaLocation | None
     reason: Literal[
         "oas_encoding_request_body_only",
         "oas_encoding_media_not_applicable",
@@ -160,15 +159,15 @@ class ApiOpenAPIParser(OpenAPIParser):
     ) -> None:
         """Initialize declaration ownership exclusively on the API path."""
         self.declaration_frames: list[ApiDeclarationFrame] = []
-        self._processed_declarations: set[ApiDeclarationId] = set()
-        self._projected_declarations: set[ApiDeclarationId] = set()
-        self._declaration_types: dict[ApiDeclarationId, DataType] = {}
+        self._processed_declarations: set[SchemaLocation] = set()
+        self._projected_declarations: set[SchemaLocation] = set()
+        self._declaration_types: dict[SchemaLocation, DataType] = {}
         self._api_roots: set[str] = set()
         self._api_security: YamlValue = None
-        self.declaration_uses: list[tuple[ApiDeclarationId, ApiDeclarationId, dict[str, YamlValue]]] = []
+        self.declaration_uses: list[tuple[SchemaLocation, SchemaLocation, dict[str, YamlValue]]] = []
         self.ignored_declarations: list[ApiIgnoredDeclaration] = []
-        self._active_api_objects: set[ApiDeclarationId] = set()
-        self._completed_api_objects: set[ApiDeclarationId] = set()
+        self._active_api_objects: set[SchemaLocation] = set()
+        self._completed_api_objects: set[SchemaLocation] = set()
         # Parser._iter_source_uncached supports mappings; the legacy constructor annotation omits them.
         super().__init__(  # pyright: ignore[reportUnknownMemberType]
             source,  # type: ignore[arg-type]
@@ -191,9 +190,9 @@ class ApiOpenAPIParser(OpenAPIParser):
         stripped = replace_non_word(path_name, self.target_python_version).lstrip("_") or "root"
         return super()._get_model_name(stripped, method, suffix)
 
-    def _declaration_id(self, path: Sequence[str]) -> ApiDeclarationId:
+    def _declaration_id(self, path: Sequence[str]) -> SchemaLocation:
         ref = self.model_resolver.join_path(tuple(path))
-        return ApiDeclarationId(ref.partition("#")[0], pointer_tokens(ref) or ())
+        return SchemaLocation(ref.partition("#")[0], pointer_tokens(ref) or ())
 
     @contextmanager
     def _schema_frame(  # noqa: PLR0913
@@ -203,7 +202,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         raw: dict[str, YamlValue],
         *,
         phase: Literal["schema", "file"] = "schema",
-        declaration: ApiDeclarationId | None = None,
+        declaration: SchemaLocation | None = None,
         raw_schema: YamlValue = None,
         validated_schema: JsonSchemaObject | None = None,
         projection: Literal["value", "item_stream_array"] = "value",
@@ -331,7 +330,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     self._api_documents[document] = raw_document
                 tokens = self._checked_pointer(raw_document, resolved)
                 raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
-                target = _ApiObject(ApiDeclarationId(document, tuple(tokens)), raw_document, _mapping(raw, [resolved]))
+                target = _ApiObject(SchemaLocation(document, tuple(tokens)), raw_document, _mapping(raw, [resolved]))
         return target
 
     def get_ref_model(self, ref: str) -> dict[str, YamlValue]:
@@ -697,7 +696,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     def _walk_path_item(
         self,
         target: _ApiObject,
-        use_site: ApiDeclarationId,
+        use_site: SchemaLocation,
         prefix: str,
         global_parameters: list[ApiParameterDeclaration],
     ) -> None:
@@ -718,7 +717,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     self._walk_api_operation(
                         operation,
                         path,
-                        ApiDeclarationId(use_site.document, (*use_site.tokens, *operation_tokens)),
+                        use_site.child(*operation_tokens),
                         prefix,
                         common,
                     )
@@ -764,7 +763,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self,
         operation: dict[str, YamlValue],
         path: list[str],
-        use_site: ApiDeclarationId,
+        use_site: SchemaLocation,
         prefix: str,
         common: tuple[list[ApiParameterDeclaration], list[ApiParameterDeclaration]],
     ) -> None:
@@ -857,9 +856,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         finally:
             self.declaration_frames.pop()
 
-    def _walk_callback(
-        self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: ApiDeclarationId
-    ) -> None:
+    def _walk_callback(self, raw: dict[str, YamlValue], path: list[str], prefix: str, use_site: SchemaLocation) -> None:
         """Traverse callback expressions in declaration order without expanding cycles."""
         target = self._resolve_api_object(raw, path)
         self.declaration_uses.append((use_site, target.declaration, target.value))
@@ -875,9 +872,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     ordinal += 1
                     expression_path = [*target.path, expression]
                     child = self._resolve_api_object(_mapping(value, expression_path), expression_path)
-                    child_use = ApiDeclarationId(
-                        use_site.document, (*use_site.tokens, "callbacks", path[-1], expression)
-                    )
+                    child_use = use_site.child("callbacks", path[-1], expression)
                     self._walk_path_item(child, child_use, prefix + str(ordinal), [])
             self._completed_api_objects.add(target.declaration)
         finally:
