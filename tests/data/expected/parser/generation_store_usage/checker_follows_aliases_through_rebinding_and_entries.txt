@@ -1,4 +1,4 @@
-5 chained extras.clear(): extras.clear() changes Fact.METADATA outside GenerationStore operations
+5 chained extras.clear(): extras.clear() changes Fact.METADATA, RenderFact.IMPORT_ALIASES outside GenerationStore operations
 7 chained _internal_template_data["config"].update(): _internal_template_data["config"].update() changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 8 chained _internal_template_data["config"]: _internal_template_data["config"] changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 10 chained _internal_template_data["config"] |=: _internal_template_data["config"] |= changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations

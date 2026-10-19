@@ -155,8 +155,16 @@ from datamodel_code_generator.model.output import (
     prepare_output_model_config,
 )
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
+from datamodel_code_generator.parser import _pass_decls as decls
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._finality import arm_store_write_guard, pass_scope, store_write_guard
+from datamodel_code_generator.parser._finality import (
+    arm_parse_checks,
+    fact_pass,
+    module_checkpoint,
+    parse_checks,
+    pass_scope,
+    record_ordering_inputs,
+)
 from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
@@ -6948,6 +6956,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ])
         if not inherited_models:
             return None  # pragma: no cover
+        record_ordering_inputs(model, inherited_models)
 
         supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
         required_assignment_names: set[str] = set()
@@ -8578,16 +8587,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_to_module_models, model_path_to_module_name = _index_module_models(module_models, module_split_mode)
         self._collapsed_reuse_models.clear()
         self._collapsed_reuse_users.clear()
-        self._reuse_union_tags = (
-            {model: tags for _, models in module_models for model in models if (tags := _union_tags(model))}
-            if self.reuse_model
-            else {}
-        )
+        with fact_pass(decls.SNAPSHOT_UNION_TAGS):
+            self._reuse_union_tags = (
+                {model: tags for _, models in module_models for model in models if (tags := _union_tags(model))}
+                if self.reuse_model
+                else {}
+            )
         for _, models in module_models:
-            self.__delete_duplicate_models(models)
-            self.__replace_duplicate_name_in_module(models)
+            with fact_pass(decls.DELETE_DUPLICATE_MODELS, models):
+                self.__delete_duplicate_models(models)
+            with fact_pass(decls.REPLACE_DUPLICATE_NAME_IN_MODULE, models):
+                self.__replace_duplicate_name_in_module(models)
 
-        if self._apply_forced_invalid_dotted_stdout_repair(module_models, module_split_mode):
+        with fact_pass(decls.APPLY_FORCED_INVALID_DOTTED_STDOUT_REPAIR):
+            repaired = self._apply_forced_invalid_dotted_stdout_repair(module_models, module_split_mode)
+        if repaired:
             live_model_ids = {id(model) for _, models in module_models for model in models}
             module_models = _group_models_by_module(
                 (model for model in sorted_data_models.values() if id(model) in live_model_ids),
@@ -8596,9 +8610,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             model_to_module_models, model_path_to_module_name = _index_module_models(module_models, module_split_mode)
 
-        shared_module_entry = self.__reuse_model_tree_scope(
-            module_models, require_update_action_models, module_split_mode
-        )
+        with fact_pass(decls.REUSE_MODEL_TREE_SCOPE):
+            shared_module_entry = self.__reuse_model_tree_scope(
+                module_models, require_update_action_models, module_split_mode
+            )
         if shared_module_entry:
             module_models.insert(0, shared_module_entry)
             if module_split_mode == ModuleSplitMode.Single:
@@ -8606,7 +8621,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     module_models, module_split_mode
                 )
 
-        module_models, internal_modules, forwarder_map, path_mapping = self.__resolve_circular_imports(module_models)
+        with fact_pass(decls.RESOLVE_CIRCULAR_IMPORTS):
+            module_models, internal_modules, forwarder_map, path_mapping = self.__resolve_circular_imports(
+                module_models
+            )
 
         if path_mapping:
             require_update_action_models[:] = [path_mapping.get(path, path) for path in require_update_action_models]
@@ -8700,18 +8718,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Prepare aliases, imports, and inherited enums before default processing."""
         if "Decimal" in all_module_fields:
             self._constrained_decimal_alias_model_ids.update(map(id, models))
-        self.__alias_shadowed_imports(models, all_module_fields, can_retain_cache=can_retain_cache)
-        self.__override_required_field(models, can_retain_cache=can_retain_cache)
-        self.__replace_unique_list_to_set(models, can_retain_cache=can_retain_cache)
-        self.__change_from_import(
-            models,
-            imports,
-            scoped_model_resolver,
-            init=is_init,
-            internal_modules=internal_modules,
-            model_path_to_module_name=model_path_to_module_name,
-        )
-        self.__extract_inherited_enum(models)
+        with fact_pass(decls.ALIAS_SHADOWED_IMPORTS, models):
+            self.__alias_shadowed_imports(models, all_module_fields, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.OVERRIDE_REQUIRED_FIELD, models):
+            self.__override_required_field(models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.REPLACE_UNIQUE_LIST_TO_SET, models):
+            self.__replace_unique_list_to_set(models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.CHANGE_FROM_IMPORT, models):
+            self.__change_from_import(
+                models,
+                imports,
+                scoped_model_resolver,
+                init=is_init,
+                internal_modules=internal_modules,
+                model_path_to_module_name=model_path_to_module_name,
+            )
+        with fact_pass(decls.EXTRACT_INHERITED_ENUM, models):
+            self.__extract_inherited_enum(models)
         return can_retain_cache and _can_retain_model_imports_cache(
             models,
             configured_types_are_builtin=self._configured_generation_types_are_builtin,
@@ -8732,18 +8755,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         internal_modules: set[ModulePath] | None = None,
     ) -> list[DataModel]:
         """Apply defaults and model transforms before final type adjustments."""
-        self.__set_reference_default_value_to_field(models, can_retain_cache=can_retain_cache)
-        self.__reuse_model(models, require_update_action_models)
+        with fact_pass(decls.SET_REFERENCE_DEFAULT_VALUE_TO_FIELD, models):
+            self.__set_reference_default_value_to_field(models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.REUSE_MODEL, models):
+            self.__reuse_model(models, require_update_action_models)
         try:
-            self.__collapse_root_models(
-                models,
-                unused_models,
-                imports,
-                scoped_model_resolver,
-                model_path_to_module_name,
-                is_init=is_init,
-                internal_modules=internal_modules,
-            )
+            with fact_pass(decls.COLLAPSE_ROOT_MODELS, models):
+                self.__collapse_root_models(
+                    models,
+                    unused_models,
+                    imports,
+                    scoped_model_resolver,
+                    model_path_to_module_name,
+                    is_init=is_init,
+                    internal_modules=internal_modules,
+                )
         except _CollapseRootModelsRecursionError:
             raise
         except RecursionError as exc:
@@ -8752,20 +8778,31 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     Error, "collapsing root models reached the recursion limit instead of stopping at a cycle"
                 )
             raise _CollapseRootModelsRecursionError from exc
-        self.__set_default_enum_member(models, can_retain_cache=can_retain_cache)
-        self.__sort_models(models, imports, use_deferred_annotations=use_deferred_annotations)
-        self.__change_field_name(models, can_retain_cache=can_retain_cache)
-        self.__restore_inherited_field_names_for_unique_aliases(models)
-        self.__apply_discriminator_type(models, imports, can_retain_cache=can_retain_cache)
-        self.__set_one_literal_on_default(models, can_retain_cache=can_retain_cache)
-        for model in models:
-            model.refresh_field_config()
-        self.__rename_fields_hiding_types(
-            models, can_retain_cache=can_retain_cache, use_deferred_annotations=use_deferred_annotations
-        )
-        kept_models = self.__remove_overridden_models(models)
-        self.__apply_field_type_overrides(kept_models)
-        self.__fix_constructor_field_ordering(models)
+        with fact_pass(decls.SET_DEFAULT_ENUM_MEMBER, models):
+            self.__set_default_enum_member(models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.SORT_MODELS, models):
+            self.__sort_models(models, imports, use_deferred_annotations=use_deferred_annotations)
+        with fact_pass(decls.CHANGE_FIELD_NAME, models):
+            self.__change_field_name(models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.RESTORE_INHERITED_FIELD_NAMES_FOR_UNIQUE_ALIASES, models):
+            self.__restore_inherited_field_names_for_unique_aliases(models)
+        with fact_pass(decls.APPLY_DISCRIMINATOR_TYPE, models):
+            self.__apply_discriminator_type(models, imports, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.SET_ONE_LITERAL_ON_DEFAULT, models):
+            self.__set_one_literal_on_default(models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.REFRESH_FIELD_CONFIG, models):
+            for model in models:
+                model.refresh_field_config()
+        with fact_pass(decls.RENAME_FIELDS_HIDING_TYPES, models):
+            self.__rename_fields_hiding_types(
+                models, can_retain_cache=can_retain_cache, use_deferred_annotations=use_deferred_annotations
+            )
+        with fact_pass(decls.REMOVE_OVERRIDDEN_MODELS, models):
+            kept_models = self.__remove_overridden_models(models)
+        with fact_pass(decls.APPLY_FIELD_TYPE_OVERRIDES, kept_models):
+            self.__apply_field_type_overrides(kept_models)
+        with fact_pass(decls.FIX_CONSTRUCTOR_FIELD_ORDERING, models):
+            self.__fix_constructor_field_ordering(models)
         return kept_models
 
     def __assign_forward_reference_fields(self, models: list[DataModel], *, can_retain_cache: bool) -> None:
@@ -8792,33 +8829,39 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         A field that hides a type of its class's annotations is left unbound where the model can, and without
         future imports the type is written as a string.
         """
-        self.__apply_base_class_type_overrides(models)
-        for model in models:
-            if (names := _hidden_type_names(model)) and model.unbind_fields(names):
-                _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
-        self.__update_type_aliases(
-            models,
-            self.pydantic_v2_root_model_type,
-            use_deferred_annotations=use_deferred_annotations,
-            defers_recursive_containers=pydantic_target_meets(
-                "pydantic.type_alias_module_namespace", self.target_pydantic_version
-            ),
-            generation_store=self.generation_store,
-            can_retain_cache=can_retain_cache,
-            hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
-            use_typing_generics=not python_target_meets(
-                "python.builtin_generic_strings", self.target_python_version.version_key
-            ),
-        )
+        with fact_pass(decls.APPLY_BASE_CLASS_TYPE_OVERRIDES, models):
+            self.__apply_base_class_type_overrides(models)
+        with fact_pass(decls.UNBIND_HIDDEN_TYPE_FIELDS, models):
+            for model in models:
+                if (names := _hidden_type_names(model)) and model.unbind_fields(names):
+                    _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.UPDATE_TYPE_ALIASES, models):
+            self.__update_type_aliases(
+                models,
+                self.pydantic_v2_root_model_type,
+                use_deferred_annotations=use_deferred_annotations,
+                defers_recursive_containers=pydantic_target_meets(
+                    "pydantic.type_alias_module_namespace", self.target_pydantic_version
+                ),
+                generation_store=self.generation_store,
+                can_retain_cache=can_retain_cache,
+                hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
+                use_typing_generics=not python_target_meets(
+                    "python.builtin_generic_strings", self.target_python_version.version_key
+                ),
+            )
         if not unused_models:
             live_models = models
         else:
             unused_model_ids = {id(model) for model in unused_models}
             live_models = [model for model in models if id(model) not in unused_model_ids]
-        self.__set_validate_default_on_fields(live_models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.SET_VALIDATE_DEFAULT_ON_FIELDS, live_models):
+            self.__set_validate_default_on_fields(live_models, can_retain_cache=can_retain_cache)
         if self.use_annotated and use_deferred_annotations:
-            self.__assign_forward_reference_fields(models, can_retain_cache=can_retain_cache)
-        self.__warn_required_assignments_after_defaults(live_models)
+            with fact_pass(decls.ASSIGN_FORWARD_REFERENCE_FIELDS, models):
+                self.__assign_forward_reference_fields(models, can_retain_cache=can_retain_cache)
+        with fact_pass(decls.WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS, live_models):
+            self.__warn_required_assignments_after_defaults(live_models)
         if not can_retain_cache:
             _clear_model_imports_cache(models)
 
@@ -8912,7 +8955,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     )
                     self._register_runtime_expression()
 
-    def _finalize_modules(  # noqa: PLR0912
+    def _finalize_modules(  # noqa: PLR0912, PLR0915
         self,
         contexts: list[ModuleContext],
         unused_models: list[DataModel],
@@ -8920,24 +8963,35 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         module_to_import: dict[ModulePath, Imports],
     ) -> None:
         """Finalize module processing: apply generic base class and remove unused imports."""
-        self.__apply_generic_base_class(contexts)
+        with fact_pass(decls.APPLY_GENERIC_BASE_CLASS):
+            self.__apply_generic_base_class(contexts)
+        self.generation_store.enter_phase(Phase.DECIDE)
+        self.generation_store.enter_phase(Phase.RENDER_PREPARATION)
         all_models = [model for ctx in contexts for model in ctx.models]
-        self.__prepare_type_alias_fields(contexts, unused_models)
-        self.data_model_type.finalize_type_alias_users(all_models)
-        self.__mark_set_item_models_hashable(all_models)
-        self._finalize_structured_imports(contexts)
+        with fact_pass(decls.PREPARE_TYPE_ALIAS_FIELDS, all_models):
+            self.__prepare_type_alias_fields(contexts, unused_models)
+        with fact_pass(decls.FINALIZE_TYPE_ALIAS_USERS, all_models):
+            self.data_model_type.finalize_type_alias_users(all_models)
+        with fact_pass(decls.MARK_SET_ITEM_MODELS_HASHABLE, all_models):
+            self.__mark_set_item_models_hashable(all_models)
+        with fact_pass(decls.FINALIZE_STRUCTURED_IMPORTS, all_models):
+            self._finalize_structured_imports(contexts)
         if self.use_default_factory_for_optional_nested_models:
             # Inherited defaults may have changed since a consumer first queried its factory imports.
             _clear_model_imports_cache(all_models)
         if self.use_root_model_sequence_interface:
-            for model in all_models:
-                model.finalize_sequence_interface()
-        model_imports = {model: model.imports for ctx in contexts for model in ctx.models}
+            with fact_pass(decls.FINALIZE_SEQUENCE_INTERFACE, all_models):
+                for model in all_models:
+                    model.finalize_sequence_interface()
+        self.generation_store.enter_phase(Phase.IMPORTS)
+        with fact_pass(decls.SNAPSHOT_MODEL_IMPORTS, all_models):
+            model_imports = {model: model.imports for ctx in contexts for model in ctx.models}
         ledger = self._import_ledger
 
-        for ctx in contexts:
-            for model in ctx.models:
-                ledger.append(ctx.imports, model_imports[model], ImportProducer("model-imports-snapshot", model))
+        with fact_pass(decls.APPEND_MODEL_IMPORTS, all_models):
+            for ctx in contexts:
+                for model in ctx.models:
+                    ledger.append(ctx.imports, model_imports[model], ImportProducer("model-imports-snapshot", model))
 
         replaced_root_modules = (
             {
@@ -8949,65 +9003,81 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if (replaced_root_models := self._replaced_root_models)
             else {}
         )
-        for unused_model in unused_models:
-            module, models = replaced_root_modules.pop(id(unused_model), None) or model_to_module_models[unused_model]
-            if unused_model in models:  # pragma: no branch
-                ledger.remove(
-                    module_to_import[module],
-                    model_imports.get(unused_model, unused_model.imports),
-                    ImportProducer("unused-models", unused_model),
+        with fact_pass(decls.REMOVE_UNUSED_MODELS, all_models):
+            for unused_model in unused_models:
+                module, models = (
+                    replaced_root_modules.pop(id(unused_model), None) or model_to_module_models[unused_model]
                 )
-                models.remove(unused_model)
+                if unused_model in models:  # pragma: no branch
+                    ledger.remove(
+                        module_to_import[module],
+                        model_imports.get(unused_model, unused_model.imports),
+                        ImportProducer("unused-models", unused_model),
+                    )
+                    models.remove(unused_model)
 
         if self.config.aliases:
-            for ctx in contexts:
-                for model in ctx.models:
-                    self.model_resolver.validate_explicit_field_aliases(
-                        model.fields, self.field_name_model_type, self.target_python_version
-                    )
+            with fact_pass(decls.VALIDATE_EXPLICIT_FIELD_ALIASES):
+                for ctx in contexts:
+                    for model in ctx.models:
+                        self.model_resolver.validate_explicit_field_aliases(
+                            model.fields, self.field_name_model_type, self.target_python_version
+                        )
 
         if self.generate_schema_validators:
-            self._prepare_schema_runtime_validation_module_code(contexts)
-            self._sync_schema_runtime_validation_module_imports(contexts, model_imports)
+            with fact_pass(decls.PREPARE_SCHEMA_RUNTIME_VALIDATION_MODULE_CODE, all_models):
+                self._prepare_schema_runtime_validation_module_code(contexts)
+            with fact_pass(decls.SYNC_SCHEMA_RUNTIME_VALIDATION_MODULE_IMPORTS, all_models):
+                self._sync_schema_runtime_validation_module_imports(contexts, model_imports)
 
         if self._has_runtime_expressions:
-            self._merge_runtime_expression_imports(contexts, model_imports)
+            with fact_pass(decls.MERGE_RUNTIME_EXPRESSION_IMPORTS, all_models):
+                self._merge_runtime_expression_imports(contexts, model_imports)
 
-        for ctx in contexts:
-            used_names = self._collect_used_names_from_models(ctx.models, model_imports)
-            ledger.remove_unused(ctx.imports, used_names, _REMOVE_UNUSED)
+        with fact_pass(decls.REMOVE_UNUSED_IMPORTS, all_models):
+            for ctx in contexts:
+                used_names = self._collect_used_names_from_models(ctx.models, model_imports)
+                ledger.remove_unused(ctx.imports, used_names, _REMOVE_UNUSED)
 
-        for ctx in contexts:
-            with ledger.external(ctx.imports, _IMPORT_CONFLICTS):
-                self.data_model_type.resolve_module_import_conflicts(ctx.models, model_imports, ctx.imports)
+        with fact_pass(decls.RESOLVE_MODULE_IMPORT_CONFLICTS, all_models):
+            for ctx in contexts:
+                with ledger.external(ctx.imports, _IMPORT_CONFLICTS):
+                    self.data_model_type.resolve_module_import_conflicts(ctx.models, model_imports, ctx.imports)
 
-        for ctx in contexts:
-            _bind_module_field_names(ctx.models, ctx.imports, ledger)
+        with fact_pass(decls.BIND_MODULE_FIELD_NAMES, all_models):
+            for ctx in contexts:
+                _bind_module_field_names(ctx.models, ctx.imports, ledger)
 
         renamed_models = False
-        for ctx in contexts:
-            renamed_models = (
-                self.__change_imported_model_name(ctx.models, ctx.imports, ctx.scoped_model_resolver) or renamed_models
-            )
-        if self.use_root_model_sequence_interface and renamed_models:
-            for model in all_models:
-                model.finalize_sequence_interface()
-        if self.generate_schema_validators and renamed_models:
-            # Helper-name reservations include referenced models from other modules,
-            # so a rare import collision must invalidate every module plan.
+        with fact_pass(decls.CHANGE_IMPORTED_MODEL_NAME, all_models):
             for ctx in contexts:
-                self.data_model_type.invalidate_module_code_cache(ctx.models)
-            self._prepare_schema_runtime_validation_module_code(contexts)
-            # Renaming only changes synthetic helper names; capabilities and their
-            # import set stay invariant. Keep snapshots synchronized defensively.
-            self._sync_schema_runtime_validation_module_imports(contexts, model_imports)
+                renamed_models = (
+                    self.__change_imported_model_name(ctx.models, ctx.imports, ctx.scoped_model_resolver)
+                    or renamed_models
+                )
+        if self.use_root_model_sequence_interface and renamed_models:
+            with fact_pass(decls.REFRESH_SEQUENCE_INTERFACE_AFTER_RENAMES, all_models):
+                for model in all_models:
+                    model.finalize_sequence_interface()
+        if self.generate_schema_validators and renamed_models:
+            with fact_pass(decls.REPLAN_SCHEMA_VALIDATORS_AFTER_RENAMES, all_models):
+                # Helper-name reservations include referenced models from other modules,
+                # so a rare import collision must invalidate every module plan.
+                for ctx in contexts:
+                    self.data_model_type.invalidate_module_code_cache(ctx.models)
+                self._prepare_schema_runtime_validation_module_code(contexts)
+                # Renaming only changes synthetic helper names; capabilities and their
+                # import set stay invariant. Keep snapshots synchronized defensively.
+                self._sync_schema_runtime_validation_module_imports(contexts, model_imports)
 
         if (overrides := self._import_overrides) is not None:
-            _remap_imports(ledger, self.imports, overrides)
-            for ctx in contexts:
-                _remap_imports(ledger, ctx.imports, overrides)
+            with fact_pass(decls.REMAP_IMPORT_OVERRIDES):
+                _remap_imports(ledger, self.imports, overrides)
+                for ctx in contexts:
+                    _remap_imports(ledger, ctx.imports, overrides)
         if self._unavailable_imports:
-            self._reject_unavailable_imports(contexts)
+            with fact_pass(decls.REJECT_UNAVAILABLE_IMPORTS):
+                self._reject_unavailable_imports(contexts)
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
         """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
@@ -9496,7 +9566,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Parse schema and generate code, returning single file or module dict."""
         token = SCHEMA_GRAPH.set(self._schema_graph)
         try:
-            with read_check_flags(), store_write_guard(self, Error):
+            with read_check_flags(), parse_checks(self, Error):
                 return self.__prepare_parse(
                     with_import=with_import,
                     format_=format_,
@@ -9539,15 +9609,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._close_http_fetch_session()
         if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
             self._check_schema_locations(mode)
-        arm_store_write_guard(self.generation_store, "Parser.__prepare_parse")
-        self._typed_map_value_reference_ids = self.model_resolver.settle_yielding_names()
-        if (changes := self.model_resolver.yielding_name_changes) and self._names_have_class_keyed_options(changes):
-            self.yielding_names_to_assign = tuple(self.model_resolver.final_yielding_names.items())
+        self.generation_store.enter_phase(Phase.SETTLE)
+        arm_parse_checks(self.generation_store, "Parser.__prepare_parse")
+        with fact_pass(decls.SETTLE_YIELDING_NAMES):
+            self._typed_map_value_reference_ids = self.model_resolver.settle_yielding_names()
+            if (changes := self.model_resolver.yielding_name_changes) and self._names_have_class_keyed_options(changes):
+                self.yielding_names_to_assign = tuple(self.model_resolver.final_yielding_names.items())
         if suppress_parse_warnings:
-            self._run_with_suppressed_warnings(self._report_parse_diagnostics)
+            with fact_pass(decls.REPORT_PARSE_DIAGNOSTICS):
+                self._run_with_suppressed_warnings(self._report_parse_diagnostics)
         else:
-            self._report_parse_diagnostics()
-            self.__warn_about_unmatched_model_name_keys()
+            with fact_pass(decls.REPORT_PARSE_DIAGNOSTICS):
+                self._report_parse_diagnostics()
+            with fact_pass(decls.WARN_ABOUT_UNMATCHED_MODEL_NAME_KEYS):
+                self.__warn_about_unmatched_model_name_keys()
 
         config = self._prepare_parse_config(
             with_import,
@@ -9557,19 +9632,24 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_split_mode,
         )
 
-        _, sorted_data_models, require_update_action_models = sort_data_models(
-            self.results,
-            generation_index=self.generation_store.index,
-            pydantic_v2_root_model_type=self.pydantic_v2_root_model_type,
-            runtime_validation_references=(
-                None if self.keep_model_order else _runtime_validation_reference_paths(self.results, same_module=True)
-            ),
-        )
+        with fact_pass(decls.SORT_DATA_MODELS):
+            _, sorted_data_models, require_update_action_models = sort_data_models(
+                self.results,
+                generation_index=self.generation_store.index,
+                pydantic_v2_root_model_type=self.pydantic_v2_root_model_type,
+                runtime_validation_references=(
+                    None
+                    if self.keep_model_order
+                    else _runtime_validation_reference_paths(self.results, same_module=True)
+                ),
+            )
         model_identities: Mapping[DataModel, str] | None = (
             {model: model.reference.path for model in sorted_data_models.values()} if collect_model_metadata else None
         )
-        sort_base_classes_for_mro(sorted_data_models, self.generation_store)
+        with fact_pass(decls.SORT_BASE_CLASSES_FOR_MRO):
+            sort_base_classes_for_mro(sorted_data_models, self.generation_store)
 
+        self.generation_store.enter_phase(Phase.STRUCTURE)
         with pass_scope("Parser._build_module_structure", Phase.STRUCTURE):
             (
                 module_models,
@@ -9647,6 +9727,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         config: ParseConfig,
     ) -> str | dict[tuple[str, ...], Result]:
         """Process every module into one shared result mapping before rendering."""
+        self.generation_store.enter_phase(Phase.PLAN)
         results: dict[ModulePath, Result] = {}
         unused_models: list[DataModel] = []
         module_to_import: dict[ModulePath, Imports] = {}
@@ -9659,20 +9740,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._renamed_types.clear()
         self._replaced_root_models.clear()
         with pass_scope("Parser.__process_modules", Phase.PLAN):
-            self.__flatten_conflicting_base_layouts(module_models)
+            with fact_pass(decls.FLATTEN_CONFLICTING_BASE_LAYOUTS):
+                self.__flatten_conflicting_base_layouts(module_models)
 
             if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
-                for _, models in module_models:
-                    for model in models:
-                        for field in model.fields:
+                with fact_pass(decls.UNCONSTRAIN_UNION_MEMBERS):
+                    for _, models in module_models:
+                        for field in (field for model in models for field in model.fields):
                             field.unconstrain_union_members()
-                    self.generation_store.note_changed_models(*models)
+                        self.generation_store.note_changed_models(*models)
 
             if self.collapse_root_models:
-                self.__set_circular_root_model_paths(
-                    module_models,
-                    require_dict_key_edge=not self.run_context.preserve_circular_root_models,
-                )
+                with fact_pass(decls.SET_CIRCULAR_ROOT_MODEL_PATHS):
+                    self.__set_circular_root_model_paths(
+                        module_models,
+                        require_dict_key_edge=not self.run_context.preserve_circular_root_models,
+                    )
         self._emitting_module_lists = (
             [(_module_name_from_module_path(module_), models) for module_, models in module_models]
             if self.collapse_root_models and self.collapse_root_models_name_strategy is not None
@@ -9682,9 +9765,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             id(model): module_name for module_name, models in self._emitting_module_lists for model in models
         }
 
+        self.generation_store.enter_phase(Phase.MODULES)
         for position, (module_, models) in enumerate(module_models, 1):
             self._defers_tagged_unions = position < len(module_models)
-            with pass_scope("Parser._process_single_module", Phase.MODULES):
+            with pass_scope("Parser._process_single_module", Phase.MODULES), module_checkpoint(models):
                 ctx = self._process_single_module(
                     module_,
                     models,
@@ -9698,25 +9782,32 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_to_import[module_] = ctx.imports
             contexts.append(ctx)
 
+        self.generation_store.enter_phase(Phase.CROSS_MODULE)
         with pass_scope("Parser.__process_modules", Phase.CROSS_MODULE):
             if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                 all_models = [model for ctx in contexts for model in ctx.models]
-                self.__fix_tag_opt_out_field_ordering(_tag_fields_of_tagged_bases(all_models), all_models)
-            self.__import_removed_reuse_canonicals(
-                contexts,
-                internal_modules=internal_modules,
-                model_path_to_module_name=model_path_to_module_name,
-            )
-            self.__import_renamed_types(
-                contexts,
-                internal_modules=internal_modules,
-                model_path_to_module_name=model_path_to_module_name,
-            )
-            self.__import_enum_member_literal_classes(
-                contexts,
-                internal_modules=internal_modules,
-                model_path_to_module_name=model_path_to_module_name,
-            )
+                with fact_pass(decls.TAG_FIELDS_OF_TAGGED_BASES, all_models):
+                    opted_out = _tag_fields_of_tagged_bases(all_models)
+                with fact_pass(decls.FIX_TAG_OPT_OUT_FIELD_ORDERING, all_models):
+                    self.__fix_tag_opt_out_field_ordering(opted_out, all_models)
+            with fact_pass(decls.IMPORT_REMOVED_REUSE_CANONICALS):
+                self.__import_removed_reuse_canonicals(
+                    contexts,
+                    internal_modules=internal_modules,
+                    model_path_to_module_name=model_path_to_module_name,
+                )
+            with fact_pass(decls.IMPORT_RENAMED_TYPES):
+                self.__import_renamed_types(
+                    contexts,
+                    internal_modules=internal_modules,
+                    model_path_to_module_name=model_path_to_module_name,
+                )
+            with fact_pass(decls.IMPORT_ENUM_MEMBER_LITERAL_CLASSES):
+                self.__import_enum_member_literal_classes(
+                    contexts,
+                    internal_modules=internal_modules,
+                    model_path_to_module_name=model_path_to_module_name,
+                )
             self._finalize_modules(contexts, unused_models, model_to_module_models, module_to_import)
         with pass_scope("Parser.__process_modules", Phase.IMPORTS):
             if collecting_class_names():
@@ -9724,15 +9815,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     (model.class_name, model.duplicate_class_name) for ctx in contexts for model in ctx.models
                 )
             if self.typed_nullable_maps or self.run_context.untyped_nullable_maps:
-                self.__record_model_placement(contexts, bool(internal_modules))
-            self._check_model_inheritance(contexts)
-            self.__warn_about_dropped_constraints(contexts)
-            self.__warn_about_decimal_defaults()
-            self.__warn_about_variant_discriminator_tags()
-            self.__warn_about_msgspec_decoding(contexts)
+                with fact_pass(decls.RECORD_MODEL_PLACEMENT):
+                    self.__record_model_placement(contexts, bool(internal_modules))
+            with fact_pass(decls.CHECK_MODEL_INHERITANCE):
+                self._check_model_inheritance(contexts)
+            with fact_pass(decls.WARN_ABOUT_DROPPED_CONSTRAINTS):
+                self.__warn_about_dropped_constraints(contexts)
+            with fact_pass(decls.WARN_ABOUT_DECIMAL_DEFAULTS):
+                self.__warn_about_decimal_defaults()
+            with fact_pass(decls.WARN_ABOUT_VARIANT_DISCRIMINATOR_TAGS):
+                self.__warn_about_variant_discriminator_tags()
+            with fact_pass(decls.WARN_ABOUT_MSGSPEC_DECODING):
+                self.__warn_about_msgspec_decoding(contexts)
             if self.use_default_factory_for_optional_nested_models:
-                self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
-            self.__record_pydantic_floor(contexts)
+                with fact_pass(decls.SET_NESTED_MODEL_DEFAULT_FACTORY_METADATA):
+                    self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
+            with fact_pass(decls.RECORD_PYDANTIC_FLOOR):
+                self.__record_pydantic_floor(contexts)
 
         root_init: ModulePath = ("__init__.py",)
         if root_init not in results:
@@ -9740,7 +9839,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if len(top_level_dirs) > 1:
                 results[root_init] = Result(body="")
 
-        with pass_scope("Parser.__render_modules", Phase.RENDER):
+        self.generation_store.enter_phase(Phase.RENDER)
+        with pass_scope("Parser.__render_modules", Phase.RENDER), fact_pass(decls.RENDER_MODULES):
             return self.__render_modules(
                 results,
                 contexts=contexts,

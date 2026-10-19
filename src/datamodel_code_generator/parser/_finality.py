@@ -1,53 +1,115 @@
-"""Guard writes of model facts outside store operations when ``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`` is on.
+"""Debug checks that watch how the passes of one parse change the model graph.
 
-After L1, a data type, a field or a model may change a fact or presentation attribute of ``ATTRIBUTE_FACTS`` only
-while a ``GenerationStore`` operation that some row names in ``store_ops`` runs. Any such operation accepts any guarded
-write, and the phase is not checked; which operation and which phase may write which attribute is EN5's check. With
-the area on, ``Parser.parse`` opens a guard (``store_write_guard``) and arms it at the end of L1
-(``arm_store_write_guard``): ``DataType``, ``DataModelFieldBase`` and ``DataModel`` get a ``__setattr__`` guard (they
-inherit theirs, so leaving deletes it again), and each store operation of the parser's store runs in a write scope. The
-drivers of ``parser/base.py`` open pass scopes (``pass_scope``, inert unless a guard is armed). A write outside every
-store operation is reported with the line that wrote it, the parser method it ran in and the pass scope and phase,
-once per line and parse; the construction of an object (its ``__init__`` and what that calls) writes freely. With the
-area off, nothing is installed.
+Two check areas share this module. With neither variable set, ``Parser.parse`` installs nothing, and the scopes the
+drivers of ``parser/base.py`` open (``pass_scope``, ``fact_pass``, ``module_checkpoint``) are one shared no-op.
 
-In check mode the list attributes of the parsed graph, and the lists store operations set, are replaced by
+``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES``: after L1, a data type, a field or a model may change a fact or
+presentation attribute of ``ATTRIBUTE_FACTS`` only while a ``GenerationStore`` operation that some row names in
+``store_ops`` runs. Any such operation accepts any guarded write; which pass and phase may write which attribute is the
+finality check's. A write outside every store operation is reported with the line that wrote it, the parser method it
+ran in and the pass scope and phase of the drivers (``pass_scope``), once per line and parse; the construction of an
+object (its ``__init__`` and what that calls) writes freely.
+
+``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``: the drivers run every pass that can change models inside
+``fact_pass(DECL)`` with its declaration from ``parser/_pass_decls.py``. The parse keeps one fingerprint per model: the
+values of the ``fact`` rows of ``ATTRIBUTE_FACTS`` on the model, its fields and every data type of their types and of
+its bases, holding the objects it keys. When a pass ends, the fingerprints of the models it touched are compared with
+the stored ones: for a module pass the models of its module and the models they reference, the models that guarded
+writes and store operations reached during the pass, and the models the pass reported changed
+(``GenerationStore.note_changed_models``, ``DataModelFieldBase.invalidate_semantic_caches``). With
+``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP`` on as well, a global pass that transforms or repairs compares
+every model. Every model is compared whenever the pipeline enters a phase (``GenerationStore.enter_phase``), which
+includes the freeze points B1 and B2. A changed row is
+
+* ``undeclared`` when the pass declares none of the row's facts,
+* ``other-module`` when a module pass changed a model of another module,
+* ``frozen`` when every declared fact of the row is final at a freeze point the pipeline has passed (B1 for facts,
+  B2 for the rendered nullability rows, the ``RENDER_FACT_FREEZE_POINTS`` entry for render facts),
+* ``after-final`` when the phase is later than the row's ``final_after``.
+
+A change that no pass covers is ``unattributed``, found at the next comparison of its model: when a pass touches it,
+when the next pass starts (a guarded write outside every pass), at the start and the end of each module
+(``module_checkpoint``) and when the pipeline leaves a phase (``GenerationStore.enter_phase``). A pass that runs in
+another phase than it declares is ``wrong-phase``. On entering ``DECIDE`` (B1), the ordering-input check compares the
+fields that a pass read from the bases of a model for constructor ordering, with the facts the ordering pass declares
+as reads, with those fields now (``ordering-input``). Only type aliases hold ``TYPE_ALIAS_BODY`` in their rows.
+
+A row is judged by the freeze points of the facts the pass declares: a pass that declares only ``IMPORT_ALIASES`` (final
+at render) can change ``DataType.type``, ``python_type``, ``kwargs`` or ``extras`` after B1 without a report, and one
+that declares only ``TYPE_ALIAS_BODY`` (final at B2) can change a type alias's ``data_type`` or ``data_types`` after B1,
+although ``FIELD_TYPES`` of those rows is final at B1. ``KNOWN_WRITES`` lists the violations of today's pipeline with a
+witness each; they are reported with ``report:<path>`` and never raise. Presentation rows, parser state, module imports
+and rows a model class computes with a property are not fingerprinted.
+
+Machinery shared by both areas: ``parse_checks`` opens the state of one parse when either area is on, and
+``arm_parse_checks`` arms it at the end of L1: ``DataType``, ``DataModelFieldBase`` and ``DataModel`` get a
+``__setattr__`` guard (they inherit theirs, so leaving deletes it again), each store operation of the parser's store
+runs in a write scope, and the list attributes of the parsed graph, and the lists store operations set, are replaced by
 ``_GuardedList`` copies: a list keeps being shared by the objects that shared it, but not with other references to the
-original list, and ``type(x) is list`` is false for it. The copies outlive the parse; once no guard is armed they act as
-plain lists, and they copy and pickle as plain lists.
-
-Writes through ``object.__setattr__``, through ``__dict__``, into dict attributes, and into lists that an object got
-outside a store operation after arming are not seen.
+original list, and ``type(x) is list`` is false for it. The copies outlive the parse; once no parse is armed they act as
+plain lists, and they copy and pickle as plain lists. Writes through ``object.__setattr__``, through ``__dict__``, into
+dict attributes, and into lists that an object got outside a store operation after arming are not seen by the guards;
+the finality check sees their effect at the next comparison.
 """
 
 from __future__ import annotations
 
+import re
 import sys
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, is_dataclass
+from decimal import Decimal
+from enum import Enum, unique
 from functools import wraps
-from itertools import takewhile
+from inspect import getattr_static
+from itertools import takewhile, zip_longest
 from pathlib import Path
 from threading import Lock
 from traceback import walk_stack
 from typing import TYPE_CHECKING, Any, Final, SupportsIndex
+from weakref import ref
 
+from pydantic import BaseModel
 from typing_extensions import final, override
 
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
-from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
-from datamodel_code_generator.parser._facts import ATTRIBUTE_FACTS, Access, FactKind, Phase
+from datamodel_code_generator.model.base import DataModel, DataModelFieldBase, _find_base_classes, linearize_data_models
+from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.parser import _pass_decls as decls
+from datamodel_code_generator.parser._facts import (
+    ATTRIBUTE_FACTS,
+    RENDER_FACT_FREEZE_POINTS,
+    Access,
+    AttributeFact,
+    Fact,
+    FactKind,
+    FreezePoint,
+    Phase,
+    RenderFact,
+)
+from datamodel_code_generator.parser._pass_decls import PassDecl, PassKind, Scope
+from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator
+    from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
     from contextlib import AbstractContextManager
     from types import FrameType
 
     from datamodel_code_generator.parser.generation import GenerationStore
 
-__all__ = ["arm_store_write_guard", "pass_scope", "store_write_guard"]
+__all__ = [
+    "KNOWN_WRITES",
+    "KnownWrite",
+    "Rule",
+    "arm_parse_checks",
+    "fact_pass",
+    "module_checkpoint",
+    "parse_checks",
+    "pass_scope",
+    "record_ordering_inputs",
+]
 
 _PACKAGE_ROOT: Final = Path(__file__).parents[1]
 _PACKAGE: Final = _PACKAGE_ROOT.name
@@ -72,7 +134,7 @@ _LIST_MUTATORS: Final = (
 )
 _KEYED_MUTATORS: Final = frozenset({"__delitem__", "__setitem__", "pop"})
 
-_GUARD: Final[ContextVar[_StoreWriteGuard | None]] = ContextVar("store_write_guard", default=None)
+_CHECKS: Final[ContextVar[_ParseChecks | None]] = ContextVar("parse_checks", default=None)
 _NO_SCOPE: Final = nullcontext()
 
 
@@ -117,18 +179,20 @@ def _stack(frame: FrameType) -> Iterator[FrameType]:
 
 @final
 class _GuardedList(list[Any]):  # noqa: FURB189
-    """A list attribute of the parsed graph whose mutators report writes outside store operations."""
+    """A list attribute of the parsed graph whose mutators report to the checks of the parse."""
 
-    __slots__ = ("_attribute", "_owner")
+    __slots__ = ("_attribute", "_holder", "_owner")
 
     _attribute: str
+    _holder: ref[Any]
     _owner: str
 
     @classmethod
-    def of(cls, items: Iterable[Any], owner: str, attribute: str) -> _GuardedList:
-        """Return a guarded list holding ``items``, as the attribute of an object of class ``owner``."""
+    def of(cls, items: Iterable[Any], holder: object, attribute: str) -> _GuardedList:
+        """Return a guarded list holding ``items``, as the attribute of ``holder``."""
         guarded = cls(items)
-        guarded._owner = owner
+        guarded._owner = type(holder).__name__
+        guarded._holder = ref(holder)
         guarded._attribute = attribute
         return guarded
 
@@ -142,14 +206,8 @@ def _guarded_mutator(name: str) -> Callable[..., Any]:
     mutate = getattr(list, name)
 
     def mutator(self: _GuardedList, *args: Any, **kwargs: Any) -> Any:
-        if (guard := _GUARD.get()) is not None and guard.checks_writes:
-            guard.report_write(
-                self._owner,
-                self._attribute,
-                name,
-                _key_kind(name, args),
-                sys._getframe(1),  # noqa: SLF001
-            )
+        if (checks := _CHECKS.get()) is not None and checks.armed:
+            checks.on_list_write(self, name, args)
         return mutate(self, *args, **kwargs)
 
     mutator.__name__ = name
@@ -162,52 +220,707 @@ for _name in _LIST_MUTATORS:
 
 def _guarded_setattr(original: Callable[[Any, str, Any], None]) -> Callable[[Any, str, Any], None]:
     def __setattr__(self: Any, name: str, value: Any) -> None:  # noqa: N807
-        if (guard := _GUARD.get()) is not None and guard.armed:
-            value = guard.on_setattr(self, name, value, sys._getframe(1))  # noqa: SLF001
+        if (checks := _CHECKS.get()) is not None and checks.armed:
+            value = checks.on_setattr(self, name, value, sys._getframe(1))  # noqa: SLF001
         original(self, name, value)
 
     return __setattr__
 
 
+def _noting_invalidation(original: Callable[..., None]) -> Callable[..., None]:
+    @wraps(original)
+    def invalidate_semantic_caches(self: DataModelFieldBase, *, invalidate_parent: bool = True) -> None:
+        if (checks := _CHECKS.get()) is not None and (finality := checks.finality) is not None:
+            finality.mark((self,))
+        original(self, invalidate_parent=invalidate_parent)
+
+    return invalidate_semantic_caches
+
+
 @final
 class _ClassGuards:
-    """The ``__setattr__`` guards of the graph classes, installed while at least one parse has an armed guard."""
+    """The ``__setattr__`` guards of the graph classes, installed while at least one parse is armed.
+
+    ``DataModelFieldBase.invalidate_semantic_caches`` notes its field's models as changed for the finality check.
+    """
 
     def __init__(self) -> None:
         self._lock = Lock()
         self._armed = 0
 
     def install(self) -> None:
-        """Count one more armed guard; the first one installs the guards."""
+        """Count one more armed parse; the first one installs the guards."""
         with self._lock:
             self._armed += 1
             if self._armed == 1:
                 for cls in _GUARDED_CLASSES:
                     cls.__setattr__ = _guarded_setattr(cls.__setattr__)  # ty: ignore[invalid-assignment]
+                DataModelFieldBase.invalidate_semantic_caches = _noting_invalidation(_INVALIDATE)  # ty: ignore[invalid-assignment]
 
     def uninstall(self) -> None:
-        """Count one armed guard less; the last one gives the classes their inherited ``__setattr__`` back."""
+        """Count one armed parse less; the last one gives the classes their inherited ``__setattr__`` back."""
         with self._lock:
             self._armed -= 1
             if not self._armed:
                 for cls in _GUARDED_CLASSES:
                     del cls.__setattr__
+                DataModelFieldBase.invalidate_semantic_caches = _INVALIDATE
 
 
+_INVALIDATE: Final = DataModelFieldBase.invalidate_semantic_caches
 _CLASS_GUARDS: Final = _ClassGuards()
+
+
+@unique
+class Rule(Enum):
+    """Why the finality check reports a change."""
+
+    UNDECLARED = "undeclared"
+    OTHER_MODULE = "other-module"
+    FROZEN = "frozen"
+    AFTER_FINAL = "after-final"
+    UNATTRIBUTED = "unattributed"
+    WRONG_PHASE = "wrong-phase"
+    ORDERING_INPUT = "ordering-input"
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class KnownWrite:
+    """A finality violation of today's pipeline: reported, never raised, and made by its witness."""
+
+    pass_name: str
+    """The declaration name of the pass, or ``<PHASE>`` for an unattributed change."""
+    rule: Rule
+    row: str
+    """The ``ATTRIBUTE_FACTS`` row as ``Owner.attribute``, or ``-`` for a pass that runs in the wrong phase."""
+    witness: str
+    """The ``datamodel-codegen`` arguments of one run that makes the violation, from the repository root."""
+    removed_by: str
+    """The roadmap item that removes the violation."""
+
+
+_TAGGED_MODULES_WITNESS: Final = (
+    "--input tests/data/openapi/discriminator_msgspec_tagged_unions_modules_variants_first.yaml --input-file-type "
+    "openapi --output-model-type msgspec.Struct --use-msgspec-tagged-unions --target-python-version 3.10 "
+    "--formatters builtin"
+)
+_IMPORTS_CORRECT_WITNESS: Final = (
+    "--input tests/data/jsonschema/imports_correct --output-model-type pydantic_v2.BaseModel --formatters builtin"
+)
+_EMPTY_UNION_WITNESS: Final = (
+    "--input tests/data/jsonschema/collapse_root_models_empty_union.json --input-file-type jsonschema "
+    "--collapse-root-models --formatters builtin"
+)
+
+KNOWN_WRITES: tuple[KnownWrite, ...] = (
+    KnownWrite(
+        "apply_discriminator_type",
+        Rule.OTHER_MODULE,
+        "DataModel.fields",
+        "--input tests/data/openapi/external_discriminator_base/multiple --input-file-type openapi "
+        "--formatters builtin",
+        "RP17",
+    ),
+    KnownWrite(
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.data_type", _IMPORTS_CORRECT_WITNESS, "RP17"
+    ),
+    KnownWrite(
+        "apply_discriminator_type", Rule.OTHER_MODULE, "DataModelFieldBase.required", _IMPORTS_CORRECT_WITNESS, "RP17"
+    ),
+    KnownWrite(
+        "apply_discriminator_type",
+        Rule.OTHER_MODULE,
+        'DataModelFieldBase.extras["is_classvar"]',
+        "--input tests/data/jsonschema/discriminator_with_external_reference --output-model-type msgspec.Struct "
+        "--target-python-version 3.10 --formatters builtin",
+        "RP17",
+    ),
+    KnownWrite(
+        "<MODULES>", Rule.UNATTRIBUTED, 'DataModelFieldBase.extras["is_classvar"]', _TAGGED_MODULES_WITNESS, "RP17"
+    ),
+    KnownWrite(
+        "delete_duplicate_models",
+        Rule.OTHER_MODULE,
+        "DataModel.base_classes",
+        "--input tests/data/jsonschema/schema_validators_property_count_cross_module --input-file-type jsonschema "
+        "--generate-schema-validators --output-model-type pydantic_v2.BaseModel --formatters builtin",
+        "DC11b",
+    ),
+    KnownWrite(
+        "delete_duplicate_models",
+        Rule.OTHER_MODULE,
+        "DataType.reference",
+        "--input tests/data/jsonschema/external_ref_slash_key/schema.json --input-file-type jsonschema "
+        "--target-python-version 3.10 --formatters builtin",
+        "DC11b",
+    ),
+    KnownWrite(
+        "reuse_model",
+        Rule.OTHER_MODULE,
+        "DataType.reference",
+        "--input tests/data/openapi/reuse_model_cross_module_users.yaml --input-file-type openapi --output-model-type "
+        "pydantic_v2.BaseModel --reuse-model --target-python-version 3.10 --formatters builtin",
+        "G07",
+    ),
+    KnownWrite(
+        "fix_constructor_field_ordering",
+        Rule.ORDERING_INPUT,
+        "DataModel.fields",
+        "--input tests/data/openapi/type_overrides_constructor_order.yaml --input-file-type openapi "
+        "--output-model-type pydantic_v2.dataclass --target-python-version 3.10 "
+        '--type-overrides \'{"Base": "decimal.Decimal"}\' --formatters builtin',
+        "PH2",
+    ),
+    KnownWrite(
+        "fix_constructor_field_ordering",
+        Rule.ORDERING_INPUT,
+        "DataModelFieldBase.data_type",
+        _TAGGED_MODULES_WITNESS,
+        "PH2",
+    ),
+    KnownWrite(
+        "fix_constructor_field_ordering",
+        Rule.ORDERING_INPUT,
+        "DataModelFieldBase.name",
+        "--input tests/data/jsonschema/field_type_collision_inherited_modules --input-file-type jsonschema "
+        "--output-model-type pydantic_v2.dataclass --target-python-version 3.11 --formatters builtin",
+        "PH2",
+    ),
+    KnownWrite(
+        "fix_constructor_field_ordering",
+        Rule.ORDERING_INPUT,
+        "DataType.enum_member_literals",
+        "--input tests/data/generation_platform/binding/session-discriminator-forward.json --input-file-type openapi "
+        "--openapi-scopes api --module-split-mode single --use-subclass-enum --reuse-model "
+        "--use-enum-values-in-discriminator --output-model-type dataclasses.dataclass --formatters builtin",
+        "PH2",
+    ),
+    KnownWrite(
+        "prepare_type_alias_fields",
+        Rule.FROZEN,
+        "DataModelFieldBase.extras",
+        "--input tests/data/jsonschema/type_alias_lookaround/model.json --input-file-type jsonschema --use-type-alias "
+        "--use-annotated --formatters builtin",
+        "RP14a",
+    ),
+    KnownWrite("snapshot_model_imports", Rule.FROZEN, "DataType.is_optional", _EMPTY_UNION_WITNESS, "RP13"),
+    KnownWrite("render_modules", Rule.FROZEN, "DataType.import_", _EMPTY_UNION_WITNESS, "RP13"),
+    KnownWrite(
+        "render_modules",
+        Rule.FROZEN,
+        "DataType.is_optional",
+        "--input tests/data/jsonschema/ref_type_has_null.json --input-file-type jsonschema --use-union-operator "
+        "--formatters builtin",
+        "RP13",
+    ),
+)
+"""The violations of today's pipeline; ``scripts/check_fact_finality.py --witnesses`` runs their witnesses.
+
+A module pass writes models of other modules: the discriminator pass writes the tags of variants (RP17 plans them
+first), reuse redirects the users of removed duplicates (G07's reuse groups), and L3 deduplication redirects users
+and bases module by module (DC11b makes it one step). Constructor ordering reads the fields of bases that change
+before B1 (PH2 orders once after the decision phase). Import collection and rendering write rendered nullability and
+types after B2 (RP13 writes rendered nullability once), and alias preparation records compiled patterns in field extras
+after B1 (RP14a's field render plan holds them).
+"""
+
+_KNOWN: Final = frozenset((known.pass_name, known.rule, known.row) for known in KNOWN_WRITES)
+_SWEEPING_KINDS: Final = frozenset({PassKind.TRANSFORM, PassKind.REPAIR})
+_PHASE_FREEZE_POINTS: Final = {FreezePoint.B1: Phase.DECIDE, FreezePoint.B2: Phase.IMPORTS}
+_ITEM_ROW: Final = re.compile(r'(\w+)\["([^"]+)"\]')
+_MISSING: Final = object()
+_IDENTITY: Final = object()
+_SEQUENCE: Final = object()
+_MAPPING: Final = object()
+_SET: Final = object()
+_PLAIN_TYPES: Final = frozenset({str, int, bool, type(None), bytes})
+_BUILTIN_VALUE_TYPES: Final = (bool, int, float, complex, Decimal, str, bytes)
+_DESCENDED: Final = (DataType, DataModelFieldBase)
+_GRAPH_CLASSES: Final = (DataType, DataModelFieldBase, Reference, DataModel)
+_ORDERING_READS: Final = decls.FIX_CONSTRUCTOR_FIELD_ORDERING.reads
+_FIELDS_ROW: Final = next(row for row in ATTRIBUTE_FACTS if (row.owner, row.attribute) == ("DataModel", "fields"))
+
+
+def _freeze(value: Any, nested: list[Any]) -> Any:  # noqa: PLR0911
+    """Return a comparable copy of ``value``; graph objects become their identity and are appended to ``nested``.
+
+    Numbers, strings and bytes compare by their built-in text, so that NaN equals itself and subclasses never run their
+    own hash or equality; any other object is kept as it is and compares by its own equality.
+    """
+    kind = type(value)
+    if kind in _PLAIN_TYPES:
+        return value
+    if isinstance(value, _GRAPH_CLASSES):
+        nested.append(value)
+        return _IDENTITY, id(value)
+    if isinstance(value, (list, tuple)):
+        return _SEQUENCE, kind is tuple, tuple(_freeze(item, nested) for item in value)
+    if isinstance(value, dict):
+        return _MAPPING, tuple((_freeze(key, nested), _freeze(item, nested)) for key, item in value.items())
+    if isinstance(value, (set, frozenset)):
+        return _SET, frozenset(_freeze(item, nested) for item in value)
+    if isinstance(value, Enum):
+        return kind, value.name
+    if isinstance(value, _BUILTIN_VALUE_TYPES):
+        return kind, repr(next(base for base in _BUILTIN_VALUE_TYPES if isinstance(value, base))(value))
+    if isinstance(value, BaseModel):
+        state = value.__dict__
+        return kind, tuple(_freeze(state.get(name), nested) for name in kind.model_fields)
+    if is_dataclass(value):
+        return kind, tuple(_freeze(getattr(value, item.name), nested) for item in fields(value))
+    return value
+
+
+def _dict_keys() -> dict[str, str]:
+    """Return the ``__dict__`` key that each constant a dict-key fact row names stands for, from the loaded modules.
+
+    A module that is not loaded puts no key into any object, so its constants are not needed.
+    """
+    names = {row.attribute for row in ATTRIBUTE_FACTS if row.kind is FactKind.FACT and row.access is Access.DICT_KEY}
+    keys: dict[str, str] = {}
+    for module_name, module in sorted(sys.modules.items()):
+        if module_name.startswith(f"{_PACKAGE}.") and module is not None:
+            keys.update(
+                (name, value) for name in names - keys.keys() if isinstance(value := getattr(module, name, None), str)
+            )
+    return keys
+
+
+def _getter(row: AttributeFact, dict_keys: dict[str, str], item_keys: frozenset[str]) -> Callable[[Any], Any]:
+    """Return how to read the value of ``row`` on an object.
+
+    A dict-key row whose constant no loaded module defines reads its name, which no object holds.
+    """
+    match row.access:
+        case Access.ITEM:
+            match = _ITEM_ROW.fullmatch(row.attribute)
+            container, key = match.groups() if match else (row.attribute, "")
+            return lambda owner: getattr(owner, container, {}).get(key, _MISSING)
+        case Access.DICT_KEY:
+            key = dict_keys.get(row.attribute, row.attribute)
+            return lambda owner: owner.__dict__.get(key, _MISSING)
+        case _ if row.access is Access.CONTAINER and item_keys:
+            name = row.attribute
+            return lambda owner: {key: item for key, item in getattr(owner, name, {}).items() if key not in item_keys}
+        case _:
+            name = row.attribute
+            return lambda owner: getattr(owner, name, _MISSING)
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _ClassRows:
+    """The fact rows of one class and how to read them."""
+
+    rows: tuple[AttributeFact, ...]
+    getters: tuple[Callable[[Any], Any], ...]
+
+    @classmethod
+    def of(cls, owner_class: type, dict_keys: dict[str, str]) -> _ClassRows:
+        """Collect the fact rows that ``owner_class`` stores, from the rows of its package classes.
+
+        A row that the class computes with a property holds no state of its own, so it is left out; a dict attribute
+        leaves out the keys that have rows of their own.
+        """
+        names = {base.__name__ for base in owner_class.__mro__ if base.__module__.startswith(f"{_PACKAGE}.")}
+        rows = [row for row in ATTRIBUTE_FACTS if row.owner in names]
+        item_keys: dict[str, set[str]] = {}
+        for row in rows:
+            if row.access is Access.ITEM and (match := _ITEM_ROW.fullmatch(row.attribute)):
+                item_keys.setdefault(match.group(1), set()).add(match.group(2))
+        readable = tuple(
+            row
+            for row in rows
+            if row.kind is FactKind.FACT and not isinstance(getattr_static(owner_class, row.attribute, None), property)
+        )
+        return cls(
+            readable,
+            tuple(_getter(row, dict_keys, frozenset(item_keys.get(row.attribute, ()))) for row in readable),
+        )
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _Entry:
+    """The fact values of one object of a model's graph."""
+
+    owner: object
+    rows: tuple[AttributeFact, ...]
+    values: tuple[Any, ...]
+    base: bool
+    """Whether the object belongs to a base class of the model, so its type facts are ``BASES``."""
+    alias: bool
+    """Whether the object belongs to a type alias, the only model whose rows hold ``TYPE_ALIAS_BODY``."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _ModelPrint:
+    """The fingerprint of one model: its entries by object id, holding the objects."""
+
+    model: DataModel
+    entries: dict[int, _Entry]
+    referenced: tuple[object, ...]
+    """The references and models the fingerprint names, through which new models are found."""
+
+
+def _row_name(row: AttributeFact) -> str:
+    return f"{row.owner}.{row.attribute}"
+
+
+def _row_facts(entry: _Entry, row: AttributeFact) -> frozenset[Fact | RenderFact]:
+    facts = (fact for fact in row.facts if entry.alias or fact is not RenderFact.TYPE_ALIAS_BODY)
+    if not entry.base:
+        return frozenset(facts)
+    return frozenset(Fact.BASES if isinstance(fact, Fact) else fact for fact in facts)
+
+
+def _freeze_point(row: AttributeFact, fact: Fact | RenderFact) -> FreezePoint:
+    """Return where ``fact`` of ``row`` is final: a render fact at its point, a fact at B1 or its row's later point."""
+    if isinstance(fact, RenderFact):
+        return RENDER_FACT_FREEZE_POINTS[fact]
+    if row.frozen_at is not None and all(isinstance(item, Fact) for item in row.facts):
+        return row.frozen_at
+    return FreezePoint.B1
+
+
+def _passed(point: FreezePoint, phase: Phase) -> bool:
+    return (entered := _PHASE_FREEZE_POINTS.get(point)) is not None and phase.value >= entered.value
 
 
 @final
 @dataclass(slots=True)
-class _StoreWriteGuard:
-    """The write guard of one parse."""
+class _PassRun:
+    """One pass running inside ``fact_pass``."""
 
-    mode: CheckMode
+    decl: PassDecl
+    own: set[int]
+    """The ids of the models of the module a module pass runs for."""
+    touched: dict[int, DataModel] = field(default_factory=dict)
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _OrderingField:
+    """A field of a base that constructor ordering reads, with the values of the facts it reads."""
+
+    field: DataModelFieldBase
+    base: DataModel
+    values: tuple[tuple[int, AttributeFact, Any], ...]
+    held: tuple[object, ...]
+    """The objects whose ids ``values`` names, kept alive so that no id is reused while the read is recorded."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _OrderingRead:
+    """The constructor fields that ordering read from the bases of ``model``."""
+
+    pass_name: str
+    model: DataModel
+    fields: tuple[_OrderingField, ...]
+
+
+@final
+class _Finality:
+    """The finality check of one armed parse."""
+
+    def __init__(self, mode: CheckMode, error: type[Exception], store: GenerationStore, *, sweep: bool) -> None:
+        self.mode = mode
+        self.sweep = sweep
+        """Whether a global pass that transforms or repairs compares every model (``FACT_FINALITY_SWEEP``)."""
+        self.error = error
+        self.store = store
+        self.prints: dict[int, _ModelPrint] = {}
+        self.owners: dict[int, dict[int, DataModel]] = {}
+        self.held: dict[int, object] = {}
+        self.run: _PassRun | None = None
+        self.module: dict[int, DataModel] | None = None
+        """The models of the module that ``module_checkpoint`` processes now, by id, as they were at its start."""
+        self.done: set[int] = set()
+        self.loose: dict[int, DataModel] = {}
+        """Models that guarded writes outside every pass reached, to compare when the next pass starts."""
+        self.ordering_reads: list[_OrderingRead] = []
+        self._classes: dict[type, _ClassRows] = {}
+        self._dict_keys = _dict_keys()
+        self._reported: set[tuple[str, Rule, str]] = set()
+        self._settle(store.models)
+
+    def _rows(self, cls: type) -> _ClassRows:
+        if (rows := self._classes.get(cls)) is None:
+            rows = self._classes[cls] = _ClassRows.of(cls, self._dict_keys)
+        return rows
+
+    def _entries(
+        self, owner: object, entries: dict[int, _Entry], referenced: list[object], *, alias: bool = False
+    ) -> None:
+        """Add the entries of ``owner`` and of the fields and data types it holds; data types of bases are ``base``.
+
+        With ``alias``, ``owner`` is a type alias and the entries outside its bases are ``alias``.
+        """
+        pending: list[tuple[object, bool]] = [(owner, False)]
+        while pending:
+            item, base = pending.pop()
+            if id(item) in entries:
+                continue
+            rows = self._rows(type(item))
+            nested: list[Any] = []
+            values = tuple(
+                value if type(value := getter(item)) in _PLAIN_TYPES else _freeze(value, nested)
+                for getter in rows.getters
+            )
+            entries[id(item)] = _Entry(item, rows.rows, values, base, alias and not base)
+            base_ids = {id(base_class) for base_class in getattr(item, "base_classes", ())}
+            for child in nested:
+                if isinstance(child, _DESCENDED):
+                    pending.append((child, base or id(child) in base_ids))
+                else:
+                    referenced.append(child)
+
+    def _print(self, model: DataModel) -> _ModelPrint:
+        """Return the fingerprint of ``model``: the model, its fields and their types, and its bases."""
+        entries: dict[int, _Entry] = {}
+        referenced: list[object] = []
+        self._entries(model, entries, referenced, alias=isinstance(model, TypeAliasBase))
+        model_id = id(model)
+        for object_id, entry in entries.items():
+            self.owners.setdefault(object_id, {})[model_id] = model
+            self.held[object_id] = entry.owner
+        return _ModelPrint(model, entries, tuple(referenced))
+
+    def _settle(self, models: Iterable[DataModel], run: _PassRun | None = None, *, reach: bool = False) -> None:
+        """Compare ``models`` with their stored fingerprints, report what changed, and store the new ones.
+
+        Models that a fingerprint names and that have none yet get their first one; with ``reach``, the models that
+        the new fingerprints name are compared as well.
+        """
+        pending = list(models)
+        settled: set[int] = set()
+        reached: list[DataModel] = []
+        while pending:
+            if (model_id := id(current := pending.pop())) in settled:
+                continue
+            settled.add(model_id)
+            self.loose.pop(model_id, None)
+            new = self._print(current)
+            old = self.prints.get(model_id)
+            self.prints[model_id] = new
+            if old is not None:
+                self._compare(old, new, run)
+            for item in new.referenced:
+                if not isinstance(source := item.source if isinstance(item, Reference) else item, DataModel):
+                    continue
+                if id(source) not in self.prints:
+                    pending.append(source)
+                elif reach:
+                    reached.append(source)
+        if reached:
+            self._settle((model for model in reached if id(model) not in settled), run)
+
+    def _compare(self, old: _ModelPrint, new: _ModelPrint, run: _PassRun | None) -> None:
+        for object_id, before in old.entries.items():
+            if (after := new.entries.get(object_id)) is None or after.values == before.values:
+                continue
+            for row, was, now in zip(after.rows, before.values, after.values, strict=True):
+                if was != now:
+                    self._judge(new.model, after, row, run)
+
+    def _judge(self, model: DataModel, entry: _Entry, row: AttributeFact, run: _PassRun | None) -> None:
+        """Report a change of ``row`` of ``model`` when the rules forbid it."""
+        facts = _row_facts(entry, row)
+        phase = self.store.phase
+        if run is None:
+            self._violation(f"<{phase.name}>", Rule.UNATTRIBUTED, row, model, facts)
+            return
+        decl = run.decl
+        if not (declared := facts & decl.writes):
+            self._violation(decl.name, Rule.UNDECLARED, row, model, facts)
+        elif decl.scope is Scope.MODULE and id(model) not in run.own:
+            self._violation(decl.name, Rule.OTHER_MODULE, row, model, facts, module_done=id(model) in self.done)
+        elif all(_passed(_freeze_point(row, fact), phase) for fact in declared):
+            self._violation(decl.name, Rule.FROZEN, row, model, declared)
+        elif phase.value > row.final_after.value:
+            self._violation(decl.name, Rule.AFTER_FINAL, row, model, facts, final_after=row.final_after.name)
+
+    def _violation(
+        self,
+        pass_name: str,
+        rule: Rule,
+        row: AttributeFact | None,
+        model: DataModel | None,
+        facts: Iterable[Fact | RenderFact],
+        **details: object,
+    ) -> None:
+        """Raise or report a violation once per pass, rule and row; a known one is only reported."""
+        row_name = "-" if row is None else _row_name(row)
+        if (key := (pass_name, rule, row_name)) in self._reported:
+            return
+        self._reported.add(key)
+        known = key in _KNOWN
+        if known and self.mode.report_path is None:
+            return
+        fact_names = sorted(fact.name for fact in facts)
+        class_name = None if model is None else model.class_name
+        phase = self.store.phase.name
+        self.mode.violation(
+            self.error,
+            f"{pass_name} {rule.value}: {row_name} ({', '.join(fact_names)}) of {class_name} during {phase}",
+            rule=rule.value,
+            pass_name=pass_name,
+            row=row_name,
+            facts=fact_names,
+            model=class_name,
+            phase=phase,
+            known=known,
+            **details,
+        )
+
+    def models_of(self, owner: object) -> Iterable[DataModel]:
+        """Return the models whose fingerprint holds ``owner``, or the model its parents lead to."""
+        if isinstance(owner, DataModel):
+            return (owner,)
+        if models := self.owners.get(id(owner)):
+            return models.values()
+        node = owner
+        while isinstance(node, DataType):
+            node = node.parent
+        if isinstance(node, DataModelFieldBase):
+            node = node.parent
+        return (node,) if isinstance(node, DataModel) else ()
+
+    def touch(self, owner: object) -> None:
+        """Note that the running pass writes ``owner``; a model of another module is compared before the write.
+
+        A write outside every pass is compared when the next pass starts.
+        """
+        if (run := self.run) is None:
+            self._note_loose(owner)
+            return
+        for model in tuple(self.models_of(owner)):
+            if (model_id := id(model)) in run.touched:
+                continue
+            run.touched[model_id] = model
+            if model_id not in run.own and model_id in self.prints:
+                self._settle((model,))
+
+    def mark(self, owners: Iterable[object]) -> None:
+        """Note that the models of ``owners`` changed, as the store or a field reports, to compare when the pass ends.
+
+        Unlike ``touch``, nothing is compared first: the change is already made. Outside every pass the models are
+        compared when the next pass starts.
+        """
+        if (run := self.run) is None:
+            for owner in owners:
+                self._note_loose(owner)
+            return
+        for owner in owners:
+            for model in self.models_of(owner):
+                run.touched.setdefault(id(model), model)
+
+    def _note_loose(self, owner: object) -> None:
+        """Note the fingerprinted models of ``owner`` changed outside every pass, to compare when the next starts."""
+        self.loose.update((id(model), model) for model in self.models_of(owner) if id(model) in self.prints)
+
+    @contextmanager
+    def pass_scope(self, decl: PassDecl, models: Sequence[DataModel] | None) -> Generator[None, None, None]:
+        """Run one pass and compare the models it touched when it ends; a pass inside another is a pass of its own."""
+        if self.loose:
+            self._settle(tuple(self.loose.values()))
+        if decl.phase is not self.store.phase:
+            self._violation(decl.name, Rule.WRONG_PHASE, None, None, (), declared_phase=decl.phase.name)
+        own = {id(model) for model in models or ()}
+        if decl.scope is Scope.MODULE and (module := self.module) is not None:
+            own.update(module)
+        outer, run = self.run, _PassRun(decl, own)
+        self.run = run
+        try:
+            yield
+            checked: dict[int, DataModel] = {}
+            if models is not None:
+                run.own.update(id(model) for model in models)
+                checked.update((id(model), model) for model in models)
+            checked.update(run.touched)
+            if self.sweep and decl.scope is Scope.GLOBAL and decl.kind in _SWEEPING_KINDS:
+                checked.update((model_id, model_print.model) for model_id, model_print in self.prints.items())
+            self._settle(checked.values(), run, reach=decl.scope is Scope.MODULE)
+        finally:
+            self.run = outer
+
+    @contextmanager
+    def module_scope(self, models: list[DataModel]) -> Generator[None, None, None]:
+        """Compare the models of one module before and after it is processed; afterwards the module is done."""
+        start = {id(model): model for model in models}
+        self._settle(start.values(), reach=True)
+        self.module = start
+        try:
+            yield
+            done = {**start, **{id(model): model for model in models}}
+            self._settle(done.values())
+            self.done.update(done)
+        finally:
+            self.module = None
+
+    def leave_phase(self) -> None:
+        """Compare every model before the pipeline leaves the current phase."""
+        self._settle(tuple(model_print.model for model_print in self.prints.values()))
+
+    def check_ordering_reads(self) -> None:
+        """Check, at B1, that the constructor fields the passes read from bases did not change since."""
+        for read in self.ordering_reads:
+            self._check_ordering_read(read)
+
+    def _ordering_fields(self, bases: Iterable[DataModel]) -> tuple[_OrderingField, ...]:
+        """Return the named fields of ``bases`` in constructor order, with the values of the facts ordering reads."""
+        result: list[_OrderingField] = []
+        for base in reversed(list(bases)):
+            for base_field in (item for item in base.fields if item.name is not None):
+                entries: dict[int, _Entry] = {}
+                referenced: list[object] = []
+                self._entries(base_field, entries, referenced)
+                values = tuple(
+                    (id(entry.owner), row, value)
+                    for entry in entries.values()
+                    for row, value in zip(entry.rows, entry.values, strict=True)
+                    if not _ORDERING_READS.isdisjoint(row.facts)
+                )
+                held = (*(entry.owner for entry in entries.values()), *referenced)
+                result.append(_OrderingField(base_field, base, values, held))
+        return tuple(result)
+
+    def record_ordering(self, model: DataModel, bases: Iterable[DataModel]) -> None:
+        """Record the constructor fields that the running pass, or the phase, reads from the bases of ``model``."""
+        pass_name = f"<{self.store.phase.name}>" if (run := self.run) is None else run.decl.name
+        self.ordering_reads.append(_OrderingRead(pass_name, model, self._ordering_fields(bases)))
+
+    def _check_ordering_read(self, read: _OrderingRead) -> None:
+        """Report a field of a base that ordering read and that changed before B1, or a changed set of fields."""
+        now = self._ordering_fields(linearize_data_models(_find_base_classes(read.model)))
+        name = read.pass_name
+        if [id(item.field) for item in now] != [id(item.field) for item in read.fields]:
+            self._violation(name, Rule.ORDERING_INPUT, _FIELDS_ROW, read.model, _FIELDS_ROW.facts)
+            return
+        for before, after in zip(read.fields, now, strict=True):
+            changed = next((new or old for old, new in zip_longest(before.values, after.values) if old != new), None)
+            if changed is not None:
+                row = changed[1]
+                self._violation(name, Rule.ORDERING_INPUT, row, read.model, row.facts, base=before.base.class_name)
+
+
+@final
+@dataclass(slots=True)
+class _ParseChecks:
+    """The debug checks of one parse: the store write guard and the finality check, whichever areas are on."""
+
     parser: object
     error: type[Exception]
     """The error a violation raises when the mode raises."""
+    writes: CheckMode | None
+    """How the store write guard handles a write outside store operations, or None when the area is off."""
+    finality_mode: CheckMode | None
+    finality: _Finality | None = None
     scopes: list[tuple[str, Phase]] = field(default_factory=list)
-    """The pass scopes open now, innermost last."""
+    """The driver scopes open now, innermost last."""
     operations: list[str] = field(default_factory=list)
     """The store operations running now, innermost last."""
     _store: GenerationStore | None = None
@@ -216,13 +929,8 @@ class _StoreWriteGuard:
 
     @property
     def armed(self) -> bool:
-        """Return whether L1 is over, so that writes are checked."""
+        """Return whether L1 is over, so that writes are watched."""
         return self._store is not None
-
-    @property
-    def checks_writes(self) -> bool:
-        """Return whether a write now happens after L1 and outside every store operation."""
-        return self._store is not None and not self.operations
 
     def arm(self, store: GenerationStore, scope: str) -> None:
         """Guard the classes, the lists of the parsed graph and the store operations, in ``scope`` of SETTLE."""
@@ -234,14 +942,34 @@ class _StoreWriteGuard:
         lists: dict[int, _GuardedList] = {}
         for owner in _graph_objects(store.models):
             self._guard_lists(owner, lists)
+        if (mode := self.finality_mode) is not None:
+            finality = self.finality = _Finality(
+                mode, self.error, store, sweep=check_mode(CheckArea.FACT_FINALITY_SWEEP) is not None
+            )
+            enter_phase = store.enter_phase
+            note_changed_models = store.note_changed_models
+
+            def note_checked_models(*models: object) -> None:
+                finality.mark(models)
+                note_changed_models(*models)
+
+            def enter_checked_phase(phase: Phase) -> None:
+                finality.leave_phase()
+                enter_phase(phase)
+                if phase is Phase.DECIDE:
+                    finality.check_ordering_reads()
+
+            store.__dict__["enter_phase"] = enter_checked_phase
+            store.__dict__["note_changed_models"] = note_checked_models
 
     def disarm(self) -> None:
         """Give the classes and the store back their own behaviour."""
         if (store := self._store) is None:
             return
         self._store = None
-        for name in _STORE_OPERATIONS:
-            del store.__dict__[name]
+        self.finality = None
+        for name in (*_STORE_OPERATIONS, "enter_phase", "note_changed_models"):
+            store.__dict__.pop(name, None)
         _CLASS_GUARDS.uninstall()
 
     def _guarded(self, cls: type) -> tuple[frozenset[str], frozenset[str]]:
@@ -264,23 +992,41 @@ class _StoreWriteGuard:
         for name in self._guarded(type(owner))[1]:
             if type(value := values.get(name)) is list:
                 if (guarded := lists.get(id(value))) is None:
-                    guarded = lists[id(value)] = _GuardedList.of(value, type(owner).__name__, name)
+                    guarded = lists[id(value)] = _GuardedList.of(value, owner, name)
                 values[name] = guarded
 
     def on_setattr(self, owner: object, name: str, value: Any, frame: FrameType) -> Any:
-        """Report a guarded write outside store operations; a list a store operation sets becomes a guarded list."""
+        """Watch a guarded write; a list a store operation sets becomes a guarded list."""
         attributes, containers = self._guarded(type(owner))
         if name not in attributes:
             return value
+        if (finality := self.finality) is not None:
+            finality.touch(owner)
         if self.operations:
             if name in containers and type(value) is list:
-                return _GuardedList.of(value, type(owner).__name__, name)
+                return _GuardedList.of(value, owner, name)
             return value
-        if not _constructing(owner, frame):
-            self.report_write(type(owner).__name__, name, "=", None, frame)
+        if (mode := self.writes) is not None and not _constructing(owner, frame):
+            self.report_write(mode, type(owner).__name__, name, "=", None, frame)
         return value
 
-    def report_write(self, owner: str, attribute: str, operation: str, key: str | None, frame: FrameType) -> None:
+    def on_list_write(self, guarded: _GuardedList, operation: str, args: tuple[Any, ...]) -> None:
+        """Watch a mutation of a guarded list by the caller of its mutator."""
+        if (finality := self.finality) is not None and (holder := guarded._holder()) is not None:  # noqa: SLF001
+            finality.touch(holder)
+        if (mode := self.writes) is not None and not self.operations:
+            self.report_write(
+                mode,
+                guarded._owner,  # noqa: SLF001
+                guarded._attribute,  # noqa: SLF001
+                operation,
+                _key_kind(operation, args),
+                sys._getframe(2),  # noqa: SLF001
+            )
+
+    def report_write(  # noqa: PLR0913, PLR0917
+        self, mode: CheckMode, owner: str, attribute: str, operation: str, key: str | None, frame: FrameType
+    ) -> None:
         """Raise for a write outside store operations, or report it once per writing line and parse."""
         filename, line = frame.f_code.co_filename, frame.f_lineno
         if (seen := (filename, line, attribute, operation, key)) in self._reported:
@@ -293,7 +1039,7 @@ class _StoreWriteGuard:
             (_qualified_name(item) for item in _stack(frame) if item.f_locals.get("self") is self.parser), None
         )
         written = f"{owner}.{attribute}" if operation == "=" else f"{owner}.{attribute}.{operation}()"
-        self.mode.violation(
+        mode.violation(
             self.error,
             f"{written} is written outside store operations by {function} ({path}:{line}), "
             f"in {caller or scope} during {phase.name}",
@@ -325,8 +1071,8 @@ def _graph_objects(models: Iterable[Any]) -> Iterator[object]:
             continue
         seen.add(id(item))
         yield item
-        if (fields := getattr(item, "fields", None)) is not None:
-            pending.extend(fields)
+        if (fields_ := getattr(item, "fields", None)) is not None:
+            pending.extend(fields_)
             pending.extend(item.base_classes)
         elif (data_type := getattr(item, "data_type", None)) is not None:
             pending.append(data_type)
@@ -336,53 +1082,78 @@ def _graph_objects(models: Iterable[Any]) -> Iterator[object]:
                 pending.append(dict_key)
 
 
-def _store_operation(guard: _StoreWriteGuard, name: str, operation: Callable[..., Any]) -> Callable[..., Any]:
+def _store_operation(checks: _ParseChecks, name: str, operation: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(operation)
     def run(*args: Any, **kwargs: Any) -> Any:
-        guard.operations.append(name)
+        checks.operations.append(name)
         try:
             return operation(*args, **kwargs)
         finally:
-            guard.operations.pop()
+            checks.operations.pop()
 
     return run
 
 
 @contextmanager
-def store_write_guard(parser: object, error: type[Exception]) -> Generator[None, None, None]:
-    """Open the write guard of one parse of ``parser`` when ``CHECK_STORE_WRITES`` is on; install nothing when off.
+def parse_checks(parser: object, error: type[Exception]) -> Generator[None, None, None]:
+    """Open the checks of one parse of ``parser`` when an area that watches writes is on; install nothing when off.
 
     A violation raises ``error`` when the mode raises.
     """
-    if (mode := check_mode(CheckArea.STORE_WRITES)) is None:
+    writes = check_mode(CheckArea.STORE_WRITES)
+    finality = check_mode(CheckArea.FACT_FINALITY)
+    if writes is None and finality is None:
         yield
         return
-    guard = _StoreWriteGuard(mode, parser, error)
-    token = _GUARD.set(guard)
+    checks = _ParseChecks(parser, error, writes, finality)
+    token = _CHECKS.set(checks)
     try:
         yield
     finally:
-        _GUARD.reset(token)
-        guard.disarm()
+        _CHECKS.reset(token)
+        checks.disarm()
 
 
-def arm_store_write_guard(store: GenerationStore, scope: str) -> None:
-    """Arm the guard of the current parse at the end of L1, if one is open; ``scope`` names the SETTLE driver."""
-    if (guard := _GUARD.get()) is not None:
-        guard.arm(store, scope)
+def arm_parse_checks(store: GenerationStore, scope: str) -> None:
+    """Arm the checks of the current parse at the end of L1, if they are open; ``scope`` names the SETTLE driver."""
+    if (checks := _CHECKS.get()) is not None:
+        checks.arm(store, scope)
 
 
 def pass_scope(name: str, phase: Phase) -> AbstractContextManager[None]:
-    """Name the pass and phase that writes inside are reported with; a shared no-op without an armed guard."""
-    if (guard := _GUARD.get()) is None or not guard.armed:
+    """Name the driver scope and phase that guarded writes inside are reported with; a no-op unless a parse is armed."""
+    if (checks := _CHECKS.get()) is None or not checks.armed:
         return _NO_SCOPE
-    return _scope(guard, name, phase)
+    return _scope(checks, name, phase)
 
 
 @contextmanager
-def _scope(guard: _StoreWriteGuard, name: str, phase: Phase) -> Generator[None, None, None]:
-    guard.scopes.append((name, phase))
+def _scope(checks: _ParseChecks, name: str, phase: Phase) -> Generator[None, None, None]:
+    checks.scopes.append((name, phase))
     try:
         yield
     finally:
-        guard.scopes.pop()
+        checks.scopes.pop()
+
+
+def fact_pass(decl: PassDecl, models: Sequence[DataModel] | None = None) -> AbstractContextManager[None]:
+    """Run the pass ``decl`` declares; ``models`` are the models it works on (those of its module, for a module pass).
+
+    A no-op unless the finality check is armed.
+    """
+    if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
+        return _NO_SCOPE
+    return finality.pass_scope(decl, models)
+
+
+def module_checkpoint(models: list[DataModel]) -> AbstractContextManager[None]:
+    """Process the module whose models are ``models``; a no-op unless the finality check is armed."""
+    if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
+        return _NO_SCOPE
+    return finality.module_scope(models)
+
+
+def record_ordering_inputs(model: DataModel, bases: Iterable[DataModel]) -> None:
+    """Record the fields constructor ordering reads from ``bases`` for ``model``, when the finality check is armed."""
+    if (checks := _CHECKS.get()) is not None and (finality := checks.finality) is not None:
+        finality.record_ordering(model, bases)

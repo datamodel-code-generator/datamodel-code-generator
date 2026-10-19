@@ -8,7 +8,7 @@
 12 write has_default: has_default changes Fact.DEFAULTS outside GenerationStore operations
 13 write setattr(...): setattr with a computed name may write any fact; name the attribute
 14 write extras["kw_only"]: extras["kw_only"] changes RenderFact.KEYWORD_ONLY outside GenerationStore operations
-15 write extras["title"]: extras["title"] changes Fact.METADATA outside GenerationStore operations
+15 write extras["title"]: extras["title"] changes Fact.METADATA, RenderFact.IMPORT_ALIASES outside GenerationStore operations
 16 write extras.pop("discriminator"): extras.pop("discriminator") changes Fact.DISCRIMINATOR_TAGS outside GenerationStore operations
 17 write _internal_template_data["config"]: _internal_template_data["config"] changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 18 write _internal_template_data["config"].update(): _internal_template_data["config"].update() changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
@@ -24,6 +24,6 @@
 29 write __dict__.update(): __dict__.update() writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 31 write __dict__.setdefault("_forced_field_assignment"): __dict__.setdefault("_forced_field_assignment") changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
 33 write _dedup_key_cache[...]: _dedup_key_cache[...] caches state on a mutable DataModel; keep derived values in a per-parse store memo
-35 write extras["description"]: extras["description"] changes Fact.METADATA outside GenerationStore operations
+35 write extras["description"]: extras["description"] changes Fact.METADATA, RenderFact.IMPORT_ALIASES outside GenerationStore operations
 36 write reference.path: use GenerationStore API instead of assigning reference.path
 37 write required: required changes Fact.REQUIRED outside GenerationStore operations

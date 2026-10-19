@@ -38,5 +38,8 @@ becomes final and where a decision belongs.
   "... is written outside store operations" made a write the allowlist does not list; route it the same way. Witness
   entries (`target = "<datamodel-codegen args>"`) only record runtime-only writes that existed before the guard; never
   add one for a new write.
+- Every pass has a declaration in `parser/_pass_decls.py` and runs inside `fact_pass(DECL)`. Every test runs the
+  finality check (`DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`): "... undeclared: ..." means the pass writes a fact
+  its declaration does not list; the other rules report writes after a fact is final.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.

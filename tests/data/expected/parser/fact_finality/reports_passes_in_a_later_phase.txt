@@ -1,0 +1,1 @@
+{"pass_name": "apply_generic_base_class", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}

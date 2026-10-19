@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+from pydantic import BaseModel, RootModel
+
+
+class NullableString(RootModel[str | None]):
+    root: str | None
+
+
+class NonNullableString(RootModel[str]):
+    root: str
+
+
+class NullOnly(RootModel[None]):
+    root: None
+
+
+class Model(BaseModel):
+    nullableRef: NullableString | None
+    nonNullableRef: NonNullableString
+    nullOnlyRef: NullOnly | None

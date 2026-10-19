@@ -1,0 +1,4 @@
+refresh_custom_template_paths runs in PARSE, before render_modules in RENDER
+refresh_custom_template_paths is declared twice
+repair pass refresh_custom_template_paths must name the change that removes it
+check pass checking must not write facts

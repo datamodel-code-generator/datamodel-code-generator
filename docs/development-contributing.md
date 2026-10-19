@@ -291,6 +291,13 @@ wins: `0` runs the tests without that area and `report:<path>` collects the viol
 `--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
 measure performance outside pytest with the variables unset as well.
 
+`FACT_FINALITY` raises only for violations that `KNOWN_WRITES` in `src/datamodel_code_generator/parser/_finality.py`
+does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
+`datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
+test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
+list only shrinks. A new pass is declared in `parser/_pass_decls.py` and runs inside `fact_pass(DECL)`; the same script
+checks the declarations, and a test that fails with "... undeclared: ..." made a write its pass does not declare.
+
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
 `scripts/generation_store_allowlist.toml` lists, so `1` would stop every generation. Unless you set the variable,
 `tests/conftest.py` (`StoreWritesCheck`) sets it to `report:<file>` during each test, with one file per test process,
@@ -304,9 +311,12 @@ and fails the test for a write of the package that the allowlist does not list.
 | `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |
 | `GENERATED_CODE_REQUIREMENTS` | every `ConfigDict` key that Pydantic declares and the generator can write has a row in `_requirements.py`, checked when a parse records the Pydantic release its models need ([Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)) |
+| `FACT_FINALITY` | each pass changes only the facts its declaration in `parser/_pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
+| `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
 
 A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
-a row to this table, and keeps tests that run it on and off.
+a row to this table, and keeps tests that run it on and off. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
+sets it to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison.
 
 `DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in
 `tests/main/_builtin_parity.py` read it on every call and then generate each output of the default formatters a

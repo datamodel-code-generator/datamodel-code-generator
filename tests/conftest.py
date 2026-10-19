@@ -84,14 +84,19 @@ CHECK_MODEL_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
 CHECK_SCHEMA_GRAPH_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
 CHECK_MODULE_IMPORTS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
 CHECK_GENERATED_CODE_REQUIREMENTS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_GENERATED_CODE_REQUIREMENTS"
+CHECK_FACT_FINALITY_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
 CHECK_AREA_ENVS = (
     CHECK_SCHEMA_LOCATIONS_ENV,
     CHECK_MODEL_GRAPH_ENV,
     CHECK_SCHEMA_GRAPH_ENV,
     CHECK_MODULE_IMPORTS_ENV,
     CHECK_GENERATED_CODE_REQUIREMENTS_ENV,
+    CHECK_FACT_FINALITY_ENV,
 )
 """The variable of every debug check area (`CheckArea` in `datamodel_code_generator/_checks.py`) set to `1`."""
+CHECK_FACT_FINALITY_SWEEP_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
+SWEEP_PYTHON = (3, 15)
+"""The Python from which the test suite also sets `CHECK_FACT_FINALITY_SWEEP_ENV` to `1`: one CI lane runs the sweep."""
 CHECK_STORE_WRITES_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
 """The debug check area that reports into a file during each test, which `StoreWritesCheck` checks after the test."""
 BUILTIN_FORMATTER_VALUE = "builtin"
@@ -255,10 +260,15 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks."""
+    """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks.
+
+    The finality sweep is turned on only from `SWEEP_PYTHON`.
+    """
     benchmarks = config.getoption("codspeed", default=False)
     for name in () if benchmarks else CHECK_AREA_ENVS:
         os.environ.setdefault(name, "1")
+    if not benchmarks and sys.version_info >= SWEEP_PYTHON:
+        os.environ.setdefault(CHECK_FACT_FINALITY_SWEEP_ENV, "1")
     if not benchmarks and CHECK_STORE_WRITES_ENV not in os.environ:
         config.pluginmanager.register(store_writes_check := StoreWritesCheck(), "store-writes-check")
         config.add_cleanup(store_writes_check.report.unlink)

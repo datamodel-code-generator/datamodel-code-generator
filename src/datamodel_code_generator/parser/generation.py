@@ -51,6 +51,7 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._graph_ids import ModelKey, identity_of, model_key_of
 
 if TYPE_CHECKING:
@@ -894,6 +895,8 @@ class GenerationStore:  # noqa: PLR0904
         self._active_root_collapse_reference_scope: _RootCollapseReferenceScope | None = None
         self._root_collapse_internal_mutation_depth = 0
         self._reference_copies: _ReferenceCopies | None = None
+        self.phase = Phase.PARSE
+        """The phase of the pipeline that runs now, which the parser drivers set as they enter it."""
 
     @classmethod
     def create_with_results(cls) -> tuple[GenerationStore, list[DataModel]]:
@@ -1125,6 +1128,10 @@ class GenerationStore:  # noqa: PLR0904
         """Compatibility access to reverse reference edges, by the model key of the reference."""
         self.refresh()
         return self._facts.reverse_edges
+
+    def enter_phase(self, phase: Phase) -> None:
+        """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
+        self.phase = phase
 
     def register_model(self, model: DataModel) -> None:
         """Register a parsed model while preserving parser append order."""

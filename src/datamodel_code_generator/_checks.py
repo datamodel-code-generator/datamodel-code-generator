@@ -46,6 +46,15 @@ class CheckArea(Enum):
     GENERATED_CODE_REQUIREMENTS = "DATAMODEL_CODE_GENERATOR_CHECK_GENERATED_CODE_REQUIREMENTS"
     """Every Pydantic ``ConfigDict`` key that the generator can write has a row in ``_requirements.py``."""
 
+    FACT_FINALITY = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY"
+    """Each pass changes only the facts it declares, on the models its scope allows, before they are final."""
+
+    FACT_FINALITY_SWEEP = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
+    """With ``FACT_FINALITY`` on, every model is compared after each global pass that transforms or repairs.
+
+    It widens what ``FACT_FINALITY`` compares and reports nothing itself: ``1`` and ``report:<path>`` both turn it on.
+    """
+
 
 @final
 @dataclass(frozen=True, slots=True)

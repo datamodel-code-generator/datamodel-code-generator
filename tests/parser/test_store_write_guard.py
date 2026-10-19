@@ -1,7 +1,8 @@
 """The runtime write guard that ``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`` turns on, seen through custom parsers.
 
 After L1, a custom parser that changes a model, a field or a data type directly, outside a ``GenerationStore``
-operation, is reported with the line that wrote it, the parser method it ran in and the phase.
+operation, is reported with the line that wrote it, the parser method it ran in and the phase. The finality check,
+which would report the same writes as made outside every pass, is off in these tests.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model.base import DataModel, DataModelFieldBase
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.types import DataType
-from tests.conftest import CHECK_STORE_WRITES_ENV, assert_output
+from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_STORE_WRITES_ENV, assert_output
 
 if TYPE_CHECKING:
     from datamodel_code_generator.parser.base import ModuleContext
@@ -110,6 +111,7 @@ def test_store_write_guard_reports_a_custom_parser_write(
     """A model described directly after L1 raises (``1``), is reported (``report:<path>``) or passes (``0``)."""
     report = tmp_path / "writes.jsonl"
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, {"check": "1", "report": f"report:{report}", "off": "0"}[flag])
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
     parser = DescribingParser(SCHEMA, formatters=[Formatter.BUILTIN])
     if flag == "check":
         with pytest.raises(
@@ -130,6 +132,7 @@ def test_store_write_guard_reports_list_writes_outside_store_operations(
     """Store operations write freely, and the lists they set report direct writes, once per writing line."""
     report = tmp_path / "writes.jsonl"
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, f"report:{report}")
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
 
     output = ReorderingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
 
@@ -137,12 +140,13 @@ def test_store_write_guard_reports_list_writes_outside_store_operations(
     assert_output(_reported(report), name="writes")
 
 
-@pytest.mark.parametrize("flag", ["report", "off"])
+@pytest.mark.parametrize("flag", ["report", "finality", "off"])
 def test_store_write_guard_is_installed_only_while_a_parse_is_armed(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
 ) -> None:
-    """With the area on, the graph classes are guarded while a parse runs and given back afterwards."""
-    monkeypatch.setenv(CHECK_STORE_WRITES_ENV, {"report": f"report:{tmp_path / 'writes.jsonl'}", "off": "0"}[flag])
+    """With either area that watches writes on, the graph classes are guarded while a parse runs, and given back."""
+    monkeypatch.setenv(CHECK_STORE_WRITES_ENV, f"report:{tmp_path / 'writes.jsonl'}" if flag == "report" else "0")
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "1" if flag == "finality" else "0")
     parser = InstallRecordingParser(SCHEMA, formatters=[Formatter.BUILTIN])
 
     parser.parse()
@@ -155,6 +159,7 @@ def test_store_write_guard_of_a_nested_parse(monkeypatch: pytest.MonkeyPatch, tm
     """A parse run inside a pass keeps the guard of the parse around it: both parses report their writes."""
     report = tmp_path / "writes.jsonl"
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, f"report:{report}")
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
 
     NestingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
 
@@ -165,6 +170,7 @@ def test_store_write_guard_keeps_what_the_parsed_graph_shares(monkeypatch: pytes
     """Objects that several holders share at the end of L1 are guarded once, and a shared list stays one list."""
     report = tmp_path / "writes.jsonl"
     monkeypatch.setenv(CHECK_STORE_WRITES_ENV, f"report:{report}")
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
     parser = SharingParser(SCHEMA.with_name("combined_array.json"), formatters=[Formatter.BUILTIN])
 
     output = parser.parse()

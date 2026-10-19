@@ -241,9 +241,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "DataType",
         "kwargs",
         FactKind.FACT,
-        (Fact.CONSTRAINTS,),
+        (Fact.CONSTRAINTS, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
-        FreezePoint.B1,
+        FreezePoint.RENDER,
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -254,7 +254,14 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         Phase.RENDER,
         FreezePoint.RENDER,
     ),
-    AttributeFact("DataType", "python_type", FactKind.FACT, (Fact.FIELD_TYPES,), Phase.IMPORTS, FreezePoint.B1),
+    AttributeFact(
+        "DataType",
+        "python_type",
+        FactKind.FACT,
+        (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
+        Phase.IMPORTS,
+        FreezePoint.RENDER,
+    ),
     AttributeFact("DataType", "python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataType", "is_optional", FactKind.FACT, (Fact.NULLABLE,), Phase.RENDER, FreezePoint.B2),
     AttributeFact("DataType", "is_dict", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
@@ -443,9 +450,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "DataModelFieldBase",
         "extras",
         FactKind.FACT,
-        (Fact.METADATA,),
+        (Fact.METADATA, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
-        FreezePoint.B1,
+        FreezePoint.RENDER,
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -602,7 +609,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "_UNCONSTRAINED_UNION_MEMBERS_KEY",
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
-        Phase.PLAN,
+        Phase.MODULES,
         FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
@@ -839,7 +846,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.RENDER,
     ),
     AttributeFact(
-        "DataModel", "discriminator_tag", FactKind.FACT, (Fact.DISCRIMINATOR_TAGS,), Phase.MODULES, FreezePoint.B1
+        "DataModel", "discriminator_tag", FactKind.FACT, (Fact.DISCRIMINATOR_TAGS,), Phase.CROSS_MODULE, FreezePoint.B1
     ),
     AttributeFact(
         "DataModel",
