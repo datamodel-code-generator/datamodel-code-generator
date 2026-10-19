@@ -186,23 +186,43 @@ def test_schema_location_metadata_of_shared_dict_input(tmp_path: Path) -> None:
     assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
 
 
-@pytest.mark.parametrize("check", [True, False], ids=["check", "fallback"])
-def test_schema_location_of_schemas_a_custom_parser_rewrites(monkeypatch: pytest.MonkeyPatch, *, check: bool) -> None:
+@pytest.mark.parametrize("flag", ["check", "report", "off", "fallback", "invalid"])
+def test_schema_location_of_schemas_a_custom_parser_rewrites(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
     """A custom parser that parses copies of the raw schemas leaves models without a location.
 
-    The check the test suite enables reports them at the end of parsing; without it, they keep their reference paths.
+    The check (`1`, as the test suite sets it) raises for them at the end of parsing; `report:<path>` appends them to
+    the file as a JSON line instead; with the check off (`0`) or unset, they keep their reference paths. Other values
+    are rejected.
     """
 
     class RewritingParser(OpenAPIParser):
         def parse_raw_obj(self, name: str, raw: Any, path: list[str]) -> None:
             super().parse_raw_obj(name, json.loads(json.dumps(raw)), path)
 
-    if not check:
-        monkeypatch.delenv(CHECK_SCHEMA_LOCATIONS_ENV)
+    report_path = tmp_path / "checks.jsonl"
+    match flag:
+        case "check":
+            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, "1")
+        case "report":
+            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, f"report:{report_path}")
+        case "off":
+            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, "0")
+        case "fallback":
+            monkeypatch.delenv(CHECK_SCHEMA_LOCATIONS_ENV, raising=False)
+        case "invalid":
+            monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, "report:")
     parser = RewritingParser(OPEN_API_DATA_PATH / "schema_location_alias.yaml", formatters=[Formatter.BUILTIN])
-    if check:
-        with pytest.raises(Error, match="models without a schema location: Owner"):
+    if flag == "check":
+        with pytest.raises(Error, match=f"^{CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: Owner "):
+            parser.parse(collect_model_metadata=True)
+        return
+    if flag == "invalid":
+        with pytest.raises(ValueError, match=r"='report:': expected 0, 1 or report:<path>$"):
             parser.parse(collect_model_metadata=True)
         return
     parser.parse(collect_model_metadata=True)
     assert_output(dump_model_metadata(parser.model_metadata), name="metadata")
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")

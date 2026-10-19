@@ -236,6 +236,37 @@ that bypass the store. If a new mutation helper is needed, add the method to
 `GENERATION_STORE_MUTATION_METHODS` and update the checker tests so contributors
 get an actionable message.
 
+## Debug checks
+
+Some internal invariants are checked only when a debug flag turns the check on, so that production runs do not pay
+for them. Each area of checks has one environment variable, `DATAMODEL_CODE_GENERATOR_CHECK_<AREA>`:
+
+| Value | Effect |
+| --- | --- |
+| unset, empty or `0` | off, as in production |
+| `1` | raise at the first violation, with a message that starts with the variable |
+| `report:<path>` | append every violation to `<path>` as one JSON line (`area`, `message` and the area's details) and go on |
+
+Any other value fails the run. `Parser.parse` reads every variable once, at its start (`read_check_flags` in
+`src/datamodel_code_generator/_checks.py`); the code it runs asks `check_mode(area)`, which costs one lookup, and
+reports a violation through the mode it returns.
+
+`tests/conftest.py` sets every area to `1` for the test suite with `os.environ.setdefault`, so a value you set first
+wins: `0` runs the tests without that area and `report:<path>` collects the violations of a whole run. Under
+`--codspeed` (the CodSpeed workflow and `tox -e perf`) it sets nothing, so benchmarks measure what production runs;
+measure performance outside pytest with the variables unset as well.
+
+| Area | Checks |
+| --- | --- |
+| `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
+
+A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
+a row to this table, and keeps tests that run it on and off.
+
+`DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in
+`tests/main/_builtin_parity.py` read it on every call and then generate each output of the default formatters a
+second time with the built-in formatter. The CI black-latest lane sets it; the test suite does not.
+
 ## Comparing output with a release
 
 Before sending a change to parsing, naming or rendering, compare the output of your checkout with the latest

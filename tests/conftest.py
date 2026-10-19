@@ -79,6 +79,8 @@ CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weight
 CLI_DOC_SCHEMA_VERSION = 1
 TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
 CHECK_SCHEMA_LOCATIONS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
+CHECK_AREA_ENVS = (CHECK_SCHEMA_LOCATIONS_ENV,)
+"""The variable of every debug check area (`CheckArea` in `datamodel_code_generator/_checks.py`)."""
 BUILTIN_FORMATTER_VALUE = "builtin"
 TARGET_PYTHON = (3, 11)
 TARGET_TEST_ROOTS = (Path(__file__).parent / "api_generation", Path(__file__).parent / "model_codecs")
@@ -240,8 +242,10 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Register the cli_doc marker and check that every model parsed from a JSON document has a schema location."""
-    os.environ.setdefault(CHECK_SCHEMA_LOCATIONS_ENV, "1")
+    """Register the cli_doc marker and turn on every debug check area that is not set, except in CodSpeed benchmarks."""
+    if not config.getoption("codspeed", default=False):
+        for name in CHECK_AREA_ENVS:
+            os.environ.setdefault(name, "1")
     config.addinivalue_line(
         "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "

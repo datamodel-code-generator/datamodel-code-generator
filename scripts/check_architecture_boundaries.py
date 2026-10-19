@@ -24,6 +24,7 @@ Layer: TypeAlias = Literal[
     "output-model",
     "shared-model",
     "target",
+    "checks",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -71,6 +72,8 @@ _TARGET_MODULES: Final = frozenset({
     "datamodel_code_generator._target_selection",
     "datamodel_code_generator._target_templates",
 })
+_CHECKS_IMPORTS: Final = frozenset({*sys.stdlib_module_names, "typing_extensions"})
+"""The modules (with their submodules) the debug check flags module may import: any layer can read the flags."""
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
     "enum.py",
@@ -256,6 +259,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "output-model": "datamodel_code_generator.model.fixture",
             "shared-model": "datamodel_code_generator.model.shared_fixture",
             "target": "datamodel_code_generator.target_fixture",
+            "checks": "datamodel_code_generator.checks_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -543,7 +547,9 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         dynamic_target = None
         if self._is_dynamic_import(node.func) and (argument := self._dynamic_import_target_argument(node)) is not None:
             dynamic_target = self._resolved_dynamic_target(node, self._resolved_string(argument))
-        if (
+        if dynamic_target and self.layer == "checks":
+            self._check_import(node, dynamic_target)
+        elif (
             dynamic_target
             and not self._check_target_boundary(node, dynamic_target)
             and self.layer in {"parser", "config", "reference", "shared-model"}
@@ -984,6 +990,16 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         return False
 
     def _check_import(self, node: ast.AST, target: str) -> None:
+        if self.layer == "checks":
+            if not any(target == module or target.startswith(f"{module}.") for module in _CHECKS_IMPORTS):
+                self._add(
+                    node,
+                    "checks-import",
+                    target,
+                    "the debug check flags module is a leaf that every layer reads: import only the standard library "
+                    "and typing_extensions",
+                )
+            return
         if self.layer == "reference" and _is_reference_backend_import(target):
             self._add(
                 node,
@@ -1073,6 +1089,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
+        case ("_checks.py",):
+            layer = "checks"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:

@@ -53,3 +53,6 @@ yaml-aliases	main/jsonschema/model_metadata/schema_location_metadata[yaml-aliase
 	main/jsonschema/model_metadata/schema_location_metadata_of_shared_dict_input.txt
 [test_schema_location_of_schemas_a_custom_parser_rewrites]
 fallback	main/jsonschema/model_metadata/schema_location_of_schemas_a_custom_parser_rewrites[fallback].metadata.txt
+off	main/jsonschema/model_metadata/schema_location_of_schemas_a_custom_parser_rewrites[off].metadata.txt	= main/jsonschema/model_metadata/schema_location_of_schemas_a_custom_parser_rewrites[fallback].metadata.txt
+report	main/jsonschema/model_metadata/schema_location_of_schemas_a_custom_parser_rewrites[report].metadata.txt	= main/jsonschema/model_metadata/schema_location_of_schemas_a_custom_parser_rewrites[fallback].metadata.txt
+report	main/jsonschema/model_metadata/schema_location_of_schemas_a_custom_parser_rewrites[report].report.txt

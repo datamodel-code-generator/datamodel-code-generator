@@ -53,6 +53,7 @@ from datamodel_code_generator import (
     ReuseScope,
     cached_path_exists,
 )
+from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode, read_check_flags
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._internal_utils import (
     HashableComparable,
@@ -199,7 +200,6 @@ _DEFERRED_INHERITED_TYPE_KEY: Final = "_deferred_inherited_type"
 _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
 _TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
-_CHECK_SCHEMA_LOCATIONS_ENV: Final = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
 _TYPE_ALIAS_MODULE_NAMESPACE_PYDANTIC_MINIMUM: Final = "2.10"
 
@@ -8936,8 +8936,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             tuple(redact_reference(model_identities[model]) for model, _ in models),
         )
 
-    def _check_schema_locations(self) -> None:
-        """Raise when a model parsed from a JSON document has no schema location (the copy step lost it).
+    def _check_schema_locations(self, mode: CheckMode) -> None:
+        """Report the models parsed from a JSON document without a schema location (the copy step lost it).
 
         A model whose Reference several schema objects reach has none by rule and is not reported.
         """
@@ -8946,9 +8946,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for model in self.results
             if location_of(model.reference) is None and not model.reference.__dict__.get(SCHEMA_LOCATION_CONFLICT_KEY)
         ]:
-            names = ", ".join(f"{model.class_name} ({redact_reference(model.reference.path)})" for model in missing)
-            msg = f"{_CHECK_SCHEMA_LOCATIONS_ENV}: models without a schema location: {names}"
-            raise Error(msg)
+            paths = [(model.class_name, redact_reference(model.reference.path)) for model in missing]
+            names = ", ".join(f"{name} ({path})" for name, path in paths)
+            mode.violation(
+                Error,
+                f"models without a schema location: {names}",
+                models=[{"class_name": name, "path": path} for name, path in paths],
+            )
 
     def _close_http_fetch_session(self) -> None:
         """Close and discard the parser-scoped HTTP session without masking parser results."""
@@ -9010,16 +9014,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Parse schema and generate code, returning single file or module dict."""
         token = SCHEMA_LOCATION_INDEX.set(self._schema_location_index)
         try:
-            return self.__prepare_parse(
-                with_import=with_import,
-                format_=format_,
-                settings_path=settings_path,
-                disable_future_imports=disable_future_imports,
-                all_exports_scope=all_exports_scope,
-                all_exports_collision_strategy=all_exports_collision_strategy,
-                module_split_mode=module_split_mode,
-                collect_model_metadata=collect_model_metadata,
-            )
+            with read_check_flags():
+                return self.__prepare_parse(
+                    with_import=with_import,
+                    format_=format_,
+                    settings_path=settings_path,
+                    disable_future_imports=disable_future_imports,
+                    all_exports_scope=all_exports_scope,
+                    all_exports_collision_strategy=all_exports_collision_strategy,
+                    module_split_mode=module_split_mode,
+                    collect_model_metadata=collect_model_metadata,
+                )
         finally:
             SCHEMA_LOCATION_INDEX.reset(token)
 
@@ -9050,8 +9055,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.parse_raw()
         finally:
             self._close_http_fetch_session()
-        if self._schema_location_index is not None and os.environ.get(_CHECK_SCHEMA_LOCATIONS_ENV) == "1":
-            self._check_schema_locations()
+        if self._schema_location_index is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
+            self._check_schema_locations(mode)
         self._typed_map_value_reference_ids = self.model_resolver.settle_yielding_names()
         if (changes := self.model_resolver.yielding_name_changes) and self._names_have_class_keyed_options(changes):
             self.yielding_names_to_assign = tuple(self.model_resolver.final_yielding_names.items())

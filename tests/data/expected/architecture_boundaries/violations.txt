@@ -1,4 +1,8 @@
 Architecture boundary violations found:
+tests/data/architecture_boundaries/checks/forbidden.py:7:1: [checks-import] datamodel_code_generator.parser.base: the debug check flags module is a leaf that every layer reads: import only the standard library and typing_extensions (in <module>)
+tests/data/architecture_boundaries/checks/forbidden.py:8:1: [checks-import] datamodel_code_generator: the debug check flags module is a leaf that every layer reads: import only the standard library and typing_extensions (in <module>)
+tests/data/architecture_boundaries/checks/forbidden.py:9:1: [checks-import] datamodel_code_generator: the debug check flags module is a leaf that every layer reads: import only the standard library and typing_extensions (in <module>)
+tests/data/architecture_boundaries/checks/forbidden.py:11:9: [checks-import] datamodel_code_generator.types: the debug check flags module is a leaf that every layer reads: import only the standard library and typing_extensions (in <module>)
 tests/data/architecture_boundaries/config/forbidden.py:1:1: [config-backend-import] datamodel_code_generator.model.typed_dict: configuration must receive output implementations through a neutral registry or injection (in <module>)
 tests/data/architecture_boundaries/config/forbidden.py:2:1: [config-parser-import] datamodel_code_generator.parser: configuration must not depend on parser implementation modules (in <module>)
 tests/data/architecture_boundaries/config/forbidden.py:6:19: [config-backend-reference] datamodel_code_generator.model.typed_dict.TypedDict: configuration must receive output implementations through a neutral registry or injection (in Config)
