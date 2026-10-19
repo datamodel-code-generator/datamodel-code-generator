@@ -34,6 +34,9 @@ class CheckArea(Enum):
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
     """Collapsing root models never reaches the recursion limit: it stops before an inlining that closes a cycle."""
 
+    SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
+    """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did."""
+
 
 @final
 @dataclass(frozen=True, slots=True)

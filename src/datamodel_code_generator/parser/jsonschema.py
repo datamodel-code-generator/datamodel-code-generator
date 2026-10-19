@@ -48,6 +48,7 @@ from datamodel_code_generator import (
     snooper_to_methods,
 )
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
+from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
@@ -103,6 +104,14 @@ from datamodel_code_generator.model.runtime_validation import (
     _is_internal_schema_runtime_validation,
     _make_internal_schema_runtime_validation,
 )
+from datamodel_code_generator.parser._schema_graph import (
+    SCHEMA_GRAPH,
+    DocumentId,
+    DocumentResources,
+    ResourceRegistry,
+    SchemaGraphBuilder,
+    walk_schema_resources,
+)
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
@@ -131,14 +140,12 @@ from datamodel_code_generator.python_literal import _safe_non_finite_value, _sem
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     SCHEMA_LOCATION_CONFLICT_KEY,
-    SCHEMA_LOCATION_INDEX,
     SCHEMA_LOCATION_KEY,
     SCHEMA_OWNER_FRAMES_KEY,
     SPECIAL_PATH_MARKER,
     ModelType,
     Reference,
     SchemaLocation,
-    SchemaLocationIndex,
     get_inferred_module_name,
     is_url,
     location_of,
@@ -350,8 +357,8 @@ def _source_location(values: object) -> SchemaLocation | None:
         values.schema_location
         if isinstance(values, _LocatedDict)
         else None
-        if (index := SCHEMA_LOCATION_INDEX.get()) is None
-        else index.locations.get(id(values))
+        if (graph := SCHEMA_GRAPH.get()) is None
+        else graph.locations.get(id(values))
     )
 
 
@@ -385,46 +392,6 @@ def _locate_dump(obj: JsonSchemaObject, data: dict[str, Any]) -> dict[str, Any]:
                 for item, sub in zip(value, dumped, strict=True)
             ]
     return _located(data, fields.get(SCHEMA_LOCATION_KEY))
-
-
-def _index_document(raw: Any, root: SchemaLocation, index: SchemaLocationIndex) -> Any:
-    """Return a loaded document as a tree and index each of its JSON objects by identity (L0).
-
-    An object that already has another location (a YAML alias, an object the caller shares, a document served under
-    several names) is copied for this position, and its holders are copied on write up to the root, so neither the
-    loader's nor the caller's objects are written and each object has one location. A container that is its own
-    ancestor is a cycle: it is copied once, the back edge points to the copy and is not descended. Arrays are not
-    indexed: an array shared between positions is copied when an object in it is.
-    """
-    document = root.document
-    locations = index.locations
-    ancestors: dict[int, Any] = {}
-
-    def visit(value: dict[Any, Any] | list[Any], tokens: tuple[str, ...]) -> Any:
-        if (ancestor := ancestors.get(value_id := id(value))) is not None:
-            if ancestor is value:
-                ancestors[value_id] = ancestor = copy(value)
-            return ancestor
-        location: SchemaLocation | None = None
-        if isinstance(value, dict):
-            location = SchemaLocation(document, tokens)
-            seen = locations.get(value_id)
-            ancestors[value_id] = copy(value) if seen is not None and seen != location else value
-        else:
-            ancestors[value_id] = value
-        for key, child in value.items() if isinstance(value, dict) else enumerate(value):
-            if isinstance(child, (dict, list)) and (updated := visit(child, (*tokens, str(key)))) is not child:
-                if (node := ancestors[value_id]) is value:
-                    ancestors[value_id] = node = copy(value)
-                node[key] = updated
-        node = ancestors.pop(value_id)
-        if location is not None:
-            locations[id(node)] = location
-        return node
-
-    result = visit(raw, root.tokens)
-    index.documents.append(result)
-    return result
 
 
 _NUMERIC_TYPE_DOMAINS = {
@@ -1367,14 +1334,14 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         result = handler(values)
         if isinstance(values, _LocatedDict):
             result.__dict__[SCHEMA_LOCATION_KEY] = values.schema_location
-        elif (index := SCHEMA_LOCATION_INDEX.get()) is not None and (location := index.locations.get(id(values))):
+        elif (graph := SCHEMA_GRAPH.get()) is not None and (location := graph.locations.get(id(values))):
             result.__dict__[SCHEMA_LOCATION_KEY] = location
         return result
 
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         """Dump the object; during a parse, each dumped schema object remembers the location of its source."""
         data = super().model_dump(**kwargs)
-        if SCHEMA_LOCATION_INDEX.get() is None or kwargs.get("mode", "python") != "python":
+        if SCHEMA_GRAPH.get() is None or kwargs.get("mode", "python") != "python":
             return data
         return _locate_dump(self, data)
 
@@ -1798,6 +1765,13 @@ def _builds_model(method: _BuilderT) -> _BuilderT:
     return cast("_BuilderT", build)
 
 
+def _registry_entries(value: object) -> object:
+    """Return a registry value with every dict as its ordered items, so that a reordered registration differs."""
+    if isinstance(value, dict):
+        return [(key, _registry_entries(item)) for key, item in value.items()]
+    return value
+
+
 @snooper_to_methods()  # noqa: PLR0904
 class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     """Parser for JSON Schema, JSON, YAML, Dict, and CSV formats."""
@@ -1903,7 +1877,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._loads_only_used_references = False
         self._dangling_refs: set[tuple[str, str]] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
-        self._schema_location_index = SchemaLocationIndex()
         self._model_frames: list[list[Reference | None]] = []
         self._dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]] = {}
         self._recursive_anchor_index: dict[tuple[str, ...], list[str]] = {}
@@ -12893,26 +12866,28 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self.resolve_ref(ref)
 
     def _init_schema_resources(self) -> None:
-        """Initialize the document-local resource indexes and normalization cache.
+        """Initialize the schema graph, the document-local resource indexes and the normalization cache.
 
+        The resource indexes are the registry dicts of the schema graph, which fills them as documents load.
         Schema resource root pointers are indexed by document. $dynamicAnchor locations and the embedded
         resources that $id declares are indexed by document and enclosing resource root pointer, so
         documents that share an $id keep their own anchors. The dynamic scope state tracks the model
         root being parsed, the $dynamicAnchor bindings imposed by the schemas that referenced it, and
         the models specialized for those bindings.
         """
-        self._schema_resource_locations: dict[str, str] = {}
+        self._schema_graph = graph = SchemaGraphBuilder()
+        self._schema_resource_registry = registry = graph.registry
+        self._schema_resource_locations: dict[str, str] = registry.locations
         self._schema_resource_document_aliases: dict[str, str] = {}
-        self._schema_resource_root_bases: dict[str, str] = {}
+        self._schema_resource_root_bases: dict[str, str] = registry.root_bases
         self._schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
-        self._schema_resource_keys: dict[str, set[str]] = {}
         self._has_embedded_schema_resources = False
         self._lenient_documents: dict[str, dict[str, Any]] = {}
         self._implicit_documents: set[str] = set()
         self._resource_ref_warnings: set[str] = set()
-        self._schema_resources: dict[str, set[str]] = {}
-        self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = {}
-        self._embedded_resources: dict[tuple[str, str], dict[str, str]] = {}
+        self._schema_resources: dict[str, set[str]] = registry.resources
+        self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = registry.dynamic_anchors
+        self._embedded_resources: dict[tuple[str, str], dict[str, str]] = registry.embedded
         self._dynamic_scope_pointer = ""
         self._schema_resource_path_parts: dict[str, list[str]] = {}
         self._dynamic_document: str | None = None
@@ -12971,8 +12946,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             identifier = schema.get("$id") or schema.get("id")
         return id_field, identifier
 
-    def _register_schema_resources(  # noqa: PLR0913
+    def _register_schema_resources(  # noqa: PLR0913, PLR0917
         self,
+        registry: ResourceRegistry,
         schema: dict[str, Any],
         document: str,
         pointer: str,
@@ -12982,37 +12958,82 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         id_field: str | None,
         resource: str = "",
     ) -> bool:
-        """Index resource URIs and resource-scoped anchors once for each document."""
+        """Index resource URIs and resource-scoped anchors of a document into ``registry``, walking its schemas.
+
+        This is the registry walk the schema graph replaced; only the schema graph check runs it now, as the answer
+        the graph's registration must reproduce (``_check_schema_graph_resources``).
+        """
         id_field, identifier = self._schema_resource_identifier(schema, id_field, is_root=not pointer)
         nested = bool(pointer and isinstance(identifier, str) and not identifier.startswith("#"))
         location = f"{document}#{pointer}"
         if isinstance(identifier, str):
             absolute = urljoin(base, identifier)
-            self._schema_resource_locations[absolute] = location
+            registry.locations[absolute] = location
             keys.add(absolute)
             base = absolute.split("#", 1)[0]
         if not pointer:
-            self._schema_resource_root_bases[document] = base
-            self._schema_resource_locations.setdefault(base, location)
+            registry.root_bases[document] = base
+            registry.locations.setdefault(base, location)
             keys.add(base)
         if nested:
-            self._embedded_resources.setdefault((document, resource), {}).setdefault(identifier, pointer)
+            registry.embedded.setdefault((document, resource), {}).setdefault(identifier, pointer)
         if nested or not pointer:
-            self._schema_resources.setdefault(document, set()).add(pointer)
+            registry.resources.setdefault(document, set()).add(pointer)
             resource = pointer
         for keyword in ("$anchor", "$dynamicAnchor"):
             if isinstance(anchor := schema.get(keyword), str):
                 absolute = urljoin(base, f"#{anchor}")
-                self._schema_resource_locations[absolute] = location
+                registry.locations[absolute] = location
                 keys.add(absolute)
                 if keyword == "$dynamicAnchor":
-                    self._dynamic_anchors.setdefault((document, resource), {}).setdefault(anchor, location)
+                    registry.dynamic_anchors.setdefault((document, resource), {}).setdefault(anchor, location)
         for path, child in self._iter_schema_resource_children(schema):
             child_pointer = pointer + "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in path)
             nested |= self._register_schema_resources(
-                child, document, child_pointer, base, keys, id_field=id_field, resource=resource
+                registry, child, document, child_pointer, base, keys, id_field=id_field, resource=resource
             )
         return nested
+
+    def _check_schema_graph_resources(  # noqa: PLR0913, PLR0917
+        self,
+        mode: CheckMode,
+        raw: dict[str, Any],
+        implicit: Sequence[tuple[tuple[str | int, ...], dict[str, Any]]],
+        resources: DocumentResources,
+        base: str,
+        id_field: str | None,
+        path_parts: list[str],
+    ) -> None:
+        """Report a document whose resources the schema graph registers otherwise than the registry walk it replaced.
+
+        Both registrations start from the registry as the document finds it, so a URI that an earlier document keeps
+        is compared too. The report names the document as reference paths name it.
+        """
+        document = resources.document
+        expected, actual = self._schema_resource_registry.copy(), self._schema_resource_registry.copy()
+        keys: set[str] = set()
+        nested = self._register_schema_resources(expected, raw, document, "", base, keys, id_field=id_field)
+        for path, schema in implicit:
+            pointer = "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in path)
+            expected.resources[document].add(pointer)
+            nested |= self._register_schema_resources(
+                expected, schema, document, pointer, base, keys, id_field=id_field, resource=pointer
+            )
+        expected.keys[document] = keys
+        actual.register(resources)
+        if differences := [
+            name
+            for name in ("locations", "root_bases", "resources", "dynamic_anchors", "embedded", "keys")
+            if _registry_entries(getattr(actual, name)) != _registry_entries(getattr(expected, name))
+        ] + (["embedded resources"] if nested != resources.embeds_resources else []):
+            name = redact_url(self.model_resolver.join_path(tuple(path_parts)).partition("#")[0])
+            mode.violation(
+                Error,
+                f"the schema graph registers the schema resources of {repr(name) if name else 'the input'} otherwise "
+                f"than the registry walk it replaced: {', '.join(differences)}",
+                document=name,
+                differences=differences,
+            )
 
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
@@ -13140,70 +13161,71 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         yield ("components", "schemas", name), schema
 
     def _prepare_schema_resources(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
-        """Cache resource indexing and normalization instead of rescanning on each reference."""
+        """Add a loaded document to the schema graph once, instead of rescanning it on each reference (L0).
+
+        The graph walk finds the document's resources and fills the registry dicts from them; then `$ref`s that
+        resolve through an embedded `$id` are rewritten copy-on-write, and the prepared document is indexed.
+        """
         document = self._schema_resource_document(path_parts)
         self._schema_resource_path_parts.setdefault(document, path_parts)
         if (cached := self._schema_resource_cache.get(document)) is not None and (raw is cached[0] or raw is cached[1]):
             return cached[1]
-        for key in self._schema_resource_keys.get(document, ()):
-            if self._schema_resource_locations.get(key, "").split("#", 1)[0] == document:
-                self._schema_resource_locations.pop(key, None)
-        for resource in self._schema_resources.pop(document, ()):
-            self._dynamic_anchors.pop((document, resource), None)
-            self._embedded_resources.pop((document, resource), None)
+        registry = self._schema_resource_registry
+        registry.forget(document)
         self._lenient_documents.pop(document, None)
         self._implicit_documents.discard(document)
-        keys: set[str] = set()
         base = document if is_url(document) else Path(document).as_uri() if document else f"{self.base_path.as_uri()}/"
         id_field = (
             self.schema_features.id_field
             if getattr(self.config, "jsonschema_version", None) not in {None, JsonSchemaVersion.Auto}
             else None
         )
-        nested = self._register_schema_resources(raw, document, "", base, keys, id_field=id_field)
-        implicit = list(self._implicit_schema_resources(raw))
-        for path, schema in implicit:
-            pointer = "".join(f"/{str(part).replace('~', '~0').replace('/', '~1')}" for part in path)
-            self._schema_resources[document].add(pointer)
-            nested |= self._register_schema_resources(
-                schema, document, pointer, base, keys, id_field=id_field, resource=pointer
-            )
-        if implicit:
+        implicit = tuple(self._implicit_schema_resources(raw))
+        resources = walk_schema_resources(
+            raw,
+            implicit,
+            document=DocumentId(document),
+            base=base,
+            id_field=id_field,
+            children=self._iter_schema_resource_children,
+            identifier=self._schema_resource_identifier,
+        )
+        if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is not None:
+            self._check_schema_graph_resources(mode, raw, implicit, resources, base, id_field, path_parts)
+        registry.register(resources)
+        if resources.implicit_resources:
             self._implicit_documents.add(document)
-        if implicit and nested:
+        if resources.implicit_resources and resources.embeds_resources:
             self._lenient_documents[document] = raw
-        self._schema_resource_keys[document] = keys
         prepared = raw
-        if nested:
+        if resources.embeds_resources:
             self._has_embedded_schema_resources = True
             prepared = self._rewrite_schema_resource_refs(
-                raw, document, base, self._schema_resource_root_bases[document], id_field, is_root=True
+                raw, document, base, resources.root_base, id_field, is_root=True
             )
         prepared = self._index_document(prepared, path_parts)
         self._schema_resource_cache[document] = raw, prepared
         return prepared
 
     def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
-        """Return a loaded document as a tree whose JSON objects are indexed by location (L0).
+        """Return a loaded document as a tree whose JSON objects the schema graph locates (L0).
 
         The document is named as reference paths name it. A copy of the root keeps the document as written that
         ``_document_as_written`` returns for the loaded one. A mounted converted schema keeps its locations.
         """
-        if (index := self._schema_location_index) is None or id(raw) in index.mounted:
+        if (graph := self._schema_graph) is None or graph.is_mounted(raw):
             return raw
         document = self.model_resolver.join_path(tuple(path_parts)).partition("#")[0]
-        indexed = _index_document(raw, SchemaLocation(document, ()), index)
+        indexed = graph.index_document(raw, SchemaLocation(document, ()))
         if (entry := self._documents_as_written.get(id(raw))) is not None and entry[0] is raw:
             self._documents_as_written[id(indexed)] = indexed, entry[1]
         return indexed
 
     def _mount_converted_schema(self, converted: dict[str, Any], location: SchemaLocation | None) -> dict[str, Any]:
-        """Index a JSON Schema converted from a value of a document at the location of that value (L0)."""
-        if location is None or (index := self._schema_location_index) is None:
+        """Locate a JSON Schema converted from a value of a document at the location of that value (L0)."""
+        if location is None or (graph := self._schema_graph) is None:
             return converted  # pragma: no cover - the values a parser converts are in documents it has indexed
-        mounted = _index_document(converted, location, index)
-        index.mounted.add(id(mounted))
-        return mounted
+        return graph.mount(converted, location)
 
     def _add_id_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Add $id and $anchor to model resolver."""
@@ -13269,7 +13291,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _raw_location(self, raw: object) -> SchemaLocation | None:
         """Return the location of a JSON container of a loaded document."""
-        return None if (index := self._schema_location_index) is None else index.locations.get(id(raw))
+        return None if (graph := self._schema_graph) is None else graph.locations.get(id(raw))
 
     def _member_location(self, holder: object, *tokens: str) -> SchemaLocation | None:
         """Return the location of a value below a JSON container, such as a boolean schema the index cannot key."""

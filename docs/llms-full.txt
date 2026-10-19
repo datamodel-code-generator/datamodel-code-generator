@@ -60561,9 +60561,16 @@ modules). These are retries around the whole pipeline, not passes inside it.
 `--use-single-value-enum-as-const`, rewrites one-value `enum` to `const` copy-on-write, except beside `nullable: true`
 when the value is not null (`_single_value_enum_as_const`, which skips instance-data keywords and extension keys other
 than `x-propertyNames` through `_document_child_entries`). `_parse_file` then calls `_prepare_schema_resources`, which
-indexes `$id` and anchors, rewrites `$ref`s that resolve through an embedded `$id`, and indexes the location of every
-object of the prepared document (`_index_document`, see [Metadata Output](#metadata-output)). Referenced documents go
-through the same steps when `resolve_ref` loads them.
+adds the document to the schema graph (`parser/_schema_graph.py`): `walk_schema_resources` finds which absolute URI
+names which schema of it (the root, `$id` or draft-04 `id` resources, the implicit component resources of OpenAPI,
+`$anchor` and `$dynamicAnchor`) and returns one frozen `DocumentResources` record, from which
+`ResourceRegistry.register` fills the registry dicts L1 resolves references through; then `$ref`s that resolve through
+an embedded `$id` are rewritten copy-on-write (`_rewrite_schema_resource_refs`), and the location of every object of
+the prepared document is indexed (`SchemaGraphBuilder.index_document`, see [Metadata Output](#metadata-output)).
+Referenced documents go through the same steps when `resolve_ref` loads them: documents enter the graph in the order
+L1 asks for them, and the graph never loads one by itself. With `DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH=1`, which
+`tests/conftest.py` sets for the test suite, each registration is compared with the registry that the walk the graph
+replaced (`_register_schema_resources`) leaves for the same document.
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
@@ -60725,6 +60732,7 @@ collapse replacing a member of a shared list.
 | applied type overrides | field types: the module's own L5 `__apply_field_type_overrides`; base classes: the model's own L5 `__apply_base_class_type_overrides` |
 | root-model collapse | end of the L5 loop (circular paths: the L4 snapshot, not recomputed) |
 | class names and reference paths | L6 `__change_imported_model_name` |
+| schema resources and anchors of a document (`parser/_schema_graph.py:DocumentResources`, the registry dicts) | the document's load in L0; loading the document again replaces its entries |
 | schema location of a model (`reference.py:location_of`, kept on the `Reference` object, not keyed by its path) | end of L1 |
 | module membership | L6 unused-model removal |
 | field aliases | the model's own L5 `__rename_fields_hiding_types`; validated in L6 |
@@ -61003,11 +61011,12 @@ paths:
 
 Run `python scripts/check_architecture_boundaries.py` to validate these rules. The checker parses imports and semantic
 backend inspection with the Python AST, including lazy and dynamic imports. Entrypoint, parser, configuration,
-input-model, reference, model-composition, output-model, shared-model, requirement-table, and debug check flag files are
-classified explicitly. The composition root may select concrete backends, while shared-model modules must remain
-neutral: they cannot import a concrete backend or resolve one through `sys.modules`, including module-name constants and
-aliases. The requirement table may import only the standard library, `typing_extensions` and `enums`, and `_checks.py`,
-which every layer reads for the debug check flags, only the standard library and `typing_extensions`. This keeps
+input-model, reference, model-composition, output-model, shared-model, schema graph, requirement-table, and debug check
+flag files are classified explicitly. The composition root may select concrete backends, while shared-model modules must
+remain neutral: they cannot import a concrete backend or resolve one through `sys.modules`, including module-name
+constants and aliases. The requirement table may import only the standard library, `typing_extensions` and `enums`,
+`_checks.py`, which every layer reads for the debug check flags, only the standard library and `typing_extensions`, and
+the schema graph (`parser/_schema_graph.py`, L0) only those and `reference`: the parsers pass it their rules. This keeps
 backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral module
 registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
 backend policy therefore cannot hide in the shared layer. Its legacy allowlist is keyed by file, enclosing symbol, rule,
@@ -61043,19 +61052,20 @@ from a copy of a schema object.
 
 The location is a fact recorded in L0 and L1:
 
-- **L0.** `_index_document` makes each loaded document a tree and indexes every JSON container of it by identity in
-  `SchemaLocationIndex` (`reference.py`). A container met at a second position (a PyYAML alias, an object an API dict
-  input shares, a mirror file served for several URLs) is copied for that position and its holders copy on write, so
-  the location does not depend on the YAML loader or the caller; a container that is its own ancestor keeps a back
-  edge to its copy. AsyncAPI indexes its document at load, and a converted payload schema is mounted at the payload's
-  location (`_mount_converted_schema`).
+- **L0.** `_index_document` makes each loaded document a tree and indexes every JSON container of it by identity in the
+  location table of the schema graph (`parser/_schema_graph.py:SchemaGraphBuilder.index_document`). A container met at a
+  second position (a PyYAML alias, an object an API dict input shares, a mirror file served for several URLs) is copied
+  for that position and its holders copy on write, so the location does not depend on the YAML loader or the caller; a
+  container that is its own ancestor keeps a back edge to its copy. AsyncAPI indexes its document at load, and a
+  converted payload schema is mounted at the payload's location (`_mount_converted_schema`).
 - **Carrier.** `JsonSchemaObject.schema_location` lives in the object's `__dict__`, not in its fields: a wrap validator
   takes it from the document object or from a located dump (`_LocatedDict`) the object is validated from, through the
-  index that `Parser.parse` publishes in a `ContextVar`. During a parse, `model_dump` returns located dumps whose schema
-  children remember their own sources. An object a copy step builds stands for one source object by rule: the use
-  site of a `$ref` with siblings, the union branch, the allOf holder, the holder of a synthetic enum or of an
-  `itemSchema` array, or the member property it normalizes. A dict a merge helper builds from two sources takes the
-  location of the side the helper lets win. A boolean schema, which cannot carry a location, takes it from its holder.
+  schema graph that `Parser.parse` publishes in a `ContextVar` (`SCHEMA_GRAPH`). During a parse, `model_dump` returns
+  located dumps whose schema children remember their own sources. An object a copy step builds stands for one source
+  object by rule: the use site of a `$ref` with siblings, the union branch, the allOf holder, the holder of a synthetic
+  enum or of an `itemSchema` array, or the member property it normalizes. A dict a merge helper builds from two sources
+  takes the location of the side the helper lets win. A boolean schema, which cannot carry a location, takes it from its
+  holder.
 - **Copy steps** the location survives, besides those under "Scope on schema objects": L0 unsharing,
   `openapi.py:RawMediaObject` (the media object's own `schema` value is used), lists joined and dicts merged in
   `_deep_merge`, `_merge_all_of_schema`, `_merge_property_schemas` and `_merge_inherited_type_shape_dict`, combined
@@ -61404,6 +61414,7 @@ measure performance outside pytest with the variables unset as well.
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
 | `MODEL_GRAPH` | collapsing root models never reaches the recursion limit: it stops before an inlining that would make a data type contain itself ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`) |
+| `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
 
 A new area adds a member to `CheckArea` in `_checks.py`, its variable to `CHECK_AREA_ENVS` in `tests/conftest.py` and
 a row to this table, and keeps tests that run it on and off.

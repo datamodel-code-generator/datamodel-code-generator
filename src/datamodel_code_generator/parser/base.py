@@ -125,6 +125,7 @@ from datamodel_code_generator.model.output import (
 )
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
+from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, set_model_base_classes
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
 from datamodel_code_generator.python_literal import (
@@ -139,11 +140,9 @@ from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     _UNMATCHED_MODEL_NAME_KEYS_REPORTED,
     SCHEMA_LOCATION_CONFLICT_KEY,
-    SCHEMA_LOCATION_INDEX,
     ModelResolver,
     ModelType,
     Reference,
-    SchemaLocationIndex,
     _source_path,
     location_of,
     split_module_name,
@@ -169,6 +168,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
     from datamodel_code_generator.parser._scc import ModuleGraph
+    from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
 
 
 # Preserve the existing parser.base export while sharing one canonical escape table.
@@ -3325,7 +3325,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _collapses_list_item_root_models: ClassVar[bool] = True
     _http_fetch_session: _HTTPFetchSession | None = None
     _dropped_constraint_fields: DroppedConstraintFields = frozenset()
-    _schema_location_index: SchemaLocationIndex | None = None
+    _schema_graph: SchemaGraphBuilder | None = None
 
     @property
     def run_context(self) -> ParserRunContext:
@@ -9240,7 +9240,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.generation_store._dispose(self.model_resolver.references.values())  # noqa: SLF001
         self.model_resolver.references.clear()
         self._reset_local_source_cache()
-        self._schema_location_index = None
+        self._schema_graph = None
 
     def dispose(self) -> None:
         """Release parser-owned resources after a facade-managed run."""
@@ -9277,7 +9277,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         collect_model_metadata: bool = False,  # noqa: FBT001, FBT002
     ) -> str | dict[tuple[str, ...], Result]:
         """Parse schema and generate code, returning single file or module dict."""
-        token = SCHEMA_LOCATION_INDEX.set(self._schema_location_index)
+        token = SCHEMA_GRAPH.set(self._schema_graph)
         try:
             with read_check_flags():
                 return self.__prepare_parse(
@@ -9291,7 +9291,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     collect_model_metadata=collect_model_metadata,
                 )
         finally:
-            SCHEMA_LOCATION_INDEX.reset(token)
+            SCHEMA_GRAPH.reset(token)
 
     def __prepare_parse(  # noqa: PLR0913
         self,
@@ -9320,7 +9320,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.parse_raw()
         finally:
             self._close_http_fetch_session()
-        if self._schema_location_index is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
+        if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
             self._check_schema_locations(mode)
         self._typed_map_value_reference_ids = self.model_resolver.settle_yielding_names()
         if (changes := self.model_resolver.yielding_name_changes) and self._names_have_class_keyed_options(changes):

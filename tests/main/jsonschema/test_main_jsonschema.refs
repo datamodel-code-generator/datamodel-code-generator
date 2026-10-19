@@ -11980,6 +11980,10 @@ True-True-null_pattern-api	main/jsonschema/root_alias_constraints/null_runtime.t
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_native_error.txt	?	= main/jsonschema/numeric_allof_types/native_null_error.txt
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_pattern.py	= main/jsonschema/root_alias_constraints/null_pattern_annotated_api.py
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_runtime.txt
+[test_schema_graph_check_of_a_parser_that_changes_the_registry_walk]
+off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
+report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].report.txt
+report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
 [test_schema_import_paths_for_target]
 python-3.10	main/jsonschema/schema_import_paths_target_310.py
 python-3.12	main/jsonschema/schema_import_paths_target_312.py

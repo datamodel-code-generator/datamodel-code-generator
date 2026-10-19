@@ -18,6 +18,7 @@ Layer: TypeAlias = Literal[
     "entrypoint",
     "parser",
     "facts",
+    "schema-graph",
     "config",
     "input-model",
     "reference",
@@ -82,6 +83,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the attribute-to-fact table is read by checkers without the package: import only the standard library "
             "and typing_extensions"
+        ),
+    ),
+    "schema-graph": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator.reference"}),
+        (
+            "the schema graph is the L0 core the parsers build: import only the standard library, typing_extensions "
+            "and datamodel_code_generator.reference, and take parser rules as arguments"
         ),
     ),
     "requirements": (
@@ -279,6 +287,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "entrypoint": "datamodel_code_generator.entrypoint_fixture",
             "parser": "datamodel_code_generator.parser.fixture",
             "facts": "datamodel_code_generator.parser.facts_fixture",
+            "schema-graph": "datamodel_code_generator.parser.schema_graph_fixture",
             "config": "datamodel_code_generator.config_fixture",
             "input-model": "datamodel_code_generator.input_model_fixture",
             "reference": "datamodel_code_generator.reference_fixture",
@@ -1131,6 +1140,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "entrypoint"
         case ("parser", "_facts.py"):
             layer = "facts"
+        case ("parser", "_schema_graph.py"):
+            layer = "schema-graph"
         case ("parser", *_):
             layer = "parser"
         case ("config.py" | "input_model.py" as filename,):

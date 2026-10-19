@@ -1,0 +1,1 @@
+{"area": "SCHEMA_GRAPH", "message": "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH: the schema graph registers the schema resources of 'root.json' otherwise than the registry walk it replaced: locations", "document": "root.json", "differences": ["locations"]}

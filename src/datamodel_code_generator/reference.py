@@ -301,23 +301,6 @@ class SchemaLocation:
         return SchemaLocation(self.document, (*self.tokens, *tokens))
 
 
-class SchemaLocationIndex:
-    """The location of every JSON object of the documents one parse loads, by object identity.
-
-    The index keeps the documents alive, so an identity stays valid for the whole parse. ``mounted`` holds the
-    converted schemas indexed at the location of the value they were converted from, which keep that location.
-    """
-
-    def __init__(self) -> None:
-        """Start an empty index."""
-        self.locations: dict[int, SchemaLocation] = {}
-        self.documents: list[object] = []
-        self.mounted: set[int] = set()
-
-
-SCHEMA_LOCATION_INDEX: ContextVar[SchemaLocationIndex | None] = ContextVar("schema_location_index", default=None)
-
-
 def location_of(reference: Reference) -> SchemaLocation | None:
     """Return the location of the schema object the model of a reference is built from.
 

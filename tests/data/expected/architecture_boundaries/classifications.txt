@@ -1,6 +1,7 @@
 __init__.py: entrypoint
 parser/base.py: parser
 parser/_facts.py: facts
+parser/_schema_graph.py: schema-graph
 config.py: config
 input_model.py: input-model
 reference.py: reference
