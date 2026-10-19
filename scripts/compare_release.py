@@ -503,6 +503,8 @@ def main(argv: list[str] | None = None) -> int:
             note = f" [import fails on candidate only: {c.import_error}]"
         elif b.import_error and not c.import_error:
             note = f" [import fixed: {b.import_error}]"
+        elif c.import_error:
+            note = f" [import fails on both sides: {c.import_error}]"
         if b.tree == c.tree:
             if c.import_error and not b.import_error:
                 return "fail-candidate-only", f"{name}:{note}"

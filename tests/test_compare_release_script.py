@@ -61,6 +61,17 @@ pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="compare_release
                 str(ROOT / "tests/data/jsonschema/person.json"),
             ],
         ),
+        (
+            "import_fails_both",
+            [
+                "--types",
+                "pydantic_v2.BaseModel",
+                "--extra=--input-file-type jsonschema",
+                "--options=--base-class=missing_compare_release_module.Base",
+                "--import-check",
+                str(ROOT / "tests/data/jsonschema/person.json"),
+            ],
+        ),
     ],
 )
 def test_compare_release(case: str, args: list[str], tmp_path: Path) -> None:
