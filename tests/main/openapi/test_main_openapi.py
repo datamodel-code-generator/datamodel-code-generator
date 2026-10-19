@@ -53,6 +53,7 @@ from tests.conftest import (
     assert_httpx_get_kwargs,
     assert_output,
     assert_warnings_contain,
+    assert_warnings_do_not_contain,
     freeze_time,
     stored_expected,
     validate_generated_code,
@@ -72,6 +73,7 @@ from tests.main.conftest import (
     OPEN_API_DATA_PATH,
     TARGET_PYDANTIC_VERSION_CASES,
     TIMESTAMP,
+    _assert_model_json_invalid,
     _generated_model,
     _generated_package_module,
     _model_json_validator,
@@ -93,6 +95,7 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 EXTERNAL_REF_MAPPING_DATA_PATH = OPEN_API_DATA_PATH / "external_ref_mapping"
+COLLAPSE_NAME_STRATEGY_DATA_PATH = OPEN_API_DATA_PATH / "collapse_root_models_name_strategy"
 
 
 @pytest.mark.benchmark
@@ -11526,6 +11529,217 @@ def test_main_openapi_collapse_root_models_module_named_field(output_dir: Path) 
         runtime_validation_module="core.v1",
         runtime_validation_model_name="Selector",
         runtime_validation_data={"resource": "cpu", "divisor": "1m"},
+    )
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "typing.TypedDict", "dataclasses.dataclass"])
+def test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice(
+    output_file: Path, output_model_type: str
+) -> None:
+    """Write the inner model once under the name of a wrapper that two fields reference (#4968).
+
+    Every holder of the wrapper follows the parent decision taken at the first one, so the wrapper does not stay
+    beside the renamed model as a model or alias that refers to itself.
+    """
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / "two_holders.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--collapse-root-models",
+                "--collapse-root-models-name-strategy",
+                "parent",
+                "--disable-timestamp",
+            ],
+        )
+    assert_warnings_do_not_contain(recorded_warnings, "Cannot apply 'parent' strategy")
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="two_holders",
+        model_name="User",
+        valid_json='{"first": {"x": "1"}, "second": {"x": "2"}}',
+        invalid_json='{"second": {"x": 2}}',
+        expected_error_type="string_type",
+    )
+
+
+@pytest.mark.parametrize("strategy", ["child", "parent"])
+@pytest.mark.parametrize(
+    ("input_name", "extra_args", "module", "model_name", "data", "invalid_data"),
+    [
+        pytest.param(
+            "other_module.yaml", [], "other", "User", {"w": {"x": "1"}}, {"w": {"x": 1}}, id="holder-in-other-module"
+        ),
+        pytest.param(
+            "derived_split.yaml", [], "b", "User", {"w": {"x": "1"}}, {"w": {"x": 1}}, id="inner-in-other-module"
+        ),
+        pytest.param(
+            "holder_in_init.yaml", [], "", "User", {"w": {"x": "1"}}, {"w": {"x": 1}}, id="holder-in-package-init"
+        ),
+        pytest.param("import_cycle.yaml", [], "a", "User", {"w": {"x": "1"}}, {"w": {"x": 1}}, id="import-cycle"),
+        pytest.param(
+            "two_holders_modular.yaml",
+            [],
+            "other",
+            "User",
+            {"first": {"x": "1"}},
+            {"first": {"x": 1}},
+            id="two-modules",
+        ),
+        pytest.param("same_class_name.yaml", [], "c", "User", {"t": {"x": "1"}}, {"t": {"x": 1}}, id="same-class-name"),
+        pytest.param(
+            "two_holders_one_module.yaml",
+            ["--use-exact-imports"],
+            "a",
+            "User",
+            {"first": {"x": "1"}, "second": {"x": "2"}},
+            {"second": {"x": 2}},
+            id="two-holders-exact-imports",
+        ),
+        pytest.param(
+            "inherited_in_wrapper_module_first.yaml",
+            [],
+            "b",
+            "Derived",
+            {"x": "1", "y": 2},
+            {"x": 1},
+            id="inherited-in-wrapper-module-first",
+        ),
+        pytest.param(
+            "inherited_in_wrapper_module_last.yaml",
+            ["--use-exact-imports"],
+            "a",
+            "Derived",
+            {"x": "1", "y": 2},
+            {"x": 1},
+            id="inherited-in-wrapper-module-last",
+        ),
+        pytest.param(
+            "inherited_beside_holder.yaml",
+            ["--use-exact-imports"],
+            "a",
+            "Derived",
+            {"x": "1", "y": 2},
+            {"x": 1},
+            id="inherited-beside-holder",
+        ),
+        pytest.param(
+            "reused_inner_in_cycle.yaml",
+            ["--reuse-model"],
+            "a",
+            "User",
+            {"w": {"x": "1"}},
+            {"w": {"x": 1}},
+            id="reused-inner-in-cycle",
+        ),
+    ],
+)
+def test_main_openapi_collapse_root_models_name_strategy_modular(
+    output_dir: Path,
+    input_name: str,
+    extra_args: list[str],
+    module: str,
+    model_name: str,
+    data: dict[str, Any],
+    invalid_data: dict[str, Any],
+    strategy: str,
+) -> None:
+    """Import the inner model where a collapsed holder's module does not emit it (#4969, #4968).
+
+    The holder imports the inner model as it would for a direct reference, drops its import of the wrapper, and under
+    the parent strategy the inner model takes the wrapper's name in its own module and replaces the wrapper, which
+    from then on is no member of its module: a model there that inherits from the inner model imports it. The module
+    of the inner model is the one whose model list holds it, also when reuse put it there.
+    """
+    run_main_and_assert(
+        input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            strategy,
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        runtime_validation_module=module,
+        runtime_validation_model_name=model_name,
+        runtime_validation_data=data,
+    )
+    with _generated_package_module(output_dir, module) as generated_module:
+        _assert_model_json_invalid(
+            _model_json_validator(getattr(generated_module, model_name)), json.dumps(invalid_data), "string_type"
+        )
+
+
+def test_main_openapi_collapse_root_models_child_reused_inner_in_tree_scope(output_dir: Path) -> None:
+    """Import nothing for an inner model that tree-scope reuse replaced in the holder's own module.
+
+    The replacement takes the inner model's path in the module, and no model list holds the replaced model any more,
+    so the holder writes the inner model by the name the module emits under that path.
+    """
+    run_main_and_assert(
+        input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / "reused_inner_in_cycle.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            "child",
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+        ],
+        runtime_validation_module="a",
+        runtime_validation_model_name="User",
+        runtime_validation_data={"w": {"x": "1"}},
+    )
+
+
+@pytest.mark.parametrize(("strategy", "direct_schema"), [("child", "direct"), ("parent", "direct_parent")])
+def test_main_openapi_collapse_root_models_name_strategy_as_direct_reference(
+    tmp_path: Path, strategy: str, direct_schema: str
+) -> None:
+    """Collapse a wrapper into the output of a schema whose holder references the inner model directly (#4969).
+
+    Under the parent strategy that schema names the inner model after the wrapper in the inner model's own module; a
+    model of a module processed earlier that inherits from the inner model imports it by that name.
+    """
+    args = [
+        "--input-file-type",
+        "openapi",
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--collapse-root-models",
+        "--collapse-root-models-name-strategy",
+        strategy,
+        "--formatters",
+        "builtin",
+        "--disable-timestamp",
+    ]
+    direct_output = tmp_path / "direct"
+    run_main_with_args([
+        "--input",
+        str(COLLAPSE_NAME_STRATEGY_DATA_PATH / direct_schema / "derived_split.yaml"),
+        "--output",
+        str(direct_output),
+        *args,
+    ])
+    run_main_and_assert(
+        input_path=COLLAPSE_NAME_STRATEGY_DATA_PATH / "derived_split.yaml",
+        output_path=tmp_path / "collapsed",
+        expected_directory=direct_output,
+        extra_args=args,
     )
 
 

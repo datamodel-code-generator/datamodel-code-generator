@@ -608,6 +608,13 @@ def _module_name_from_module_path(module: ModulePath) -> str:
     return ".".join(parts[:-1] if parts[-1:] == ["__init__"] else parts)
 
 
+class _RenamedType(NamedTuple):
+    """A type's class name before a later module renamed it, and the path its imports were added under."""
+
+    class_name: str
+    import_path: str
+
+
 class _KeepModelOrderDeps(NamedTuple):
     strong: ModelDeps
     all: ModelDeps
@@ -3435,7 +3442,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._deferred_tagged_unions: list[_DiscriminatorUnion] = []
         self._defers_tagged_unions = False
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
-        self._renamed_types: dict[str, str] = {}
+        self._renamed_types: dict[str, _RenamedType] = {}
+        self._replaced_root_models: dict[int, DataModel] = {}
+        self._emitting_module_names: dict[int, str] = {}
+        self._emitting_module_lists: list[tuple[str, list[DataModel]]] = []
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
         self._collapsed_reuse_users: dict[int, tuple[DataType, Reference]] = {}
         self._reuse_union_tags: dict[DataModel, tuple[HashableComparable, ...]] = {}
@@ -4270,6 +4280,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         internal_modules: set[tuple[str, ...]] | None = None,
         model_path_to_module_name: dict[str, str] | None = None,
     ) -> None:
+        models = self.__module_members(models)
         model_paths = {model.path for model in models}
         internal_modules = internal_modules or set()
         model_path_to_module_name = model_path_to_module_name or {}
@@ -4376,6 +4387,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         return expression
 
+    def __module_members(self, models: list[DataModel]) -> list[DataModel]:
+        """Return the models of a module that stay in it: a root replaced by its inner model leaves at the decision."""
+        if not (replaced_root_models := self._replaced_root_models):
+            return models
+        return [model for model in models if id(model) not in replaced_root_models]
+
+    def __names_left_by_replaced_roots(self, models: list[DataModel], member_paths: Collection[str]) -> set[str]:
+        """Return the class names that roots replaced by their inner models leave free in a module.
+
+        A root keeps its name for the inner model when the inner model, which takes the root's path, is in the same
+        module.
+        """
+        replaced_root_models = self._replaced_root_models
+        return {
+            model.class_name for model in models if id(model) in replaced_root_models and model.path not in member_paths
+        }
+
     def __set_reference_expression(  # noqa: PLR0913
         self,
         data_type: DataType,
@@ -4459,28 +4487,38 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Import a type by its new name where a module processed before the type's module imported the old one.
 
         A field of the type's module can hide the type, which then gets a new name after modules that come first
-        built their imports of it. The stale import releases the name it binds for the new one, found by name, as
-        neither the import of a package ``__init__`` nor a ``from .`` path leads back to the path it was added under.
+        built their imports of it, and the ``parent`` strategy of root-model collapse gives an inner model the name
+        and path of the root model it replaces. The stale import is the one added under the type's path before the
+        rename. It releases the name it binds for the new one, found by name, as neither the import of a package
+        ``__init__`` nor a ``from .`` path leads back to the path it was added under.
         """
         if not (renamed := self._renamed_types):
             return
         for ctx in contexts:
-            model_paths = {model.path for model in ctx.models}
+            members = self.__module_members(ctx.models)
+            model_paths = {model.path for model in members}
             stale_users = [
                 (data_type, reference, model, import_)
-                for model in ctx.models
+                for model in members
                 for data_type in model.all_data_types
                 if (reference := data_type.reference) is not None
-                and (old_name := renamed.get(reference.path)) is not None
+                and (renamed_type := renamed.get(reference.path)) is not None
                 and reference.path not in model_paths
-                and (import_ := ctx.imports.reference_paths.get(reference.path)) is not None
-                and (import_.import_ == old_name or (data_type.alias or "").endswith(f".{old_name}"))
+                and (import_ := ctx.imports.reference_paths.get(renamed_type.import_path)) is not None
+                and (
+                    import_.import_ == renamed_type.class_name
+                    or (data_type.alias or "").endswith(f".{renamed_type.class_name}")
+                )
             ]
             if not stale_users:
                 continue
             for *_, import_ in stale_users:
                 ctx.imports.remove(import_)
-            ctx.scoped_model_resolver.delete_names({import_.binding_name for *_, import_ in stale_users})
+            ctx.scoped_model_resolver.delete_names(
+                {import_.binding_name for *_, import_ in stale_users}.union(
+                    self.__names_left_by_replaced_roots(ctx.models, model_paths)
+                )
+            )
             for data_type, reference, model, _ in stale_users:
                 self.__set_reference_expression(
                     data_type,
@@ -5254,13 +5292,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             module_models, duplicates, require_update_action_models, reference_models
         )
 
-    def __collapse_root_models(
+    def __collapse_root_models(  # noqa: PLR0913
         self,
         models: list[DataModel],
         unused_models: list[DataModel],
         imports: Imports,
         scoped_model_resolver: ModelResolver,
         model_path_to_module_name: dict[str, str] | None = None,
+        *,
+        is_init: bool = False,
+        internal_modules: set[ModulePath] | None = None,
     ) -> None:
         if not self.collapse_root_models:
             return
@@ -5271,7 +5312,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 unused_models,
                 imports,
                 scoped_model_resolver,
-                model_path_to_module_name,
+                {} if model_path_to_module_name is None else model_path_to_module_name,
+                is_init=is_init,
+                internal_modules=internal_modules or set(),
             )
 
     def _keeps_root_model_named(self, model: DataModel, circular_root_model_paths: Collection[str]) -> bool:
@@ -5291,19 +5334,30 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             and (root_type_field.data_type.is_dict or root_type_field.data_type.is_mapping)
         )
 
-    def __collapse_root_models_in_scope(  # noqa: PLR0912, PLR0914, PLR0915
+    def __collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         models: list[DataModel],
         unused_models: list[DataModel],
         imports: Imports,
         scoped_model_resolver: ModelResolver,
-        model_path_to_module_name: dict[str, str] | None = None,
+        model_path_to_module_name: dict[str, str],
+        *,
+        is_init: bool,
+        internal_modules: set[ModulePath],
     ) -> None:
+        """Collapse the root models that this module's models reference.
+
+        A holder of a root model whose root type is a reference to another model gets the output it would get if it
+        referenced that model directly. Under the ``parent`` strategy that model takes the root model's name in its
+        own module and replaces the root model, decided at the root model's first holder from the references the
+        schema gives, so that every holder follows the same decision.
+        """
         generation_store = self.generation_store
         generation_index = generation_store.index
         circular_root_model_paths = getattr(self, "_circular_root_model_paths", ())
         is_root_model = self._is_root_model
         collapses_list_item_root_models = self._collapses_list_item_root_models
+        redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
 
         for model in models:  # noqa: PLR1702
             for model_field in model.fields:
@@ -5333,7 +5387,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         inner_reference = root_type_field.data_type.reference
                         inner_model = cast("DataModel", inner_reference.source)
 
-                        if self.collapse_root_models_name_strategy == CollapseRootModelsNameStrategy.Parent:
+                        if (
+                            self.collapse_root_models_name_strategy == CollapseRootModelsNameStrategy.Parent
+                            and id(root_type_model) not in self._replaced_root_models
+                        ):
                             root_model_wrappers, direct_refs = generation_index.root_collapse_reference_usage(
                                 inner_reference,
                                 excluded_model=root_type_model,
@@ -5357,11 +5414,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 )
                                 continue
 
-                            generation_store.update_model_reference(
-                                inner_model,
-                                class_name=root_type_model.class_name,
-                                reference_name=root_type_model.class_name,
-                                new_path=root_type_model.reference.path,
+                            self.__replace_root_model_by_inner_model(
+                                root_type_model, inner_model, model_path_to_module_name
                             )
 
                         if (
@@ -5376,7 +5430,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             )
                         generation_store.collapse_root_data_type(data_type, inner_reference)
 
-                        imports.remove_referenced_imports(root_type_model.path)
+                        redirected_holders.append((
+                            model,
+                            data_type,
+                            imports.reference_paths.get(root_type_model.path),
+                        ))
                         if not has_remaining_root_references:
                             unused_models.append(root_type_model)
 
@@ -5514,6 +5572,96 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     imports.remove_referenced_imports(root_type_model.path)
                     if not has_remaining_root_references:
                         unused_models.append(root_type_model)
+
+        self.__import_collapsed_inner_models(
+            models,
+            redirected_holders,
+            imports,
+            scoped_model_resolver,
+            model_path_to_module_name,
+            is_init=is_init,
+            internal_modules=internal_modules,
+        )
+
+    def __emitting_module_name(self, model: DataModel, model_path_to_module_name: dict[str, str]) -> str:
+        """Return the name of the module whose live model list holds a model, found by identity.
+
+        A model that a module's processing puts into its list after modules are structured, such as a reuse subclass,
+        is looked up in the live lists and remembered.
+        """
+        if (module_name := self._emitting_module_names.get(id(model))) is not None:
+            return module_name
+        for module_name, module_models in self._emitting_module_lists:
+            if any(module_model is model for module_model in module_models):
+                self._emitting_module_names[id(model)] = module_name
+                return module_name
+        return _get_model_module_name(model, model_path_to_module_name)
+
+    def __replace_root_model_by_inner_model(
+        self,
+        root_model: DataModel,
+        inner_model: DataModel,
+        model_path_to_module_name: dict[str, str],
+    ) -> None:
+        """Give the inner model the class name of the root model it replaces, in the module that emits it.
+
+        The inner model also takes the root model's path, which tag values read, as the root model leaves the
+        output. Modules processed earlier imported the inner model by its old name under its old path.
+        """
+        old_class_name, old_path = inner_model.class_name, inner_model.path
+        inner_module_name = self.__emitting_module_name(inner_model, model_path_to_module_name)
+        self.generation_store.update_model_reference(
+            inner_model, class_name=root_model.class_name, new_path=root_model.reference.path
+        )
+        self._replaced_root_models[id(root_model)] = root_model
+        model_path_to_module_name[inner_model.path] = inner_module_name
+        if inner_model.class_name != old_class_name:
+            self._renamed_types.setdefault(inner_model.path, _RenamedType(old_class_name, old_path))
+
+    def __import_collapsed_inner_models(  # noqa: PLR0913
+        self,
+        models: list[DataModel],
+        redirected_holders: list[tuple[DataModel, DataType, Import | None]],
+        imports: Imports,
+        scoped_model_resolver: ModelResolver,
+        model_path_to_module_name: dict[str, str],
+        *,
+        is_init: bool,
+        internal_modules: set[ModulePath],
+    ) -> None:
+        """Import the inner models that collapse redirected this module's holders to, as direct references would.
+
+        Each holder drops its import of the root model. A name that no import binds any more, and the name of a root
+        of this module that its inner model replaced, are free for the inner model, which is imported where the
+        holder's module does not emit it.
+        """
+        if not redirected_holders:
+            return
+        root_imports = [root_import for *_, root_import in redirected_holders if root_import is not None]
+        imports.remove(root_imports)
+        scoped_model_resolver.delete_names(
+            {root_import.binding_name for root_import in root_imports}.difference(_iter_import_bindings(imports)).union(
+                self.__names_left_by_replaced_roots(models, {model.path for model in self.__module_members(models)})
+            )
+        )
+        for holder, data_type, _ in redirected_holders:
+            reference = cast("Reference", data_type.reference)
+            holder_module_name = _get_model_module_name(holder, model_path_to_module_name)
+            inner_module_name = (
+                holder_module_name
+                if (inner_model := reference.source) is None
+                else self.__emitting_module_name(cast("DataModel", inner_model), model_path_to_module_name)
+            )
+            self.__set_reference_expression(
+                data_type,
+                holder_module_name,
+                f"{inner_module_name}.{reference.short_name}" if inner_module_name else reference.short_name,
+                imports,
+                scoped_model_resolver,
+                same_module=inner_module_name == holder_module_name,
+                init=is_init,
+                internal_modules=internal_modules,
+            )
 
     def __set_circular_root_model_paths(
         self,
@@ -6163,7 +6311,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         source = cast("DataModel", colliding_reference.source)
                         resolver.exclude_names.add(cast("str", field_name))
                         new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
-                        self._renamed_types.setdefault(colliding_reference.path, source.class_name)
+                        self._renamed_types.setdefault(
+                            colliding_reference.path, _RenamedType(source.class_name, colliding_reference.path)
+                        )
                         source.class_name = new_class_name
                         all_class_names.add(new_class_name)
                     else:
@@ -6282,7 +6432,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             for name in _family_field_names(_model_family(user, derived_models))
         )
-        self._renamed_types.setdefault(reference.path, source.class_name)
+        self._renamed_types.setdefault(reference.path, _RenamedType(source.class_name, reference.path))
         source.class_name = resolver.add(["type"], source.class_name).name
         class_names.add(source.class_name)
 
@@ -8279,6 +8429,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             require_update_action_models=require_update_action_models,
             use_deferred_annotations=config.use_deferred_annotations,
             can_retain_cache=can_retain_cache,
+            is_init=is_init,
+            internal_modules=internal_modules,
         )
         current_unused_models: Sequence[DataModel] = ()
         if unused_models_start != len(unused_models):
@@ -8335,6 +8487,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         require_update_action_models: list[str],
         use_deferred_annotations: bool,
         can_retain_cache: bool,
+        is_init: bool = False,
+        internal_modules: set[ModulePath] | None = None,
     ) -> list[DataModel]:
         """Apply defaults and model transforms before final type adjustments."""
         self.__set_reference_default_value_to_field(models, can_retain_cache=can_retain_cache)
@@ -8346,6 +8500,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 imports,
                 scoped_model_resolver,
                 model_path_to_module_name,
+                is_init=is_init,
+                internal_modules=internal_modules,
             )
         except RecursionError as exc:
             raise _CollapseRootModelsRecursionError from exc
@@ -8528,8 +8684,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for model in ctx.models:
                 ctx.imports.append(model_imports[model])
 
+        replaced_root_modules = (
+            {
+                id(model): (ctx.module_key, ctx.models)
+                for ctx in contexts
+                for model in ctx.models
+                if id(model) in replaced_root_models
+            }
+            if (replaced_root_models := self._replaced_root_models)
+            else {}
+        )
         for unused_model in unused_models:
-            module, models = model_to_module_models[unused_model]
+            module, models = replaced_root_modules.pop(id(unused_model), None) or model_to_module_models[unused_model]
             if unused_model in models:  # pragma: no branch
                 imports = module_to_import[module]
                 imports.remove(model_imports.get(unused_model, unused_model.imports))
@@ -9213,6 +9379,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._deferred_tagged_unions.clear()
         self._removed_reuse_users.clear()
         self._renamed_types.clear()
+        self._replaced_root_models.clear()
         self.__flatten_conflicting_base_layouts(module_models)
 
         if self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
@@ -9227,6 +9394,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 module_models,
                 require_dict_key_edge=not self.run_context.preserve_circular_root_models,
             )
+        self._emitting_module_lists = (
+            [(_module_name_from_module_path(module_), models) for module_, models in module_models]
+            if self.collapse_root_models and self.collapse_root_models_name_strategy is not None
+            else []
+        )
+        self._emitting_module_names = {
+            id(model): module_name for module_name, models in self._emitting_module_lists for model in models
+        }
 
         for position, (module_, models) in enumerate(module_models, 1):
             self._defers_tagged_unions = position < len(module_models)

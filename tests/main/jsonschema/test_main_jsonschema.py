@@ -17330,6 +17330,68 @@ def test_main_jsonschema_collapse_root_models_name_strategy_parent(output_file: 
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "expected_error_type"),
+    [("pydantic_v2.BaseModel", "model_type"), ("typing.TypedDict", "dict_type")],
+)
+def test_main_jsonschema_collapse_root_models_name_strategy_parent_recursive_wrapper(
+    output_file: Path, output_model_type: str, expected_error_type: str
+) -> None:
+    """Write one recursive model under its wrapper's name when the model also refers to the wrapper (#4968).
+
+    The model's own reference to the wrapper is a holder like any other, so the wrapper leaves the output.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "circular_ref_ref_with_schema_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            "parent",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="circular_ref_ref_with_schema_keywords",
+        model_name="Model",
+        valid_json='{"root": {"next": {"next": {}}}}',
+        invalid_json='{"root": {"next": 1}}',
+        expected_error_type=expected_error_type,
+    )
+
+
+@pytest.mark.parametrize("strategy", ["child", "parent"])
+def test_main_jsonschema_collapse_root_models_name_strategy_reused_inner(output_dir: Path, strategy: str) -> None:
+    """Write the inner model by its name where reuse replaced it with a subclass in the holder's module.
+
+    The module of the inner model is the one whose model list holds it, which reuse changes after the modules are
+    structured, so the holder imports nothing.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_reuse",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--collapse-root-models",
+            "--collapse-root-models-name-strategy",
+            strategy,
+            "--reuse-model",
+            "--disable-timestamp",
+        ],
+        runtime_validation_module="b",
+        runtime_validation_model_name="User",
+        runtime_validation_data={"w": {"x": "1"}, "d": {"x": "2"}},
+    )
+    with _generated_package_module(output_dir, "b") as module:
+        _assert_model_json_invalid(_model_json_validator(module.User), '{"w": {"x": 1}}', "string_type")
+
+
 def test_main_jsonschema_collapse_root_models_name_strategy_requires_collapse_root_models(
     output_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

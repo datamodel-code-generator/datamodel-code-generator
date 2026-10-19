@@ -809,8 +809,37 @@ pydantic_v2.BaseModel-datetime_pydantic_v2_past_datetime.py-PastDatetime	main/op
 	main/openapi/circular_imports_stripe_like//*.py
 [test_main_openapi_circular_imports_with_inheritance]
 	main/openapi/circular_imports_with_inheritance//*.py
+[test_main_openapi_collapse_root_models_child_reused_inner_in_tree_scope]
+	main/openapi/main_openapi/collapse_root_models_child_reused_inner_in_tree_scope/
 [test_main_openapi_collapse_root_models_module_named_field]
 	main/openapi/collapse_root_models_module_named_field//*.py
+[test_main_openapi_collapse_root_models_name_strategy_modular]
+holder-in-other-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-other-module-child]/
+holder-in-other-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-other-module-parent]/
+holder-in-package-init-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-package-init-child]/
+holder-in-package-init-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[holder-in-package-init-parent]/
+import-cycle-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[import-cycle-child]/
+import-cycle-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[import-cycle-parent]/
+inherited-beside-holder-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-beside-holder-child]/
+inherited-beside-holder-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-beside-holder-parent]/
+inherited-in-wrapper-module-first-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-in-wrapper-module-first-child]/
+inherited-in-wrapper-module-first-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-in-wrapper-module-first-parent]/
+inherited-in-wrapper-module-last-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-in-wrapper-module-last-child]/
+inherited-in-wrapper-module-last-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inherited-in-wrapper-module-last-parent]/
+inner-in-other-module-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-child]/
+inner-in-other-module-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[inner-in-other-module-parent]/
+reused-inner-in-cycle-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[reused-inner-in-cycle-child]/
+reused-inner-in-cycle-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[reused-inner-in-cycle-parent]/
+same-class-name-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[same-class-name-child]/
+same-class-name-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[same-class-name-parent]/	= main/openapi/main_openapi/collapse_root_models_name_strategy_modular[same-class-name-child]/
+two-holders-exact-imports-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-holders-exact-imports-child]/
+two-holders-exact-imports-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-holders-exact-imports-parent]/
+two-modules-child	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-modules-child]/
+two-modules-parent	main/openapi/main_openapi/collapse_root_models_name_strategy_modular[two-modules-parent]/
+[test_main_openapi_collapse_root_models_parent_wrapper_referenced_twice]
+dataclasses.dataclass	main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice.py
+pydantic_v2.BaseModel	main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice.py	= main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice~collapse_root_models_parent_wrapper_referenced_twice[pydantic_v2.BaseModel].py
+typing.TypedDict	main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice.py	= main/openapi/openapi_collapse_root_models_parent_wrapper_referenced_twice~collapse_root_models_parent_wrapper_referenced_twice[typing.TypedDict].py
 [test_main_openapi_complex_reference]
 	main/openapi/complex_reference.py
 [test_main_openapi_component_embedded_ids]

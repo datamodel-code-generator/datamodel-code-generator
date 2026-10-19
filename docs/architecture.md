@@ -301,7 +301,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | prepare | `__extract_inherited_enum` | field-less models with Enum bases | replaces the model by a new Enum with the same `Reference`, of the class of its first Enum base (`decide_enum_kind`) |
 | process | `__set_reference_default_value_to_field` | defaults of referenced models | field defaults |
 | process | `__reuse_model` | rendered model text and union tags of this module's models | replaces duplicates by empty subclasses (users in this module redirected) or removes them (Enums, `--collapse-reuse-models`: users in every module redirected) |
-| process | `__collapse_root_models` | root models referenced from this module (any module), circular paths from L4 | inlines root types, merges constraints, calls `process_const()` again, renames, marks unused roots |
+| process | `__collapse_root_models` | root models referenced from this module (any module), circular paths from L4, the module of each inner model (found by identity in the live module lists) | inlines root types, merges constraints, calls `process_const()` again, redirects references to a root model's inner model and imports it where this module does not emit it, renames (the `parent` strategy names the inner model of any module after the root it replaces, decided at the root's first holder; from then on the root is no member of its module for `__change_from_import` and `__import_renamed_types`), marks unused roots |
 | process | `__set_default_enum_member` | defaults vs Enum members | defaults |
 | process | `__sort_models` | `--keep-model-order` | model order |
 | process | `__change_field_name` | field names vs type names | field names, class names of referenced types (any module) |
@@ -336,8 +336,8 @@ Single-file output has one module, so "per module" then means the whole graph.
 | `_check_model_inheritance`, warnings, `_set_nested_model_default_factory_metadata` | errors, warnings, default-factory metadata |
 
 Three L6 passes repair results that L5 built from facts that changed afterwards: `__import_removed_reuse_canonicals`
-and `__import_renamed_types` (reuse and renames in a later module) and `__fix_tag_opt_out_field_ordering` (the tag
-opt-out decided in L6).
+and `__import_renamed_types` (reuse and renames in a later module, including the `parent` collapse rename) and
+`__fix_tag_opt_out_field_ordering` (the tag opt-out decided in L6).
 
 **L7.** `_generate_module_output` builds the import block, calls the backend's `render_module_code`, renders each
 model and formats the body. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
@@ -363,7 +363,7 @@ quoting are done) or not yet (its overrides, collapse and reuse have not run).
 | --- | --- | --- |
 | `__override_required_field` | copying fields of bases in any module | reads base fields at whatever stage that module is in |
 | `__reuse_model` | removing duplicates (Enums, `--collapse-reuse-models`) and redirecting their users in every module | earlier modules imported the removed duplicate; repaired by `__import_removed_reuse_canonicals` |
-| `__collapse_root_models` | inlining root models of any module | the root's own module may collapse its members later |
+| `__collapse_root_models` | inlining root models of any module; under the `parent` strategy, giving the inner model of any module the root's class name and path | the root's own module may collapse its members later; earlier modules imported the inner model's old name under its old path, repaired by `__import_renamed_types` |
 | `__change_field_name`, `__rename_fields_hiding_types` | renaming types of any module | earlier modules imported the old name; repaired by `__import_renamed_types` |
 | `__apply_discriminator_type` | rewriting tag fields of variants in any module | variants in earlier modules were ordered, validated and quoted without the tag; msgspec tags are final only in L6 |
 
@@ -419,8 +419,10 @@ collapse replacing a member of a shared list.
 In practice, the fields, types, defaults, tags and bases of every model are final once `__apply_generic_base_class`
 has run in `_finalize_modules`, except pydantic v2 type-alias bodies (`__prepare_type_alias_fields`). Models that
 collapse left unused stay in the module lists until unused-model removal, so a pass placed there skips
-`unused_models`. Later passes change presentation or derive from those facts. The code does not enforce this
-boundary.
+`unused_models`. Removal finds a model through the module index built before L3 merges import cycles, so it does not
+reach a merged `_internal` module, except for a root model that the `parent` strategy replaced by its inner model,
+which is removed from the module that holds it: unused roots of other collapses stay in merged modules. Later passes
+change presentation or derive from those facts. The code does not enforce this boundary.
 
 ### Generation Store
 
