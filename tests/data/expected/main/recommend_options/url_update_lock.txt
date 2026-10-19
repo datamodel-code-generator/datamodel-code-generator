@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       6, 2 operations
@@ -15,7 +15,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (6 options)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -93,16 +93,17 @@ Not recommended
 Notes
   - --http-headers is not repeated here; add it to the command again.
   - --url is repeated without its user information, query, and fragment; add them again.
+  - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --naming-strategy full-path --preset standard-py314-20261017 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --update-lock --url https://api.example.com/specs/api.yaml --use-tag-as-union-variant-name
+  datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --naming-strategy full-path --preset standard-py314-20261019 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --update-lock --url https://api.example.com/specs/api.yaml --use-tag-as-union-variant-name
 
 pyproject.toml
   [tool.datamodel-codegen]
   collapse-reuse-models = true
   enum-field-as-literal = "all"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   reuse-model = true
   target-python-version = "3.14"
   treat-dot-as-module = false

@@ -23,7 +23,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
       "title-source"
     ]
   },
-  "rules_revision": "2026-10-18",
+  "rules_revision": "2026-10-19",
   "schemas": {
     "config": {
       "best": {
@@ -32,7 +32,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 12,
-        "preset": "standard-py310-20261017",
+        "preset": "standard-py310-20261019",
         "problems": 0
       },
       "diff_against": null,
@@ -41,7 +41,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py310-20261017"
+          "standard-py310-20261019"
         ],
         "median_length": 17,
         "problems": 0
@@ -61,7 +61,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 5,
-        "preset": "standard-py310-20261017",
+        "preset": "standard-py310-20261019",
         "problems": 0
       },
       "diff_against": "v1",
@@ -70,7 +70,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py310-20261017"
+          "standard-py310-20261019"
         ],
         "median_length": 9,
         "problems": 0
@@ -88,7 +88,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "all"
         ],
         "median_length": 4,
-        "preset": "standard-py310-20261017",
+        "preset": "standard-py310-20261019",
         "problems": 0
       },
       "diff_against": null,
@@ -97,7 +97,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py310-20261017"
+          "standard-py310-20261019"
         ],
         "median_length": 11,
         "problems": 0
@@ -111,7 +111,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
   },
   "settings": {
     "output_model_type": "pydantic_v2.BaseModel",
-    "preset": "standard-py310-20261017",
+    "preset": "standard-py310-20261019",
     "target_python_version": "3.10"
   }
 }
@@ -119,9 +119,9 @@ wrote report.md, scores.json, calibration.json, rules.diff
 --- report.md
 # Recommender calibration
 
-- Rules: revision 2026-10-18, calibrated on 20261017 presets
+- Rules: revision 2026-10-19, calibrated on 20261017 presets
 - Settings: pydantic_v2.BaseModel, target Python 3.10
-- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261017
+- Grid: 8 configurations over naming-strategy, enum-shape, title-source, each on top of standard-py310-20261019
 - Schemas: 4 (2 calibration, 2 holdout)
 
 ## Schemas
@@ -146,6 +146,7 @@ A rule should fire on a schema when the grid's best configuration with its value
 | naming.qualify-shared-inline-names | naming-strategy | pets, shop, config | shop | config | - |
 | enums.inline-value-sets-as-literal | enum-shape | - | pets, shop | config | - |
 
+- Not covered: enums.read-as-their-const (decision enum-const-reading has no grid axis)
 - Not covered: reuse.identical-inline-shapes (decision reuse has no grid axis)
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
@@ -182,13 +183,13 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 
 | Schema | Configurations | Arguments | Result |
 |---|---|---|---|
-| pets | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261017 --target-python-version 3.10` | ok |
-| pets | grid best | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --naming-strategy full-path --enum-field-as-literal all` | ok |
-| pets | preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --enum-field-as-literal all` | ok |
-| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261017 --target-python-version 3.10` | ok |
-| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --enum-field-as-literal all` | ok |
-| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261017 --target-python-version 3.10` | ok |
-| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261017 --enum-field-as-literal all` | ok |
+| pets | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261019 --target-python-version 3.10` | ok |
+| pets | grid best | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261019 --naming-strategy full-path --enum-field-as-literal all` | ok |
+| pets | preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261019 --enum-field-as-literal all` | ok |
+| shop | recommended | `--input-file-type openapi --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261019 --target-python-version 3.10` | ok |
+| shop | grid best, preset + enum_field_as_literal="all" | `--input-file-type openapi --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261019 --enum-field-as-literal all` | ok |
+| config | recommended | `--input-file-type jsonschema --naming-strategy full-path --output-model-type pydantic_v2.BaseModel --preset standard-py310-20261019 --target-python-version 3.10` | ok |
+| config | grid best, preset + enum_field_as_literal="all" | `--input-file-type jsonschema --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --preset standard-py310-20261019 --enum-field-as-literal all` | ok |
 
 ## Proposed rotation
 
@@ -207,13 +208,13 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
 ## Changes since the last calibration
 
 - calibrated_presets 20261015 -> 20261017
-- rules_revision 2026-10-15 -> 2026-10-18
-- settings.preset None -> standard-py310-20261017
+- rules_revision 2026-10-15 -> 2026-10-19
+- settings.preset None -> standard-py310-20261019
 - settings.target_python_version 3.14 -> 3.10
 - config: new
 - legacy: not in this run
-- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py310-20261017; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy full-path --preset standard-py310-20261017]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
-- shop: best.preset None -> standard-py310-20261017; recommended.arguments [--naming-strategy full-path] -> [--naming-strategy full-path --preset standard-py310-20261017]; ref v1 -> <upstream head>
+- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py310-20261019; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy full-path --preset standard-py310-20261019]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
+- shop: best.preset None -> standard-py310-20261019; recommended.arguments [--naming-strategy full-path] -> [--naming-strategy full-path --preset standard-py310-20261019]; ref v1 -> <upstream head>
 
 --- rules.diff
 --- a/src/datamodel_code_generator/resources/recommender_rules.json
@@ -259,7 +260,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "title-source"
       ]
     },
-    "rules_revision": "2026-10-18",
+    "rules_revision": "2026-10-19",
     "schemas": {
       "config": {
         "best": {
@@ -268,7 +269,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "all"
           ],
           "median_length": 12,
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "problems": 0
         },
         "diff_against": null,
@@ -277,7 +278,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "--naming-strategy",
             "full-path",
             "--preset",
-            "standard-py310-20261017"
+            "standard-py310-20261019"
           ],
           "median_length": 17,
           "problems": 0
@@ -297,7 +298,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "all"
           ],
           "median_length": 5,
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "problems": 0
         },
         "diff_against": "v1",
@@ -306,7 +307,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "--naming-strategy",
             "full-path",
             "--preset",
-            "standard-py310-20261017"
+            "standard-py310-20261019"
           ],
           "median_length": 9,
           "problems": 0
@@ -324,7 +325,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "all"
           ],
           "median_length": 4,
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "problems": 0
         },
         "diff_against": null,
@@ -333,7 +334,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "--naming-strategy",
             "full-path",
             "--preset",
-            "standard-py310-20261017"
+            "standard-py310-20261019"
           ],
           "median_length": 11,
           "problems": 0
@@ -347,7 +348,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
     },
     "settings": {
       "output_model_type": "pydantic_v2.BaseModel",
-      "preset": "standard-py310-20261017",
+      "preset": "standard-py310-20261019",
       "target_python_version": "3.10"
     }
   },
@@ -399,7 +400,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261017",
+        "standard-py310-20261019",
         "--target-python-version",
         "3.10"
       ],
@@ -418,7 +419,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261017",
+        "standard-py310-20261019",
         "--naming-strategy",
         "full-path",
         "--enum-field-as-literal",
@@ -439,7 +440,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261017",
+        "standard-py310-20261019",
         "--enum-field-as-literal",
         "all"
       ],
@@ -458,7 +459,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261017",
+        "standard-py310-20261019",
         "--target-python-version",
         "3.10"
       ],
@@ -477,7 +478,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261017",
+        "standard-py310-20261019",
         "--enum-field-as-literal",
         "all"
       ],
@@ -497,7 +498,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--output-model-type",
         "pydantic_v2.BaseModel",
         "--preset",
-        "standard-py310-20261017",
+        "standard-py310-20261019",
         "--target-python-version",
         "3.10"
       ],
@@ -516,7 +517,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "--target-python-version",
         "3.10",
         "--preset",
-        "standard-py310-20261017",
+        "standard-py310-20261019",
         "--enum-field-as-literal",
         "all"
       ],
@@ -598,7 +599,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         {
           "arguments": [],
           "delta": {},
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -608,7 +609,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "delta": {
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -619,7 +620,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "delta": {
             "enum_field_as_literal": "all"
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -632,7 +633,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "enum_field_as_literal": "all",
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -643,7 +644,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "delta": {
             "naming_strategy": "full-path"
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -656,7 +657,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -670,7 +671,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "enum_field_as_literal": "all",
             "naming_strategy": "full-path"
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         },
         {
@@ -686,7 +687,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "naming_strategy": "full-path",
             "use_title_as_name": true
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "rejected": "Unable to read the input as a JSON Schema document: Expected dict, got list"
         }
       ],
@@ -723,7 +724,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -757,7 +758,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -792,7 +793,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -829,7 +830,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -864,7 +865,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -901,7 +902,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -939,7 +940,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -979,7 +980,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         }
       ],
@@ -992,7 +993,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261017",
+          "standard-py310-20261019",
           "--target-python-version",
           "3.10"
         ],
@@ -1000,7 +1001,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261017"
+          "preset": "standard-py310-20261019"
         },
         "calibrated_presets": "20261017",
         "consider": [],
@@ -1077,7 +1078,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         ],
         "mode": "full",
         "not_recommended": [],
-        "notes": [],
+        "notes": [
+          "The rules were calibrated on the 20261017 presets."
+        ],
         "policy": [],
         "recommendations": [
           {
@@ -1129,7 +1132,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             }
           }
         ],
-        "rules_revision": "2026-10-18",
+        "rules_revision": "2026-10-19",
         "signals": {
           "all_enums": 2,
           "boolean_exclusive_bounds": 0,
@@ -1149,6 +1152,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "duplicate_inline_enums": 0,
           "duplicate_inline_objects": 0,
           "duplicate_inline_shapes": 0,
+          "enums_beside_const": 0,
           "estimated_models": 3,
           "formats": 0,
           "inline_enums": 2,
@@ -1246,7 +1250,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {},
               "stability": null
@@ -1284,7 +1288,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {
                 "class_name": "Config",
@@ -1323,7 +1327,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {
                 "class_name": "Config"
@@ -1361,7 +1365,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {
                 "naming_strategy": "full-path"
@@ -1439,7 +1443,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         },
         {
@@ -1473,7 +1477,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         },
         {
@@ -1508,7 +1512,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         },
         {
@@ -1545,7 +1549,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         },
         {
@@ -1580,7 +1584,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         },
         {
@@ -1617,7 +1621,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         },
         {
@@ -1655,7 +1659,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         },
         {
@@ -1695,7 +1699,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": 0
         }
       ],
@@ -1708,7 +1712,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261017",
+          "standard-py310-20261019",
           "--target-python-version",
           "3.10"
         ],
@@ -1716,7 +1720,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261017"
+          "preset": "standard-py310-20261019"
         },
         "calibrated_presets": "20261017",
         "consider": [],
@@ -1746,7 +1750,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "left_out": [],
         "mode": "full",
         "not_recommended": [],
-        "notes": [],
+        "notes": [
+          "The rules were calibrated on the 20261017 presets."
+        ],
         "policy": [],
         "recommendations": [
           {
@@ -1798,7 +1804,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             }
           }
         ],
-        "rules_revision": "2026-10-18",
+        "rules_revision": "2026-10-19",
         "signals": {
           "all_enums": 4,
           "boolean_exclusive_bounds": 0,
@@ -1818,6 +1824,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "duplicate_inline_enums": 0,
           "duplicate_inline_objects": 0,
           "duplicate_inline_shapes": 0,
+          "enums_beside_const": 0,
           "estimated_models": 9,
           "formats": 0,
           "inline_enums": 4,
@@ -1927,7 +1934,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {},
               "stability": {
@@ -1975,7 +1982,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {
                 "naming_strategy": "full-path"
@@ -2063,7 +2070,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -2097,7 +2104,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -2132,7 +2139,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -2169,7 +2176,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -2204,7 +2211,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -2241,7 +2248,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -2279,7 +2286,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         },
         {
@@ -2319,7 +2326,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             "union_variants_numbered": 0,
             "union_variants_parent_numbered": 0
           },
-          "preset": "standard-py310-20261017",
+          "preset": "standard-py310-20261019",
           "renamed": null
         }
       ],
@@ -2332,7 +2339,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
-          "standard-py310-20261017",
+          "standard-py310-20261019",
           "--target-python-version",
           "3.10"
         ],
@@ -2340,7 +2347,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "configured": false,
           "covers": [],
           "family": "standard",
-          "preset": "standard-py310-20261017"
+          "preset": "standard-py310-20261019"
         },
         "calibrated_presets": "20261017",
         "consider": [],
@@ -2370,7 +2377,9 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
         "left_out": [],
         "mode": "full",
         "not_recommended": [],
-        "notes": [],
+        "notes": [
+          "The rules were calibrated on the 20261017 presets."
+        ],
         "policy": [
           {
             "arguments": [
@@ -2447,7 +2456,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
             }
           }
         ],
-        "rules_revision": "2026-10-18",
+        "rules_revision": "2026-10-19",
         "signals": {
           "all_enums": 2,
           "boolean_exclusive_bounds": 0,
@@ -2467,6 +2476,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "duplicate_inline_enums": 0,
           "duplicate_inline_objects": 0,
           "duplicate_inline_shapes": 0,
+          "enums_beside_const": 0,
           "estimated_models": 6,
           "formats": 0,
           "inline_enums": 2,
@@ -2564,7 +2574,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {},
               "stability": null
@@ -2600,7 +2610,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
                 "union_variants_numbered": 0,
                 "union_variants_parent_numbered": 0
               },
-              "preset": "standard-py310-20261017",
+              "preset": "standard-py310-20261019",
               "selectable": true,
               "set": {
                 "naming_strategy": "full-path"
@@ -2715,6 +2725,11 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
       "rule": "enums.inline-value-sets-as-literal"
     },
     {
+      "covered": "decision enum-const-reading has no grid axis",
+      "decision": "enum-const-reading",
+      "rule": "enums.read-as-their-const"
+    },
+    {
       "covered": "decision reuse has no grid axis",
       "decision": "reuse",
       "rule": "reuse.identical-inline-shapes"
@@ -2777,7 +2792,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261017",
+        "preset": "standard-py310-20261019",
         "renamed": 0,
         "values": {
           "enum_field_as_literal": "all",
@@ -2791,7 +2806,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py310-20261017"
+          "standard-py310-20261019"
         ],
         "metrics": {
           "component": 3,
@@ -2856,7 +2871,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261017",
+        "preset": "standard-py310-20261019",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -2869,7 +2884,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py310-20261017"
+          "standard-py310-20261019"
         ],
         "metrics": {
           "component": 2,
@@ -2934,7 +2949,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "union_variants_numbered": 0,
           "union_variants_parent_numbered": 0
         },
-        "preset": "standard-py310-20261017",
+        "preset": "standard-py310-20261019",
         "renamed": null,
         "values": {
           "enum_field_as_literal": "all",
@@ -2947,7 +2962,7 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "--naming-strategy",
           "full-path",
           "--preset",
-          "standard-py310-20261017"
+          "standard-py310-20261019"
         ],
         "metrics": {
           "component": 1,

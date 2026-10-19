@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  AsyncAPI 3.0.0
   components                       1, 1 operations
@@ -15,7 +15,7 @@ Schema  AsyncAPI 3.0.0
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   1
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (1 option)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -42,12 +42,15 @@ Optional (policy; not in the command)
       rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
       rejected
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --input events_v3.yaml --naming-strategy full-path --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --input events_v3.yaml --naming-strategy full-path --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "events_v3.yaml"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

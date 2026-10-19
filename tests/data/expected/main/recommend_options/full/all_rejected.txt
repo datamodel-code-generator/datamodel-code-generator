@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   components                       0, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 1
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add  nothing on top of the preset
 
@@ -28,15 +28,16 @@ Trial  2 candidates generated in memory without formatting; nothing written
   unconstrained: fields that dcg warns it generates without some of their constraints
 
 Notes
+  - The rules were calibrated on the 20261017 presets.
   - Every candidate on the preset failed to generate, so the options are the rules' recommendation
     alone.
 
 Command
-  datamodel-codegen --formatters builtin --input-file-type jsonschema --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --formatters builtin --input-file-type jsonschema --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   formatters = ["builtin"]
   input-file-type = "jsonschema"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

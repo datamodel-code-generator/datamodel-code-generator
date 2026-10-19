@@ -162,6 +162,19 @@ class PresetName(str, Enum):
     PracticalPy31420261017 = "practical-py314-20261017"
     PracticalPy31520261017 = "practical-py315-20261017"
 
+    StandardPy31020261019 = "standard-py310-20261019"
+    StandardPy31120261019 = "standard-py311-20261019"
+    StandardPy31220261019 = "standard-py312-20261019"
+    StandardPy31320261019 = "standard-py313-20261019"
+    StandardPy31420261019 = "standard-py314-20261019"
+    StandardPy31520261019 = "standard-py315-20261019"
+    PracticalPy31020261019 = "practical-py310-20261019"
+    PracticalPy31120261019 = "practical-py311-20261019"
+    PracticalPy31220261019 = "practical-py312-20261019"
+    PracticalPy31320261019 = "practical-py313-20261019"
+    PracticalPy31420261019 = "practical-py314-20261019"
+    PracticalPy31520261019 = "practical-py315-20261019"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -632,8 +645,38 @@ _PRACTICAL_20261017_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
     PythonVersion.PY_315: PresetName.PracticalPy31520261017,
 }
 
-_STANDARD_PRESET_NAMES_BY_TARGET = _STANDARD_20261017_PRESET_NAMES_BY_TARGET
-_PRACTICAL_PRESET_NAMES_BY_TARGET = _PRACTICAL_20261017_PRESET_NAMES_BY_TARGET
+_STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261017_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Enums read as their const",
+        config=PresetConfig(use_single_value_enum_as_const=True),
+        description=(
+            "Read an enum of one value, and an enum that admits the const beside it, as that const, so it renders "
+            "as a Literal value instead of an enum class; one-value enum branches of a oneOf or anyOf merge into "
+            "one enum."
+        ),
+    ),
+)
+
+_STANDARD_20261019_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
+    PythonVersion.PY_310: PresetName.StandardPy31020261019,
+    PythonVersion.PY_311: PresetName.StandardPy31120261019,
+    PythonVersion.PY_312: PresetName.StandardPy31220261019,
+    PythonVersion.PY_313: PresetName.StandardPy31320261019,
+    PythonVersion.PY_314: PresetName.StandardPy31420261019,
+    PythonVersion.PY_315: PresetName.StandardPy31520261019,
+}
+_PRACTICAL_20261019_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
+    PythonVersion.PY_310: PresetName.PracticalPy31020261019,
+    PythonVersion.PY_311: PresetName.PracticalPy31120261019,
+    PythonVersion.PY_312: PresetName.PracticalPy31220261019,
+    PythonVersion.PY_313: PresetName.PracticalPy31320261019,
+    PythonVersion.PY_314: PresetName.PracticalPy31420261019,
+    PythonVersion.PY_315: PresetName.PracticalPy31520261019,
+}
+
+_STANDARD_PRESET_NAMES_BY_TARGET = _STANDARD_20261019_PRESET_NAMES_BY_TARGET
+_PRACTICAL_PRESET_NAMES_BY_TARGET = _PRACTICAL_20261019_PRESET_NAMES_BY_TARGET
 
 
 def _standard_option_groups_for_target(
@@ -751,6 +794,12 @@ _PRESET_INFOS: tuple[PresetInfo, ...] = (
         standard_names_by_target=_STANDARD_20261017_PRESET_NAMES_BY_TARGET,
         practical_names_by_target=_PRACTICAL_20261017_PRESET_NAMES_BY_TARGET,
         standard_option_groups=_STANDARD_20261017_OPTION_GROUPS,
+        practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
+    ),
+    *_build_preset_family_infos(
+        standard_names_by_target=_STANDARD_20261019_PRESET_NAMES_BY_TARGET,
+        practical_names_by_target=_PRACTICAL_20261019_PRESET_NAMES_BY_TARGET,
+        standard_option_groups=_STANDARD_20261019_OPTION_GROUPS,
         practical_extra_option_groups=_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
     ),
 )
@@ -884,13 +933,13 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --input-file-type jsonschema \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset standard-py312-20261017 \\",
+        "  --preset standard-py312-20261019 \\",
         "  --output model.py",
         "```",
         "",
         (
-            "Use `standard-py312-20261017` for the project-recommended modern Python 3.12 baseline. "
-            "Use `practical-py312-20261017` when you also want schema-authored names, model reuse, and schema "
+            "Use `standard-py312-20261019` for the project-recommended modern Python 3.12 baseline. "
+            "Use `practical-py312-20261019` when you also want schema-authored names, model reuse, and schema "
             "descriptions embedded in the generated code."
         ),
         "",
@@ -915,6 +964,12 @@ def render_presets_markdown() -> str:
             "options for all output model types."
         ),
         "",
+        (
+            "The 20261019 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of "
+            "one value, and an enum that admits the const beside it, render as that const's Literal value instead "
+            "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum."
+        ),
+        "",
         "## Override Preset Options",
         "",
         "Preset options are defaults, not locks. Explicit options override preset-supplied values.",
@@ -922,7 +977,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261017 \\",
+        "  --preset standard-py312-20261019 \\",
         "  --no-snake-case-field \\",
         "  --no-use-annotated \\",
         "  --enum-field-as-literal none",
@@ -943,7 +998,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261017 \\",
+        "  --preset standard-py312-20261019 \\",
         "  --extra-fields forbid \\",
         "  --use-title-as-name \\",
         "  --output model.py",
@@ -959,12 +1014,12 @@ def render_presets_markdown() -> str:
         '```toml title="pyproject.toml"',
         "[tool.datamodel-codegen]",
         'output-model-type = "pydantic_v2.BaseModel"',
-        'preset = "standard-py312-20261017"',
+        'preset = "standard-py312-20261019"',
         "",
         "[tool.datamodel-codegen.profiles.api]",
         'input = "schemas/api.json"',
         'output = "src/models/api.py"',
-        'preset = "practical-py312-20261017"',
+        'preset = "practical-py312-20261019"',
         'extra-fields = "forbid"',
         "",
         "[tool.datamodel-codegen.profiles.events]",
@@ -993,7 +1048,7 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --output model.py \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset practical-py312-20261017 \\",
+        "  --preset practical-py312-20261019 \\",
         "  --extra-fields forbid \\",
         "  --generate-pyproject-config",
         "```",

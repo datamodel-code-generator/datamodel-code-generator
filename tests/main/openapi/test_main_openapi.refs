@@ -1095,6 +1095,8 @@ msgspec.Struct	main/openapi/main_openapi/enum_const_positions[msgspec.Struct].py
 msgspec.Struct	main/openapi/main_openapi/enum_const_positions[msgspec.Struct].warnings.txt
 pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_positions[pydantic_v2.BaseModel].py
 pydantic_v2.BaseModel	main/openapi/main_openapi/enum_const_positions[pydantic_v2.BaseModel].warnings.txt
+single-value-enum-as-const	main/openapi/main_openapi/enum_const_positions[single-value-enum-as-const].py
+single-value-enum-as-const	main/openapi/main_openapi/enum_const_positions[single-value-enum-as-const].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_openapi_enum_const_unsatisfiable]
 	main/openapi/main_openapi/enum_const_unsatisfiable.py
 	main/openapi/main_openapi/enum_const_unsatisfiable.warnings.txt
@@ -1511,6 +1513,11 @@ without-option-missing-sentinel	main/openapi/main_openapi/single_value_enum_as_c
 without-option-msgspec-strict-nullable	main/openapi/main_openapi/single_value_enum_as_const_nullable[without-option-msgspec-strict-nullable].py	= main/openapi/main_openapi/single_value_enum_as_const_nullable[option-msgspec-strict-nullable].py
 without-option-pydantic-v2	main/openapi/main_openapi/single_value_enum_as_const_nullable[without-option-pydantic-v2].py	= main/openapi/main_openapi/single_value_enum_as_const_nullable[option-pydantic-v2].py
 without-option-strict-nullable	main/openapi/main_openapi/single_value_enum_as_const_nullable[without-option-strict-nullable].py	= main/openapi/main_openapi/single_value_enum_as_const_nullable[option-strict-nullable].py
+[test_main_openapi_single_value_enum_as_const_nullable_beside_const]
+msgspec.Struct	main/openapi/main_openapi/single_value_enum_as_const_nullable_beside_const[msgspec.Struct].py
+msgspec.Struct	main/openapi/main_openapi/single_value_enum_as_const_nullable_beside_const[msgspec.Struct].warnings.txt
+pydantic_v2.BaseModel	main/openapi/main_openapi/single_value_enum_as_const_nullable_beside_const[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/single_value_enum_as_const_nullable_beside_const[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_openapi_strict_types_field_constraints_msgspec]
 	main/openapi/strict_types_field_constraints_msgspec.py
 [test_main_openapi_strict_types_field_constraints_pydantic_v2]

@@ -7019,6 +7019,7 @@ def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: li
             ("py311", ["--target-python-version", "3.11"]),
             ("literal-one", ["--enum-field-as-literal", "one"]),
             ("literal-all", ["--enum-field-as-literal", "all"]),
+            ("single-value-enum-as-const", ["--use-single-value-enum-as-const"]),
         )
         for model_id, output_model in (
             ("pydantic-v2", "pydantic_v2.BaseModel"),
@@ -7029,7 +7030,10 @@ def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: li
         if args_id == "default"
         or (args_id == "subclass-enum" and model_id in {"pydantic-v2", "dataclasses"})
         or (args_id == "py311" and model_id == "pydantic-v2")
-        or (args_id.startswith("literal") and model_id in {"pydantic-v2", "msgspec"})
+        or (
+            (args_id.startswith("literal") or args_id == "single-value-enum-as-const")
+            and model_id in {"pydantic-v2", "msgspec"}
+        )
     ],
 )
 def test_main_jsonschema_enum_const_positions(output_model: str, extra_args: list[str], output_file: Path) -> None:
@@ -7040,6 +7044,8 @@ def test_main_jsonschema_enum_const_positions(output_model: str, extra_args: lis
     values (``IntEnum``, ``StrEnum``, ``--use-subclass-enum``), and None for a null const. A plain ``Enum``, and any
     msgspec enum, keeps the enum type and warns once per schema location that the other values are accepted. Up to
     0.86.0 these positions kept every value of the enum, except at the fields of models that write const as a Literal.
+    Under --use-single-value-enum-as-const every enum that admits its const is read as that const, without an enum
+    class.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
@@ -7084,16 +7090,49 @@ def test_main_jsonschema_enum_const_hidden_by_field(output_model: str, strategy:
         )
 
 
-@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
-def test_main_jsonschema_enum_const_type_list(output_model: str, output_file: Path) -> None:
-    """Keep the plain enum type of the enum branch of a type list holding array beside a narrowing const, and warn."""
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("msgspec.Struct", ["--use-single-value-enum-as-const"], id="single-value-enum-as-const"),
+    ],
+)
+def test_main_jsonschema_enum_const_type_list(output_model: str, extra_args: list[str], output_file: Path) -> None:
+    """Keep the plain enum type of the enum branch of a type list holding array beside a narrowing const, and warn.
+
+    Under --use-single-value-enum-as-const the branch is the const without an enum class.
+    """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
         run_main_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / "enum_const_type_list.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            extra_args=["--output-model-type", output_model],
+            extra_args=["--output-model-type", output_model, *extra_args],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+def test_main_jsonschema_read_as_const_marker_in_document(output_file: Path) -> None:
+    """Read nothing from a document's own read-as-const marker without --use-single-value-enum-as-const, its writer.
+
+    The enum beside a const and the const branches of mixed types are typed, and warned about, as without the marker.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "read_as_const_marker_in_document.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
             force_exec_validation=True,
         )
     assert_output(
@@ -7126,11 +7165,31 @@ def test_main_jsonschema_enum_const_discriminator_tag(output_file: Path) -> None
 
 
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
-def test_main_jsonschema_enum_const_non_literal(output_model: str, output_file: Path) -> None:
+def test_main_jsonschema_single_value_enum_as_const_titles(output_model: str, output_file: Path) -> None:
+    """Name the type of a titled enum that admits its const after its title, as for the const written alone."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_const_titles.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--use-single-value-enum-as-const", "--use-title-as-name"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("pydantic_v2.BaseModel", ["--use-single-value-enum-as-const"], id="single-value-enum-as-const"),
+    ],
+)
+def test_main_jsonschema_enum_const_non_literal(output_model: str, extra_args: list[str], output_file: Path) -> None:
     """Keep the enum type of a value whose const the output writes as no Literal, as its value type would widen it.
 
     Floats, objects and, for msgspec, booleans are no Literal values, while null is typed None. A boolean const types
-    its plain ``Enum`` value by the enum and warns. A definition keeps its values as written.
+    its plain ``Enum`` value by the enum and warns. A definition keeps its values as written; under
+    --use-single-value-enum-as-const, which reads such an enum as written, it keeps only the admitted values.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
@@ -7138,7 +7197,7 @@ def test_main_jsonschema_enum_const_non_literal(output_model: str, output_file: 
             input_path=JSON_SCHEMA_DATA_PATH / "enum_const_non_literal.json",
             output_path=output_file,
             input_file_type="jsonschema",
-            extra_args=["--output-model-type", output_model],
+            extra_args=["--output-model-type", output_model, *extra_args],
             force_exec_validation=True,
         )
     assert_output(
@@ -9716,7 +9775,9 @@ become one Enum with branch titles as member names when there are two or more an
 of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
 value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
 schema with one enum value is typed `Literal[...]` instead of a one-member Enum, except one with
-`nullable: true` and a value other than `null`, which keeps its enum and is read as written. The
+`nullable: true` and a value other than `null`, which keeps its enum and is read as written. An
+`enum` that admits the `const` beside it, such as `{"enum": ["a", "b"], "const": "a"}`, is read as
+that `const` the same way, without the enum class written beside it otherwise. The
 option reads `const` branches the same way, which without it merge into one Enum in those cases
 too. Instance data such as `default` and `examples`, extension values (`x-...` except
 `x-propertyNames`), links and servers stay as written, so a schema kept under an extension
@@ -9742,7 +9803,9 @@ def test_main_jsonschema_single_value_enum_as_const(output_file: Path) -> None:
     of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
     value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
     schema with one enum value is typed `Literal[...]` instead of a one-member Enum, except one with
-    `nullable: true` and a value other than `null`, which keeps its enum and is read as written. The
+    `nullable: true` and a value other than `null`, which keeps its enum and is read as written. An
+    `enum` that admits the `const` beside it, such as `{"enum": ["a", "b"], "const": "a"}`, is read as
+    that `const` the same way, without the enum class written beside it otherwise. The
     option reads `const` branches the same way, which without it merge into one Enum in those cases
     too. Instance data such as `default` and `examples`, extension values (`x-...` except
     `x-propertyNames`), links and servers stay as written, so a schema kept under an extension

@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       6, 2 operations
@@ -15,7 +15,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (6 options)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -90,6 +90,9 @@ Not recommended
       measured: Stripe API description: 17% of component titles changed in four months; class names
       from keys renamed 0.0% of locations
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
   datamodel-codegen
 
@@ -98,7 +101,7 @@ pyproject.toml: keys to add or change
   collapse-reuse-models = true
   enum-field-as-literal = "all"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   reuse-model = true
   treat-dot-as-module = false
   use-tag-as-union-variant-name = true

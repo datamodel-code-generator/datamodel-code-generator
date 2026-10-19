@@ -2259,22 +2259,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             member_count=len(obj.enum),
         )
 
-    @classmethod
     def _extract_const_enum_from_combined(  # noqa: PLR0912
-        cls, items: list[JsonSchemaObject | bool], parent_type: str | list[str] | None
+        self, items: list[JsonSchemaObject | bool], parent_type: str | list[str] | None
     ) -> tuple[list[Any], list[str], list[str], str | None, bool] | None:
         """Extract enum values from oneOf/anyOf const pattern.
 
         Const branches that --use-single-value-enum-as-const read merge into one Enum only when there are two or more
         and all hold values of one JSON type; otherwise each branch is typed as written, each const as its Literal and
-        null as None.
+        null as None. Without the option, a document's own read-as-const marker reads nothing.
         """
         enum_values: list[Any] = []
         varnames: list[str] = []
         descriptions: list[str] = []
         nullable = False
         inferred_type: str | None = None
-        read_as_const = True
+        read_as_const = self.use_single_value_enum_as_const
 
         for item in items:
             if item is False:
@@ -10531,9 +10530,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (
             merged_root.enum
             and not self.ignore_enum_constraints
+            and not self._reads_enum_as_const(merged_root)
             and not self.should_parse_enum_as_literal(merged_root, property_name=name)
         ):
-            return self.parse_enum(name, merged_root, path)
+            return self.parse_enum(name, self._definition_enum(merged_root), path)
         return (
             self.parse_array(name, merged_root, path)
             if merged_root.is_array
@@ -11682,7 +11682,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and not item.oneOf
             and not item.allOf
             and not item.ref
-            and not (item.enum and not self.ignore_enum_constraints)
+            and not (item.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(item))
         )
         return bool(is_primitive)
 
@@ -11863,6 +11863,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return self._parse_object_model_item(name, item, path, singular_name=singular_name)
             return self._parse_object_map(name, item, path, get_special_path("object", path))
         if item.enum and not self.ignore_enum_constraints:
+            if self._reads_enum_as_const(item):
+                return self._get_const_data_type(item.extras["const"])
             if self.should_parse_enum_as_literal(item, property_name=name):
                 return self._enum_value_type(item, self.parse_enum_as_literal(item))
             return self.parse_enum(name, item, get_special_path("enum", path), singular_name=singular_name)
@@ -12161,7 +12163,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         elif obj.is_object:
             data_types.append(self.parse_object(name, obj, get_special_path("object", path)))
         if obj.enum and not self.ignore_enum_constraints:
-            data_types.append(self.parse_enum(name, obj, get_special_path("enum", path)))
+            data_types.append(
+                self._get_const_data_type(obj.extras["const"])
+                if self._reads_enum_as_const(obj)
+                else self.parse_enum(name, obj, get_special_path("enum", path))
+            )
         constraints = self._get_array_constraints(obj, array_data_type)
         if non_array_types:
             constraints = {}
@@ -12338,6 +12344,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or (obj.is_object and not obj.properties and isinstance(obj.additionalProperties, JsonSchemaObject))
         ):
             data_type = self._parse_object_map(name, obj, path, path)
+        elif obj.enum and not self.ignore_enum_constraints and self._reads_enum_as_const(obj):
+            data_type = self._get_const_data_type(obj.extras["const"])
         elif obj.enum and not self.ignore_enum_constraints:
             if self.should_parse_enum_as_literal(obj, property_name=name):
                 data_type = self.parse_enum_as_literal(self._const_narrowed_enum(obj))
@@ -12596,6 +12604,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and self._enum_class_has_value_base(obj),
             ),
         ))
+
+    def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
+        """Return whether --use-single-value-enum-as-const reads an enum that admits the const beside it as that const.
+
+        The option marks each schema holding a const; without it, a document's own marker reads nothing. The enum is
+        read as written beside ``nullable: true`` and a const other than null, as the option keeps such a one-value
+        enum, since a const does not carry nullable, and when the const's type would admit other values
+        (``_const_type_is_exact``).
+        """
+        return (
+            self.use_single_value_enum_as_const
+            and obj.read_as_const
+            and "const" in obj.extras
+            and ((const := obj.extras["const"]) is None or obj.nullable is not True)
+            and self._const_type_is_exact(const)
+            and any(_json_literal_values_equal(const, value) for value in obj.enum)
+        )
+
+    def _definition_enum(self, obj: JsonSchemaObject) -> JsonSchemaObject:
+        """Return the enum schema a model built for the schema object itself holds.
+
+        The enum as written, or under --use-single-value-enum-as-const only the values its const admits, so derived
+        classes the const leaves unused are not written.
+        """
+        return self._const_narrowed_enum(obj) if self.use_single_value_enum_as_const else obj
 
     def _enum_value_type(self, obj: JsonSchemaObject, enum_type: DataType) -> DataType:
         """Return the type of a value whose enum a route wrote as the Literal ``enum_type``: the const's, if it narrows.
@@ -14037,9 +14070,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         elif (
             obj.enum
             and not self.ignore_enum_constraints
+            and not self._reads_enum_as_const(obj)
             and not self.should_parse_enum_as_literal(obj, property_name=name)
         ):
-            self.parse_enum(name, obj, path)
+            self.parse_enum(name, self._definition_enum(obj), path)
         else:
             self.parse_root_type(name, obj, path)
         self.parse_ref(obj, path)

@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   components                       4, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 0
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (6 options)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -145,11 +145,12 @@ Changes from the current configuration (current -> recommended - dotted-keys)
     Customer -> ManyOptionsCustomer   at $defs/Customer
 
 Notes
+  - The rules were calibrated on the 20261017 presets.
   - The trial compares at most 8 candidates, so 1 was left out; the options they would measure show
     no trial result.
 
 Command
-  datamodel-codegen --class-name ManyOptions --collapse-reuse-models --enum-field-as-literal all --input many_options.json --naming-strategy full-path --preset standard-py314-20261017 --reuse-model --target-python-version 3.14 --use-tag-as-union-variant-name
+  datamodel-codegen --class-name ManyOptions --collapse-reuse-models --enum-field-as-literal all --input many_options.json --naming-strategy full-path --preset standard-py314-20261019 --reuse-model --target-python-version 3.14 --use-tag-as-union-variant-name
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -158,7 +159,7 @@ pyproject.toml
   enum-field-as-literal = "all"
   input = "many_options.json"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   reuse-model = true
   target-python-version = "3.14"
   use-tag-as-union-variant-name = true

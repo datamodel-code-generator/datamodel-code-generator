@@ -1,8 +1,8 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  not analysed (directory input)
 
-Start from  --preset standard-py310-20261017
+Start from  --preset standard-py310-20261019
 
 Add  nothing on top of the preset
 
@@ -13,9 +13,9 @@ Notes
     AsyncAPI, and JSON Schema documents.
 
 Command
-  datamodel-codegen --input . --preset standard-py310-20261017
+  datamodel-codegen --input . --preset standard-py310-20261019
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "."
-  preset = "standard-py310-20261017"
+  preset = "standard-py310-20261019"

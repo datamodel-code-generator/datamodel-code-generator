@@ -73,6 +73,7 @@ unicode-profile	main/recommend_options/project_profile_unicode.txt
 asyncapi	main/recommend_options/asyncapi.txt
 asyncapi-v3	main/recommend_options/asyncapi_v3.txt
 draft-07-pattern-map	main/recommend_options/settings.txt
+enums-read-as-their-const	main/recommend_options/enum_const.txt
 explicit-options	main/recommend_options/api_explicit_options.txt
 json	main/recommend_options/api_json.txt
 jsonschema	main/recommend_options/service_config.txt

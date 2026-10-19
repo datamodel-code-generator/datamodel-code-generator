@@ -3,7 +3,7 @@
   "format": "json",
   "kind": "recommend-options",
   "mode": "quick",
-  "rules_revision": "2026-10-18",
+  "rules_revision": "2026-10-19",
   "calibrated_presets": "20261017",
   "input": {
     "source": "file",
@@ -18,7 +18,7 @@
   "signals": {},
   "facts": {},
   "baseline": {
-    "preset": "standard-py314-20261017",
+    "preset": "standard-py314-20261019",
     "family": "standard",
     "configured": false,
     "covers": []
@@ -37,5 +37,5 @@
   "arguments": [],
   "config": null,
   "config_complete": true,
-  "content": "Option recommendations (experimental; quick mode; rules 2026-10-18)\n\nSchema  not analysed (openapi input)\n\nNotes\n  - Nothing is recommended: this is a Swagger 2.0 document, and with --input-file-type openapi\n    generation finds no models in it. Generation reads Swagger 2.0 definitions with\n    --input-file-type jsonschema; run the recommendation with it.\n"
+  "content": "Option recommendations (experimental; quick mode; rules 2026-10-19)\n\nSchema  not analysed (openapi input)\n\nNotes\n  - Nothing is recommended: this is a Swagger 2.0 document, and with --input-file-type openapi\n    generation finds no models in it. Generation reads Swagger 2.0 definitions with\n    --input-file-type jsonschema; run the recommendation with it.\n"
 }

@@ -1,8 +1,8 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  not analysed (json input)
 
-Start from  --preset standard-py310-20261017
+Start from  --preset standard-py310-20261019
 
 Add  nothing on top of the preset
 
@@ -23,11 +23,11 @@ Notes
     OpenAPI, AsyncAPI, and JSON Schema documents.
 
 Command
-  datamodel-codegen --input data.json --input-file-type json --preset standard-py310-20261017 --no-use-annotated
+  datamodel-codegen --input data.json --input-file-type json --preset standard-py310-20261019 --no-use-annotated
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "data.json"
   input-file-type = "json"
-  preset = "standard-py310-20261017"
+  preset = "standard-py310-20261019"
   use-annotated = false

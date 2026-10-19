@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       1, 0 operations
@@ -15,7 +15,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (3 options)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -41,12 +41,13 @@ Add (3 options)
       With1
 
 Notes
+  - The rules were calibrated on the 20261017 presets.
   - Candidates were not compared: the input and --diff-against are estimated at 8192 models, more
     than the 3000 compared by default. Run --recommend-options full to generate each candidate
     configuration in memory and compare their class names.
 
 Command
-  datamodel-codegen --collapse-reuse-models --input large.yaml --naming-strategy full-path --output models.py --preset standard-py314-20261017 --reuse-model --target-python-version 3.14
+  datamodel-codegen --collapse-reuse-models --input large.yaml --naming-strategy full-path --output models.py --preset standard-py314-20261019 --reuse-model --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -54,6 +55,6 @@ pyproject.toml
   input = "large.yaml"
   naming-strategy = "full-path"
   output = "models.py"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   reuse-model = true
   target-python-version = "3.14"

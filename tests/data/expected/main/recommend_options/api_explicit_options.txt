@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       6, 2 operations
@@ -15,7 +15,7 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (5 options)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -75,8 +75,11 @@ Your configuration
   --use-title-as-name is set to true; the rules suggest false   [titles.keys-when-titles-collide]
   --enum-field-as-literal is set to "one"; the rules suggest "all"   [enums.inline-value-sets-as-literal]
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --collapse-reuse-models --enum-field-as-literal one --input api.yaml --naming-strategy full-path --preset standard-py314-20261017 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name --use-title-as-name
+  datamodel-codegen --collapse-reuse-models --enum-field-as-literal one --input api.yaml --naming-strategy full-path --preset standard-py314-20261019 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name --use-title-as-name
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -84,7 +87,7 @@ pyproject.toml
   enum-field-as-literal = "one"
   input = "api.yaml"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   reuse-model = true
   target-python-version = "3.14"
   treat-dot-as-module = false

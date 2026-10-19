@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       6, 1 operations
@@ -15,7 +15,8 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
+  already sets --use-single-value-enum-as-const   [enums.read-as-their-const]
 
 Add (2 options)
   --use-title-as-name   [titles.names-from-unique-titles]
@@ -36,13 +37,16 @@ Add (2 options)
       measured: with full-path on the GitHub and OpenAI descriptions: no change in problem names;
       schemas without tagged or key branches: no change
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --input union_edges.yaml --preset standard-py314-20261017 --target-python-version 3.14 --use-tag-as-union-variant-name --use-title-as-name
+  datamodel-codegen --input union_edges.yaml --preset standard-py314-20261019 --target-python-version 3.14 --use-tag-as-union-variant-name --use-title-as-name
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "union_edges.yaml"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"
   use-tag-as-union-variant-name = true
   use-title-as-name = true

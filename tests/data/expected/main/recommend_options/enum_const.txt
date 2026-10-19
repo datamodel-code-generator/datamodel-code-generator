@@ -1,0 +1,39 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
+  components                       1, 0 operations
+  inline objects / enums           0 / 3, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           1 oneOf/anyOf, 0 with a discriminator, 2 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+
+Start from  --preset standard-py314-20261019
+  already sets --use-single-value-enum-as-const   [enums.read-as-their-const]
+
+Add (1 option)
+  --use-title-as-name   [titles.names-from-unique-titles]
+      Inline union variants carry titles that no other schema uses (titled variants: 2, e.g. none).
+      Titles name them after what they are, instead of their parent property and a number.
+      measured: Train Travel API: BookingPayment.source variants became Card and BankAccount instead
+      of Source and Source1
+
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
+Command
+  datamodel-codegen --input enum_const.yaml --preset standard-py314-20261019 --target-python-version 3.14 --use-title-as-name
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "enum_const.yaml"
+  preset = "standard-py314-20261019"
+  target-python-version = "3.14"
+  use-title-as-name = true

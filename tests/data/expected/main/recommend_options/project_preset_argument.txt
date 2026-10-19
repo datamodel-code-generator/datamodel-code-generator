@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   components                       6, 2 operations
@@ -91,7 +91,7 @@ Not recommended
       from keys renamed 0.0% of locations
 
 Your configuration
-  --preset standard-py314-20261015: a newer preset is available, standard-py314-20261017
+  --preset standard-py314-20261015: a newer preset is available, standard-py314-20261019
 
 Notes
   - The rules were calibrated on the 20261017 presets.

@@ -2629,7 +2629,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
     <!-- fmt: off -->
 
     ```
-    Option recommendations (experimental; full mode; rules 2026-10-18)
+    Option recommendations (experimental; full mode; rules 2026-10-19)
 
     Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
       components                       6, 2 operations
@@ -2646,7 +2646,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
       integer/number/boolean schemas   5
 
-    Start from  --preset standard-py310-20261017
+    Start from  --preset standard-py310-20261019
 
     Add (5 options)
       --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
@@ -2772,9 +2772,10 @@ reported when the rules suggest another value. Add `--output-format json` for a 
     Notes
       - Target Python is not set: the recommendation assumes 3.10, the default. Set
         --target-python-version to start from the preset of the Python version the project runs.
+      - The rules were calibrated on the 20261017 presets.
 
     Command
-      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261017 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
+      datamodel-codegen --collapse-reuse-models --enum-field-as-literal all --input api.yaml --input-file-type openapi --preset standard-py310-20261019 --reuse-model --no-treat-dot-as-module --use-tag-as-union-variant-name
 
     pyproject.toml
       [tool.datamodel-codegen]
@@ -2782,7 +2783,7 @@ reported when the rules suggest another value. Add `--output-format json` for a 
       enum-field-as-literal = "all"
       input = "api.yaml"
       input-file-type = "openapi"
-      preset = "standard-py310-20261017"
+      preset = "standard-py310-20261019"
       reuse-model = true
       treat-dot-as-module = false
       use-tag-as-union-variant-name = true

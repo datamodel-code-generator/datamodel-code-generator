@@ -1,7 +1,7 @@
 [tool.datamodel-codegen]
 input = "api.yaml"
 input-file-type = "openapi"
-preset = "standard-py314-20261017"
+preset = "standard-py314-20261019"
 naming-strategy = "full-path"
 enum-field-as-literal = "all"
 reuse-model = true

@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   components                       3, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   integer/number/boolean schemas   6
   root schema                      object model 1, title words 4
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (2 options)
   --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
@@ -89,13 +89,16 @@ Changes from the current configuration (current -> recommended)
   1 of 6 classes matched by schema location renamed (0 only renumbered), 6 removed, 0 added, e.g.
     ServiceConfigurationFileSchema -> ServiceConfig   at (root)
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   class-name = "ServiceConfig"
   enum-field-as-literal = "all"
   input = "service-config.json"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

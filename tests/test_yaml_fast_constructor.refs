@@ -227,6 +227,7 @@ openapi/dynamic_ref_external_generic/api.yaml	yaml_fast_constructor/parity.txt
 openapi/empty_dict_default.yaml	yaml_fast_constructor/parity.txt
 openapi/empty_list_default.yaml	yaml_fast_constructor/parity.txt
 openapi/enum_builtin_conflict.yaml	yaml_fast_constructor/parity.txt
+openapi/enum_const_nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/enum_const_positions.yaml	yaml_fast_constructor/parity.txt
 openapi/enum_const_unsatisfiable.yaml	yaml_fast_constructor/parity.txt
 openapi/enum_models.yaml	yaml_fast_constructor/parity.txt

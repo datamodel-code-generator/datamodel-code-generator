@@ -1140,6 +1140,32 @@ def test_standard_preset_enum_shapes(output_model_type: str, date: str, expected
     )
 
 
+@pytest.mark.skipif(sys.version_info < (3, 12), reason="the 3.14 preset writes type statements")
+@pytest.mark.parametrize("date", ["20261017", "20261019"])
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_standard_preset_enums_read_as_their_const(output_model_type: str, date: str, output_file: Path) -> None:
+    """The 20261019 presets read an enum of one value, and an enum that admits its const, as that const.
+
+    The 20261017 presets keep each enum class and warn where a value typed by its enum accepts the other values.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_const_positions.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--preset", f"standard-py314-{date}", "--output-model-type", output_model_type],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
 @freeze_time(TIMESTAMP)
 def test_standard_preset_target_py310_does_not_force_specialized_enum(output_file: Path) -> None:
     """The standard preset does not force StrEnum when target Python is 3.10."""
@@ -6588,6 +6614,7 @@ def test_all_exports_includes_generate_config() -> None:
             ("20260909", ("310", "311", "312", "313", "314")),
             ("20261015", ("310", "311", "312", "313", "314", "315")),
             ("20261017", ("310", "311", "312", "313", "314", "315")),
+            ("20261019", ("310", "311", "312", "313", "314", "315")),
         )
         for family in ("standard", "practical")
         for target in targets

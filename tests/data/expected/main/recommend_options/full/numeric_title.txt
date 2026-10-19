@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   components                       0, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 1
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (1 option)
   --class-name NumericTitle   [root.class-name-for-root-object]
@@ -37,12 +37,15 @@ Trial  3 candidates generated in memory without formatting; nothing written
   current: the configuration as set, without the preset; never selected
   unconstrained: fields that dcg warns it generates without some of their constraints
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --class-name NumericTitle --input numeric_title.json --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --class-name NumericTitle --input numeric_title.json --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   class-name = "NumericTitle"
   input = "numeric_title.json"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

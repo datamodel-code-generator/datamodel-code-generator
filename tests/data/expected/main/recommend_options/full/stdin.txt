@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   components                       2, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   5
   root schema                      object model 1, title words 0
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (1 option)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -62,13 +62,16 @@ Changes from the current configuration (current -> recommended)
     Dimensions1 -> VariantDimensions   at $defs/Variant > dimensions
     Price -> ModelPrice   at (root) > price > oneOf 0
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --formatters builtin --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --formatters builtin --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   formatters = ["builtin"]
   input-file-type = "jsonschema"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

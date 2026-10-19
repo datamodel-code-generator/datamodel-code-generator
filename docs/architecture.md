@@ -270,13 +270,16 @@ all values of the `enum` beside it leaves every enum class as written; `parse_en
 builds (`_note_const_narrowing`), the end of L1 marks every value that names that model, and L5
 `__type_const_narrowed_values` types those values. A Literal enum route (`_enum_value_type`), a `propertyNames` key and
 a Literal root type keep only the admitted values (`_const_narrowed_enum`); a const equal to none of the values only
-warns. An object map, an object without `properties` whose keys and values `patternProperties`, `propertyNames` or
-`additionalProperties` type, is built by one builder at every position (`_parse_object_map`): one dict whose value type
-is the union of the value types of its key classes, never a union of dicts. The dict itself admits the null of a type
-array of object and null, or of `nullable: true` under `--strict-nullable` as `_get_data_type` does for other types, so
-property counts stay on it, and the other types of a type array join it in a union. A `nullable` that
-`parse_combined_schema` copies from an anyOf or oneOf parent into a branch is marked on the branch, and the dict of that
-branch leaves it to the union. Names come from `ModelResolver.add`.
+warns. Under `--use-single-value-enum-as-const` each enum route reads an enum that admits the const beside it as that
+const, without an enum class (`_reads_enum_as_const`); like the L0 rewrite, it keeps an enum beside `nullable: true` and
+a const other than null, and a model built for the schema object itself then holds only the admitted values
+(`_definition_enum`). An object map, an object without `properties` whose keys and values `patternProperties`,
+`propertyNames` or `additionalProperties` type, is built by one builder at every position (`_parse_object_map`): one
+dict whose value type is the union of the value types of its key classes, never a union of dicts. The dict itself admits
+the null of a type array of object and null, or of `nullable: true` under `--strict-nullable` as `_get_data_type` does
+for other types, so property counts stay on it, and the other types of a type array join it in a union. A `nullable`
+that `parse_combined_schema` copies from an anyOf or oneOf parent into a branch is marked on the branch, and the dict of
+that branch leaves it to the union. Names come from `ModelResolver.add`.
 Each model records the location of the schema object it is built from on its `Reference` (`_record_schema_object`).
 Every use of a reference gets a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base
 classes; inherited fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only

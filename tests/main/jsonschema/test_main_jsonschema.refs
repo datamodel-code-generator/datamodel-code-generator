@@ -6219,6 +6219,8 @@ msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_non_literal[msgspec.St
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_non_literal[msgspec.Struct].warnings.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_non_literal[pydantic_v2.BaseModel].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_non_literal[pydantic_v2.BaseModel].warnings.txt
+single-value-enum-as-const	main/jsonschema/main_jsonschema/enum_const_non_literal[single-value-enum-as-const].py
+single-value-enum-as-const	main/jsonschema/main_jsonschema/enum_const_non_literal[single-value-enum-as-const].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_enum_const_positions]
 default-dataclasses	main/jsonschema/main_jsonschema/enum_const_positions[default-dataclasses].py
 default-dataclasses	main/jsonschema/main_jsonschema/enum_const_positions[default-dataclasses].warnings.txt
@@ -6238,6 +6240,10 @@ literal-one-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[lit
 literal-one-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[literal-one-pydantic-v2].warnings.txt	= main/jsonschema/main_jsonschema/enum_const_positions[default-dataclasses].warnings.txt
 py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[py311-pydantic-v2].py
 py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[py311-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+single-value-enum-as-const-msgspec	main/jsonschema/main_jsonschema/enum_const_positions[single-value-enum-as-const-msgspec].py
+single-value-enum-as-const-msgspec	main/jsonschema/main_jsonschema/enum_const_positions[single-value-enum-as-const-msgspec].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+single-value-enum-as-const-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[single-value-enum-as-const-pydantic-v2].py
+single-value-enum-as-const-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[single-value-enum-as-const-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-enum-dataclasses	main/jsonschema/main_jsonschema/enum_const_positions[subclass-enum-dataclasses].py
 subclass-enum-dataclasses	main/jsonschema/main_jsonschema/enum_const_positions[subclass-enum-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-enum-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[subclass-enum-pydantic-v2].py
@@ -6247,6 +6253,8 @@ msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_type_list[msgspec.Stru
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_type_list[msgspec.Struct].warnings.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_type_list[pydantic_v2.BaseModel].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_type_list[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+single-value-enum-as-const	main/jsonschema/main_jsonschema/enum_const_type_list[single-value-enum-as-const].py
+single-value-enum-as-const	main/jsonschema/main_jsonschema/enum_const_type_list[single-value-enum-as-const].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_enum_const_unsatisfiable]
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.Struct].py
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_unsatisfiable[msgspec.Struct].warnings.txt
@@ -6809,6 +6817,9 @@ target-unset	main/jsonschema/property_names_ref_enum.py
 	main/jsonschema/property_names_type_non_string_additional_properties_schema_with_properties.py
 [test_main_jsonschema_pydantic_v2_valid_field_names_fast_path]
 	main/jsonschema/valid_field_names.py
+[test_main_jsonschema_read_as_const_marker_in_document]
+	main/jsonschema/main_jsonschema/read_as_const_marker_in_document.py
+	main/jsonschema/main_jsonschema/read_as_const_marker_in_document.warnings.txt
 [test_main_jsonschema_read_only_write_only_compositions]
 	main/jsonschema/read_only_write_only_compositions.py
 [test_main_jsonschema_recursive_array]
@@ -6978,6 +6989,9 @@ option-default	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_f
 option-strict-nullable	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[option-strict-nullable].py
 without-option-default	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[without-option-default].py
 without-option-strict-nullable	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[without-option-strict-nullable].py
+[test_main_jsonschema_single_value_enum_as_const_titles]
+msgspec.Struct	main/jsonschema/main_jsonschema/single_value_enum_as_const_titles[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/single_value_enum_as_const_titles[pydantic_v2.BaseModel].py
 [test_main_jsonschema_special_enum]
 	main/jsonschema/special_enum.py
 [test_main_jsonschema_special_enum_empty_enum_field_name]

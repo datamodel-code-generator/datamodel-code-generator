@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
   components                       1, 0 operations
@@ -15,7 +15,7 @@ Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
   formats                          6 (uuid x1, decimal x1, int32 x1, int64 x1), decimal 1; int32/int64 2, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add  nothing on top of the preset
 
@@ -47,11 +47,14 @@ Optional (policy; not in the command)
       rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
       rejected
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --input validation.yaml --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --input validation.yaml --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "validation.yaml"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

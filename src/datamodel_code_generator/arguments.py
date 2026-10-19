@@ -785,11 +785,11 @@ typing_options.add_argument(
 )
 typing_options.add_argument(
     "--use-single-value-enum-as-const",
-    help="Treat `enum` with a single value as `const` with that value, which JSON Schema defines as equal: "
-    'oneOf/anyOf branches such as {"type": "string", "enum": ["low"]} merge into one Enum when there are two or more '
-    "and all hold values of one JSON type, otherwise each branch is typed as written, and a schema with one enum "
-    "value is typed Literal[...] instead of a one-member Enum, except one with `nullable: true` and a value other "
-    "than null, which is read as written",
+    help="Treat `enum` with a single value as `const` with that value, which JSON Schema defines as equal, and an "
+    "`enum` that admits the `const` beside it as that `const`: oneOf/anyOf branches such as "
+    '{"type": "string", "enum": ["low"]} merge into one Enum when there are two or more and all hold values of one '
+    "JSON type, otherwise each branch is typed as written, and such a schema is typed Literal[...] instead of an "
+    "Enum, except one with `nullable: true` and a value other than null, which is read as written",
     action="store_true",
     default=None,
 )

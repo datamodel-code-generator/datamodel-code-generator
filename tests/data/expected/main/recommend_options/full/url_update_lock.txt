@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   components                       0, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 1
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add  nothing on top of the preset
 
@@ -46,13 +46,14 @@ Changes from the current configuration (current -> preset)
 
 Notes
   - --url is repeated without its user information, query, and fragment; add them again.
+  - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --preset standard-py314-20261017 --target-python-version 3.14 --update-lock --url https://api.example.com/specs/catalog.json
+  datamodel-codegen --preset standard-py314-20261019 --target-python-version 3.14 --update-lock --url https://api.example.com/specs/catalog.json
 
 pyproject.toml
   [tool.datamodel-codegen]
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"
   update-lock = true
   url = "https://api.example.com/specs/catalog.json"

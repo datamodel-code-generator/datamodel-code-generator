@@ -1,6 +1,6 @@
 {
   "format_version": 1,
-  "rules_revision": "2026-10-18",
+  "rules_revision": "2026-10-19",
   "calibrated_presets": "20261017",
   "families": [
     "standard",
@@ -163,6 +163,34 @@
         "GitHub REST API description: 1872 -> 1538 types, names over 40 characters 370 -> 227",
         "Stripe API description: problem names 348 -> 158",
         "SchemaStore workflow schema: Type1 to Type19 disappear"
+      ]
+    },
+    {
+      "id": "enums.read-as-their-const",
+      "decision": "enum-const-reading",
+      "when": {
+        "any": [
+          {
+            "signal": "single_value_enums",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "signal": "enums_beside_const",
+            "op": ">=",
+            "value": 1
+          }
+        ]
+      },
+      "set": {
+        "use_single_value_enum_as_const": true
+      },
+      "reason": "The schema has enums of one value or enums beside a const (one-value enums: {single_value_enums}; enums beside a const: {enums_beside_const}), which JSON Schema reads as that const. Read so, a value is typed as the const's Literal instead of an enum class that lists values the schema excludes, and one-value enum branches of a oneOf or anyOf merge into one enum.",
+      "evidence": [
+        "Discord API description: fields whose one-value enum narrows a shared enum are typed as that value (entity_type: Literal[3] instead of GuildScheduledEventEntityTypes)",
+        "OpenAI API description: two unions of one-value enum branches became enum classes (Target, Reason5) and four numbered names shifted (Model14 -> Model15); 2894 -> 2897 types",
+        "GitHub REST API description: two unions of one-value enum branches became enum classes (BudgetType, BudgetType1); 3263 -> 3265 types",
+        "SchemaStore workflow schema: an enum class no field uses disappears (Type20); the 15 other corpus schemas are unchanged"
       ]
     },
     {
@@ -1169,8 +1197,9 @@
       "reason": "Documentation style chosen by the practical presets; the recommendation starts from a preset."
     },
     "use_single_value_enum_as_const": {
-      "not_recommended": "runtime-behaviour",
-      "reason": "Never improved class names on the measured schemas."
+      "rules": [
+        "enums.read-as-their-const"
+      ]
     },
     "use_specialized_enum": {
       "not_recommended": "preset",

@@ -1,4 +1,4 @@
-Option recommendations (experimental; full mode; rules 2026-10-18)
+Option recommendations (experimental; full mode; rules 2026-10-19)
 
 Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
   components                       6, 0 operations
@@ -15,7 +15,7 @@ Schema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)
   formats                          5 (time x5), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add  nothing on top of the preset
 
@@ -57,12 +57,15 @@ Trial  3 candidates generated in memory without formatting; nothing written
 Changes from the current configuration (current -> preset)
   0 of 7 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --input schedules.yaml --output models --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --input schedules.yaml --output models --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "schedules.yaml"
   output = "models"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

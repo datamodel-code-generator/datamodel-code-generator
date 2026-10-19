@@ -377,7 +377,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --output OUTPUT       Output file (default: stdout)
   --output-model-type {pydantic_v2.BaseModel,pydantic_v2.dataclass,dataclasses.dataclass,typing.TypedDict,msgspec.Struct}
                         Output model type (default: pydantic_v2.BaseModel)
-  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017}
+  --preset {standard-py310-20260619,standard-py311-20260619,standard-py312-20260619,standard-py313-20260619,standard-py314-20260619,practical-py310-20260619,practical-py311-20260619,practical-py312-20260619,practical-py313-20260619,practical-py314-20260619,standard-py310-20260826,standard-py311-20260826,standard-py312-20260826,standard-py313-20260826,standard-py314-20260826,practical-py310-20260826,practical-py311-20260826,practical-py312-20260826,practical-py313-20260826,practical-py314-20260826,standard-py310-20260909,standard-py311-20260909,standard-py312-20260909,standard-py313-20260909,standard-py314-20260909,practical-py310-20260909,practical-py311-20260909,practical-py312-20260909,practical-py313-20260909,practical-py314-20260909,standard-py310-20261015,standard-py311-20261015,standard-py312-20261015,standard-py313-20261015,standard-py314-20261015,standard-py315-20261015,practical-py310-20261015,practical-py311-20261015,practical-py312-20261015,practical-py313-20261015,practical-py314-20261015,practical-py315-20261015,standard-py310-20261017,standard-py311-20261017,standard-py312-20261017,standard-py313-20261017,standard-py314-20261017,standard-py315-20261017,practical-py310-20261017,practical-py311-20261017,practical-py312-20261017,practical-py313-20261017,practical-py314-20261017,practical-py315-20261017,standard-py310-20261019,standard-py311-20261019,standard-py312-20261019,standard-py313-20261019,standard-py314-20261019,standard-py315-20261019,practical-py310-20261019,practical-py311-20261019,practical-py312-20261019,practical-py313-20261019,practical-py314-20261019,practical-py315-20261019}
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
@@ -506,14 +506,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         have subtypes (Pydantic v2 only)
   --use-single-value-enum-as-const
                         Treat `enum` with a single value as `const` with that
-                        value, which JSON Schema defines as equal: oneOf/anyOf
-                        branches such as {"type": "string", "enum": ["low"]}
-                        merge into one Enum when there are two or more and all
-                        hold values of one JSON type, otherwise each branch is
-                        typed as written, and a schema with one enum value is
-                        typed Literal[...] instead of a one-member Enum,
-                        except one with `nullable: true` and a value other
-                        than null, which is read as written
+                        value, which JSON Schema defines as equal, and an
+                        `enum` that admits the `const` beside it as that
+                        `const`: oneOf/anyOf branches such as {"type":
+                        "string", "enum": ["low"]} merge into one Enum when
+                        there are two or more and all hold values of one JSON
+                        type, otherwise each branch is typed as written, and
+                        such a schema is typed Literal[...] instead of an
+                        Enum, except one with `nullable: true` and a value
+                        other than null, which is read as written
   --use-specialized-enum, --no-use-specialized-enum
                         Use specialized Enum class (StrEnum, IntEnum).
                         Requires --target-python-version 3.11+

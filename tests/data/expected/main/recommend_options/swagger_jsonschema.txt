@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  Swagger 2.0
   components                       2, 0 operations
@@ -16,7 +16,7 @@ Schema  Swagger 2.0
   integer/number/boolean schemas   0
   root schema                      object model 0, title words 0
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (1 option)
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
@@ -31,13 +31,16 @@ Add (1 option)
       measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
       lost
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --input swagger.yaml --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --input swagger.yaml --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "swagger.yaml"
   input-file-type = "jsonschema"
   naming-strategy = "full-path"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

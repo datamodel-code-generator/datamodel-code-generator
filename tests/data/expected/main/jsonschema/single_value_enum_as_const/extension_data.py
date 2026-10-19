@@ -10,10 +10,6 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
-class Both(Enum):
-    same = 'same'
-
-
 class Level(Enum):
     low = 'low'
     high = 'high'

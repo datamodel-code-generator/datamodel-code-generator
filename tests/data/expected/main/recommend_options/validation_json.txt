@@ -3,7 +3,7 @@
   "format": "json",
   "kind": "recommend-options",
   "mode": "quick",
-  "rules_revision": "2026-10-18",
+  "rules_revision": "2026-10-19",
   "calibrated_presets": "20261017",
   "input": {
     "source": "file",
@@ -34,6 +34,7 @@
     "duplicate_inline_enums": 0,
     "duplicate_inline_objects": 0,
     "duplicate_inline_shapes": 0,
+    "enums_beside_const": 0,
     "estimated_models": 1,
     "formats": 6,
     "inline_enums": 0,
@@ -79,7 +80,7 @@
     "format_examples": "uuid x1, decimal x1, int32 x1, int64 x1"
   },
   "baseline": {
-    "preset": "standard-py314-20261017",
+    "preset": "standard-py314-20261019",
     "family": "standard",
     "configured": false,
     "covers": []
@@ -138,12 +139,14 @@
   "not_recommended": [],
   "disagreements": [],
   "trial": null,
-  "notes": [],
+  "notes": [
+    "The rules were calibrated on the 20261017 presets."
+  ],
   "arguments": [
     "--input",
     "validation.yaml",
     "--preset",
-    "standard-py314-20261017",
+    "standard-py314-20261019",
     "--target-python-version",
     "3.14"
   ],
@@ -151,11 +154,11 @@
     "tool": {
       "datamodel-codegen": {
         "input": "validation.yaml",
-        "preset": "standard-py314-20261017",
+        "preset": "standard-py314-20261019",
         "target-python-version": "3.14"
       }
     }
   },
   "config_complete": true,
-  "content": "Option recommendations (experimental; quick mode; rules 2026-10-18)\n\nSchema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)\n  components                       1, 0 operations\n  inline objects / enums           0 / 0, nesting depth 0\n  shared property names            0 (none)\n  inline names = component names   0\n  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets\n  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key\n  inline titles                    0 objects, most repeated 0 (none)\n  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants\n  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent\n  component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces\n  constraint keywords              uniqueItems 1, patternProperties 0 (0 beyond a typed map), multipleOf 2, OpenAPI 3.0 nullable 1, boolean exclusive bounds 1\n  formats                          6 (uuid x1, decimal x1, int32 x1, int64 x1), decimal 1; int32/int64 2, ranges not enforced\n  integer/number/boolean schemas   5\n\nStart from  --preset standard-py314-20261017\n\nAdd  nothing on top of the preset\n\nOptional (validation; not in the command)\n  --generate-schema-validators   [validation.check-unique-items-and-pattern-properties]\n      The models leave out checks the schema declares (uniqueItems: 1; patternProperties that a\n      typed map cannot express, beside declared properties, with several patterns, or with other\n      keys allowed: 0 of 0): duplicate items pass, and those properties are checked wrongly or not\n      at all. The experimental schema validators check both when a model validates.\n      caveat: Experimental: on some schemas the generated validators reject valid data or fail to\n      import; validate sample data with the generated models before adopting it.\n      measured: SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked\n      against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with\n      x- extension keys rejected), 0 with the validators\n      measured: Six patternProperties shapes a typed map cannot express (other keys allowed, several\n      patterns, declared properties beside them), 22 documents: 7 judged wrongly by the preset, 0\n      with the validators; one pattern on a closed object without declared properties is exact\n      without them\n\nOptional (policy; not in the command)\n  --strict-types int float bool   [policy.strict-scalar-types]\n      Pydantic validates in lax mode, which coerces input into the 5 integer, number and boolean\n      schemas: it accepts the string \"5\" and true as integers, \"1.5\" as a number, and \"true\" or 1 as\n      booleans. Strict types reject such input. Whether to accept it depends on the project's\n      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an\n      integer, so leave int out to accept it.\n      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them\n      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one\n      rejected (5.0 as an integer); with float bool, 2 accepted (\"5\" and true as integers) and none\n      rejected\n\nCommand\n  datamodel-codegen --input validation.yaml --preset standard-py314-20261017 --target-python-version 3.14\n\npyproject.toml\n  [tool.datamodel-codegen]\n  input = \"validation.yaml\"\n  preset = \"standard-py314-20261017\"\n  target-python-version = \"3.14\"\n"
+  "content": "Option recommendations (experimental; quick mode; rules 2026-10-19)\n\nSchema  OpenAPI 3.0.3 (OpenAPI scopes: schemas)\n  components                       1, 0 operations\n  inline objects / enums           0 / 0, nesting depth 0\n  shared property names            0 (none)\n  inline names = component names   0\n  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets\n  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key\n  inline titles                    0 objects, most repeated 0 (none)\n  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants\n  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent\n  component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces\n  constraint keywords              uniqueItems 1, patternProperties 0 (0 beyond a typed map), multipleOf 2, OpenAPI 3.0 nullable 1, boolean exclusive bounds 1\n  formats                          6 (uuid x1, decimal x1, int32 x1, int64 x1), decimal 1; int32/int64 2, ranges not enforced\n  integer/number/boolean schemas   5\n\nStart from  --preset standard-py314-20261019\n\nAdd  nothing on top of the preset\n\nOptional (validation; not in the command)\n  --generate-schema-validators   [validation.check-unique-items-and-pattern-properties]\n      The models leave out checks the schema declares (uniqueItems: 1; patternProperties that a\n      typed map cannot express, beside declared properties, with several patterns, or with other\n      keys allowed: 0 of 0): duplicate items pass, and those properties are checked wrongly or not\n      at all. The experimental schema validators check both when a model validates.\n      caveat: Experimental: on some schemas the generated validators reject valid data or fail to\n      import; validate sample data with the generated models before adopting it.\n      measured: SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked\n      against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with\n      x- extension keys rejected), 0 with the validators\n      measured: Six patternProperties shapes a typed map cannot express (other keys allowed, several\n      patterns, declared properties beside them), 22 documents: 7 judged wrongly by the preset, 0\n      with the validators; one pattern on a closed object without declared properties is exact\n      without them\n\nOptional (policy; not in the command)\n  --strict-types int float bool   [policy.strict-scalar-types]\n      Pydantic validates in lax mode, which coerces input into the 5 integer, number and boolean\n      schemas: it accepts the string \"5\" and true as integers, \"1.5\" as a number, and \"true\" or 1 as\n      booleans. Strict types reject such input. Whether to accept it depends on the project's\n      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an\n      integer, so leave int out to accept it.\n      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them\n      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one\n      rejected (5.0 as an integer); with float bool, 2 accepted (\"5\" and true as integers) and none\n      rejected\n\nNotes\n  - The rules were calibrated on the 20261017 presets.\n\nCommand\n  datamodel-codegen --input validation.yaml --preset standard-py314-20261019 --target-python-version 3.14\n\npyproject.toml\n  [tool.datamodel-codegen]\n  input = \"validation.yaml\"\n  preset = \"standard-py314-20261019\"\n  target-python-version = \"3.14\"\n"
 }

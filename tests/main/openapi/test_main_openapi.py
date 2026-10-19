@@ -1201,11 +1201,20 @@ def test_main_openapi_nullable_enum_alias_ignored_by_pydantic(extra_args: list[s
     )
 
 
-@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
-def test_main_openapi_enum_const_positions(output_model: str, output_file: Path) -> None:
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+        pytest.param("msgspec.Struct", ["--use-single-value-enum-as-const"], id="single-value-enum-as-const"),
+    ],
+)
+def test_main_openapi_enum_const_positions(output_model: str, extra_args: list[str], output_file: Path) -> None:
     """Keep the enum classes of request and response bodies and of components as written beside a narrowing const.
 
     A property is typed as the const where the output writes const as a Literal, and an item keeps its plain enum.
+    Under --use-single-value-enum-as-const each of them is the const, and a body gets no model of its own, as a body
+    written as a const.
     """
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
@@ -1213,7 +1222,31 @@ def test_main_openapi_enum_const_positions(output_model: str, output_file: Path)
             input_path=OPEN_API_DATA_PATH / "enum_const_positions.yaml",
             output_path=output_file,
             input_file_type="openapi",
-            extra_args=["--output-model-type", output_model, "--openapi-scopes", "schemas", "paths"],
+            extra_args=["--output-model-type", output_model, "--openapi-scopes", "schemas", "paths", *extra_args],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_openapi_single_value_enum_as_const_nullable_beside_const(output_model: str, output_file: Path) -> None:
+    """Read an enum beside nullable true and a const as written under --use-single-value-enum-as-const.
+
+    A const does not carry nullable, so such an enum keeps its class, as a nullable one-value enum does.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "enum_const_nullable.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=["--output-model-type", output_model, "--use-single-value-enum-as-const", "--strict-nullable"],
             force_exec_validation=True,
         )
     assert_output(

@@ -201,6 +201,7 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         ),
         pytest.param("deployment.json", [], "deployment.txt", id="pattern-properties"),
         pytest.param("settings.json", [], "settings.txt", id="draft-07-pattern-map"),
+        pytest.param("enum_const.yaml", [], "enum_const.txt", id="enums-read-as-their-const"),
     ],
 )
 def test_recommend_options_for_schemas(
@@ -689,7 +690,7 @@ def test_recommender_rules_match_the_option_registry(tmp_path: Path, capsys: pyt
         ),
         pytest.param(
             [INPUT_PATH / "api.yaml"],
-            ["--input", "api.yaml", "--preset", "standard-py314-20261017"],
+            ["--input", "api.yaml", "--preset", "standard-py314-20261019"],
             ("full",),
             "full/api_preset_argument.txt",
             id="preset-argument",

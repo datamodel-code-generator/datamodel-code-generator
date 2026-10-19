@@ -4239,7 +4239,9 @@ become one Enum with branch titles as member names when there are two or more an
 of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
 value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
 schema with one enum value is typed `Literal[...]` instead of a one-member Enum, except one with
-`nullable: true` and a value other than `null`, which keeps its enum and is read as written. The
+`nullable: true` and a value other than `null`, which keeps its enum and is read as written. An
+`enum` that admits the `const` beside it, such as `{"enum": ["a", "b"], "const": "a"}`, is read as
+that `const` the same way, without the enum class written beside it otherwise. The
 option reads `const` branches the same way, which without it merge into one Enum in those cases
 too. Instance data such as `default` and `examples`, extension values (`x-...` except
 `x-propertyNames`), links and servers stay as written, so a schema kept under an extension
@@ -4345,10 +4347,6 @@ Schema and GraphQL inputs are not changed.
         from pydantic import BaseModel, Field, RootModel
 
 
-        class Both(Enum):
-            same = 'same'
-
-
         class Level(Enum):
             low = 'low'
             high = 'high'
@@ -4427,10 +4425,6 @@ Schema and GraphQL inputs are not changed.
         from msgspec import UNSET, Meta, Struct, UnsetType, field
 
 
-        class Both(Enum):
-            same = 'same'
-
-
         class Level(Enum):
             low = 'low'
             high = 'high'
@@ -4480,7 +4474,7 @@ Schema and GraphQL inputs are not changed.
             region: Region | UnsetType = UNSET
             version: Literal[2] | UnsetType = 2
             default: Literal['named'] | UnsetType = UNSET
-            both: Both | UnsetType = UNSET
+            both: Literal['same'] | UnsetType = UNSET
             options: (
                 Annotated[dict[str, Any], Meta(examples=[{'enum': ['kept']}])] | UnsetType
             ) = field(default_factory=lambda: {'enum': ['kept']})

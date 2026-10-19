@@ -1,4 +1,4 @@
-Option recommendations (experimental; quick mode; rules 2026-10-18)
+Option recommendations (experimental; quick mode; rules 2026-10-19)
 
 Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   components                       1, 0 operations
@@ -16,7 +16,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   integer/number/boolean schemas   3
   root schema                      object model 1, title words 1
 
-Start from  --preset standard-py314-20261017
+Start from  --preset standard-py314-20261019
 
 Add (1 option)
   --class-name Settings   [root.class-name-for-root-object]
@@ -41,12 +41,15 @@ Optional (policy; not in the command)
       rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
       rejected
 
+Notes
+  - The rules were calibrated on the 20261017 presets.
+
 Command
-  datamodel-codegen --class-name Settings --input settings.json --preset standard-py314-20261017 --target-python-version 3.14
+  datamodel-codegen --class-name Settings --input settings.json --preset standard-py314-20261019 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   class-name = "Settings"
   input = "settings.json"
-  preset = "standard-py314-20261017"
+  preset = "standard-py314-20261019"
   target-python-version = "3.14"

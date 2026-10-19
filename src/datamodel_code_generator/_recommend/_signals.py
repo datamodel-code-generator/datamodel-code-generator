@@ -49,6 +49,7 @@ SignalName: TypeAlias = Literal[
     "single_key_required_open",
     "single_value_enums",
     "single_value_enum_union_branches",
+    "enums_beside_const",
     "dotted_keys",
     "dotted_key_namespaces",
     "dotted_namespace_reference_cycles",
@@ -416,13 +417,14 @@ class _Walker:
         counts["multiple_of"] += isinstance(divisor, int | float) and not isinstance(divisor, bool)
 
     def count_keywords(self, node: Mapping[str, Any]) -> None:
-        """Count a one-value enum without const, the validation keywords of a schema, and a format generation maps.
+        """Count a one-value enum, an enum beside a const, the validation keywords and a format generation maps.
 
         A format counts when generation maps it to a type for one of the types the schema declares.
         """
         counts = self.counts
         values = node.get("enum")
         counts["single_value_enums"] += isinstance(values, list) and len(values) == 1 and "const" not in node
+        counts["enums_beside_const"] += isinstance(values, list) and "const" in node
         self.count_validation_keywords(node)
         counts["nullable_keywords"] += self.dialect.nullable_keyword and node.get("nullable") is True
         counts["boolean_exclusive_bounds"] += (
