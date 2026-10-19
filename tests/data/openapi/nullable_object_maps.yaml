@@ -96,6 +96,12 @@ components:
             - type: string
             - $ref: "#/components/schemas/IntegerMap"
               maxProperties: 2
+        valueRoot:
+          $ref: "#/components/schemas/ValueRoot"
+        valueRootItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValueRoot"
     PatternRoot:
       type: object
       nullable: true
@@ -125,3 +131,9 @@ components:
       type: object
       additionalProperties:
         type: integer
+    ValueRoot:
+      type: object
+      nullable: true
+      additionalProperties:
+        type: integer
+      minProperties: 1

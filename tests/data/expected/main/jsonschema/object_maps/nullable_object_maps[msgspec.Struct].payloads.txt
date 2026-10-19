@@ -4,3 +4,4 @@ invalid values: rejected
 invalid combined: rejected
 invalid branchNullable: rejected
 invalid combinedRoot: rejected
+invalid valueRootItems: rejected

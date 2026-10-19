@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pClosed": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 2
+    },
+    "rClosed": {
+      "$ref": "#/$defs/Closed"
+    },
+    "pNames": {
+      "type": "object",
+      "propertyNames": {
+        "maxLength": 3
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rNames": {
+      "$ref": "#/$defs/Names"
+    },
+    "pRefNames": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/KeyName"
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "rRefNames": {
+      "$ref": "#/$defs/RefNames"
+    },
+    "pOpen": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "maxProperties": 2
+    },
+    "rOpen": {
+      "$ref": "#/$defs/Open"
+    },
+    "pNullableCount": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "rNullableCount": {
+      "$ref": "#/$defs/NullableCount"
+    },
+    "pStringOrCount": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "rStringOrCount": {
+      "$ref": "#/$defs/StringOrCount"
+    },
+    "pNoKeys": {
+      "type": "object",
+      "patternProperties": {
+        "^a": false
+      },
+      "additionalProperties": false,
+      "maxProperties": 2
+    },
+    "rNoKeys": {
+      "$ref": "#/$defs/NoKeys"
+    },
+    "iClosed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1,
+        "maxProperties": 2
+      }
+    },
+    "mClosed": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1,
+        "maxProperties": 2
+      }
+    },
+    "iNames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {
+          "maxLength": 3
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mNames": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "maxLength": 3
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iRefNames": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {
+          "$ref": "#/$defs/KeyName"
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mRefNames": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "$ref": "#/$defs/KeyName"
+        },
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "iOpen": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "maxProperties": 2
+      }
+    },
+    "mOpen": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "maxProperties": 2
+      }
+    },
+    "iNullableCount": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      }
+    },
+    "mNullableCount": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      }
+    },
+    "iStringOrCount": {
+      "type": "array",
+      "items": {
+        "type": [
+          "object",
+          "string"
+        ],
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      }
+    },
+    "mStringOrCount": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "object",
+          "string"
+        ],
+        "patternProperties": {
+          "^a": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      }
+    },
+    "iNoKeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "patternProperties": {
+          "^a": false
+        },
+        "additionalProperties": false,
+        "maxProperties": 2
+      }
+    },
+    "mNoKeys": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "patternProperties": {
+          "^a": false
+        },
+        "additionalProperties": false,
+        "maxProperties": 2
+      }
+    }
+  },
+  "required": [
+    "pClosed",
+    "rClosed",
+    "pNames",
+    "rNames",
+    "pRefNames",
+    "rRefNames",
+    "pOpen",
+    "rOpen",
+    "pNullableCount",
+    "rNullableCount",
+    "pStringOrCount",
+    "rStringOrCount",
+    "pNoKeys",
+    "rNoKeys"
+  ],
+  "$defs": {
+    "Closed": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 2
+    },
+    "Names": {
+      "type": "object",
+      "propertyNames": {
+        "maxLength": 3
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RefNames": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/KeyName"
+      },
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Open": {
+      "type": "object",
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "maxProperties": 2
+    },
+    "NullableCount": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "StringOrCount": {
+      "type": [
+        "object",
+        "string"
+      ],
+      "patternProperties": {
+        "^a": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "minProperties": 1
+    },
+    "NoKeys": {
+      "type": "object",
+      "patternProperties": {
+        "^a": false
+      },
+      "additionalProperties": false,
+      "maxProperties": 2
+    },
+    "KeyName": {
+      "type": "string",
+      "maxLength": 3
+    }
+  }
+}

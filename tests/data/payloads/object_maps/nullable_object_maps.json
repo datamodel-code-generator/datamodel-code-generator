@@ -42,7 +42,14 @@
     "trueBranch": null,
     "refBranch": {
       "x": 1
-    }
+    },
+    "valueRoot": null,
+    "valueRootItems": [
+      null,
+      {
+        "x": 1
+      }
+    ]
   },
   "invalid": [
     {
@@ -69,6 +76,11 @@
     },
     {
       "combinedRoot": "s"
+    },
+    {
+      "valueRootItems": [
+        {}
+      ]
     }
   ]
 }

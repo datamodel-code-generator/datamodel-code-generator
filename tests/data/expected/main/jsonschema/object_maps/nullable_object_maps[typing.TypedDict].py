@@ -20,6 +20,9 @@ TrueBranch: TypeAlias = dict[str, int] | None
 IntegerMap: TypeAlias = dict[str, int]
 
 
+ValueRoot: TypeAlias = dict[str, int] | None
+
+
 class Model(TypedDict):
     values: dict[str, int] | None
     patterns: dict[str, int] | None
@@ -36,3 +39,5 @@ class Model(TypedDict):
     combinedRoot: NotRequired[CombinedRoot | None]
     trueBranch: NotRequired[TrueBranch | None]
     refBranch: NotRequired[str | dict[str, int] | None]
+    valueRoot: NotRequired[ValueRoot | None]
+    valueRootItems: NotRequired[list[ValueRoot | None]]

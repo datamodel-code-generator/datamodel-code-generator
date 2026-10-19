@@ -10990,23 +10990,37 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> DataModelFieldBase:
-        """Build a dict root field without leaking value constraints onto the container."""
-        additional_props_type = None
-        if not self._has_pattern_properties_validator(obj):
+        """Build the dict root field of an object without declared fields, without leaking value constraints.
+
+        propertyNames types the keys and additionalProperties the values. Where the patternProperties validator
+        checks the map, the values are ``Any`` and the keys are read from propertyNames as a pattern map reads them.
+        The object map builder's rule gives the dict its null. The field reads the keywords that count the keys of
+        the object, patternProperties included, so a key that a pattern admits counts.
+        """
+        value_type = self.data_type_manager.get_data_type(Types.any)
+        if self._has_pattern_properties_validator(obj):
+            key_type = self._pattern_map_key_type(obj.propertyNames, None)
+        else:
+            key_type = (
+                None
+                if obj.propertyNames is None
+                else self._parse_property_names_key_type(name, obj.propertyNames, path)
+            )
             match obj.additionalProperties:
                 case JsonSchemaObject() as additional_properties:
-                    additional_props_type = self._parse_additional_properties_value(
+                    value_type = self._parse_additional_properties_value(
                         name,
                         [*path, "additionalProperties"],
                         obj,
                         additional_properties=additional_properties,
                     )
-
+        map_type = self.data_type(data_types=[value_type], is_dict=True, dict_key=key_type)
         additional_props_field = self.SCHEMA_OBJECT_TYPE.model_validate({
             "minProperties": obj.minProperties,
             "maxProperties": obj.maxProperties,
             "propertyNames": obj.propertyNames,
             "additionalProperties": obj.additionalProperties,
+            "patternProperties": obj.patternProperties,
         })
 
         return self.get_object_field(
@@ -11014,14 +11028,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             field=additional_props_field,
             required=True,
             original_field_name=None,
-            field_type=self.data_type(
-                data_types=[
-                    additional_props_type
-                    if additional_props_type is not None
-                    else self.data_type_manager.get_data_type(Types.any)
-                ],
-                is_dict=True,
-            ),
+            field_type=_with_null(map_type) if self._object_map_admits_null(obj) else map_type,
             alias=None,
         )
 
@@ -11182,25 +11189,43 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             any_type := next((value_type for value_type in value_types if _is_plain_any(value_type)), None)
         ) is not None:
             value_types = [any_type]
-        merged_pattern = "|".join(patterns)
-        key_type = self.data_type_manager.get_data_type(
-            Types.string,
-            pattern=merged_pattern,
-            use_annotated=self.use_annotated,
-            target_pydantic_version=self.target_pydantic_version,
+        return self.data_type(
+            data_types=value_types,
+            is_dict=True,
+            dict_key=self._pattern_map_key_type(property_names, "|".join(patterns)),
         )
-        if isinstance(property_names, JsonSchemaObject):
-            merged_property_names = property_names.model_copy(deep=True)
-            merged_property_names.type = "string"
-            merged_property_names.pattern = (
-                merged_pattern
-                if merged_property_names.pattern is None
-                else _intersect_patterns((merged_property_names.pattern, merged_pattern))
+
+    def _pattern_map_key_type(
+        self,
+        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
+        pattern: str | None,
+    ) -> DataType | None:
+        """Return the key type of a pattern map: propertyNames read as a string schema, its ``$ref`` resolved.
+
+        ``pattern`` joins the key when the map admits only the keys of its patterns. ``None`` means ``str`` keys.
+        """
+        if not isinstance(property_names, JsonSchemaObject):
+            return (
+                None
+                if pattern is None
+                else self.data_type_manager.get_data_type(
+                    Types.string,
+                    pattern=pattern,
+                    use_annotated=self.use_annotated,
+                    target_pydantic_version=self.target_pydantic_version,
+                )
             )
-            if merged_property_names.ref:
-                merged_property_names = self._merge_ref_with_schema(merged_property_names)
-            key_type = self._parse_property_name_key_schema(merged_property_names)
-        return self.data_type(data_types=value_types, is_dict=True, dict_key=key_type)
+        merged_property_names = property_names.model_copy(deep=True)
+        merged_property_names.type = "string"
+        if pattern is not None:
+            merged_property_names.pattern = (
+                pattern
+                if merged_property_names.pattern is None
+                else _intersect_patterns((merged_property_names.pattern, pattern))
+            )
+        if merged_property_names.ref:
+            merged_property_names = self._merge_ref_with_schema(merged_property_names)
+        return self._parse_property_name_key_schema(merged_property_names)
 
     def _parse_object_map(
         self,
@@ -11684,7 +11709,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if item.discriminator and parent and parent.is_array and (item.oneOf or item.anyOf):
             return self.parse_root_type(name, item, path)
         if self.generate_schema_validators and self._should_parse_object_with_schema_validators(item):
-            return self.parse_object(name, item, get_special_path("object", path), singular_name=singular_name)
+            return self._parse_object_model_item(name, item, path, singular_name=singular_name)
         if item.anyOf:
             if combined_const_enum := self._parse_combined_const_enum(
                 name,
@@ -11731,15 +11756,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 ignore_duplicate_model=True,
             )
         if item.is_object or item.patternProperties or item.propertyNames is not None:
-            object_path = get_special_path("object", path)
             if item.properties:
-                if item.has_multiple_types and isinstance(item.type, list):
-                    data_types: list[DataType] = []
-                    data_types.append(self.parse_object(name, item, object_path, singular_name=singular_name))
-                    data_types.extend(self._iter_non_object_union_types(name, item, item.type, path))
-                    return self.data_type(data_types=data_types)
-                return self.parse_object(name, item, object_path, singular_name=singular_name)
-            return self._parse_object_map(name, item, path, object_path)
+                return self._parse_object_model_item(name, item, path, singular_name=singular_name)
+            return self._parse_object_map(name, item, path, get_special_path("object", path))
         if item.enum and not self.ignore_enum_constraints:
             if self.should_parse_enum_as_literal(item, property_name=name):
                 return self.parse_enum_as_literal(item)
@@ -11749,6 +11768,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (typed_values := self._typed_nullable_map_value_schema(item)) is not None:
             return self._parse_object_map(name, item, path, get_special_path("object", path), typed_values=typed_values)
         return self.get_data_type(item)
+
+    def _parse_object_model_item(
+        self, name: str, item: JsonSchemaObject, path: list[str], *, singular_name: bool
+    ) -> DataType:
+        """Parse an object into its model, joined in a union with the other types of its type array."""
+        model_type = self.parse_object(name, item, get_special_path("object", path), singular_name=singular_name)
+        if not (item.has_multiple_types and isinstance(item.type, list)):
+            return model_type
+        return self.data_type(data_types=[model_type, *self._iter_non_object_union_types(name, item, item.type, path)])
 
     def parse_list_item(
         self,
@@ -12350,6 +12378,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     if localize_constraints
                     else self._get_format_data_type(type_, obj.format or "default")
                 )
+
+    def _parse_object_model(self, name: str, obj: JsonSchemaObject, path: list[str]) -> None:
+        """Parse an object into its model; a type array with other types makes a root model of their union."""
+        if obj.has_multiple_types and isinstance(obj.type, list):
+            self._parse_multiple_types_with_properties(name, obj, obj.type, path)
+        else:
+            self.parse_object(name, obj, path)
 
     def _parse_multiple_types_with_properties(
         self,
@@ -13804,7 +13839,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         elif obj.allOf:
             self.parse_all_of(name, obj, path)
         elif self.generate_schema_validators and self._should_parse_object_with_schema_validators(obj):
-            self.parse_object(name, obj, path)
+            self._parse_object_model(name, obj, path)
         elif obj.oneOf or obj.anyOf:
             combined_items = obj.oneOf or obj.anyOf
             const_enum_data = self._extract_const_enum_from_combined(combined_items, obj.type)
@@ -13819,10 +13854,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if isinstance(data_type, EmptyDataType) and obj.properties:
                     self.parse_object(name, obj, path)  # pragma: no cover
         elif obj.properties:
-            if obj.has_multiple_types and isinstance(obj.type, list):
-                self._parse_multiple_types_with_properties(name, obj, obj.type, path)
-            else:
-                self.parse_object(name, obj, path)
+            self._parse_object_model(name, obj, path)
         elif obj.patternProperties or (obj.propertyNames is not None and obj.propertyNames is not False):
             self.parse_root_type(name, obj, path)
         elif obj.type == "object":

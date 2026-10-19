@@ -26,6 +26,11 @@ TrueBranch = TypeAliasType("TrueBranch", dict[str, int] | None)
 IntegerMap = TypeAliasType("IntegerMap", dict[str, int])
 
 
+ValueRoot = TypeAliasType(
+    "ValueRoot", Annotated[dict[str, int] | None, Field(..., min_length=1)]
+)
+
+
 @dataclass
 class Model:
     values: dict[str, int] | None = Field(...)
@@ -43,3 +48,5 @@ class Model:
     combinedRoot: CombinedRoot | None = None
     trueBranch: TrueBranch | None = None
     refBranch: str | dict[str, int] | None = None
+    valueRoot: ValueRoot | None = None
+    valueRootItems: list[ValueRoot | None] | None = None

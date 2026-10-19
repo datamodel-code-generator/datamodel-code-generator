@@ -25,6 +25,10 @@ class IntegerMap(RootModel[dict[str, int]]):
     root: dict[str, int]
 
 
+class ValueRoot(RootModel[dict[str, int] | None]):
+    root: dict[str, int] | None = Field(..., min_length=1)
+
+
 class Model(BaseModel):
     values: dict[str, int] | None = Field(...)
     patterns: dict[constr(pattern=r'^a'), int] | None = Field(...)
@@ -41,3 +45,5 @@ class Model(BaseModel):
     combinedRoot: CombinedRoot | None = None
     trueBranch: TrueBranch | None = None
     refBranch: str | dict[str, int] | None = None
+    valueRoot: ValueRoot | None = None
+    valueRootItems: list[ValueRoot | None] | None = None

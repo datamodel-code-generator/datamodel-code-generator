@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from typing import Annotated, Any, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 PatternRoot: TypeAlias = dict[str, int] | None
 
@@ -18,6 +18,9 @@ TrueBranch: TypeAlias = dict[str, int] | None
 
 
 IntegerMap: TypeAlias = dict[str, int]
+
+
+ValueRoot: TypeAlias = Annotated[dict[str, int], Meta(min_length=1)] | None
 
 
 class Model(Struct):
@@ -36,3 +39,5 @@ class Model(Struct):
     combinedRoot: CombinedRoot | None | UnsetType = UNSET
     trueBranch: TrueBranch | None | UnsetType = UNSET
     refBranch: str | dict[str, int] | None = None
+    valueRoot: ValueRoot | None | UnsetType = UNSET
+    valueRootItems: list[ValueRoot | None] | UnsetType = UNSET

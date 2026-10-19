@@ -19,6 +19,9 @@ TrueBranch: TypeAlias = dict[str, int] | None
 IntegerMap: TypeAlias = dict[str, int]
 
 
+ValueRoot: TypeAlias = dict[str, int] | None
+
+
 @dataclass
 class Model:
     values: dict[str, int] | None
@@ -36,3 +39,5 @@ class Model:
     combinedRoot: CombinedRoot | None = None
     trueBranch: TrueBranch | None = None
     refBranch: str | dict[str, int] | None = None
+    valueRoot: ValueRoot | None = None
+    valueRootItems: list[ValueRoot | None] | None = None

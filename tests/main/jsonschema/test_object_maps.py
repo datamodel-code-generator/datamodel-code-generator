@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 OBJECT_MAPS = JSON_SCHEMA_DATA_PATH / "object_maps"
 PAYLOADS = DATA_PATH / "payloads" / "object_maps"
+OBJECT_MAP_INPUTS = ("pattern_maps", "nullable_maps", "type_array_maps", "pattern_counts")
 OUTPUT_MODEL_TYPES = (
     "pydantic_v2.BaseModel",
     "pydantic_v2.dataclass",
@@ -55,7 +56,7 @@ def _verdict(model: Any, output_model_type: str, document: object) -> str:
     return "accepted"
 
 
-@pytest.mark.parametrize("name", ["pattern_maps", "nullable_maps", "type_array_maps"])
+@pytest.mark.parametrize("name", OBJECT_MAP_INPUTS)
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
 @pytest.mark.parametrize("option_set", OPTION_SETS)
 def test_object_maps(
@@ -106,9 +107,12 @@ def test_nullable_object_maps(output_file: Path, output_model_type: str) -> None
     assert_output(_payload_verdicts(output_file, output_model_type, payloads), name="payloads")
 
 
-@pytest.mark.parametrize("name", ["pattern_maps", "nullable_maps", "type_array_maps"])
+@pytest.mark.parametrize("name", OBJECT_MAP_INPUTS)
 def test_object_maps_schema_validators(output_file: Path, recwarn: pytest.WarningsRecorder, name: str) -> None:
-    """Build the same maps where schema validators check the objects that one dict type cannot express."""
+    """Build the same maps where schema validators check the objects that one dict type cannot express.
+
+    The dict of a validated map counts every key its patterns admit and keeps the keys of propertyNames.
+    """
     run_main_and_assert(
         input_path=OBJECT_MAPS / f"{name}.json",
         output_path=output_file,
@@ -119,3 +123,5 @@ def test_object_maps_schema_validators(output_file: Path, recwarn: pytest.Warnin
         "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
         name="warnings",
     )
+    payloads = json.loads((PAYLOADS / f"{name}.json").read_text())
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")

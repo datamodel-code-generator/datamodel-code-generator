@@ -104,7 +104,7 @@ class PPatternCount(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]])
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0, min_length=1)
+    root: dict[str, Any] = Field(..., min_length=1)
 
 
 class INullablePattern(_JsonSchemaRuntimeValidationBase):
@@ -150,7 +150,7 @@ class IPatternCountItem(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, An
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0, min_length=1)
+    root: dict[str, Any] = Field(..., min_length=1)
 
 
 class MPatternCount(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
@@ -164,7 +164,7 @@ class MPatternCount(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]])
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0, min_length=1)
+    root: dict[str, Any] = Field(..., min_length=1)
 
 
 class NullablePatterns(_JsonSchemaRuntimeValidationBase):
@@ -206,7 +206,7 @@ class PatternCount(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0, min_length=1)
+    root: dict[str, Any] = Field(..., min_length=1)
 
 
 class Model(BaseModel):

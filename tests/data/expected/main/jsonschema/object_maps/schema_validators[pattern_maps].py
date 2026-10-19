@@ -11,10 +11,10 @@ from typing import Any, ClassVar
 from pydantic import (
     BaseModel,
     ConfigDict,
-    Field,
     RootModel,
     TypeAdapter,
     conint,
+    constr,
     model_validator,
 )
 
@@ -226,7 +226,10 @@ class PTrueEmpty(_JsonSchemaRuntimeValidationBase):
     )
 
 
-class PNamesTwo(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+class PNamesTwo(
+    _JsonSchemaRuntimeValidationBase,
+    RootModel[dict[constr(max_length=3), Any]],
+):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
             'declared_properties': (),
@@ -240,7 +243,7 @@ class PNamesTwo(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0)
+    root: dict[constr(max_length=3), Any]
 
 
 class IClosedOneItem(_JsonSchemaRuntimeValidationBase):
@@ -541,7 +544,10 @@ class MTrueEmpty(_JsonSchemaRuntimeValidationBase):
     )
 
 
-class INamesTwoItem(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+class INamesTwoItem(
+    _JsonSchemaRuntimeValidationBase,
+    RootModel[dict[constr(max_length=3), Any]],
+):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
             'declared_properties': (),
@@ -555,10 +561,13 @@ class INamesTwoItem(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]])
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0)
+    root: dict[constr(max_length=3), Any]
 
 
-class MNamesTwo(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+class MNamesTwo(
+    _JsonSchemaRuntimeValidationBase,
+    RootModel[dict[constr(max_length=3), Any]],
+):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
             'declared_properties': (),
@@ -572,7 +581,7 @@ class MNamesTwo(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0)
+    root: dict[constr(max_length=3), Any]
 
 
 class ClosedOne(_JsonSchemaRuntimeValidationBase):
@@ -724,7 +733,10 @@ class TrueEmpty(_JsonSchemaRuntimeValidationBase):
     )
 
 
-class NamesTwo(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
+class NamesTwo(
+    _JsonSchemaRuntimeValidationBase,
+    RootModel[dict[constr(max_length=3), Any]],
+):
     __json_schema_pattern_properties__: ClassVar[tuple[Any, ...]] = (
         {
             'declared_properties': (),
@@ -738,7 +750,7 @@ class NamesTwo(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, Any]]):
         },
     )
 
-    root: dict[str, Any] = Field(..., max_length=0)
+    root: dict[constr(max_length=3), Any]
 
 
 class Model(BaseModel):

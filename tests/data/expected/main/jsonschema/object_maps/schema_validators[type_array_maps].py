@@ -124,7 +124,7 @@ class MStringOrPatterns(_JsonSchemaRuntimeValidationBase):
     )
 
 
-class StringOrPatterns(_JsonSchemaRuntimeValidationBase):
+class StringOrPatterns1(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
     )
@@ -140,6 +140,10 @@ class StringOrPatterns(_JsonSchemaRuntimeValidationBase):
     )
 
 
+class StringOrPatterns(RootModel[StringOrPatterns1 | str]):
+    root: StringOrPatterns1 | str
+
+
 class StringOrNames(RootModel[dict[constr(pattern=r'^a'), int] | str | None]):
     root: dict[constr(pattern=r'^a'), int] | str | None
 
@@ -149,14 +153,14 @@ class ArrayOrNamesCount(RootModel[dict[constr(pattern=r'^a'), Any] | list[Any] |
 
 
 class Model(BaseModel):
-    pStringOrPatterns: PStringOrPatterns
+    pStringOrPatterns: PStringOrPatterns | str
     rStringOrPatterns: StringOrPatterns
     pStringOrNames: dict[constr(pattern=r'^a'), int] | str | None
     rStringOrNames: StringOrNames | None
     pArrayOrNamesCount: dict[constr(pattern=r'^a'), Any] | list[Any] | None
     rArrayOrNamesCount: ArrayOrNamesCount | None
-    iStringOrPatterns: list[IStringOrPattern] | None = None
-    mStringOrPatterns: dict[str, MStringOrPatterns] | None = None
+    iStringOrPatterns: list[IStringOrPattern | str] | None = None
+    mStringOrPatterns: dict[str, MStringOrPatterns | str] | None = None
     iStringOrNames: list[dict[constr(pattern=r'^a'), int] | str | None] | None = None
     mStringOrNames: dict[str, dict[constr(pattern=r'^a'), int] | str | None] | None = (
         None
