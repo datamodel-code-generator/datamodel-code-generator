@@ -41,6 +41,7 @@ PROJECT_ROOT = Path(__file__).parents[2]
 PACKAGE_ROOT = Path(datamodel_code_generator.__file__).parent
 WATCH_DATA_PATH = PROJECT_ROOT / "tests/data/watch"
 WATCH_CLI_TIMEOUT_SECONDS = 15.0
+WATCH_CLI_STARTUP_TIMEOUT_SECONDS = 120.0
 WATCH_CLI_STOP_TIMEOUT_SECONDS = 5.0
 WATCH_CLI_READY_DELAY_SECONDS = 0.3
 WATCH_CLI_CHANGE_RETRY_SECONDS = 0.75
@@ -260,9 +261,16 @@ def _wait_for_watch_cli(
     stderr_lines: list[str],
     condition: Callable[[], bool],
     description: str,
+    *,
+    timeout: float = WATCH_CLI_TIMEOUT_SECONDS,
 ) -> None:
-    deadline = time.monotonic() + WATCH_CLI_TIMEOUT_SECONDS
-    while time.monotonic() < deadline:
+    """Wait until the condition holds, failing when the process exits first or ``timeout`` seconds pass.
+
+    The default bounds a reaction of the watcher. The start waits ``WATCH_CLI_STARTUP_TIMEOUT_SECONDS``: it covers the
+    process's initial generation, whose first run under the coverage tracer takes seconds on a loaded runner.
+    """
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
         if condition():
             return
         if (return_code := process.poll()) is not None:
@@ -407,6 +415,7 @@ def _wait_for_watch_cli_ready(
             stderr_lines,
             lambda: _lines_contain(stdout_lines, "Watching "),
             "watch mode to start",
+            timeout=WATCH_CLI_STARTUP_TIMEOUT_SECONDS,
         )
         time.sleep(WATCH_CLI_READY_DELAY_SECONDS)
     except BaseException:
@@ -654,11 +663,14 @@ def test_start_watch_cli_until_ready_stops_process_on_start_failure(
         stderr_lines: list[str],
         condition: Callable[[], bool],
         description: str,
+        *,
+        timeout: float,
     ) -> None:
         assert process_ is process
         assert not stdout_lines
         assert not stderr_lines
         assert description == "watch mode to start"
+        assert timeout == WATCH_CLI_STARTUP_TIMEOUT_SECONDS
         assert not condition()
         raise KeyboardInterrupt
 
