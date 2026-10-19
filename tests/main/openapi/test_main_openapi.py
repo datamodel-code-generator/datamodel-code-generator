@@ -11713,6 +11713,31 @@ def test_main_openapi_circular_imports_class_conflict(output_dir: Path) -> None:
         )
 
 
+def test_main_openapi_circular_imports_class_conflict_suffix_taken(output_dir: Path) -> None:
+    """Rename a class merged into _internal.py to a name no other merged class holds.
+
+    Regression test for https://github.com/koxudaxi/datamodel-code-generator/issues/4967
+    """
+    run_generate_file_and_assert(
+        input_path=OPEN_API_DATA_PATH / "circular_imports_class_conflict_suffix_taken.yaml",
+        output_path=output_dir,
+        input_file_type=InputFileType.OpenAPI,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        custom_class_name_generator=lambda name: name,
+        disable_timestamp=True,
+    )
+    assert_generated_model_json_validation(
+        output_dir / "_internal.py",
+        module_name="circular_imports_class_conflict_suffix_taken_internal",
+        model_name="Foo_2",
+        valid_json='{"note": {"label": "x"}}',
+        invalid_json='{"note": {"label": 1}}',
+        expected_error_type="string_type",
+        expected_attribute_path=("note", "label"),
+        expected_attribute_value="x",
+    )
+
+
 def test_main_openapi_circular_imports_pattern_properties_ref(output_dir: Path) -> None:
     """Define a model merged into _internal.py before the class whose patternProperties rule names it."""
     run_main_and_assert(

@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info:
+  title: Circular Import with a Class Already Named Like a Renamed One
+  version: "1"
+paths: {}
+components:
+  schemas:
+    a.Foo:
+      type: object
+      properties:
+        other:
+          $ref: '#/components/schemas/b.Foo'
+    a.Foo_1:
+      type: object
+      properties:
+        label:
+          type: string
+    b.Foo:
+      type: object
+      properties:
+        back:
+          $ref: '#/components/schemas/a.Foo'
+        note:
+          $ref: '#/components/schemas/a.Foo_1'

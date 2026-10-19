@@ -277,7 +277,7 @@ template writes, and moves fields whose default the template keeps after the fie
 | L3 `__delete_duplicate_models` | rendered model text (`DataModel.get_dedup_key`) | redirects users, edits base lists, removes models |
 | L3 `__replace_duplicate_name_in_module` | class names | `class_name` |
 | L3 `__reuse_model_tree_scope` | rendered model text across modules | moves canonicals to a shared module, replaces duplicates by empty subclasses or removes them |
-| L3 `__resolve_circular_imports` | module dependency graph | merges cyclic modules into `_internal` modules, relocates models |
+| L3 `__resolve_circular_imports` | module dependency graph, class names | merges cyclic modules into `_internal` modules, relocates models; a model whose class name an earlier model of the merge holds takes `<name>_<n>` with the smallest `n` no merged model holds (`_merged_class_names`) |
 | L4 `__flatten_conflicting_base_layouts` (msgspec) | bases, fields, possible tags (`__find_possible_tag_names`) and reuse duplicates (`__find_possible_reuse_duplicates`) | copies base fields into Structs whose generated bases have conflicting layouts, sorted by the construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`), and drops those bases |
 | L4 `unconstrain_union_members` (msgspec) | union members | field types |
 | L4 `__set_circular_root_model_paths` | root-model reference graph | circular root-model paths that every module's collapse reads |

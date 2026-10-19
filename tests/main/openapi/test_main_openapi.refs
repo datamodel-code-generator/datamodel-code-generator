@@ -797,6 +797,8 @@ pydantic_v2.BaseModel-datetime_pydantic_v2_past_datetime.py-PastDatetime	main/op
 	main/openapi/circular_imports_acyclic//*.py
 [test_main_openapi_circular_imports_class_conflict]
 	main/openapi/circular_imports_class_conflict//*.py
+[test_main_openapi_circular_imports_class_conflict_suffix_taken]
+	main/openapi/main_openapi/circular_imports_class_conflict_suffix_taken/
 [test_main_openapi_circular_imports_different_prefixes]
 	main/openapi/circular_imports_different_prefixes//*.py
 [test_main_openapi_circular_imports_mixed_prefixes]

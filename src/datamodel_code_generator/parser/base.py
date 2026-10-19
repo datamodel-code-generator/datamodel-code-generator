@@ -467,6 +467,28 @@ def _reserve_import_alias(name: str, reserved_names: set[str]) -> str:
     return alias
 
 
+def _merged_class_names(class_names: Sequence[str]) -> tuple[str, ...]:
+    """Return one distinct class name per model merged into one module, in merge order.
+
+    A model keeps its name unless an earlier model of the merge already holds it; a later holder takes
+    ``<name>_<n>`` with the smallest ``n >= 1`` that no model of the merge holds or has already taken.
+    """
+    taken = set(class_names)
+    held: set[str] = set()
+    names: list[str] = []
+    for name in class_names:
+        if name not in held:
+            held.add(name)
+            names.append(name)
+            continue
+        suffix = 1
+        while (candidate := f"{name}_{suffix}") in taken:
+            suffix += 1
+        taken.add(candidate)
+        names.append(candidate)
+    return tuple(names)
+
+
 def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
     """Allocate aliases only where a property hides an emitted expression name.
 
@@ -7493,29 +7515,25 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> tuple[defaultdict[tuple[str, ...], list[tuple[str, str]]], dict[str, str]]:
         """Rename duplicate classes and relocate models to internal module.
 
+        Class names follow ``_merged_class_names``; forwarders re-export each model under its original name.
+
         Returns:
             Tuple of:
             - Mapping from original module to list of (original_name, new_name) tuples.
             - Mapping from old reference paths to new reference paths.
         """
-        class_name_counts = Counter(model.class_name for model in all_scc_models)
-        class_name_seen: dict[str, int] = {}
         internal_module_str = ".".join(internal_module)
         module_class_mappings: defaultdict[tuple[str, ...], list[tuple[str, str]]] = defaultdict(list)
         path_mapping: dict[str, str] = {}
+        original_class_names = [model.class_name for model in all_scc_models]
+        new_class_names = _merged_class_names(original_class_names)
 
         with self.generation_store.defer_refresh():
-            for model in all_scc_models:
-                original_class_name = model.class_name
+            for model, original_class_name, new_class_name in zip(
+                all_scc_models, original_class_names, new_class_names, strict=True
+            ):
                 original_module = model_to_original_module[id(model)]
                 old_path = model.path  # Save old path before updating
-
-                if class_name_counts[original_class_name] > 1:
-                    seen_count = class_name_seen.get(original_class_name, 0)
-                    new_class_name = f"{original_class_name}_{seen_count}" if seen_count > 0 else original_class_name
-                    class_name_seen[original_class_name] = seen_count + 1
-                else:
-                    new_class_name = original_class_name
 
                 new_path = f"{internal_module_str}.{new_class_name}"
                 self.generation_store.update_model_reference(
