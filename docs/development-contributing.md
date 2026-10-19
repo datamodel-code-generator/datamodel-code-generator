@@ -299,6 +299,7 @@ and fails the test for a write of the package that the allowlist does not list.
 | Area | Checks |
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
+| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written ([Model Processing Passes](architecture.md#model-processing-passes)) |
 | `MODEL_GRAPH` | collapsing root models never reaches the recursion limit: it stops before an inlining that would make a data type contain itself ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`) |
 | `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |

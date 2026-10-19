@@ -149,6 +149,7 @@ from datamodel_code_generator.model.output import (
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._finality import arm_store_write_guard, pass_scope, store_write_guard
+from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, set_model_base_classes
@@ -234,6 +235,17 @@ _RAW_SCHEMA_DEFAULT_KEY: Final = "_raw_schema_default"
 _TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
 _RAW_SCHEMA_DEFAULT_UNDEFINED: Final = object()
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
+_ADDITIONAL_IMPORTS: Final = ImportProducer("additional-imports")
+_DEFERRED_ANNOTATIONS: Final = ImportProducer("deferred-annotations")
+_FUTURE_IMPORTS: Final = ImportProducer("future-imports")
+_GENERIC_BASE_CLASS: Final = ImportProducer("generic-base-class")
+_COLLAPSE_ROOT_MODELS: Final = ImportProducer("collapse-root-models")
+_REMOVE_UNUSED: Final = ImportProducer("remove-unused")
+_IMPORT_CONFLICTS: Final = ImportProducer("import-conflicts")
+_FIELD_NAME_BINDINGS: Final = ImportProducer("field-name-bindings")
+_REUSED_VARIANT_LITERAL: Final = ImportProducer("reused-variant-literal")
+_SHADOWED_IMPORTS: Final = ImportProducer("shadowed-imports")
+_IMPORT_OVERRIDES: Final = ImportProducer("import-overrides")
 
 
 @dataclass(frozen=True, slots=True)
@@ -525,7 +537,7 @@ def _merged_class_names(class_names: Sequence[str]) -> tuple[str, ...]:
     return tuple(names)
 
 
-def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
+def _bind_module_field_names(models: list[DataModel], imports: Imports, ledger: ModuleImportLedger) -> None:
     """Allocate aliases only where a property hides an emitted expression name.
 
     Type aliases sit at module scope, so an import they name keeps its name beside the alias.
@@ -563,9 +575,9 @@ def _bind_module_field_names(models: list[DataModel], imports: Imports) -> None:
         aliased_import = Import(from_=from_, import_=imported_name, alias=alias, keep_unaliased=keep_unaliased)
         bindings[name] = alias
         if from_ == "builtins" or keep_unaliased:
-            imports.append(aliased_import)
+            ledger.append(imports, aliased_import, _FIELD_NAME_BINDINGS)
         else:
-            imports.apply_alias(aliased_import)
+            ledger.apply_alias(imports, aliased_import, _FIELD_NAME_BINDINGS)
     for model in models:
         if not isinstance(model, TypeAliasBase):
             model.set_field_name_bindings(bindings)
@@ -3148,12 +3160,15 @@ def _get_data_type_target_full_name(
     return f"{ref_module_name}.{reference.short_name}" if ref_module_name else reference.short_name
 
 
-def _register_data_type_import(
+def _register_data_type_import(  # ruff: ignore[too-many-arguments]
     data_type: DataType,
     model: DataModel,
     imports: Imports,
     scoped_model_resolver: ModelResolver,
-    model_path_to_module_name: dict[str, str] | None = None,
+    model_path_to_module_name: dict[str, str] | None,
+    *,
+    ledger: ModuleImportLedger,
+    producer: ImportProducer,
 ) -> None:
     match data_type.reference:
         case None:
@@ -3180,14 +3195,16 @@ def _register_data_type_import(
 
     alias = scoped_model_resolver.add(full_path, import_)
     data_type.alias = alias.name if reference.short_name == import_ else f"{alias.name}.{reference.short_name}"
-    imports.append([
+    ledger.append(
+        imports,
         Import(
             from_=from_,
             import_=import_,
             alias=alias.name,
             reference_path=reference.path,
-        )
-    ])
+        ),
+        producer,
+    )
 
 
 def _resolve_module_file(module_: ModulePath, results: dict[ModulePath, Result]) -> tuple[ModulePath, bool]:
@@ -3221,12 +3238,10 @@ def _format_body_safe(body: str, code_formatter: CodeFormatter, *, generated_cod
         return body
 
 
-def _remap_imports(imports: Imports, overrides: Mapping[str, str]) -> None:
-    """Convert import override conflicts to a user-facing generator error."""
-    if not imports.counter:
-        return
+def _remap_imports(ledger: ModuleImportLedger, imports: Imports, overrides: Mapping[str, str]) -> None:
+    """Move overridden names to their modules, converting import override conflicts to a user-facing generator error."""
     try:
-        imports.remap_modules(overrides)
+        ledger.remap_modules(imports, overrides, _IMPORT_OVERRIDES)
     except ValueError as e:
         raise Error(str(e)) from e
 
@@ -3592,6 +3607,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self._uses_standard_generation_templates = False
 
+        self._import_ledger = ModuleImportLedger()
         self.imports: Imports = Imports(config.use_exact_imports)
         self.use_exact_imports: bool = config.use_exact_imports
         self.use_type_checking_imports: bool | None = config.use_type_checking_imports
@@ -4089,7 +4105,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         for additional_import_string in _validate_additional_import_paths(additional_imports) or []:
             new_import = Import.from_full_path(additional_import_string)
-            self.imports.append(new_import)
+            self._import_ledger.append(self.imports, new_import, _ADDITIONAL_IMPORTS)
 
     def _resolve_base_class(
         self, class_name: str, custom_base_path: str | list[str] | None = None
@@ -4384,11 +4400,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         internal_modules = internal_modules or set()
         model_path_to_module_name = model_path_to_module_name or {}
 
+        ledger = self._import_ledger
         for model in models:
             scoped_model_resolver.add([model.path], model.class_name)
         for model in models:
+            producer = ImportProducer("change-from-import", model)
             before_import = model.imports
-            imports.append(before_import)
+            ledger.append(imports, before_import, producer)
             current_module_name = _get_model_module_name(model, model_path_to_module_name)
             # Some imports are derived from type hints, so aliases can affect them.
             import_sensitive_alias_changed = False
@@ -4410,6 +4428,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     init=init,
                     internal_modules=internal_modules,
                     base_class=isinstance(data_type, BaseClassDataType),
+                    producer=producer,
                 ):
                     data_type.alias = alias
                     import_sensitive_alias_changed = True
@@ -4417,8 +4436,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 model.clear_imports_cache()
                 after_import = model.imports
                 if before_import != after_import:
-                    imports.remove(before_import)
-                    imports.append(after_import)
+                    ledger.remove(imports, before_import, producer)
+                    ledger.append(imports, after_import, producer)
 
     def __register_reference_import(  # noqa: PLR0913
         self,
@@ -4431,6 +4450,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         init: bool,
         internal_modules: set[tuple[str, ...]],
         base_class: bool = False,
+        producer: ImportProducer,
     ) -> str | None:
         """Import a reference from another module and return its expression when it is not the class name."""
         name = reference.short_name
@@ -4476,13 +4496,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             expression = alias if name == import_ else f"{alias}.{name}"
         if init and not target_full_name.startswith(current_module_name + "."):
             from_ = "." + from_
-        imports.append(
+        self._import_ledger.append(
+            imports,
             Import(
                 from_=from_,
                 import_=import_,
                 alias=alias,
                 reference_path=reference.path,
             ),
+            producer,
         )
         return expression
 
@@ -4514,6 +4536,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         same_module: bool,
         init: bool,
         internal_modules: set[ModulePath],
+        producer: ImportProducer,
     ) -> None:
         """Write how a data type names its reference in the current module.
 
@@ -4532,6 +4555,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 init=init,
                 internal_modules=internal_modules,
                 base_class=isinstance(data_type, BaseClassDataType),
+                producer=producer,
             )
         )
 
@@ -4563,7 +4587,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         stale_import := next(filter(None, map(stale_imports.get, paths)), None)
                     ):
                         continue
-                    ctx.imports.remove(stale_import)
+                    producer = ImportProducer("import-removed-reuse-canonicals", model)
+                    self._import_ledger.remove(ctx.imports, stale_import, producer)
                     reference = cast("Reference", data_type.reference)
                     self.__set_reference_expression(
                         data_type,
@@ -4574,6 +4599,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         same_module=reference.path in model_paths,
                         init=ctx.is_init,
                         internal_modules=internal_modules,
+                        producer=producer,
                     )
 
     def __import_renamed_types(
@@ -4608,8 +4634,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ]
             if not stale_users:
                 continue
-            for *_, import_ in stale_users:
-                ctx.imports.remove(import_)
+            for _, _, model, import_ in stale_users:
+                self._import_ledger.remove(ctx.imports, import_, ImportProducer("import-renamed-types", model))
             ctx.scoped_model_resolver.delete_names(
                 {import_.binding_name for *_, import_ in stale_users}.union(
                     self.__names_left_by_replaced_roots(ctx.models, model_paths)
@@ -4625,6 +4651,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     same_module=False,
                     init=ctx.is_init,
                     internal_modules=internal_modules,
+                    producer=ImportProducer("import-renamed-types", model),
                 )
 
     def __import_enum_member_literal_classes(
@@ -4661,6 +4688,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             ctx.scoped_model_resolver,
                             init=ctx.is_init,
                             internal_modules=internal_modules,
+                            producer=ImportProducer("import-enum-member-literal-classes", model),
                         )
                         or reference.short_name
                     )
@@ -4988,7 +5016,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 literal_default,
                                 can_retain_cache=can_retain_cache,
                             )
-                        imports.append(discriminator_field.imports)
+                        self._import_ledger.append(
+                            imports,
+                            discriminator_field.imports,
+                            ImportProducer("discriminator", discriminator_model, discriminator_field),
+                        )
                         has_one_literal = True
                     if not has_one_literal:
                         new_data_type = self._create_discriminator_data_type(
@@ -5040,9 +5072,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     unions.append((model, tags, tag_field, mapping))
                 else:
                     _apply_discriminator_tags(tags, tag_field, can_retain_cache=can_retain_cache)
-            has_imported_literal = any(import_ == IMPORT_LITERAL for import_ in imports)
-            if has_imported_literal:  # pragma: no cover
-                imports.append(IMPORT_LITERAL)
         if (deferred := self._deferred_tagged_unions) or unions:
             derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
             for derived_model in {id(model): model for model in chain(self.results, models)}.values():
@@ -5643,6 +5672,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             "contain itself"
                         )
                         raise _CollapseRootModelsRecursionError(msg)
+                    producer = ImportProducer("collapse-root-models", model, model_field)
                     with replacement_context:
                         for d in copied_data_type.all_data_types:
                             _register_data_type_import(
@@ -5651,6 +5681,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 imports,
                                 scoped_model_resolver,
                                 model_path_to_module_name,
+                                ledger=self._import_ledger,
+                                producer=producer,
                             )
 
                         original_field = get_most_of_parent(data_type, DataModelFieldBase)
@@ -5659,9 +5691,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             # Use list instead of set because Import is not hashable
                             excluded_imports = [IMPORT_OPTIONAL, IMPORT_UNION]
                             field_imports = [i for i in original_field.imports if i not in excluded_imports]
-                            imports.append(field_imports)
+                            self._import_ledger.append(
+                                imports, field_imports, ImportProducer("collapse-root-models", model, original_field)
+                            )
 
-                    imports.remove_referenced_imports(root_type_model.path)
+                    self._import_ledger.remove_referenced_imports(imports, root_type_model.path, producer)
                     if not has_remaining_root_references:
                         unused_models.append(root_type_model)
 
@@ -5730,7 +5764,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not redirected_holders:
             return
         root_imports = [root_import for *_, root_import in redirected_holders if root_import is not None]
-        imports.remove(root_imports)
+        self._import_ledger.remove(imports, root_imports, _COLLAPSE_ROOT_MODELS)
         scoped_model_resolver.delete_names(
             {root_import.binding_name for root_import in root_imports}.difference(_iter_import_bindings(imports)).union(
                 self.__names_left_by_replaced_roots(models, {model.path for model in self.__module_members(models)})
@@ -5753,6 +5787,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 same_module=inner_module_name == holder_module_name,
                 init=is_init,
                 internal_modules=internal_modules,
+                producer=ImportProducer("collapse-root-models", holder),
             )
 
     def __set_circular_root_model_paths(
@@ -7400,7 +7435,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             import_=IMPORT_LITERAL.import_,
             alias=_reserve_import_alias(IMPORT_LITERAL.import_, reserved_names),
         )
-        imports.apply_alias(aliased_import)
+        self._import_ledger.apply_alias(imports, aliased_import, _REUSED_VARIANT_LITERAL)
         for field in annotated:
             for data_type in field.data_type.all_data_types:
                 data_type._set_literal_import(aliased_import)  # noqa: SLF001
@@ -7444,7 +7479,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         _apply_structured_import_aliases(models, aliased_imports, can_retain_cache=can_retain_cache)
         if module_imports is not None:
             for aliased_import in aliased_imports.values():
-                module_imports.apply_alias(aliased_import)
+                self._import_ledger.apply_alias(module_imports, aliased_import, _SHADOWED_IMPORTS)
 
     def _register_runtime_expression(self) -> None:
         """Mark a parser-owned expression created after the initial import scan."""
@@ -7542,14 +7577,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 else:
                     self.generation_store.set_base_classes(model, [base_class_dt])
             if not is_first_root and original_import:
-                imports.remove(original_import)
+                self._import_ledger.remove(imports, original_import, _GENERIC_BASE_CLASS)
                 from_ = relative(current_module_name, first_root_module_name)[0]
                 from_ = (
                     f"{from_}{first_root_module[-1].replace('.py', '')}"
                     if from_.endswith(".")
                     else f"{from_}.{first_root_module[-1].replace('.py', '')}"
                 )
-                imports.append(Import(from_=from_, import_=base_class_ref.name))
+                self._import_ledger.append(
+                    imports, Import(from_=from_, import_=base_class_ref.name), _GENERIC_BASE_CLASS
+                )
 
     @classmethod
     def _collect_exports_for_init(
@@ -8075,8 +8112,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             and self._requires_explicit_deferred_annotations(ctx.models, config)
         ):
             return future_imports_str
-        ctx.imports.append(IMPORT_ANNOTATIONS)
-        return "\n".join(import_ for import_ in (future_imports_str, str(ctx.imports.extract_future())) if import_)
+        self._import_ledger.append(ctx.imports, IMPORT_ANNOTATIONS, _DEFERRED_ANNOTATIONS)
+        future_imports = self._import_ledger.extract_future(ctx.imports, _FUTURE_IMPORTS)
+        return "\n".join(import_ for import_ in (future_imports_str, str(future_imports)) if import_)
 
     def _set_typed_extra_annotation_mode(self, *, use_deferred_annotations: bool) -> None:
         """Let the selected output configure its annotation representation."""
@@ -8103,7 +8141,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             and not disable_future_imports
             and not python_target_meets("python.deferred_annotations", self.target_python_version.version_key)
         ):
-            self.imports.append(IMPORT_ANNOTATIONS)
+            self._import_ledger.append(self.imports, IMPORT_ANNOTATIONS, _DEFERRED_ANNOTATIONS)
 
         return ParseConfig(
             with_import=bool(with_import),
@@ -8729,7 +8767,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 module_imports=ctx.imports,
             )
 
-    def _merge_runtime_expression_imports(  # noqa: PLR6301
+    def _merge_runtime_expression_imports(
         self,
         contexts: list[ModuleContext],
         model_imports: dict[DataModel, tuple[Import, ...]],
@@ -8744,27 +8782,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         runtime_imports.extend(data_type.runtime_expression_imports)
                 if runtime_imports:
                     model_imports[model] = (*model_imports[model], *runtime_imports)
-                    ctx.imports.append(runtime_imports)
+                    self._import_ledger.append(
+                        ctx.imports, runtime_imports, ImportProducer("runtime-expressions", model)
+                    )
 
     def _prepare_schema_runtime_validation_module_code(self, contexts: list[ModuleContext]) -> None:
         """Plan opt-in module helpers before their imports are collected."""
         for ctx in contexts:
             self.data_model_type.prepare_module_code(ctx.models)
 
-    def _sync_schema_runtime_validation_module_imports(  # noqa: PLR6301
+    def _sync_schema_runtime_validation_module_imports(
         self,
         contexts: list[ModuleContext],
         model_imports: dict[DataModel, tuple[Import, ...]],
     ) -> None:
-        """Merge imports added by module planning into finalized module imports.
-
-        This remains an instance method because ``snooper_to_methods`` does not
-        preserve inherited static methods on parser subclasses.
-        """
+        """Merge imports added by module planning into finalized module imports."""
         for ctx in contexts:
             for model in ctx.models:
                 prepared_imports = model.imports
-                ctx.imports.append(import_ for import_ in prepared_imports if import_ not in model_imports[model])
+                self._import_ledger.append(
+                    ctx.imports,
+                    [import_ for import_ in prepared_imports if import_ not in model_imports[model]],
+                    ImportProducer("schema-validators", model),
+                )
                 model_imports[model] = prepared_imports
 
     def __prepare_type_alias_fields(self, contexts: list[ModuleContext], unused_models: list[DataModel]) -> None:
@@ -8787,7 +8827,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if prepare_field(field := model.fields[0], prepared_patterns, replace_field_type):
                     field.invalidate_semantic_caches()
                     current_imports = model.imports
-                    ctx.imports.remove(import_ for import_ in previous_imports if import_ not in current_imports)
+                    self._import_ledger.remove(
+                        ctx.imports,
+                        [import_ for import_ in previous_imports if import_ not in current_imports],
+                        ImportProducer("type-alias-fields", model, field),
+                    )
                     self._register_runtime_expression()
 
     def _finalize_modules(  # noqa: PLR0912
@@ -8811,10 +8855,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for model in all_models:
                 model.finalize_sequence_interface()
         model_imports = {model: model.imports for ctx in contexts for model in ctx.models}
+        ledger = self._import_ledger
 
         for ctx in contexts:
             for model in ctx.models:
-                ctx.imports.append(model_imports[model])
+                ledger.append(ctx.imports, model_imports[model], ImportProducer("model-imports-snapshot", model))
 
         replaced_root_modules = (
             {
@@ -8829,8 +8874,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for unused_model in unused_models:
             module, models = replaced_root_modules.pop(id(unused_model), None) or model_to_module_models[unused_model]
             if unused_model in models:  # pragma: no branch
-                imports = module_to_import[module]
-                imports.remove(model_imports.get(unused_model, unused_model.imports))
+                ledger.remove(
+                    module_to_import[module],
+                    model_imports.get(unused_model, unused_model.imports),
+                    ImportProducer("unused-models", unused_model),
+                )
                 models.remove(unused_model)
 
         if self.config.aliases:
@@ -8849,13 +8897,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         for ctx in contexts:
             used_names = self._collect_used_names_from_models(ctx.models, model_imports)
-            ctx.imports.remove_unused(used_names)
+            ledger.remove_unused(ctx.imports, used_names, _REMOVE_UNUSED)
 
         for ctx in contexts:
-            self.data_model_type.resolve_module_import_conflicts(ctx.models, model_imports, ctx.imports)
+            with ledger.external(ctx.imports, _IMPORT_CONFLICTS):
+                self.data_model_type.resolve_module_import_conflicts(ctx.models, model_imports, ctx.imports)
 
         for ctx in contexts:
-            _bind_module_field_names(ctx.models, ctx.imports)
+            _bind_module_field_names(ctx.models, ctx.imports, ledger)
 
         renamed_models = False
         for ctx in contexts:
@@ -8876,9 +8925,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._sync_schema_runtime_validation_module_imports(contexts, model_imports)
 
         if (overrides := self._import_overrides) is not None:
-            _remap_imports(self.imports, overrides)
+            _remap_imports(ledger, self.imports, overrides)
             for ctx in contexts:
-                _remap_imports(ctx.imports, overrides)
+                _remap_imports(ledger, ctx.imports, overrides)
         if self._unavailable_imports:
             self._reject_unavailable_imports(contexts)
 
@@ -9101,6 +9150,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         result: list[str] = []
         export_imports: Imports | None = None
         module_future_imports_str = self._get_module_future_imports(ctx, config, future_imports_str)
+        if (mode := check_mode(CheckArea.MODULE_IMPORTS)) is not None:
+            self._check_module_imports(mode, ctx)
 
         if config.all_exports_scope is not None and ctx.module[-1] == "__init__.py":
             child_exports = self._collect_exports_for_init(ctx.module, contexts, config.all_exports_scope)
@@ -9273,6 +9324,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             },
             tuple(redact_reference(model_identities[model]) for model, _ in models),
         )
+
+    def _check_module_imports(self, mode: CheckMode, ctx: ModuleContext) -> None:
+        """Report the shared imports and the module's imports where they differ from the replay of their ledger.
+
+        Such a difference is a write that did not go through ``parser/_imports_plan.py:ModuleImportLedger``.
+        """
+        for label, imports in (("shared imports", self.imports), (f"imports of {'/'.join(ctx.module)}", ctx.imports)):
+            if differences := self._import_ledger.differences(imports):
+                mode.violation(
+                    Error,
+                    f"{label} differ from the replay of their ledger in {', '.join(differences)}",
+                    imports=label,
+                    parts=list(differences),
+                )
 
     def _check_schema_locations(self, mode: CheckMode) -> None:
         """Report the models parsed from a JSON document without a schema location (the copy step lost it).
@@ -9803,7 +9868,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         require_update_action_models: list[str],
     ) -> str | dict[tuple[str, ...], Result]:
         """Render the shared result mapping and apply final output-only transformations."""
-        future_imports = self.imports.extract_future()
+        future_imports = self._import_ledger.extract_future(self.imports, _FUTURE_IMPORTS)
         future_imports_str = str(future_imports)
         if forwarder_map:
             forwarder_map = _forward_defined_models(contexts, forwarder_map)

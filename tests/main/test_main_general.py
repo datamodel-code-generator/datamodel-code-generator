@@ -62,6 +62,7 @@ from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import (
     CHECK_MODEL_GRAPH_ENV,
+    CHECK_MODULE_IMPORTS_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -2667,6 +2668,57 @@ def test_import_overrides_preserve_alias(output_file: Path) -> None:
             str(DATA_PATH / "config" / "import_overrides.json"),
         ],
     )
+
+
+@freeze_time(TIMESTAMP)
+def test_import_overrides_on_a_target_without_shared_imports(output_file: Path) -> None:
+    """Route generated typing imports through a compatibility module when no module shares a future import."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "datetime.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "typing.TypedDict",
+            "--target-python-version",
+            "3.14",
+            "--import-overrides",
+            '{"TypedDict": "my_project.typing_compat", "NotRequired": "my_project.typing_compat"}',
+        ],
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_module_imports_written_outside_the_import_ledger(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A custom ``_process_single_module`` that appends to the module's imports itself bypasses the import ledger.
+
+    The check (`1`, as the test suite sets it) raises when the module's import text is written; `report:<path>`
+    appends a JSON line and goes on; with the check off (`0`) the import is counted once more and the output reads the
+    same.
+    """
+    from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class DirectImportWriter(JsonSchemaParser):
+        def _process_single_module(self, *args: Any, **kwargs: Any) -> Any:
+            context = super()._process_single_module(*args, **kwargs)
+            context.imports.append(Import.from_full_path("pydantic.BaseModel"))
+            return context
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_MODULE_IMPORTS_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = DirectImportWriter(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
+    if flag == "check":
+        with pytest.raises(Error, match=f"^{CHECK_MODULE_IMPORTS_ENV}: imports of .+ differ from the replay of"):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
 @freeze_time(TIMESTAMP)

@@ -134,6 +134,7 @@ from datamodel_code_generator.parser._schema_graph import (
     SchemaGraphBuilder,
     walk_schema_resources,
 )
+from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
@@ -241,6 +242,8 @@ def _update_false_schema_refs(
 
 
 _MIN_UNION_VARIANT_LITERAL_VALUES = 2
+_EXTERNAL_REF_MAPPING_IMPORT = ImportProducer("external-ref-mapping")
+_X_PYTHON_IMPORT = ImportProducer("x-python-import")
 _ALL_OF_METADATA_FIELDS = ("nullable", "description", "default", "example", "examples", "readOnly", "writeOnly")
 _ANNOTATION_KEYWORDS = frozenset({
     "$comment",
@@ -3952,7 +3955,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         # Construct import — same pattern as x-python-import
         full_path = f"{python_package}.{class_name}"
         import_ = Import.from_full_path(full_path)
-        self.imports.append(import_)
+        self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
         return self.data_type.from_import(import_)
 
     def _get_x_python_import_path(self, x_python_import: dict[str, Any]) -> str | None:
@@ -4111,7 +4114,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 bound_type = self._bind_python_type(runtime_symbol)
                 return self.data_type(type=render_python_type_expr(bound_type.expression), python_type=bound_type)
             import_ = self._get_x_python_import(full_path)
-            self.imports.append(import_)
+            self._import_ledger.append(self.imports, import_, _X_PYTHON_IMPORT)
             return self.data_type(type=import_.import_, import_=import_, alias=import_.alias)
         if not self._dynamic_anchors or (
             (reference := self._dynamic_specialization_reference(ref, resolved_ref)) is None

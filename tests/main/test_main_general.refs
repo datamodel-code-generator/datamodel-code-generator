@@ -482,6 +482,8 @@ custom-unset	main/generate_with_empty_formatters.py
 	main/import_overrides.py
 [test_import_overrides_apply_to_additional_imports]
 	main/import_overrides_additional_import.py
+[test_import_overrides_on_a_target_without_shared_imports]
+	main/import_overrides_on_a_target_without_shared_imports.py
 [test_import_overrides_preserve_alias]
 	main/import_overrides_preserve_alias.py
 [test_init_exports_without_formatting]
@@ -574,6 +576,10 @@ schema_reference_positions	main/mcp_tools/schema_reference_positions.txt
 schema_value_references	main/mcp_tools/schema_value_references.txt
 [test_mcp_tools_url_preserves_relative_ref_context]
 	main/mcp_tools/remote_relative_ref.py
+[test_module_imports_written_outside_the_import_ledger]
+off	main/main_general/module_imports_written_outside_the_import_ledger[off].txt
+report	main/main_general/module_imports_written_outside_the_import_ledger[report].report.txt
+report	main/main_general/module_imports_written_outside_the_import_ledger[report].txt	= main/main_general/module_imports_written_outside_the_import_ledger[off].txt
 [test_module_split_mode_single]
 	main/jsonschema/module_split_single//*.py
 [test_no_use_type_checking_imports]

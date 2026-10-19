@@ -60670,6 +60670,15 @@ Three L6 passes repair results that L5 built from facts that changed afterwards:
 and `__import_renamed_types` (reuse and renames in a later module, including the `parent` collapse rename) and
 `__fix_tag_opt_out_field_ordering` (the tag opt-out decided in L6).
 
+**Module imports.** The passes from L1 to L7 write the imports of a module (`ModuleContext.imports`) and the imports
+all modules share (`Parser.imports`) only through `parser/_imports_plan.py:ModuleImportLedger`, which applies each write to
+the live `Imports` at once and keeps it as an entry with its producer: the pass (`ImportPass`), and the model and
+field it wrote for. The live `Imports` is the replay of its entries (`replay`), and a view that keeps the entries of
+some producers only is the replay of those. The output model's `resolve_module_import_conflicts` gets the live
+`Imports`; `ModuleImportLedger.external` records what it changed. `DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS`
+compares each module's imports with the replay of their entries when the import text is written, so a write that
+bypasses the ledger fails the check, which the test suite turns on.
+
 **L7.** `_generate_module_output` builds the import block, calls the backend's `render_module_code`, renders each
 model and formats the body. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
@@ -60682,7 +60691,9 @@ collection runs, applies the first write and makes a union optional for a `null`
 `parser/base.py:_flatten_union_members` (L5 finalize) moves member nullability onto the union. Import collection
 already runs in L3 deduplication, so `is_optional` read before L7 depends on what ran first. A decision before L7
 reads `types.py:DataType.admits_none`, which computes the rendered nullability with
-`model/_decisions/nullability.py:rendered_nullability` without writing it.
+`model/_decisions/nullability.py:rendered_nullability` without writing it. A RootModel decides its config items, and
+adds or drops its `ConfigDict` import, when it renders (`model/pydantic_v2/root_model.py:RootModel._sync_config_items`),
+after the module's import block is built: the named row `legacy.rootmodel-config-late-import` of the import ledger.
 
 ### Hidden Couplings
 
@@ -60847,8 +60858,9 @@ Current behaviour that a decision reading the index must allow for:
   `__replace_duplicate_name_in_module`) do not go through `rename_model`.
 - Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
   function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
-  to module imports (`ModuleContext.imports`), or writes in model methods that the hook closure does not reach; the
-  runtime guard sees the last kind, and the allowlist lists them with a witness.
+  to module imports (`ModuleContext.imports`, which go through the import ledger and its runtime check instead, see
+  L6 above), or writes in model methods that the hook closure does not reach; the runtime guard sees the last kind, and
+  the allowlist lists them with a witness.
 - Dedup keys (`DataModel.get_dedup_key`), model shapes and imports caches are separate caches, not store facts.
 
 ### Placement Guide
@@ -61484,6 +61496,7 @@ and fails the test for a write of the package that the allowlist does not list.
 | Area | Checks |
 | --- | --- |
 | `SCHEMA_LOCATIONS` | every model parsed from a JSON document has a schema location at the end of L1 ([Metadata Output](architecture.md#metadata-output)) |
+| `MODULE_IMPORTS` | the imports of every module, and those all modules share, equal the replay of their import ledger when the module's import text is written ([Model Processing Passes](architecture.md#model-processing-passes)) |
 | `MODEL_GRAPH` | collapsing root models never reaches the recursion limit: it stops before an inlining that would make a data type contain itself ([Model Processing Passes](architecture.md#model-processing-passes), L5 `__collapse_root_models`) |
 | `SCHEMA_GRAPH` | the schema graph registers the resources and anchors of every loaded document as the registry walk it replaced does ([Layers](architecture.md#layers), L0) |
 | `STORE_WRITES` | after L1, data types, fields and models change their facts only inside store operations ([Generation Store](architecture.md#generation-store)) |

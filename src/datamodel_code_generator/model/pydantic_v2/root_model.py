@@ -211,6 +211,11 @@ class RootModel(BaseModel):
         return has_config
 
     def _sync_config_items(self) -> None:
+        """Decide the config items the template writes, and the ``ConfigDict`` import they need, when rendering.
+
+        The import changes after the module's import text is built: the named row
+        ``legacy.rootmodel-config-late-import`` of ``parser/_imports_plan.py``.
+        """
         config = self.extra_template_data.get("config")
         config_items = _root_model_config_items(config)
         if literal_values := getattr(self, "_literal_values", None):

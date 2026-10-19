@@ -30,6 +30,9 @@ class CheckArea(Enum):
 
     SCHEMA_LOCATIONS = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
     """Every model parsed from a JSON document has a schema location at the end of L1."""
+    MODULE_IMPORTS = "DATAMODEL_CODE_GENERATOR_CHECK_MODULE_IMPORTS"
+    """The imports of every module, and those all modules share, equal the replay of their import ledger when the
+    module's import text is written."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
     """Collapsing root models never reaches the recursion limit: it stops before an inlining that closes a cycle."""
