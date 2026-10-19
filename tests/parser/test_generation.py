@@ -2352,13 +2352,13 @@ def test_generation_store_root_collapse_scope_rejects_invalid_deltas() -> None:
     store.register_model(_base_model("Target"))
     store.models[0].reference = target_reference
 
-    assert store._root_collapse_apply_reference_deltas({id(target_reference): 1}) is False
+    assert store._root_collapse_apply_reference_deltas({store.model_key(target_reference): 1}) is False
 
     with store._collapse_root_reference_scope():
         scope = store._active_root_collapse_reference_scope
         assert scope is not None
         unknown_reference = Reference(path="Unknown", original_name="Unknown", name="Unknown")
-        assert store._root_collapse_apply_reference_deltas({id(unknown_reference): 1}) is False
+        assert store._root_collapse_apply_reference_deltas({store.model_key(unknown_reference): 1}) is False
         assert scope.enabled is False
         assert scope.reference_counts == {}
 
@@ -2369,7 +2369,7 @@ def test_generation_store_root_collapse_scope_rejects_invalid_deltas() -> None:
     with store._collapse_root_reference_scope():
         scope = store._active_root_collapse_reference_scope
         assert scope is not None
-        assert store._root_collapse_apply_reference_deltas({id(target_reference): -1}) is False
+        assert store._root_collapse_apply_reference_deltas({store.model_key(target_reference): -1}) is False
         assert scope.enabled is False
         assert scope.reference_counts == {}
 
@@ -2397,7 +2397,7 @@ def test_generation_store_root_collapse_scope_reference_change_fallbacks() -> No
         assert store._root_collapse_prepare_data_type_replacement(
             no_reference_type,
             DataType(reference=target_reference),
-        ) == {id(target_reference): 1}
+        ) == {store.model_key(target_reference): 1}
         assert store._root_collapse_record_reference_change(tracked_type, target_reference, None)
         assert store._root_collapse_record_reference_change(tracked_type, None, new_reference) is False
         assert scope.enabled is False

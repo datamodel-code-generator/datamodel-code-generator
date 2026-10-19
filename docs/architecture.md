@@ -453,9 +453,21 @@ change presentation or derive from those facts. The code does not enforce this b
 
 `GenerationStore` (`parser/generation.py`) owns `Parser.results` and indexes, per model, its reference and paths and,
 per `DataType` occurrence, its owner model, field index and role (field, base, nested, dict key). It also records
-`DataType` objects that occur in more than one place (`shared_data_type_fact_ids`), models by path and by reference,
-and reverse edges from a reference to its users. Queries refresh the facts when a mutation marked them dirty, either
-incrementally for appended and changed models or with a full rebuild.
+`DataType` objects that occur in more than one place (`shared_data_type_fact_ids`), models by path and by model key,
+and reverse edges from a model key to the users of its reference. Queries refresh the facts when a mutation marked
+them dirty, either incrementally for appended and changed models or with a full rebuild.
+
+A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
+counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it
+(`identity_of` returns the `ModelIdentity` record: the key, the schema location and an owner that is not recorded
+yet). The store keys `model_by_ref_id`, `reverse_edges` and the reference counts of root collapse by it, through
+`GenerationStore.model_key`, instead of `id(reference)`, which Python reuses once a Reference is freed. Copies of a
+Reference (`deepcopy`, `model_copy`, pickling) keep the key of their original, so the store would take a copy for
+the model it was copied from. `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH` reports a Reference object that the store
+records or is asked about when another one took its key first. Because the key sits in `__dict__`, two distinct
+References with equal fields compare unequal under pydantic before 2.6, whose `==` compares `__dict__`; no parser
+comparison depends on that (GR5 turns the remaining `==` sites into `is`). Other parser maps still identify models by
+path, class name or `id()`.
 
 The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_MUTATION_METHODS`, for example
 `replace_field_type`, `replace_nested_data_type`, `set_fields`, `set_base_classes`, `update_model_reference` and

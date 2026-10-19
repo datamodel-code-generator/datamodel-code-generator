@@ -15,7 +15,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property, lru_cache
-from itertools import zip_longest
+from itertools import count, zip_longest
 from keyword import iskeyword
 from pathlib import Path, PurePath
 from re import Pattern
@@ -66,6 +66,8 @@ if TYPE_CHECKING:
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
 _EXPLICIT_FIELD_ALIAS_KEY: Final = "_explicit_field_alias"
+_MODEL_KEY: Final = "_model_key"
+_MODEL_KEYS: Final = count()
 
 
 def split_module_name(
@@ -249,6 +251,11 @@ class Reference(_BaseModel):
         revalidate_instances="never",
         defer_build=True,
     )
+
+    @override
+    def model_post_init(self, context: Any, /) -> None:
+        """Take the next model key of this process (`parser/_graph_ids.py`); copies of the Reference keep it."""
+        self.__dict__[_MODEL_KEY] = next(_MODEL_KEYS)
 
     @property
     def short_name(self) -> str:

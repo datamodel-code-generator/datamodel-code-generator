@@ -48,12 +48,18 @@ from typing import TYPE_CHECKING, Any, Literal, SupportsIndex, TypeAlias, TypeVa
 
 from typing_extensions import override
 
+from datamodel_code_generator import Error
+from datamodel_code_generator._checks import CheckArea, check_mode
+from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator.parser._graph_ids import ModelKey, identity_of, model_key_of
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
     from pathlib import Path
 
     from typing_extensions import Self
 
+    from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.types import DataType
 
@@ -179,9 +185,9 @@ class GenerationFacts:
     data_type_fact_by_object: dict[int, DataTypeFact] = field(default_factory=dict)
     base_owner_model_ids_by_object: dict[int, ModelId | list[ModelId]] = field(default_factory=dict)
     model_by_path: dict[str, ModelId] = field(default_factory=dict)
-    model_by_ref_id: dict[int, ModelId] = field(default_factory=dict)
+    model_by_ref_id: dict[ModelKey, ModelId] = field(default_factory=dict)
     data_types_by_model: dict[ModelId, tuple[DataTypeId, ...]] = field(default_factory=dict)
-    reverse_edges: defaultdict[int, OrderedSet[DataTypeId]] = field(default_factory=lambda: defaultdict(dict))
+    reverse_edges: defaultdict[ModelKey, OrderedSet[DataTypeId]] = field(default_factory=lambda: defaultdict(dict))
     shared_data_type_fact_ids: dict[int, list[DataTypeId]] = field(default_factory=dict)
 
     def parse_order(self, model_id: ModelId) -> int:
@@ -325,6 +331,10 @@ class _GenerationModelList(list["DataModel"]):
 class GenerationIndexBuilder:
     """Record generation facts from live parser objects, in full or for changed models."""
 
+    def __init__(self, model_key: Callable[[Reference], ModelKey] = model_key_of) -> None:
+        """Create a builder that keys references by ``model_key``."""
+        self._model_key = model_key
+
     def build(
         self,
         models: Iterable[DataModel],
@@ -390,12 +400,14 @@ class GenerationIndexBuilder:
             model_ids_by_object[id(model)] = model_id
             model_facts[model_id] = _model_fact(model_id, parse_order, model)
             facts.model_by_path[model.path] = model_id
-            facts.model_by_ref_id[id(model.reference)] = model_id
+            facts.model_by_ref_id[self._model_key(model.reference)] = model_id
             self._record_data_types_again(model_id, occurrences)
         if renamed_facts:
             model_facts.update((model_fact.id, model_fact) for model_fact in renamed_facts)
             facts.model_by_path = {model_fact.path: model_id for model_id, model_fact in model_facts.items()}
-            facts.model_by_ref_id = {id(model_fact.reference): model_id for model_id, model_fact in model_facts.items()}
+            facts.model_by_ref_id = {
+                self._model_key(model_fact.reference): model_id for model_id, model_fact in model_facts.items()
+            }
         for model_id, occurrences in changes:
             self._record_data_types_again(model_id, occurrences)
         return GenerationBuildResult(
@@ -415,7 +427,7 @@ class GenerationIndexBuilder:
 
             self._facts.model_facts[model_id] = _model_fact(model_id, parse_order, model)
             self._facts.model_by_path[model.path] = model_id
-            self._facts.model_by_ref_id[id(model.reference)] = model_id
+            self._facts.model_by_ref_id[self._model_key(model.reference)] = model_id
 
     def _data_type_occurrences(self, model: DataModel) -> list[DataTypeOccurrence]:
         occurrences: list[DataTypeOccurrence] = []
@@ -475,7 +487,7 @@ class GenerationIndexBuilder:
         data_type_ids.append(data_type_id)
 
         if data_type.reference:
-            facts.reverse_edges[id(data_type.reference)][data_type_id] = None
+            facts.reverse_edges[self._model_key(data_type.reference)][data_type_id] = None
 
         nested_role: DataTypeRole = "dict_key" if role == "dict_key" else "nested"
         for nested_data_type in data_type.data_types:
@@ -524,16 +536,16 @@ class GenerationIndexBuilder:
         self._facts.data_type_facts[fact.id] = fact
         self._index_data_type_object(fact)
         if fact.reference:
-            self._add_reverse_edge(id(fact.reference), fact.id)
+            self._add_reverse_edge(self._model_key(fact.reference), fact.id)
 
     def _forget_fact(self, fact: DataTypeFact) -> None:
         self._forget_data_type_object(fact)
         if fact.reference:
-            reference_id = id(fact.reference)
-            data_type_ids = self._facts.reverse_edges[reference_id]
+            key = self._model_key(fact.reference)
+            data_type_ids = self._facts.reverse_edges[key]
             del data_type_ids[fact.id]
             if not data_type_ids:
-                del self._facts.reverse_edges[reference_id]
+                del self._facts.reverse_edges[key]
 
     def _update_base_owners(
         self,
@@ -573,9 +585,9 @@ class GenerationIndexBuilder:
         if facts.data_type_fact_by_object[object_id] is fact:
             facts.data_type_fact_by_object[object_id] = facts.data_type_facts[max(data_type_ids, key=facts.order_key)]
 
-    def _add_reverse_edge(self, reference_id: int, data_type_id: DataTypeId) -> None:
+    def _add_reverse_edge(self, key: ModelKey, data_type_id: DataTypeId) -> None:
         facts = self._facts
-        data_type_ids = facts.reverse_edges[reference_id]
+        data_type_ids = facts.reverse_edges[key]
         if not data_type_ids or facts.order_key(next(reversed(data_type_ids))) < facts.order_key(data_type_id):
             data_type_ids[data_type_id] = None
             return
@@ -657,12 +669,12 @@ class GenerationIndex:
 
     def model_id_for_reference(self, reference: Reference) -> ModelId | None:
         """Return the tracked model id for ``reference`` if it points to a model."""
-        return self._facts().model_by_ref_id.get(id(reference))
+        return self._facts().model_by_ref_id.get(self._store.model_key(reference))
 
     def model_for_reference(self, reference: Reference) -> DataModel | None:
         """Return the tracked model for ``reference`` if it points to a model."""
         facts = self._facts()
-        model_id = facts.model_by_ref_id.get(id(reference))
+        model_id = facts.model_by_ref_id.get(self._store.model_key(reference))
         if model_id is None:
             return None
         return facts.model_facts[model_id].model
@@ -670,19 +682,19 @@ class GenerationIndex:
     def data_type_facts_for_reference(self, reference: Reference) -> tuple[DataTypeFact, ...]:
         """Return data type occurrences that currently point at ``reference``."""
         facts = self._facts()
-        data_type_ids = facts.reverse_edges.get(id(reference))
+        data_type_ids = facts.reverse_edges.get(self._store.model_key(reference))
         if not data_type_ids:
             return ()
         return tuple(facts.data_type_facts[data_type_id] for data_type_id in data_type_ids)
 
     def has_data_type_references(self, reference: Reference) -> bool:
         """Return whether any tracked data type currently points at ``reference``."""
-        return bool(self._facts().reverse_edges.get(id(reference)))
+        return bool(self._facts().reverse_edges.get(self._store.model_key(reference)))
 
     def has_data_type_references_other_than(self, reference: Reference, excluded_data_type: DataType) -> bool:
         """Return whether tracked data types other than ``excluded_data_type`` point at ``reference``."""
         facts = self._facts()
-        data_type_ids = facts.reverse_edges.get(id(reference))
+        data_type_ids = facts.reverse_edges.get(self._store.model_key(reference))
         if not data_type_ids:
             return False
         excluded_data_type_id = id(excluded_data_type)
@@ -753,7 +765,7 @@ class GenerationIndex:
         facts = self._facts()
         wrappers: list[DataModel] = []
         seen: set[int] = set()
-        data_type_ids = facts.reverse_edges.get(id(reference))
+        data_type_ids = facts.reverse_edges.get(self._store.model_key(reference))
         if not data_type_ids:
             return wrappers
         for data_type_id in data_type_ids:
@@ -776,7 +788,7 @@ class GenerationIndex:
         wrappers: list[DataModel] = []
         direct_refs: list[DataTypeFact] = []
         wrapper_ids: set[int] = set()
-        data_type_ids = facts.reverse_edges.get(id(reference))
+        data_type_ids = facts.reverse_edges.get(self._store.model_key(reference))
         if not data_type_ids:
             return wrappers, direct_refs
 
@@ -802,7 +814,7 @@ class GenerationIndex:
         """Return non-wrapper field references to ``reference`` outside ``excluded_model``."""
         facts = self._facts()
         direct_refs: list[DataTypeFact] = []
-        data_type_ids = facts.reverse_edges.get(id(reference))
+        data_type_ids = facts.reverse_edges.get(self._store.model_key(reference))
         if not data_type_ids:
             return direct_refs
         for data_type_id in data_type_ids:
@@ -820,7 +832,7 @@ class GenerationIndex:
 class _RootCollapseReferenceScope:
     """Lazy reference counts for one root-collapse mutation scope."""
 
-    reference_counts: dict[int, int] = field(default_factory=dict)
+    reference_counts: dict[ModelKey, int] = field(default_factory=dict)
     enabled: bool = True
     initialized: bool = False
     mutated: bool = False
@@ -829,6 +841,34 @@ class _RootCollapseReferenceScope:
         """Disable incremental updates after an unsupported mutation."""
         self.enabled = False
         self.reference_counts.clear()
+
+
+@final
+class _ReferenceCopies:
+    """The Reference object that the store met first under each model key, kept under the ``MODEL_GRAPH`` check."""
+
+    def __init__(self, mode: CheckMode) -> None:
+        """Start with no References met."""
+        self._mode = mode
+        self._originals: dict[ModelKey, Reference] = {}
+        self._reported: set[ModelKey] = set()
+
+    def model_key(self, reference: Reference) -> ModelKey:
+        """Return the model key of ``reference``; report the first copy met of each key, once."""
+        key = model_key_of(reference)
+        if self._originals.setdefault(key, reference) is not reference and key not in self._reported:
+            self._reported.add(key)
+            location = identity_of(reference).location
+            path = redact_reference(reference.path)
+            self._mode.violation(
+                Error,
+                f"a copy of the Reference of {reference.name} ({path}) reached the generation store beside the "
+                "original, whose model key it shares",
+                name=reference.name,
+                path=path,
+                location=None if location is None else redact_reference(str(location)),
+            )
+        return key
 
 
 class GenerationStore:  # noqa: PLR0904
@@ -853,6 +893,7 @@ class GenerationStore:  # noqa: PLR0904
         self._defer_refresh_depth = 0
         self._active_root_collapse_reference_scope: _RootCollapseReferenceScope | None = None
         self._root_collapse_internal_mutation_depth = 0
+        self._reference_copies: _ReferenceCopies | None = None
 
     @classmethod
     def create_with_results(cls) -> tuple[GenerationStore, list[DataModel]]:
@@ -885,6 +926,7 @@ class GenerationStore:  # noqa: PLR0904
         self._appended_model_ids.clear()
         self._changed_model_ids.clear()
         self._renamed_model_ids.clear()
+        self._reference_copies = None
         self._dirty = True
 
     @property
@@ -954,10 +996,10 @@ class GenerationStore:  # noqa: PLR0904
         if scope is None:
             return None
 
-        reference_id = id(reference)
-        if (count := scope.reference_counts.get(reference_id)) is None:
-            count = len(self._facts.reverse_edges.get(reference_id, ()))
-            scope.reference_counts[reference_id] = count
+        key = self.model_key(reference)
+        if (count := scope.reference_counts.get(key)) is None:
+            count = len(self._facts.reverse_edges.get(key, ()))
+            scope.reference_counts[key] = count
         if excluded_data_type is not None:
             excluded_fact = self._facts.data_type_fact_by_object.get(id(excluded_data_type))
             if excluded_fact is None or excluded_fact.data_type is not excluded_data_type:
@@ -970,7 +1012,7 @@ class GenerationStore:  # noqa: PLR0904
         self,
         data_type: DataType,
         new_data_type: DataType,
-    ) -> dict[int, int] | None:
+    ) -> dict[ModelKey, int] | None:
         """Prepare one replacement's reference deltas, or return ``None`` for fallback."""
         scope = self._root_collapse_scope_if_ready()
         if scope is None:
@@ -981,7 +1023,7 @@ class GenerationStore:  # noqa: PLR0904
             scope.invalidate()
             return None
 
-        deltas: dict[int, int] = {}
+        deltas: dict[ModelKey, int] = {}
         seen_data_type_ids: set[int] = set()
         for nested_data_type in new_data_type.all_data_types:
             nested_data_type_id = id(nested_data_type)
@@ -990,35 +1032,33 @@ class GenerationStore:  # noqa: PLR0904
                 return None
             seen_data_type_ids.add(nested_data_type_id)
             if nested_data_type.reference:
-                reference_id = id(nested_data_type.reference)
-                deltas[reference_id] = deltas.get(reference_id, 0) + 1
+                key = self.model_key(nested_data_type.reference)
+                deltas[key] = deltas.get(key, 0) + 1
         for nested_data_type in data_type.all_data_types:
             if nested_data_type.reference:
-                reference_id = id(nested_data_type.reference)
-                deltas[reference_id] = deltas.get(reference_id, 0) - 1
+                key = self.model_key(nested_data_type.reference)
+                deltas[key] = deltas.get(key, 0) - 1
         return deltas
 
-    def _root_collapse_apply_reference_deltas(self, deltas: dict[int, int]) -> bool:
+    def _root_collapse_apply_reference_deltas(self, deltas: dict[ModelKey, int]) -> bool:
         """Apply reference-count deltas when every affected reference is tracked."""
         scope = self._active_root_collapse_reference_scope
         if scope is None or not scope.enabled:
             return False
 
-        for reference_id, delta in deltas.items():
-            if delta and (
-                reference_id not in self._facts.model_by_ref_id and reference_id not in self._facts.reverse_edges
-            ):
+        for key, delta in deltas.items():
+            if delta and (key not in self._facts.model_by_ref_id and key not in self._facts.reverse_edges):
                 scope.invalidate()
                 return False
 
-        for reference_id, delta in deltas.items():
-            if (count := scope.reference_counts.get(reference_id)) is None:
-                count = len(self._facts.reverse_edges.get(reference_id, ()))
+        for key, delta in deltas.items():
+            if (count := scope.reference_counts.get(key)) is None:
+                count = len(self._facts.reverse_edges.get(key, ()))
             count += delta
             if count < 0:
                 scope.invalidate()
                 return False
-            scope.reference_counts[reference_id] = count
+            scope.reference_counts[key] = count
         return True
 
     def _root_collapse_record_reference_change(
@@ -1033,12 +1073,12 @@ class GenerationStore:  # noqa: PLR0904
         scope = self._root_collapse_scope_if_ready()
         if scope is None:
             return False
-        deltas: dict[int, int] = {}
+        deltas: dict[ModelKey, int] = {}
         if old_reference is not None:
-            deltas[id(old_reference)] = -1
+            deltas[self.model_key(old_reference)] = -1
         if new_reference is not None:
-            new_reference_id = id(new_reference)
-            deltas[new_reference_id] = deltas.get(new_reference_id, 0) + 1
+            new_key = self.model_key(new_reference)
+            deltas[new_key] = deltas.get(new_key, 0) + 1
         if (fact := self._facts.data_type_fact_by_object.get(id(data_type))) is None or fact.data_type is not data_type:
             scope.invalidate()
             return False
@@ -1069,8 +1109,8 @@ class GenerationStore:  # noqa: PLR0904
         return self._facts.model_by_path
 
     @property
-    def model_by_ref_id(self) -> dict[int, ModelId]:
-        """Compatibility access to model ids by reference object id."""
+    def model_by_ref_id(self) -> dict[ModelKey, ModelId]:
+        """Compatibility access to model ids by the model key of their reference."""
         self.refresh()
         return self._facts.model_by_ref_id
 
@@ -1081,8 +1121,8 @@ class GenerationStore:  # noqa: PLR0904
         return self._facts.data_types_by_model
 
     @property
-    def reverse_edges(self) -> defaultdict[int, OrderedSet[DataTypeId]]:
-        """Compatibility access to reverse reference edges."""
+    def reverse_edges(self) -> defaultdict[ModelKey, OrderedSet[DataTypeId]]:
+        """Compatibility access to reverse reference edges, by the model key of the reference."""
         self.refresh()
         return self._facts.reverse_edges
 
@@ -1093,6 +1133,16 @@ class GenerationStore:  # noqa: PLR0904
     def model_id(self, model: DataModel) -> ModelId | None:
         """Return the stable store id for ``model`` if it is tracked."""
         return self._model_ids_by_object.get(id(model))
+
+    def model_key(self, reference: Reference) -> ModelKey:
+        """Return the model key that the facts record ``reference`` and its users under.
+
+        Under the ``MODEL_GRAPH`` check, a Reference object that shares its key with another one the store met first
+        (a copy of it) is a violation: the store would take both for one model.
+        """
+        if (copies := self._reference_copies) is None:
+            return model_key_of(reference)
+        return copies.model_key(reference)
 
     def _invalidate(self) -> None:
         """Invalidate derived facts after a store-managed mutation."""
@@ -1170,15 +1220,17 @@ class GenerationStore:  # noqa: PLR0904
         if not self._dirty:
             return
 
+        if self._reference_copies is None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
+            self._reference_copies = _ReferenceCopies(mode)
         if self._rebuild_required:
-            result = GenerationIndexBuilder().build(
+            result = GenerationIndexBuilder(self.model_key).build(
                 self.models,
                 previous_model_ids_by_object=self._model_ids_by_object,
                 next_model_id=self._next_model_id,
             )
         else:
             try:
-                result = GenerationIndexBuilder().update(
+                result = GenerationIndexBuilder(self.model_key).update(
                     self._facts,
                     self.models,
                     appended_count=len(self._appended_model_ids),

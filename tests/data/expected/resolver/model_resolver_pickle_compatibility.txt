@@ -7,6 +7,7 @@ replacement shallow shared: True
 replacement deep shared: False
 replacement pickle shared: False
 replacement pickle field: replacement_3name
+reference pickle keeps state and model key: True
 current slotted roundtrip
 state layout: private
 slot marker: current-slot

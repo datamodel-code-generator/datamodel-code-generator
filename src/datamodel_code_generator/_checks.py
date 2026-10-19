@@ -35,7 +35,7 @@ class CheckArea(Enum):
     module's import text is written."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
-    """Collapsing root models never reaches the recursion limit: it stops before an inlining that closes a cycle."""
+    """Collapse stops before it would build a data type cycle; the store never meets a copied Reference."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did."""

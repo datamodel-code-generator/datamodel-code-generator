@@ -750,6 +750,40 @@ def _run_generate_from_config_model_copy_updates() -> list[tuple[str, str]]:
     return updates
 
 
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_model_graph_check_reports_a_copied_reference(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A custom parser that types a field with a deep copy of its type puts a copy of a Reference beside the original.
+
+    The copy keeps the model key of its original, so the generation store would take both for one model. The check
+    (`1`, as the test suite sets it) raises when the store meets the copy; `report:<path>` appends it to the file as one
+    JSON line; with the check off (`0`) the copy is generated like its original.
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class CopyingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            field = next(field for model in self.results for field in model.fields if field.data_type.reference)
+            self.generation_store.replace_field_type(field, deepcopy(field.data_type))
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = CopyingParser(
+        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    if flag == "check":
+        with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a copy of the Reference of Child "):
+            parser.parse()
+        return
+    assert_output(cast("str", parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 def test_debug(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test debug flag functionality."""
     with pytest.raises(expected_exception=SystemExit):
