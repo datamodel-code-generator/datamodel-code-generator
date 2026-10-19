@@ -73,9 +73,7 @@ class W3(BaseModel):
 
 
 class Pick(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1(Enum):
@@ -90,25 +88,19 @@ class Sib(RootModel[int]):
 
 
 class Looser(RootModel[int]):
-    root: Annotated[int, Field(ge=0)]
+    root: Annotated[int, Field(ge=1)]
 
 
 class PickProp(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickItem(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickMap(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1Prop(Enum):
@@ -142,11 +134,11 @@ QSibMapAdditionalProperty = TypeAliasType(
 
 
 class LooserItem(RootModel[int]):
-    root: Annotated[int, Field(ge=0)]
+    root: Annotated[int, Field(ge=1)]
 
 
 LooserMapAdditionalProperty = TypeAliasType(
-    "LooserMapAdditionalProperty", Annotated[int, Field(ge=0)]
+    "LooserMapAdditionalProperty", Annotated[int, Field(ge=1)]
 )
 
 
@@ -196,7 +188,7 @@ class Model(BaseModel):
     q_sib_items: list[QSibItem] | None = None
     q_sib_map: dict[str, QSibMapAdditionalProperty] | None = None
     looser: Looser | None = None
-    looser_prop: Annotated[int | None, Field(ge=0)] = None
+    looser_prop: Annotated[int | None, Field(ge=1)] = None
     looser_items: list[LooserItem] | None = None
     looser_map: dict[str, LooserMapAdditionalProperty] | None = None
     w3: W3 | None = None

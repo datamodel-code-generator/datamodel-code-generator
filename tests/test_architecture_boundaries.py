@@ -33,6 +33,7 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
     files: list[tuple[Path, check_architecture_boundaries.Layer]] = [
         (FIXTURE_ROOT / "entrypoint" / "forbidden.py", "entrypoint"),
         (FIXTURE_ROOT / "parser" / "forbidden.py", "parser"),
+        (FIXTURE_ROOT / "parser_core" / "forbidden.py", "parser-core"),
         (FIXTURE_ROOT / "facts" / "forbidden.py", "facts"),
         (FIXTURE_ROOT / "schema_graph" / "forbidden.py", "schema-graph"),
         (FIXTURE_ROOT / "config" / "forbidden.py", "config"),
@@ -78,13 +79,14 @@ def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(
 
 
 def test_architecture_boundary_source_classification() -> None:
-    """Keep entrypoint, model, schema graph, requirement, constraint-table and check flag ownership explicit."""
+    """Keep entrypoint, model, schema graph, parser core, requirement, constraint and check flag ownership explicit."""
     source_root = ROOT / "src" / "datamodel_code_generator"
     paths = (
         source_root / "__init__.py",
         source_root / "parser" / "base.py",
         source_root / "parser" / "_facts.py",
         source_root / "parser" / "_schema_graph.py",
+        source_root / "parser" / "_intersection.py",
         source_root / "config.py",
         source_root / "input_model.py",
         source_root / "reference.py",

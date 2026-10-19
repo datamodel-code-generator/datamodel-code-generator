@@ -34,7 +34,7 @@ class W3(TypedDict):
     k: NotRequired[Literal['a', 'b', 'b', 'a']]
 
 
-Pick: TypeAlias = Literal['a', 'b', 'b']
+Pick: TypeAlias = Literal['b']
 
 
 W1: TypeAlias = Literal['a', 'b', 'a', 'b']
@@ -48,9 +48,9 @@ Looser: TypeAlias = int
 
 class Model(TypedDict):
     pick: NotRequired[Pick]
-    pick_prop: NotRequired[Literal['a', 'b', 'b']]
-    pick_items: NotRequired[list[Literal['a', 'b', 'b']]]
-    pick_map: NotRequired[dict[str, Literal['a', 'b', 'b']]]
+    pick_prop: NotRequired[Literal['b']]
+    pick_items: NotRequired[list[Literal['b']]]
+    pick_map: NotRequired[dict[str, Literal['b']]]
     w1: NotRequired[W1]
     w1_prop: NotRequired[Literal['a', 'b', 'a', 'b']]
     w1_items: NotRequired[list[Literal['a', 'b', 'a', 'b']]]

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import TypeAliasType
@@ -59,11 +59,11 @@ QSibMapAdditionalProperty = TypeAliasType(
 
 
 class LooserItem(RootModel[int]):
-    root: Annotated[int, Field(ge=0)]
+    root: Annotated[int, Field(ge=1)]
 
 
 LooserMapAdditionalProperty = TypeAliasType(
-    "LooserMapAdditionalProperty", Annotated[int, Field(ge=0)]
+    "LooserMapAdditionalProperty", Annotated[int, Field(ge=1)]
 )
 
 
@@ -77,6 +77,10 @@ class WeMap(RootModel[int]):
 
 class WfMap(RootModel[int]):
     root: Annotated[int, Field(examples=[1, 2], ge=1)]
+
+
+class EnumConst(Enum):
+    b = 'b'
 
 
 class AB(Enum):
@@ -179,7 +183,11 @@ class Sib(RootModel[int]):
 
 
 class Looser(RootModel[int]):
-    root: Annotated[int, Field(ge=0)]
+    root: Annotated[int, Field(ge=1)]
+
+
+class ConstA(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
 class Model(BaseModel):
@@ -196,7 +204,7 @@ class Model(BaseModel):
     q_sib_items: list[QSibItem] | None = None
     q_sib_map: dict[str, QSibMapAdditionalProperty] | None = None
     looser: Looser | None = None
-    looser_prop: Annotated[int | None, Field(ge=0)] = None
+    looser_prop: Annotated[int | None, Field(ge=1)] = None
     looser_items: list[LooserItem] | None = None
     looser_map: dict[str, LooserMapAdditionalProperty] | None = None
     w3: W3 | None = None
@@ -241,3 +249,4 @@ class Model(BaseModel):
     wh_prop: AB | None = None
     wh_items: list[AB] | None = None
     wh_map: dict[str, AB] | None = None
+    enum_const: Literal['a'] | None = None

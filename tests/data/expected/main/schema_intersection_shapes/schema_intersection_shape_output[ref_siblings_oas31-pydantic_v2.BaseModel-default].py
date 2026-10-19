@@ -71,9 +71,7 @@ class W3(BaseModel):
 
 
 class Pick(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1(Enum):
@@ -87,26 +85,20 @@ class Sib(RootModel[conint(ge=1, le=10)]):
     root: conint(ge=1, le=10)
 
 
-class Looser(RootModel[conint(ge=0)]):
-    root: conint(ge=0)
+class Looser(RootModel[conint(ge=1)]):
+    root: conint(ge=1)
 
 
 class PickProp(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickItem(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickMap(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1Prop(Enum):
@@ -164,9 +156,9 @@ class Model(BaseModel):
     q_sib_items: list[conint(ge=1, le=10)] | None = None
     q_sib_map: dict[str, conint(ge=1, le=10)] | None = None
     looser: Looser | None = None
-    looser_prop: conint(ge=0) | None = None
-    looser_items: list[conint(ge=0)] | None = None
-    looser_map: dict[str, conint(ge=0)] | None = None
+    looser_prop: conint(ge=1) | None = None
+    looser_items: list[conint(ge=1)] | None = None
+    looser_map: dict[str, conint(ge=1)] | None = None
     w3: W3 | None = None
     redundant_type: conint(ge=1) | None = None
     redundant_allof: Quantity | None = None

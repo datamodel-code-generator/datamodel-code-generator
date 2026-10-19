@@ -255,6 +255,12 @@ class OpenAPIParser(JsonSchemaParser):
         version = detect_openapi_version(root) if root else OpenAPIVersion.Auto
         return OpenAPISchemaFeatures.from_openapi_version(version)
 
+    @property
+    @override
+    def _ref_siblings_are_parts(self) -> bool:
+        """Whether the document's OpenAPI or AsyncAPI version reads the keywords beside a ``$ref`` as parts."""
+        return self.schema_features.ref_sibling_keywords
+
     _config_class_name: ClassVar[str] = "OpenAPIParserConfig"
     _supports_api_scope: ClassVar[bool] = False
     _named_entry_maps: ClassVar[frozenset[str]] = JsonSchemaParser._named_entry_maps | {"headers"}  # ruff: ignore[private-member-access]

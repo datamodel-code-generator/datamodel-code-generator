@@ -9,21 +9,15 @@ from typing import TypeAlias
 
 
 class PickProp(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickItem(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickMap(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1Prop(Enum):
@@ -97,9 +91,7 @@ class W3:
 
 
 class Pick(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1(Enum):

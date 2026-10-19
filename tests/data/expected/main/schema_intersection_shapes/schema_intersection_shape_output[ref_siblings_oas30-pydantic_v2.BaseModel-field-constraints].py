@@ -88,7 +88,7 @@ class Sib(RootModel[int]):
 
 
 class Looser(RootModel[int]):
-    root: int = Field(..., ge=0)
+    root: int = Field(..., ge=1)
 
 
 class PickProp(Enum):
@@ -139,11 +139,11 @@ class QSibMap(RootModel[int]):
 
 
 class LooserItem(RootModel[int]):
-    root: int = Field(..., ge=0)
+    root: int = Field(..., ge=1)
 
 
 class LooserMap(RootModel[int]):
-    root: int = Field(..., ge=0)
+    root: int = Field(..., ge=1)
 
 
 class Wa(RootModel[AB]):
@@ -180,7 +180,7 @@ class Model(BaseModel):
     q_sib_items: list[QSibItem] | None = None
     q_sib_map: dict[str, QSibMap] | None = None
     looser: Looser | None = None
-    looser_prop: int | None = Field(None, ge=0)
+    looser_prop: int | None = Field(None, ge=1)
     looser_items: list[LooserItem] | None = None
     looser_map: dict[str, LooserMap] | None = None
     w3: W3 | None = None

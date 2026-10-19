@@ -23,12 +23,11 @@ class Base:
 
 class E1(Enum):
     b = 'b'
-    c = 'c'
 
 
 @dataclass
 class Child(Base):
-    x: conint(le=20) | None = None
+    x: conint(le=10) | None = None
     e: E1 | None = None
     y: conint(ge=0, le=5) | None = None
 

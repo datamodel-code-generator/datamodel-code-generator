@@ -11,4 +11,4 @@ class StrictParent(BaseModel):
 
 
 class RawSchemaIntersection(StrictParent):
-    value: conint(ge=0) = Field(..., title='Value')
+    value: conint(ge=5) = Field(..., title='Value')

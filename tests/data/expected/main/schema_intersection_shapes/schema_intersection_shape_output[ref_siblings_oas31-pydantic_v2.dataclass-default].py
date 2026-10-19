@@ -72,9 +72,7 @@ class W3:
 
 
 class Pick(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1(Enum):
@@ -87,25 +85,19 @@ class W1(Enum):
 Sib = TypeAliasType("Sib", Annotated[int, Field(ge=1, le=10)])
 
 
-Looser = TypeAliasType("Looser", Annotated[int, Field(ge=0)])
+Looser = TypeAliasType("Looser", Annotated[int, Field(ge=1)])
 
 
 class PickProp(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickItem(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickMap(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1Prop(Enum):
@@ -159,9 +151,9 @@ class Model:
     q_sib_items: list[conint(ge=1, le=10)] | None = None
     q_sib_map: dict[str, conint(ge=1, le=10)] | None = None
     looser: Looser | None = None
-    looser_prop: conint(ge=0) | None = None
-    looser_items: list[conint(ge=0)] | None = None
-    looser_map: dict[str, conint(ge=0)] | None = None
+    looser_prop: conint(ge=1) | None = None
+    looser_items: list[conint(ge=1)] | None = None
+    looser_map: dict[str, conint(ge=1)] | None = None
     w3: W3 | None = None
     redundant_type: conint(ge=1) | None = None
     redundant_allof: Quantity | None = None

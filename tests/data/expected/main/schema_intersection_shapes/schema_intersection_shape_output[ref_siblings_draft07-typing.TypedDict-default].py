@@ -70,6 +70,9 @@ Sib: TypeAlias = int
 Looser: TypeAlias = int
 
 
+ConstA: TypeAlias = Literal['a']
+
+
 class Model(TypedDict):
     pick: NotRequired[Pick]
     pick_prop: NotRequired[Literal['a', 'b', 'b']]
@@ -127,3 +130,4 @@ class Model(TypedDict):
     wh_prop: NotRequired[AB]
     wh_items: NotRequired[list[AB]]
     wh_map: NotRequired[dict[str, AB]]
+    enum_const: NotRequired[Literal['a']]

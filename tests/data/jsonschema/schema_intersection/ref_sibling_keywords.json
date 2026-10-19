@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "unique": {
+      "$ref": "#/$defs/UniqueList",
+      "uniqueItems": false
+    },
+    "count_number": {
+      "$ref": "#/$defs/Count",
+      "type": "number"
+    },
+    "code_or_null": {
+      "$ref": "#/$defs/Code",
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "disjoint": {
+      "$ref": "#/$defs/AB",
+      "enum": [
+        "c"
+      ]
+    },
+    "named": {
+      "$ref": "#/$defs/Named",
+      "enum": [
+        "b"
+      ]
+    },
+    "const_conflict": {
+      "$ref": "#/$defs/ConstA",
+      "const": "b"
+    },
+    "closed": {
+      "$ref": "#/$defs/Closed",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "int_values": {
+      "$ref": "#/$defs/IntMap",
+      "additionalProperties": true
+    },
+    "any_values": {
+      "$ref": "#/$defs/AnyMap",
+      "additionalProperties": true
+    },
+    "small_items": {
+      "$ref": "#/$defs/SmallItems",
+      "items": {
+        "maximum": 20
+      }
+    },
+    "small_property": {
+      "$ref": "#/$defs/SmallProperty",
+      "properties": {
+        "n": {
+          "maximum": 20
+        }
+      }
+    },
+    "crossed": {
+      "$ref": "#/$defs/Min5",
+      "maximum": 3
+    },
+    "const_enum": {
+      "$ref": "#/$defs/AB",
+      "const": "c"
+    },
+    "enum_const": {
+      "$ref": "#/$defs/ConstA",
+      "enum": [
+        "b"
+      ]
+    },
+    "self_crossed": {
+      "$ref": "#/$defs/Crossed",
+      "minimum": 4
+    }
+  },
+  "$defs": {
+    "UniqueList": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "uniqueItems": true
+    },
+    "Count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "Code": {
+      "type": "string"
+    },
+    "AB": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ]
+    },
+    "Named": {
+      "type": "string",
+      "enum": [
+        "a",
+        "b"
+      ],
+      "x-enum-varnames": [
+        "FIRST",
+        "SECOND"
+      ]
+    },
+    "ConstA": {
+      "type": "string",
+      "const": "a"
+    },
+    "Closed": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "IntMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "AnyMap": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "SmallItems": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "maximum": 10
+      }
+    },
+    "SmallProperty": {
+      "type": "object",
+      "properties": {
+        "n": {
+          "type": "integer",
+          "maximum": 10
+        }
+      }
+    },
+    "Min5": {
+      "type": "integer",
+      "minimum": 5
+    },
+    "Crossed": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 3
+    }
+  }
+}

@@ -20,12 +20,10 @@ class Pet(Struct):
 
 class PetType1(Enum):
     cat = 'cat'
-    dog = 'dog'
-    cat_1 = 'cat'
 
 
 class Cat(Pet):
-    petType: Literal['Cat']
+    petType: Literal['cat']
     meow: str | UnsetType = UNSET
 
 

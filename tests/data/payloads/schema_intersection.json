@@ -2742,6 +2742,14 @@
             "k": "c"
           }
         ]
+      },
+      "enum_const": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "b"
+        ]
       }
     }
   },
@@ -4292,6 +4300,228 @@
           {
             "w": "b"
           }
+        ]
+      }
+    }
+  },
+  "ref_sibling_keywords": {
+    "model": "Model",
+    "fields": {
+      "unique": {
+        "valid": [
+          [
+            1,
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "count_number": {
+        "valid": [
+          3
+        ],
+        "invalid": [
+          2.5,
+          -1
+        ]
+      },
+      "code_or_null": {
+        "valid": [],
+        "invalid": [
+          null,
+          3,
+          "x"
+        ]
+      },
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "named": {
+        "valid": [
+          "b"
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "const_conflict": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "closed": {
+        "valid": [
+          {
+            "a": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "a": "x",
+            "b": "y"
+          }
+        ]
+      },
+      "int_values": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": "x"
+          }
+        ]
+      },
+      "any_values": {
+        "valid": [
+          {
+            "k": "x"
+          }
+        ],
+        "invalid": [
+          "x"
+        ]
+      },
+      "small_items": {
+        "valid": [
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            15
+          ]
+        ]
+      },
+      "small_property": {
+        "valid": [
+          {
+            "n": 10
+          }
+        ],
+        "invalid": [
+          {
+            "n": 15
+          }
+        ]
+      },
+      "crossed": {
+        "valid": [],
+        "invalid": [
+          3,
+          5
+        ]
+      },
+      "const_enum": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "c"
+        ]
+      },
+      "enum_const": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "self_crossed": {
+        "valid": [],
+        "invalid": [
+          4,
+          5
+        ]
+      }
+    }
+  },
+  "inherited_override_keywords": {
+    "model": "Model",
+    "fields": {
+      "c": {
+        "valid": [
+          {
+            "tags": {
+              "a": "x",
+              "b": "y"
+            }
+          },
+          {}
+        ],
+        "invalid": [
+          {
+            "tags": {
+              "b": "y"
+            }
+          },
+          {
+            "tags": {
+              "a": "x"
+            }
+          },
+          {
+            "kind": "c"
+          },
+          {
+            "size": 1
+          },
+          {
+            "size": "x"
+          },
+          {
+            "code": "abcdef"
+          }
+        ]
+      }
+    }
+  },
+  "ref_sibling_nullable_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "typed": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "abcdef"
+        ]
+      },
+      "untyped": {
+        "valid": [
+          "ab"
+        ],
+        "invalid": [
+          "abcdef"
+        ]
+      },
+      "typed_items": {
+        "valid": [
+          [
+            "ab"
+          ]
+        ],
+        "invalid": [
+          [
+            null
+          ],
+          [
+            "abcdef"
+          ]
         ]
       }
     }

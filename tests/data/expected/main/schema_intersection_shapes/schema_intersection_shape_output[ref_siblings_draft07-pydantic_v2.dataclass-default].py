@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, conint, constr
 from pydantic.dataclasses import dataclass
@@ -48,6 +48,10 @@ class W1Map(Enum):
     b = 'b'
     a_1 = 'a'
     b_1 = 'b'
+
+
+class EnumConst(Enum):
+    b = 'b'
 
 
 class AB(Enum):
@@ -141,7 +145,10 @@ class W1(Enum):
 Sib = TypeAliasType("Sib", Annotated[int, Field(ge=1, le=10)])
 
 
-Looser = TypeAliasType("Looser", Annotated[int, Field(ge=0)])
+Looser = TypeAliasType("Looser", Annotated[int, Field(ge=1)])
+
+
+ConstA = TypeAliasType("ConstA", Literal['a'])
 
 
 @dataclass
@@ -159,9 +166,9 @@ class Model:
     q_sib_items: list[conint(ge=1, le=10)] | None = None
     q_sib_map: dict[str, conint(ge=1, le=10)] | None = None
     looser: Looser | None = None
-    looser_prop: conint(ge=0) | None = None
-    looser_items: list[conint(ge=0)] | None = None
-    looser_map: dict[str, conint(ge=0)] | None = None
+    looser_prop: conint(ge=1) | None = None
+    looser_items: list[conint(ge=1)] | None = None
+    looser_map: dict[str, conint(ge=1)] | None = None
     w3: W3 | None = None
     redundant_type: conint(ge=1) | None = None
     redundant_allof: Quantity | None = None
@@ -202,3 +209,4 @@ class Model:
     wh_prop: AB | None = None
     wh_items: list[AB] | None = None
     wh_map: dict[str, AB] | None = None
+    enum_const: Literal['a'] | None = None

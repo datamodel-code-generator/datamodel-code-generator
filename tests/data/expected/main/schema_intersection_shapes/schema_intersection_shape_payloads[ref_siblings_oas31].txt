@@ -1,14 +1,14 @@
 pydantic_v2.BaseModel default pick "b" accepted
-pydantic_v2.BaseModel default pick "a" accepted
+pydantic_v2.BaseModel default pick "a" rejected
 pydantic_v2.BaseModel default pick "c" rejected
 pydantic_v2.BaseModel default pick_prop "b" accepted
-pydantic_v2.BaseModel default pick_prop "a" accepted
+pydantic_v2.BaseModel default pick_prop "a" rejected
 pydantic_v2.BaseModel default pick_prop "c" rejected
 pydantic_v2.BaseModel default pick_items ["b"] accepted
-pydantic_v2.BaseModel default pick_items ["a"] accepted
+pydantic_v2.BaseModel default pick_items ["a"] rejected
 pydantic_v2.BaseModel default pick_items ["c"] rejected
 pydantic_v2.BaseModel default pick_map {"k": "b"} accepted
-pydantic_v2.BaseModel default pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel default pick_map {"k": "a"} rejected
 pydantic_v2.BaseModel default pick_map {"k": "c"} rejected
 pydantic_v2.BaseModel default w1 "a" accepted
 pydantic_v2.BaseModel default w1 "b" accepted
@@ -41,19 +41,19 @@ pydantic_v2.BaseModel default q_sib_map {"k": 11} rejected
 pydantic_v2.BaseModel default looser 1 accepted
 pydantic_v2.BaseModel default looser 5 accepted
 pydantic_v2.BaseModel default looser -1 rejected
-pydantic_v2.BaseModel default looser 0 accepted
+pydantic_v2.BaseModel default looser 0 rejected
 pydantic_v2.BaseModel default looser_prop 1 accepted
 pydantic_v2.BaseModel default looser_prop 5 accepted
 pydantic_v2.BaseModel default looser_prop -1 rejected
-pydantic_v2.BaseModel default looser_prop 0 accepted
+pydantic_v2.BaseModel default looser_prop 0 rejected
 pydantic_v2.BaseModel default looser_items [1] accepted
 pydantic_v2.BaseModel default looser_items [5] accepted
 pydantic_v2.BaseModel default looser_items [-1] rejected
-pydantic_v2.BaseModel default looser_items [0] accepted
+pydantic_v2.BaseModel default looser_items [0] rejected
 pydantic_v2.BaseModel default looser_map {"k": 1} accepted
 pydantic_v2.BaseModel default looser_map {"k": 5} accepted
 pydantic_v2.BaseModel default looser_map {"k": -1} rejected
-pydantic_v2.BaseModel default looser_map {"k": 0} accepted
+pydantic_v2.BaseModel default looser_map {"k": 0} rejected
 pydantic_v2.BaseModel default w3 {"k": "a"} accepted
 pydantic_v2.BaseModel default w3 {"k": "b"} accepted
 pydantic_v2.BaseModel default w3 {"k": "c"} rejected
@@ -172,16 +172,16 @@ pydantic_v2.BaseModel default wh_map {"k": "a"} accepted
 pydantic_v2.BaseModel default wh_map {"k": "b"} accepted
 pydantic_v2.BaseModel default wh_map {"k": "c"} rejected
 pydantic_v2.dataclass default pick "b" accepted
-pydantic_v2.dataclass default pick "a" accepted
+pydantic_v2.dataclass default pick "a" rejected
 pydantic_v2.dataclass default pick "c" rejected
 pydantic_v2.dataclass default pick_prop "b" accepted
-pydantic_v2.dataclass default pick_prop "a" accepted
+pydantic_v2.dataclass default pick_prop "a" rejected
 pydantic_v2.dataclass default pick_prop "c" rejected
 pydantic_v2.dataclass default pick_items ["b"] accepted
-pydantic_v2.dataclass default pick_items ["a"] accepted
+pydantic_v2.dataclass default pick_items ["a"] rejected
 pydantic_v2.dataclass default pick_items ["c"] rejected
 pydantic_v2.dataclass default pick_map {"k": "b"} accepted
-pydantic_v2.dataclass default pick_map {"k": "a"} accepted
+pydantic_v2.dataclass default pick_map {"k": "a"} rejected
 pydantic_v2.dataclass default pick_map {"k": "c"} rejected
 pydantic_v2.dataclass default w1 "a" accepted
 pydantic_v2.dataclass default w1 "b" accepted
@@ -214,19 +214,19 @@ pydantic_v2.dataclass default q_sib_map {"k": 11} rejected
 pydantic_v2.dataclass default looser 1 accepted
 pydantic_v2.dataclass default looser 5 accepted
 pydantic_v2.dataclass default looser -1 rejected
-pydantic_v2.dataclass default looser 0 accepted
+pydantic_v2.dataclass default looser 0 rejected
 pydantic_v2.dataclass default looser_prop 1 accepted
 pydantic_v2.dataclass default looser_prop 5 accepted
 pydantic_v2.dataclass default looser_prop -1 rejected
-pydantic_v2.dataclass default looser_prop 0 accepted
+pydantic_v2.dataclass default looser_prop 0 rejected
 pydantic_v2.dataclass default looser_items [1] accepted
 pydantic_v2.dataclass default looser_items [5] accepted
 pydantic_v2.dataclass default looser_items [-1] rejected
-pydantic_v2.dataclass default looser_items [0] accepted
+pydantic_v2.dataclass default looser_items [0] rejected
 pydantic_v2.dataclass default looser_map {"k": 1} accepted
 pydantic_v2.dataclass default looser_map {"k": 5} accepted
 pydantic_v2.dataclass default looser_map {"k": -1} rejected
-pydantic_v2.dataclass default looser_map {"k": 0} accepted
+pydantic_v2.dataclass default looser_map {"k": 0} rejected
 pydantic_v2.dataclass default w3 {"k": "a"} accepted
 pydantic_v2.dataclass default w3 {"k": "b"} accepted
 pydantic_v2.dataclass default w3 {"k": "c"} rejected
@@ -345,16 +345,16 @@ pydantic_v2.dataclass default wh_map {"k": "a"} accepted
 pydantic_v2.dataclass default wh_map {"k": "b"} accepted
 pydantic_v2.dataclass default wh_map {"k": "c"} rejected
 msgspec.Struct default pick "b" accepted
-msgspec.Struct default pick "a" accepted
+msgspec.Struct default pick "a" rejected
 msgspec.Struct default pick "c" rejected
 msgspec.Struct default pick_prop "b" accepted
-msgspec.Struct default pick_prop "a" accepted
+msgspec.Struct default pick_prop "a" rejected
 msgspec.Struct default pick_prop "c" rejected
 msgspec.Struct default pick_items ["b"] accepted
-msgspec.Struct default pick_items ["a"] accepted
+msgspec.Struct default pick_items ["a"] rejected
 msgspec.Struct default pick_items ["c"] rejected
 msgspec.Struct default pick_map {"k": "b"} accepted
-msgspec.Struct default pick_map {"k": "a"} accepted
+msgspec.Struct default pick_map {"k": "a"} rejected
 msgspec.Struct default pick_map {"k": "c"} rejected
 msgspec.Struct default w1 "a" accepted
 msgspec.Struct default w1 "b" accepted
@@ -387,19 +387,19 @@ msgspec.Struct default q_sib_map {"k": 11} rejected
 msgspec.Struct default looser 1 accepted
 msgspec.Struct default looser 5 accepted
 msgspec.Struct default looser -1 rejected
-msgspec.Struct default looser 0 accepted
+msgspec.Struct default looser 0 rejected
 msgspec.Struct default looser_prop 1 accepted
 msgspec.Struct default looser_prop 5 accepted
 msgspec.Struct default looser_prop -1 rejected
-msgspec.Struct default looser_prop 0 accepted
+msgspec.Struct default looser_prop 0 rejected
 msgspec.Struct default looser_items [1] accepted
 msgspec.Struct default looser_items [5] accepted
 msgspec.Struct default looser_items [-1] rejected
-msgspec.Struct default looser_items [0] accepted
+msgspec.Struct default looser_items [0] rejected
 msgspec.Struct default looser_map {"k": 1} accepted
 msgspec.Struct default looser_map {"k": 5} accepted
 msgspec.Struct default looser_map {"k": -1} rejected
-msgspec.Struct default looser_map {"k": 0} accepted
+msgspec.Struct default looser_map {"k": 0} rejected
 msgspec.Struct default w3 {"k": "a"} accepted
 msgspec.Struct default w3 {"k": "b"} accepted
 msgspec.Struct default w3 {"k": "c"} rejected
@@ -518,16 +518,16 @@ msgspec.Struct default wh_map {"k": "a"} accepted
 msgspec.Struct default wh_map {"k": "b"} accepted
 msgspec.Struct default wh_map {"k": "c"} rejected
 pydantic_v2.BaseModel --field-constraints pick "b" accepted
-pydantic_v2.BaseModel --field-constraints pick "a" accepted
+pydantic_v2.BaseModel --field-constraints pick "a" rejected
 pydantic_v2.BaseModel --field-constraints pick "c" rejected
 pydantic_v2.BaseModel --field-constraints pick_prop "b" accepted
-pydantic_v2.BaseModel --field-constraints pick_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints pick_prop "a" rejected
 pydantic_v2.BaseModel --field-constraints pick_prop "c" rejected
 pydantic_v2.BaseModel --field-constraints pick_items ["b"] accepted
-pydantic_v2.BaseModel --field-constraints pick_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints pick_items ["a"] rejected
 pydantic_v2.BaseModel --field-constraints pick_items ["c"] rejected
 pydantic_v2.BaseModel --field-constraints pick_map {"k": "b"} accepted
-pydantic_v2.BaseModel --field-constraints pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints pick_map {"k": "a"} rejected
 pydantic_v2.BaseModel --field-constraints pick_map {"k": "c"} rejected
 pydantic_v2.BaseModel --field-constraints w1 "a" accepted
 pydantic_v2.BaseModel --field-constraints w1 "b" accepted
@@ -560,19 +560,19 @@ pydantic_v2.BaseModel --field-constraints q_sib_map {"k": 11} rejected
 pydantic_v2.BaseModel --field-constraints looser 1 accepted
 pydantic_v2.BaseModel --field-constraints looser 5 accepted
 pydantic_v2.BaseModel --field-constraints looser -1 rejected
-pydantic_v2.BaseModel --field-constraints looser 0 accepted
+pydantic_v2.BaseModel --field-constraints looser 0 rejected
 pydantic_v2.BaseModel --field-constraints looser_prop 1 accepted
 pydantic_v2.BaseModel --field-constraints looser_prop 5 accepted
 pydantic_v2.BaseModel --field-constraints looser_prop -1 rejected
-pydantic_v2.BaseModel --field-constraints looser_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints looser_prop 0 rejected
 pydantic_v2.BaseModel --field-constraints looser_items [1] accepted
 pydantic_v2.BaseModel --field-constraints looser_items [5] accepted
 pydantic_v2.BaseModel --field-constraints looser_items [-1] rejected
-pydantic_v2.BaseModel --field-constraints looser_items [0] accepted
+pydantic_v2.BaseModel --field-constraints looser_items [0] rejected
 pydantic_v2.BaseModel --field-constraints looser_map {"k": 1} accepted
 pydantic_v2.BaseModel --field-constraints looser_map {"k": 5} accepted
 pydantic_v2.BaseModel --field-constraints looser_map {"k": -1} rejected
-pydantic_v2.BaseModel --field-constraints looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints looser_map {"k": 0} rejected
 pydantic_v2.BaseModel --field-constraints w3 {"k": "a"} accepted
 pydantic_v2.BaseModel --field-constraints w3 {"k": "b"} accepted
 pydantic_v2.BaseModel --field-constraints w3 {"k": "c"} rejected
@@ -691,16 +691,16 @@ pydantic_v2.BaseModel --field-constraints wh_map {"k": "a"} accepted
 pydantic_v2.BaseModel --field-constraints wh_map {"k": "b"} accepted
 pydantic_v2.BaseModel --field-constraints wh_map {"k": "c"} rejected
 pydantic_v2.BaseModel --use-annotated pick "b" accepted
-pydantic_v2.BaseModel --use-annotated pick "a" accepted
+pydantic_v2.BaseModel --use-annotated pick "a" rejected
 pydantic_v2.BaseModel --use-annotated pick "c" rejected
 pydantic_v2.BaseModel --use-annotated pick_prop "b" accepted
-pydantic_v2.BaseModel --use-annotated pick_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated pick_prop "a" rejected
 pydantic_v2.BaseModel --use-annotated pick_prop "c" rejected
 pydantic_v2.BaseModel --use-annotated pick_items ["b"] accepted
-pydantic_v2.BaseModel --use-annotated pick_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated pick_items ["a"] rejected
 pydantic_v2.BaseModel --use-annotated pick_items ["c"] rejected
 pydantic_v2.BaseModel --use-annotated pick_map {"k": "b"} accepted
-pydantic_v2.BaseModel --use-annotated pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated pick_map {"k": "a"} rejected
 pydantic_v2.BaseModel --use-annotated pick_map {"k": "c"} rejected
 pydantic_v2.BaseModel --use-annotated w1 "a" accepted
 pydantic_v2.BaseModel --use-annotated w1 "b" accepted
@@ -733,19 +733,19 @@ pydantic_v2.BaseModel --use-annotated q_sib_map {"k": 11} rejected
 pydantic_v2.BaseModel --use-annotated looser 1 accepted
 pydantic_v2.BaseModel --use-annotated looser 5 accepted
 pydantic_v2.BaseModel --use-annotated looser -1 rejected
-pydantic_v2.BaseModel --use-annotated looser 0 accepted
+pydantic_v2.BaseModel --use-annotated looser 0 rejected
 pydantic_v2.BaseModel --use-annotated looser_prop 1 accepted
 pydantic_v2.BaseModel --use-annotated looser_prop 5 accepted
 pydantic_v2.BaseModel --use-annotated looser_prop -1 rejected
-pydantic_v2.BaseModel --use-annotated looser_prop 0 accepted
+pydantic_v2.BaseModel --use-annotated looser_prop 0 rejected
 pydantic_v2.BaseModel --use-annotated looser_items [1] accepted
 pydantic_v2.BaseModel --use-annotated looser_items [5] accepted
 pydantic_v2.BaseModel --use-annotated looser_items [-1] rejected
-pydantic_v2.BaseModel --use-annotated looser_items [0] accepted
+pydantic_v2.BaseModel --use-annotated looser_items [0] rejected
 pydantic_v2.BaseModel --use-annotated looser_map {"k": 1} accepted
 pydantic_v2.BaseModel --use-annotated looser_map {"k": 5} accepted
 pydantic_v2.BaseModel --use-annotated looser_map {"k": -1} rejected
-pydantic_v2.BaseModel --use-annotated looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-annotated looser_map {"k": 0} rejected
 pydantic_v2.BaseModel --use-annotated w3 {"k": "a"} accepted
 pydantic_v2.BaseModel --use-annotated w3 {"k": "b"} accepted
 pydantic_v2.BaseModel --use-annotated w3 {"k": "c"} rejected
@@ -864,16 +864,16 @@ pydantic_v2.BaseModel --use-annotated wh_map {"k": "a"} accepted
 pydantic_v2.BaseModel --use-annotated wh_map {"k": "b"} accepted
 pydantic_v2.BaseModel --use-annotated wh_map {"k": "c"} rejected
 pydantic_v2.BaseModel --collapse-root-models pick "b" accepted
-pydantic_v2.BaseModel --collapse-root-models pick "a" accepted
+pydantic_v2.BaseModel --collapse-root-models pick "a" rejected
 pydantic_v2.BaseModel --collapse-root-models pick "c" rejected
 pydantic_v2.BaseModel --collapse-root-models pick_prop "b" accepted
-pydantic_v2.BaseModel --collapse-root-models pick_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models pick_prop "a" rejected
 pydantic_v2.BaseModel --collapse-root-models pick_prop "c" rejected
 pydantic_v2.BaseModel --collapse-root-models pick_items ["b"] accepted
-pydantic_v2.BaseModel --collapse-root-models pick_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models pick_items ["a"] rejected
 pydantic_v2.BaseModel --collapse-root-models pick_items ["c"] rejected
 pydantic_v2.BaseModel --collapse-root-models pick_map {"k": "b"} accepted
-pydantic_v2.BaseModel --collapse-root-models pick_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models pick_map {"k": "a"} rejected
 pydantic_v2.BaseModel --collapse-root-models pick_map {"k": "c"} rejected
 pydantic_v2.BaseModel --collapse-root-models w1 "a" accepted
 pydantic_v2.BaseModel --collapse-root-models w1 "b" accepted
@@ -906,19 +906,19 @@ pydantic_v2.BaseModel --collapse-root-models q_sib_map {"k": 11} rejected
 pydantic_v2.BaseModel --collapse-root-models looser 1 accepted
 pydantic_v2.BaseModel --collapse-root-models looser 5 accepted
 pydantic_v2.BaseModel --collapse-root-models looser -1 rejected
-pydantic_v2.BaseModel --collapse-root-models looser 0 accepted
+pydantic_v2.BaseModel --collapse-root-models looser 0 rejected
 pydantic_v2.BaseModel --collapse-root-models looser_prop 1 accepted
 pydantic_v2.BaseModel --collapse-root-models looser_prop 5 accepted
 pydantic_v2.BaseModel --collapse-root-models looser_prop -1 rejected
-pydantic_v2.BaseModel --collapse-root-models looser_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models looser_prop 0 rejected
 pydantic_v2.BaseModel --collapse-root-models looser_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models looser_items [5] accepted
 pydantic_v2.BaseModel --collapse-root-models looser_items [-1] rejected
-pydantic_v2.BaseModel --collapse-root-models looser_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models looser_items [0] rejected
 pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 5} accepted
 pydantic_v2.BaseModel --collapse-root-models looser_map {"k": -1} rejected
-pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 0} rejected
 pydantic_v2.BaseModel --collapse-root-models w3 {"k": "a"} accepted
 pydantic_v2.BaseModel --collapse-root-models w3 {"k": "b"} accepted
 pydantic_v2.BaseModel --collapse-root-models w3 {"k": "c"} rejected
@@ -1037,16 +1037,16 @@ pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "a"} accepted
 pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "b"} accepted
 pydantic_v2.BaseModel --collapse-root-models wh_map {"k": "c"} rejected
 msgspec.Struct --collapse-root-models pick "b" accepted
-msgspec.Struct --collapse-root-models pick "a" accepted
+msgspec.Struct --collapse-root-models pick "a" rejected
 msgspec.Struct --collapse-root-models pick "c" rejected
 msgspec.Struct --collapse-root-models pick_prop "b" accepted
-msgspec.Struct --collapse-root-models pick_prop "a" accepted
+msgspec.Struct --collapse-root-models pick_prop "a" rejected
 msgspec.Struct --collapse-root-models pick_prop "c" rejected
 msgspec.Struct --collapse-root-models pick_items ["b"] accepted
-msgspec.Struct --collapse-root-models pick_items ["a"] accepted
+msgspec.Struct --collapse-root-models pick_items ["a"] rejected
 msgspec.Struct --collapse-root-models pick_items ["c"] rejected
 msgspec.Struct --collapse-root-models pick_map {"k": "b"} accepted
-msgspec.Struct --collapse-root-models pick_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models pick_map {"k": "a"} rejected
 msgspec.Struct --collapse-root-models pick_map {"k": "c"} rejected
 msgspec.Struct --collapse-root-models w1 "a" accepted
 msgspec.Struct --collapse-root-models w1 "b" accepted
@@ -1079,19 +1079,19 @@ msgspec.Struct --collapse-root-models q_sib_map {"k": 11} rejected
 msgspec.Struct --collapse-root-models looser 1 accepted
 msgspec.Struct --collapse-root-models looser 5 accepted
 msgspec.Struct --collapse-root-models looser -1 rejected
-msgspec.Struct --collapse-root-models looser 0 accepted
+msgspec.Struct --collapse-root-models looser 0 rejected
 msgspec.Struct --collapse-root-models looser_prop 1 accepted
 msgspec.Struct --collapse-root-models looser_prop 5 accepted
 msgspec.Struct --collapse-root-models looser_prop -1 rejected
-msgspec.Struct --collapse-root-models looser_prop 0 accepted
+msgspec.Struct --collapse-root-models looser_prop 0 rejected
 msgspec.Struct --collapse-root-models looser_items [1] accepted
 msgspec.Struct --collapse-root-models looser_items [5] accepted
 msgspec.Struct --collapse-root-models looser_items [-1] rejected
-msgspec.Struct --collapse-root-models looser_items [0] accepted
+msgspec.Struct --collapse-root-models looser_items [0] rejected
 msgspec.Struct --collapse-root-models looser_map {"k": 1} accepted
 msgspec.Struct --collapse-root-models looser_map {"k": 5} accepted
 msgspec.Struct --collapse-root-models looser_map {"k": -1} rejected
-msgspec.Struct --collapse-root-models looser_map {"k": 0} accepted
+msgspec.Struct --collapse-root-models looser_map {"k": 0} rejected
 msgspec.Struct --collapse-root-models w3 {"k": "a"} accepted
 msgspec.Struct --collapse-root-models w3 {"k": "b"} accepted
 msgspec.Struct --collapse-root-models w3 {"k": "c"} rejected

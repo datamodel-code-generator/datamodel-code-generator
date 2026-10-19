@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -56,11 +57,15 @@ class QSibMap(RootModel[int]):
 
 
 class LooserItem(RootModel[int]):
-    root: int = Field(..., ge=0)
+    root: int = Field(..., ge=1)
 
 
 class LooserMap(RootModel[int]):
-    root: int = Field(..., ge=0)
+    root: int = Field(..., ge=1)
+
+
+class EnumConst(Enum):
+    b = 'b'
 
 
 class AB(Enum):
@@ -163,7 +168,11 @@ class Sib(RootModel[int]):
 
 
 class Looser(RootModel[int]):
-    root: int = Field(..., ge=0)
+    root: int = Field(..., ge=1)
+
+
+class ConstA(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
 class Model(BaseModel):
@@ -180,7 +189,7 @@ class Model(BaseModel):
     q_sib_items: list[QSibItem] | None = None
     q_sib_map: dict[str, QSibMap] | None = None
     looser: Looser | None = None
-    looser_prop: int | None = Field(None, ge=0)
+    looser_prop: int | None = Field(None, ge=1)
     looser_items: list[LooserItem] | None = None
     looser_map: dict[str, LooserMap] | None = None
     w3: W3 | None = None
@@ -223,3 +232,4 @@ class Model(BaseModel):
     wh_prop: AB | None = None
     wh_items: list[AB] | None = None
     wh_map: dict[str, AB] | None = None
+    enum_const: Literal['a'] | None = None

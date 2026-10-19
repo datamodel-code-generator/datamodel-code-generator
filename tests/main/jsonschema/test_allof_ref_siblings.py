@@ -394,3 +394,38 @@ def test_allof_ref_siblings_pattern_properties(output_file: Path) -> None:
         expected_file="allof_ref_siblings/items_pattern.py",
         force_exec_validation=True,
     )
+
+
+def test_allof_ref_siblings_integer_multiple_of_beyond_float(output_file: Path, tmp_path: Path) -> None:
+    """Intersect integer ``multipleOf`` values too large for a float as integers, to their least common multiple."""
+    multiple = 10**400
+    schema = tmp_path / "huge_multiple_of.json"
+    schema.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {"huge": {"$ref": "#/$defs/Huge", "multipleOf": 2 * multiple}},
+            "$defs": {"Huge": {"type": "integer", "multipleOf": multiple}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=schema,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "huge_multiple_of", "Model") as model:
+        adapter = TypeAdapter(model)
+        results = [_validation_outcome(adapter, json.dumps({"huge": value})) for value in (0, 2 * multiple, multiple)]
+    assert_output("".join(f"{result}\n" for result in results), name="values")
+
+
+def _validation_outcome(adapter: TypeAdapter[object], payload: str) -> str:
+    """Return whether the adapter accepts the JSON payload."""
+    try:
+        adapter.validate_json(payload)
+    except ValidationError:
+        return "rejected"
+    return "accepted"

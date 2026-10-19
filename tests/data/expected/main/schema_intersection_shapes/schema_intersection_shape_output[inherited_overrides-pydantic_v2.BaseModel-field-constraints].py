@@ -21,11 +21,10 @@ class Base(BaseModel):
 
 class E1(Enum):
     b = 'b'
-    c = 'c'
 
 
 class Child(Base):
-    x: int | None = Field(None, le=20)
+    x: int | None = Field(None, le=10)
     e: E1 | None = None
     y: int | None = Field(None, ge=0, le=5)
 

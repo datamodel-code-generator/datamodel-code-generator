@@ -426,6 +426,12 @@
           }
         ]
       }
+    },
+    "enum_const": {
+      "$ref": "#/definitions/ConstA",
+      "enum": [
+        "b"
+      ]
     }
   },
   "definitions": {
@@ -586,6 +592,10 @@
     "Looser": {
       "$ref": "#/definitions/Quantity",
       "minimum": 0
+    },
+    "ConstA": {
+      "type": "string",
+      "const": "a"
     }
   }
 }

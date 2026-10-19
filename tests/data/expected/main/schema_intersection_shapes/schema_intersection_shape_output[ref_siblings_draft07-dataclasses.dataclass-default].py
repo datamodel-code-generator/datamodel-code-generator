@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeAlias
+from typing import Literal, TypeAlias
 
 
 class PickProp(Enum):
@@ -45,6 +45,10 @@ class W1Map(Enum):
     b = 'b'
     a_1 = 'a'
     b_1 = 'b'
+
+
+class EnumConst(Enum):
+    b = 'b'
 
 
 class AB(Enum):
@@ -139,6 +143,9 @@ Sib: TypeAlias = int
 Looser: TypeAlias = int
 
 
+ConstA: TypeAlias = Literal['a']
+
+
 @dataclass
 class Model:
     pick: Pick | None = None
@@ -197,3 +204,4 @@ class Model:
     wh_prop: AB | None = None
     wh_items: list[AB] | None = None
     wh_map: dict[str, AB] | None = None
+    enum_const: Literal['a'] | None = None

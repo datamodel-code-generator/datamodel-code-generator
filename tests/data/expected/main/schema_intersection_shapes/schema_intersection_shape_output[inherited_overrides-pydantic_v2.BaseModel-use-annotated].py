@@ -22,11 +22,10 @@ class Base(BaseModel):
 
 class E1(Enum):
     b = 'b'
-    c = 'c'
 
 
 class Child(Base):
-    x: Annotated[int | None, Field(le=20)] = None
+    x: Annotated[int | None, Field(le=10)] = None
     e: E1 | None = None
     y: Annotated[int | None, Field(ge=0, le=5)] = None
 

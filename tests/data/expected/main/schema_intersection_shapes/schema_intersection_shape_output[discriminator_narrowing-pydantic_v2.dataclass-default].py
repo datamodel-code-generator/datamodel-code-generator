@@ -22,13 +22,11 @@ class Pet:
 
 class PetType1(Enum):
     cat = 'cat'
-    dog = 'dog'
-    cat_1 = 'cat'
 
 
 @dataclass
 class Cat(Pet):
-    petType: Literal['Cat']
+    petType: Literal['cat']
     meow: str | None = None
 
 

@@ -12,12 +12,10 @@ import math
 import re
 from collections import Counter, defaultdict, deque
 from contextlib import contextmanager, suppress
-from copy import copy
+from copy import copy, deepcopy
 from dataclasses import dataclass
-from fractions import Fraction
 from functools import cached_property, lru_cache, partial, wraps
-from itertools import chain, starmap
-from math import gcd, lcm
+from itertools import chain
 from operator import is_not
 from pathlib import Path
 from string import digits
@@ -132,6 +130,16 @@ from datamodel_code_generator.model.runtime_validation import (
     _make_internal_schema_runtime_validation,
 )
 from datamodel_code_generator.parser._imports_plan import ImportProducer
+from datamodel_code_generator.parser._intersection import (
+    ENUM_METADATA_KEYWORDS,
+    enum_metadata,
+    intersect_constraint,
+    intersect_enum_values,
+    intersect_keywords,
+    intersect_multiple_of,
+    warn_unsatisfiable,
+)
+from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
     DocumentId,
@@ -332,6 +340,9 @@ _INHERITED_CONTAINER_TYPE_FIELDS: tuple[tuple[frozenset[str], frozenset[str]], .
 _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY = "_inherited_materialized_type_shape"
 _MERGED_REF_TARGET_KEY = "_merged_ref_target"
 _COPIED_NULLABLE_KEY = "_copied_nullable"
+_INHERITED_OVERRIDE_KEY = "_inherited_override"
+_REPORTED_VALUE_CONFLICT_KEY = "_reported_value_conflict"
+_VALUE_CONFLICT_KEYWORDS = frozenset({"enum", "const"})
 _NO_INHERITED_SCHEMA_MERGE = object()
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
@@ -546,110 +557,25 @@ def _json_schema_type_may_accept_container(
     return schema_type == container_type if isinstance(schema_type, str) else container_type in schema_type
 
 
-def _json_literal_values_equal(left: object, right: object) -> bool:  # noqa: PLR0911
-    """Compare JSON literals with the equality semantics used by uniqueItems."""
-    match left:
-        case None:
-            return right is None
-        case bool() as boolean:
-            return isinstance(right, bool) and boolean == right
-        case int() | float() as number:
-            return not isinstance(right, bool) and isinstance(right, (int, float)) and number == right
-        case str() as string:
-            return isinstance(right, str) and string == right
-        case list() as array:
-            return (
-                isinstance(right, list)
-                and len(array) == len(right)
-                and all(starmap(_json_literal_values_equal, zip(array, right, strict=True)))
-            )
-        case dict() as object_:
-            return (
-                isinstance(right, dict)
-                and len(object_) == len(right)
-                and all(key in right and _json_literal_values_equal(item, right[key]) for key, item in object_.items())
-            )
-    return False
-
-
-_HASH_SAFE_JSON_SCALAR_TYPES = frozenset({str, int, float, bool, type(None)})
-
-
-def _is_hash_safe_json_scalar(value: object) -> bool:
-    """Keep scalar subclasses with custom equality or hashing on the equality fallback."""
-    value_type = type(value)
-    return any(
-        isinstance(value, scalar_type)
-        and value_type.__eq__ is scalar_type.__eq__
-        and value_type.__hash__ is scalar_type.__hash__
-        for scalar_type in (str, int, float)
-    )
-
-
 def _intersect_all_of_enum(parent: list[Any], child: list[Any]) -> list[Any]:
     """Intersect JSON enum values while retaining order and already-correct enum aliases."""
-    if all(
-        type(item) in _HASH_SAFE_JSON_SCALAR_TYPES or _is_hash_safe_json_scalar(item) for item in chain(parent, child)
+    intersection = intersect_enum_values(parent, child)
+    if not intersection or (
+        len(intersection) == len(parent) and len(intersect_enum_values(child, parent)) == len(child)
     ):
-        # JSON booleans are distinct from numbers; integral floats equal their integer values.
-        parent_keys = {(isinstance(item, bool), item) for item in parent}
-        child_keys = {(isinstance(item, bool), item) for item in child}
-        if parent_keys == child_keys and parent:
-            return parent + child
-        intersection = [item for item in parent if (isinstance(item, bool), item) in child_keys]
-    else:
-        intersection = [
-            item for item in parent if any(_json_literal_values_equal(item, candidate) for candidate in child)
-        ]
-        if len(intersection) == len(parent) and all(
-            any(_json_literal_values_equal(item, candidate) for candidate in parent) for item in child
-        ):
-            return parent + child
-    return intersection or parent + child
+        return parent + child
+    return intersection
 
 
 def _align_all_of_enum_metadata(parent: dict[str, Any], child: dict[str, Any], result: dict[str, Any]) -> None:
     """Keep annotations attached to their retained enum values, preferring parent annotations."""
-    metadata = [
-        key for key in ("x-enum-varnames", "x-enumNames", "x-enum-descriptions") if parent.get(key) or child.get(key)
-    ]
-    if not metadata:
-        return
     retained_ids = {id(value) for value in result["enum"]}
     indices = [index for index, value in enumerate(parent["enum"]) if id(value) in retained_ids]
-    child_indices: list[int] | None = None
-    for key in metadata:
-        parent_metadata = parent.get(key, [])
-        child_metadata = child.get(key, [])
-        if not child_metadata or indices[-1] < len(parent_metadata):
-            result[key] = [parent_metadata[index] if index < len(parent_metadata) else None for index in indices]
-            continue
-        if child_indices is None:
-            if all(
-                type(value) in _HASH_SAFE_JSON_SCALAR_TYPES or _is_hash_safe_json_scalar(value)
-                for value in chain(parent["enum"], child["enum"])
-            ):
-                positions: dict[tuple[bool, Any], int] = {}
-                for index, value in enumerate(child["enum"]):
-                    positions.setdefault((isinstance(value, bool), value), index)
-                child_indices = [positions[isinstance(value, bool), value] for value in result["enum"]]
-            else:
-                child_indices = [
-                    next(
-                        index
-                        for index, candidate in enumerate(child["enum"])
-                        if _json_literal_values_equal(value, candidate)
-                    )
-                    for value in result["enum"]
-                ]
-        result[key] = [
-            parent_metadata[index]
-            if index < len(parent_metadata)
-            else child_metadata[child_index]
-            if child_index < len(child_metadata)
-            else None
-            for index, child_index in zip(indices, child_indices, strict=True)
-        ]
+    result.update({
+        key: [enum_metadata((parent, child), key, index) for index in indices]
+        for key in ENUM_METADATA_KEYWORDS
+        if parent.get(key) or child.get(key)
+    })
 
 
 def _is_rw_model_variant_path(path: str) -> bool:
@@ -2051,6 +1977,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._inherited_schema_ancestor_cache: dict[str, frozenset[str]] = {}
         self._inherited_schema_linearization_cache: dict[tuple[str, ...], tuple[str, ...]] = {}
         self._inherited_required_cache: dict[tuple[str, ...], frozenset[str]] = {}
+        self._ref_target_dumps: dict[tuple[str, str], tuple[dict[str, Any], str]] = {}
+        self._unsatisfiable_schemas: set[tuple[str, tuple[str, ...]]] = set()
         self._inherited_parent_property_cache: dict[
             tuple[str | int, str, frozenset[str], bool],
             tuple[
@@ -2228,6 +2156,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else JsonSchemaVersion.Auto
         )
         return version not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
+
+    @property
+    def _ref_siblings_are_parts(self) -> bool:
+        """Whether the document's dialect reads the keywords beside a ``$ref`` as parts of the schema."""
+        return self._ref_sibling_keywords_enabled
+
+    def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
+        """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it.
+
+        They are in a dialect that reads them so, and in every dialect where an inherited property override wrote
+        them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an override is an allOf part.
+        """
+        return self._ref_siblings_are_parts or _INHERITED_OVERRIDE_KEY in schema.__dict__
 
     @property
     def root_id(self) -> str | None:
@@ -3068,6 +3009,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._inherited_schema_linearization_cache.clear()
         self._inherited_required_cache.clear()
         self._inherited_parent_property_cache.clear()
+        self._ref_target_dumps.clear()
+        self._unsatisfiable_schemas.clear()
         if self.generate_schema_validators:
             self._property_count_rule_cache.clear()
 
@@ -5427,17 +5370,80 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         contains = self.SCHEMA_OBJECT_TYPE.model_validate({key: obj.extras[key] for key in keys})
         return self.SCHEMA_OBJECT_TYPE.model_validate(self._get_array_items_constraints(contains))
 
+    def _ref_target_dump(self, ref: str, resolved_ref: str) -> tuple[dict[str, Any], str]:
+        """Return a fresh dump of a referenced schema for the current document, and the reference it ends at.
+
+        References inside a schema from another document are rebased to their locations, and a referenced schema
+        that is itself a $ref is merged with its own target. The dump depends only on the resolved reference and the
+        current document, so each parse computes it once per pair and hands out copies.
+        """
+        document = self._schema_resource_document(list(self.model_resolver.current_root))
+        if (cached := self._ref_target_dumps.get((resolved_ref, document))) is None:
+            ref_dict = self._load_ref_schema_object(ref).model_dump(exclude_unset=True, by_alias=True)
+            target_ref = resolved_ref
+            if self._schema_location(resolved_ref).partition("#")[0] != document:
+                self._rebase_schema_refs(ref_dict, resolved_ref)
+            if isinstance(ref_dict.get("$ref"), str):
+                target = self._merge_ref_with_schema(self.SCHEMA_OBJECT_TYPE.model_validate(ref_dict))
+                ref_dict = target.model_dump(exclude_unset=True, by_alias=True)
+                target_ref = target.__dict__.get(_MERGED_REF_TARGET_KEY, resolved_ref)
+            cached = self._ref_target_dumps[resolved_ref, document] = ref_dict, target_ref
+        return deepcopy(cached[0]), cached[1]
+
+    def _intersect_ref_siblings(
+        self, target: dict[str, Any], siblings: dict[str, Any], where: str, *, siblings_are_parts: bool
+    ) -> tuple[dict[str, Any], tuple[str, ...]]:
+        """Merge the dump of a referenced schema with the sibling keywords of its $ref into their intersection.
+
+        The earlier merge (``_deep_merge``: lists concatenated, a sibling's value winning) stays wherever it enforces
+        what the intersection enforces; ``intersect_keywords`` replaces the keywords where it does not. A keyword whose
+        parts have no value in common keeps the earlier merge's value, with a warning. Returns the merged keywords and
+        the keywords with no value in common.
+        """
+        intersection = intersect_keywords(
+            [target, siblings],
+            self._deep_merge(target, siblings),
+            extras_key=JsonSchemaObject.__extra_key__,
+            ref_siblings_are_parts=siblings_are_parts,
+        )
+        self._warn_unsatisfiable(where, intersection.unsatisfiable)
+        return intersection.keywords, intersection.unsatisfiable
+
+    def _intersect_ref_siblings_schema(
+        self, target: dict[str, Any], siblings: dict[str, Any], where: str, *, siblings_are_parts: bool
+    ) -> JsonSchemaObject:
+        """Return the schema of the intersection of a referenced schema's dump and the sibling keywords of its $ref."""
+        merged, unsatisfiable = self._intersect_ref_siblings(
+            target, siblings, where, siblings_are_parts=siblings_are_parts
+        )
+        merged.pop("$ref", None)
+        merged_schema = self.SCHEMA_OBJECT_TYPE.model_validate(merged)
+        self._mark_reported_value_conflict(merged_schema, unsatisfiable)
+        return merged_schema
+
+    def _warn_unsatisfiable(self, where: str, keywords: tuple[str, ...]) -> None:
+        """Warn once per parse for each schema whose parts have no value in common for some keywords."""
+        if keywords and (where, keywords) not in self._unsatisfiable_schemas:
+            self._unsatisfiable_schemas.add((where, keywords))
+            warn_unsatisfiable(where, keywords)
+
+    def _mark_reported_value_conflict(  # noqa: PLR6301
+        self, schema: JsonSchemaObject, keywords: Sequence[str]
+    ) -> None:
+        """Mark a merged schema whose ``enum`` or ``const`` conflict the intersection warning already reports."""
+        if _VALUE_CONFLICT_KEYWORDS.intersection(keywords):
+            schema.__dict__[_REPORTED_VALUE_CONFLICT_KEY] = True
+
     def _merge_ref_with_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         """Merge $ref schema with current schema's additional keywords.
 
-        JSON Schema 2020-12 allows $ref alongside other keywords,
-        which should be merged together.
+        JSON Schema 2020-12 allows $ref alongside other keywords, which apply together with the referenced schema:
+        the merged schema is their intersection, keyword by keyword (``_intersect_ref_siblings``).
 
-        The local keywords take precedence over referenced schema, except a local contains: both contains then
-        apply, so the referenced contains keywords become the item bounds they imply and intersect with the local
-        bounds. References inside a schema from another document are rebased to their locations first, and a
-        referenced schema that is itself a $ref is merged with its own target, so aliases keep the definition they
-        name.
+        A local contains does not replace the referenced one: both contains then apply, so the referenced contains
+        keywords become the item bounds they imply and intersect with the local bounds. References inside a schema
+        from another document are rebased to their locations first, and a referenced schema that is itself a $ref is
+        merged with its own target, so aliases keep the definition they name.
         """
         if not obj.ref:
             return obj
@@ -5446,18 +5452,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if self._is_ref_circular(resolved_ref):
             return obj
 
-        ref_schema = self._load_ref_schema_object(ref)
-        ref_dict = ref_schema.model_dump(exclude_unset=True, by_alias=True)
-        if self._schema_location(resolved_ref).partition("#")[0] != self._schema_resource_document(
-            list(self.model_resolver.current_root)
-        ):
-            self._rebase_schema_refs(ref_dict, resolved_ref)
-        if isinstance(ref_dict.get("$ref"), str):
-            target = self._merge_ref_with_schema(self.SCHEMA_OBJECT_TYPE.model_validate(ref_dict))
-            ref_dict = target.model_dump(exclude_unset=True, by_alias=True)
-            resolved_ref = target.__dict__.get(_MERGED_REF_TARGET_KEY, resolved_ref)
+        ref_dict, resolved_ref = self._ref_target_dump(ref, resolved_ref)
         current_dict = obj.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True)
-        merged = self._deep_merge(ref_dict, current_dict)
+        merged, unsatisfiable = self._intersect_ref_siblings(
+            ref_dict,
+            current_dict,
+            str(obj.schema_location or redact_reference(obj.ref)),
+            siblings_are_parts=self._ref_siblings_are_parts_of(obj),
+        )
         merged.pop("$ref", None)
         if (
             "contains" in obj.extras
@@ -5477,6 +5479,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._merge_schema_constraints(merged, [contains_bounds], intersect=True)
 
         merged_obj = self.SCHEMA_OBJECT_TYPE.model_validate(merged)
+        self._mark_reported_value_conflict(merged_obj, unsatisfiable)
         merged_obj.__dict__[_MERGED_REF_TARGET_KEY] = resolved_ref
         return _locate(merged_obj, obj.schema_location)
 
@@ -5678,35 +5681,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _intersect_multiple_of(val1: Any, val2: Any) -> Any:
         """Return the least common multiple for JSON Schema multipleOf values."""
         with suppress(TypeError, ValueError, ZeroDivisionError):
-            multiple_1 = Fraction(str(val1))
-            multiple_2 = Fraction(str(val2))
-            merged = Fraction(
-                lcm(multiple_1.numerator, multiple_2.numerator),
-                gcd(multiple_1.denominator, multiple_2.denominator),
-            )
-            return merged.numerator if merged.denominator == 1 else float(merged)
+            return intersect_multiple_of(val1, val2)
         return val1  # pragma: no cover
 
     @staticmethod
-    def _intersect_constraint(field: str, val1: Any, val2: Any) -> Any:  # noqa: PLR0911
+    def _intersect_constraint(field: str, val1: Any, val2: Any) -> Any:
         """Compute the intersection of two constraint values."""
+        if field == "multipleOf":
+            return JsonSchemaParser._intersect_multiple_of(val1, val2)
         v1 = val1.value if isinstance(val1, UnionIntFloat) else val1
         v2 = val2.value if isinstance(val2, UnionIntFloat) else val2
-
-        match field:
-            case "minLength" | "minimum" | "exclusiveMinimum" | "minItems" | "minProperties":
-                if v1 is not None and v2 is not None:
-                    return val1 if v1 >= v2 else val2
-                return val1  # pragma: no cover
-            case "maxLength" | "maximum" | "exclusiveMaximum" | "maxItems" | "maxProperties":
-                if v1 is not None and v2 is not None:
-                    return val1 if v1 <= v2 else val2
-                return val1  # pragma: no cover
-            case "uniqueItems":
-                return val1 or val2
-            case "multipleOf":
-                return JsonSchemaParser._intersect_multiple_of(val1, val2)
-        return val1  # pragma: no cover
+        return val1 if intersect_constraint(field, v1, v2) is v1 else val2
 
     @classmethod
     def _merge_schema_constraints(
@@ -6765,9 +6750,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 sibling_dict = schema.model_dump(exclude={"ref"}, exclude_unset=True, by_alias=True)
                 if not refs_resolved:
                     self._resolve_schema_refs_in_place(sibling_dict, parent_ref)
-                merged_dict = self._deep_merge(referenced_dict, sibling_dict)
-                merged_dict.pop("$ref", None)
-                schema = self.SCHEMA_OBJECT_TYPE.model_validate(merged_dict)
+                schema = self._intersect_ref_siblings_schema(
+                    referenced_dict,
+                    sibling_dict,
+                    str(schema.schema_location or redact_reference(resolved_ref)),
+                    siblings_are_parts=self._ref_siblings_are_parts_of(schema),
+                )
                 refs_resolved = True
             else:
                 schema = referenced_schema
@@ -7267,11 +7255,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             parent_dict = parent_prop.model_dump(exclude_unset=True, by_alias=True)
             self._resolve_schema_refs_in_place(parent_dict, parent_ref)
             child_dict = effective_child.model_dump(exclude_unset=True, by_alias=True)
-            merged_dict = self._merge_property_schemas(parent_dict, child_dict)
-            merged_property = self.SCHEMA_OBJECT_TYPE.model_validate(merged_dict)
+            intersection = intersect_keywords(
+                [parent_dict, child_dict],
+                self._merge_property_schemas(parent_dict, child_dict),
+                extras_key=JsonSchemaObject.__extra_key__,
+            )
+            self._warn_unsatisfiable(
+                str(child_prop.schema_location or f"property {prop_name!r}"), intersection.unsatisfiable
+            )
+            merged_property = self.SCHEMA_OBJECT_TYPE.model_validate(intersection.keywords)
+            self._mark_reported_value_conflict(merged_property, intersection.unsatisfiable)
             merged_property.__dict__[_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY] = frozenset(
                 self.get_field_extras(effective_child)
             )
+            merged_property.__dict__[_INHERITED_OVERRIDE_KEY] = True
             merged_properties[prop_name] = merged_property
             merged_changed = True
 
@@ -12548,7 +12545,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the positions of the enum values that the const beside them excludes, when it admits one of them.
 
         Draft-04 has no const keyword. A const equal to none of the values admits no value: the schema is read as
-        written, and a warning says so once per schema location.
+        written, and a warning says so once per schema location unless the intersection warning already reports it.
         """
         if "const" not in obj.extras or not self.schema_features.const_support:
             return set()
@@ -12556,6 +12553,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         excluded = {position for position, value in enumerate(obj.enum) if not _json_literal_values_equal(const, value)}
         if len(excluded) < len(obj.enum):
             return excluded
+        if _REPORTED_VALUE_CONFLICT_KEY in obj.__dict__:
+            return set()
         if (location := redact_reference(str(obj.schema_location))) not in self._unsatisfiable_const_locations:
             self._unsatisfiable_const_locations.add(location)
             warn(

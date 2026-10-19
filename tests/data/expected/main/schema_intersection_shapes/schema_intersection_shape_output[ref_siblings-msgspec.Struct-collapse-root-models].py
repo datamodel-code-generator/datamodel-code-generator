@@ -10,21 +10,15 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class PickProp(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickItem(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class PickMap(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1Prop(Enum):
@@ -54,10 +48,10 @@ QSibItem: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 QSibMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 
 
-LooserItem: TypeAlias = Annotated[int, Meta(ge=0)]
+LooserItem: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
-LooserMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=0)]
+LooserMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
 class AB(Enum):
@@ -101,9 +95,7 @@ class W3(Struct):
 
 
 class Pick(Enum):
-    a = 'a'
     b = 'b'
-    b_1 = 'b'
 
 
 class W1(Enum):
@@ -126,8 +118,8 @@ class Model(Struct):
     q_sib_prop: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
     q_sib_items: list[QSibItem] | UnsetType = UNSET
     q_sib_map: dict[str, QSibMapAdditionalProperty] | UnsetType = UNSET
-    looser: Annotated[int, Meta(ge=0)] | UnsetType = UNSET
-    looser_prop: Annotated[int, Meta(ge=0)] | UnsetType = UNSET
+    looser: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
+    looser_prop: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     looser_items: list[LooserItem] | UnsetType = UNSET
     looser_map: dict[str, LooserMapAdditionalProperty] | UnsetType = UNSET
     w3: W3 | UnsetType = UNSET

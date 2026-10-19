@@ -1,11 +1,11 @@
-pydantic_v2.BaseModel default pet {"petType": "cat"} rejected
-pydantic_v2.BaseModel default pet {"petType": "cat", "meow": "m"} rejected
+pydantic_v2.BaseModel default pet {"petType": "cat"} accepted
+pydantic_v2.BaseModel default pet {"petType": "cat", "meow": "m"} accepted
 pydantic_v2.BaseModel default pet {"petType": "dog"} rejected
 pydantic_v2.BaseModel default pet {"petType": "bird"} rejected
 pydantic_v2.BaseModel default pet {} rejected
 pydantic_v2.BaseModel default pet {"petType": "cat", "meow": 1} rejected
-pydantic_v2.dataclass default pet {"petType": "cat"} rejected
-pydantic_v2.dataclass default pet {"petType": "cat", "meow": "m"} rejected
+pydantic_v2.dataclass default pet {"petType": "cat"} accepted
+pydantic_v2.dataclass default pet {"petType": "cat", "meow": "m"} accepted
 pydantic_v2.dataclass default pet {"petType": "dog"} rejected
 pydantic_v2.dataclass default pet {"petType": "bird"} rejected
 pydantic_v2.dataclass default pet {} rejected
@@ -16,20 +16,20 @@ msgspec.Struct default pet {"petType": "dog"} import error
 msgspec.Struct default pet {"petType": "bird"} import error
 msgspec.Struct default pet {} import error
 msgspec.Struct default pet {"petType": "cat", "meow": 1} import error
-pydantic_v2.BaseModel --field-constraints pet {"petType": "cat"} rejected
-pydantic_v2.BaseModel --field-constraints pet {"petType": "cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --field-constraints pet {"petType": "cat"} accepted
+pydantic_v2.BaseModel --field-constraints pet {"petType": "cat", "meow": "m"} accepted
 pydantic_v2.BaseModel --field-constraints pet {"petType": "dog"} rejected
 pydantic_v2.BaseModel --field-constraints pet {"petType": "bird"} rejected
 pydantic_v2.BaseModel --field-constraints pet {} rejected
 pydantic_v2.BaseModel --field-constraints pet {"petType": "cat", "meow": 1} rejected
-pydantic_v2.BaseModel --use-annotated pet {"petType": "cat"} rejected
-pydantic_v2.BaseModel --use-annotated pet {"petType": "cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --use-annotated pet {"petType": "cat"} accepted
+pydantic_v2.BaseModel --use-annotated pet {"petType": "cat", "meow": "m"} accepted
 pydantic_v2.BaseModel --use-annotated pet {"petType": "dog"} rejected
 pydantic_v2.BaseModel --use-annotated pet {"petType": "bird"} rejected
 pydantic_v2.BaseModel --use-annotated pet {} rejected
 pydantic_v2.BaseModel --use-annotated pet {"petType": "cat", "meow": 1} rejected
-pydantic_v2.BaseModel --collapse-root-models pet {"petType": "cat"} rejected
-pydantic_v2.BaseModel --collapse-root-models pet {"petType": "cat", "meow": "m"} rejected
+pydantic_v2.BaseModel --collapse-root-models pet {"petType": "cat"} accepted
+pydantic_v2.BaseModel --collapse-root-models pet {"petType": "cat", "meow": "m"} accepted
 pydantic_v2.BaseModel --collapse-root-models pet {"petType": "dog"} rejected
 pydantic_v2.BaseModel --collapse-root-models pet {"petType": "bird"} rejected
 pydantic_v2.BaseModel --collapse-root-models pet {} rejected

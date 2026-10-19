@@ -94,8 +94,8 @@ class PartialContainerDerived(PartialContainerBase):
     mapping: dict[str, PartialItem]
     unionValue: PartialItem
     booleanUnionValue: PartialItem
-    text: constr(pattern=r'.*z$', min_length=1, max_length=5)
-    number: conint(multiple_of=3)
+    text: constr(pattern=r'.*z$', min_length=3, max_length=5)
+    number: conint(multiple_of=6)
 
 
 class ForwardPartialContainerBase(BaseModel):
@@ -143,5 +143,5 @@ class ForwardPartialContainerDerived(ForwardPartialContainerBase):
     mapping: dict[str, PartialItem]
     unionValue: PartialItem
     booleanUnionValue: PartialItem
-    text: constr(pattern=r'.*z$', min_length=1, max_length=5)
-    number: conint(multiple_of=3)
+    text: constr(pattern=r'.*z$', min_length=3, max_length=5)
+    number: conint(multiple_of=6)

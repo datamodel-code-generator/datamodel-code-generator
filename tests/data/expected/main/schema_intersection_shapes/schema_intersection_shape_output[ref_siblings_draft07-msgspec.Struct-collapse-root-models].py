@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, TypeAlias
+from typing import Annotated, Literal, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
@@ -54,10 +54,10 @@ QSibItem: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 QSibMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 
 
-LooserItem: TypeAlias = Annotated[int, Meta(ge=0)]
+LooserItem: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
-LooserMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=0)]
+LooserMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
 WdMap: TypeAlias = Annotated[int, Meta(examples=[1, 2], ge=1, le=10)]
@@ -67,6 +67,10 @@ WeMap: TypeAlias = Annotated[int, Meta(examples=[1, 2], ge=1)]
 
 
 WfMap: TypeAlias = Annotated[int, Meta(examples=[1, 2], ge=1)]
+
+
+class EnumConst(Enum):
+    b = 'b'
 
 
 class AB(Enum):
@@ -140,6 +144,9 @@ class W1(Enum):
     b_1 = 'b'
 
 
+ConstA: TypeAlias = Literal['a']
+
+
 class Model(Struct):
     pick: Pick | UnsetType = UNSET
     pick_prop: PickProp | UnsetType = UNSET
@@ -153,8 +160,8 @@ class Model(Struct):
     q_sib_prop: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
     q_sib_items: list[QSibItem] | UnsetType = UNSET
     q_sib_map: dict[str, QSibMapAdditionalProperty] | UnsetType = UNSET
-    looser: Annotated[int, Meta(ge=0)] | UnsetType = UNSET
-    looser_prop: Annotated[int, Meta(ge=0)] | UnsetType = UNSET
+    looser: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
+    looser_prop: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     looser_items: list[LooserItem] | UnsetType = UNSET
     looser_map: dict[str, LooserMapAdditionalProperty] | UnsetType = UNSET
     w3: W3 | UnsetType = UNSET
@@ -201,3 +208,4 @@ class Model(Struct):
     wh_prop: AB | UnsetType = UNSET
     wh_items: list[AB] | UnsetType = UNSET
     wh_map: dict[str, AB] | UnsetType = UNSET
+    enum_const: EnumConst | UnsetType = UNSET

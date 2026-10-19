@@ -4062,7 +4062,7 @@ def test_inherited_parent_property_cache_bypasses_mutable_sibling_refs() -> None
         "#/$defs/Parent",
         refs_resolved=True,
     )
-    inline_schema = JsonSchemaObject.model_validate({"type": "integer"})
+    inline_schema = JsonSchemaObject.model_validate({"type": "string"})
     inline = parser._resolve_inherited_parent_property(
         inline_schema,
         "#/$defs/Parent",

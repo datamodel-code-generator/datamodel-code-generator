@@ -17,7 +17,9 @@
       ]
     },
     "generated": {
-      "value": 0
+      "errors": [
+        "greater_than_equal"
+      ]
     }
   },
   {
@@ -30,7 +32,9 @@
       ]
     },
     "generated": {
-      "value": 1
+      "errors": [
+        "greater_than_equal"
+      ]
     }
   },
   {

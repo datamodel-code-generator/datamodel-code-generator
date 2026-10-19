@@ -80,7 +80,7 @@ class W1(Enum):
 Sib: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 
 
-Looser: TypeAlias = Annotated[int, Meta(ge=0)]
+Looser: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
 class PickProp(Enum):
@@ -128,10 +128,10 @@ QSibItem: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 QSibMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=1, le=10)]
 
 
-LooserItem: TypeAlias = Annotated[int, Meta(ge=0)]
+LooserItem: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
-LooserMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=0)]
+LooserMapAdditionalProperty: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
 WdMap: TypeAlias = Annotated[int, Meta(examples=[1, 2], ge=1, le=10)]
@@ -172,7 +172,7 @@ class Model(Struct):
     q_sib_items: list[QSibItem] | UnsetType = UNSET
     q_sib_map: dict[str, QSibMapAdditionalProperty] | UnsetType = UNSET
     looser: Looser | UnsetType = UNSET
-    looser_prop: Annotated[int, Meta(ge=0)] | UnsetType = UNSET
+    looser_prop: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     looser_items: list[LooserItem] | UnsetType = UNSET
     looser_map: dict[str, LooserMapAdditionalProperty] | UnsetType = UNSET
     w3: W3 | UnsetType = UNSET

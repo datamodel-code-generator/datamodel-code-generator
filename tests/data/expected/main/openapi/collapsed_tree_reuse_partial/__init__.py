@@ -78,22 +78,22 @@ class Child(Base):
     allTrueValue: shared.Item
     nullableValue: shared.Item
     nullableObjectValue: shared.Item
-    directScalarValue: constr(min_length=1)
-    directScalarInferred: constr(min_length=1)
-    inlineScalarInferred: constr(min_length=1)
-    scalarArrayInferred: list[constr(min_length=1)]
-    scalarMappingInferred: dict[str, constr(min_length=1)]
-    scalarDeepInferred: list[list[constr(min_length=1)]]
-    scalarArrayRootInferred: list[constr(min_length=2)] = Field(..., min_length=1)
+    directScalarValue: constr(min_length=2)
+    directScalarInferred: constr(min_length=2)
+    inlineScalarInferred: constr(min_length=2)
+    scalarArrayInferred: list[constr(min_length=2)]
+    scalarMappingInferred: dict[str, constr(min_length=2)]
+    scalarDeepInferred: list[list[constr(min_length=2)]]
+    scalarArrayRootInferred: list[constr(min_length=2)] = Field(..., min_length=2)
     scalarMappingRootInferred: dict[str, constr(min_length=2)] = Field(
-        ..., min_length=1
+        ..., min_length=2
     )
     arrayNeutralComposition: list[shared.Item]
     mappingNeutralComposition: dict[str, shared.Item]
     deepArrayNeutralComposition: list[list[shared.Item]]
-    scalarArrayWeaker: list[constr(min_length=1)]
-    scalarMappingWeaker: dict[str, constr(min_length=1)]
-    scalarDeepWeaker: list[list[constr(min_length=1)]]
+    scalarArrayWeaker: list[constr(min_length=2)]
+    scalarMappingWeaker: dict[str, constr(min_length=2)]
+    scalarDeepWeaker: list[list[constr(min_length=2)]]
     prefixItemsNeutral: tuple[PrefixItemsNeutralItem, int]
     legacyItemsNeutral: list[LegacyItemsNeutralItem | int] = Field(
         ..., max_length=2, min_length=2

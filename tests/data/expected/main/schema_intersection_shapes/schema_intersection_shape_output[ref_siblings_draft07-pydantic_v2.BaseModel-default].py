@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field, RootModel, conint, constr
 
@@ -45,6 +46,10 @@ class W1Map(Enum):
     b = 'b'
     a_1 = 'a'
     b_1 = 'b'
+
+
+class EnumConst(Enum):
+    b = 'b'
 
 
 class AB(Enum):
@@ -146,8 +151,12 @@ class Sib(RootModel[conint(ge=1, le=10)]):
     root: conint(ge=1, le=10)
 
 
-class Looser(RootModel[conint(ge=0)]):
-    root: conint(ge=0)
+class Looser(RootModel[conint(ge=1)]):
+    root: conint(ge=1)
+
+
+class ConstA(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
 class Model(BaseModel):
@@ -164,9 +173,9 @@ class Model(BaseModel):
     q_sib_items: list[conint(ge=1, le=10)] | None = None
     q_sib_map: dict[str, conint(ge=1, le=10)] | None = None
     looser: Looser | None = None
-    looser_prop: conint(ge=0) | None = None
-    looser_items: list[conint(ge=0)] | None = None
-    looser_map: dict[str, conint(ge=0)] | None = None
+    looser_prop: conint(ge=1) | None = None
+    looser_items: list[conint(ge=1)] | None = None
+    looser_map: dict[str, conint(ge=1)] | None = None
     w3: W3 | None = None
     redundant_type: conint(ge=1) | None = None
     redundant_allof: Quantity | None = None
@@ -207,3 +216,4 @@ class Model(BaseModel):
     wh_prop: AB | None = None
     wh_items: list[AB] | None = None
     wh_map: dict[str, AB] | None = None
+    enum_const: Literal['a'] | None = None

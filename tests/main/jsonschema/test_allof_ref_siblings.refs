@@ -1696,6 +1696,9 @@ string_draft-07-none-True-cli-False	payloads/allof_ref_sibling_outputs/string_dr
 string_draft-07-none-True-cli-False	payloads/allof_ref_sibling_outputs/without_validators.txt
 string_draft-07-none-True-cli-True	main/jsonschema/allof_ref_siblings/string_draft-07_True_True.py
 string_draft-07-none-True-cli-True	payloads/allof_ref_sibling_outputs/string_draft-07.txt
+[test_allof_ref_siblings_integer_multiple_of_beyond_float]
+	main/jsonschema/allof_ref_siblings/integer_multiple_of_beyond_float.py
+	main/jsonschema/allof_ref_siblings/integer_multiple_of_beyond_float.values.txt
 [test_allof_ref_siblings_pattern_properties]
 	main/jsonschema/allof_ref_siblings/items_pattern.py
 [test_allof_ref_siblings_root_config]

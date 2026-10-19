@@ -22,11 +22,10 @@ class Base(Struct):
 
 class E1(Enum):
     b = 'b'
-    c = 'c'
 
 
 class Child(Base):
-    x: Annotated[int, Meta(le=20)] | UnsetType = UNSET
+    x: Annotated[int, Meta(le=10)] | UnsetType = UNSET
     e: E1 | UnsetType = UNSET
     y: Annotated[int, Meta(ge=0, le=5)] | UnsetType = UNSET
 

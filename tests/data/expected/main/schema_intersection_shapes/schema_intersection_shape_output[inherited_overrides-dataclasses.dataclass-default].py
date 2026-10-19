@@ -21,7 +21,6 @@ class Base:
 
 class E1(Enum):
     b = 'b'
-    c = 'c'
 
 
 @dataclass

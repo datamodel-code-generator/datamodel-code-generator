@@ -87,8 +87,8 @@ class Sib(RootModel[conint(ge=1, le=10)]):
     root: conint(ge=1, le=10)
 
 
-class Looser(RootModel[conint(ge=0)]):
-    root: conint(ge=0)
+class Looser(RootModel[conint(ge=1)]):
+    root: conint(ge=1)
 
 
 class PickProp(Enum):
@@ -164,9 +164,9 @@ class Model(BaseModel):
     q_sib_items: list[conint(ge=1, le=10)] | None = None
     q_sib_map: dict[str, conint(ge=1, le=10)] | None = None
     looser: Looser | None = None
-    looser_prop: conint(ge=0) | None = None
-    looser_items: list[conint(ge=0)] | None = None
-    looser_map: dict[str, conint(ge=0)] | None = None
+    looser_prop: conint(ge=1) | None = None
+    looser_items: list[conint(ge=1)] | None = None
+    looser_map: dict[str, conint(ge=1)] | None = None
     w3: W3 | None = None
     redundant_type: conint(ge=1) | None = None
     redundant_allof: Quantity | None = None

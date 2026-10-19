@@ -1,0 +1,56 @@
+pydantic_v2.BaseModel default c {"tags": {"a": "x", "b": "y"}} accepted
+pydantic_v2.BaseModel default c {} accepted
+pydantic_v2.BaseModel default c {"tags": {"b": "y"}} rejected
+pydantic_v2.BaseModel default c {"tags": {"a": "x"}} rejected
+pydantic_v2.BaseModel default c {"kind": "c"} accepted
+pydantic_v2.BaseModel default c {"size": 1} rejected
+pydantic_v2.BaseModel default c {"size": "x"} accepted
+pydantic_v2.BaseModel default c {"code": "abcdef"} accepted
+pydantic_v2.dataclass default c {"tags": {"a": "x", "b": "y"}} accepted
+pydantic_v2.dataclass default c {} accepted
+pydantic_v2.dataclass default c {"tags": {"b": "y"}} rejected
+pydantic_v2.dataclass default c {"tags": {"a": "x"}} rejected
+pydantic_v2.dataclass default c {"kind": "c"} accepted
+pydantic_v2.dataclass default c {"size": 1} rejected
+pydantic_v2.dataclass default c {"size": "x"} accepted
+pydantic_v2.dataclass default c {"code": "abcdef"} accepted
+msgspec.Struct default c {"tags": {"a": "x", "b": "y"}} accepted
+msgspec.Struct default c {} accepted
+msgspec.Struct default c {"tags": {"b": "y"}} rejected
+msgspec.Struct default c {"tags": {"a": "x"}} rejected
+msgspec.Struct default c {"kind": "c"} accepted
+msgspec.Struct default c {"size": 1} rejected
+msgspec.Struct default c {"size": "x"} accepted
+msgspec.Struct default c {"code": "abcdef"} accepted
+pydantic_v2.BaseModel --field-constraints c {"tags": {"a": "x", "b": "y"}} accepted
+pydantic_v2.BaseModel --field-constraints c {} accepted
+pydantic_v2.BaseModel --field-constraints c {"tags": {"b": "y"}} rejected
+pydantic_v2.BaseModel --field-constraints c {"tags": {"a": "x"}} rejected
+pydantic_v2.BaseModel --field-constraints c {"kind": "c"} accepted
+pydantic_v2.BaseModel --field-constraints c {"size": 1} rejected
+pydantic_v2.BaseModel --field-constraints c {"size": "x"} accepted
+pydantic_v2.BaseModel --field-constraints c {"code": "abcdef"} accepted
+pydantic_v2.BaseModel --use-annotated c {"tags": {"a": "x", "b": "y"}} accepted
+pydantic_v2.BaseModel --use-annotated c {} accepted
+pydantic_v2.BaseModel --use-annotated c {"tags": {"b": "y"}} rejected
+pydantic_v2.BaseModel --use-annotated c {"tags": {"a": "x"}} rejected
+pydantic_v2.BaseModel --use-annotated c {"kind": "c"} accepted
+pydantic_v2.BaseModel --use-annotated c {"size": 1} rejected
+pydantic_v2.BaseModel --use-annotated c {"size": "x"} accepted
+pydantic_v2.BaseModel --use-annotated c {"code": "abcdef"} accepted
+pydantic_v2.BaseModel --collapse-root-models c {"tags": {"a": "x", "b": "y"}} accepted
+pydantic_v2.BaseModel --collapse-root-models c {} accepted
+pydantic_v2.BaseModel --collapse-root-models c {"tags": {"b": "y"}} rejected
+pydantic_v2.BaseModel --collapse-root-models c {"tags": {"a": "x"}} rejected
+pydantic_v2.BaseModel --collapse-root-models c {"kind": "c"} accepted
+pydantic_v2.BaseModel --collapse-root-models c {"size": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models c {"size": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models c {"code": "abcdef"} accepted
+msgspec.Struct --collapse-root-models c {"tags": {"a": "x", "b": "y"}} accepted
+msgspec.Struct --collapse-root-models c {} accepted
+msgspec.Struct --collapse-root-models c {"tags": {"b": "y"}} rejected
+msgspec.Struct --collapse-root-models c {"tags": {"a": "x"}} rejected
+msgspec.Struct --collapse-root-models c {"kind": "c"} accepted
+msgspec.Struct --collapse-root-models c {"size": 1} rejected
+msgspec.Struct --collapse-root-models c {"size": "x"} accepted
+msgspec.Struct --collapse-root-models c {"code": "abcdef"} accepted

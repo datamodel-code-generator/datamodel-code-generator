@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: t
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Name:
+      type: string
+      nullable: true
+      maxLength: 5
+    Model:
+      type: object
+      properties:
+        typed:
+          $ref: '#/components/schemas/Name'
+          type: string
+          minLength: 1
+        untyped:
+          $ref: '#/components/schemas/Name'
+          minLength: 1
+        typed_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Name'
+            type: string
+            minLength: 1

@@ -17,6 +17,7 @@ SOURCE_ROOT = ROOT / "src" / "datamodel_code_generator"
 Layer: TypeAlias = Literal[
     "entrypoint",
     "parser",
+    "parser-core",
     "facts",
     "schema-graph",
     "config",
@@ -113,6 +114,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "datamodel_code_generator.enums"
         ),
     ),
+    "parser-core": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        (
+            "a pure parser core computes from the dumped schemas it is given: import only the standard library and "
+            "typing_extensions"
+        ),
+    ),
     "checks": (
         frozenset({*sys.stdlib_module_names, "typing_extensions"}),
         (
@@ -122,6 +130,8 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
     ),
 }
 """Leaf layers: the modules (with their submodules) each may import, and the reason shown on a violation."""
+_PARSER_CORE_FILENAMES: Final = frozenset({"_intersection.py"})
+"""Pure parser modules: decisions over dumped schema dicts that the parser adapters call."""
 _NEUTRAL_MODEL_FILENAMES: Final = frozenset({
     "base.py",
     "enum.py",
@@ -300,6 +310,7 @@ def _module_name(path: Path, layer: Layer) -> str:
         return {
             "entrypoint": "datamodel_code_generator.entrypoint_fixture",
             "parser": "datamodel_code_generator.parser.fixture",
+            "parser-core": "datamodel_code_generator.parser.core_fixture",
             "facts": "datamodel_code_generator.parser.facts_fixture",
             "schema-graph": "datamodel_code_generator.parser.schema_graph_fixture",
             "config": "datamodel_code_generator.config_fixture",
@@ -1157,6 +1168,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "facts"
         case ("parser", "_schema_graph.py"):
             layer = "schema-graph"
+        case ("parser", filename) if filename in _PARSER_CORE_FILENAMES:
+            layer = "parser-core"
         case ("parser", *_):
             layer = "parser"
         case ("config.py" | "input_model.py" as filename,):
