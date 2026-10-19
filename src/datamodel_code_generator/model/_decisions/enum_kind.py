@@ -38,7 +38,8 @@ __all__ = [
 
 EnumOrigin: TypeAlias = Literal["schema", "graphql", "merged"]
 """Where an enum comes from: a schema ``enum`` (JSON Schema, OpenAPI, AsyncAPI and the converted formats), a GraphQL
-enum type, or the enums an ``allOf`` lists, merged into one that replaces the field-less model of the ``allOf``."""
+enum type, or the enums an ``allOf`` lists, merged into one that replaces the field-less model of the ``allOf``.
+Schema and GraphQL enums follow the same rows."""
 
 EnumBase: TypeAlias = Literal["Enum", "IntEnum", "StrEnum"]
 """The enum class a model is written with."""
@@ -48,22 +49,18 @@ EnumKindRule: TypeAlias = Literal[
     "str-enum",
     "legacy-int-type-without-value-check",
     "legacy-subclass-type-without-member-check",
-    "legacy-graphql-subclass-str",
     "legacy-inherited-first-base-class",
     "legacy-inherited-specialized-without-member-check",
 ]
 """The rows of ``decide_enum_kind``.
 
 * ``enum``: a plain ``Enum``.
-* ``str-enum``: a ``StrEnum`` for a string type whose members are all str, on a target Python that has it.
+* ``str-enum``: a ``StrEnum`` for a string type whose members are all str, on a target Python that has it. Like an
+  ``IntEnum``, it subclasses its value type already, so ``--use-subclass-enum`` adds no value type base.
 * ``legacy-int-type-without-value-check``: an ``IntEnum`` for an integer type, whatever its members are, so a member
   ``1.5`` equals the member ``1`` and a member ``'x'`` fails at import.
 * ``legacy-subclass-type-without-member-check``: under ``--use-subclass-enum``, a plain ``Enum`` that also subclasses
   the value type of the schema type (``class A(str, Enum)``), whatever its members are.
-* ``legacy-graphql-subclass-str``: a GraphQL ``StrEnum`` that also subclasses ``str`` under ``--use-subclass-enum``,
-  where a schema enum is a ``StrEnum`` alone. It has no consistent method resolution order and fails at import, as in
-  every release since 0.50.0; every dated preset for Python 3.11 or later writes it for each GraphQL enum it does not
-  write as a ``Literal``.
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a
@@ -96,7 +93,6 @@ _ENUM = EnumKind(base="Enum", subclasses_value_type=False, rule="enum")
 _STR_ENUM = EnumKind(base="StrEnum", subclasses_value_type=False, rule="str-enum")
 _INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="legacy-int-type-without-value-check")
 _SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="legacy-subclass-type-without-member-check")
-_GRAPHQL_SUBCLASS_STR_ENUM = EnumKind(base="StrEnum", subclasses_value_type=True, rule="legacy-graphql-subclass-str")
 _INHERITED = EnumKind(base=None, subclasses_value_type=False, rule="legacy-inherited-first-base-class")
 _INHERITED_SPECIALIZED = EnumKind(
     base=None, subclasses_value_type=False, rule="legacy-inherited-specialized-without-member-check"
@@ -119,7 +115,8 @@ def decide_enum_kind(  # noqa: PLR0913
     A schema or GraphQL enum reads ``value_type``, the Python type the members of its schema type are (``int``,
     ``float``, ``bytes`` or ``str``, or None for any other type), its member ``values``, the options and whether the
     target Python has ``StrEnum``. A merged enum reads only ``first_specialized``, which tells that the first enum it
-    extends is an ``IntEnum`` or a ``StrEnum``.
+    extends is an ``IntEnum`` or a ``StrEnum``. An ``IntEnum`` or ``StrEnum`` subclasses its value type already, so
+    only a plain ``Enum`` takes the value type base of ``--use-subclass-enum``.
     """
     if origin == "merged":
         return _INHERITED_SPECIALIZED if first_specialized else _INHERITED
@@ -127,7 +124,7 @@ def decide_enum_kind(  # noqa: PLR0913
         if value_type == "int":
             return _INT_ENUM
         if value_type == "str" and has_strenum and all(isinstance(value, str) for value in values):
-            return _GRAPHQL_SUBCLASS_STR_ENUM if origin == "graphql" and use_subclass_enum else _STR_ENUM
+            return _STR_ENUM
     if use_subclass_enum and value_type is not None:
         return _SUBCLASS_ENUM
     return _ENUM

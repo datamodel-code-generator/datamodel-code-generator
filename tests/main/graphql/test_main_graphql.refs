@@ -45,12 +45,14 @@ github-api-issue-states.graphql-extra_args2-github_api_issue_states-IssueState	m
 	main/graphql/enum_literals_all.py
 [test_main_graphql_enums_as_literals_one]
 	main/graphql/enum_literals_one.py
+[test_main_graphql_enums_dated_preset]
+	main/graphql/main_graphql/enums_dated_preset.py
 [test_main_graphql_enums_ignore_enum_constraints]
 	main/graphql/enums_ignore_enum_constraints.py
 [test_main_graphql_enums_subclass]
 	main/graphql/enums_using_subclass.py
 [test_main_graphql_enums_subclass_specialized]
-	main/graphql/main_graphql/enums_subclass_specialized.py
+	main/graphql/main_graphql/enums_subclass_specialized.py	= main/graphql/enums_specialized.py
 [test_main_graphql_enums_to_typed_dict]
 	main/graphql/enums_typed_dict.py
 [test_main_graphql_extra_fields_allow]
