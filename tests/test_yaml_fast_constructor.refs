@@ -250,6 +250,7 @@ openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt
 openapi/fixed_length_array_tuples.yaml	yaml_fast_constructor/parity.txt
 openapi/http_openapi_with_custom_port.yaml	yaml_fast_constructor/parity.txt
+openapi/ignored_content_type_header_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/include_path_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/inheritance.yaml	yaml_fast_constructor/parity.txt
 openapi/input_diff/model_name_map_new.yaml	yaml_fast_constructor/parity.txt

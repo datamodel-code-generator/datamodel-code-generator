@@ -6172,6 +6172,7 @@ legacy-option	main/jsonschema/enum_list_defaults.py
 	main/jsonschema/enum_literal_type_alias_default.py
 [test_main_jsonschema_enum_member_descriptions]
 pydantic-v2	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2].py
+pydantic-v2-custom-enum-template	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-custom-enum-template].py
 pydantic-v2-dataclass	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-dataclass].py
 pydantic-v2-inline-description	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-inline-description].py
 pydantic-v2-reuse-model	main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2-reuse-model].py	= main/jsonschema/main_jsonschema/enum_member_descriptions[pydantic-v2].py

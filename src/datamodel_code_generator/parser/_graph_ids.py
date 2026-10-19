@@ -1,8 +1,9 @@
 """Identities of the models of one parse, independent of the names and paths they are written under.
 
 Every `Reference` takes the next value of a process-wide counter when it is built (`Reference.model_post_init`) and
-keeps it in its `__dict__`, beside its schema location. Copies of a Reference (`deepcopy`, `model_copy`, pickling) keep
-the key of their original. Keys never reach output.
+keeps it in its `__dict__`, beside its schema location. Copies of a Reference (`deepcopy`, `model_copy`) keep the key of
+their original; an unpickled one takes a new key, since the counter of the process that pickled it is not this one's.
+Keys never reach output.
 """
 
 from __future__ import annotations

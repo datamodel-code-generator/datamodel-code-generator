@@ -6,10 +6,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from msgspec import UNSET, Meta, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType, field
 
 
 class PrefixItemsUniqueItems(Struct):
     closed: tuple[str, int] | UnsetType = UNSET
     explicit: tuple[str, int] | UnsetType = UNSET
+    with_default: tuple[str, int] | UnsetType = field(default_factory=lambda: ['a', 1])
+    nested_list: tuple[list[int], str] | UnsetType = UNSET
     kept_list: Annotated[set[str], Meta(max_length=2, min_length=2)] | UnsetType = UNSET

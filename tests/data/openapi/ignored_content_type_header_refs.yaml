@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Ignored content-type headers
+  version: '1'
+paths:
+  /upload:
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+            encoding:
+              file:
+                headers:
+                  Content-Type:
+                    $ref: '#/paths/~1upload/post/requestBody/content/multipart~1form-data/encoding/file/headers/Content-Type'
+                  X-Part:
+                    schema:
+                      type: integer
+      responses:
+        '200':
+          description: ok
+          headers:
+            Content-Type:
+              $ref: missing.yaml#/components/headers/ContentType
+            X-Rate:
+              schema:
+                type: integer

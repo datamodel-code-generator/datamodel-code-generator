@@ -247,7 +247,7 @@ def tag_field_matches(  # noqa: PLR0913
         case "original-or-unaliased-python-name":
             return original_name == wanted or (original_name is None and name == python_name)
         case _:  # pragma: no cover
-            assert_never(mode)
+            return assert_never(mode)
 
 
 def redeclared_tag_field(

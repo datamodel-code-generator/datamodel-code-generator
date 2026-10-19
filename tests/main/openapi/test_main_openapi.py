@@ -13585,3 +13585,18 @@ def test_main_openapi_api_scope_without_models_jobs(
         EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / expected_stdout,
     )
     assert_output(captured.err, EXPECTED_API_SCOPE_WITHOUT_MODELS_PATH / "empty.txt")
+
+
+def test_main_openapi_ignored_content_type_header_refs(output_file: Path) -> None:
+    """Ignore ``Content-Type`` response and encoding headers without resolving their ``$ref``.
+
+    Up to 0.86.0 the header was resolved before it was ignored, so a reference that names a missing file or only
+    itself failed generation for a header the output never uses.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ignored_content_type_header_refs.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", "schemas", "api", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )

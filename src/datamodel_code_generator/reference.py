@@ -257,6 +257,12 @@ class Reference(_BaseModel):
         """Take the next model key of this process (`parser/_graph_ids.py`); copies of the Reference keep it."""
         self.__dict__[_MODEL_KEY] = next(_MODEL_KEYS)
 
+    @override
+    def __setstate__(self, state: dict[Any, Any]) -> None:
+        """Restore a pickled Reference under a new model key, as its key may come from another process."""
+        super().__setstate__(state)
+        self.__dict__[_MODEL_KEY] = next(_MODEL_KEYS)
+
     @property
     def short_name(self) -> str:
         """Return the last component of the dotted name."""

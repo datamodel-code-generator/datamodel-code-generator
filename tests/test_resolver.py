@@ -200,6 +200,8 @@ def test_model_resolver_pickles_are_compatible_across_the_resolver_state_rename(
     keyed_resolver = ModelResolver()
     keyed_reference = keyed_resolver.add(["#/definitions/Pet"], "Pet")
     restored_keyed_reference = pickle.loads(pickle.dumps(keyed_resolver, protocol=4)).references[keyed_reference.path]
+    restored_reference_state, reference_state = vars(restored_keyed_reference).copy(), vars(keyed_reference).copy()
+    new_model_key = restored_reference_state.pop("_model_key") != reference_state.pop("_model_key")
 
     slotted_resolver = SlottedModelResolver()
     slotted_resolver.slot_marker = "current-slot"
@@ -234,7 +236,8 @@ def test_model_resolver_pickles_are_compatible_across_the_resolver_state_rename(
             f"{replacement_pickle_copy.field_name_resolvers is replacement_resolver.field_name_resolvers}\n"
             "replacement pickle field: "
             f"{replacement_pickle_copy.get_valid_field_name('3name', model_type=ModelType.CLASS)}\n"
-            f"reference pickle keeps state and model key: {vars(restored_keyed_reference) == vars(keyed_reference)}\n"
+            f"reference pickle keeps state: {restored_reference_state == reference_state}\n"
+            f"reference pickle takes a new model key: {new_model_key}\n"
             "current slotted roundtrip\n"
             f"state layout: {'private' if '_field_name_resolvers' in vars(restored_slotted_resolver) else 'public'}\n"
             f"slot marker: {restored_slotted_resolver.slot_marker}\n"

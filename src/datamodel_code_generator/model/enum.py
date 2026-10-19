@@ -252,11 +252,13 @@ class Enum(DataModel):
 
     @override
     def _unrendered_imports(self) -> tuple[Import, ...]:
-        """Return the imports of the member declarations, which render as ``name = value`` with docstrings.
+        """Return the imports of the member declarations, which the built-in template renders as ``name = value``.
 
         ``imports`` keeps them, so the module binds their names (``legacy.enum-member-import-bindings`` in
-        ``parser/_imports_plan.py``).
+        ``parser/_imports_plan.py``). A custom ``Enum.jinja2`` may render what needs them, so it renders them all.
         """
+        if self._uses_custom_root_template:
+            return ()
         return tuple(i for f in self.fields for i in f.imports if i != IMPORT_ANY)
 
 

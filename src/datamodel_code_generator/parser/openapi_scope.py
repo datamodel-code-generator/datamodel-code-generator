@@ -663,8 +663,6 @@ class ApiOpenAPIParser(OpenAPIParser):
         with self._api_object_context(target):
             self._walk_content(name, target, owner="response")
             for key, value in _mapping(target.value.get("headers", {}), [*target.path, "headers"]).items():
-                header_path = [*target.path, "headers", key]
-                header = self._resolve_api_object(value, header_path)
                 if key.lower() == "content-type":
                     self._ignore_declaration(
                         self._declared(target.value).child("headers", key),
@@ -673,6 +671,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                         wire_name=key,
                     )
                     continue
+                header = self._resolve_api_object(value, [*target.path, "headers", key])
                 with self._api_object_context(header):
                     self._walk_parameter(
                         self._get_model_name((header_name or name) + key, "", "Header"),
@@ -965,8 +964,6 @@ class ApiOpenAPIParser(OpenAPIParser):
                         )
                 continue
             for key, header_value in _mapping(headers, [*property_path, "headers"]).items():
-                header_path = [*property_path, "headers", key]
-                header = self._resolve_api_object(header_value, header_path)
                 if key.lower() == "content-type":
                     self._ignore_declaration(
                         self._declared(encoding).child("headers", key),
@@ -976,6 +973,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                         wire_name=key,
                     )
                     continue
+                header = self._resolve_api_object(header_value, [*property_path, "headers", key])
                 with self._api_object_context(header):
                     candidate = (
                         name

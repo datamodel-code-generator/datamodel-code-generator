@@ -233,9 +233,13 @@ class PrefixItemsUniqueItems(_JsonSchemaRuntimeValidationBase):
     __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
         (('closed',),),
         (('explicit',),),
+        (('with_default',),),
+        (('nested_list',),),
         (('kept_list',),),
     )
 
     closed: tuple[str, int] | None = None
     explicit: tuple[str, int] | None = None
+    with_default: tuple[str, int] | None = ['a', 1]
+    nested_list: tuple[list[int], str] | None = None
     kept_list: set[str] | None = Field(None, max_length=2, min_length=2)

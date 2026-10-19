@@ -312,6 +312,8 @@ typed_map_values-typing.TypedDict-pattern_maps	main/jsonschema/object_maps/objec
 typed_map_values-typing.TypedDict-type_array_maps	main/jsonschema/object_maps/object_maps[typed_map_values-typing.TypedDict-type_array_maps].payloads.txt	= main/jsonschema/object_maps/object_maps[annotated-dataclasses.dataclass-type_array_maps].payloads.txt
 typed_map_values-typing.TypedDict-type_array_maps	main/jsonschema/object_maps/object_maps[typed_map_values-typing.TypedDict-type_array_maps].py	= main/jsonschema/object_maps/object_maps[annotated-typing.TypedDict-type_array_maps].py
 typed_map_values-typing.TypedDict-type_array_maps	main/jsonschema/object_maps/object_maps[typed_map_values-typing.TypedDict-type_array_maps].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_object_maps_released_pattern_properties_hook]
+	main/jsonschema/object_maps/released_pattern_properties_hook.txt
 [test_object_maps_schema_validators]
 nullable_maps	main/jsonschema/object_maps/schema_validators[nullable_maps].payloads.txt	= main/jsonschema/object_maps/object_maps[annotated-pydantic_v2.BaseModel-nullable_maps].payloads.txt
 nullable_maps	main/jsonschema/object_maps/schema_validators[nullable_maps].py

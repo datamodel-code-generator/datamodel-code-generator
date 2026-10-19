@@ -5095,7 +5095,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         changed = False
         for model in models:
             for model_field in model.fields:
-                if not self.use_unique_items_as_set or not _declares_unique_items(model_field):
+                if (
+                    not self.use_unique_items_as_set
+                    or not _declares_unique_items(model_field)
+                    or _unique_items_tuple(model_field.data_type) is not None
+                ):
                     continue
                 set_data_type = self._create_set_from_list(model_field.data_type)
                 if set_data_type:  # pragma: no cover

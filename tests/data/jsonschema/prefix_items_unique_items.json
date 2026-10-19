@@ -17,6 +17,21 @@
       "maxItems": 2,
       "uniqueItems": true
     },
+    "with_default": {
+      "type": "array",
+      "prefixItems": [{"type": "string"}, {"type": "integer"}],
+      "items": false,
+      "minItems": 2,
+      "uniqueItems": true,
+      "default": ["a", 1]
+    },
+    "nested_list": {
+      "type": "array",
+      "prefixItems": [{"type": "array", "items": {"type": "integer"}}, {"type": "string"}],
+      "items": false,
+      "minItems": 2,
+      "uniqueItems": true
+    },
     "kept_list": {
       "type": "array",
       "prefixItems": [{"type": "string"}, {"type": "string"}],
