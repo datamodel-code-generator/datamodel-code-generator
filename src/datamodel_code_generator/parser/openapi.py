@@ -18,8 +18,8 @@ from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
 from warnings import warn
 
-from pydantic import Field, StrictBool, ValidationError, model_validator
-from typing_extensions import Unpack
+from pydantic import Field, StrictBool, ValidationError
+from typing_extensions import Unpack, override
 
 from datamodel_code_generator import (
     Error,
@@ -36,7 +36,7 @@ from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _locate,
     _located,
-    _source_location,
+    _located_model_schema,
     get_model_by_path,
 )
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, FieldNameResolver, is_url, snake_to_upper_camel
@@ -50,7 +50,8 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from urllib.parse import ParseResult
 
-    from pydantic import ValidatorFunctionWrapHandler
+    from pydantic import GetCoreSchemaHandler
+    from pydantic_core import CoreSchema
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._types import OpenAPIParserConfigDict
@@ -110,14 +111,11 @@ class MediaObject(BaseModel):
     example: YamlValue = None
     examples: Optional[Union[str, ReferenceObject, ExampleObject]] = None  # noqa: UP007, UP045
 
-    @model_validator(mode="wrap")
     @classmethod
-    def _take_schema_location(cls, values: Any, handler: ValidatorFunctionWrapHandler) -> Any:
-        """Give the media type object the location of the document object it is validated from."""
-        result = handler(values)
-        if isinstance(values, dict) and (location := _source_location(values)):
-            result.__dict__[SCHEMA_LOCATION_KEY] = location
-        return result
+    @override
+    def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler, /) -> CoreSchema:
+        """Validate media type objects so that each takes the location of the document object it is validated from."""
+        return _located_model_schema(source, handler)
 
     @property
     def schema_location(self) -> SchemaLocation | None:

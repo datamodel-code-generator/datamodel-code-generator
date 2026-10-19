@@ -777,14 +777,17 @@ The location is a fact recorded in L0 and L1:
   for that position and its holders copy on write, so the location does not depend on the YAML loader or the caller; a
   container that is its own ancestor keeps a back edge to its copy. AsyncAPI indexes its document at load, and a
   converted payload schema is mounted at the payload's location (`_mount_converted_schema`).
-- **Carrier.** `JsonSchemaObject.schema_location` lives in the object's `__dict__`, not in its fields: a wrap validator
-  takes it from the document object or from a located dump (`_LocatedDict`) the object is validated from, through the
-  schema graph that `Parser.parse` publishes in a `ContextVar` (`SCHEMA_GRAPH`). During a parse, `model_dump` returns
-  located dumps whose schema children remember their own sources. An object a copy step builds stands for one source
-  object by rule: the use site of a `$ref` with siblings, the union branch, the allOf holder, the holder of a synthetic
-  enum or of an `itemSchema` array, or the member property it normalizes. A dict a merge helper builds from two sources
-  takes the location of the side the helper lets win. A boolean schema, which cannot carry a location, takes it from its
-  holder.
+- **Carrier.** `JsonSchemaObject.schema_location` lives in the object's `__dict__`, not in its fields. The object
+  takes it from the document object or located dump (`_LocatedDict`) it is validated from, through the schema graph
+  that `Parser.parse` publishes in a `ContextVar` (`SCHEMA_GRAPH`): `_located_model_schema` (the model's `__get_pydantic_core_schema__`)
+  wraps the field validation inside the model schema, so every validation of the model locates it, in any field, a
+  subclass's own included, and through `TypeAdapter`. `MediaObject` takes its location the same way. A model validator
+  in wrap mode would rename the model in pydantic's error locations (`function-wrap[...]` instead of
+  `JsonSchemaObject`). During a parse, `model_dump` returns located dumps whose schema children remember their own
+  sources. An object a copy step builds stands for one source object by rule: the use site of a `$ref` with siblings,
+  the union branch, the allOf holder, the holder of a synthetic enum or of an `itemSchema` array, or the member
+  property it normalizes. A dict a merge helper builds from two sources takes the location of the side the helper lets
+  win. A boolean schema, which cannot carry a location, takes it from its holder.
 - **Copy steps** the location survives, besides those under "Scope on schema objects": L0 unsharing,
   `openapi.py:RawMediaObject` (the media object's own `schema` value is used), lists joined and dicts merged in
   `_deep_merge`, `_merge_all_of_schema`, `_merge_property_schemas` and `_merge_inherited_type_shape_dict`, combined

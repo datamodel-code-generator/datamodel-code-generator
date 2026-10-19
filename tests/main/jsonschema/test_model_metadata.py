@@ -7,11 +7,12 @@ import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from pydantic import TypeAdapter
+from pydantic import Field, TypeAdapter, model_validator
 
 from datamodel_code_generator import DataModelType, Error, InputFileType, PythonVersion, generate
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model_metadata import dump_model_metadata
+from datamodel_code_generator.parser.jsonschema import JsonSchemaObject, JsonSchemaParser
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import CHECK_SCHEMA_LOCATIONS_ENV, assert_inputs_not_mutated, assert_output, stored_expected
 from tests.main.conftest import (
@@ -220,3 +221,38 @@ def test_schema_location_of_schemas_a_custom_parser_rewrites(
     assert_output(dump_model_metadata(parser.model_metadata), name="metadata")
     if flag == "report":
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_schema_location_of_fields_a_schema_object_subclass_adds(tmp_path: Path) -> None:
+    """Schema objects in a field a ``SCHEMA_OBJECT_TYPE`` subclass adds take their locations, also beside its validator.
+
+    The test suite runs with the location check on, so a model built from such a field without a location fails here.
+    """
+
+    class ExtensionSchema(JsonSchemaObject):
+        children: list[JsonSchemaObject] = Field(default_factory=list)
+
+        @model_validator(mode="after")
+        def _keep(self) -> ExtensionSchema:
+            return self
+
+    class ExtensionParser(JsonSchemaParser):
+        SCHEMA_OBJECT_TYPE = ExtensionSchema
+
+        def parse_object(self, name: str, obj: JsonSchemaObject, path: list[str], *args: Any, **kwargs: Any) -> Any:
+            if isinstance(obj, ExtensionSchema):
+                for index, child in enumerate(obj.children):
+                    super().parse_object(f"{name}Child{index}", child, [*path, "children", str(index)])
+            return super().parse_object(name, obj, path, *args, **kwargs)
+
+    (input_path := tmp_path / "extension.json").write_text(
+        json.dumps({
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+            "children": [{"type": "object", "properties": {"count": {"type": "integer"}}}],
+        }),
+        encoding="utf-8",
+    )
+    parser = ExtensionParser(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN])
+    parser.parse(collect_model_metadata=True)
+    assert_output(dump_model_metadata(parser.model_metadata), name="metadata")

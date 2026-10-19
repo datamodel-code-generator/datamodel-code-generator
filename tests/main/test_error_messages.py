@@ -1172,6 +1172,22 @@ def test_unsatisfiable_schema_error_names_location(
     )
 
 
+def test_schema_validation_error_details_name_the_model(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Pydantic's error details name the schema model inside a union, as in 0.86.0, beside the schema location."""
+    (input_path := output_file.parent / "schema.json").write_text(
+        json.dumps({"type": "object", "properties": {"x": {"type": "integer", "minimum": "low"}}}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="\nproperties.x.JsonSchemaObject.minimum.",
+        output_should_not_exist=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "input_file_type", "extra_args"),
     [

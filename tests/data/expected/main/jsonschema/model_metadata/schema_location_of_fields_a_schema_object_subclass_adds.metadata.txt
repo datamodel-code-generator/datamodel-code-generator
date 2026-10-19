@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "ModelChild0",
+      "name": "ModelChild0",
+      "module": "",
+      "source_ref": "extension.json#/children/0",
+      "source_path": [
+        "children",
+        "0"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "count",
+          "alias": "count",
+          "original_name": "count",
+          "type": "Optional[int]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Model",
+      "name": "Model",
+      "module": "",
+      "source_ref": "extension.json#",
+      "source_path": [],
+      "title": null,
+      "fields": [
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "Optional[str]",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

@@ -30,6 +30,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic_core import core_schema
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import (
@@ -177,7 +178,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Container, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
-    from pydantic import ValidatorFunctionWrapHandler
+    from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
+    from pydantic_core import CoreSchema
     from typing_extensions import Self, TypeIs
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
@@ -352,6 +354,31 @@ def _source_location(values: object) -> SchemaLocation | None:
         if (graph := SCHEMA_GRAPH.get()) is None
         else graph.locations.get(id(values))
     )
+
+
+def _take_input_location(values: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+    """Validate the fields of a located model; the instance takes the location of the input they come from."""
+    fields = handler(values)
+    if (location := _source_location(values)) is not None:
+        fields[0][SCHEMA_LOCATION_KEY] = location
+    return fields
+
+
+def _located_model_schema(source: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+    """Return the core schema of a model whose instances take the location of the input they are validated from.
+
+    The locating validator wraps the field validation inside the model schema, where pydantic's error locations do not
+    name it, so they keep the model's name (a model validator in wrap mode would replace it there). Every schema that
+    holds the model, the fields a subclass adds and ``TypeAdapter`` roots included, validates it this way.
+    """
+    schema = handler(source)
+    model: Any = handler.resolve_ref_schema(schema)
+    while model["type"] != "model":
+        model = model["schema"]
+    inner = model["schema"]
+    if inner["type"] != "function-wrap" or inner["function"]["function"] is not _take_input_location:
+        model["schema"] = core_schema.no_info_wrap_validator_function(_take_input_location, inner)
+    return schema
 
 
 def _named_path(location: SchemaLocation | None, path: list[str]) -> list[str]:
@@ -1295,16 +1322,11 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         defer_build=True,
     )
 
-    @model_validator(mode="wrap")
     @classmethod
-    def _take_schema_location(cls, values: Any, handler: ValidatorFunctionWrapHandler) -> Any:
-        """Give the object the location of the document object or the located dump it is validated from."""
-        result = handler(values)
-        if isinstance(values, _LocatedDict):
-            result.__dict__[SCHEMA_LOCATION_KEY] = values.schema_location
-        elif (graph := SCHEMA_GRAPH.get()) is not None and (location := graph.locations.get(id(values))):
-            result.__dict__[SCHEMA_LOCATION_KEY] = location
-        return result
+    @override
+    def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler, /) -> CoreSchema:
+        """Validate schema objects so that each takes the location of the document object or located dump it is from."""
+        return _located_model_schema(source, handler)
 
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         """Dump the object; during a parse, each dumped schema object remembers the location of its source."""
