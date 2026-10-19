@@ -96,6 +96,7 @@ from datamodel_code_generator.imports import (
     Imports,
 )
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, literal_value_kind
+from datamodel_code_generator.model._decisions.literal_default import decide_literal_default
 from datamodel_code_generator.model._decisions.tag_value import (
     enum_tag_literal,
     field_tag,
@@ -122,6 +123,7 @@ from datamodel_code_generator.model.base import (
     ConstraintsBase,
     DataModel,
     DataModelFieldBase,
+    _apply_literal_default,
     _find_base_classes,
     _overlay_constraints,
     _refresh_custom_template_paths,
@@ -4752,41 +4754,34 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         member = enum_source.find_member(value, coerce_strings=True)
         return enum_tag_literal(value, member.value) if member else value
 
-    def __set_force_optional_discriminator_literal_default(
+    def __set_tag_literal_default(
         self,
         model: DataModel,
         discriminator_field: DataModelFieldBase,
-        literal: DiscriminatorValue | Member,
+        literal: DiscriminatorValue | Member | None,
+        source: Literal["tag", "written-tag"],
         *,
         can_retain_cache: bool,
     ) -> None:
-        """Keep Pydantic v2 single-literal discriminator fields valid when optional or forced optional.
+        """Write the default, required and nullability a discriminator tag gives its field (``decide_literal_default``).
 
-        An optional tag would add ``None`` or the ``MISSING`` sentinel to its type, which Pydantic rejects as a
-        discriminator, so the tag takes its literal as default instead. A tag the schema declares nullable keeps its
-        type, and one it declares not nullable keeps its ``None`` default unless the sentinel would replace it.
+        Pydantic rejects an optional tag, as its None or ``MISSING`` sentinel joins the type, so such a tag is the
+        field's default instead; a tag whose type L5 writes (``written-tag``) is required unless forced optional.
         """
-        if not discriminator_field.SUPPORTS_DISCRIMINATOR or not (
-            self.force_optional_for_required_fields
-            or (
-                not discriminator_field.required
-                and not discriminator_field.type_has_null
-                and (
-                    discriminator_field.nullable is None
-                    or (
-                        discriminator_field.nullable is False
-                        and discriminator_field.use_missing_sentinel
-                        and not discriminator_field.has_default
-                    )
-                )
-            )
-        ):
-            return
-
-        discriminator_field.default = literal
-        discriminator_field.required = False
-        discriminator_field.nullable = False
-        _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+        decision = decide_literal_default(
+            source,
+            literal,
+            required=discriminator_field.required,
+            has_default=discriminator_field.has_default,
+            nullable=discriminator_field.nullable,
+            type_has_null=discriminator_field.type_has_null,
+            force_optional=self.force_optional_for_required_fields,
+            missing_sentinel=discriminator_field.use_missing_sentinel,
+            discriminator_argument=discriminator_field.SUPPORTS_DISCRIMINATOR,
+        )
+        _apply_literal_default(discriminator_field, decision)
+        if decision.writes_default:
+            _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __set_nested_discriminator_literal_defaults(
         self,
@@ -4797,8 +4792,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Keep the single-literal tags of variants that nested choices give a union valid like the direct ones."""
         for tag_field, values in tag_fields:
             if tag_field.data_type.literals == [*values]:
-                self.__set_force_optional_discriminator_literal_default(
-                    cast("DataModel", tag_field.parent), tag_field, values[0], can_retain_cache=can_retain_cache
+                self.__set_tag_literal_default(
+                    cast("DataModel", tag_field.parent), tag_field, values[0], "tag", can_retain_cache=can_retain_cache
                 )
 
     def _get_discriminator_field_name(
@@ -4953,10 +4948,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 case _ if discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                                     tags.append((discriminator_model, discriminator_field, literal))
                                 case _:
-                                    self.__set_force_optional_discriminator_literal_default(
+                                    self.__set_tag_literal_default(
                                         discriminator_model,
                                         discriminator_field,
                                         literal,
+                                        "tag",
                                         can_retain_cache=can_retain_cache,
                                     )
                             # Found the discriminator field, no need to keep looking
@@ -4990,32 +4986,26 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         )
                         self.generation_store.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
-                        discriminator_field.required = True
                         tag_fields.append((discriminator_field, discriminator_values))
                         self.__record_reused_variant_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
+                        literal_default = None
                         if tagged_unions and discriminator_model.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
                             tags.append((
                                 discriminator_model,
                                 discriminator_field,
                                 _get_mapped_discriminator_tag(discriminator_values, enum_source),
                             ))
-                        elif (
-                            self.force_optional_for_required_fields
-                            and (
-                                literal_default := _get_single_discriminator_default(
-                                    new_discriminator_data_type,
-                                    enum_source,
-                                    expected_value,
-                                )
+                        elif self.force_optional_for_required_fields:
+                            literal_default = _get_single_discriminator_default(
+                                new_discriminator_data_type, enum_source, expected_value
                             )
-                            is not None
-                        ):
-                            self.__set_force_optional_discriminator_literal_default(
-                                discriminator_model,
-                                discriminator_field,
-                                literal_default,
-                                can_retain_cache=can_retain_cache,
-                            )
+                        self.__set_tag_literal_default(
+                            discriminator_model,
+                            discriminator_field,
+                            literal_default,
+                            "written-tag",
+                            can_retain_cache=can_retain_cache,
+                        )
                         self._import_ledger.append(
                             imports,
                             discriminator_field.imports,
@@ -6663,17 +6653,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __set_one_literal_on_default(self, models: list[DataModel], *, can_retain_cache: bool) -> None:
+        """Write the default, required and nullability one literal gives its field (``decide_literal_default``)."""
         if not self.use_one_literal_as_default:
             return
         for model in models:
             for model_field in model.fields:
-                if not model_field.required or len(model_field.data_type.literals) != 1:
+                if len(literals := model_field.data_type.literals) != 1:
                     continue
-                model_field.default = model_field.data_type.literals[0]
-                model_field.required = False
-                if model_field.nullable is not True:  # pragma: no cover
-                    model_field.nullable = False
-                _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+                decision = decide_literal_default(
+                    "one-literal",
+                    literals[0],
+                    required=model_field.required,
+                    nullable=model_field.nullable,
+                    type_has_null=model_field.type_has_null,
+                )
+                _apply_literal_default(model_field, decision)
+                if decision.writes_default:
+                    _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __restore_inherited_field_names_for_unique_aliases(self, models: list[DataModel]) -> None:  # noqa: PLR6301
         """Reserve inherited Python names for output models with unique wire aliases."""

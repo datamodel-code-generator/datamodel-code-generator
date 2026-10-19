@@ -35,6 +35,7 @@ from datamodel_code_generator.imports import (
     IMPORT_UNION,
     Import,
 )
+from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
 from datamodel_code_generator.model._decisions.nullability import field_renders_none
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
@@ -60,6 +61,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator import types as _types
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
+    from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
@@ -712,32 +714,30 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return bool(getattr(self, "is_pydantic_extra_field", False))
 
     def _process_const_as_literal(self) -> None:
-        """Process const values by converting to literal type. Used by subclasses."""
+        """Type a const as ``const_type`` decides and write its default and nullability (``decide_literal_default``).
+
+        The ``process_const`` hook of the subclasses calls it.
+        """
         if (const := self.extras.get("const", UNDEFINED)) is UNDEFINED:
             return
         self.const = True
-
-        match const:
-            case None:
-                self.nullable = False
+        match const_type(const):
+            case "none":
                 self.replace_data_type(self.data_type.__class__(type=NONE), clear_old_parent=False)
-                return
-            case bool() | int() | str():
+            case "literal":
                 self.replace_data_type(self.data_type.__class__(literals=[const]), clear_old_parent=False)
-            case _:
-                self.nullable = False
-                return
-
-        # A const is only a generated Python default when the field would carry one anyway:
-        # a required field (whose default the renderer suppresses) or a schema that also
-        # defines a default. An optional const without a schema default follows the normal
-        # optional path (nullable + ``None`` default) so an omitted field stays unset rather
-        # than being silently filled with the const value.
-        if not (self.required or self.has_default or self.default is not None):
-            return
-        self.nullable = False
-        if self.default is None and not self.has_default:
-            self.default = const
+        _apply_literal_default(
+            self,
+            decide_literal_default(
+                "const",
+                const,
+                required=self.required,
+                has_default=self.has_default,
+                default=self.default,
+                nullable=self.nullable,
+                type_has_null=self.type_has_null,
+            ),
+        )
 
     def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
         """Return whether an actual None default should be omitted."""
@@ -1372,6 +1372,16 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             self.data_type = new_data_type
             new_data_type.parent = self
         self.invalidate_semantic_caches()
+
+
+def _apply_literal_default(field: DataModelFieldBase, decision: LiteralDefault) -> None:
+    """Write what ``decide_literal_default`` decides for a field fixed to one value; the field keeps the rest."""
+    if decision.writes_default:
+        field.default = decision.default
+    if decision.required is not None:
+        field.required = decision.required
+    if decision.not_null:
+        field.nullable = False
 
 
 def _nested_model_has_required_constructor_fields(source: DataModel) -> bool:

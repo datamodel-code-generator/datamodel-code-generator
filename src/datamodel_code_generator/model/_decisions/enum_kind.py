@@ -8,10 +8,9 @@ from the live objects and build the class through ``model/enum.py:_enum_class``:
 The rows named ``legacy-*`` keep today's output where the kind does not follow from the member values; a fix of that
 output deletes its row.
 
-Not routed here yet: ``model/base.py:DataModelFieldBase._process_const_as_literal`` classifies a const on its own and
-moves with the decision on const defaults and nullability; the enum branch of
-``parser/jsonschema.py:JsonSchemaParser.parse_array_fields`` (a ``type`` list holding ``array``) writes an Enum class
-without asking ``enum_as_literal``, so ``--enum-field-as-literal all`` leaves that enum a class.
+Not routed here yet: the enum branch of ``parser/jsonschema.py:JsonSchemaParser.parse_array_fields`` (a ``type`` list
+holding ``array``) writes an Enum class without asking ``enum_as_literal``, so ``--enum-field-as-literal all`` leaves
+that enum a class.
 """
 
 from __future__ import annotations

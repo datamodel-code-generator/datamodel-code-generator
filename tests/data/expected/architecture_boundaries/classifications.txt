@@ -12,6 +12,7 @@ model/runtime_validation.py: shared-model
 model/_decisions/nullability.py: shared-model
 model/_decisions/enum_kind.py: shared-model
 model/_decisions/tag_value.py: shared-model
+model/_decisions/literal_default.py: shared-model
 _api_generation.py: target
 _target_config.py: target
 _requirements.py: requirements

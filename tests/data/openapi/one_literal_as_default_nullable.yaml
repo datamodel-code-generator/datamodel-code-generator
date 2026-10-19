@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: One literal as default
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Shape:
+      type: object
+      required:
+        - kind
+        - unit
+      properties:
+        kind:
+          type: string
+          enum:
+            - square
+          nullable: true
+        unit:
+          type: string
+          enum:
+            - cm

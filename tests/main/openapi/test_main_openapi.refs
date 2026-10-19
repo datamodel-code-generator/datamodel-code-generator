@@ -1566,6 +1566,8 @@ pydantic_v2.BaseModel-pydantic_v2_union_default_object.py	main/openapi/pydantic_
 	main/openapi/discriminator/msgspec_tagged_unions.py
 [test_main_openapi_use_one_literal_as_default]
 	main/openapi/enum_models/one_literal_as_default.py
+[test_main_openapi_use_one_literal_as_default_keeps_nullable]
+	main/openapi/openapi_use_one_literal_as_default_keeps_nullable.py
 [test_main_openapi_use_operation_id_as_name]
 	main/openapi/use_operation_id_as_name.py
 [test_main_openapi_use_status_code_in_response_name]

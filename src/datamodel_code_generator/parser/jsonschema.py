@@ -87,6 +87,7 @@ from datamodel_code_generator.model._decisions.enum_kind import (
     is_literal_kind,
     literal_value_kind,
 )
+from datamodel_code_generator.model._decisions.literal_default import const_type
 from datamodel_code_generator.model._decisions.tag_value import (
     FieldTag,
     distinct_tags,
@@ -2889,10 +2890,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.data_type_manager.get_data_type(Types.any)
 
     def _get_const_data_type(self, const: object) -> DataType:
-        """Return a DataType for a JSON Schema const value: its Literal (``is_literal_kind``) or its value's type."""
-        if is_literal_kind(
-            literal_value_kind(const), bool_literals=self._output_model_context.supports_boolean_literals
-        ):
+        """Return a DataType for a JSON Schema const value: its Literal (``const_type``) or its value's type."""
+        if const_type(const, bool_literals=self._output_model_context.supports_boolean_literals) == "literal":
             return self.data_type(literals=[const])
         return self._get_data_type_from_json_value(const)
 

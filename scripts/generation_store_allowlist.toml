@@ -70,8 +70,6 @@ _field_name_bindings = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._process_const_as_literal"]
 const = 1
-default = 1
-nullable = 3
 'replace_data_type()' = 2
 
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._set_cached_field_imports"]
@@ -120,6 +118,11 @@ data_type = "--input tests/data/openapi/const.yaml --input-file-type openapi --o
 ["src/datamodel_code_generator/model/base.py"."_RenderedDataModelField.__init__"]
 '__dict__["docstring"]' = 1
 
+["src/datamodel_code_generator/model/base.py"."_apply_literal_default"]
+default = 1
+nullable = 1
+required = 1
+
 ["src/datamodel_code_generator/model/base.py"."_nested_model_default_factory"]
 '__dict__[_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY]' = 1
 
@@ -161,7 +164,6 @@ data_types = 1
 
 ["src/datamodel_code_generator/model/msgspec.py"."DataModelField.process_const"]
 const = 1
-nullable = 1
 'replace_data_type()' = 1
 
 ["src/datamodel_code_generator/model/msgspec.py"."DataModelField.unconstrain_union_members"]
@@ -255,7 +257,6 @@ default = 1
 ["src/datamodel_code_generator/parser/base.py"."Parser.__apply_discriminator_type"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
 'extras["discriminator"]' = 1
-required = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__apply_generic_base_class"]
 _additional_imports = 2
@@ -326,16 +327,6 @@ default = 1
 ["src/datamodel_code_generator/parser/base.py"."Parser.__set_default_enum_member"]
 alias = 1
 default = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__set_force_optional_discriminator_literal_default"]
-default = 1
-nullable = 1
-required = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__set_one_literal_on_default"]
-default = 1
-nullable = 1
-required = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__set_reference_default_value_to_field"]
 default = 1

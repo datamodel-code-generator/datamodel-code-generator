@@ -20,11 +20,13 @@ from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import PatternConstraints as _Constraints
+from datamodel_code_generator.model._decisions.literal_default import decide_literal_default
 from datamodel_code_generator.model._decisions.tag_value import struct_discriminator_tag, struct_tag_options
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     BaseClassDataType,
     BaseLayoutView,
+    _apply_literal_default,
     _default_factory_type_name,
     _nested_model_default_factory,
     linearize_data_models,
@@ -617,12 +619,12 @@ class DataModelField(DataModelFieldBase):
 
     @override
     def process_const(self) -> None:
-        """Process const field constraint."""
+        """Process const field constraint; its default and nullability are those of ``decide_literal_default``."""
         if "const" not in self.extras:
             return
         self.const = True
-        self.nullable = False
         const = self.extras["const"]
+        _apply_literal_default(self, decide_literal_default("msgspec-const", const, required=self.required))
         if self.data_type.type == "str" and isinstance(const, str):  # pragma: no cover
             self.replace_data_type(self.data_type.__class__(literals=[const]), clear_old_parent=False)
 

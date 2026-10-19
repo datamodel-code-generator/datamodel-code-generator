@@ -4311,6 +4311,17 @@ def test_main_openapi_use_one_literal_as_default(min_version: str, output_file: 
     )
 
 
+def test_main_openapi_use_one_literal_as_default_keeps_nullable(output_file: Path) -> None:
+    """A required one-value enum declared nullable takes its literal as default and keeps None."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "one_literal_as_default_nullable.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=["--enum-field-as-literal", "one", "--use-one-literal-as-default", "--strict-nullable"],
+    )
+
+
 @pytest.mark.skipif(
     version.parse(pydantic.VERSION) < version.parse("1.9.0"),
     reason="Require Pydantic version 1.9.0 or later ",
