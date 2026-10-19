@@ -640,9 +640,14 @@ def _meets(value: object, keyword: str, limit: float) -> bool | None:
         return True
     if (check := _BOUND_CHECKS.get(keyword)) is not None:
         return check(value, limit)
-    if not (isfinite(limit) and limit > 0 and isfinite(value)):
+    if not (_is_finite(limit) and limit > 0 and _is_finite(value)):
         return None
     return (Fraction(str(value)) / Fraction(str(limit))).denominator == 1
+
+
+def _is_finite(number: float) -> bool:
+    """Return whether a JSON number is finite: every ``int`` is, also one too large for a float."""
+    return isinstance(number, int) or isfinite(number)
 
 
 def literal_check(

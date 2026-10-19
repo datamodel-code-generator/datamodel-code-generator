@@ -6214,6 +6214,12 @@ pydantic_v2.dataclass-rename-field	main/jsonschema/main_jsonschema/enum_const_hi
 pydantic_v2.dataclass-rename-field	main/jsonschema/main_jsonschema/enum_const_hidden_by_field[pydantic_v2.dataclass-rename-field].values.txt	= main/jsonschema/main_jsonschema/enum_const_hidden_by_field[pydantic_v2.BaseModel-rename-field].values.txt
 pydantic_v2.dataclass-rename-type	main/jsonschema/main_jsonschema/enum_const_hidden_by_field[pydantic_v2.dataclass-rename-type].py
 pydantic_v2.dataclass-rename-type	main/jsonschema/main_jsonschema/enum_const_hidden_by_field[pydantic_v2.dataclass-rename-type].values.txt	= main/jsonschema/main_jsonschema/enum_const_hidden_by_field[dataclasses.dataclass-rename-field].values.txt
+[test_main_jsonschema_enum_const_integral_float]
+	main/jsonschema/main_jsonschema/enum_const_integral_float.py
+[test_main_jsonschema_enum_const_integral_float_literal]
+pydantic-literal	main/jsonschema/main_jsonschema/enum_const_integral_float_literal[pydantic-literal].py
+pydantic-single-value	main/jsonschema/main_jsonschema/enum_const_integral_float_literal[pydantic-single-value].py	= main/jsonschema/main_jsonschema/enum_const_integral_float_literal[pydantic-literal].py
+typed-dict	main/jsonschema/main_jsonschema/enum_const_integral_float_literal[typed-dict].py
 [test_main_jsonschema_enum_const_non_literal]
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_non_literal[msgspec.Struct].py
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_non_literal[msgspec.Struct].warnings.txt
@@ -7274,6 +7280,8 @@ typed_dict	main/jsonschema/main_jsonschema/main_literal_constraints[typed_dict].
 use_annotated	main/jsonschema/literal_constraints.py	= main/jsonschema/literal_constraints~main_literal_constraints[use_annotated].py
 use_annotated	main/jsonschema/main_jsonschema/main_literal_constraints[use_annotated].rejected.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[field_constraints].rejected.txt
 use_annotated	main/jsonschema/main_jsonschema/main_literal_constraints[use_annotated].warnings.txt	= main/jsonschema/main_jsonschema/main_literal_constraints[dataclass].warnings.txt
+[test_main_literal_constraints_big_integer]
+	main/jsonschema/main_jsonschema/main_literal_constraints_big_integer.py
 [test_main_literal_constraints_undecided]
 default	main/jsonschema/literal_constraints_undecided.py
 literal	main/jsonschema/literal_constraints_undecided.py	= main/jsonschema/literal_constraints_undecided~main_literal_constraints_undecided[literal].py

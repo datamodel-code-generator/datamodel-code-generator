@@ -16,6 +16,11 @@
     "invalid": [{"count": 2, "name": "AB", "payload": "abcd", "enabled": true}],
     "args": ["--field-constraints"]
   },
+  "jsonschema/pattern_str_bytes_union.json": {
+    "valid": {"blob": "aa"},
+    "invalid": [{"blob": "b"}],
+    "args": ["--collapse-root-models", "--field-constraints"]
+  },
   "jsonschema/compound_property_names/enum_oneof.json": {"valid": {"a": 1}, "invalid": []},
   "jsonschema/compound_property_names/enum_refs.json": {"valid": {"a": 1}, "invalid": []},
   "jsonschema/compound_property_names/extra_enum_disjoint.json": {"valid": {"a": 1}, "invalid": []}

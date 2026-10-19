@@ -705,12 +705,14 @@ class DataModelField(_PydanticBaseDataModelField):
             for data_type in self.data_type.all_data_types
         ):
             constructs.append("pydantic.compiled_pattern")
-        if (
-            pattern is not None
-            and _pattern_data_type(self.data_type, includes_bytes=False) is None
-            and _pattern_data_type(self.data_type, includes_bytes=True) is not None
-        ):
-            constructs.append("pydantic.bytes_pattern")
+        if pattern is not None:
+            string_type = _pattern_data_type(self.data_type, includes_bytes=False)
+            if string_type is None and _pattern_data_type(self.data_type, includes_bytes=True) is not None:
+                constructs.append("pydantic.bytes_pattern")
+            elif string_type is not None and any(
+                member.type in _BYTES_PATTERN_TYPES for member in self.data_type.data_types
+            ):
+                constructs.append("pydantic.str_bytes_union_pattern")
         return tuple(constructs)
 
     @property
@@ -1134,8 +1136,8 @@ def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> D
     to 2.13 and rejects them at import before, so ``bytes`` counts only for an explicit target of ``model`` that
     compiles them: an unset target keeps the default engine of older releases. Pydantic 2.12 also compiles the
     pattern of a ``bytes | MISSING`` field, which keeps the default engine like the other unset-target output.
-    Otherwise a ``bytes`` member is left out of a union, whose string members Pydantic constrains on every
-    release.
+    Otherwise a ``bytes`` member is left out of a union, whose string members Pydantic constrains from 2.2 on:
+    2.0 and 2.1 reject the schema, as the stated floor says.
     """
     return _pattern_data_type(data_type, includes_bytes=model_target_meets(model, "pydantic.bytes_pattern"))
 

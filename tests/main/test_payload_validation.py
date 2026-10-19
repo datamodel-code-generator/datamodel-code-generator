@@ -1400,9 +1400,9 @@ def test_payload_runtime_pydantic_version_witnesses(
     generation states the release its models need above that target. Below it the models fail to build, or accept
     the schema-invalid payloads that the newer release rejects; from it on they validate the payload, reject the
     invalid ones and dump schema-valid data. Lookaround patterns that a model's ``regex_engine`` serves, also through
-    a type alias it reaches, need 2.5, an alias of a model or a ``type`` statement needs 2.10, and a pattern on bytes
-    2.14. A limit that no generated construct explains, such as a bare dataclass alias whose string pattern no model
-    config serves, keeps its exclusion reason.
+    a type alias it reaches, need 2.5, an alias of a model or a ``type`` statement needs 2.10, a pattern on a union of
+    ``str`` and ``bytes`` 2.2, and a pattern on bytes 2.14. A limit that no generated construct explains, such as a
+    bare dataclass alias whose string pattern no model config serves, keeps its exclusion reason.
     """
     case = SCHEMA_CASE_BY_ID[case_id]
     args = (*case.backend_extra_args.get(backend, ()), *witness.get("args", ()))

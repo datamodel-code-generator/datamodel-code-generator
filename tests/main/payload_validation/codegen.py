@@ -228,6 +228,17 @@ def _payload_runtime(payload_type: Any, backend: PayloadBackend) -> PayloadRunti
             raise PayloadAdapterError(msg)
 
 
+def _assert_codegen_warnings(messages: list[str], warning_file: str) -> None:
+    """Compare the warnings of a case's generation, other than the floor statement, with its warning file.
+
+    Each test that loads the case compares them, also when an earlier test of the session generated it.
+    """
+    assert_output(
+        json.dumps([message for message in messages if not _PYDANTIC_FLOOR_STATEMENT.match(message)], indent=2) + "\n",
+        EXPECTED_MAIN_PATH / warning_file,
+    )
+
+
 def generate_payload_runtime(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
@@ -240,14 +251,16 @@ def generate_payload_runtime(
     """
     runtimes: dict[tuple[str, str], PayloadRuntime] = generated_model_cache["adapters"]
     cache_key = (backend.value, case.id)
+    warning_file = PAYLOAD_CODEGEN_WARNING_FILES.get(case.id)
     if (runtime := runtimes.get(cache_key)) is not None:
+        if warning_file:
+            _assert_codegen_warnings(generated_model_cache["warnings"][cache_key], warning_file)
         return runtime
 
     case_dir = generated_model_cache["base"] / _safe_filename(backend.value) / _safe_filename(case.id)
     case_dir.mkdir(parents=True, exist_ok=True)
     input_path = _write_input_schema(case, case_dir)
     output_path = case_dir / "model.py"
-    warning_file = PAYLOAD_CODEGEN_WARNING_FILES.get(case.id)
     with warnings.catch_warnings(record=True) as captured:
         if warning_file:
             warnings.simplefilter("always", UserWarning)
@@ -258,11 +271,8 @@ def generate_payload_runtime(
     generated_model_cache.setdefault("floors", {})[cache_key] = _stated_floor(captured)
     if warning_file:
         messages = [str(record.message) for record in captured]
-        assert_output(
-            json.dumps([message for message in messages if not _PYDANTIC_FLOOR_STATEMENT.match(message)], indent=2)
-            + "\n",
-            EXPECTED_MAIN_PATH / warning_file,
-        )
+        generated_model_cache.setdefault("warnings", {})[cache_key] = messages
+        _assert_codegen_warnings(messages, warning_file)
     if return_code != Exit.OK:
         msg = f"Generation failed with exit code {return_code!r}"
         raise PayloadAdapterError(msg)

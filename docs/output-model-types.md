@@ -119,6 +119,7 @@ never warns, and `2.14` has nothing to warn about.
 | Written for every target | Needs Pydantic | Written when |
 | --- | --- | --- |
 | `Field(union_mode=...)` | 2.2; 2.0 and 2.1 ignore it | `--union-mode` on a union field |
+| A pattern on a union of `str` and `bytes` | 2.2; 2.0 and 2.1 reject it at import | `--use-annotated` or `--field-constraints` with a `pattern` beside string and `format: binary` branches that `--collapse-root-models` inlines |
 | `coerce_numbers_to_str` config key | 2.4; older releases ignore it | `config` in `--extra-template-data` |
 | `regex_engine` config key | 2.5; older releases ignore it | a pattern needs Python's regex engine, or `config` in `--extra-template-data` |
 | `use_attribute_docstrings` config key | 2.7; older releases ignore it | `--use-attribute-docstrings`, or `config` in `--extra-template-data` |

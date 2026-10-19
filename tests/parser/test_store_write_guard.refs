@@ -7,6 +7,8 @@ report	parser/store_write_guard/is_installed_only_while_a_parse_is_armed[report]
 [test_store_write_guard_keeps_what_the_parsed_graph_shares]
 	parser/store_write_guard/keeps_what_the_parsed_graph_shares.output.txt
 	parser/store_write_guard/keeps_what_the_parsed_graph_shares.shared.txt
+[test_store_write_guard_leaves_deep_copies_unguarded]
+	parser/store_write_guard/leaves_deep_copies_unguarded.copies.txt
 [test_store_write_guard_of_a_nested_parse]
 	parser/store_write_guard/of_a_nested_parse.txt
 [test_store_write_guard_reports_a_custom_parser_write]

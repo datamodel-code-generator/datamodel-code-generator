@@ -2512,6 +2512,15 @@ def test_data_type_deepcopy_keeps_the_source_of_a_nullable_reference_none() -> N
     assert deepcopy(from_model).type_hint == "Optional[NullableModel]"
 
 
+def test_data_type_deepcopy_keeps_the_enum_of_its_member_literals() -> None:
+    """A deep copy keeps the enum whose members its ``Literal`` renders, so every module still imports the class."""
+    reference = Reference(path="#/Kind", name="Kind")
+    data_type = DataType(type="str")
+    data_type._set_enum_member_literal_reference(reference)
+
+    assert deepcopy(data_type)._enum_member_literal_reference is reference
+
+
 def test_msgspec_simple_unset_fast_path_falls_back_for_nested_optional_union() -> None:
     """A nested unordered None union does not mutate the caller-owned graph."""
     child = DataType(data_types=[DataType(type="str"), DataType(type=NONE)])

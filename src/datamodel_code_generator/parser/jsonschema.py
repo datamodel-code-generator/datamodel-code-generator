@@ -12016,7 +12016,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._parse_object_map(name, item, path, get_special_path("object", path))
         if item.enum and not self.ignore_enum_constraints:
             if self._reads_enum_as_const(item):
-                return self._get_const_data_type(item.extras["const"], item)
+                return self._get_const_data_type(self._exact_const_enum_value(item)[0], item)
             if self.should_parse_enum_as_literal(item, property_name=name):
                 return self._enum_value_type(item, self.parse_enum_as_literal(item))
             return self.parse_enum(name, item, get_special_path("enum", path), singular_name=singular_name)
@@ -12316,7 +12316,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             data_types.append(self.parse_object(name, obj, get_special_path("object", path)))
         if obj.enum and not self.ignore_enum_constraints:
             data_types.append(
-                self._get_const_data_type(obj.extras["const"], obj)
+                self._get_const_data_type(self._exact_const_enum_value(obj)[0], obj)
                 if self._reads_enum_as_const(obj)
                 else self.parse_enum(name, obj, get_special_path("enum", path))
             )
@@ -12500,7 +12500,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             data_type = self._parse_object_map(name, obj, path, path)
         elif obj.enum and not self.ignore_enum_constraints and self._reads_enum_as_const(obj):
-            data_type = self._get_const_data_type(obj.extras["const"], obj)
+            data_type = self._get_const_data_type(self._exact_const_enum_value(obj)[0], obj)
         elif obj.enum and not self.ignore_enum_constraints:
             if self.should_parse_enum_as_literal(obj, property_name=name):
                 narrowed = self._const_narrowed_enum(obj)
@@ -12736,11 +12736,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _note_const_narrowing(self, reference: Reference, obj: JsonSchemaObject) -> None:
         """Record the const that narrows the enum ``reference`` is built from, to type the values that name it.
 
-        The enum class keeps every value as written. A const whose type would admit other values, such as a float or
-        an object, leaves the values typed by the enum.
+        The enum class keeps every value as written. The values are narrowed to the enum value that the const equals,
+        such as ``1`` for a const ``1.0``; one whose type would admit other values, such as a float or an object, leaves
+        the values typed by the enum.
         """
-        if not self._enum_positions_outside_const(obj) or not self._const_type_is_exact(const := obj.extras["const"]):
+        if not self._enum_positions_outside_const(obj) or not (exact := self._exact_const_enum_value(obj)):
             return
+        const = exact[0]
         self._const_narrowed_references.append((
             reference,
             _ConstNarrowing(
@@ -12759,14 +12761,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         enum, since a const does not carry nullable, and when the const's type would admit other values
         (``_const_type_is_exact``).
         """
-        return (
+        return bool(
             self.use_single_value_enum_as_const
             and obj.read_as_const
             and "const" in obj.extras
-            and ((const := obj.extras["const"]) is None or obj.nullable is not True)
-            and self._const_type_is_exact(const)
-            and any(_json_literal_values_equal(const, value) for value in obj.enum)
+            and (exact := self._exact_const_enum_value(obj))
+            and (exact[0] is None or obj.nullable is not True)
         )
+
+    def _exact_const_enum_value(self, obj: JsonSchemaObject) -> tuple[Any, ...]:
+        """Return the value an enum's const narrows it to, as a one-tuple, or an empty one when it narrows to none.
+
+        The const when its type admits that value only (``_const_type_is_exact``), else the enum value it equals that
+        does, such as ``1`` for a const ``1.0``. A const that equals no enum value narrows
+        nothing. The schema must hold a const.
+        """
+        const = obj.extras["const"]
+        equal = [value for value in obj.enum if _json_literal_values_equal(const, value)]
+        return next(((value,) for value in (const, *equal) if equal and self._const_type_is_exact(value)), ())
 
     def _definition_enum(self, obj: JsonSchemaObject) -> JsonSchemaObject:
         """Return the enum schema a model built for the schema object itself holds.
@@ -12781,8 +12793,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         A const whose type would admit other values, such as a float or an object, keeps the enum type.
         """
-        if self._enum_positions_outside_const(obj) and self._const_type_is_exact(const := obj.extras["const"]):
-            return self._get_const_data_type(const)
+        if self._enum_positions_outside_const(obj) and (exact := self._exact_const_enum_value(obj)):
+            return self._get_const_data_type(exact[0])
         return enum_type
 
     def parse_enum_as_literal(self, obj: JsonSchemaObject) -> DataType:

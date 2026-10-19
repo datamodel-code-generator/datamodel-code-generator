@@ -585,7 +585,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
             A generation collects them only for a model type that Pydantic reads, whose fields are Pydantic fields.
             """
-            ...
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,

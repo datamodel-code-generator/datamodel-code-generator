@@ -1,0 +1,2 @@
+{"title":"Holder","type":"object","properties":{"counts":{"type":"array","items":{"type":"integer","enum":[1,2],"const":1}},"c2":{"type":"array","items":{"type":"integer","enum":[1,2],"const":1.0}},
+"c3":{"type":"array","items":{"type":"number","enum":[1.0,2.0],"const":1}}}}

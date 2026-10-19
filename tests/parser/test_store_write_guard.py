@@ -8,6 +8,7 @@ which would report the same writes as made outside every pass, is off in these t
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -49,6 +50,20 @@ class ReorderingParser(JsonSchemaParser):
             model.fields[0] = model.fields[0]
             model.fields.insert(0, model.fields.pop())
             model.fields.sort(key=lambda field: field.name or "", reverse=True)
+        return super()._process_single_module(module_, models, *args)
+
+
+class CopyingParser(JsonSchemaParser):
+    """Sets the fields of every model through the store, then deep-copies them and reorders the copy directly."""
+
+    copy_types: list[type[list[Any]]]
+
+    def _process_single_module(self, module_: Any, models: list[DataModel], *args: Any) -> ModuleContext:
+        for model in models:
+            self.generation_store.set_fields(model, list(model.fields))
+            copied = deepcopy(model.fields)
+            copied.reverse()
+            self.copy_types.append(type(copied))
         return super()._process_single_module(module_, models, *args)
 
 
@@ -138,6 +153,20 @@ def test_store_write_guard_reports_list_writes_outside_store_operations(
 
     assert_output(output, name="output")
     assert_output(_reported(report), name="writes")
+
+
+def test_store_write_guard_leaves_deep_copies_unguarded(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """A deep copy of a list that a store operation set is a plain list, and writing it reports nothing."""
+    report = tmp_path / "writes.jsonl"
+    monkeypatch.setenv(CHECK_STORE_WRITES_ENV, f"report:{report}")
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, "0")
+    parser = CopyingParser(SCHEMA, formatters=[Formatter.BUILTIN])
+    parser.copy_types = []
+
+    parser.parse()
+
+    copy_types = "".join(f"{copy_type.__name__}\n" for copy_type in parser.copy_types)
+    assert_output(f"copies:\n{copy_types}writes:\n{_reported(report)}", name="copies")
 
 
 @pytest.mark.parametrize("flag", ["report", "finality", "off"])

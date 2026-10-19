@@ -71,6 +71,18 @@
     },
     "dataclass": null
   },
+  "jsonschema/pattern_str_bytes_union.json": {
+    "floor": "2.2",
+    "2.0.3": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": null
+  },
   "jsonschema/compound_property_names/enum_oneof.json": {
     "floor": null,
     "2.0.3": {

@@ -87,6 +87,7 @@ PydanticConstruct: TypeAlias = Literal[
     "pydantic.config_polymorphic_serialization",
     "pydantic.string_constraints",
     "pydantic.union_mode",
+    "pydantic.str_bytes_union_pattern",
     "pydantic.coerce_numbers_to_str",
     "pydantic.dataclass_alias",
     "pydantic.regex_engine",
@@ -211,6 +212,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     ),
     Requirement("pydantic.string_constraints", "pydantic", "2.1"),
     Requirement("pydantic.union_mode", "pydantic", "2.2", label="Field(union_mode=...)"),
+    Requirement("pydantic.str_bytes_union_pattern", "pydantic", "2.2", label="a pattern on a union of str and bytes"),
     Requirement(
         "pydantic.coerce_numbers_to_str",
         "pydantic",

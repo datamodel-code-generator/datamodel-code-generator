@@ -256,6 +256,8 @@ jsonschema/enum_complex_values_literal.json	payloads/native_numeric_empty_errors
 jsonschema/enum_const_discriminator_tag.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_draft_04.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_hidden_by_field.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_const_integral_float.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_const_integral_float_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_non_literal.json	main/jsonschema/enum_const_non_literal_payload_warnings.txt
 jsonschema/enum_const_non_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_positions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -267,6 +269,7 @@ jsonschema/enum_literal_type_alias_default.json	payloads/native_numeric_empty_er
 jsonschema/enum_literal_typed_dict.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_member_descriptions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_member_typed_defaults.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_multiple_of_big_integer.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_names_beside_null.json	main/jsonschema/enum_names_beside_null_payload_warnings.txt
 jsonschema/enum_names_beside_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_names_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -525,6 +528,7 @@ jsonschema/path_absolute_root_id_refs/core/platform-extension-ref.json	payloads/
 jsonschema/path_absolute_root_id_refs_parent_traversal/outside-platform-extension-ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_escaped_quote.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/pattern_str_bytes_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_string_adapters/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_unicode_mixed_dialect.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_unicode_nested_dialect.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1853,6 +1857,8 @@ jsonschema/enum_complex_values_literal.json	payloads/native_numeric_empty_errors
 jsonschema/enum_const_discriminator_tag.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_draft_04.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_hidden_by_field.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_const_integral_float.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_const_integral_float_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_non_literal.json	main/jsonschema/enum_const_non_literal_payload_warnings.txt
 jsonschema/enum_const_non_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_const_positions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1864,6 +1870,7 @@ jsonschema/enum_literal_type_alias_default.json	payloads/native_numeric_empty_er
 jsonschema/enum_literal_typed_dict.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_member_descriptions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_member_typed_defaults.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enum_multiple_of_big_integer.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_names_beside_null.json	main/jsonschema/enum_names_beside_null_payload_warnings.txt	?
 jsonschema/enum_names_beside_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_names_null.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2119,6 +2126,7 @@ jsonschema/path_absolute_root_id_refs/core/platform-extension-ref.json	payloads/
 jsonschema/path_absolute_root_id_refs_parent_traversal/outside-platform-extension-ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_escaped_quote.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/pattern_str_bytes_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_string_adapters/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_unicode_mixed_dialect.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/pattern_unicode_nested_dialect.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

@@ -3,7 +3,7 @@
 [test_pydantic_floor]
 attribute-docstrings	main/pydantic_floor/pydantic_floor[attribute-docstrings].warnings.txt
 attribute-docstrings-generic-base-class	main/pydantic_floor/pydantic_floor[attribute-docstrings-generic-base-class].warnings.txt
-bytes-or-string-pattern	main/pydantic_floor/pydantic_floor[bytes-or-string-pattern].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+bytes-or-string-pattern	main/pydantic_floor/pydantic_floor[bytes-or-string-pattern].warnings.txt
 bytes-pattern	main/pydantic_floor/pydantic_floor[bytes-pattern].warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args2-2-~614cda0d.warnings.txt
 bytes-pattern-field-constraints	main/pydantic_floor/pydantic_floor[bytes-pattern-field-constraints].warnings.txt	= main/jsonschema/main_jsonschema/main_rust_unsupported_pattern_bytes[rust_unsupported_pattern_bytes.json-args2-2-~614cda0d.warnings.txt
 bytes-pattern-missing-sentinel	main/pydantic_floor/pydantic_floor[bytes-pattern-missing-sentinel].warnings.txt
@@ -17,7 +17,7 @@ regex-engine	main/pydantic_floor/pydantic_floor[regex-engine].warnings.txt	= mai
 regex-engine-dataclass	main/pydantic_floor/pydantic_floor[regex-engine-dataclass].warnings.txt	= main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[dataclass-target-2].warnings.txt
 regex-engine-root-model	main/pydantic_floor/pydantic_floor[regex-engine-root-model].warnings.txt	= main/jsonschema/main_jsonschema/main_lookaround_anyof_nullable_target_pydantic_version[dataclass-target-2].warnings.txt
 root-model-config-without-docstrings	main/pydantic_floor/pydantic_floor[root-model-config-without-docstrings].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-string-or-bytes-pattern	main/pydantic_floor/pydantic_floor[string-or-bytes-pattern].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+string-or-bytes-pattern	main/pydantic_floor/pydantic_floor[string-or-bytes-pattern].warnings.txt	= main/pydantic_floor/pydantic_floor[bytes-or-string-pattern].warnings.txt
 target-2.14	main/pydantic_floor/pydantic_floor[target-2.14].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 target-unset	main/pydantic_floor/pydantic_floor[target-unset].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 type-alias-annotation-of-model-dataclass	main/pydantic_floor/pydantic_floor[type-alias-annotation-of-model-dataclass].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt

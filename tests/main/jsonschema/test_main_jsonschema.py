@@ -6651,13 +6651,15 @@ def test_main_nullable_enum_literal_length(output_file: Path, extra_args: list[s
     )
     with _generated_model(output_file, "nullable_enum_literal_length", "Status") as model:
         validate = _model_json_validator(model)
-        outcomes = []
-        for value in ("bb", None, "a", "c"):
-            outcome = "rejected"
-            with suppress(ValidationError):
+
+        def outcome(value: str | None) -> str:
+            try:
                 validate(json.dumps(value))
-                outcome = "accepted"
-            outcomes.append(f"{value!r}: {outcome}")
+            except ValidationError:
+                return "rejected"
+            return "accepted"
+
+        outcomes = [f"{value!r}: {outcome(value)}" for value in ("bb", None, "a", "c")]
     assert_output("\n".join(outcomes) + "\n", name="payloads")
 
 
@@ -6677,6 +6679,25 @@ def test_main_literal_constraints_undecided(output_file: Path, extra_args: list[
         assert_func=assert_file_content,
         extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"],
         force_exec_validation=True,
+    )
+
+
+def test_main_literal_constraints_big_integer(output_file: Path) -> None:
+    """Test multipleOf decides an enum value too large for a float exactly, without converting it to one."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_multiple_of_big_integer.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="enum_multiple_of_big_integer",
+        model_name="Holder",
+        valid_json=f'{{"big": {10**400}}}',
+        invalid_json='{"big": 3}',
+        expected_error_type="enum",
     )
 
 
@@ -7187,6 +7208,62 @@ def test_main_jsonschema_enum_const_positions(output_model: str, extra_args: lis
         ),
         name="warnings",
     )
+
+
+def test_main_jsonschema_enum_const_integral_float(output_file: Path) -> None:
+    """Type a value by the enum member that an integral float const equals, as ``1`` for a const ``1.0``.
+
+    A float member keeps the enum type, as its type would admit other values.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_const_integral_float.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--target-python-version", "3.11"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="enum_const_integral_float",
+        model_name="Holder",
+        valid_json='{"counts": [1], "ratios": [1.5]}',
+        invalid_json='{"counts": [2]}',
+        expected_error_type="literal_error",
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--enum-field-as-literal", "all"], id="pydantic-literal"),
+        pytest.param("pydantic_v2.BaseModel", ["--use-single-value-enum-as-const"], id="pydantic-single-value"),
+        pytest.param("typing.TypedDict", [], id="typed-dict"),
+    ],
+)
+def test_main_jsonschema_enum_const_integral_float_literal(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Type a value by the enum value that an integral float const equals when the enum is written as a Literal.
+
+    A const ``1.0`` beside the enum ``[1, 2]`` admits ``1`` only, on every route that writes the values as a Literal.
+    A const ``1`` beside the enum ``[1.0, 2.0]`` is the exact Literal, as only the const is one.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_const_integral_float_literal.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, *extra_args],
+        force_exec_validation=True,
+    )
+    if output_model != "typing.TypedDict":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="enum_const_integral_float_literal",
+            model_name="Holder",
+            valid_json='{"counts": [1], "c2": [1], "c3": [1]}',
+            invalid_json='{"c3": [2]}',
+            expected_error_type="literal_error",
+        )
 
 
 @pytest.mark.parametrize("strategy", ["rename-field", "rename-type"])
@@ -19755,7 +19832,7 @@ def test_main_rust_unsupported_pattern_bytes(
     Rust engine accepts; that output imports on the releases that ignore the pattern, and the 2.14 target
     output on the releases that compile it. Type aliases, nullable types and strict ``bytes`` follow the same
     rule. A union with a string member, such as ``str | bytes``, selects Python's engine for every target,
-    because Pydantic compiles its pattern for the string member on every release.
+    because Pydantic compiles its pattern for the string member on every release that builds it (2.2 on).
     """
     compiles_bytes_patterns = installed_pydantic_runs_target(TargetPydanticVersion.V2_14.value)
     runs = compiles_bytes_patterns == (target_pydantic_version == TargetPydanticVersion.V2_14.value)

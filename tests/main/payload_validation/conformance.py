@@ -204,6 +204,12 @@ MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/enum_names_beside_null.json": (
         "msgspec conversion only supports Enum classes with homogeneous str or int values"
     ),
+    "jsonschema/enum_multiple_of_big_integer.json": (
+        "msgspec Enum and Literal values only support integers up to 2**63 - 1"
+    ),
+    "jsonschema/enum_const_integral_float.json": (
+        "msgspec conversion only supports Enum classes with homogeneous str or int values"
+    ),
     "jsonschema/enum_const_non_literal.json": (
         "msgspec conversion only supports Enum classes with homogeneous str or int values"
     ),

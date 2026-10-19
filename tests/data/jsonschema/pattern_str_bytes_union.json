@@ -1,0 +1,12 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "blob": {"$ref": "#/$defs/Blob"}
+  },
+  "$defs": {
+    "Blob": {"pattern": "^a+$", "anyOf": [{"$ref": "#/$defs/Text"}, {"$ref": "#/$defs/Binary"}]},
+    "Text": {"type": "string"},
+    "Binary": {"type": "string", "format": "binary"}
+  }
+}
