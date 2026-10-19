@@ -603,6 +603,23 @@ def test_main_graphql_enums_subclass(output_file: Path) -> None:
     )
 
 
+def test_main_graphql_enums_subclass_specialized(output_file: Path) -> None:
+    """Pin the legacy-graphql-subclass-str row of decide_enum_kind: ``class Color(str, StrEnum)``.
+
+    Under --use-subclass-enum on Python 3.11+, a GraphQL enum is a StrEnum that also subclasses str, where a JSON
+    Schema string enum is a StrEnum alone. This is a known import failure (TypeError: no consistent method resolution
+    order for the bases str, StrEnum), present since 0.50.0, kept until a later plain fix deletes the row; the output is
+    therefore not executed here.
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "enums.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=["--target-python-version", "3.11", "--use-subclass-enum"],
+        skip_code_validation=True,
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",

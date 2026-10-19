@@ -7,6 +7,11 @@ from the live objects and build the class through ``model/enum.py:_enum_class``:
 
 The rows named ``legacy-*`` keep today's output where the kind does not follow from the member values; a fix of that
 output deletes its row.
+
+Not routed here yet: ``model/base.py:DataModelFieldBase._process_const_as_literal`` classifies a const on its own and
+moves with the decision on const defaults and nullability; the enum branch of
+``parser/jsonschema.py:JsonSchemaParser.parse_array_fields`` (a ``type`` list holding ``array``) writes an Enum class
+without asking ``enum_as_literal``, so ``--enum-field-as-literal all`` leaves that enum a class.
 """
 
 from __future__ import annotations
@@ -56,7 +61,9 @@ EnumKindRule: TypeAlias = Literal[
 * ``legacy-subclass-type-without-member-check``: under ``--use-subclass-enum``, a plain ``Enum`` that also subclasses
   the value type of the schema type (``class A(str, Enum)``), whatever its members are.
 * ``legacy-graphql-subclass-str``: a GraphQL ``StrEnum`` that also subclasses ``str`` under ``--use-subclass-enum``,
-  which has no consistent method resolution order and fails at import, where a schema enum is a ``StrEnum`` alone.
+  where a schema enum is a ``StrEnum`` alone. It has no consistent method resolution order and fails at import, as in
+  every release since 0.50.0; every dated preset for Python 3.11 or later writes it for each GraphQL enum it does not
+  write as a ``Literal``.
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a

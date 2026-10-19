@@ -20,7 +20,7 @@ from math import gcd, lcm
 from operator import is_not
 from pathlib import Path
 from string import digits
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, Optional, Union, cast
 from urllib.parse import ParseResult, unquote, urljoin, urlparse
 from warnings import warn
 
@@ -159,6 +159,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
+    from datamodel_code_generator.model._decisions.enum_kind import LiteralValueKind
 
 JsonSchemaLiteral = Union[bool, int, str]  # noqa: UP007
 JsonSchemaConstraintKey = Literal[
@@ -176,6 +177,13 @@ JsonSchemaConstraintKey = Literal[
 JsonSchemaConstraintValue = int | float | str | bool
 JsonSchemaDataTypeKwargValue = JsonSchemaConstraintValue
 TaggedUnionValue = Union[int, str]  # noqa: UP007
+_CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
+    "str": "string",
+    "bool": "boolean",
+    "int": "integer",
+    "float": "number",
+}
+"""The ``type`` a merged enum of const branches takes from the kind of the first const that has one."""
 _ARRAY_ITEMS_CONSTRAINT_FIELDS = frozenset({"items", "additionalItems", "prefixItems", "unevaluatedItems"})
 
 
@@ -1975,16 +1983,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 varnames.append(item.title)
             descriptions.append(item.description or "")
 
-            if inferred_type is None and const_value is not None:
-                match const_value:
-                    case str():
-                        inferred_type = "string"
-                    case bool():  # bool must come before int (bool is subclass of int)
-                        inferred_type = "boolean"
-                    case int():
-                        inferred_type = "integer"
-                    case float():
-                        inferred_type = "number"
+            if inferred_type is None:
+                inferred_type = _CONST_ENUM_TYPES.get(literal_value_kind(const_value))
 
         if not enum_values:  # pragma: no cover
             return None
@@ -11961,7 +11961,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _get_enum_model_class(self, type_: Types | None, enum_values: list[Any]) -> tuple[type[Enum], Types | None]:
-        """Return the enum model class and the type whose value type it also subclasses (``decide_enum_kind``)."""
+        """Return the enum model class and the schema type whose value type it also subclasses, else None.
+
+        ``decide_enum_kind`` decides both. Up to 0.86.0 the second value was the schema type for every class that is
+        not specialized, whether or not the class subclasses it; callers still check ``use_subclass_enum`` for parser
+        subclasses that return that.
+        """
         kind = decide_enum_kind(
             "schema",
             value_type=SUBCLASS_BASE_CLASSES.get(type_) if type_ else None,
@@ -11980,7 +11985,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the enum class of the schema subclasses a value type, whose members cannot be None.
 
         Such a class needs one ``type`` other than ``string``, which rejects null unless ``nullable`` allows it, so the
-        enum drops the null it lists and is not nullable, except that an enum of only null stays that None.
+        enum drops the null it lists and is not nullable, except that an enum of only null stays that None. The
+        ``use_subclass_enum`` check is a no-op for the built-in ``_get_enum_model_class``; it stays for parser
+        subclasses that return its old second value.
         """
         enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), obj.enum)
         return enum_cls is not Enum or (self.use_subclass_enum and type_ in SUBCLASS_BASE_CLASSES)
@@ -12129,6 +12136,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.data_type(reference=reference)
 
         def create_enum(reference_: Reference) -> DataType:
+            """Build the enum model; the ``use_subclass_enum`` check is kept for parser subclasses (see above)."""
             enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), enum_times)
             self._set_schema_metadata(reference_.path, obj)
             self.set_schema_extensions(reference_.path, obj)

@@ -2933,7 +2933,8 @@ def _msgspec_null_enum_message(model: Enum) -> str | None:
     """Describe an enum whose null member msgspec refuses, if the other members are all str or all int."""
     values = {field.name: get_raw_enum_member_value(field.default) for field in model.fields}
     if not (nulls := [name for name, value in values.items() if value is None]) or not (
-        (kinds := {type(value) for value in values.values() if value is not None}) <= {str} or kinds <= {int}
+        (kinds := {literal_value_kind(value) for value in values.values() if value is not None}) <= {"str"}
+        or kinds <= {"int"}
     ):
         return None
     member = f"its member {nulls[0]} = None"
