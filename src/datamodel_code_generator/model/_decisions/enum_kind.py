@@ -61,7 +61,9 @@ EnumKindRule: TypeAlias = Literal[
 * ``enum-value-base-changes-a-member``: a plain ``Enum``, since the value base asked for would change or refuse a
   member value (``T(v) != v``, NaN equal to itself; ``bytes`` keeps no JSON value), as ``1.5`` or ``'x'`` beside an
   integer type would.
-* ``int-enum``: an ``IntEnum`` for an integer type whose members ``int`` keeps (ints, bools and integral floats).
+* ``int-enum``: an ``IntEnum`` for an integer type whose members ``int`` keeps (ints, bools and integral floats). A
+  bool counts as its int, as Python's ``==`` has it, so const branches ``[1, true]`` stay an ``IntEnum`` (``True``
+  an alias of ``1``), as in 0.86.0.
 * ``str-enum``: a ``StrEnum`` for a string type whose members are all str, on a target Python that has it. Like an
   ``IntEnum``, it subclasses its value type already, so ``--use-subclass-enum`` adds no value type base.
 * ``subclass-value-type``: under ``--use-subclass-enum``, a plain ``Enum`` that also subclasses the value type of the
@@ -99,7 +101,6 @@ _MEMBER_CHANGING_ENUM = EnumKind(base="Enum", subclasses_value_type=False, rule=
 _INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="int-enum")
 _STR_ENUM = EnumKind(base="StrEnum", subclasses_value_type=False, rule="str-enum")
 _SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="subclass-value-type")
-_VALUE_TYPES: Final[Mapping[str, Callable[[Any], object]]] = {"int": int, "float": float, "str": str}
 _INHERITED = EnumKind(base=None, subclasses_value_type=False, rule="legacy-inherited-first-base-class")
 _INHERITED_SPECIALIZED = EnumKind(
     base=None, subclasses_value_type=False, rule="legacy-inherited-specialized-without-member-check"
@@ -138,11 +139,15 @@ def decide_enum_kind(  # noqa: PLR0913
     return _SUBCLASS_ENUM
 
 
+_VALUE_TYPES: Final[Mapping[str, Callable[[Any], object]]] = {"int": int, "float": float, "str": str}
+"""The constructors of the value types a value base can subclass; ``bytes`` keeps no JSON value, so it has none."""
+
+
 def keeps_member_value(value_type: str, value: object, /) -> bool:
     """Return whether a member of an enum whose class subclasses the value type keeps its value as written.
 
-    The value type ``T`` keeps ``v`` when ``T(v) == v``, NaN being equal to itself: ``int`` keeps ints, bools and
-    integral floats, ``float`` any number, ``str`` only strings, and ``bytes`` no JSON value.
+    The value type ``T`` keeps ``v`` when ``T(v) == v``, NaN being equal to itself: ``int`` keeps ints, bools (a bool
+    equals its int) and integral floats, ``float`` any number, ``str`` only strings, and ``bytes`` no JSON value.
     """
     if value_type == "float" and isinstance(value, float) and isnan(value):
         return True

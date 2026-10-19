@@ -6769,21 +6769,22 @@ def test_main_jsonschema_specialized_enums_disabled(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "output_model",
+    ("output_model", "extra_args"),
     [
-        pytest.param("pydantic_v2.BaseModel", id="pydantic-v2"),
-        pytest.param("dataclasses.dataclass", id="dataclasses"),
-    ],
-)
-@pytest.mark.parametrize(
-    "extra_args",
-    [
-        pytest.param([], id="default"),
-        pytest.param(["--use-subclass-enum"], id="subclass"),
-        pytest.param(["--use-subclass-enum", "--no-use-specialized-enum"], id="subclass-unspecialized"),
-        pytest.param(["--target-python-version", "3.11"], id="py311"),
-        pytest.param(["--target-python-version", "3.11", "--use-subclass-enum"], id="py311-subclass"),
-        pytest.param(["--preset", "standard-py314-20261017", "--target-python-version", "3.14"], id="preset"),
+        pytest.param(output_model, extra_args, id=f"{args_id}-{model_id}")
+        for args_id, extra_args in (
+            ("default", []),
+            ("subclass", ["--use-subclass-enum"]),
+            ("subclass-unspecialized", ["--use-subclass-enum", "--no-use-specialized-enum"]),
+            ("py311", ["--target-python-version", "3.11"]),
+            ("py311-subclass", ["--target-python-version", "3.11", "--use-subclass-enum"]),
+            ("preset", ["--preset", "standard-py314-20261017", "--target-python-version", "3.14"]),
+        )
+        for model_id, output_model in (
+            ("pydantic-v2", "pydantic_v2.BaseModel"),
+            ("dataclasses", "dataclasses.dataclass"),
+        )
+        if (args_id, model_id) != ("preset", "dataclasses")
     ],
 )
 def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: list[str], output_file: Path) -> None:

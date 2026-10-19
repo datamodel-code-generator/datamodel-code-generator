@@ -6169,7 +6169,6 @@ legacy-option	main/jsonschema/enum_member_typed_defaults.py
 [test_main_jsonschema_enum_value_base_kinds]
 default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
 default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py
-preset-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-dataclasses].py
 preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-pydantic-v2].py
 py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
 py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py

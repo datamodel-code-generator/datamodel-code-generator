@@ -60573,16 +60573,15 @@ build a JSON Schema dict and call `_parse_file` without `_read_document`, so doc
 `parse_combined_schema`), `parse_object`, `parse_enum` or `parse_root_type`. A oneOf/anyOf of constants can become a
 synthetic enum (`_extract_const_enum_from_combined`). An enum class takes a value base (`IntEnum`, `StrEnum`,
 `--use-subclass-enum`'s `(T, Enum)`) only when that base keeps every member value (`T(v) == v`, NaN equal to itself),
-and is a plain `Enum` otherwise (`model/_decisions/enum_kind.py:decide_enum_kind`). Names come from
-`ModelResolver.add`. Each model records the location of the schema object it is built from on its `Reference`
-(`_record_schema_object`). Every use of a reference
-gets a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base classes; inherited
-fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only captured here
-(`field.extras["discriminator"]`). Field construction already decides const handling: `DataModelFieldBase.__init__`
-calls `process_const()`. Dataclass-like models (`dataclasses`, Pydantic dataclasses, msgspec Structs) sort their
-fields when they are built, by `DataModel.FIELD_CONSTRUCTION_ORDER_KEY`. The key reads only facts known then: on a
-Pydantic dataclass, a `None` default that `--strip-default-none` may keep counts as no default, while a msgspec
-Struct counts every optional field as having one, as it never strips its defaults. L5
+and is a plain `Enum` otherwise (`model/_decisions/enum_kind.py:decide_enum_kind`). Names come from `ModelResolver.add`.
+Each model records the location of the schema object it is built from on its `Reference` (`_record_schema_object`).
+Every use of a reference gets a new `DataType` that points to the one shared `Reference`. allOf `$ref` items become base
+classes; inherited fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only
+captured here (`field.extras["discriminator"]`). Field construction already decides const handling:
+`DataModelFieldBase.__init__` calls `process_const()`. Dataclass-like models (`dataclasses`, Pydantic dataclasses,
+msgspec Structs) sort their fields when they are built, by `DataModel.FIELD_CONSTRUCTION_ORDER_KEY`. The key reads only
+facts known then: on a Pydantic dataclass, a `None` default that `--strip-default-none` may keep counts as no default,
+while a msgspec Struct counts every optional field as having one, as it never strips its defaults. L5
 `__fix_constructor_field_ordering` decides with the output model's `FIELD_ASSIGNMENT_CHECKER`, which states what the
 template writes, and moves fields whose default the template keeps after the fields without one.
 
