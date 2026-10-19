@@ -35,6 +35,8 @@ becomes final and where a decision belongs.
   `scripts/generation_store_allowlist.toml` only shrinks. Route a new write through the store instead of adding an
   entry, and remove the entries of writes you route.
 - Every test also runs the runtime write guard (`DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES`): a test that fails with
-  "... is written outside store operations" made a write the allowlist does not list; route it the same way.
+  "... is written outside store operations" made a write the allowlist does not list; route it the same way. Witness
+  entries (`target = "<datamodel-codegen args>"`) only record runtime-only writes that existed before the guard; never
+  add one for a new write.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.
