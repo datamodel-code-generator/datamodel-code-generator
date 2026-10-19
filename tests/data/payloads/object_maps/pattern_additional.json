@@ -1,0 +1,196 @@
+{
+  "valid": {
+    "pMatrix": {
+      "include": [
+        {
+          "os": "linux"
+        }
+      ],
+      "os": [
+        "ubuntu",
+        "macos"
+      ]
+    },
+    "rMatrix": {
+      "include": [
+        {
+          "os": "linux"
+        }
+      ],
+      "os": [
+        "ubuntu",
+        "macos"
+      ]
+    },
+    "iMatrix": [
+      {
+        "include": [
+          {
+            "os": "linux"
+          }
+        ],
+        "os": [
+          "ubuntu",
+          "macos"
+        ]
+      }
+    ],
+    "mMatrix": {
+      "k": {
+        "include": [
+          {
+            "os": "linux"
+          }
+        ],
+        "os": [
+          "ubuntu",
+          "macos"
+        ]
+      }
+    },
+    "pSame": {
+      "a1": 1,
+      "zz": 2
+    },
+    "rSame": {
+      "a1": 1,
+      "zz": 2
+    },
+    "iSame": [
+      {
+        "a1": 1,
+        "zz": 2
+      }
+    ],
+    "mSame": {
+      "k": {
+        "a1": 1,
+        "zz": 2
+      }
+    },
+    "pNames": {
+      "a1": 1,
+      "zz": 2
+    },
+    "rNames": {
+      "a1": 1,
+      "zz": 2
+    },
+    "iNames": [
+      {
+        "a1": 1,
+        "zz": 2
+      }
+    ],
+    "mNames": {
+      "k": {
+        "a1": 1,
+        "zz": 2
+      }
+    },
+    "pAnyOther": {
+      "a1": 1
+    },
+    "rAnyOther": {
+      "a1": 1
+    },
+    "iAnyOther": [
+      {
+        "a1": 1
+      }
+    ],
+    "mAnyOther": {
+      "k": {
+        "a1": 1
+      }
+    },
+    "pNoPatternKeys": {
+      "zz": 1
+    },
+    "rNoPatternKeys": {
+      "zz": 1
+    },
+    "iNoPatternKeys": [
+      {
+        "zz": 1
+      }
+    ],
+    "mNoPatternKeys": {
+      "k": {
+        "zz": 1
+      }
+    }
+  },
+  "invalid": [
+    {
+      "pMatrix": {
+        "os": [
+          1
+        ]
+      }
+    },
+    {
+      "rMatrix": {
+        "include": [
+          "ubuntu"
+        ]
+      }
+    },
+    {
+      "iMatrix": [
+        {
+          "exclude": "linux"
+        }
+      ]
+    },
+    {
+      "pSame": {
+        "zz": "s"
+      }
+    },
+    {
+      "rSame": {
+        "a1": "s"
+      }
+    },
+    {
+      "iSame": [
+        {
+          "zz": "s"
+        }
+      ]
+    },
+    {
+      "mSame": {
+        "k": {
+          "zz": "s"
+        }
+      }
+    },
+    {
+      "pNames": {
+        "abcd": 1
+      }
+    },
+    {
+      "rNames": {
+        "zz": "s"
+      }
+    },
+    {
+      "pAnyOther": {
+        "a1": "s"
+      }
+    },
+    {
+      "pNoPatternKeys": {
+        "zz": "s"
+      }
+    },
+    {
+      "rNoPatternKeys": {
+        "x1": 1
+      }
+    }
+  ]
+}

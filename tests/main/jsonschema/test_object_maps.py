@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 OBJECT_MAPS = JSON_SCHEMA_DATA_PATH / "object_maps"
 PAYLOADS = DATA_PATH / "payloads" / "object_maps"
-OBJECT_MAP_INPUTS = ("pattern_maps", "nullable_maps", "type_array_maps", "pattern_counts")
+OBJECT_MAP_INPUTS = ("pattern_maps", "nullable_maps", "type_array_maps", "pattern_counts", "pattern_additional")
 OUTPUT_MODEL_TYPES = (
     "pydantic_v2.BaseModel",
     "pydantic_v2.dataclass",

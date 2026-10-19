@@ -1,0 +1,13 @@
+valid: rejected
+invalid pMatrix: rejected
+invalid rMatrix: rejected
+invalid iMatrix: rejected
+invalid pSame: rejected
+invalid rSame: rejected
+invalid iSame: rejected
+invalid mSame: rejected
+invalid pNames: rejected
+invalid rNames: rejected
+invalid pAnyOther: rejected
+invalid pNoPatternKeys: rejected
+invalid rNoPatternKeys: rejected

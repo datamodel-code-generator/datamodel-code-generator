@@ -2015,6 +2015,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     SUPPORTS_NULL_ENUM_MEMBER: ClassVar[bool] = True
     _DECODES_MIXED_ENUM_VALUES: ClassVar[bool] = True
     """Whether the output decodes an Enum whose values are not all str or all int (msgspec does not)."""
+    _DECODES_VALUE_UNIONS: ClassVar[bool] = True
+    """Whether the output decodes a union of any value types (msgspec decodes unions of some kinds only)."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False

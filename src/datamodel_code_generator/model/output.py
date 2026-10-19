@@ -132,6 +132,7 @@ class OutputModelContext:
         "_data_model_root_type",
         "_data_model_type",
         "decodes_mixed_enum_values",
+        "decodes_value_unions",
         "requires_additional_properties_reference_classes",
         "requires_tagged_union_discriminator",
         "supports_annotated_constraints",
@@ -152,6 +153,7 @@ class OutputModelContext:
         requires_additional_properties_reference_classes: bool,
         decodes_mixed_enum_values: bool = True,
         writes_constrained_types: bool = False,
+        decodes_value_unions: bool = True,
     ) -> None:
         """Initialize capabilities with the established keyword signature."""
         self._data_model_type = data_model_type
@@ -163,6 +165,7 @@ class OutputModelContext:
         self.requires_additional_properties_reference_classes = requires_additional_properties_reference_classes
         self.decodes_mixed_enum_values = decodes_mixed_enum_values
         self.writes_constrained_types = writes_constrained_types
+        self.decodes_value_unions = decodes_value_unions
 
     @classmethod
     def from_generation_types(  # noqa: PLR0913
@@ -201,6 +204,7 @@ class OutputModelContext:
             ),
             decodes_mixed_enum_values=data_model_type._DECODES_MIXED_ENUM_VALUES,  # noqa: SLF001
             writes_constrained_types=data_type_manager_type._WRITES_CONSTRAINED_TYPES,  # noqa: SLF001
+            decodes_value_unions=data_model_type._DECODES_VALUE_UNIONS,  # ruff: ignore[private-member-access]
         )
 
     def resolve_nested_constrained_model_type(self) -> type[DataModel]:

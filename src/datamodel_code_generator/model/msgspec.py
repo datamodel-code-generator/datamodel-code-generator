@@ -237,6 +237,7 @@ class Struct(DataModel):
     SUPPORTS_BOOLEAN_LITERAL: ClassVar[bool] = False
     SUPPORTS_NULL_ENUM_MEMBER: ClassVar[bool] = False
     _DECODES_MIXED_ENUM_VALUES: ClassVar[bool] = False
+    _DECODES_VALUE_UNIONS: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = True
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = True
     FLATTENS_CONFLICTING_BASE_LAYOUTS: ClassVar[bool] = True

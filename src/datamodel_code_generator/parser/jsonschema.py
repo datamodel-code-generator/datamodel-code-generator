@@ -11160,12 +11160,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         *,
         property_names: JsonSchemaObject | bool | None = None,
+        additional_properties: JsonSchemaObject | bool | None = None,
     ) -> DataType:
         """Parse patternProperties into one dict whose keys match a pattern and whose value is the union of theirs.
 
         Each value is parsed where its pattern declares it, in document order; equal values collapse when the
         type is written, and a value that admits anything makes the whole value ``Any``. The patterns are joined
-        into one key pattern, intersected with ``property_names``. A ``false`` pattern admits no key.
+        into one key pattern, intersected with ``property_names``. A ``false`` pattern admits no key. Where
+        ``additional_properties`` types the keys that match no pattern, the dict admits them too: its keys are
+        those of ``property_names`` and its value joins the value of ``additional_properties`` last.
         """
         patterns: list[str] = []
         value_types: list[DataType] = []
@@ -11178,8 +11181,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if schema is True
                 else self.parse_item(name, schema, get_special_path(f"patternProperties/{i}", path))
             )
+        if (other_keys := self._other_keys_schema(additional_properties)) is not None:
+            value_types.append(
+                self._parse_additional_properties_value(
+                    name,
+                    get_special_path("additionalProperties", path),
+                    other_keys,
+                    additional_properties=other_keys,
+                )
+            )
 
-        if not patterns:
+        if not value_types:
             return self.data_type(
                 data_types=[self.data_type_manager.get_data_type(Types.any)],
                 is_dict=True,
@@ -11192,8 +11204,26 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.data_type(
             data_types=value_types,
             is_dict=True,
-            dict_key=self._pattern_map_key_type(property_names, "|".join(patterns)),
+            dict_key=self._pattern_map_key_type(property_names, None if other_keys is not None else "|".join(patterns)),
         )
+
+    def _other_keys_schema(
+        self,
+        additional_properties: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
+    ) -> JsonSchemaObject | None:
+        """Return the additionalProperties schema that types the keys no pattern of a pattern map matches.
+
+        Only a schema that asserts something types them, and only where the output decodes a union of any value
+        types (msgspec keeps its earlier type until its union fallbacks are decided); otherwise the map admits the
+        keys of its patterns only.
+        """
+        if (
+            isinstance(additional_properties, JsonSchemaObject)
+            and self._output_model_context.decodes_value_unions
+            and _schema_assertions(additional_properties)
+        ):
+            return additional_properties
+        return None
 
     def _pattern_map_key_type(
         self,
@@ -11248,7 +11278,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if pattern_properties := obj.patternProperties:
             self._warn_inexact_object_map(name, obj, pattern_properties)
             map_type = self.parse_pattern_properties(
-                name, pattern_properties, object_path, property_names=obj.propertyNames
+                name,
+                pattern_properties,
+                object_path,
+                property_names=obj.propertyNames,
+                additional_properties=obj.additionalProperties,
             )
         elif obj.propertyNames is not None:
             map_type = self.parse_property_names(
@@ -11283,8 +11317,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> None:
         """Warn once per schema object whose patternProperties one dict type cannot express exactly.
 
-        A dict gives all its keys one key type and one value type. It is exact only when the object admits no key
-        outside the patterns and every pattern declares the same value schema, annotations aside.
+        A dict gives all its keys one key type and one value type. It is exact only when every key the object admits
+        is a key of the dict, and every pattern and the additionalProperties schema that types the other keys
+        declare the same value schema, annotations aside.
         """
         admitted = [
             {} if schema is True else _schema_assertions(schema)
@@ -11292,10 +11327,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if schema is not False
         ]
         reasons: list[str] = []
-        if admitted and obj.additionalProperties is not False:
+        if (other_keys := self._other_keys_schema(obj.additionalProperties)) is not None:
+            admitted.append(_schema_assertions(other_keys))
+        elif admitted and obj.additionalProperties is not False:
             reasons.append("allows keys that match no pattern")
         if any(schema != admitted[0] for schema in admitted):
-            reasons.append("gives the keys of its patterns different value schemas")
+            reasons.append(
+                "gives the keys of its patterns different value schemas"
+                if other_keys is None
+                else "gives the keys of its patterns and the other keys different value schemas"
+            )
         where = str(location) if (location := obj.schema_location) is not None else name
         if not reasons or where in self._inexact_object_maps:
             return
