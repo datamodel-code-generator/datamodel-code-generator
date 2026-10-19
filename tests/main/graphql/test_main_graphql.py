@@ -619,12 +619,16 @@ def test_main_graphql_enums_subclass_specialized(output_file: Path) -> None:
 
 
 def test_main_graphql_enums_dated_preset(output_file: Path) -> None:
-    """Write GraphQL enums as importable StrEnum classes under a dated preset, which sets --use-subclass-enum."""
+    """Write GraphQL enums as importable StrEnum classes under a dated preset, which sets --use-subclass-enum.
+
+    The preset's own target is passed too, so that the output (``type`` statements) is compiled and imported only on
+    Python 3.14 and compared everywhere.
+    """
     run_main_and_assert(
         input_path=GRAPHQL_DATA_PATH / "enums.graphql",
         output_path=output_file,
         input_file_type="graphql",
-        extra_args=["--preset", "standard-py314-20261017"],
+        extra_args=["--preset", "standard-py314-20261017", "--target-python-version", "3.14"],
         force_exec_validation=True,
     )
 
