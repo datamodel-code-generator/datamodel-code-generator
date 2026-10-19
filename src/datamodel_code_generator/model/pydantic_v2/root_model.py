@@ -11,11 +11,13 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator.imports import IMPORT_ANY, Import
+from datamodel_code_generator.model.base import TEMPLATE_DIR
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
     _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY,
     BaseModel,
     _config_dict_items,
+    _has_frozen_hash_config,
     _safe_config_dict_items,
 )
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_CONFIG_DICT
@@ -55,6 +57,29 @@ class RootModel(BaseModel):
     def _uses_builtin_hash_implementation(cls) -> bool:
         """Recognize the builtin root without a reverse import from BaseModel."""
         return cls is RootModel
+
+    @property
+    @override
+    def _keys_take_root_type(self) -> bool:
+        """Whether the instances cannot be dict keys while the model checks nothing beyond its root type.
+
+        A RootModel's instances are unhashable unless its config freezes it. Decorators, methods, validators, class
+        body lines, object rules and a custom root template can check what its root type does not.
+        """
+        return not (
+            _has_frozen_hash_config(self, {})
+            or self.decorators
+            or self.methods
+            or self.extra_template_data.get("validators")
+            or self.extra_template_data.get("class_body_lines")
+            or self._internal_template_data.get("class_body_lines")
+            or self.has_runtime_object_validation
+            or (
+                (directory := self._custom_template_dir) is not None
+                and directory.resolve() != TEMPLATE_DIR.resolve()
+                and self._uses_custom_root_template
+            )
+        )
 
     def add_literal_validation(self, values: list[object]) -> None:
         """Keep finite JSON literal membership beside the root's existing value constraints."""

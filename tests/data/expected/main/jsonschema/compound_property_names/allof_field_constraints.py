@@ -9,5 +9,5 @@ class Root1(RootModel[str]):
     root: str
 
 
-class Root(RootModel[dict[Root1, int]]):
-    root: dict[Root1, int] = Field(..., title='Root')
+class Root(RootModel[dict[str, int]]):
+    root: dict[str, int] = Field(..., title='Root')

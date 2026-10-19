@@ -1,0 +1,18 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "single": {"type": "object", "propertyNames": {"$ref": "#/$defs/Single"}, "additionalProperties": {"type": "integer"}},
+    "pattern": {"type": "object", "propertyNames": {"$ref": "#/$defs/Pattern"}, "additionalProperties": {"type": "integer"}},
+    "chain": {"type": "object", "propertyNames": {"$ref": "#/$defs/Chain"}, "additionalProperties": {"type": "integer"}},
+    "lookbehind": {"type": "object", "propertyNames": {"$ref": "#/$defs/Lookbehind"}, "additionalProperties": {"type": "integer"}},
+    "kind": {"type": "object", "propertyNames": {"$ref": "#/$defs/Kind"}, "additionalProperties": {"type": "integer"}}
+  },
+  "$defs": {
+    "Single": {"type": "string", "enum": ["a"]},
+    "Pattern": {"type": "string", "pattern": "^[a-z]+$", "maxLength": 3},
+    "Chain": {"$ref": "#/$defs/Pattern"},
+    "Lookbehind": {"type": "string", "pattern": "(?<!z)y$"},
+    "Kind": {"type": "string", "enum": ["p", "q"]}
+  }
+}

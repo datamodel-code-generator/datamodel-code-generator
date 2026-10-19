@@ -501,6 +501,15 @@ APPLY_FIELD_TYPE_OVERRIDES = PassDecl(
     reads=_facts(Fact.TYPE_OVERRIDES, Fact.FIELD_NAMES),
     writes=_facts(Fact.FIELD_TYPES, Fact.CONSTRAINTS, Fact.TYPE_OVERRIDES, RenderFact.MODULE_IMPORTS),
 )
+TYPE_DICT_KEYS_BY_ROOT_TYPES = PassDecl(
+    "type_dict_keys_by_root_types",
+    Phase.MODULES,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES, Fact.CONSTRAINTS, Fact.MODEL_KIND, Fact.METADATA, RenderFact.MODULE_MEMBERSHIP),
+    writes=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.BACKEND_CONFIG),
+    summary="Types each dict key that names a root model whose instances cannot be dict keys by its root type.",
+)
 FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
     "fix_constructor_field_ordering",
     Phase.MODULES,

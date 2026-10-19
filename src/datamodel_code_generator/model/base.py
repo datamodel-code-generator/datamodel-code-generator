@@ -2876,6 +2876,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         self._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")
 
     @property
+    def _keys_take_root_type(self) -> bool:
+        """Whether a dict key that names the model takes its root type instead."""
+        return False
+
+    @property
     def schema_runtime_validation(self) -> _runtime_validation.SchemaRuntimeValidation | None:
         """Return executable schema rules already prepared by this output model."""
         return self._internal_template_data.get("schema_runtime_validation")

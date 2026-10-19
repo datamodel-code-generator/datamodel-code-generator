@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "$defs": {"Pattern": {"type": "string", "maxLength": 3}, "Key": {"$ref": "#/$defs/Pattern"}, "Owner": {"type": "object", "properties": {"z": {"$ref": "z.json"}}}}}

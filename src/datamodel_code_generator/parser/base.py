@@ -4858,6 +4858,105 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     )
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
+    def __type_dict_keys_by_root_types(
+        self,
+        models: list[DataModel],
+        imports: Imports,
+        scoped_model_resolver: ModelResolver,
+        model_path_to_module_name: dict[str, str],
+        *,
+        can_retain_cache: bool,
+    ) -> None:
+        """Type each dict key that names a root model whose instances cannot be dict keys by that model's root type.
+
+        Runs once the root types are final: after collapse, const narrowing and type overrides. Such a root model
+        named inside the root type a key takes is typed the same way, and a cycle of them stops at the first repeated
+        model. A root type that cannot be a dict key either keeps the root model, as does a member of a key that is no
+        reference: another member may take every key. Each changed model refreshes its backend config, as a pattern
+        that a key takes may need another regex engine.
+        """
+        for model in models:
+            changed = False
+            for field in model.fields:
+                pending = [
+                    (key, holder, frozenset[str]())
+                    for holder in field.data_type.all_data_types
+                    if (key := holder.dict_key) is not None and key.reference is not None
+                ]
+                while pending:
+                    data_type, parent, expanded = pending.pop()
+                    if (reference := data_type.reference) is None:
+                        pending.extend((nested, data_type, expanded) for nested in data_type.data_types)
+                        continue
+                    if (
+                        not isinstance(root_model := reference.source, DataModel)
+                        or not root_model._keys_take_root_type  # ruff: ignore[private-member-access]
+                        or reference.path in expanded
+                        or (root_type := self.__root_key_data_type(root_model)) is None
+                    ):
+                        continue
+                    self.generation_store.detach_data_type_ref(data_type)
+                    if parent.dict_key is data_type:
+                        self.generation_store.replace_nested_data_type(parent, data_type, root_type)
+                    else:
+                        self.generation_store.set_nested_data_types(
+                            parent, [root_type if nested is data_type else nested for nested in parent.data_types]
+                        )
+                    producer = ImportProducer("type-dict-keys-by-root-types", model, field)
+                    for nested in root_type.all_data_types:
+                        if nested.reference is not None:
+                            _register_data_type_import(
+                                nested,
+                                model,
+                                imports,
+                                scoped_model_resolver,
+                                model_path_to_module_name,
+                                ledger=self._import_ledger,
+                                producer=producer,
+                            )
+                    self._import_ledger.append(imports, root_type.imports, producer)
+                    pending.append((root_type, parent, expanded | {reference.path}))
+                    changed = True
+            if changed:
+                self.generation_store.note_changed_models(model)
+                model.refresh_field_config()
+                _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+
+    def __root_key_data_type(self, root_model: DataModel) -> DataType | None:
+        """Return a root model's root type as a dict key writes it, or None when it cannot be a key.
+
+        The model-level type overrides apply to the copy, as the module of a root model processed later applies them to
+        the root type itself. A container cannot be a key. Constraints that the root keeps as ``Field()`` arguments are
+        written into the string type as a key schema writes them; a root of another type cannot keep them.
+        """
+        root_field = root_model.fields[0]
+        root_type = root_field.data_type
+        keywords = (
+            root_field.constraints.model_dump(by_alias=True, exclude_none=True, exclude={"unique_items"})
+            if isinstance(root_field.constraints, ConstraintsBase)
+            else {}
+        )
+        string_type = self.data_type_manager.get_data_type(Types.string)
+        if any((
+            root_type.is_dict,
+            root_type.is_mapping,
+            root_type.is_list,
+            root_type.is_sequence,
+            root_type.is_set,
+        )) or (keywords and (root_type.type, root_type.import_) != (string_type.type, string_type.import_)):
+            return None
+        if keywords:
+            return self.data_type_manager.get_data_type(
+                Types.string,
+                use_annotated=self.use_annotated,
+                target_pydantic_version=self.target_pydantic_version,
+                **keywords,
+            )
+        key_type = _copy_data_type(root_type)
+        if self._model_type_override_imports:
+            self._apply_override_to_data_type(key_type)
+        return key_type
+
     def __const_narrowed_data_type(
         self, data_type: DataType, narrowing: _ConstNarrowing, enum: Enum
     ) -> DataType | None:
@@ -7243,7 +7342,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             is_known_python_type_path,
         )
 
-        data_type = deepcopy(field.data_type)
+        data_type = _copy_data_type(field.data_type)
         data_type.import_ = override_import
         data_type.alias = override_import.import_
         path = (
@@ -8919,6 +9018,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             kept_models = self.__remove_overridden_models(models)
         with fact_pass(decls.APPLY_FIELD_TYPE_OVERRIDES, kept_models):
             self.__apply_field_type_overrides(kept_models)
+        with fact_pass(decls.TYPE_DICT_KEYS_BY_ROOT_TYPES, kept_models):
+            self.__type_dict_keys_by_root_types(
+                kept_models,
+                imports,
+                scoped_model_resolver,
+                model_path_to_module_name,
+                can_retain_cache=can_retain_cache,
+            )
         with fact_pass(decls.FIX_CONSTRUCTOR_FIELD_ORDERING, models):
             self.__fix_constructor_field_ordering(models)
         return kept_models

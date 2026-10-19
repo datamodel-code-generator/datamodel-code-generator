@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "kind": {"type": "object", "propertyNames": {"$ref": "#/$defs/Kind"}, "additionalProperties": {"type": "integer"}}
+  },
+  "$defs": {
+    "Base": {"type": "string", "maxLength": 5},
+    "Kind": {"allOf": [{"$ref": "#/$defs/Base", "enum": ["p", "q"]}]}
+  }
+}

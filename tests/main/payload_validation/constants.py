@@ -191,8 +191,6 @@ EXCLUDED_CASES: dict[str, str] = {
     ),
     **dict.fromkeys(
         (
-            "jsonschema/compound_property_names/allof_branch_title.json",
-            "jsonschema/compound_property_names/allof_lookbehind.json",
             "jsonschema/compound_property_names/unsupported_one_sibling.json",
             "jsonschema/compound_property_names/unsupported_sibling.json",
         ),

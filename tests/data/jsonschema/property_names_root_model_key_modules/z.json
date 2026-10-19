@@ -1,0 +1,1 @@
+{"title": "A", "type": "object", "properties": {"m": {"type": "object", "propertyNames": {"$ref": "keys.json#/$defs/Key"}, "additionalProperties": {"type": "integer"}}}}

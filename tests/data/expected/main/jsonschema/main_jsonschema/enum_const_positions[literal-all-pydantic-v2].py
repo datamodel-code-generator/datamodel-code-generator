@@ -41,7 +41,7 @@ class Positions(BaseModel):
     branch: Literal['a'] | int | None = None
     refSibling: Literal['on'] | None = None
     keys: dict[Literal['a'], int] | None = None
-    refKeys: dict[Narrowed, int] | None = None
+    refKeys: dict[Literal['b'], int] | None = None
     definition: Narrowed | None = None
     definitionSingle: Single | None = None
     allOfDefinition: AllOfNarrowed | None = None

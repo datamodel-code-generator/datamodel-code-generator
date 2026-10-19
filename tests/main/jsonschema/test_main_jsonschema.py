@@ -12396,6 +12396,118 @@ def test_main_jsonschema_property_names_ref_with_constraints(output_file: Path) 
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--use-single-value-enum-as-const"], id="single-value-enum-as-const"),
+        pytest.param(["--field-constraints"], id="field-constraints"),
+        pytest.param(["--use-annotated"], id="use-annotated"),
+        pytest.param(["--collapse-root-models"], id="collapse-root-models"),
+        pytest.param(["--collapse-root-models", "--field-constraints"], id="collapse-root-models-field-constraints"),
+        pytest.param(["--enable-faux-immutability"], id="faux-immutability"),
+    ],
+)
+def test_main_jsonschema_property_names_root_model_keys(extra_args: list[str], output_file: Path) -> None:
+    """Type a map key that names a RootModel by the root type, as RootModel instances cannot be dict keys.
+
+    The key keeps the root's constraints, also those that ``--field-constraints`` writes as ``Field()`` arguments,
+    and its pattern selects the regex engine of the map's model. A root type naming another such RootModel is typed
+    the same way. Enum keys, frozen RootModels (``--enable-faux-immutability``) and RootModels that are union members
+    of a key keep their class. Up to 0.86.0 every non-empty map of such a key failed with ``TypeError``.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "property_names_root_model_keys.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=extra_args,
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="property_names_root_model_keys",
+        model_name="Model",
+        valid_json=json.dumps({
+            "single": {"a": 1},
+            "pattern": {"ab": 1},
+            "chain": {"abc": 1},
+            "lookbehind": {"ay": 1},
+            "kind": {"p": 1},
+        }),
+        invalid_json=json.dumps({"pattern": {"abcd": 1}}),
+        expected_error_type="string_too_long",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="default"), pytest.param(["--field-constraints"], id="field-constraints")],
+)
+def test_main_jsonschema_property_names_root_model_key_unions(extra_args: list[str], output_file: Path) -> None:
+    """Type the RootModels that the union root type of a map key names by their root types too.
+
+    Under ``--field-constraints`` each branch of the union is a RootModel of its own. A RootModel that its own root
+    type names again, here through an array, keeps its class there.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "property_names_root_model_key_unions.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=extra_args,
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="property_names_root_model_key_unions",
+        model_name="Model",
+        valid_json='{"either": {"xa": 1, "long": 2}, "recursive": {"r1": 1}}',
+        invalid_json='{"recursive": {"x": 1}}',
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
+def test_main_jsonschema_property_names_root_model_key_type_override(output_file: Path) -> None:
+    """Type the key of a map by its root type while a field-level type override replaces the map of another field."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "property_names_root_model_key_override.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--type-overrides", '{"M.n": "typing.Any"}'],
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_property_names_root_model_key_literal_validation(output_file: Path) -> None:
+    """Keep the RootModel of a map key that checks its values by the literal validation it carries."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "property_names_root_model_key_literal_validation.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--generate-schema-validators"],
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_property_names_root_model_key_modules_type_override(output_dir: Path) -> None:
+    """Type a map key by the root type of a RootModel of another module after that module's type overrides."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "property_names_root_model_key_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--type-overrides", '{"Pattern": "typing.Any"}'],
+        force_exec_validation=True,
+    )
+
+
 def test_main_jsonschema_property_names_anyof_ref(output_file: Path) -> None:
     """Test propertyNames with anyOf containing $refs uses union of enum types as dict key."""
     run_main_and_assert(

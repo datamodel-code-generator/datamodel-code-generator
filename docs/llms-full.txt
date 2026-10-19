@@ -61530,6 +61530,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | process | `__rename_fields_hiding_types` | same-named fields and types of the model family | field names or type names |
 | process | `__remove_overridden_models` | model-level `--type-overrides` | removes overridden models from the module's list (constructor ordering still runs on them) |
 | process | `__apply_field_type_overrides` | `--type-overrides`, field names | field types of the kept models; model-level overrides edit nodes on fields in place |
+| process | `__type_dict_keys_by_root_types` | dict keys that name a RootModel whose instances cannot be dict keys (`DataModel._keys_take_root_type`: not frozen, no validators, methods or custom root template), its root type and `Field()` constraints (any module) | types the key by the root type, the constraints written into a string type; follows root models inside that type, not union members of a key; refreshes the backend config |
 | process | `__fix_constructor_field_ordering` | required and default state, inherited fields, rendered nullability (`types.py:DataType.admits_none`), field types after overrides (a base in a module processed later is read before its own overrides), bases before base-class overrides | field order, constructor adjustments |
 | finalize | `__apply_base_class_type_overrides` | model-level `--type-overrides` | base classes; edits base-class nodes in place |
 | finalize | `unbind_fields` (model) | hidden type names | field binding |
@@ -61656,6 +61657,7 @@ runs inside `fact_pass`.
 | MODULES | `rename_fields_hiding_types` | module | transform | CLASS_NAMES, FIELD_ALIASES, FIELD_NAMES | BASES, CLASS_NAMES, DEFAULTS, FIELD_NAMES, FIELD_SET, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED |  |
 | MODULES | `remove_overridden_models` | module | transform | MODELS_EXIST | CLASS_NAMES, TYPE_OVERRIDES | Keeps the models that a model-level --type-overrides replaces out of the module. |
 | MODULES | `apply_field_type_overrides` | module | transform | CONSTRAINTS, FIELD_TYPES, MODULE_IMPORTS, TYPE_OVERRIDES | FIELD_NAMES, TYPE_OVERRIDES |  |
+| MODULES | `type_dict_keys_by_root_types` | module | transform | BACKEND_CONFIG, FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | CONSTRAINTS, FIELD_TYPES, METADATA, MODEL_KIND, MODULE_MEMBERSHIP | Types each dict key that names a root model whose instances cannot be dict keys by its root type. |
 | MODULES | `fix_constructor_field_ordering` | module | transform | FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED | BACKEND_CONFIG, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED | Orders constructor fields so that fields without a default come first, reading the fields of bases. Moves to RENDER_PREPARATION. |
 | MODULES | `snapshot_module_unused_models` | module | bookkeeping | - | - |  |
 | MODULES | `apply_base_class_type_overrides` | module | transform | BASES, MODULE_IMPORTS, TYPE_OVERRIDES | TYPE_OVERRIDES | Moves to RENDER_PREPARATION. |
