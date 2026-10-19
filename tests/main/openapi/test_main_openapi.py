@@ -13439,6 +13439,27 @@ def test_main_openapi_api_scope_ref_siblings(output_file: Path, schema_version: 
     )
 
 
+def test_main_openapi_api_scope_external_boolean_schema(output_file: Path) -> None:
+    """Locate a boolean schema of another document's components at its place in that document."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "api_scope_external_boolean_schema" / "openapi.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--openapi-scopes",
+            "schemas",
+            "api",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_api_scope_path_names_custom_class_name_generator(tmp_path: Path) -> None:
     """Hand the custom class name generator the route-derived API scope names."""
     run_generate_file_and_assert(

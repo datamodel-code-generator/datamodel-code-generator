@@ -123,6 +123,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "pagination-counts",
         "fingerprint-nested",
         "fingerprint-nested-changed",
+        "fingerprint-write-only",
         "pagination-links",
         "pagination-plans",
         "pagination-querystring",

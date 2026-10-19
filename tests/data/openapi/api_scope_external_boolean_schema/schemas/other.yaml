@@ -1,0 +1,13 @@
+openapi: 3.1.0
+info:
+  title: Other
+  version: '1'
+paths: {}
+components:
+  schemas:
+    A:
+      type: object
+      properties:
+        id:
+          type: integer
+    Yes: true

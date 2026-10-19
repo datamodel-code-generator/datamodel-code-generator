@@ -5391,6 +5391,25 @@
       ]
     ]
   },
+  "fingerprint-write-only": {
+    "input": "fingerprint-write-only.yaml",
+    "references": [
+      "protocols/fingerprint-write-only.json"
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "protocols": "protocols/fingerprint-write-only.json"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
   "fingerprint-nested-changed": {
     "input": "fingerprint-nested-changed.yaml",
     "references": [

@@ -1,0 +1,15 @@
+openapi: 3.1.0
+info:
+  title: External boolean schema
+  version: '1'
+paths:
+  /a:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: 'schemas/other.yaml#/components/schemas/A'
+      responses:
+        '204':
+          description: ok

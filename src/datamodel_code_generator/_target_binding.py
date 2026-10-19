@@ -98,7 +98,7 @@ from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
-from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, SchemaLocation, _source_path
+from datamodel_code_generator.reference import SPECIAL_PATH_MARKER, SchemaLocation, _source_path, location_of
 from datamodel_code_generator.types import DataType, Types
 
 BackendName: TypeAlias = Literal["dataclass", "pydantic_dataclass", "pydantic", "typeddict", "msgspec"]
@@ -435,10 +435,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Record the declaration a reference object resolves to."""
         target = super()._resolve_api_object(value, path)
         if target.value is not value:
-            self.resolutions[self._declaration_id(path)] = (
-                target.declaration,
-                target.value,
-            )
+            self.resolutions[self._declared(value, path)] = (target.declaration, target.value)
         return target
 
     def _walk_path_item(
@@ -472,7 +469,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.operations.append(
             _WalkedOperation(
                 operation,
-                self._declaration_id(path),
+                self._declared(operation, path),
                 use_site,
                 item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
                 item,
@@ -519,8 +516,9 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
     ) -> None:
         """Record where each schema the reference walk visits declares its members, at its place in its document.
 
-        A visited schema below another sits at its parent's declaration and the raw keys the walk descends by; the
-        model-free type of a typed additional property needs its schema too.
+        The walk starts at the location the parser recorded for the schema object; a visited schema below another sits
+        at its parent's declaration and the raw keys the walk descends by. The model-free type of a typed additional
+        property needs its schema too.
         """
         if callback != self._resolve_ref_callback:
             super()._traverse_schema_objects(obj, path, callback, include_one_of=include_one_of)
@@ -530,7 +528,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             tokens = path[parent[0] :]
             declaration, value = parent[1].child(*tokens), _descend(parent[2], tokens)
         else:
-            declaration = self._declaration_id(path)
+            declaration = cast("SchemaLocation", obj.schema_location)
             value = self._reader.borrow(declaration)
         if self._reader.node(declaration, value) is not None and path[-1] == "additionalProperties":
             self.free_schemas.setdefault(declaration, obj)
@@ -616,15 +614,16 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             field = copy[1]
         return True
 
-    def _acquire_schema(self, name: str, raw: YamlValue, path: list[str], *, role: SchemaRole) -> None:
+    def _acquire_schema(
+        self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
+    ) -> None:
         """Record the declaration's engine key, even when it was already generated, and what its schema says.
 
         Once the schema is generated, its default, keywords, parts and text encoding are recorded as the
         documents spell them, since its model types do not say them.
         """
-        declaration = self._declaration_id(path)
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(path)))
-        super()._acquire_schema(name, raw, path, role=role)
+        super()._acquire_schema(name, raw, path, declaration=declaration, role=role)
         self._reader.node(declaration, raw)
         if declaration not in self.schema_records:
             self.schema_records[declaration] = self._reader.record(declaration, role, self._locate)
@@ -644,18 +643,24 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         document = self.record_documents.setdefault(declaration.document, SourceDocumentId(len(self.record_documents)))
         return SourceLocation(document, declaration.pointer, "schema")
 
-    def _acquire_item_schema(
-        self, name: str, item: YamlValue, path: list[str], projected: YamlValue, *, role: SchemaRole
+    def _acquire_item_schema(  # ruff: ignore[too-many-arguments]
+        self,
+        name: str,
+        item: YamlValue,
+        path: list[str],
+        projected: YamlValue,
+        *,
+        declaration: SchemaLocation,
+        role: SchemaRole,
     ) -> None:
         """Record an item schema and its stream-array projection, even when they were already generated."""
         item_path = [*path, "itemSchema"]
-        declaration = self._declaration_id(item_path)
         self.acquisitions.setdefault((declaration, "value"), self.model_resolver.join_path(tuple(item_path)))
         self.acquisitions.setdefault(
             (declaration, "item_stream_array"),
             self.model_resolver.join_path(tuple(self._media_schema_path(path, from_item_schema=True))),
         )
-        super()._acquire_item_schema(name, item, path, projected, role=role)
+        super()._acquire_item_schema(name, item, path, projected, declaration=declaration, role=role)
         self._free(declaration, "item_stream_array", item, item_path)
 
     def _generate_module_output(  # noqa: PLR0913, PLR0917
@@ -2762,31 +2767,13 @@ class _Models:
         self.variants = any(SPECIAL_PATH_MARKER + "read-write-" in key for key in self.parser.model_resolver.references)
 
     def model_location(self, model: DataModel) -> SchemaLocation | None:
-        """Locate the schema a model was generated from, when its resolver key is a source pointer."""
-        key = self.binder.keys.get(id(model.reference), model.reference.path)
-        if (variant := key.rpartition(SPECIAL_PATH_MARKER))[1] and variant[2].startswith("read-write-"):
-            key = variant[0].rstrip("/")
-        source, marker, special = key.partition(SPECIAL_PATH_MARKER)
-        item = special.startswith("itemSchema-")
-        tokens = (*(_pointer_tokens(source.rstrip("/")) or ()), *(("itemSchema",) if item else ()))
-        location = SchemaLocation(source.partition("#")[0], tokens)
-        return None if (marker and not item) or self.schemas.node(location) is None else location
+        """Return the location the parser recorded for the schema a model is built from, where the walk read it.
 
-    def place(self, declaration: SchemaLocation, data_type: DataType, *, root: bool = False) -> list[SymbolId]:
-        """Locate the unlocated inline models a schema's type refers to, through items, values and branches."""
-        if (node := self.schemas.at(declaration)).has_ref:
-            return []
-        placed: list[SymbolId] = []
-        if not root and (reference := data_type.reference) is not None:
-            if (final := self.binder.final(reference)) is not None and self.locations.get(
-                symbol := self.binder.symbols[id(final.source)]
-            ) is None:
-                self.locations[symbol] = declaration
-                placed.append(symbol)
-            return placed
-        for keyword, child in _children(node, data_type):
-            placed.extend(self.place(declaration.child(*keyword), child))
-        return placed
+        A read or write variant shares its base schema's location and a model that reuse made shares the replaced
+        model's; the binder reads a schema's members only through what the walk recorded.
+        """
+        location = location_of(model.reused_reference or model.reference)
+        return location if location is not None and self.schemas.node(location) is not None else None
 
     def address(self, module: ModulePath, result: Result) -> ModelArtifactAddress:
         if isinstance(results := self.binder.results, str):
@@ -2887,19 +2874,6 @@ class _Models:
     def field_facts(self, symbols: tuple[FinalModelSymbol, ...]) -> None:
         for model, symbol in zip(self.binder.models, symbols, strict=True):
             self.locations[symbol.id] = self.model_location(model)
-        pending = [symbol for symbol, location in self.locations.items() if location is not None]
-        while pending:
-            model = self.binder.models[symbol := pending.pop(0)]
-            location = cast("SchemaLocation", self.locations[symbol])
-            if model.IS_ALIAS or model.IS_ROOT_MODEL:
-                for field in model.fields:
-                    pending.extend(self.place(location, field.data_type, root=True))
-                continue
-            for field in model.fields:
-                if (wire_name := _wire_name(field)) and (
-                    found := self.schemas.property_location(location, wire_name, set())
-                ):
-                    pending.extend(self.place(found, field.data_type))
         projector = self.projectors["neutral"]
         for model, symbol in zip(self.binder.models, symbols, strict=True):
             if (backend := symbol.backend) is None or symbol.kind == "enum":
@@ -3335,16 +3309,8 @@ class _SchemaUses(_Models):
         return True
 
     def extras(self) -> None:
-        """Bind each model's typed additional properties that no field holds.
-
-        A model that reuse made in place of an equal one binds those of the schema the replaced model came from.
-        """
-        for symbol, found in self.locations.items():
-            location = (
-                found
-                if found is not None or (original := self.binder.reused(self.binder.models[symbol])) is None
-                else self.model_location(original)
-            )
+        """Bind each model's typed additional properties that no field holds."""
+        for symbol, location in self.locations.items():
             if location is None or self.schemas.at(location).additional != "schema":
                 continue
             declaration = location.child("additionalProperties")

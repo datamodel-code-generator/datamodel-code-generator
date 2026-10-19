@@ -179,6 +179,8 @@ fingerprint-nested	main/generation_platform/client/fingerprint-nested.txt
 fingerprint-nested	main/generation_platform/client/packages/fingerprint-nested/pydantic_v2_BaseModel//*.py
 fingerprint-nested-changed	main/generation_platform/client/fingerprint-nested-changed.txt
 fingerprint-nested-changed	main/generation_platform/client/packages/fingerprint-nested-changed/pydantic_v2_BaseModel//*.py
+fingerprint-write-only	main/generation_platform/client/fingerprint-write-only.txt
+fingerprint-write-only	main/generation_platform/client/packages/fingerprint-write-only/pydantic_v2_BaseModel//*.py
 form-name-errors	main/generation_platform/client/form-name-errors.txt
 form-name-kept	main/generation_platform/client/form-name-kept.txt
 header-names	main/generation_platform/client/header-names.txt

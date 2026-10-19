@@ -645,6 +645,8 @@ typed-dict	main/openapi/allof_scalar_roots/typed_dict.py
 	main/openapi/allof_with_required_inherited_nested_object.py
 [test_main_openapi_anchor_refs]
 	main/openapi/anchor_refs.py
+[test_main_openapi_api_scope_external_boolean_schema]
+	main/openapi/openapi_api_scope_external_boolean_schema.py
 [test_main_openapi_api_scope_parameter_type_aliases]
 dataclass.py-extra_args11-api-scope	main/openapi/api_scope_parameter_type_aliases/dataclass.py
 dataclass.py-extra_args11-use-type-alias	main/openapi/api_scope_parameter_type_aliases/dataclass.py

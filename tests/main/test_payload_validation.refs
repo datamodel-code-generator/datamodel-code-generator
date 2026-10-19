@@ -1028,6 +1028,7 @@ openapi/api_ordered_required_fields.yaml::components.schemas.Pet	payloads/native
 openapi/api_ordered_required_fields.yaml::components.schemas.Rules	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_ordered_required_fields.yaml::components.schemas.Users	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_ordered_required_fields.yaml::components.schemas.apis	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/api_scope_external_boolean_schema/schemas/other.yaml::components.schemas.A	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_scope_parameter_type_aliases.yaml::components.schemas.Color	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_scope_path_names.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_scope_path_names.yaml::components.schemas.PetsGetResponse	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2593,6 +2594,7 @@ openapi/api_ordered_required_fields.yaml::components.schemas.Pet	payloads/native
 openapi/api_ordered_required_fields.yaml::components.schemas.Rules	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_ordered_required_fields.yaml::components.schemas.Users	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_ordered_required_fields.yaml::components.schemas.apis	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/api_scope_external_boolean_schema/schemas/other.yaml::components.schemas.A	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_scope_parameter_type_aliases.yaml::components.schemas.Color	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_scope_path_names.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/api_scope_path_names.yaml::components.schemas.PetsGetResponse	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
