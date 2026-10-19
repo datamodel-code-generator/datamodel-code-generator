@@ -1,4 +1,4 @@
 alias_generator_name_enum: to_camel
 alias_generator_name_unknown: None
-generate_alias_unknown: field_name
+generate_alias_unknown: None
 automatic_alias_disabled_without_parent: False

@@ -14,7 +14,12 @@ from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_ANNOTATED
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model import dataclass as _dataclass_module
-from datamodel_code_generator.model.base import UNDEFINED, _has_field_assignment, _nested_model_default_factory
+from datamodel_code_generator.model.base import (
+    UNDEFINED,
+    _find_base_classes,
+    _has_field_assignment,
+    _nested_model_default_factory,
+)
 from datamodel_code_generator.model.dataclass import _DataclassReuseMixin
 from datamodel_code_generator.model.pydantic_v2._config import (
     ConfigAttribute,
@@ -24,18 +29,20 @@ from datamodel_code_generator.model.pydantic_v2._output_context import (
     ANNOTATED_CONSTRAINTS_CONTEXT as _ANNOTATED_CONSTRAINTS_CONTEXT,
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
+    _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
+    _config_dict_items,
+    _import_rendered_alias_generator,
+    _model_references,
+    _template_config_items,
+    assigns_forward_reference_field,
+    has_lookaround_pattern,
+    models_reaching_string_pattern_aliases,
+)
+from datamodel_code_generator.model.pydantic_v2.base_model import (
     Constraints as _Constraints,
 )
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     DataModelField as DataModelFieldV2,
-)
-from datamodel_code_generator.model.pydantic_v2.base_model import (
-    _config_dict_items,
-    _model_references,
-    _safe_config_dict_items,
-    assigns_forward_reference_field,
-    has_lookaround_pattern,
-    models_reaching_string_pattern_aliases,
 )
 from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONFIG_DICT,
@@ -191,9 +198,9 @@ class DataClass(_DataclassReuseMixin, DataModel):
             self._additional_imports.append(IMPORT_CONFIG_DICT)
             self.extra_template_data["config"] = config_parameters
             self._set_internal_template_data(
-                _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY,
-                _safe_config_dict_items(config_parameters),
+                _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, config_items := self._rendered_config_items()
             )
+            _import_rendered_alias_generator(self, config_items)
 
         self._lookaround_regex_engine_checked = False
 
@@ -285,15 +292,33 @@ class DataClass(_DataclassReuseMixin, DataModel):
             ):
                 model._select_python_regex_engine()  # noqa: SLF001
 
+    def _rendered_config_items(self) -> list[tuple[str, str]]:
+        """Return the ``ConfigDict`` items the built-in dataclass template writes; imports and aliases read them."""
+        return _template_config_items(self.extra_template_data)
+
+    def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
+        """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.
+
+        A base on an inheritance cycle, which generation rejects later, adds nothing.
+        """
+        if own := self._rendered_config_items():
+            return dict(own)
+        visiting |= {id(self)}
+        return next(
+            (
+                base._applied_config_items(visiting)  # noqa: SLF001
+                for base in _find_base_classes(self)
+                if isinstance(base, DataClass) and id(base) not in visiting
+            ),
+            {},
+        )
+
     def _select_python_regex_engine(self) -> None:
         """Set ``regex_engine`` in the dataclass config."""
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
         config = self.extra_template_data.setdefault("config", {})
         config["regex_engine"] = '"python-re"'
-        self._set_internal_template_data(
-            _SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY,
-            _safe_config_dict_items(config),
-        )
+        self._set_internal_template_data(_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
         self._additional_imports.append(IMPORT_CONFIG_DICT)
         self.clear_imports_cache()
 
@@ -324,9 +349,18 @@ class _PydanticDataclassField(DataModelFieldV2):
     _ALIASES_REQUIRE_ASSIGNMENT: ClassVar[bool] = False
 
     @override
-    def _alias_generator_renames(self, name: str) -> bool:
-        """Return False: the dataclass template renders no alias generator."""
-        return False
+    def _parent_config_items(self) -> dict[str, str]:
+        """Return the config items that Pydantic applies to a parent dataclass, else those of a parent model."""
+        if isinstance(parent := self.parent, DataClass):
+            return parent._applied_config_items()  # noqa: SLF001
+        return super()._parent_config_items()
+
+    @override
+    def _alias_generator_name_from_parent(self) -> str | None:
+        """Follow only a generator that the dataclass config applies: the template writes no template-data one."""
+        if _ALIAS_GENERATOR_TEMPLATE_DATA_KEY not in self._parent_config_items():
+            return None
+        return super()._alias_generator_name_from_parent()
 
     @override
     def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:

@@ -1,0 +1,5 @@
+{
+  "baseField": "base",
+  "child_field": "child",
+  "otherName": "other"
+}

@@ -210,27 +210,29 @@ class RootModel(BaseModel):
                 has_config = bool(_root_model_config_items(config))
         return has_config
 
+    @override
+    def _rendered_config_items(self) -> list[tuple[str, str]]:
+        """Return the root model's config items: its engine and freezing, literal values and a neutral ``extra``."""
+        config_items = _root_model_config_items(self.extra_template_data.get("config"))
+        if literal_values := getattr(self, "_literal_values", None):
+            config_items.append(("json_schema_extra", {"enum": literal_values}))
+        if self._internal_template_data.get(_NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY):
+            config_items.append(("extra", None))
+        return _safe_config_dict_items(dict(config_items)) if config_items else []
+
     def _sync_config_items(self) -> None:
         """Decide the config items the template writes, and the ``ConfigDict`` import they need, when rendering.
 
         The import changes after the module's import text is built: the named row
         ``legacy.rootmodel-config-late-import`` of ``parser/_imports_plan.py``.
         """
-        config = self.extra_template_data.get("config")
-        config_items = _root_model_config_items(config)
-        if literal_values := getattr(self, "_literal_values", None):
-            config_items.append(("json_schema_extra", {"enum": literal_values}))
-            if not config:
+        if not self.extra_template_data.get("config"):
+            if literal_values := getattr(self, "_literal_values", None):
                 self.extra_template_data["config"] = {"json_schema_extra": {"enum": literal_values}}
-        if self._internal_template_data.get(_NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY):
-            config_items.append(("extra", None))
-            if not config:
-                self.extra_template_data["config"] = {"extra": None}
-        if config_items:
-            self._set_internal_template_data(
-                _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
-                _safe_config_dict_items(dict(config_items)),
-            )
+            if self._internal_template_data.get(_NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY):
+                self.extra_template_data["config"] = {**(self.extra_template_data.get("config") or {}), "extra": None}
+        if config_items := self._rendered_config_items():
+            self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, config_items)
             if IMPORT_CONFIG_DICT not in self._additional_imports:
                 self._additional_imports.append(IMPORT_CONFIG_DICT)
             self.clear_imports_cache()

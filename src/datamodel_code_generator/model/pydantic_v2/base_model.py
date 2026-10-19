@@ -258,6 +258,7 @@ _ALIAS_GENERATOR_INTERNAL_KEY = "_alias_generator"
 _NO_ALIAS_INTERNAL_KEY = "_no_alias"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
+_RENDERED_NONE = "None"
 _COMPILED_PATTERN_KEY = "_compiled_python_pattern"
 _IMPORT_RE_COMPILE = Import.from_full_path("re.compile")
 _NEUTRALIZE_ROOT_MODEL_EXTRA_CONFIG_TEMPLATE_DATA_KEY = "neutralize_root_model_extra_config"
@@ -375,8 +376,11 @@ def _alias_generator_name(value: Any) -> str | None:
     return generator_name
 
 
-def _generate_alias(generator_name: str, field_name: str, target_python_version: PythonVersion | None = None) -> str:
-    generated_alias = field_name
+def _generate_alias(
+    generator_name: str, field_name: str, target_python_version: PythonVersion | None = None
+) -> str | None:
+    """Return the alias that the named generator gives a field, or None for a generator dcg cannot run."""
+    generated_alias: str | None = None
     match generator_name:
         case AliasGenerator.ToCamel.value:
             generated_alias = to_camel(field_name, target_python_version)
@@ -451,6 +455,24 @@ def _safe_config_dict_items(config: Any) -> list[tuple[str, str]]:
             rendered_value = json.dumps(normalized_value, ensure_ascii=False)
         safe_items.append((normalized_field_name, rendered_value))
     return safe_items
+
+
+def _template_config_items(extra_template_data: Mapping[str, Any]) -> list[tuple[str, str]]:
+    """Return the safe items of the ``config`` template data, which the built-in templates write."""
+    return _safe_config_dict_items(config) if (config := extra_template_data.get("config")) else []
+
+
+def _import_rendered_alias_generator(model: DataModel, config_items: Iterable[tuple[str, str]]) -> None:
+    """Import the known alias generator that the model's rendered config items name.
+
+    A BaseModel, RootModels included, also keeps importing the run's ``--alias-generator`` where it does not render
+    it (``legacy-run-alias-generator-import``): class naming avoids every imported name of a module, so dropping that
+    import would rename classes, until the module import ledger binds names without writing imports.
+    """
+    if (generator := _alias_generator_name(dict(config_items).get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY))) is None:
+        return
+    if (import_ := _ALIAS_GENERATOR_IMPORTS[generator]) not in (additional_imports := model._additional_imports):  # noqa: SLF001
+        additional_imports.append(import_)
 
 
 _PYDANTIC_V2_DEFAULT_FIELD_KEYS: frozenset[str] = frozenset({
@@ -912,42 +934,48 @@ class DataModelField(_PydanticBaseDataModelField):
     def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> str | None:
         """Keep only an alias the parent's generator does not reproduce and return the generated alias to pin.
 
-        A target predating the 2.8 generator algorithms pins that alias on the fields of a BaseModel, the only model
-        that renders or inherits the generator: never a RootModel, enum, union or type alias.
+        A target predating the 2.8 generator algorithms pins that alias on the fields of a model that renders or
+        inherits the generator, a BaseModel or a dataclass whose config names it: never a RootModel, enum, union or
+        type alias.
         """
         if self.name is None or self.is_pydantic_extra_field:
             return None
         if (generator_name := self._alias_generator_name_from_parent()) is None:
             return None
+        generated_alias = _generate_alias(generator_name, self.name, self.data_type.python_version)
         pinned_alias: str | None = None
-        if (
-            not model_target_meets(parent := self.parent, "pydantic.alias_generators")
-            and isinstance(parent, BaseModel)
-            and not parent.IS_ROOT_MODEL
+        if not model_target_meets(parent := self.parent, "pydantic.alias_generators") and (
+            (isinstance(parent, BaseModel) and not parent.IS_ROOT_MODEL)
+            or _ALIAS_GENERATOR_TEMPLATE_DATA_KEY in self._parent_config_items()
         ):
-            pinned_alias = _generate_alias(generator_name, self.name, self.data_type.python_version)
+            pinned_alias = self.name if generated_alias is None else generated_alias
         alias = data.get("alias")
         if alias is None and self._automatic_alias_disabled_for_alias_generator():
             return pinned_alias
         if (wire_name := alias if alias is not None else self.original_name) is None:
             return pinned_alias
-        if (
-            _generate_alias(generator_name, self.name, self.data_type.python_version)
-            if pinned_alias is None
-            else pinned_alias
-        ) == wire_name:
+        if generated_alias == wire_name:
             data.pop("alias", None)
             return pinned_alias
         data["alias"] = wire_name
         return pinned_alias
 
+    def _parent_config_items(self) -> dict[str, str]:
+        """Return the config items that Pydantic applies to the parent model, or none for a parent of another kind."""
+        return parent._applied_config_items() if isinstance(parent := self.parent, BaseModel) else {}  # noqa: SLF001
+
     def _alias_generator_name_from_parent(self) -> str | None:
-        if self.parent is None:
+        """Return the generator of the config Pydantic applies to the parent, else the generic base's generator.
+
+        A rendered ``None`` is no generator; a rendered generator that dcg does not know is returned as its source,
+        which ``_generate_alias`` cannot run, so every field keeps its alias.
+        """
+        if (parent := self.parent) is None:
             return None
-        alias_generator = self.parent.extra_template_data.get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY)
-        if alias_generator is None:
-            alias_generator = self.parent.extra_template_data.get(_ALIAS_GENERATOR_INTERNAL_KEY)
-        return _alias_generator_name(alias_generator)
+        if _ALIAS_GENERATOR_TEMPLATE_DATA_KEY in (config_items := self._parent_config_items()):
+            rendered = config_items[_ALIAS_GENERATOR_TEMPLATE_DATA_KEY]
+            return None if rendered == _RENDERED_NONE else _alias_generator_name(rendered) or rendered
+        return _alias_generator_name(parent.extra_template_data.get(_ALIAS_GENERATOR_INTERNAL_KEY))
 
     def _alias_generator_renames(self, name: str) -> bool:
         """Return whether the parent's alias generator serializes a field of this name under another one."""
@@ -1793,15 +1821,32 @@ class BaseModel(BaseModelBase):
     def _keep_string_pattern_aliases_out_of_bases(self) -> None:
         """Keep the bases free of types Pydantic builds before the config applies; a model names none there."""
 
+    def _rendered_config_items(self) -> list[tuple[str, str]]:
+        """Return the ``ConfigDict`` items the built-in template writes; imports and alias decisions read them too."""
+        return _template_config_items(self.extra_template_data)
+
+    def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
+        """Return the config items Pydantic applies: those of the bases merged in order, then the model's own.
+
+        A base on an inheritance cycle, which generation rejects later, adds nothing.
+        """
+        visiting |= {id(self)}
+        items: dict[str, str] = {}
+        for base in _find_base_classes(self):
+            items.update(
+                base._applied_config_items(visiting)  # noqa: SLF001
+                if isinstance(base, BaseModel) and id(base) not in visiting
+                else {}
+            )
+        items.update(self._rendered_config_items())
+        return items
+
     def _set_config(self, config_parameters: dict[str, Any]) -> None:
         """Store the ConfigDict rendered as ``model_config``."""
         from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
 
         self.extra_template_data["config"] = ConfigDict.model_validate(config_parameters)
-        self._set_internal_template_data(
-            _CONFIG_ITEMS_TEMPLATE_DATA_KEY,
-            _safe_config_dict_items(self.extra_template_data["config"]),
-        )
+        self._set_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
         if IMPORT_CONFIG_DICT not in self._additional_imports:
             self._additional_imports.append(IMPORT_CONFIG_DICT)
 
@@ -2298,6 +2343,7 @@ class BaseModel(BaseModelBase):
 
         if config_parameters:
             self._set_config(config_parameters)
+            _import_rendered_alias_generator(self, self._rendered_config_items())
         else:
             self.extra_template_data.pop("config", None)
             self._pop_internal_template_data(_CONFIG_ITEMS_TEMPLATE_DATA_KEY)

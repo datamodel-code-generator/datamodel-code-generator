@@ -2587,7 +2587,7 @@ def test_main_alias_generator_target_pydantic_version_enum_only(output_file: Pat
 
 
 def test_main_alias_generator_template_data_dataclass_target_pydantic_version(output_file: Path) -> None:
-    """Leave dataclass fields unpinned for --target-pydantic-version 2 when template data names a generator."""
+    """Write every alias a dataclass field needs when template data names a generator the dataclass does not render."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
         output_path=output_file,
@@ -2604,6 +2604,142 @@ def test_main_alias_generator_template_data_dataclass_target_pydantic_version(ou
             "2",
         ],
     )
+
+
+@pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["target-unset", "target-2"])
+@pytest.mark.parametrize(
+    ("output_model_type", "alias_generator"),
+    [
+        ("pydantic_v2.BaseModel", None),
+        ("pydantic_v2.BaseModel", "to_pascal"),
+        ("pydantic_v2.BaseModel", "my_func"),
+        ("pydantic_v2.dataclass", "to_camel"),
+    ],
+    ids=["null", "to_pascal", "unknown", "dataclass-to_camel"],
+)
+def test_main_alias_generator_model_config(
+    output_file: Path,
+    tmp_path: Path,
+    output_model_type: str,
+    alias_generator: str | None,
+    target_pydantic_version: str | None,
+) -> None:
+    """Decide aliases and import the generator from the alias generator that a model's own config renders."""
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(
+        json.dumps({"AliasGeneratorModel": {"config": {"alias_generator": alias_generator}}}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--snake-case-field",
+            *(["--alias-generator", "to_camel"] if output_model_type == "pydantic_v2.BaseModel" else []),
+            "--extra-template-data",
+            str(extra_template_data),
+            "--disable-timestamp",
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+    with _generated_model(output_file, "alias_generator_model_config", "AliasGeneratorModel") as model:
+        adapter = TypeAdapter(model)
+        payload = '{"firstName": "Ada", "lastName": "Lovelace", "foo_bar": "engine", "weird-url": 1}'
+        assert_output(
+            adapter.dump_json(adapter.validate_json(payload), by_alias=True, indent=2).decode(), name="round_trip"
+        )
+
+
+def test_main_alias_generator_model_config_root_and_nested(output_file: Path, tmp_path: Path) -> None:
+    """Import the generator a nested model's config names; a RootModel renders no generator, so it imports none."""
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(
+        json.dumps({
+            "Owner": {"config": {"alias_generator": "to_snake"}},
+            "NickName": {"config": {"alias_generator": "to_pascal"}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator_target_pydantic.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--alias-generator",
+            "to_camel",
+            "--extra-template-data",
+            str(extra_template_data),
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payload = (JSON_DATA_PATH / "alias_generator_target_pydantic.json").read_text(encoding="utf-8")
+    with _generated_model(output_file, "alias_generator_model_config_root", "Account") as model:
+        assert_output(model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2), name="round_trip")
+
+
+@pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["target-unset", "target-2"])
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_alias_generator_inherited_from_base(
+    output_file: Path, tmp_path: Path, output_model_type: str, target_pydantic_version: str | None
+) -> None:
+    """Decide a subclass's aliases by the generator its base's config renders, which Pydantic applies to it too."""
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(json.dumps({"Base": {"config": {"alias_generator": "to_pascal"}}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator_inherited.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--snake-case-field",
+            "--extra-template-data",
+            str(extra_template_data),
+            "--disable-timestamp",
+            *target_pydantic_args(target_pydantic_version),
+        ],
+        force_exec_validation=True,
+        skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
+    )
+    with _generated_model(output_file, "alias_generator_inherited", "Child") as model:
+        adapter = TypeAdapter(model)
+        payload = '{"baseField": "base", "child_field": "child", "otherName": "other"}'
+        assert_output(
+            adapter.dump_json(adapter.validate_json(payload), by_alias=True, indent=2).decode(), name="round_trip"
+        )
+
+
+def test_main_alias_generator_internal_template_data_dataclass(output_file: Path, tmp_path: Path) -> None:
+    """Keep a dataclass field's alias when template data names a generic-base generator the dataclass never applies."""
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(json.dumps({"#all#": {"_alias_generator": "to_camel"}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--snake-case-field",
+            "--extra-template-data",
+            str(extra_template_data),
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "alias_generator_internal_template_data", "AliasGeneratorModel") as model:
+        adapter = TypeAdapter(model)
+        payload = '{"firstName": "Ada", "lastName": "Lovelace", "foo_bar": "engine", "weird-url": 1}'
+        assert_output(
+            adapter.dump_json(adapter.validate_json(payload), by_alias=True, indent=2).decode(), name="round_trip"
+        )
 
 
 @pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "pydantic_v2.dataclass"])

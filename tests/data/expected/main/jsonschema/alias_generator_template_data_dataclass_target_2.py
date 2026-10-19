@@ -10,9 +10,9 @@ from pydantic.dataclasses import dataclass
 
 @dataclass
 class AliasGeneratorModel:
-    first_name: str
-    foo_bar: str = Field(..., alias='foo_bar')
-    last_name: str | None = None
+    foo_bar: str
+    first_name: str = Field(..., alias='firstName')
+    last_name: str | None = Field(None, alias='lastName')
     weird_url: int = Field(
         ..., serialization_alias='weird-url', validation_alias=AliasChoices('weird-url')
     )

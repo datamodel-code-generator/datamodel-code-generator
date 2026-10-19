@@ -1,0 +1,6 @@
+{
+  "firstName": "Ada",
+  "foo_bar": "engine",
+  "lastName": "Lovelace",
+  "weird-url": 1
+}
