@@ -6783,6 +6783,7 @@ def test_main_jsonschema_specialized_enums_disabled(output_file: Path) -> None:
         for model_id, output_model in (
             ("pydantic-v2", "pydantic_v2.BaseModel"),
             ("dataclasses", "dataclasses.dataclass"),
+            ("msgspec", "msgspec.Struct"),
         )
         if (args_id, model_id) != ("preset", "dataclasses")
     ],
@@ -6793,7 +6794,8 @@ def test_main_jsonschema_enum_value_base_kinds(output_model: str, extra_args: li
     Up to 0.86.0 the base came from the schema type alone: const branches ``[1, 'a']`` or ``[1, 2.5]`` were an
     IntEnum (``'a'`` failed at import, ``2.5`` became ``2``), ``['a', 1]`` under --use-subclass-enum a ``(str, Enum)``
     holding ``'1'``, and a ``format: byte`` enum a ``(bytes, Enum)`` that failed at import. Members that the base
-    keeps, as ``1.0`` in an IntEnum or ``1`` in a ``(float, Enum)``, keep it.
+    keeps, as ``1.0`` in an IntEnum or ``1`` in a ``(float, Enum)``, keep it. msgspec keeps the 0.86.0 IntEnum or
+    ``(T, Enum)`` where it could not decode the plain Enum, until msgspec Enums are decided as a whole.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "enum_value_base_kinds.json",
@@ -24309,6 +24311,30 @@ def test_main_jsonschema_non_finite_enum_members(output_model: str, output_file:
         importable_module_name="generated_non_finite_enum_members",
         importable_module_attribute="Model",
     )
+
+
+def test_main_jsonschema_msgspec_enum_value_base_kept(output_file: Path) -> None:
+    """Keep the 0.86.0 value base of enums whose plain Enum msgspec cannot decode, so the Struct still decodes.
+
+    ``[1, 2.5]`` stays an IntEnum (``2.5`` written as ``2``) and, under --use-subclass-enum, ``['a', 1]`` a
+    ``(str, Enum)`` (``1`` written as ``'1'``), as in 0.86.0: a plain Enum of mixed values fails every msgspec decode.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_enum_value_base_kept.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct", "--use-subclass-enum"],
+        force_exec_validation=True,
+    )
+    payloads = [{"int_then_float": 1, "str_then_int": "a"}, {"int_then_float": 2.5}, {"str_then_int": "1"}]
+    with _generated_model(output_file, "generated_msgspec_enum_value_base_kept", "Kept") as model:
+        decoded = [
+            msgspec.to_builtins(msgspec.json.decode(json.dumps(payload).encode(), type=model))
+            for payload in payloads[::2]
+        ]
+        with pytest.raises(msgspec.ValidationError):
+            msgspec.json.decode(json.dumps(payloads[1]).encode(), type=model)
+    assert_output(json.dumps(decoded, indent=2) + "\n", name="decoded")
 
 
 def test_main_jsonschema_non_finite_enum_members_subclass(output_file: Path) -> None:

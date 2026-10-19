@@ -6168,15 +6168,21 @@ legacy-option	main/jsonschema/enum_member_typed_defaults.py
 	main/jsonschema/root_in_enum.py
 [test_main_jsonschema_enum_value_base_kinds]
 default-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
+default-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
 default-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py
+preset-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-msgspec].py
 preset-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[preset-pydantic-v2].py
 py311-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-dataclasses].py
+py311-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-msgspec].py
 py311-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[default-pydantic-v2].py
 py311-subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-dataclasses].py
+py311-subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-msgspec].py
 py311-subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-pydantic-v2].py
 subclass-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-dataclasses].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-dataclasses].py
+subclass-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-msgspec].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-msgspec].py
 subclass-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-pydantic-v2].py	= main/jsonschema/main_jsonschema/enum_value_base_kinds[py311-subclass-pydantic-v2].py
 subclass-unspecialized-dataclasses	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-dataclasses].py
+subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-msgspec].py
 subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds[subclass-unspecialized-pydantic-v2].py
 [test_main_jsonschema_external_discriminator]
 msgspec.Struct-discriminator_with_external_reference_msgspec.py	main/jsonschema/discriminator_with_external_reference_msgspec.py
@@ -6465,6 +6471,9 @@ pydantic_v2.BaseModel-model_extras_without_x_prefix_v2.py	main/jsonschema/model_
 	main/jsonschema/model_name_map_unmatched_keys_warnings.txt
 [test_main_jsonschema_modular_default_enum_member]
 	main/jsonschema/modular_default_enum_member//*.py
+[test_main_jsonschema_msgspec_enum_value_base_kept]
+	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.decoded.txt
+	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.py
 [test_main_jsonschema_msgspec_unset_fastpath]
 dataclass	main/jsonschema/output_model_types/msgspec_unset_fastpath_dataclasses_dataclass.py
 msgspec	main/jsonschema/output_model_types/msgspec_unset_fastpath_msgspec_Struct.py

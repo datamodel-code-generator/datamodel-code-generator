@@ -1,0 +1,9 @@
+[
+  {
+    "int_then_float": 1,
+    "str_then_int": "a"
+  },
+  {
+    "str_then_int": "1"
+  }
+]

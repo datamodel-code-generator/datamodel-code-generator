@@ -21,7 +21,7 @@ from math import isnan
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Callable, Collection, Mapping
 
 __all__ = [
     "EnumBase",
@@ -52,6 +52,7 @@ EnumKindRule: TypeAlias = Literal[
     "int-enum",
     "str-enum",
     "subclass-value-type",
+    "legacy-msgspec-decodable-value-base",
     "legacy-inherited-first-base-class",
     "legacy-inherited-specialized-without-member-check",
 ]
@@ -68,6 +69,10 @@ EnumKindRule: TypeAlias = Literal[
   ``IntEnum``, it subclasses its value type already, so ``--use-subclass-enum`` adds no value type base.
 * ``subclass-value-type``: under ``--use-subclass-enum``, a plain ``Enum`` that also subclasses the value type of the
   schema type (``class A(str, Enum)``), which keeps every member.
+* ``legacy-msgspec-decodable-value-base``: for an output that decodes only Enums whose values are all str or all
+  int (msgspec), the 0.86.0 ``IntEnum`` or ``(T, Enum)`` where the plain ``Enum`` of the row above would hold values
+  of other kinds and so fail every decode, and where ``T`` (``int`` or ``str``) constructs every member, so the class
+  imports and decodes, though with the changed members. It stays until msgspec Enums are decided as a whole (G16).
 * ``legacy-inherited-first-base-class``: the merged enum takes the class of the first enum it extends and none of
   their value type bases, instead of a kind decided from the merged members.
 * ``legacy-inherited-specialized-without-member-check``: the first enum it extends is an ``IntEnum`` or a
@@ -101,6 +106,8 @@ _MEMBER_CHANGING_ENUM = EnumKind(base="Enum", subclasses_value_type=False, rule=
 _INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="int-enum")
 _STR_ENUM = EnumKind(base="StrEnum", subclasses_value_type=False, rule="str-enum")
 _SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="subclass-value-type")
+_MSGSPEC_INT_ENUM = EnumKind(base="IntEnum", subclasses_value_type=False, rule="legacy-msgspec-decodable-value-base")
+_MSGSPEC_SUBCLASS_ENUM = EnumKind(base="Enum", subclasses_value_type=True, rule="legacy-msgspec-decodable-value-base")
 _INHERITED = EnumKind(base=None, subclasses_value_type=False, rule="legacy-inherited-first-base-class")
 _INHERITED_SPECIALIZED = EnumKind(
     base=None, subclasses_value_type=False, rule="legacy-inherited-specialized-without-member-check"
@@ -112,11 +119,12 @@ def decide_enum_kind(  # noqa: PLR0913
     /,
     *,
     value_type: str | None = None,
-    values: Iterable[object] = (),
+    values: Collection[object] = (),
     use_specialized_enum: bool = False,
     use_subclass_enum: bool = False,
     has_strenum: bool = False,
     first_specialized: bool = False,
+    decodes_mixed_values: bool = True,
 ) -> EnumKind:
     """Return the class an enum is written as (``EnumKindRule`` names the rows).
 
@@ -125,7 +133,8 @@ def decide_enum_kind(  # noqa: PLR0913
     target Python has ``StrEnum``. A merged enum reads only ``first_specialized``, which tells that the first enum it
     extends is an ``IntEnum`` or a ``StrEnum``. An ``IntEnum`` or ``StrEnum`` subclasses its value type already, so
     only a plain ``Enum`` takes the value type base of ``--use-subclass-enum``. Any value base is taken only when it
-    keeps every member value (``keeps_member_value``).
+    keeps every member value (``keeps_member_value``). ``decodes_mixed_values`` tells that the output decodes an Enum
+    whose values are not all str or all int.
     """
     if origin == "merged":
         return _INHERITED_SPECIALIZED if first_specialized else _INHERITED
@@ -133,10 +142,41 @@ def decide_enum_kind(  # noqa: PLR0913
     if value_type is None or not (specialized or use_subclass_enum):
         return _ENUM
     if not all(keeps_member_value(value_type, value) for value in values):
+        if not decodes_mixed_values and (
+            legacy := _decodable_legacy_kind(value_type, values, int_enum=specialized, subclass=use_subclass_enum)
+        ):
+            return legacy
         return _MEMBER_CHANGING_ENUM
     if specialized:
         return _INT_ENUM if value_type == "int" else _STR_ENUM
     return _SUBCLASS_ENUM
+
+
+def _decodable_legacy_kind(
+    value_type: str, values: Collection[object], *, int_enum: bool, subclass: bool
+) -> EnumKind | None:
+    """Return the 0.86.0 kind of an enum whose plain ``Enum`` an output decoding only str or int Enums would refuse.
+
+    That is the ``IntEnum`` of a specialized integer type, else the ``(T, Enum)`` of ``--use-subclass-enum``, when
+    ``T`` is ``int`` or ``str`` and constructs every member; None when the plain ``Enum`` decodes (all its values are
+    str or all are int) or when the 0.86.0 class failed at import.
+    """
+    if {literal_value_kind(value) for value in values} in ({"str"}, {"int"}) or value_type not in {"int", "str"}:
+        return None
+    if not all(_constructs(_VALUE_TYPES[value_type], value) for value in values):
+        return None
+    if int_enum and value_type == "int":
+        return _MSGSPEC_INT_ENUM
+    return _MSGSPEC_SUBCLASS_ENUM if subclass else None
+
+
+def _constructs(construct: Callable[[Any], object], value: object) -> bool:
+    """Return whether the value type constructs a member from the value, as an enum class subclassing it does."""
+    try:
+        construct(value)
+    except (TypeError, ValueError, OverflowError):
+        return False
+    return True
 
 
 _VALUE_TYPES: Final[Mapping[str, Callable[[Any], object]]] = {"int": int, "float": float, "str": str}

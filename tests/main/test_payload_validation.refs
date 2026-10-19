@@ -392,6 +392,7 @@ jsonschema/msgspec_enum_diagnostics/subclass_only.json	payloads/native_numeric_e
 jsonschema/msgspec_enum_diagnostics/subclass_rejected.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/subclass_reverse.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/unused.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/msgspec_enum_value_base_kept.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_falsy_defaults.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_float_multiple_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_inherited_optional_default.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1948,6 +1949,7 @@ jsonschema/msgspec_enum_diagnostics/subclass_only.json	payloads/native_numeric_e
 jsonschema/msgspec_enum_diagnostics/subclass_rejected.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/subclass_reverse.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_enum_diagnostics/unused.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/msgspec_enum_value_base_kept.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_falsy_defaults.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_float_multiple_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/msgspec_inherited_optional_default.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
