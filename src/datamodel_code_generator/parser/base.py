@@ -88,6 +88,7 @@ from datamodel_code_generator.imports import (
     Import,
     Imports,
 )
+from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model.base import (
     ALL_MODEL,  # noqa: F401  # Preserve the established parser.base export.
     GENERIC_BASE_CLASS_NAME,
@@ -107,7 +108,14 @@ from datamodel_code_generator.model.base import (
     linearize_data_models,
     sort_data_models_for_mro,
 )
-from datamodel_code_generator.model.enum import Enum, IntEnum, Member, get_raw_enum_member_value
+from datamodel_code_generator.model.enum import (
+    Enum,
+    IntEnum,
+    Member,
+    StrEnum,
+    _enum_class,
+    get_raw_enum_member_value,
+)
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
 from datamodel_code_generator.model.output import (
     _expression_names,  # noqa: F401  # Preserve the existing parser helper export.
@@ -2819,11 +2827,6 @@ def _iter_written_union_members(data_types: Iterable[DataType]) -> Iterator[Data
             yield data_type
 
 
-def _msgspec_value_kind(value: object) -> str:
-    """Return ``str`` or ``int`` for an Enum or Literal value written as one, subclasses but not bool, else ``""``."""
-    return "str" if isinstance(value, str) else "int" if isinstance(value, int) and not isinstance(value, bool) else ""
-
-
 def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind and its written members of a union that msgspec decodes once its Enums are written as Literal.
 
@@ -2839,7 +2842,7 @@ def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumC
         for leaf, _, _ in _iter_discriminator_data_types((member,)):
             if isinstance(source := leaf.reference.source if leaf.reference else None, Enum):
                 if (
-                    kinds := {_msgspec_value_kind(get_raw_enum_member_value(field.default)) for field in source.fields}
+                    kinds := {literal_value_kind(get_raw_enum_member_value(field.default)) for field in source.fields}
                 ) in ({"str"}, {"int"}):
                     enums[kind := kinds.pop()].add(id(source))
                     names[kind][member.type_hint] = None
@@ -2847,7 +2850,7 @@ def _msgspec_enum_clashes(data_types: Iterable[DataType]) -> tuple[_MsgspecEnumC
                 if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
                     refused.add("str")
                 for kind in (
-                    {_msgspec_value_kind(literal) for literal in leaf.literals} or {leaf.type or ""}
+                    {literal_value_kind(literal) for literal in leaf.literals} or {leaf.type or ""}
                 ) & names.keys():
                     others.add(kind)
                     names[kind][member.type_hint] = None
@@ -4509,7 +4512,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if isinstance(source_model, Enum):
                     enums.append(source_model)
             if enums:
-                merged_enum = enums[0].__class__(
+                kind = decide_enum_kind("merged", first_specialized=isinstance(enums[0], (IntEnum, StrEnum)))
+                merged_enum = _enum_class(kind, enums[0].__class__)(
                     fields=[f for e in enums for f in e.fields],
                     description=model.description,
                     reference=model.reference,
@@ -4553,9 +4557,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return value
 
         member_value = member.value
-        if isinstance(member_value, (str, int, bool)):
-            return member_value
-        return value
+        return member_value if is_literal_kind(literal_value_kind(member_value)) else value
 
     def __set_force_optional_discriminator_literal_default(
         self,

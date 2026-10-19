@@ -60607,7 +60607,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | prepare | `__override_required_field` | inherited placeholders, base models (any module) | replaces placeholders by copies of inherited fields, required, defaults |
 | prepare | `__replace_unique_list_to_set` | `uniqueItems`, defaults | list to set (`_create_set_from_list`), set defaults |
 | prepare | `__change_from_import` | references to other modules | module imports, `data_type.alias` |
-| prepare | `__extract_inherited_enum` | field-less models with Enum bases | replaces the model by a new Enum with the same `Reference` |
+| prepare | `__extract_inherited_enum` | field-less models with Enum bases | replaces the model by a new Enum with the same `Reference`, of the class of its first Enum base (`decide_enum_kind`) |
 | process | `__set_reference_default_value_to_field` | defaults of referenced models | field defaults |
 | process | `__reuse_model` | rendered model text and union tags of this module's models | replaces duplicates by empty subclasses (users in this module redirected) or removes them (Enums, `--collapse-reuse-models`: users in every module redirected) |
 | process | `__collapse_root_models` | root models referenced from this module (any module), circular paths from L4 | inlines root types, merges constraints, calls `process_const()` again, renames, marks unused roots |
@@ -60796,6 +60796,9 @@ concrete backends.
 | Decision | Pure core | Adapters |
 | --- | --- | --- |
 | whether a type's rendered hint, or the annotation a field writes around it, includes None | `model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, `field_renders_none` | `types.py:DataType.admits_none`; `model/base.py:DataModelFieldBase._field_null_source`; writes: `types.py:DataType._materialize_render_state` (see L7) |
+| which class an enum is written as (`Enum`, `IntEnum`, `StrEnum`, a value type base); today's kinds that ignore the member values are named `legacy-*` rows | `model/_decisions/enum_kind.py`: `decide_enum_kind` | `parser/jsonschema.py:JsonSchemaParser._get_enum_model_class` (schema enums, also those merged from `const` branches and those of the converted formats); `parser/graphql.py:GraphQLParser.parse_enum_as_enum_class`; `parser/base.py:Parser.__extract_inherited_enum` (L5); classes: `model/enum.py:_enum_class` |
+| whether an enum is written as a `Literal` | `model/_decisions/enum_kind.py`: `enum_as_literal` | `should_parse_enum_as_literal` of `parser/jsonschema.py:JsonSchemaParser` and `parser/graphql.py:GraphQLParser` |
+| the kind of a const or enum value, and whether a `Literal` or a msgspec tag holds it | `model/_decisions/enum_kind.py`: `literal_value_kind`, `is_literal_kind`, `is_tag_kind` | `parser/jsonschema.py`: `_partition_enum_values`, `_get_const_data_type`, `_get_single_literal_value`, `_get_tagged_union_value`; `parser/base.py`: `Parser._get_enum_discriminator_literal`, `_msgspec_enum_clashes` |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it

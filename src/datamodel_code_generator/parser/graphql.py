@@ -19,12 +19,12 @@ from typing_extensions import Unpack
 from datamodel_code_generator import (
     InputFileType,
     InvalidFileFormatError,
-    LiteralType,
     snooper_to_methods,
 )
 from datamodel_code_generator._format_types import DatetimeClassType
+from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
-from datamodel_code_generator.model.enum import SPECIALIZED_ENUM_TYPE_MATCH, Enum, EnumMemberValue
+from datamodel_code_generator.model.enum import SUBCLASS_BASE_CLASSES, EnumMemberValue, _enum_class
 from datamodel_code_generator.parser.base import (
     DataType,
     Parser,
@@ -227,12 +227,13 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
 
     def should_parse_enum_as_literal(self, obj: graphql.GraphQLEnumType) -> bool:
-        """Determine if an enum should be parsed as a literal type."""
-        if self.enum_field_as_literal == LiteralType.All:
-            return True
-        if self.enum_field_as_literal == LiteralType.One:
-            return len(obj.values) == 1
-        return False
+        """Determine if an enum should be parsed as a literal type (``enum_as_literal``)."""
+        return enum_as_literal(
+            extension=None,
+            mapped=None,
+            setting=self.enum_field_as_literal.value if self.enum_field_as_literal else None,
+            member_count=len(obj.values),
+        )
 
     def parse_enum(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse a GraphQL enum type and add it to results."""
@@ -313,21 +314,20 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 )
             )
 
-        enum_cls: type[Enum] = Enum
-        if (
-            self.target_python_version.has_strenum
-            and self.use_specialized_enum
-            and (specialized_type := SPECIALIZED_ENUM_TYPE_MATCH.get(Types.string))
-        ):
-            # If specialized enum is available in the target Python version, use it
-            enum_cls = specialized_type
-
-        enum: Enum = enum_cls(
+        kind = decide_enum_kind(
+            "graphql",
+            value_type=SUBCLASS_BASE_CLASSES[Types.string],
+            values=enum_object.values,
+            use_specialized_enum=self.use_specialized_enum,
+            use_subclass_enum=self.use_subclass_enum,
+            has_strenum=self.target_python_version.has_strenum,
+        )
+        enum = _enum_class(kind)(
             reference=self.references[enum_object.name],
             fields=enum_fields,
             path=self.current_source_path,
             description=enum_object.description,
-            type_=Types.string if self.use_subclass_enum else None,
+            type_=Types.string if kind.subclasses_value_type else None,
             custom_template_dir=self.custom_template_dir,
         )
         self.generation_store.register_model(enum)

@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from math import isnan
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional
 
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -18,8 +18,10 @@ from datamodel_code_generator.types import DataType, Types
 
 if TYPE_CHECKING:
     from collections import defaultdict
+    from collections.abc import Mapping
     from pathlib import Path
 
+    from datamodel_code_generator.model._decisions.enum_kind import EnumBase, EnumKind
     from datamodel_code_generator.reference import Reference
 
 
@@ -264,7 +266,16 @@ SPECIALIZED_ENUM_TYPE_MATCH: dict[Types, type[Enum]] = {
 }
 """
 Map specialized enum types to their corresponding Enum subclasses.
+
+The parsers decide the class with ``model/_decisions/enum_kind.py:decide_enum_kind``, which gives the same classes.
 """
+
+_ENUM_CLASSES: Final[Mapping[EnumBase, type[Enum]]] = {"Enum": Enum, "IntEnum": IntEnum, "StrEnum": StrEnum}
+
+
+def _enum_class(kind: EnumKind, first_merged: type[Enum] = Enum) -> type[Enum]:
+    """Return the class an enum of the kind is written as; the merged rows keep the class of the first merged enum."""
+    return first_merged if kind.base is None else _ENUM_CLASSES[kind.base]
 
 
 class Member:

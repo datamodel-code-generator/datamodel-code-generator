@@ -51,7 +51,7 @@ from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_s
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
-from datamodel_code_generator._shared_types import DefaultPutDict, LiteralType
+from datamodel_code_generator._shared_types import DefaultPutDict
 from datamodel_code_generator._source import (
     YamlValue,
     _load_parser_source_data_from_path_bytes,
@@ -63,6 +63,13 @@ from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
+from datamodel_code_generator.model._decisions.enum_kind import (
+    decide_enum_kind,
+    enum_as_literal,
+    is_literal_kind,
+    is_tag_kind,
+    literal_value_kind,
+)
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     c3_merge,
@@ -71,11 +78,10 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import (
     NULL_ENUM_MEMBER_VALUE,
-    SPECIALIZED_ENUM_TYPE_MATCH,
     SUBCLASS_BASE_CLASSES,
     Enum,
     EnumMemberValue,
-    StrEnum,
+    _enum_class,
 )
 from datamodel_code_generator.model.output import OutputModelContext
 from datamodel_code_generator.model.runtime_validation import (
@@ -602,13 +608,8 @@ def _strip_special_path_suffix(path: str) -> str:
 
 
 def _get_tagged_union_value(literal: JsonSchemaLiteral) -> TaggedUnionValue | None:
-    """Return a supported tagged-union value for a JSON Schema literal."""
-    match literal:
-        case bool():
-            return None
-        case int() | str():
-            return literal
-    return None  # pragma: no cover
+    """Return a supported tagged-union value for a JSON Schema literal (``is_tag_kind``)."""
+    return literal if is_tag_kind(literal_value_kind(literal)) else None
 
 
 def _shifted_enum_entries_message(class_name: str, obj: JsonSchemaObject, named_values: list[Any]) -> str | None:
@@ -1920,28 +1921,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         property_name: str | None = None,
         property_obj: JsonSchemaObject | None = None,
     ) -> bool:
-        """Determine if an enum should be parsed as a literal type.
+        """Determine if an enum should be parsed as a literal type (``enum_as_literal``).
 
         Priority (highest to lowest):
         1. x-enum-field-as-literal on the property schema
         2. enum_field_as_literal_map matching Model.field or field
         3. Global enum_field_as_literal setting
         """
-        # Check x-enum-field-as-literal on property or obj
-        target_obj = property_obj if property_obj is not None else obj
-        if target_obj.x_enum_field_as_literal is not None:
-            return target_obj.x_enum_field_as_literal
-
-        # Check enum_field_as_literal_map for matching keys
-        if property_name and self.enum_field_as_literal_map and property_name in self.enum_field_as_literal_map:
-            return self.enum_field_as_literal_map[property_name] == "literal"
-
-        # Fall back to global setting
-        if self.enum_field_as_literal == LiteralType.All:
-            return True
-        if self.enum_field_as_literal == LiteralType.One:
-            return len(obj.enum) == 1
-        return False
+        return enum_as_literal(
+            extension=(property_obj if property_obj is not None else obj).x_enum_field_as_literal,
+            mapped=self.enum_field_as_literal_map.get(property_name) if property_name else None,
+            setting=self.enum_field_as_literal.value if self.enum_field_as_literal else None,
+            member_count=len(obj.enum),
+        )
 
     @classmethod
     def _extract_const_enum_from_combined(  # noqa: PLR0912
@@ -2546,27 +2538,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.data_type_manager.get_data_type(Types.any)
 
     def _get_const_data_type(self, const: object) -> DataType:
-        """Return a DataType for a JSON Schema const value."""
-        if isinstance(const, bool):
-            if not self._output_model_context.supports_boolean_literals:
-                return self.data_type_manager.get_data_type(Types.boolean)
-            return self.data_type(literals=[const])
-        if isinstance(const, (int, str)):
+        """Return a DataType for a JSON Schema const value: its Literal (``is_literal_kind``) or its value's type."""
+        if is_literal_kind(
+            literal_value_kind(const), bool_literals=self._output_model_context.supports_boolean_literals
+        ):
             return self.data_type(literals=[const])
         return self._get_data_type_from_json_value(const)
 
     def _partition_enum_values(self, enum_values: list[Any]) -> tuple[list[JsonSchemaLiteral], list[object], bool]:
-        """Split enum values into literal and non-literal values."""
+        """Split enum values into literal (``is_literal_kind``) and non-literal values."""
         literal_values: list[JsonSchemaLiteral] = []
         non_literal_values: list[object] = []
         has_null = False
+        bool_literals = self._output_model_context.supports_boolean_literals
         for enum_value in enum_values:
-            if enum_value is None:
+            if (kind := literal_value_kind(enum_value)) == "none":
                 has_null = True
                 non_literal_values.append(enum_value)
-            elif isinstance(enum_value, bool) and not self._output_model_context.supports_boolean_literals:
-                non_literal_values.append(enum_value)
-            elif isinstance(enum_value, (bool, int, str)):
+            elif is_literal_kind(kind, bool_literals=bool_literals):
                 literal_values.append(enum_value)
             else:
                 non_literal_values.append(enum_value)
@@ -4230,8 +4219,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> JsonSchemaLiteral | None:
         if "const" in obj.extras:
             const = obj.extras["const"]
-            return const if isinstance(const, (bool, int, str)) else None
-        if len(obj.enum) == 1 and isinstance(obj.enum[0], (bool, int, str)):
+            return const if is_literal_kind(literal_value_kind(const)) else None
+        if len(obj.enum) == 1 and is_literal_kind(literal_value_kind(obj.enum[0])):
             return obj.enum[0]
         if obj.ref:
             seen_refs = seen_refs or set()
@@ -11972,20 +11961,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _get_enum_model_class(self, type_: Types | None, enum_values: list[Any]) -> tuple[type[Enum], Types | None]:
-        """Return the enum model class and remaining subtype for schema enum generation."""
-        if not (self.use_specialized_enum and type_ and (specialized_type := SPECIALIZED_ENUM_TYPE_MATCH.get(type_))):
-            return Enum, type_
-
-        match specialized_type:
-            case _ if specialized_type is StrEnum:
-                if not self.target_python_version.has_strenum or not all(
-                    isinstance(enum_value, str) for enum_value in enum_values
-                ):
-                    return Enum, type_
-            case _:
-                pass
-
-        return specialized_type, None
+        """Return the enum model class and the type whose value type it also subclasses (``decide_enum_kind``)."""
+        kind = decide_enum_kind(
+            "schema",
+            value_type=SUBCLASS_BASE_CLASSES.get(type_) if type_ else None,
+            values=enum_values,
+            use_specialized_enum=self.use_specialized_enum,
+            use_subclass_enum=self.use_subclass_enum,
+            has_strenum=self.target_python_version.has_strenum,
+        )
+        return _enum_class(kind), type_ if kind.subclasses_value_type else None
 
     def _get_enum_type(self, obj: JsonSchemaObject) -> Types | None:
         """Return the type an enum class of the schema may specialize or subclass."""
