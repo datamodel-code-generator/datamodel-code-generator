@@ -56,7 +56,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--disable-timestamp": "Disable timestamp in generated file header for reproducible output.",
     "--disable-warnings": "Suppress warning messages during code generation.",
     "--duplicate-name-suffix": "Customize suffix for duplicate model names.",
-    "--emit-model-metadata": "Write a separate JSON map from source schema references to the final generated models...",
+    "--emit-model-metadata": "Write a separate JSON map from the final generated models, modules, fields, and type ...",
     "--empty-enum-field-name": "Name for empty string enum field values.",
     "--enable-command-header": "Include command-line options in file header for reproducibility.",
     "--enable-faux-immutability": "Enable faux immutability in Pydantic models (frozen=True).",

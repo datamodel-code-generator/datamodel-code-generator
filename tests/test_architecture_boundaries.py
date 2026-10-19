@@ -41,6 +41,7 @@ def test_architecture_boundary_detector_reports_cross_layer_dependencies() -> No
         (FIXTURE_ROOT / "shared_model" / "forbidden.py", "shared-model"),
         (FIXTURE_ROOT / "shared" / "forbidden.py", "shared"),
         (FIXTURE_ROOT / "target" / "forbidden.py", "target"),
+        (FIXTURE_ROOT / "requirements" / "forbidden.py", "requirements"),
     ]
     violations = check_architecture_boundaries.check_files(files, allowlist={})
 
@@ -74,7 +75,7 @@ def test_architecture_boundary_detector_handles_shared_model_dynamic_imports(
 
 
 def test_architecture_boundary_source_classification() -> None:
-    """Keep entrypoint, model composition, and shared-model ownership explicit."""
+    """Keep entrypoint, model composition, shared-model, and requirement-table ownership explicit."""
     source_root = ROOT / "src" / "datamodel_code_generator"
     paths = (
         source_root / "__init__.py",
@@ -87,8 +88,10 @@ def test_architecture_boundary_source_classification() -> None:
         source_root / "model" / "__init__.py",
         source_root / "model" / "pydantic_v2" / "base_model.py",
         source_root / "model" / "runtime_validation.py",
+        source_root / "model" / "_decisions" / "nullability.py",
         source_root / "_api_generation.py",
         source_root / "_target_config.py",
+        source_root / "_requirements.py",
         source_root / "types.py",
     )
     classification = "".join(

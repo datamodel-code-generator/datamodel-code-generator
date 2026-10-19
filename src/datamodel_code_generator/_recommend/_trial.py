@@ -123,17 +123,19 @@ def _run_candidate(  # noqa: PLR0913
         with warnings.catch_warnings(), redirect_stderr(io.StringIO()):
             warnings.simplefilter("ignore")
             with dropped_constraints_recorded() as dropped:
-                metadata, input_file_type = _collect_model_metadata(input_, config, remote_text_cache=remote_text_cache)
-            records = name_records(metadata)
+                metadata, identities, input_file_type = _collect_model_metadata(
+                    input_, config, remote_text_cache=remote_text_cache
+                )
+            records = name_records(metadata, identities)
             previous = (
                 None
                 if previous_input is None
                 else name_records(
-                    _collect_model_metadata(
+                    *_collect_model_metadata(
                         previous_input,
                         config.model_copy(update={"input_file_type": input_file_type}),
                         remote_text_cache=remote_text_cache,
-                    )[0]
+                    )[:2]
                 )
             )
     except RemoteLockError:

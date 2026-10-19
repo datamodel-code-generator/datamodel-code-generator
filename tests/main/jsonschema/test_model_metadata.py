@@ -1,20 +1,25 @@
-"""End-to-end checks for generated RootModel metadata names."""
+"""End-to-end checks for generated model metadata: RootModel names and schema locations."""
 
 from __future__ import annotations
 
 import json
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from pydantic import TypeAdapter
 
-from datamodel_code_generator import InputFileType, PythonVersion
+from datamodel_code_generator import DataModelType, Error, InputFileType, PythonVersion, generate
 from datamodel_code_generator.format import Formatter
-from tests.conftest import assert_output, stored_expected
+from datamodel_code_generator.model_metadata import dump_model_metadata
+from datamodel_code_generator.parser.openapi import OpenAPIParser
+from tests.conftest import CHECK_SCHEMA_LOCATIONS_ENV, assert_inputs_not_mutated, assert_output, stored_expected
 from tests.main.conftest import (
+    ASYNC_API_DATA_PATH,
+    GRAPHQL_DATA_PATH,
     JSON_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
     _generated_model,
     run_generate_file_and_assert,
     run_main_and_assert,
@@ -96,3 +101,108 @@ def test_root_model_metadata_names(output_file: Path, entry_point: str, emit_met
         f"{json.dumps(runtime, indent=2)}\n",
         expected_dir / ("type_alias_runtime.txt" if mode == "type_alias" else "root_model_runtime.txt"),
     )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "input_file_type", "options"),
+    [
+        pytest.param(JSON_SCHEMA_DATA_PATH / "schema_location.json", "jsonschema", [], id="jsonschema"),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "all_of_any_of_base_class_ref.json", "jsonschema", [], id="colliding-parse-paths"
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "schema_location.yaml",
+            "openapi",
+            ["--openapi-scopes", "schemas", "paths", "parameters", "webhooks"],
+            id="openapi",
+        ),
+        pytest.param(OPEN_API_DATA_PATH / "schema_location.yaml", "openapi", ["--openapi-scopes", "api"], id="api"),
+        pytest.param(
+            OPEN_API_DATA_PATH / "schema_location.yaml",
+            "openapi",
+            ["--openapi-scopes", "schemas", "paths", "--read-only-write-only-model-type", "request-response"],
+            id="request-response",
+        ),
+        pytest.param(OPEN_API_DATA_PATH / "schema_location_alias.yaml", "openapi", [], id="yaml-aliases"),
+        pytest.param(ASYNC_API_DATA_PATH / "schema_location.yaml", "asyncapi", [], id="asyncapi"),
+        pytest.param(GRAPHQL_DATA_PATH / "simple-star-wars.graphql", "graphql", [], id="graphql"),
+    ],
+)
+def test_schema_location_metadata(
+    output_file: Path, input_path: Path, input_file_type: str, options: list[str]
+) -> None:
+    """Locate each model at the schema object it is built from with an RFC 6901 JSON Pointer (#4843).
+
+    Read and write variants share the location of their schema, a YAML alias is located where it is used whatever the
+    YAML loader, and GraphQL, which has no JSON document, keeps its reference paths. A model whose parse path collides
+    with another schema object's (the anyOf branches of the allOf members in ``all_of_any_of_base_class_ref.json``)
+    keeps its reference path instead of a pointer that could disagree with its content.
+    """
+    metadata_path = output_file.with_suffix(".metadata.json")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *options,
+            "--emit-model-metadata",
+            str(metadata_path),
+        ],
+    )
+    assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
+
+
+def test_schema_location_metadata_of_shared_dict_input(tmp_path: Path) -> None:
+    """Locate the models of a dict input where it shares objects and holds a cycle, without changing the input."""
+    inner: dict[str, Any] = {"type": "object", "properties": {"y": {"type": "integer"}}}
+    shared: dict[str, Any] = {"type": "object", "properties": {"inner": inner, "kind": {"type": "string"}}}
+    cycle: dict[str, Any] = {}
+    cycle["self"] = cycle["again"] = cycle
+    definitions: dict[str, Any] = {
+        "A": shared,
+        "B": shared,
+        "C": {"type": "object", "properties": {"z": inner}},
+    }
+    schema: dict[str, Any] = {
+        "$defs": definitions,
+        "type": "object",
+        "x-cycle": cycle,
+        "properties": {"a": {"$ref": "#/$defs/A"}, "b": {"$ref": "#/$defs/B"}, "c": {"$ref": "#/$defs/C"}},
+    }
+    metadata_path = tmp_path / "metadata.json"
+    with assert_inputs_not_mutated({"definitions": definitions}):
+        output = generate(
+            schema,
+            input_file_type=InputFileType.JsonSchema,
+            output_model_type=DataModelType.PydanticV2BaseModel,
+            emit_model_metadata=metadata_path,
+            disable_timestamp=True,
+            formatters=[Formatter.BUILTIN],
+        )
+    assert_output(str(output))
+    assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
+
+
+@pytest.mark.parametrize("check", [True, False], ids=["check", "fallback"])
+def test_schema_location_of_schemas_a_custom_parser_rewrites(monkeypatch: pytest.MonkeyPatch, *, check: bool) -> None:
+    """A custom parser that parses copies of the raw schemas leaves models without a location.
+
+    The check the test suite enables reports them at the end of parsing; without it, they keep their reference paths.
+    """
+
+    class RewritingParser(OpenAPIParser):
+        def parse_raw_obj(self, name: str, raw: Any, path: list[str]) -> None:
+            super().parse_raw_obj(name, json.loads(json.dumps(raw)), path)
+
+    if not check:
+        monkeypatch.delenv(CHECK_SCHEMA_LOCATIONS_ENV)
+    parser = RewritingParser(OPEN_API_DATA_PATH / "schema_location_alias.yaml", formatters=[Formatter.BUILTIN])
+    if check:
+        with pytest.raises(Error, match="models without a schema location: Owner"):
+            parser.parse(collect_model_metadata=True)
+        return
+    parser.parse(collect_model_metadata=True)
+    assert_output(dump_model_metadata(parser.model_metadata), name="metadata")

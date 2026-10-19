@@ -8,6 +8,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
+from typing_extensions import override
+
 from datamodel_code_generator._format_types import (
     DateClassType,
     DatetimeClassType,
@@ -198,10 +200,12 @@ class DataClass(_DataclassReuseMixin, DataModel):
     SUPPORTS_INHERITED_DISCRIMINATOR_ENUM: ClassVar[bool] = True
     SUPPORTS_KW_ONLY: ClassVar[bool] = True
 
+    @override
     def field_name_hides_types(self, field: DataModelFieldBase) -> bool:
         """Return whether the class body binds the field's name, which its annotation is evaluated after."""
         return self.field_binds_class_attribute(field)
 
+    @override
     def unbind_fields(self, names: Collection[str | None]) -> bool:
         """Write the defaults of the fields of these names through ``default_factory``.
 
@@ -219,6 +223,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
             field.__dict__[_UNBOUND_FIELD_KEY] = True
         return bool(fields)
 
+    @override
     def resolves_hidden_types_from_strings(self) -> bool:
         """Return whether the class needs string annotations to resolve a type that a field hides.
 
@@ -228,6 +233,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
         return not self.dataclass_arguments.get("slots")
 
     @classmethod
+    @override
     def prepare_required_inherited_field(
         cls,
         field: DataModelFieldBase,
@@ -245,6 +251,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
             field.__dict__[_REQUIRED_INHERITED_INIT_KEY] = True
 
     @classmethod
+    @override
     def restore_required_inherited_field_state(cls, field: DataModelFieldBase) -> bool:
         """Restore a required field excluded from the inherited constructor."""
         if not (field.required and field.__dict__.pop(_REQUIRED_INHERITED_INIT_KEY, False)):
@@ -309,11 +316,13 @@ class DataModelField(DataModelFieldBase):
     }
     constraints: Optional[Constraints] = None  # noqa: UP045
 
+    @override
     def process_const(self) -> None:
         """Process const field constraint using literal type."""
         self._process_const_as_literal()
 
     @property
+    @override
     def imports(self) -> tuple[Import, ...]:
         """Get imports including field() if needed."""
         field = self.field
@@ -322,6 +331,7 @@ class DataModelField(DataModelFieldBase):
         return super().imports
 
     @property
+    @override
     def field(self) -> str | None:
         """For backwards compatibility."""
         result = str(self)
@@ -402,6 +412,7 @@ class DataModelField(DataModelFieldBase):
             data["default_factory"] = f"lambda: {represent_python_value(data.pop('default', self.default))}"
         return data
 
+    @override
     def _get_constructor_default_info(self) -> tuple[bool, bool]:
         """Return constructor-default semantics from structured field data."""
         if self.required and not self.use_default_with_required:
@@ -418,6 +429,7 @@ class DataModelField(DataModelFieldBase):
             return False, False
         return True, True
 
+    @override
     def __str__(self) -> str:
         """Generate field() call or default value representation."""
         data = self._get_field_data()

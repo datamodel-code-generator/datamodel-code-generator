@@ -25,6 +25,7 @@ Layer: TypeAlias = Literal[
     "output-model",
     "shared-model",
     "target",
+    "requirements",
     "shared",
 ]
 SharedModelAliasState: TypeAlias = tuple[set[str], set[str], set[str], set[str], dict[str, str]]
@@ -46,6 +47,8 @@ PARSER_BACKEND_ATTRIBUTES: Final = frozenset({
     "has_typed_dict_non_required",
     "is_pydantic_extra_field",
 })
+PARSER_BACKEND_REQUIREMENT_READERS: Final = frozenset({"_meets", "python_target_meets"})
+PARSER_BACKEND_REQUIREMENT_PREFIX: Final = "python.typed_dict_"
 REFERENCE_BACKEND_DEFINITION_MARKERS: Final = ("dataclass", "msgspec", "pydantic", "typeddict")
 REFERENCE_EXTERNAL_BACKEND_ROOTS: Final = frozenset({"msgspec"})
 DYNAMIC_ATTRIBUTE_MIN_ARGS: Final = 2
@@ -78,6 +81,13 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the attribute-to-fact table is read by checkers without the package: import only the standard library "
             "and typing_extensions"
+        ),
+    ),
+    "requirements": (
+        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator.enums"}),
+        (
+            "the requirement table is a leaf: import only the standard library, typing_extensions and "
+            "datamodel_code_generator.enums"
         ),
     ),
 }
@@ -268,6 +278,7 @@ def _module_name(path: Path, layer: Layer) -> str:
             "output-model": "datamodel_code_generator.model.fixture",
             "shared-model": "datamodel_code_generator.model.shared_fixture",
             "target": "datamodel_code_generator.target_fixture",
+            "requirements": "datamodel_code_generator.requirements_fixture",
             "shared": "datamodel_code_generator.shared_fixture",
         }[layer]
 
@@ -546,7 +557,10 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 continue
             self._record_import_alias(alias.asname or alias.name, module)
             self._check_import(
-                node, target if self.layer in {"reference", "target"} or alias.name.startswith("_") else module
+                node,
+                target
+                if self.layer in {"reference", "target", "requirements"} or alias.name.startswith("_")
+                else module,
             )
 
     def visit_Call(self, node: ast.Call) -> None:
@@ -605,6 +619,20 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             )
 
         self._check_entrypoint_private_call(node, chain)
+
+        if (
+            self.layer == "parser"
+            and chain[-1:]
+            and chain[-1] in PARSER_BACKEND_REQUIREMENT_READERS
+            and (construct := self._resolved_string(self._requirement_construct_argument(node))) is not None
+            and construct.startswith(PARSER_BACKEND_REQUIREMENT_PREFIX)
+        ):
+            self._add(
+                node,
+                "backend-semantic-inspection",
+                construct,
+                "parser code must query a neutral DataModel or DataModelFieldBase capability",
+            )
 
         if (
             chain
@@ -843,6 +871,12 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
         if node.args:
             return node.args[0]
         return next((keyword.value for keyword in node.keywords if keyword.arg == "name"), None)
+
+    @staticmethod
+    def _requirement_construct_argument(node: ast.Call) -> ast.expr | None:
+        if node.args:
+            return node.args[0]
+        return next((keyword.value for keyword in node.keywords if keyword.arg == "construct"), None)
 
     def _is_sys_modules_registry(self, node: ast.AST) -> bool:
         match node:
@@ -1094,12 +1128,16 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "config" if filename == "config.py" else "input-model"
         case ("reference.py",):
             layer = "reference"
+        case ("_requirements.py",):
+            layer = "requirements"
         case ("_client" | "_fastapi", *_):
             layer = "target"
         case (filename,) if f"datamodel_code_generator.{filename.removesuffix('.py')}" in _TARGET_MODULES:
             layer = "target"
         case ("model", "__init__.py"):
             layer = "model-composition"
+        case ("model", "_decisions", *_):
+            layer = "shared-model"
         case ("model", filename) if filename in _NEUTRAL_MODEL_FILENAMES:
             layer = "shared-model"
         case ("model", *_):

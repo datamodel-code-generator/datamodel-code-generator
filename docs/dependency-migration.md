@@ -106,10 +106,12 @@ The proposed 2.8.2 floor applies to **DCG's runtime**, not the environment that 
 a reason to delete every existing compatibility branch.
 
 The following classification reflects the current source. Emitted code never depends on the installed Pydantic:
-`model/pydantic_v2/version.py` keys every generated-code boundary on `--target-pydantic-version`. Leaving it unset
-gives the newest supported feature forms, while config key naming keeps its existing rule (`populate_by_name` unless
-the target is `2.11` or later); `2` means Pydantic 2.0+ compatible forms. Raising DCG's runtime floor therefore cannot
-change generated output.
+every generated-code boundary is keyed on `--target-pydantic-version`, and the requirement table in
+`_requirements.py` holds the minimum of each boundary that the parsers and the model backends check, with what an unset
+target means for it; the `2.14` target that server and client targets imply when none is set is still written in
+`base_config.py`. Leaving the option unset gives the newest supported feature forms, while config key naming keeps its
+existing rule (`populate_by_name` unless the target is `2.11` or later); `2` means Pydantic 2.0+ compatible forms.
+Raising DCG's runtime floor therefore cannot change generated output.
 
 | Area | Classification and current effect | Follow-up test responsibility |
 | --- | --- | --- |

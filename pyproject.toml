@@ -277,6 +277,15 @@ src.include = [ "src" ]
 environment.python-version = "3.10"
 rules.deprecated = "warn"
 
+[[tool.ty.overrides]]
+include = [
+  "src/datamodel_code_generator/model/**",
+  "src/datamodel_code_generator/parser/**",
+  "src/datamodel_code_generator/reference.py",
+  "src/datamodel_code_generator/types.py",
+]
+rules.missing-override-decorator = "error"
+
 [tool.pytest]
 ini_options.norecursedirs = [ ".hypothesis", ".tox", "tests/data/*" ]
 ini_options.markers = [

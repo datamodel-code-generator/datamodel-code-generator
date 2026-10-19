@@ -74,3 +74,14 @@ def neutral_output_capabilities(model, field):
         model.PLAIN_PATTERN_ROOT_CHECKER,
         field.data_type,
     )
+
+
+def inspect_typed_dict_requirements(python_version):
+    from datamodel_code_generator._requirements import python_target_meets
+
+    return (
+        python_target_meets("python.typed_dict_closed", python_version.version_key),
+        python_target_meets(construct="python.typed_dict_not_required", version_key=python_version.version_key),
+        python_version._meets("python.typed_dict_read_only"),
+        python_target_meets("python.strenum", python_version.version_key),
+    )

@@ -23,8 +23,10 @@ from typing import (
     Annotated,
     Any,
     ClassVar,
+    Literal,
     Optional,
     Protocol,
+    TypeAlias,
     TypeVar,
     Union,
     runtime_checkable,
@@ -45,7 +47,7 @@ from pydantic import (
     field_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, assert_never, override
 
 from datamodel_code_generator import imports as generator_imports
 from datamodel_code_generator._format_types import (
@@ -54,7 +56,8 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
-from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion, _is_pydantic_version_at_least
+from datamodel_code_generator._requirements import pydantic_target_meets
+from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
 from datamodel_code_generator.imports import (
     IMPORT_ABC_MAPPING,
     IMPORT_ABC_SEQUENCE,
@@ -90,6 +93,7 @@ _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
 _REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
+_RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
 
 
 class DefaultValueRecipe(Enum):
@@ -171,7 +175,9 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
+    from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import StrictTypes
+    from datamodel_code_generator.model._decisions.nullability import NullSource
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -505,6 +511,14 @@ def get_optional_type(type_: str, use_union_operator: bool) -> str:  # noqa: FBT
     return f"{OPTIONAL_PREFIX}{type_}]"
 
 
+@cache
+def _nullability_core() -> ModuleType:
+    """Return the rendered nullability decision, imported once; ``model`` imports this module, so not at its top."""
+    from datamodel_code_generator.model._decisions import nullability  # noqa: PLC0415
+
+    return nullability
+
+
 def is_data_model_field(obj: object) -> TypeIs[DataModelFieldBase]:
     """Check if an object structurally owns a DataType."""
     return isinstance(getattr(obj, "data_type", None), DataType)
@@ -589,6 +603,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     _exclude_fields: ClassVar[set[str]] = {"parent", "children"}
     _pass_fields: ClassVar[set[str]] = {"parent", "children", "data_types", "reference"}
 
+    @override
     def __deepcopy__(self, memo: dict[int, Any] | None = None) -> DataType:
         """Create a deep copy handling circular references in parent/children fields."""
         if memo is None:
@@ -990,7 +1005,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 continue
 
             if data_type_type == NONE:
-                self.is_optional = True
+                self._materialize_render_state("member-null")
                 continue
 
             non_optional_data_type_type = _remove_none_from_union(
@@ -998,13 +1013,13 @@ class DataType(_BaseModel):  # noqa: PLR0904
             )
 
             if non_optional_data_type_type != data_type_type:
-                self.is_optional = True
+                self._materialize_render_state("member-null")
 
             data_types.append(non_optional_data_type_type)
 
         if not data_types:
             type_ = ANY
-            self.import_ = self.import_ or IMPORT_ANY
+            self._materialize_render_state("empty-union")
         elif len(data_types) == 1:
             type_ = data_types[0]
         else:
@@ -1050,7 +1065,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         match len(data_types):
             case 0:
                 type_ = ANY
-                self.import_ = self.import_ or IMPORT_ANY
+                self._materialize_render_state("empty-union")
             case 1:
                 type_ = data_types[0]
             case _:
@@ -1078,25 +1093,57 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return whether the rendered type hint includes None, without the writes that rendering makes.
 
         The None is the type's own, that of the nullable model it names, or that of a union member whose hint
-        includes None, which the union takes over when it is rendered.
+        includes None, which the union takes over when it is rendered (``rendered_nullability``).
         """
-        if self.is_optional or self._reference_adds_null():
-            return True
-        return (
-            not self.is_tuple
-            and self.is_union
-            and not self.preserve_union_member_order
-            and any(
-                (member.type == NONE and not member.data_types) or (member.type != ANY and member.admits_none)
-                for member in self.data_types
+        return self._rendered_null_source() is not None
+
+    def _rendered_null_source(self) -> NullSource | None:
+        """Return why the rendered type hint includes None, reading the members of a union only when they decide."""
+        core = _nullability_core()
+        members = self.data_types
+        return core.rendered_nullability(
+            own=self.is_optional,
+            reference=self._reference_adds_null(),
+            member_nulls=(member._gives_member_null(core) for member in members)  # noqa: SLF001
+            if core.takes_member_null(
+                is_tuple=self.is_tuple,
+                keeps_member_order=self.preserve_union_member_order,
+                member_count=len(members),
             )
+            else (),
         )
 
-    def _apply_nullable_from_reference(self) -> None:
-        if self.is_optional or not self._reference_adds_null():
-            return
-        self.is_optional = True
-        self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
+    def _gives_member_null(self, core: ModuleType) -> bool:
+        """Return whether the type, as a member of a union, gives the union its None (``member_null``)."""
+        verdict = core.member_null(is_none=self.type == NONE and not self.data_types, is_any=self.type == ANY)
+        return self._rendered_null_source() is not None if verdict is None else verdict
+
+    def _materialize_render_state(self, write: _RenderStateWrite, /) -> None:
+        """Write what rendering decides about the type: the writer of its render-time state on shared nodes.
+
+        ``"reference-null"`` writes the None of the nullable model the type names into ``is_optional`` when the
+        rendered None comes from that model (``rendered_nullability``), marked as not the type's own.
+        ``"member-null"`` writes the None that a union takes over from a member, ``"null-moved-to-union"`` takes the
+        None off a member whose union writes it now, and ``"empty-union"`` gives a union without a member to write
+        the import of the ``Any`` it renders as. Rendering a hint, collecting a field's imports and union flattening
+        call it where they decide, some before L7, so ``is_optional`` read before L7 depends on what ran first.
+        """
+        match write:
+            case "reference-null":
+                if not (reference := self._reference_adds_null()) or (
+                    _nullability_core().rendered_nullability(own=self.is_optional, reference=reference) != "reference"
+                ):
+                    return
+                self.is_optional = True
+                self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
+            case "member-null":
+                self.is_optional = True
+            case "null-moved-to-union":
+                self.is_optional = False
+            case "empty-union":
+                self.import_ = self.import_ or IMPORT_ANY
+            case _:  # pragma: no cover
+                assert_never(write)
 
     def _strip_null(self, *, own: bool) -> None:
         """Drop the None of the type, for good when it is the type's own rather than its nullable model's.
@@ -1201,7 +1248,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if not type_:
             type_ = self._render_nested_type_hint(use_base_type_hint=False, wrap_discriminator=True)
         if self.reference:
-            self._apply_nullable_from_reference()
+            self._materialize_render_state("reference-null")
         has_collection_container = self.is_frozen_set or self.is_set or self.is_sequence
         has_mapping_container = self.is_list or self.is_mapping or self.is_dict
         if has_collection_container or has_mapping_container:
@@ -1255,7 +1302,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if not type_:
             type_ = self._render_nested_type_hint(use_base_type_hint=True, wrap_discriminator=False)
         if self.reference:
-            self._apply_nullable_from_reference()
+            self._materialize_render_state("reference-null")
         if self.is_list or self.is_set or self.is_dict:
             type_ = self._wrap_container_type_hint(
                 type_,
@@ -1464,8 +1511,8 @@ class DataTypeManager(ABC):
         *(f"typing.Supports{name}" for name in ("Abs", "Complex", "Float", "Index", "Int", "Round")),
     })
     """Known types that a number is a value of, which check the number keywords of a number schema on it."""
-    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[str, frozenset[str]]]] = MappingProxyType({})
-    """Number keywords a type takes from an explicit target version of the output model on, by the type's path."""
+    TARGET_NUMBER_KEYWORDS: ClassVar[Mapping[str, tuple[PydanticConstruct, frozenset[str]]]] = MappingProxyType({})
+    """Number keywords a type takes once the target version of the output model has a construct, by the type's path."""
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = True
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = True
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = True
@@ -1750,10 +1797,8 @@ class DataTypeManager(ABC):
         if number_values:
             if path in cls.NUMBER_VALUE_TYPES:
                 return NUMBER_KEYWORDS
-            if (
-                target_model_version is not None
-                and (added := cls.TARGET_NUMBER_KEYWORDS.get(path)) is not None
-                and _is_pydantic_version_at_least(target_model_version, added[0])
+            if (added := cls.TARGET_NUMBER_KEYWORDS.get(path)) is not None and pydantic_target_meets(
+                added[0], target_model_version
             ):
                 return cls.CONSTRAINT_KEYWORDS.get(path, _NO_KEYWORDS) | added[1]
         if (keywords := cls.CONSTRAINT_KEYWORDS.get(path)) is not None:
