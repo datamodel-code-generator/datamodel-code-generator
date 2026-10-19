@@ -219,8 +219,8 @@ Use `GenerationStore` for parser-side mutations that affect generation facts:
 - Replace fields or base classes with `set_fields(...)`,
   `append_field(...)`, `insert_field(...)`, `remove_field(...)`, or
   `set_base_classes(...)`.
-- Move or rename generated models with `move_model(...)`,
-  `rename_model(...)`, or `update_model_reference(...)`.
+- Rename generated models with `rename_model(...)`; move them with `move_model(...)` or
+  `update_model_reference(...)`.
 - Report models whose fields, base classes, or data types changed without the
   store, for example through a model method, with `note_changed_models(...)`.
   A refresh records again only the models the store knows have changed.

@@ -158,12 +158,10 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
             if resolved_type in self.support_graphql_types:  # pragma: no cover
                 self.all_graphql_objects[type_.name] = type_
-                graphql_model_type = "enum" if resolved_type == graphql.TypeKind.ENUM else "model"
-                affixed_name = self.model_resolver.get_affixed_name(type_.name, model_type=graphql_model_type)
-                self.references[type_.name] = Reference(
-                    path=f"{paths!s}/{resolved_type.value}/{type_.name}",
-                    name=affixed_name,
-                    original_name=type_.name,
+                self.references[type_.name] = self.model_resolver._add_affixed(  # noqa: SLF001
+                    f"{paths!s}/{resolved_type.value}/{type_.name}",
+                    type_.name,
+                    model_type="enum" if resolved_type == graphql.TypeKind.ENUM else "model",
                 )
 
                 self.support_graphql_types[resolved_type].append(type_)

@@ -1306,12 +1306,21 @@ class GenerationStore:  # noqa: PLR0904
         self,
         model: DataModel,
         *,
+        new_path: str | None = None,
+        new_file_path: Path | None = None,
+    ) -> None:
+        """Update a model's reference path or output file and invalidate facts; ``rename_model`` changes names."""
+        self._update_model_reference(model, new_path=new_path, new_file_path=new_file_path)
+
+    def _update_model_reference(
+        self,
+        model: DataModel,
+        *,
         class_name: str | None = None,
         reference_name: str | None = None,
         new_path: str | None = None,
         new_file_path: Path | None = None,
     ) -> None:
-        """Update a model's generated name/path metadata and invalidate facts."""
         if class_name is not None:
             model.class_name = class_name
         if reference_name is not None:
@@ -1325,16 +1334,28 @@ class GenerationStore:  # noqa: PLR0904
         self._invalidate_render_caches_for_model(model)
         self._invalidate_after_mutation()
 
-    def rename_model(
+    def rename_model(  # noqa: PLR0913
         self,
         model: DataModel,
         *,
         class_name: str | None = None,
         reference_name: str | None = None,
         clear_duplicate_name: bool = False,
+        new_path: str | None = None,
+        new_file_path: Path | None = None,
     ) -> None:
-        """Update a model's generated class or reference name."""
-        self.update_model_reference(model, class_name=class_name, reference_name=reference_name)
+        """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
+
+        The callers apply six schemes: ``module`` (unique among the classes and imports of one module, ``Model``
+        for a taken name), ``flattened-module`` (unique among the live models, with the ``--duplicate-name-suffix``
+        map and ``Model``), ``field-type`` (a type hidden by a field of its user), ``imported-name`` (a local model
+        shadowed by an import), ``internal-module`` (``<name>_<n>`` in a module cycle's ``_internal`` module) and
+        ``collapsed-root`` (the inner model takes the root model's name and path). A rename that also relocates the
+        model passes the new path and output file.
+        """
+        self._update_model_reference(
+            model, class_name=class_name, reference_name=reference_name, new_path=new_path, new_file_path=new_file_path
+        )
         if clear_duplicate_name:
             model.reference.duplicate_name = None
 

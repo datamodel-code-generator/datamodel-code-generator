@@ -1767,6 +1767,19 @@ class ModelResolver:  # noqa: PLR0904
             )
         return reference
 
+    def _add_affixed(self, path: str, original_name: str, *, model_type: str) -> Reference:
+        """Add a reference at ``path`` named by ``get_affixed_name`` alone, the legacy mode of ``add``.
+
+        GraphQL names its types this way (row ``legacy-graphql-affix-only``): no uniqueness, no ``--model-name-map``,
+        no naming strategy and no singularization, and a dotted name stays one name.
+        """
+        reference = Reference(
+            path=path, original_name=original_name, name=self.get_affixed_name(original_name, model_type=model_type)
+        )
+        self.references[path] = reference
+        self._update_reference_name(None, reference.name, unique=False)
+        return reference
+
     def get(self, path: Sequence[str] | str) -> Reference | None:
         """Get a reference by path, returning None if not found."""
         return self.references.get(self.resolve_ref(path))

@@ -378,7 +378,7 @@ def test_generation_store_defer_refresh_batches_mutations() -> None:
 
     with store.defer_refresh():
         store.replace_data_type_ref(data_type, reference_c)
-        store.update_model_reference(model, reference_name="Renamed", new_path="Renamed")
+        store.rename_model(model, reference_name="Renamed", new_path="Renamed")
         dirty_after_mutation = store._dirty
         version_after_mutation = store.facts_version
         reference_classes_inside_defer = sorted(store.index.reference_classes_for_model(model))
@@ -1067,7 +1067,7 @@ def test_generation_store_model_mutations_clear_cached_imports_contract() -> Non
 
     assert model.imports is not None
     assert model._IMPORTS_CACHE_KEY in model.__dict__
-    store.update_model_reference(model, reference_name="Renamed")
+    store.update_model_reference(model, new_file_path=Path("renamed.py"))
     assert model._IMPORTS_CACHE_KEY not in model.__dict__
 
     assert model.imports is not None
@@ -1737,7 +1737,7 @@ def test_generation_store_render_cache_invalidation_supports_legacy_model_hook()
     model = ImportsOnlyModel()
     store = GenerationStore()
 
-    store.update_model_reference(model, class_name="After")  # ty: ignore[invalid-argument-type]
+    store.rename_model(model, class_name="After")  # ty: ignore[invalid-argument-type]
 
     assert model.class_name == "After"
     assert model.cache_cleared

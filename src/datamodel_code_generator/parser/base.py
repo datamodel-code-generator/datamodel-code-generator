@@ -4471,7 +4471,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 preserve_class_name=self._should_preserve_explicit_root_class_name(class_name),
             ).name
             if class_name != generated_name:
-                model.class_name = generated_name
+                self.generation_store.rename_model(model, class_name=generated_name)
                 renamed = True
             model_names[model.class_name] = model
 
@@ -4480,7 +4480,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             # check only first desired name
             if duplicate_name and duplicate_name not in model_names:
                 del model_names[model.class_name]
-                model.class_name = duplicate_name
+                self.generation_store.rename_model(model, class_name=duplicate_name)
                 model_names[duplicate_name] = model
                 renamed = True
 
@@ -5897,8 +5897,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         old_class_name, old_path = inner_model.class_name, inner_model.path
         inner_module_name = self.__emitting_module_name(inner_model, model_path_to_module_name)
-        self.generation_store.update_model_reference(
-            inner_model, class_name=root_model.class_name, new_path=root_model.reference.path
+        self.generation_store.rename_model(
+            inner_model,
+            class_name=root_model.class_name,
+            new_path=root_model.reference.path,
         )
         self._replaced_root_models[id(root_model)] = root_model
         model_path_to_module_name[inner_model.path] = inner_module_name
@@ -6656,7 +6658,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         self._renamed_types.setdefault(colliding_reference.path, []).append(
                             _RenamedType(source.class_name, colliding_reference.path)
                         )
-                        source.class_name = new_class_name
+                        self.generation_store.rename_model(source, class_name=new_class_name)
                         all_class_names.add(new_class_name)
                     else:
                         resolver._reset_for_reuse(reference_type_names)  # noqa: SLF001
@@ -6776,7 +6778,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for name in _family_field_names(_model_family(user, derived_models))
         )
         self._renamed_types.setdefault(reference.path, []).append(_RenamedType(source.class_name, reference.path))
-        source.class_name = resolver.add(["type"], source.class_name).name
+        self.generation_store.rename_model(source, class_name=resolver.add(["type"], source.class_name).name)
         class_names.add(source.class_name)
 
     def __family_hides_named_type(
@@ -7587,7 +7589,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if model.class_name == IMPORT_LITERAL.import_ and self.__alias_reused_variant_literal(models, imports):
                 continue
 
-            self.generation_store.update_model_reference(  # pragma: no cover
+            self.generation_store.rename_model(  # pragma: no cover
                 model,
                 reference_name=scoped_model_resolver.add(
                     path=get_special_path("imported_name", model.path.split("/")),
@@ -8074,7 +8076,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 old_path = model.path  # Save old path before updating
 
                 new_path = f"{internal_module_str}.{new_class_name}"
-                self.generation_store.update_model_reference(
+                self.generation_store.rename_model(
                     model,
                     reference_name=new_class_name,
                     new_path=new_path,

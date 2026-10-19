@@ -759,7 +759,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.CLASS_NAMES,),
         Phase.IMPORTS,
         FreezePoint.RENDER,
-        store_ops=("rename_model", "update_model_reference"),
+        store_ops=("rename_model",),
     ),
     AttributeFact(
         "DataModel", "keyword_only", FactKind.PRESENTATION, (RenderFact.KEYWORD_ONLY,), Phase.PARSE, FreezePoint.B2
@@ -802,7 +802,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.MODULE_MEMBERSHIP,),
         Phase.CROSS_MODULE,
         FreezePoint.RENDER,
-        store_ops=("move_model", "update_model_reference"),
+        store_ops=("move_model", "rename_model", "update_model_reference"),
     ),
     AttributeFact(
         "DataModel",
@@ -934,7 +934,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.MODULE_MEMBERSHIP,),
         Phase.CROSS_MODULE,
         FreezePoint.RENDER,
-        store_ops=("move_model", "update_model_reference"),
+        store_ops=("move_model", "rename_model", "update_model_reference"),
     ),
     AttributeFact(
         "Reference", "original_name", FactKind.PRESENTATION, (RenderFact.CLASS_NAMES,), Phase.PARSE, FreezePoint.RENDER
@@ -946,7 +946,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.CLASS_NAMES,),
         Phase.IMPORTS,
         FreezePoint.RENDER,
-        store_ops=("rename_model", "update_model_reference"),
+        store_ops=("rename_model",),
     ),
     AttributeFact(
         "Reference",

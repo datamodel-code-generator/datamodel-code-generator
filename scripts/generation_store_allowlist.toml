@@ -264,7 +264,6 @@ file_path = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__change_field_name"]
 alias = 1
-class_name = 1
 name = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__change_from_import"]
@@ -314,12 +313,6 @@ serialization_alias = 1
 use_default_with_required = 1
 use_serialization_alias = 1
 validation_aliases = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__rename_named_type"]
-class_name = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__replace_duplicate_name_in_module"]
-class_name = 2
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__replace_unique_list_to_set"]
 default = 1

@@ -14,7 +14,7 @@
 18 write _internal_template_data["config"].update(): _internal_template_data["config"].update() changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 19 write data_types.append(): use GenerationStore.replace_nested_data_type() or set_nested_data_types() instead of writing data_types.append()
 20 write data_types[:]: use GenerationStore.replace_nested_data_type() or set_nested_data_types() instead of writing data_types[:]
-21 write class_name: use GenerationStore.rename_model() or update_model_reference() instead of writing class_name
+21 write class_name: use GenerationStore.rename_model() instead of writing class_name
 22 write use_generic_container: use_generic_container changes an option copied at construction outside GenerationStore operations
 23 write _dedup_key_cache.clear(): _dedup_key_cache.clear() caches state on a mutable DataModel; keep derived values in a per-parse store memo
 24 write __dict__["_forced_field_assignment"]: __dict__["_forced_field_assignment"] changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations

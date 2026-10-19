@@ -651,7 +651,9 @@ path, class name or `id()`.
 
 The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_MUTATION_METHODS`, for example
 `replace_field_type`, `replace_nested_data_type`, `set_fields`, `set_base_classes`, `update_model_reference` and
-`redirect_reference_users`.
+`redirect_reference_users`. `rename_model` is the writer of class and reference names after the L2 settle; its callers apply six schemes (module,
+flattened module, field type, imported name, internal module and collapsed root), each with its own universe for
+uniqueness.
 
 `parser/_facts.py` says which attribute holds which fact. `ATTRIBUTE_FACTS` has one row per owner class and attribute,
 `__dict__` key, dict entry (`extras["kw_only"]`) or cached property, with its kind (`fact`, `presentation`, `cache` or
@@ -731,8 +733,6 @@ Current behaviour that a decision reading the index must allow for:
   were until another mutation. msgspec `unconstrain_union_members` (slice assignment on `data_types`), the unhashable
   default path of `__replace_unique_list_to_set` (`swap_with`), `process_const()` during collapse and
   `__assign_forward_reference_fields` change models this way.
-- Renames through the `class_name` setter (`__change_field_name`, `__rename_named_type`,
-  `__replace_duplicate_name_in_module`) do not go through `rename_model`.
 - Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
   function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
   to module imports (`ModuleContext.imports`, which go through the import ledger and its runtime check instead, see
