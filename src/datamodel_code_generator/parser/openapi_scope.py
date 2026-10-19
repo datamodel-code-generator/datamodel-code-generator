@@ -7,7 +7,7 @@ from collections.abc import Generator, Sequence  # noqa: TC003 - Public annotati
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
-from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, ClassVar, Literal, Protocol, TypeAlias, cast
 from urllib.parse import ParseResult  # noqa: TC003 - Public annotations support get_type_hints().
 
 from typing_extensions import Unpack, override
@@ -193,12 +193,9 @@ class ApiOpenAPIParser(OpenAPIParser):
         stripped = replace_non_word(path_name, self.target_python_version).lstrip("_") or "root"
         return super()._get_model_name(stripped, method, suffix)
 
-    def _declared(self, value: object, path: list[str]) -> SchemaLocation:
+    def _declared(self, value: object) -> SchemaLocation:
         """Return the location L0 recorded for a JSON object of a loaded document; a value below it is ``.child()``."""
-        if (location := self._raw_location(value)) is None:  # pragma: no cover - the walk reads only indexed objects
-            msg = "API_INVALID_OBJECT: the object is not part of a loaded document"
-            raise SchemaParseError(msg, path=path)
-        return location
+        return cast("SchemaLocation", self._raw_location(value))
 
     @contextmanager
     def _schema_frame(  # noqa: PLR0913
@@ -220,10 +217,8 @@ class ApiOpenAPIParser(OpenAPIParser):
                 tuple(path)
             ):
                 declaration, projection = parent.declaration, parent.projection
-            elif validated_schema is not None and validated_schema.schema_location is not None:
-                declaration = validated_schema.schema_location
             else:
-                declaration = self._declared(raw_schema, path)
+                declaration = cast("SchemaLocation", cast("JsonSchemaObject", validated_schema).schema_location)
         frame = ApiDeclarationFrame(
             declaration,
             raw,
@@ -307,7 +302,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             tokens = self._checked_pointer(raw, ref)
             reserved_path = [*self.model_resolver.current_root, "#", *tokens]
             candidate = tokens[-1] if tokens else name
-            declaration = self._declared(raw, path).child(*tokens)
+            declaration = self._declared(raw).child(*tokens)
             with self._schema_frame(candidate, reserved_path, raw, declaration=declaration):
                 super().parse_obj(candidate, obj, reserved_path)  # pyright: ignore[reportUnknownMemberType]
             self._processed_declarations.add(declaration)
@@ -331,7 +326,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     def _resolve_api_object(self, value: YamlValue, path: list[str]) -> _ApiObject:
         """Resolve each object-reference edge once, retaining its declaration identity."""
         raw = _mapping(value, path)
-        return self._follow_references(_ApiObject(self._declared(raw, path), self.raw_obj, raw), set())
+        return self._follow_references(_ApiObject(self._declared(raw), self.raw_obj, raw), set())
 
     def _follow_references(self, target: _ApiObject, seen: set[str]) -> _ApiObject:
         """Follow an object's references, each in the context of the document that spells it."""
@@ -388,7 +383,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         tokens = self._checked_pointer(raw, ref)
         if not tokens:
             reference = self.model_resolver.add_ref(ref)
-            with self._schema_frame(reference.name, [ref], raw, declaration=self._declared(raw, [ref])):
+            with self._schema_frame(reference.name, [ref], raw, declaration=self._declared(raw)):
                 self.parse_obj(reference.name, self._validate_schema_object(raw, [ref]), [ref])
             return
         models = self._get_model_by_json_pointer(raw, tokens, ref)
@@ -410,9 +405,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         path = [*path_parts, "#", *tokens]
         canonical = self.model_resolver.join_path(tuple(path))
         self._checked_pointer(raw, ref or canonical)
-        with self._schema_frame(
-            obj_name, path, raw, phase="file", declaration=self._declared(raw, path).child(*tokens)
-        ):
+        with self._schema_frame(obj_name, path, raw, phase="file", declaration=self._declared(raw).child(*tokens)):
             super()._parse_file(  # pyright: ignore[reportUnknownMemberType]
                 raw,
                 obj_name,
@@ -437,9 +430,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         components = _mapping(specification.get("components", {}), [*path_parts, "#/components"])
         schemas = _mapping(components.get("schemas", {}), ["#/components/schemas"])
         for key in schemas:
-            if (
-                declaration := self._declared(schemas, ["#/components/schemas"]).child(key)
-            ) in self._processed_declarations:
+            if (declaration := self._declared(schemas).child(key)) in self._processed_declarations:
                 continue
             self._parse_raw_member(key, schemas, key, [*path_parts, "#/components", "schemas", key])
             self._processed_declarations.add(declaration)
@@ -478,9 +469,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         for key, value in _mapping(components.get("callbacks", {}), ["#/components/callbacks"]).items():
             path = [*path_parts, "#/components", "callbacks", key]
             callback = _mapping(value, path)
-            self._walk_callback(
-                callback, path, self._get_model_name(key, "", "Callback"), self._declared(callback, path)
-            )
+            self._walk_callback(callback, path, self._get_model_name(key, "", "Callback"), self._declared(callback))
 
     def _collect_discriminator_document(self, raw: dict[str, YamlValue]) -> None:
         """Use the same canonical keys for parent registrations and subtype edges."""
@@ -622,7 +611,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 msg = "API_INVALID_OBJECT: schema and content are mutually exclusive"
                 raise SchemaParseError(msg, path=path)
             if "schema" in raw:
-                schema_path, declaration = [*path, "schema"], self._declared(raw, path).child("schema")
+                schema_path, declaration = [*path, "schema"], self._declared(raw).child("schema")
                 self._acquire_schema(name, raw["schema"], schema_path, declaration=declaration, role=role)
                 self._record_boolean_schema_location(raw["schema"], schema_path, declaration)
                 return
@@ -649,7 +638,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 medium = _mapping(value, media_path)
                 if (schema := self._get_raw_media_schema(medium)) is not None:
                     if schema.from_item_schema:
-                        declaration = self._declared(medium, media_path).child("itemSchema")
+                        declaration = self._declared(medium).child("itemSchema")
                         self._acquire_item_schema(
                             name,
                             medium["itemSchema"],
@@ -662,7 +651,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                             medium["itemSchema"], [*media_path, "itemSchema"], declaration
                         )
                     else:
-                        declaration = self._declared(medium, media_path).child("schema")
+                        declaration = self._declared(medium).child("schema")
                         self._acquire_schema(
                             name, schema.schema, [*media_path, "schema"], declaration=declaration, role=schema_role
                         )
@@ -678,7 +667,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 header = self._resolve_api_object(value, header_path)
                 if key.lower() == "content-type":
                     self._ignore_declaration(
-                        self._declared(target.value, target.path).child("headers", key),
+                        self._declared(target.value).child("headers", key),
                         "oas_header_ignored",
                         "header",
                         wire_name=key,
@@ -715,9 +704,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 msg = "API_INVALID_OBJECT: duplicate parameter identity"
                 raise SchemaParseError(msg, path=parameter_path)
             seen.add(key)
-            declarations.append(
-                ApiParameterDeclaration(self._declared(declared, parameter_path), declared, parameter, key, name)
-            )
+            declarations.append(ApiParameterDeclaration(self._declared(declared), declared, parameter, key, name))
         return declarations
 
     def walk_api_path_items(
@@ -743,7 +730,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             item = _mapping(value, path)
             target = self._resolve_api_object(item, path)
             candidate = self._get_model_name(item_name, "", "PathItem") if scope == "pathItems" else prefix or item_name
-            self._walk_path_item(target, self._declared(item, path), candidate, global_parameters)
+            self._walk_path_item(target, self._declared(item), candidate, global_parameters)
 
     def _walk_path_item(
         self,
@@ -850,7 +837,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 effective_operation = operation.copy()
             effective_operation["security"] = self._api_security
         frame = ApiDeclarationFrame(
-            self._declared(operation, path),
+            self._declared(operation),
             self.raw_obj,
             name,
             use_site,
@@ -960,7 +947,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             raise SchemaParseError(str(exc), path=path, original_error=exc) from exc
         encoding_path = [*path, "encoding"]
         if isinstance(parsed_media, str):
-            self._ignore_declaration(self._declared(medium, path).child("encoding"), parsed_media, owner, media=media)
+            self._ignore_declaration(self._declared(medium).child("encoding"), parsed_media, owner, media=media)
             return
         for property_name, value in _mapping(medium["encoding"], encoding_path).items():
             property_path = [*encoding_path, property_name]
@@ -970,7 +957,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 if isinstance(headers, dict):
                     for key in headers:
                         self._ignore_declaration(
-                            self._declared(encoding, property_path).child("headers", key),
+                            self._declared(encoding).child("headers", key),
                             "oas_non_multipart_encoding_headers",
                             owner,
                             media=media,
@@ -982,7 +969,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                 header = self._resolve_api_object(header_value, header_path)
                 if key.lower() == "content-type":
                     self._ignore_declaration(
-                        self._declared(encoding, property_path).child("headers", key),
+                        self._declared(encoding).child("headers", key),
                         "oas_header_ignored",
                         owner,
                         media=media,

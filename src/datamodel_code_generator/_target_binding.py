@@ -435,7 +435,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         """Record the declaration a reference object resolves to."""
         target = super()._resolve_api_object(value, path)
         if target.value is not value:
-            self.resolutions[self._declared(value, path)] = (target.declaration, target.value)
+            self.resolutions[self._declared(value)] = (target.declaration, target.value)
         return target
 
     def _walk_path_item(
@@ -469,7 +469,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.operations.append(
             _WalkedOperation(
                 operation,
-                self._declared(operation, path),
+                self._declared(operation),
                 use_site,
                 item.origin.child(*use_site.tokens[len(item.use_site.tokens) :]),
                 item,

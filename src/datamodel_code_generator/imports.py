@@ -91,17 +91,16 @@ class Imports(defaultdict[str | None, set[str]]):
 
     def append(self, imports: Import | Iterable[Import] | None) -> None:
         """Add one or more imports to the collection."""
-        if imports:
-            if isinstance(imports, Import):
-                imports = [imports]
-            for import_ in imports:
-                if import_.reference_path:
-                    self.reference_paths[import_.reference_path] = import_
-                key = self._storage_key(import_)
-                self[key[0]].add(key[1])
-                self.counter[key] += 1
-                if import_.alias:
-                    self.alias[key[0]][key[1]] = import_.alias
+        if isinstance(imports, Import):
+            imports = [imports]
+        for import_ in imports or ():
+            if import_.reference_path:
+                self.reference_paths[import_.reference_path] = import_
+            key = self._storage_key(import_)
+            self[key[0]].add(key[1])
+            self.counter[key] += 1
+            if import_.alias:
+                self.alias[key[0]][key[1]] = import_.alias
 
     def remove(self, imports: Import | Iterable[Import]) -> None:
         """Remove one or more imports from the collection."""
