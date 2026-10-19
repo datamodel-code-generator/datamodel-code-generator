@@ -44,15 +44,15 @@ SchemaPath: TypeAlias = tuple[str | int, ...]
 class ResourceChildren(Protocol):
     """The schema-valued keywords of a schema, by their path from it; examples, defaults and extensions are not."""
 
-    def __call__(self, schema: dict[str, Any], /) -> Iterable[tuple[SchemaPath, dict[str, Any]]]: ...
+    def __call__(self, schema: dict[str, Any], /) -> Iterable[tuple[SchemaPath, dict[str, Any]]]:
+        """Yield each schema-valued keyword below the schema with its path."""
 
 
 class ResourceIdentifier(Protocol):
     """The identifier keyword in force below a schema (from its `$schema`), and the identifier the schema declares."""
 
-    def __call__(
-        self, schema: dict[str, Any], id_field: str | None, /, *, is_root: bool
-    ) -> tuple[str | None, object]: ...
+    def __call__(self, schema: dict[str, Any], id_field: str | None, /, *, is_root: bool) -> tuple[str | None, object]:
+        """Return the identifier keyword in force and the identifier the schema declares."""
 
 
 @final
@@ -217,7 +217,6 @@ class SchemaGraphView(Protocol):
     @property
     def locations(self) -> Mapping[int, SchemaLocation]:
         """The location of every JSON object of the loaded documents, by identity."""
-        ...
 
 
 SCHEMA_GRAPH: Final[ContextVar[SchemaGraphView | None]] = ContextVar("schema_graph", default=None)
