@@ -10,6 +10,8 @@ from decimal import Decimal
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from typing_extensions import override
+
 from datamodel_code_generator._format_types import DateClassType, DatetimeClassType, PythonVersion, PythonVersionMin
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.imports import (
@@ -512,6 +514,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             return self.copy_data_type(self.strict_type_map[StrictTypes.bytes])
         return self.copy_data_type(self.type_map[types])
 
+    @override
     def get_data_type(  # noqa: PLR0911
         self,
         types: Types,
@@ -551,6 +554,7 @@ class PydanticV2DataType(DataType):
     _BASE_TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = ("list", "set", "dict")
 
     @staticmethod
+    @override
     def _wrap_discriminator_type_hint(type_: str, discriminator: str) -> str:
         return f"Annotated[{type_}, Field(discriminator={discriminator!r})]"
 
@@ -564,6 +568,7 @@ class PydanticV2DataType(DataType):
 
         return any(isinstance(child, DataModel) and child.fields for child in self.reference.children)
 
+    @override
     def _get_wrapped_reference_type_hint(self, type_: str) -> str:
         if self._should_wrap_with_serialize_as_any():
             return f"SerializeAsAny[{type_}]"
@@ -578,6 +583,7 @@ class PydanticV2DataType(DataType):
         return self._should_wrap_with_serialize_as_any()
 
     @property
+    @override
     def imports(self) -> Iterator[Import]:
         """Yield imports including SerializeAsAny when needed."""
         yield from super().imports
@@ -601,6 +607,7 @@ class EncodedBytesDataType(PydanticV2DataType):
         return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)
 
     @property
+    @override
     def type_hint(self) -> str:
         """Render the lengths and the base64 decoding inside an Annotated subscript."""
         keywords = ", ".join(f"{name}={represent_python_value(value)}" for name, value in (self.kwargs or {}).items())
@@ -610,6 +617,7 @@ class EncodedBytesDataType(PydanticV2DataType):
         )
 
     @property
+    @override
     def imports(self) -> Iterator[Import]:
         """Yield the annotation imports, which aliasing reaches."""
         yield from (import_ for import_ in super().imports if import_ != self.import_)
@@ -671,13 +679,14 @@ class DataTypeManager(_PydanticDataTypeManager):
             use_serialize_as_any,
         )
 
-    def type_map_factory(  # noqa: PLR0913, PLR0917
+    @override
+    def type_map_factory(
         self,
         data_type: type[DataType],
         strict_types: Sequence[StrictTypes],
         pattern_key: str,
         target_datetime_class: DatetimeClassType | None = None,
-        use_object_type: bool = False,  # noqa: FBT001, FBT002
+        use_object_type: bool = False,
         target_date_class: DateClassType | None = None,
     ) -> dict[Types, DataType]:
         """Create type mapping with Pydantic v2 specific types and datetime classes."""

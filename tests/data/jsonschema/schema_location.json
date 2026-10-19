@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "nested": {"type": "object", "properties": {"a": {"type": "string"}}},
+    "list": {"type": "array", "items": {"type": "object", "properties": {"b": {"type": "integer"}}}},
+    "tuple": {"type": "array", "prefixItems": [{"type": "object", "properties": {"t0": {"type": "string"}}}], "items": false},
+    "map": {"type": "object", "additionalProperties": {"type": "object", "properties": {"m": {"type": "string"}}}},
+    "patternMap": {
+      "type": "object",
+      "patternProperties": {"^x/y~z$": {"type": "object", "properties": {"p": {"type": "string"}}}}
+    },
+    "union": {
+      "oneOf": [
+        {"type": "object", "properties": {"u0": {"type": "string"}}},
+        {"type": "object", "properties": {"u1": {"type": "string"}}}
+      ]
+    },
+    "kind": {"type": "string", "enum": ["a", "b"]},
+    "constEnum": {"oneOf": [{"const": "x"}, {"const": "y"}]},
+    "allOfProp": {
+      "allOf": [{"$ref": "#/$defs/Base"}, {"type": "object", "properties": {"extra": {"type": "string"}}}]
+    },
+    "merged": {
+      "$ref": "#/$defs/Base",
+      "description": "use site",
+      "properties": {"local": {"type": "object", "properties": {"l": {"type": "string"}}}}
+    },
+    "siblingUnion": {
+      "$ref": "#/$defs/Choice",
+      "description": "use site",
+      "oneOf": [{"type": "object", "properties": {"c": {"type": "boolean"}}, "required": ["c"]}]
+    },
+    "external": {"$ref": "schema_location/ext.json#/$defs/Ext"},
+    "typeList": {"type": ["object", "array"], "properties": {"o": {"type": "string"}}, "items": {"type": "string"}},
+    "slash": {"$ref": "#/$defs/Slash~1Name"},
+    "tilde": {"$ref": "#/$defs/Tilde~0Name"},
+    "anything": {"$ref": "#/$defs/Anything"},
+    "embedded": {"$ref": "https://example.com/embedded"},
+    "common": {"$ref": "#/$defs/CommonUnion"},
+    "mergedRoot": {"$ref": "#/$defs/MergedRoot"},
+    "tree": {"$ref": "#/$defs/Tree"}
+  },
+  "$defs": {
+    "Base": {"type": "object", "properties": {"inner": {"type": "object", "properties": {"i": {"type": "string"}}}}},
+    "Choice": {
+      "oneOf": [
+        {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]},
+        {"type": "object", "properties": {"b": {"type": "integer"}}, "required": ["b"]}
+      ]
+    },
+    "Slash/Name": {"type": "object", "properties": {"s": {"type": "string"}}},
+    "Tilde~Name": {"type": "object", "properties": {"t": {"type": "string"}}},
+    "Anything": true,
+    "Embedded": {
+      "$id": "https://example.com/embedded",
+      "type": "object",
+      "properties": {"e": {"type": "object", "properties": {"x": {"type": "string"}}}}
+    },
+    "A": {"type": "object", "properties": {"a": {"type": "string"}}},
+    "B": {"type": "object", "properties": {"b": {"type": "string"}}},
+    "CommonUnion": {
+      "type": "object",
+      "properties": {"shared": {"type": "string"}},
+      "anyOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}]
+    },
+    "MergedRoot": {"allOf": [{"type": "string", "minLength": 1}, {"maxLength": 5}]},
+    "Tree": {
+      "type": "object",
+      "properties": {
+        "children": {"type": "array", "items": {"$ref": "#/$defs/Tree"}},
+        "meta": {"type": "object", "properties": {"m": {"type": "string"}}}
+      }
+    }
+  }
+}

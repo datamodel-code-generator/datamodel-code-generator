@@ -78,6 +78,7 @@ CLI_DOC_COLLECTION_OUTPUT = Path(__file__).parent / "cli_doc" / ".cli_doc_collec
 CI_SHARD_WEIGHTS_PATH = Path(__file__).parents[1] / "scripts" / "ci_shard_weights.json"
 CLI_DOC_SCHEMA_VERSION = 1
 TEST_DEFAULT_FORMATTER_ENV = "DATAMODEL_CODE_GENERATOR_TEST_DEFAULT_FORMATTER"
+CHECK_SCHEMA_LOCATIONS_ENV = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_LOCATIONS"
 BUILTIN_FORMATTER_VALUE = "builtin"
 TARGET_PYTHON = (3, 11)
 TARGET_TEST_ROOTS = (Path(__file__).parent / "api_generation", Path(__file__).parent / "model_codecs")
@@ -239,7 +240,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Register the cli_doc marker."""
+    """Register the cli_doc marker and check that every model parsed from a JSON document has a schema location."""
+    os.environ.setdefault(CHECK_SCHEMA_LOCATIONS_ENV, "1")
     config.addinivalue_line(
         "markers",
         "cli_doc(options, option_description, cli_args, input_schema=None, golden_output=None, "

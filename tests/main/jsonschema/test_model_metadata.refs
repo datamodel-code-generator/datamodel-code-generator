@@ -31,3 +31,25 @@ type_alias-python-only-api	main/jsonschema/root_model_metadata/type_alias.py
 type_alias-python-only-api	main/jsonschema/root_model_metadata/type_alias_runtime.txt
 type_alias-python-only-cli	main/jsonschema/root_model_metadata/type_alias.py
 type_alias-python-only-cli	main/jsonschema/root_model_metadata/type_alias_runtime.txt
+[test_schema_location_metadata]
+api	main/jsonschema/model_metadata/schema_location_metadata[api].metadata.txt
+api	main/jsonschema/model_metadata/schema_location_metadata[api].py
+asyncapi	main/jsonschema/model_metadata/schema_location_metadata[asyncapi].metadata.txt
+asyncapi	main/jsonschema/model_metadata/schema_location_metadata[asyncapi].py
+colliding-parse-paths	main/jsonschema/model_metadata/schema_location_metadata[colliding-parse-paths].metadata.txt
+colliding-parse-paths	main/jsonschema/model_metadata/schema_location_metadata[colliding-parse-paths].py
+graphql	main/jsonschema/model_metadata/schema_location_metadata[graphql].metadata.txt
+graphql	main/jsonschema/model_metadata/schema_location_metadata[graphql].py
+jsonschema	main/jsonschema/model_metadata/schema_location_metadata[jsonschema].metadata.txt
+jsonschema	main/jsonschema/model_metadata/schema_location_metadata[jsonschema].py
+openapi	main/jsonschema/model_metadata/schema_location_metadata[openapi].metadata.txt
+openapi	main/jsonschema/model_metadata/schema_location_metadata[openapi].py
+request-response	main/jsonschema/model_metadata/schema_location_metadata[request-response].metadata.txt
+request-response	main/jsonschema/model_metadata/schema_location_metadata[request-response].py
+yaml-aliases	main/jsonschema/model_metadata/schema_location_metadata[yaml-aliases].metadata.txt
+yaml-aliases	main/jsonschema/model_metadata/schema_location_metadata[yaml-aliases].py
+[test_schema_location_metadata_of_shared_dict_input]
+	main/jsonschema/model_metadata/schema_location_metadata_of_shared_dict_input.metadata.txt
+	main/jsonschema/model_metadata/schema_location_metadata_of_shared_dict_input.txt
+[test_schema_location_of_schemas_a_custom_parser_rewrites]
+fallback	main/jsonschema/model_metadata/schema_location_of_schemas_a_custom_parser_rewrites[fallback].metadata.txt

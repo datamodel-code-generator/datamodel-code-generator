@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence  # noqa: TC003 - Public annotations support get_type_hints().
-from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from urllib.parse import quote, unquote
+
+from typing_extensions import override
 
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
@@ -16,6 +17,7 @@ from datamodel_code_generator.reference import (
     SPECIAL_PATH_MARKER,
     ModelResolver,
     Reference,
+    SchemaLocation,
 )
 
 _BAD_PERCENT = re.compile(r"%(?![0-9a-fA-F]{2})")
@@ -71,12 +73,8 @@ def canonical_ref(ref: str) -> str:
     return canonical + marker + generated
 
 
-@dataclass(frozen=True, slots=True)
-class ApiDeclarationId:
-    """Identify an actual declaration independently of its generated Python name."""
-
-    document: str
-    tokens: tuple[str, ...]
+ApiDeclarationId = SchemaLocation
+"""Identify an actual declaration independently of its generated Python name: its document and pointer tokens."""
 
 
 class ApiModelResolver(ModelResolver):
@@ -92,6 +90,7 @@ class ApiModelResolver(ModelResolver):
         """Borrow only documents already acquired by the model engine."""
         return {}
 
+    @override
     def resolve_ref(self, path: Sequence[str] | str) -> str:
         """Canonicalize pointers before the existing file/base/ID resolution."""
         original = path if isinstance(path, str) else self.join_path(tuple(path))
@@ -106,12 +105,14 @@ class ApiModelResolver(ModelResolver):
             check_pointer_interpretation(raw, original, resolved)
         return resolved
 
-    def add_ref(self, ref: str, resolved: bool = False) -> Reference:  # noqa: FBT001, FBT002
+    @override
+    def add_ref(self, ref: str, resolved: bool = False) -> Reference:
         """Reserve names from canonical spelling exactly once per declaration."""
         canonical = canonical_ref(ref) if resolved else self.resolve_ref(ref)
         return super().add_ref(canonical, resolved=True)
 
     @staticmethod
+    @override
     @lru_cache(maxsize=4096)
     def join_path(path: tuple[str, ...]) -> str:
         """Encode raw tokens after the compiler's document/pointer boundary."""

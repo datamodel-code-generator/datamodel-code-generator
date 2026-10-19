@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Anything",
+      "name": "Anything",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/Anything",
+      "source_path": [
+        "components",
+        "schemas",
+        "Anything"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "Any",
+          "required": true
+        }
+      ]
+    },
+    {
+      "class_name": "Settings",
+      "name": "Settings",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/Profile/properties/settings",
+      "source_path": [
+        "components",
+        "schemas",
+        "Profile",
+        "properties",
+        "settings"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "theme",
+          "alias": "theme",
+          "original_name": "theme",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Profile",
+      "name": "Profile",
+      "module": "",
+      "source_ref": "schema_location.yaml#/components/schemas/Profile",
+      "source_path": [
+        "components",
+        "schemas",
+        "Profile"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "settings",
+          "alias": "settings",
+          "original_name": "settings",
+          "type": "Settings | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Address",
+      "name": "Address",
+      "module": "",
+      "source_ref": "schema_location.yaml#/channels/user~1signup/messages/userSignedUp/payload/properties/address",
+      "source_path": [
+        "channels",
+        "user/signup",
+        "messages",
+        "userSignedUp",
+        "payload",
+        "properties",
+        "address"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "street",
+          "alias": "street",
+          "original_name": "street",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Tag",
+      "name": "Tag",
+      "module": "",
+      "source_ref": "schema_location.yaml#/channels/user~1signup/messages/userSignedUp/payload/properties/tags/items",
+      "source_path": [
+        "channels",
+        "user/signup",
+        "messages",
+        "userSignedUp",
+        "payload",
+        "properties",
+        "tags",
+        "items"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "label",
+          "alias": "label",
+          "original_name": "label",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "UserSignupUserSignedUpPayload",
+      "name": "UserSignupUserSignedUpPayload",
+      "module": "",
+      "source_ref": "schema_location.yaml#/channels/user~1signup/messages/userSignedUp/payload",
+      "source_path": [
+        "channels",
+        "user/signup",
+        "messages",
+        "userSignedUp",
+        "payload"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "address",
+          "alias": "address",
+          "original_name": "address",
+          "type": "Address | None",
+          "required": false
+        },
+        {
+          "name": "tags",
+          "alias": "tags",
+          "original_name": "tags",
+          "type": "list[Tag] | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "UserSignupUserSignedUpHeaders",
+      "name": "UserSignupUserSignedUpHeaders",
+      "module": "",
+      "source_ref": "schema_location.yaml#/channels/user~1signup/messages/userSignedUp/headers",
+      "source_path": [
+        "channels",
+        "user/signup",
+        "messages",
+        "userSignedUp",
+        "headers"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "trace",
+          "alias": "trace",
+          "original_name": "trace",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "AuditEventsAuditEventPayload",
+      "name": "AuditEventsAuditEventPayload",
+      "module": "",
+      "source_ref": "schema_location.yaml#/channels/audit~1events/messages/auditEvent/payload/schema",
+      "source_path": [
+        "channels",
+        "audit/events",
+        "messages",
+        "auditEvent",
+        "payload",
+        "schema"
+      ],
+      "title": "AuditEvent",
+      "fields": [
+        {
+          "name": "eventId",
+          "alias": "eventId",
+          "original_name": "eventId",
+          "type": "str",
+          "required": true
+        },
+        {
+          "name": "severity",
+          "alias": "severity",
+          "original_name": "severity",
+          "type": "int",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

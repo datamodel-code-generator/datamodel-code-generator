@@ -1,0 +1,154 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Inner",
+      "name": "Inner",
+      "module": "",
+      "source_ref": "#/$defs/A/properties/inner",
+      "source_path": [
+        "$defs",
+        "A",
+        "properties",
+        "inner"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "y",
+          "alias": "y",
+          "original_name": "y",
+          "type": "int | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "A",
+      "name": "A",
+      "module": "",
+      "source_ref": "#/$defs/A",
+      "source_path": [
+        "$defs",
+        "A"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Inner | None",
+          "required": false
+        },
+        {
+          "name": "kind",
+          "alias": "kind",
+          "original_name": "kind",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "B",
+      "name": "B",
+      "module": "",
+      "source_ref": "#/$defs/B",
+      "source_path": [
+        "$defs",
+        "B"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Inner | None",
+          "required": false
+        },
+        {
+          "name": "kind",
+          "alias": "kind",
+          "original_name": "kind",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Z",
+      "name": "Z",
+      "module": "",
+      "source_ref": "#/$defs/C/properties/z",
+      "source_path": [
+        "$defs",
+        "C",
+        "properties",
+        "z"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "y",
+          "alias": "y",
+          "original_name": "y",
+          "type": "int | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "C",
+      "name": "C",
+      "module": "",
+      "source_ref": "#/$defs/C",
+      "source_path": [
+        "$defs",
+        "C"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "z",
+          "alias": "z",
+          "original_name": "z",
+          "type": "Z | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Model",
+      "name": "Model",
+      "module": "",
+      "source_ref": "#",
+      "source_path": [],
+      "title": null,
+      "fields": [
+        {
+          "name": "a",
+          "alias": "a",
+          "original_name": "a",
+          "type": "A | None",
+          "required": false
+        },
+        {
+          "name": "b",
+          "alias": "b",
+          "original_name": "b",
+          "type": "B | None",
+          "required": false
+        },
+        {
+          "name": "c",
+          "alias": "c",
+          "original_name": "c",
+          "type": "C | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

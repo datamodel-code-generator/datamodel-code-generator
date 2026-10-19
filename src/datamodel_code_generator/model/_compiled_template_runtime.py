@@ -10,6 +10,8 @@ from collections.abc import Iterable, Iterator, Mapping
 from pprint import pformat
 from typing import Any
 
+from typing_extensions import override
+
 
 class _Missing:
     """The subset of Jinja's undefined value needed by built-in templates."""
@@ -25,9 +27,11 @@ class _Missing:
     def __len__(self) -> int:
         return 0
 
+    @override
     def __str__(self) -> str:
         return ""
 
+    @override
     def __repr__(self) -> str:
         return "Undefined"
 
@@ -70,6 +74,7 @@ class Namespace:
     def __getattr__(self, name: str) -> Any:
         return self._values.get(name, MISSING)
 
+    @override
     def __setattr__(self, name: str, value: Any) -> None:
         self._values[name] = value
 

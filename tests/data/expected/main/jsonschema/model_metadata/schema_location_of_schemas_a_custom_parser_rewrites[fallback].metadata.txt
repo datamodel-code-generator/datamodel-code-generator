@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Owner",
+      "name": "Owner",
+      "module": "",
+      "source_ref": "schema_location_alias.yaml#/components/schemas/Cat/owner#-datamodel-code-generator-#-object-#-special-#",
+      "source_path": [
+        "components",
+        "schemas",
+        "Cat",
+        "owner#-datamodel-code-generator-#-object-#-special-#"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "Optional[str]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Cat",
+      "name": "Cat",
+      "module": "",
+      "source_ref": "schema_location_alias.yaml#/components/schemas/Cat",
+      "source_path": [
+        "components",
+        "schemas",
+        "Cat"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "kind",
+          "alias": "kind",
+          "original_name": "kind",
+          "type": "Literal['cat']",
+          "required": false
+        },
+        {
+          "name": "owner",
+          "alias": "owner",
+          "original_name": "owner",
+          "type": "Optional[Owner]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Dog",
+      "name": "Dog",
+      "module": "",
+      "source_ref": "schema_location_alias.yaml#/components/schemas/Dog",
+      "source_path": [
+        "components",
+        "schemas",
+        "Dog"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "kind",
+          "alias": "kind",
+          "original_name": "kind",
+          "type": "Literal['dog']",
+          "required": false
+        },
+        {
+          "name": "owner",
+          "alias": "owner",
+          "original_name": "owner",
+          "type": "Optional[Owner]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Inner",
+      "name": "Inner",
+      "module": "",
+      "source_ref": "schema_location_alias.yaml#/components/schemas/A/inner#-datamodel-code-generator-#-object-#-special-#",
+      "source_path": [
+        "components",
+        "schemas",
+        "A",
+        "inner#-datamodel-code-generator-#-object-#-special-#"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "y",
+          "alias": "y",
+          "original_name": "y",
+          "type": "Optional[int]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "A",
+      "name": "A",
+      "module": "",
+      "source_ref": "schema_location_alias.yaml#/components/schemas/A",
+      "source_path": [
+        "components",
+        "schemas",
+        "A"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "x",
+          "alias": "x",
+          "original_name": "x",
+          "type": "Optional[str]",
+          "required": false
+        },
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Optional[Inner]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "B",
+      "name": "B",
+      "module": "",
+      "source_ref": "schema_location_alias.yaml#/components/schemas/B",
+      "source_path": [
+        "components",
+        "schemas",
+        "B"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "x",
+          "alias": "x",
+          "original_name": "x",
+          "type": "Optional[str]",
+          "required": false
+        },
+        {
+          "name": "inner",
+          "alias": "inner",
+          "original_name": "inner",
+          "type": "Optional[Inner]",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Pet",
+      "name": "Pet",
+      "module": "",
+      "source_ref": "schema_location_alias.yaml#/components/schemas/Pet",
+      "source_path": [
+        "components",
+        "schemas",
+        "Pet"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "root",
+          "alias": "root",
+          "original_name": null,
+          "type": "Union[Cat, Dog]",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
