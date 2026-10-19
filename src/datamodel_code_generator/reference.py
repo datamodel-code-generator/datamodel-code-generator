@@ -291,6 +291,7 @@ class SchemaLocation:
         """Return the RFC 6901 string form of the tokens, without percent-encoding."""
         return "".join(f"/{token.replace('~', '~0').replace('/', '~1')}" for token in self.tokens)
 
+    @override
     def __str__(self) -> str:
         """Return the document and the JSON Pointer joined by ``#``."""
         return f"{self.document}#{self.pointer}"
