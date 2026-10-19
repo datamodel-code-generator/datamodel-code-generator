@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 from pydantic import Field, TypeAdapter, model_validator
@@ -240,9 +240,8 @@ def test_schema_location_of_fields_a_schema_object_subclass_adds(tmp_path: Path)
         SCHEMA_OBJECT_TYPE = ExtensionSchema
 
         def parse_object(self, name: str, obj: JsonSchemaObject, path: list[str], *args: Any, **kwargs: Any) -> Any:
-            if isinstance(obj, ExtensionSchema):
-                for index, child in enumerate(obj.children):
-                    super().parse_object(f"{name}Child{index}", child, [*path, "children", str(index)])
+            for index, child in enumerate(cast(ExtensionSchema, obj).children):
+                super().parse_object(f"{name}Child{index}", child, [*path, "children", str(index)])
             return super().parse_object(name, obj, path, *args, **kwargs)
 
     (input_path := tmp_path / "extension.json").write_text(
