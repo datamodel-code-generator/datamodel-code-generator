@@ -1,8 +1,9 @@
 {
   "jsonschema/root_alias_constraints/lookaround.json": {
+    "floor": "2.5",
     "2.0.3": {
-      "acceptance": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators",
-      "round_trip": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
+      "acceptance": null,
+      "round_trip": null
     },
     "2.5.0": {
       "acceptance": null,
@@ -11,9 +12,10 @@
     "dataclass": null
   },
   "jsonschema/rust_unsupported_pattern.json": {
+    "floor": "2.5",
     "2.0.3": {
-      "acceptance": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to backreference and lookaround pattern validators",
-      "round_trip": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to backreference and lookaround pattern validators"
+      "acceptance": null,
+      "round_trip": null
     },
     "2.5.0": {
       "acceptance": null,
@@ -22,9 +24,10 @@
     "dataclass": null
   },
   "openapi/pattern_backreference.yaml::components.schemas.Doubled": {
+    "floor": "2.5",
     "2.0.3": {
-      "acceptance": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI backreference pattern validators",
-      "round_trip": "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI backreference pattern validators"
+      "acceptance": null,
+      "round_trip": null
     },
     "2.5.0": {
       "acceptance": null,
@@ -32,7 +35,44 @@
     },
     "dataclass": "OpenAPI pydantic dataclass full-matrix coverage remains representative until backend-specific alias, default, and composition limits are reduced"
   },
+  "jsonschema/schema_validators_runtime_root_cross_module/a.json": {
+    "floor": "2.5",
+    "2.0.3": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": null
+  },
+  "jsonschema/collapse_root_models_name_strategy_direct_refs.json": {
+    "floor": "2.10",
+    "2.0.3": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": "pydantic 2.7 dataclass schema construction cannot resolve generated collapsed-root definitions"
+  },
+  "jsonschema/selective_constraint_kwargs.json": {
+    "floor": "2.14",
+    "2.0.3": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "2.5.0": {
+      "acceptance": null,
+      "round_trip": null
+    },
+    "dataclass": null
+  },
   "jsonschema/compound_property_names/enum_oneof.json": {
+    "floor": null,
     "2.0.3": {
       "acceptance": null,
       "round_trip": "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
@@ -44,6 +84,7 @@
     "dataclass": null
   },
   "jsonschema/compound_property_names/enum_refs.json": {
+    "floor": null,
     "2.0.3": {
       "acceptance": null,
       "round_trip": "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"
@@ -55,6 +96,7 @@
     "dataclass": null
   },
   "jsonschema/compound_property_names/extra_enum_disjoint.json": {
+    "floor": null,
     "2.0.3": {
       "acceptance": null,
       "round_trip": "Pydantic before 2.5.0 emits JSON-mode serializer warnings for enum dictionary keys"

@@ -1,8 +1,22 @@
 {
-  "jsonschema/root_alias_constraints/lookaround.json": "a",
-  "jsonschema/rust_unsupported_pattern.json": {"pair": "aa", "doubled": "aa", "plain": "abc", "holder": {"name": "abc"}},
-  "openapi/pattern_backreference.yaml::components.schemas.Doubled": "aa",
-  "jsonschema/compound_property_names/enum_oneof.json": {"a": 1},
-  "jsonschema/compound_property_names/enum_refs.json": {"a": 1},
-  "jsonschema/compound_property_names/extra_enum_disjoint.json": {"a": 1}
+  "jsonschema/root_alias_constraints/lookaround.json": {"valid": "a", "invalid": ["b"]},
+  "jsonschema/rust_unsupported_pattern.json": {
+    "valid": {"pair": "aa", "doubled": "aa", "plain": "abc", "holder": {"name": "abc"}},
+    "invalid": [{"pair": "aa", "doubled": "ab", "plain": "abc", "holder": {"name": "abc"}}]
+  },
+  "openapi/pattern_backreference.yaml::components.schemas.Doubled": {"valid": "aa", "invalid": ["ab"]},
+  "jsonschema/schema_validators_runtime_root_cross_module/a.json": {"valid": {"mixed": "abc"}, "invalid": [{"mixed": "b"}]},
+  "jsonschema/collapse_root_models_name_strategy_direct_refs.json": {
+    "valid": {"wrapper": {"value": "a"}, "container": {"inner": {"value": "b"}}},
+    "invalid": [{"wrapper": {}}],
+    "args": ["--use-type-alias"]
+  },
+  "jsonschema/selective_constraint_kwargs.json": {
+    "valid": {"count": 2, "name": "AB", "payload": "ABCD", "enabled": true},
+    "invalid": [{"count": 2, "name": "AB", "payload": "abcd", "enabled": true}],
+    "args": ["--field-constraints"]
+  },
+  "jsonschema/compound_property_names/enum_oneof.json": {"valid": {"a": 1}, "invalid": []},
+  "jsonschema/compound_property_names/enum_refs.json": {"valid": {"a": 1}, "invalid": []},
+  "jsonschema/compound_property_names/extra_enum_disjoint.json": {"valid": {"a": 1}, "invalid": []}
 }

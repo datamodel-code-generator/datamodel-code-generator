@@ -12,6 +12,8 @@ from dataclasses import dataclass, is_dataclass
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from packaging.version import Version
+from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import TypeAdapter, ValidationError
 
 from datamodel_code_generator import enable_parsed_source_cache
@@ -32,6 +34,18 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from .models import SchemaCase
+
+
+_PYDANTIC_FLOOR_STATEMENT = re.compile(r"The generated models need pydantic>=(?P<minimum>\d+(?:\.\d+)*)")
+"""The statement of the Pydantic release that generated models need above the target, with that release."""
+
+
+def _stated_floor(recorded: list[warnings.WarningMessage]) -> str | None:
+    """Return the release that the recorded statement of a generation names, or None."""
+    return next(
+        (match["minimum"] for record in recorded if (match := _PYDANTIC_FLOOR_STATEMENT.match(str(record.message)))),
+        None,
+    )
 
 
 def _safe_filename(case_id: str) -> str:
@@ -221,8 +235,8 @@ def generate_payload_runtime(
 ) -> PayloadRuntime:
     """Generate or load the backend runtime for a payload validation case.
 
-    The statement of the Pydantic release that the models need above the payload target is not a failure: the
-    exclusion tables classify the runtimes below it.
+    The generation's statement of the Pydantic release that the models need above the payload target is kept for
+    ``runtime_below_stated_floor``, not raised.
     """
     runtimes: dict[tuple[str, str], PayloadRuntime] = generated_model_cache["adapters"]
     cache_key = (backend.value, case.id)
@@ -237,11 +251,14 @@ def generate_payload_runtime(
     with warnings.catch_warnings(record=True) as captured:
         if warning_file:
             warnings.simplefilter("always", UserWarning)
-        warnings.filterwarnings("ignore", "The generated models need", UserWarning)
+        warnings.filterwarnings("always", _PYDANTIC_FLOOR_STATEMENT.pattern, UserWarning)
         return_code = _run_payload_codegen(_payload_codegen_args(case, input_path, output_path, backend))
+    generated_model_cache.setdefault("floors", {})[cache_key] = _stated_floor(captured)
     if warning_file:
+        messages = [str(record.message) for record in captured]
         assert_output(
-            json.dumps([str(warning.message) for warning in captured], indent=2) + "\n",
+            json.dumps([message for message in messages if not _PYDANTIC_FLOOR_STATEMENT.match(message)], indent=2)
+            + "\n",
             EXPECTED_MAIN_PATH / warning_file,
         )
     if return_code != Exit.OK:
@@ -266,25 +283,54 @@ def generate_payload_adapter(
     return runtime.adapter
 
 
+def runtime_below_stated_floor(
+    case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend
+) -> str | None:
+    """Return the release that the case's generation stated its models need when the installed Pydantic is older."""
+    floor = generated_model_cache.get("floors", {}).get((backend.value, case.id))
+    return floor if floor is not None and Version(PYDANTIC_VERSION) < Version(floor) else None
+
+
+def stated_pydantic_floor(case: SchemaCase, directory: Path, backend: PayloadBackend, *args: str) -> str | None:
+    """Generate the case with the arguments added and return the Pydantic release its generation states, or None."""
+    input_path = _write_input_schema(case, directory)
+    with warnings.catch_warnings(record=True) as captured:
+        warnings.filterwarnings("always", _PYDANTIC_FLOOR_STATEMENT.pattern, UserWarning)
+        _run_payload_codegen([*_payload_codegen_args(case, input_path, directory / "model.py", backend), *args])
+    return _stated_floor(captured)
+
+
+def _skip_below_stated_floor(case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend) -> None:
+    """Skip a case whose generation states that its models need a newer Pydantic than the installed one."""
+    if (floor := runtime_below_stated_floor(case, generated_model_cache, backend)) is not None:
+        pytest.skip(f"{case.id} [{backend.value}]: the generated models need pydantic>={floor}")
+
+
 def load_generated_payload_runtime(
     case: SchemaCase,
     generated_model_cache: dict[str, Any],
     backend: PayloadBackend,
 ) -> PayloadRuntime:
-    """Generate or load the runtime validator for a payload validation case."""
+    """Generate or load the runtime validator for a payload validation case, skipping it below its stated floor."""
     try:
-        return generate_payload_runtime(case, generated_model_cache, backend)
+        runtime = generate_payload_runtime(case, generated_model_cache, backend)
     except PayloadAdapterError as exc:  # pragma: no cover
+        _skip_below_stated_floor(case, generated_model_cache, backend)
         pytest.fail(f"{case.id} [{backend.value}]: {exc}")
         raise AssertionError from exc
+    _skip_below_stated_floor(case, generated_model_cache, backend)
+    return runtime
 
 
 def load_generated_payload_adapter(
     case: SchemaCase, generated_model_cache: dict[str, Any], backend: PayloadBackend = PayloadBackend.PYDANTIC_V2
 ) -> TypeAdapter[Any]:
-    """Generate or load the Pydantic v2 adapter for a payload validation case."""
+    """Generate or load the Pydantic v2 adapter for a payload validation case, skipping it below its stated floor."""
     try:
-        return generate_payload_adapter(case, generated_model_cache, backend)
+        adapter = generate_payload_adapter(case, generated_model_cache, backend)
     except PayloadAdapterError as exc:  # pragma: no cover
+        _skip_below_stated_floor(case, generated_model_cache, backend)
         pytest.fail(f"{case.id}: {exc}")
         raise AssertionError from exc
+    _skip_below_stated_floor(case, generated_model_cache, backend)
+    return adapter

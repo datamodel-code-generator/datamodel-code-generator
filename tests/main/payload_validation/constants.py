@@ -449,82 +449,6 @@ LITERAL_PATTERN_INTERSECTION_CASE_IDS = (
     "jsonschema/allof_literal_patterns/unknown_escape.json",
     "jsonschema/allof_literal_patterns/unknown_newline_escape.json",
 )
-PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES: dict[str, str] = {
-    **dict.fromkeys(
-        LITERAL_PATTERN_INTERSECTION_CASE_IDS,
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to intersected literal patterns",
-    ),
-    **dict.fromkeys(
-        (
-            "jsonschema/collapse_root_models_lookaround.json",
-            "jsonschema/collapse_root_models_lookaround_inheritance.json",
-            "jsonschema/collapse_root_models_lookaround_root.json",
-        ),
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to collapsed lookaround pattern validators",
-    ),
-    "jsonschema/lookaround_anyof_nullable.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "jsonschema/lookaround_dict.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "jsonschema/lookaround_mixed_constraints.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "jsonschema/lookaround_union_types.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "jsonschema/nested_lookaround_array.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to nested lookaround pattern validators"
-    ),
-    "jsonschema/root_alias_constraints/lookaround.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "jsonschema/schema_validators_runtime_root_cross_module/a.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    "openapi/pattern_lookaround.yaml::components.schemas.info": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI lookaround pattern validators"
-    ),
-    "jsonschema/rust_unsupported_pattern.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to backreference and lookaround pattern validators"
-    ),
-    "openapi/pattern_backreference.yaml::components.schemas.Doubled": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to OpenAPI backreference pattern validators"
-    ),
-    "jsonschema/type_alias_annotated/shadowed_imports.json": (
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators"
-    ),
-    **dict.fromkeys(
-        (
-            "jsonschema/type_alias_lookaround/annotated_root.json",
-            "jsonschema/type_alias_lookaround/inherited.json",
-            "jsonschema/type_alias_lookaround/nested.json",
-            "jsonschema/type_alias_lookaround/siblings.json",
-            "jsonschema/type_alias_lookaround/tree/schema_a.json",
-            "jsonschema/type_alias_lookaround/tree/schema_b.json",
-        ),
-        "Pydantic before 2.5.0 cannot apply regex_engine='python-re' to lookaround pattern validators",
-    ),
-}
-PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS = (
-    "jsonschema/collapse_root_models_lookaround.json",
-    "jsonschema/collapse_root_models_lookaround_inheritance.json",
-    "jsonschema/collapse_root_models_lookaround_root.json",
-    "jsonschema/lookaround_anyof_nullable.json",
-    "jsonschema/lookaround_dict.json",
-    "jsonschema/lookaround_union_types.json",
-    "jsonschema/nested_lookaround_array.json",
-    "jsonschema/rust_unsupported_pattern.json",
-    "jsonschema/schema_validators_runtime_root_cross_module/a.json",
-    "jsonschema/type_alias_lookaround/annotated_root.json",
-    "jsonschema/type_alias_lookaround/inherited.json",
-    "jsonschema/type_alias_lookaround/nested.json",
-    "jsonschema/type_alias_lookaround/siblings.json",
-    "jsonschema/type_alias_lookaround/tree/schema_a.json",
-    "jsonschema/type_alias_lookaround/tree/schema_b.json",
-)
-"""Patterns for Python's engine a dataclass reaches: its config selects the engine, so they need Pydantic 2.5."""
 PYDANTIC_V2_DATACLASS_BARE_LOOKAROUND_ALIAS_CASE_IDS = (
     *LITERAL_PATTERN_INTERSECTION_CASE_IDS,
     "jsonschema/lookaround_mixed_constraints.json",
@@ -540,16 +464,16 @@ PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[s
 }
 PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     PayloadBackend.PYDANTIC_V2: {
-        **PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES,
         "openapi/allof_with_required_inherited_coverage.yaml::components.schemas.MultipleOfBase": (
             "Pydantic before 2.5.0 can reject schema-valid inherited Decimal multipleOf values"
         ),
     },
-    PayloadBackend.PYDANTIC_V2_DATACLASS: {
-        case_id: PYDANTIC_V2_LEGACY_LOOKAROUND_EXCLUDED_CASES[case_id]
-        for case_id in PYDANTIC_V2_DATACLASS_LEGACY_LOOKAROUND_CASE_IDS
-    },
 }
+"""Pydantic before 2.5 classifications that no generated construct explains.
+
+Cases whose generation states that their models need a newer Pydantic, such as ``regex_engine`` (2.5), are skipped
+from that statement instead of from a table (``runtime_below_stated_floor``).
+"""
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_EXCLUDED_CASES: dict[PayloadBackend, dict[str, str]] = {
     backend: dict.fromkeys(
         PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,

@@ -10,6 +10,8 @@ from .codegen import (
     generate_payload_runtime,
     load_generated_payload_adapter,
     load_generated_payload_runtime,
+    runtime_below_stated_floor,
+    stated_pydantic_floor,
 )
 from .conformance import (
     BACKEND_ACCEPTANCE_EXCLUDED_CASES,
@@ -82,6 +84,8 @@ __all__ = [
     "load_generated_payload_runtime",
     "payload_strategy",
     "rejection_constraint_ids",
+    "runtime_below_stated_floor",
     "source_schema_validator",
+    "stated_pydantic_floor",
     "validate_with_source_schema",
 ]

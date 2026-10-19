@@ -823,7 +823,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "marker-reason:tests/main/test_payload_validation.py::test_pydantic_v2_dataclass_legacy_exclusions_are_version_gated",
         "marker-reason:tests/main/test_payload_validation.py::test_pydantic_v2_dataclass_type_alias_exclusion_is_backend_specific",
         "marker-reason:tests/main/test_payload_validation.py::test_pydantic_v2_float_multiple_of_exclusions_are_version_gated",
-        "marker-reason:tests/main/test_payload_validation.py::test_pydantic_v2_legacy_runtime_cross_module_lookaround_exclusions_are_version_gated",
         "marker-reason:tests/main/test_payload_validation.py::test_pydantic_v2_legacy_runtime_exclusions_are_version_gated",
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_parser_neutral_field_uses_internal_constructor",
         "marker-reason:tests/model/pydantic_v2/test_base_model.py::test_parser_simple_field_call_keywords_match_model_fields",
