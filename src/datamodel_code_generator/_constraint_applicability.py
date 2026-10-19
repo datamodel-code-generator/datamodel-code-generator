@@ -5,20 +5,27 @@ each Python or library type takes in each output model, the classes that enforce
 the ``con*`` types and ``msgspec.Meta`` take, and the rows that keep today's answer where two sites disagree
 (``legacy-*``; a fix of that output deletes its row). Every function is pure: facts in, keywords out. The adapters
 read the live objects: ``types.py:DataTypeManager.constraint_keywords`` and ``type_constraint_keywords`` (emitted
-types), ``parser/jsonschema.py:JsonSchemaParser._get_constraint_values`` (the L1 split),
+types), ``parser/jsonschema.py:JsonSchemaParser._split_constraint_values`` and ``_keywords_taken`` (the L1 split),
 ``parser/base.py:Parser._decide_overridden_constraints`` (``--type-overrides``) and
 ``model/msgspec.py:DataModelField._meta_keywords`` (``msgspec.Meta``).
 
-Legacy rows:
+Legacy rows, each named by the function that decides it:
 
-* ``legacy-declared-string-keywords-kept``: a keyword of a declared string schema stays on the field whatever type is
-  emitted (``date-time`` + ``maxLength`` writes ``max_length`` on a datetime); only number keywords ask the emitted
-  type (``number_keywords_taken``).
-* ``legacy-consumed-at-object-property``: a field leaves out the keyword its zero-bound class enforces
-  (``OutputKeywords.zero_bound_classes``) only at an object property whose own type is that class, not at a root, an
-  item or a union member.
-* ``legacy-all-of-root-format-kinds``: an ``allOf`` root merged with constraints keeps the keywords of the kinds
-  ``all_of_root_keyword_kinds`` names for its format, while the field split keeps the declared string keywords.
+* ``legacy-consumed-at-object-property`` (``property_consumed_keywords``): a field leaves out the keyword its zero-bound
+  class enforces (``OutputKeywords.zero_bound_classes``) only at an object property whose own type is that class, not
+  at a root, an item or a union member.
+* ``legacy-all-of-root-format-kinds`` (``all_of_root_keyword_kinds``): an ``allOf`` root merged with constraints keeps
+  the keywords of the kinds its format names, silently, before the field split decides the declared ones by the
+  emitted type.
+* ``legacy-undeclared-keywords-off-literal`` (``undeclared_keywords_taken``; G03a part A2 removes it): the
+  ``Literal`` of a ``const`` or an ``enum`` takes no keyword of a kind its schema does not declare, though it takes
+  those of its values' type for a declared one.
+* ``legacy-override-keeps-string-keywords`` (``overridden_declared_constraints``; G03b removes it):
+  ``--type-overrides`` decides the string keywords a field left out again, but keeps those the replaced type took
+  whatever the override type takes.
+* ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; G03b removes it with the render-time
+  drop): a type that names ``AnyUrl`` takes every keyword a declared string holds, and the Pydantic outputs leave out
+  every constraint of a field whose type holds it outside a container when they write the field, with a warning.
 
 This module is a leaf (the standard library, ``typing_extensions``, ``enums`` and ``_requirements``): ``types.py``
 builds the public tables of ``DataTypeManager`` from it while it is imported, and the model package imports
@@ -62,23 +69,29 @@ __all__ = [
     "STRING_LENGTH_KEYWORD_ORDER",
     "TAG_LITERAL_UNTAKEN_KEYWORD",
     "TYPE_DEPENDENT_KEYWORDS",
+    "DeclaredKinds",
     "OutputKeywords",
     "all_of_root_keyword_kinds",
     "constrained_type_keyword_order",
     "declared_keywords",
+    "declared_string_keywords_taken",
     "holds_number_format",
     "keyword_kinds",
+    "length_reading",
     "listed_type_keywords",
     "literal_number_keywords",
     "member_keywords",
     "meta_keywords",
-    "number_keywords_taken",
-    "overridden_number_constraints",
+    "overridden_declared_constraints",
+    "property_consumed_keywords",
     "resplit_overridden_constraints",
     "shape_keywords",
     "shape_meta_keywords",
+    "split_declared_keywords",
+    "undeclared_keywords_taken",
     "unlisted_type_keywords",
     "untaken_minimums",
+    "untaken_values",
 ]
 
 NUMBER_KEYWORD_ORDER: Final[tuple[str, ...]] = (
@@ -115,6 +128,8 @@ _KEYWORD_KINDS: Final[tuple[tuple[frozenset[str], frozenset[str]], ...]] = (
     (frozenset({"object"}), PROPERTY_COUNT_KEYWORDS),
 )
 _DECLARED_STRING_KEYWORDS: Final[frozenset[str]] = STRING_KEYWORDS | {"minItems", "maxItems"}
+_LENGTH_READINGS: Final[Mapping[str, str]] = MappingProxyType({"minItems": "minLength", "maxItems": "maxLength"})
+_UNTAKEN_KEYWORD_ORDER: Final[tuple[str, ...]] = (*NUMBER_KEYWORD_ORDER, *_LENGTH_READINGS, *STRING_KEYWORD_ORDER)
 
 _NUMBER_TYPES: Final[frozenset[str]] = frozenset({
     "int32",
@@ -147,7 +162,12 @@ _NO_STRING_KEYWORD_FORMAT_TYPES: Final[frozenset[str]] = frozenset({
     "ipv6_network",
 })
 _STRING_FORMAT_TYPES: Final[frozenset[str]] = frozenset({"string", "byte", "binary", "password", "email", "hostname"})
+_STRING_KEYWORDS_KEPT_TYPE: Final = "pydantic.AnyUrl"
+"""The type that takes every keyword a declared string holds (row ``legacy-anyurl-keeps-string-keywords``)."""
 
+_BASE64_DECODED_KEYWORDS: Final[frozenset[str]] = STRING_KEYWORDS
+"""The keywords a type that decodes base64 text takes, as written beside it in every release: Pydantic checks them on
+the decoded value, not on the text the schema constrains."""
 BASE64_BYTES_CARRIED_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS
 """The keywords that bytes decoded from base64 text write inside their own annotation, in front of the decoding, so a
 field of the type leaves them out of its own constraints (``CARRIED_CONSTRAINT_KEYWORDS``)."""
@@ -216,8 +236,13 @@ _PYDANTIC_TYPE_KEYWORDS: Final[Mapping[str, frozenset[str]]] = MappingProxyType(
         (f"pydantic.{name}" for name in ("AwareDatetime", "NaiveDatetime", "PastDatetime", "FutureDatetime")),
         NUMBER_BOUND_KEYWORDS,
     ),
-    **dict.fromkeys((f"pydantic.{name}" for name in ("constr", "StrictStr", "StrictBytes")), STRING_KEYWORDS),
-    **dict.fromkeys((f"pydantic.{name}" for name in ("conbytes", "EmailStr", "SecretStr")), LENGTH_KEYWORDS),
+    **dict.fromkeys(
+        (f"pydantic.{name}" for name in ("constr", "StrictStr", "StrictBytes", "EmailStr")), STRING_KEYWORDS
+    ),
+    **dict.fromkeys(
+        (f"pydantic.{name}" for name in ("Base64Str", "Base64Bytes", "EncodedBytes")), _BASE64_DECODED_KEYWORDS
+    ),
+    **dict.fromkeys((f"pydantic.{name}" for name in ("conbytes", "SecretStr")), LENGTH_KEYWORDS),
 })
 _MSGSPEC_TYPE_KEYWORDS: Final[Mapping[str, frozenset[str]]] = MappingProxyType({
     **dict.fromkeys(("int", "float"), NUMBER_KEYWORDS),
@@ -313,28 +338,105 @@ def keyword_kinds() -> tuple[tuple[frozenset[str], frozenset[str]], ...]:
     return _KEYWORD_KINDS
 
 
-def declared_keywords(*, numbers: bool, string: bool, array: bool) -> frozenset[str]:
+@final
+@dataclass(frozen=True, slots=True)
+class DeclaredKinds:
+    """The JSON kinds whose keywords the declared types of a schema hold.
+
+    ``numbers`` tells that a declared type holds numbers (a number, an integer or a numeric string format), ``string``
+    and ``array`` that the schema declares a string or an array.
+    """
+
+    numbers: bool = False
+    string: bool = False
+    array: bool = False
+
+
+def declared_keywords(kinds: DeclaredKinds) -> frozenset[str]:
     """Return the type-dependent keywords whose kind a declared schema type holds.
 
-    ``numbers`` tells that a declared type holds numbers (a number, an integer or a numeric string format). A declared
-    string also holds ``minItems`` and ``maxItems`` and a declared array ``minLength`` and ``maxLength``, which are
-    written as their length bounds.
+    A declared string also holds ``minItems`` and ``maxItems`` and a declared array ``minLength`` and ``maxLength``,
+    which are written as their length bounds.
     """
     return frozenset().union(
-        NUMBER_KEYWORDS if numbers else NO_KEYWORDS,
-        _DECLARED_STRING_KEYWORDS if string else NO_KEYWORDS,
-        SEQUENCE_KEYWORDS if array else NO_KEYWORDS,
+        NUMBER_KEYWORDS if kinds.numbers else NO_KEYWORDS,
+        _DECLARED_STRING_KEYWORDS if kinds.string else NO_KEYWORDS,
+        SEQUENCE_KEYWORDS if kinds.array else NO_KEYWORDS,
     )
 
 
-def number_keywords_taken(declared: frozenset[str], taken: frozenset[str]) -> frozenset[str]:
-    """Return the declared keywords of a field with only the number keywords that a number value of its type meets.
+def length_reading(keyword: str) -> str:
+    """Return the keyword a declared string writes a keyword as: ``minItems`` and ``maxItems`` as its lengths."""
+    return _LENGTH_READINGS.get(keyword, keyword)
 
-    An output model that writes constraints as ``Field()`` arguments asks so (``taken`` is what a number value of the
-    emitted type meets), as ``str`` or ``date`` hold no number; the other declared keywords stay (row
-    ``legacy-declared-string-keywords-kept``).
+
+def split_declared_keywords(
+    kinds: DeclaredKinds, *, number_taken: frozenset[str] | None, string_taken: frozenset[str] | None
+) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the declared keywords a field writes, and those it leaves out, to warn about.
+
+    The emitted type decides two kinds: a number keyword is written when a number value of the type meets it
+    (``number_taken``), and a keyword that the declared string alone holds when the type takes the keyword it is
+    written as (``string_taken``; ``length_reading``), as a ``date`` or a ``UUID`` takes neither. None tells that the
+    schema does not declare the kind; the keywords of a declared array stay.
     """
-    return (declared - NUMBER_KEYWORDS) | (taken & NUMBER_KEYWORDS)
+    string_alone = (
+        _DECLARED_STRING_KEYWORDS - (SEQUENCE_KEYWORDS if kinds.array else NO_KEYWORDS) if kinds.string else NO_KEYWORDS
+    )
+    untaken = frozenset().union(
+        NUMBER_KEYWORDS - number_taken if kinds.numbers and number_taken is not None else NO_KEYWORDS,
+        (
+            frozenset(keyword for keyword in string_alone if length_reading(keyword) not in string_taken)
+            if string_taken is not None
+            else NO_KEYWORDS
+        ),
+    )
+    return declared_keywords(kinds) - untaken, untaken
+
+
+def declared_string_keywords_taken(taken: frozenset[str], type_paths: Iterable[str]) -> frozenset[str]:
+    """Return the keywords a declared string's field takes: those its type takes (``taken``), given its type paths.
+
+    Row ``legacy-anyurl-keeps-string-keywords`` (G03b removes it with the render-time drop): a type that names
+    ``AnyUrl`` takes them all, as in every release, so the root-model and collapsing decisions see them; the Pydantic
+    outputs leave every constraint out of a field whose type holds ``AnyUrl`` outside a container when they write it,
+    with a warning, though Pydantic checks ``maxLength`` on it, and ``minLength`` from 2.10 on.
+    """
+    return taken | STRING_KEYWORDS if _STRING_KEYWORDS_KEPT_TYPE in type_paths else taken
+
+
+def untaken_values(values: Mapping[str, Any], untaken: frozenset[str]) -> dict[str, Any]:
+    """Return the values of the ``untaken`` keywords by the keyword each is written as (``length_reading``).
+
+    The number keywords come first, in their order; ``minItems`` and ``maxItems`` win over the lengths they are read as,
+    as they do where they are written.
+    """
+    left_out: dict[str, Any] = {}
+    for keyword in _UNTAKEN_KEYWORD_ORDER:
+        if keyword in untaken and keyword in values:
+            left_out.setdefault(length_reading(keyword), values[keyword])
+    return left_out
+
+
+def undeclared_keywords_taken(taken: frozenset[str], *, value_literal: bool) -> frozenset[str]:
+    """Return the keywords of the kinds a schema does not declare that its field writes: those the emitted type takes.
+
+    Row ``legacy-undeclared-keywords-off-literal`` (G03a part A2 removes it): the ``Literal`` of a ``const`` or an
+    ``enum`` (``value_literal``) takes none of them, so an untyped ``{"const": "a", "minLength": 1}`` writes no
+    ``min_length``, though Pydantic checks it on the ``Literal`` of a string and a declared string writes it.
+    """
+    return NO_KEYWORDS if value_literal else taken
+
+
+def property_consumed_keywords(
+    zero_bound_classes: Mapping[str, tuple[str, ...]], type_name: str | None
+) -> tuple[str, ...]:
+    """Return the keywords a field at an object property leaves out, as its own type is a class that enforces them.
+
+    Row ``legacy-consumed-at-object-property``: only an object property whose own type is a zero-bound class leaves
+    them out; a root, an item or a union member of the class writes them again.
+    """
+    return zero_bound_classes.get(type_name, ()) if type_name else ()
 
 
 def holds_number_format(mapped_type: str) -> bool:
@@ -450,13 +552,15 @@ def meta_keywords(taken: frozenset[str]) -> frozenset[str]:
     return frozenset(meta for meta, schema in META_SCHEMA_KEYWORDS.items() if schema in taken)
 
 
-def overridden_number_constraints(
+def overridden_declared_constraints(
     values: Mapping[str, Any], *, type_dependent: Mapping[str, Any], untaken: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Return the number constraints of a declared number that an override type decides again.
+    """Return the constraints of a declared schema type that an override type decides again.
 
-    They are the field's number constraints the schema type decided (not those ``type_dependent`` remembers as
-    decided by the emitted type) and the ``untaken`` ones it was generated without.
+    They are the field's number constraints the schema type decided (not those ``type_dependent`` remembers as decided
+    by the emitted type) and the ``untaken`` number and string ones it was generated without. Row
+    ``legacy-override-keeps-string-keywords`` (G03b removes it): the string keywords the replaced type took stay
+    whatever the override type takes, as the field's lengths no longer tell a string's from an array's or a mapping's.
     """
     return {
         **{key: value for key, value in values.items() if key in NUMBER_KEYWORDS and key not in type_dependent},
@@ -475,8 +579,8 @@ def resplit_overridden_constraints(
     """Return the constraints a field keeps once ``--type-overrides`` replaces its type, and those it leaves out.
 
     The constraints the emitted type decided (``type_dependent``, kept when the override type takes them, ``taken``)
-    and the ``declared`` ones (kept when a number value of the override type meets them, ``declared_taken``) are
-    decided again; the other constraints stay. The declared ones it does not meet are left out, to warn about.
+    and the ``declared`` ones (kept when the override type, or a number value of it, takes them, ``declared_taken``)
+    are decided again; the other constraints stay. The declared ones it does not take are left out, to warn about.
     """
     kept = {key: value for key, value in values.items() if key not in type_dependent and key not in declared}
     kept.update({key: value for key, value in type_dependent.items() if key in taken})
@@ -485,11 +589,12 @@ def resplit_overridden_constraints(
 
 
 def untaken_minimums(untaken: Iterable[str], taken_by_minimum: Iterable[tuple[str, frozenset[str]]]) -> dict[str, str]:
-    """Return, for each untaken keyword that a later target model version takes, the first such version.
+    """Return, for each untaken number keyword that a later target model version takes, the first such version.
 
-    ``taken_by_minimum`` gives, from the oldest version, each version that adds a keyword and what it takes then.
+    ``taken_by_minimum`` gives, from the oldest version, each version that adds a number keyword and the keywords a
+    number value of the type meets then; a later version adds no other kind.
     """
-    keys = tuple(untaken)
+    keys = tuple(key for key in untaken if key in NUMBER_KEYWORDS)
     minimums: dict[str, str] = {}
     for minimum, taken in taken_by_minimum:
         minimums.update({key: minimum for key in keys if key in taken and key not in minimums})

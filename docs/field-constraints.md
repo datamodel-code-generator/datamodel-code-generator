@@ -205,9 +205,19 @@ They follow the same two cases as number keywords: a schema type `string` takes 
 `array` takes the array keywords; otherwise the Python type written for the field decides each keyword. A schema
 without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
 "pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
-`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds. As for number
-keywords, `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept on the Python type, such
-as `pattern` on `bytes` or `minLength` on the `Literal` of a `const`.
+`maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
+
+As for number keywords, Pydantic models and dataclasses write a string keyword of a schema type `string` as a
+`Field()` argument only when the Python type written for the field takes it, as the Pydantic column of the table below
+lists, with `minItems` and `maxItems` read as the lengths they are written as. Pydantic cannot validate a field whose
+`Field()` holds any other, so a keyword they leave out, such as `maxLength` on the `AwareDatetime` of format
+`date-time`, `pattern` on the `date` of format `date` or on the `SecretStr` of format `password`, or `minLength` on a
+`UUID`, is named with its field in a warning. A field whose type holds the `AnyUrl` of format `uri` is written without
+any of its constraints, also with a warning. The `Literal` of a `const` takes the keywords of its values' type, so
+`{"type": "string", "const": "box", "maxLength": 5}` keeps `max_length`, while a `const` without `type` keeps none of
+them. A `--type-overrides` type decides again the keywords the replaced type left out: an override to `str` takes back
+such a length without a warning. `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept
+on the Python type, such as `pattern` on `bytes` or `minLength` on the `Literal` of a `const`.
 
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
@@ -217,13 +227,16 @@ keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[
 |-------------|----------|---------|
 | `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
 | `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
-| `conbytes`, `EmailStr`, `SecretStr` | `minLength`, `maxLength` | none |
+| `EmailStr` | `minLength`, `maxLength`, `pattern` | none |
+| `Base64Str`, and the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| `conbytes`, `SecretStr` | `minLength`, `maxLength` | none |
+| the `Literal` of a `const` | those of its value's type (a string: `minLength`, `maxLength`, `pattern`) | none |
 | `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
 | `deque` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | none |
 | `collections.abc.Sized`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
 | `typing.AnyStr`, `collections.abc.ByteString` | `minLength`, `maxLength`, `pattern` | none |
 | a type the generator does not know or a model that the schema references | all of them | all of them |
-| any other known type: `int`, `float`, `bool`, `None`, `Any`, dicts, other `typing` and `collections.abc` names such as `Container`, `Reversible` and `Buffer` | none | none |
+| any other known type: `int`, `float`, `Decimal`, `bool`, `None`, `Any`, `date`, `datetime`, `time`, `timedelta`, `UUID`, IP addresses, `AnyUrl`, dicts, other `typing` and `collections.abc` names such as `Container`, `Reversible` and `Buffer` | none | none |
 
 ```json
 {
@@ -232,7 +245,8 @@ keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[
     "code": {"type": "string", "minLength": 2},
     "any": {"minLength": 2},
     "count": {"type": "integer", "pattern": "^1"},
-    "tags": {"items": {"type": "string"}, "minItems": 1, "pattern": "^a"}
+    "tags": {"items": {"type": "string"}, "minItems": 1, "pattern": "^a"},
+    "at": {"type": "string", "format": "date-time", "maxLength": 64}
   }
 }
 ```
@@ -245,6 +259,7 @@ class Model(BaseModel):
     any: Any | None = None
     count: int | None = None
     tags: list[str] | None = Field(None, min_length=1)
+    at: AwareDatetime | None = None
 ```
 
 ---

@@ -655,7 +655,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     @property
     def untaken_constraints(self) -> tuple[dict[str, Any], dict[str, str]]:
-        """Return the declared number constraints the field is generated without, and the target taking some of them.
+        """Return the declared constraints the field is generated without, and the target taking some of them.
 
         They are the field's own and those of the members, items and values that collapsing inlines into its type. The
         second mapping names, for a constraint an explicit later target model version takes, that version.
@@ -666,7 +666,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return {**member[0], **own[0]}, {**member[1], **own[1]}
 
     def record_untaken_constraints(self, untaken: dict[str, Any], minimums: dict[str, str]) -> None:
-        """Remember the declared number constraints of this field that its type does not take, to warn about them."""
+        """Remember the declared constraints of this field that its type does not take, to warn about them."""
         self.__dict__[_UNTAKEN_CONSTRAINTS_KEY] = (untaken, minimums)
 
     def pop_untaken_constraints(self) -> dict[str, Any]:

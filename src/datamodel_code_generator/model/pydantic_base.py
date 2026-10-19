@@ -46,9 +46,13 @@ ConstraintsBase = _ConstraintsBase
 PatternConstraints = _PatternConstraints
 UnionIntFloat = _UnionIntFloat
 
-_FIELD_CONSTRAINT_ARGUMENTS: dict[str, str] = {
-    info.alias: name for name, info in Constraints.model_fields.items() if info.alias is not None
-}
+
+def _constraint_arguments(constraints: type[_ConstraintsBase]) -> dict[str, str]:
+    """Return the ``Field()`` argument that a constraints model writes each schema keyword as."""
+    return {info.alias: name for name, info in constraints.model_fields.items() if info.alias is not None}
+
+
+_FIELD_CONSTRAINT_ARGUMENTS: dict[str, str] = _constraint_arguments(Constraints)
 
 
 class _PydanticFieldRenderPlan(NamedTuple):
@@ -81,6 +85,8 @@ class DataModelField(DataModelFieldBase):
     }
     _COMPARE_EXPRESSIONS: ClassVar[set[str]] = {"gt", "ge", "lt", "le"}
     _INTEGER_CONSTRAINTS: ClassVar[set[str]] = _COMPARE_EXPRESSIONS | {"multiple_of"}
+    _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _FIELD_CONSTRAINT_ARGUMENTS
+    """The ``Field()`` argument that the constraints model of the field writes each schema keyword as."""
     constraints: Optional[Constraints] = None  # noqa: UP045
 
     @property
@@ -93,18 +99,27 @@ class DataModelField(DataModelFieldBase):
     def dropped_constraints_warning(self) -> str | None:
         """Return a warning naming the constraints this field is generated without, if any.
 
-        They are the declared number constraints Pydantic does not take on the type, and the arguments of the
-        ``con*`` type that ``--type-overrides`` replaces.
+        They are the declared constraints Pydantic does not take on the type, the constraints of a field whose type
+        holds ``AnyUrl`` outside a container, which takes no ``pattern``, and the arguments of the ``con*`` type that
+        ``--type-overrides`` replaces.
         """
         reasons: list[str] = []
         count = 0
+        if dropped := self._anyurl_dropped_constraints():
+            if "pattern" in dropped:
+                reasons.append(
+                    f"Pydantic does not take {self._CONSTRAINT_ARGUMENTS['pattern']} on {self.data_type.type_hint}"
+                )
+            if others := sorted(self._CONSTRAINT_ARGUMENTS[key] for key in dropped if key != "pattern"):
+                reasons.append(f"fields holding AnyUrl are written without {', '.join(others)}")
+            count += len(dropped)
         untaken, minimums = self.untaken_constraints
         if untaken:
             groups: dict[str | None, list[str]] = {}
             for key in untaken:
                 groups.setdefault(minimums.get(key), []).append(key)
             for minimum, keys in groups.items():
-                arguments = ", ".join(sorted(_FIELD_CONSTRAINT_ARGUMENTS[key] for key in keys))
+                arguments = ", ".join(sorted(self._CONSTRAINT_ARGUMENTS[key] for key in keys))
                 reasons.append(
                     f"Pydantic does not take {arguments} on {self.data_type.type_hint}"
                     if minimum is None
@@ -222,6 +237,20 @@ class DataModelField(DataModelFieldBase):
             ) is not None:
                 merge_normalized_constraint(constraint_data, normalized[0], normalized[1])
         return constraint_data
+
+    def _anyurl_dropped_constraints(self) -> list[str]:
+        """Return the constraint keywords the field leaves out where it is written, as its type holds ``AnyUrl``.
+
+        A field whose type holds ``AnyUrl`` outside a container is written without any constraint (row
+        ``legacy-anyurl-keeps-string-keywords`` of ``_constraint_applicability``; G03b removes the drop).
+        """
+        if self.constraints is None or not self._can_apply_constraints or not self._has_anyurl_outside_container():
+            return []
+        return [
+            key
+            for key, value in self.constraints.model_dump(by_alias=True, exclude_unset=True).items()
+            if value is not None
+        ]
 
     def _has_anyurl_outside_container(self) -> bool:
         def has_anyurl(data_type: DataType, *, inside_container: bool) -> bool:

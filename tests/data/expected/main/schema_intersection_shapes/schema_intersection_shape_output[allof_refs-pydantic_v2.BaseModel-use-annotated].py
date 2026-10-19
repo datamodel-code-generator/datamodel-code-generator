@@ -23,7 +23,7 @@ class TwoRefsMap(RootModel[int]):
 
 
 class StampLenMap(RootModel[AwareDatetime]):
-    root: Annotated[AwareDatetime, Field(max_length=40)]
+    root: AwareDatetime
 
 
 class QAllofMap(RootModel[int]):

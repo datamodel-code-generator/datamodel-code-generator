@@ -56,7 +56,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode, read_check_flags
 from datamodel_code_generator._constraint_applicability import (
     TAG_LITERAL_UNTAKEN_KEYWORD,
-    overridden_number_constraints,
+    overridden_declared_constraints,
     resplit_overridden_constraints,
     untaken_minimums,
 )
@@ -7064,8 +7064,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Keep the constraints that the emitted type decides only when the override type at ``path`` takes them.
 
         An output model that writes constraints as ``Field()`` arguments also decides the number constraints of a
-        declared number this way, and remembers the ones it leaves out to warn about them. The untaken constraints of
-        the members, items and values that collapsing inlines into the field leave with the type the override replaces.
+        declared number and the string constraints the replaced type left out this way, and remembers the ones it
+        leaves out to warn about them. The untaken constraints of the members, items and values that collapsing inlines
+        into the field leave with the type the override replaces.
         """
         type_dependent = field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY) or {}
         constraints = field.constraints
@@ -7075,20 +7076,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for key, value in (constraints.model_dump(by_alias=True) if is_model else constraints or {}).items()
             if value is not None
         }
-        declared_numbers = (
-            overridden_number_constraints(
+        declared = (
+            overridden_declared_constraints(
                 values, type_dependent=type_dependent, untaken=field.pop_untaken_constraints()
             )
             if self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
             else {}
         )
-        if not type_dependent and not declared_numbers:
+        if not type_dependent and not declared:
             return
         target = self.target_python_version.version_key
         values, untaken = resplit_overridden_constraints(
             values,
             type_dependent=type_dependent,
-            declared=declared_numbers,
+            declared=declared,
             taken=self.data_type_manager.type_constraint_keywords(path, target),
             declared_taken=self.data_type_manager.type_constraint_keywords(
                 path, target, number_values=True, target_model_version=self.target_pydantic_version
@@ -7109,7 +7110,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         untaken: dict[str, Any],
         keywords_for: Callable[[str], frozenset[str]],
     ) -> None:
-        """Remember the declared number constraints a field leaves out, and the target version that would take each.
+        """Remember the declared constraints a field leaves out, and the target version that would take each.
 
         ``keywords_for`` returns the number keywords the field's type takes for an explicit target model version.
         """

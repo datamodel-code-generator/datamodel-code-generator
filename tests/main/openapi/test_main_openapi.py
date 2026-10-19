@@ -3160,14 +3160,15 @@ def test_main_with_field_constraints(
     list types for JSON Schema arrays that have the uniqueItems constraint set
     to true, enforcing uniqueness at the type level.
     """
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
-        output_path=output_file,
-        input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=expected_output,
-        extra_args=["--field-constraints", "--output-model-type", output_model, *args],
-    )
+    with pytest.warns(UserWarning, match=r"fields holding AnyUrl are written without min_length; Api\.apiUrl "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
+            output_path=output_file,
+            input_file_type=None,
+            assert_func=assert_file_content,
+            expected_file=expected_output,
+            extra_args=["--field-constraints", "--output-model-type", output_model, *args],
+        )
 
 
 @pytest.mark.cli_doc(
@@ -3189,14 +3190,15 @@ def test_main_field_constraints_model_outputs(output_file: Path) -> None:
     The `--field-constraints` flag generates Pydantic Field() definitions with
     validation constraints (min/max length, pattern, etc.) from the schema.
     """
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
-        output_path=output_file,
-        input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="with_field_constraints.py",
-        extra_args=["--field-constraints"],
-    )
+    with pytest.warns(UserWarning, match=r"fields holding AnyUrl are written without min_length; Api\.apiUrl "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
+            output_path=output_file,
+            input_file_type=None,
+            assert_func=assert_file_content,
+            expected_file="with_field_constraints.py",
+            extra_args=["--field-constraints"],
+        )
 
 
 def test_main_without_field_constraints(output_file: Path) -> None:
@@ -5464,13 +5466,14 @@ def test_main_disable_appending_item_suffix(output_file: Path) -> None:
 
     The `--disable-appending-item-suffix` flag configures the code generation behavior.
     """
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
-        output_path=output_file,
-        input_file_type=None,
-        assert_func=assert_file_content,
-        extra_args=["--field-constraints", "--disable-appending-item-suffix"],
-    )
+    with pytest.warns(UserWarning, match=r"fields holding AnyUrl are written without min_length; Api\.apiUrl "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
+            output_path=output_file,
+            input_file_type=None,
+            assert_func=assert_file_content,
+            extra_args=["--field-constraints", "--disable-appending-item-suffix"],
+        )
 
 
 @pytest.mark.cli_doc(
@@ -5602,21 +5605,22 @@ def test_main_use_annotated_with_field_constraints(min_version: str, output_file
     Use `--use-unique-items-as-set` when you need the generated type to enforce
     uniqueness for array schemas like `Pets`.
     """
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
-        output_path=output_file,
-        input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file="use_annotated_with_field_constraints_pydantic_v2.py",
-        extra_args=[
-            "--field-constraints",
-            "--use-annotated",
-            "--target-python-version",
-            min_version,
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-        ],
-    )
+    with pytest.warns(UserWarning, match=r"fields holding AnyUrl are written without min_length; Api\.apiUrl "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "api_constrained.yaml",
+            output_path=output_file,
+            input_file_type=None,
+            assert_func=assert_file_content,
+            expected_file="use_annotated_with_field_constraints_pydantic_v2.py",
+            extra_args=[
+                "--field-constraints",
+                "--use-annotated",
+                "--target-python-version",
+                min_version,
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+            ],
+        )
 
 
 def test_main_nested_enum(output_file: Path) -> None:
@@ -7516,28 +7520,35 @@ def test_main_openapi_allof_no_merge_constraint_type_shape(
     field_constraints: bool,
     use_annotated: bool,
 ) -> None:
-    """Apply child constraints only to compatible inherited JSON type shapes."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "allof_no_merge_constraint_type_shape.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=f"allof_no_merge_constraint_type_shape_{expected_suffix}.py",
-        extra_args=[
-            "--output-model-type",
-            DataModelType.PydanticV2BaseModel.value,
-            "--target-python-version",
-            "3.10",
-            "--formatters",
-            "builtin",
-            "--allof-merge-mode",
-            "none",
-            "--use-tuple-for-fixed-items",
-            *(["--field-constraints"] if field_constraints else []),
-            *(["--use-annotated"] if use_annotated else []),
-        ],
-        force_exec_validation=True,
-    )
+    """Apply child constraints only to compatible inherited JSON type shapes.
+
+    A UUID takes no length, so the ``minLength`` beside a reference to one is left out with a warning.
+    """
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "allof_no_merge_constraint_type_shape.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=f"allof_no_merge_constraint_type_shape_{expected_suffix}.py",
+            extra_args=[
+                "--output-model-type",
+                DataModelType.PydanticV2BaseModel.value,
+                "--target-python-version",
+                "3.10",
+                "--formatters",
+                "builtin",
+                "--allof-merge-mode",
+                "none",
+                "--use-tuple-for-fixed-items",
+                *(["--field-constraints"] if field_constraints else []),
+                *(["--use-annotated"] if use_annotated else []),
+            ],
+            force_exec_validation=True,
+        )
+    if field_constraints:
+        assert_warnings_contain(recorded_warnings, "Pydantic does not take min_length on UUID; RefSiblingValue ")
     valid_payload = {
         "enumValue": "a",
         "constValue": "a",

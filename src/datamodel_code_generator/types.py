@@ -1459,6 +1459,11 @@ def _import_paths(module: ModuleType) -> frozenset[str]:
     )
 
 
+def _is_value_literal(data_type: DataType) -> bool:
+    """Return whether a type is the ``Literal`` of the values of a const or an enum."""
+    return bool(data_type.literals) and not data_type.type and data_type.import_ is None
+
+
 class DataTypeManager(ABC):
     """Abstract base class for managing type mappings in code generation.
 
@@ -1599,10 +1604,11 @@ class DataTypeManager(ABC):
     ) -> frozenset[str]:
         """Return the type-dependent keywords that every member of an emitted type takes in this output model.
 
-        The ``Literal`` of a const or an enum takes none. With ``number_values`` the keywords that a number value of
-        the type meets are returned instead: those a member takes, as a number validates as that member, where the
-        ``Literal`` of a const or an enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number
-        keywords, and an explicit ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches.
+        The ``Literal`` of a const or an enum takes what every value other than ``None`` takes as an instance of its
+        type, as a ``Literal`` annotation does. With ``number_values`` the keywords that a number value of the type
+        meets are returned instead: those a member takes, as a number validates as that member, where the ``Literal``
+        of a const or an enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number keywords, and an
+        explicit ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches.
         """
         if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
             return keywords
@@ -1619,10 +1625,15 @@ class DataTypeManager(ABC):
                 ),
                 number_values=number_values,
             )
-        if number_values and data_type.literals and not data_type.type and data_type.import_ is None:
-            return _applicability.literal_number_keywords(
-                literals_take=cls.LITERALS_TAKE_CONSTRAINTS,
-                has_non_string_value=any(type(value) is not str for value in data_type.literals),
+        if _is_value_literal(data_type):
+            if number_values:
+                return _applicability.literal_number_keywords(
+                    literals_take=cls.LITERALS_TAKE_CONSTRAINTS,
+                    has_non_string_value=any(type(value) is not str for value in data_type.literals),
+                )
+            return cls._literal_keywords(
+                {_LITERAL_VALUE_TYPE_PATHS.get(type(value), "") for value in data_type.literals if value is not None},
+                target_version,
             )
         if data_type.python_type is None:
             import_ = data_type.import_
@@ -1697,16 +1708,8 @@ class DataTypeManager(ABC):
                 number_values=number_values,
             )
         if path == "typing.Literal" and base is not expression:
-            if not cls.LITERALS_TAKE_CONSTRAINTS:
-                return _NO_KEYWORDS
-            return _applicability.member_keywords(
-                (
-                    cls.type_constraint_keywords(value, target_version, number_values=number_values)
-                    if value or not number_values
-                    else TYPE_DEPENDENT_KEYWORDS
-                    for value in set(cls._literal_value_paths(expression))
-                ),
-                number_values=number_values,
+            return cls._literal_keywords(
+                set(cls._literal_value_paths(expression)), target_version, number_values=number_values
             )
         if (
             path == "tuple"
@@ -1717,6 +1720,28 @@ class DataTypeManager(ABC):
             return _NO_KEYWORDS
         return cls.type_constraint_keywords(
             path, target_version, number_values=number_values, target_model_version=target_model_version
+        )
+
+    @classmethod
+    def _literal_keywords(
+        cls, value_paths: Iterable[str], target_version: tuple[int, int], *, number_values: bool = False
+    ) -> frozenset[str]:
+        """Return the keywords a ``Literal`` takes: those every value takes as an instance of its type at its path.
+
+        A value of a type the generator cannot classify (path ``""``) takes none, or all of them with
+        ``number_values``, where a ``Literal`` takes what one value takes; an output model that checks no keyword on
+        a ``Literal`` takes none.
+        """
+        if not cls.LITERALS_TAKE_CONSTRAINTS:
+            return _NO_KEYWORDS
+        return _applicability.member_keywords(
+            (
+                cls.type_constraint_keywords(value, target_version, number_values=number_values)
+                if value or not number_values
+                else TYPE_DEPENDENT_KEYWORDS
+                for value in value_paths
+            ),
+            number_values=number_values,
         )
 
     @staticmethod

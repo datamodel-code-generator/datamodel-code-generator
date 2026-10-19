@@ -40,6 +40,7 @@ from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIB
 from datamodel_code_generator.model.imports import IMPORT_CLASSVAR
 from datamodel_code_generator.model.pydantic_base import (
     BaseModelBase,
+    _constraint_arguments,
     _PydanticFieldRenderPlan,
 )
 from datamodel_code_generator.model.pydantic_base import Constraints as _Constraints
@@ -628,6 +629,7 @@ class DataModelField(_PydanticBaseDataModelField):
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
+    _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _constraint_arguments(Constraints)
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {

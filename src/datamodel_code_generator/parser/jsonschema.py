@@ -54,15 +54,19 @@ from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
 from datamodel_code_generator._constraint_applicability import (
     NO_KEYWORDS,
     NUMBER_KEYWORD_ORDER,
-    NUMBER_KEYWORDS,
     PROPERTY_COUNT_KEYWORDS,
     STRING_KEYWORD_ORDER,
+    DeclaredKinds,
     all_of_root_keyword_kinds,
     constrained_type_keyword_order,
     declared_keywords,
+    declared_string_keywords_taken,
     holds_number_format,
     keyword_kinds,
-    number_keywords_taken,
+    property_consumed_keywords,
+    split_declared_keywords,
+    undeclared_keywords_taken,
+    untaken_values,
 )
 from datamodel_code_generator._format_types import (
     DatetimeClassType,
@@ -181,6 +185,7 @@ from datamodel_code_generator.types import (
     FloatConstraint,
     Types,
     UnionIntFloat,
+    _is_value_literal,
 )
 from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors
 
@@ -724,6 +729,14 @@ def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
     return data_type.CARRIED_CONSTRAINT_KEYWORDS.union(
         *(member.CARRIED_CONSTRAINT_KEYWORDS for member in data_type.data_types)
     )
+
+
+def _imported_type_paths(data_type: DataType) -> Iterator[str]:
+    """Yield the path of every type that a type and its members import, as a type or inside an annotation."""
+    for nested in data_type.all_data_types:
+        for import_ in (nested.import_, *(nested.python_type.imports if nested.python_type else ())):
+            if import_ is not None and import_.from_:
+                yield f"{import_.from_}.{import_.import_}"
 
 
 def _get_discriminator_property_name(obj: JsonSchemaObject) -> str | None:
@@ -2368,9 +2381,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return False
         return any(field in obj.model_fields_set for field in constraint_fields)
 
-    def _accepts_number_constraints(self, obj: JsonSchemaObject, types: Sequence[str]) -> bool:
+    def _accepts_number_constraints(self, types: Sequence[str], format_: str | None) -> bool:
         """Return whether a declared type of the schema holds numbers, as number, integer or a numeric string format."""
-        format_ = obj.format or "default"
+        format_ = format_ or "default"
         return any(
             type_ in {"number", "integer"}
             or (
@@ -2383,26 +2396,61 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for type_ in types
         )
 
+    def _declared_kinds(self, types: str | Sequence[str] | None, format_: str | None) -> DeclaredKinds:
+        """Return the JSON kinds whose keywords a schema's declared types hold, with its format."""
+        if types is None:
+            return DeclaredKinds()
+        types = (types,) if isinstance(types, str) else types
+        return DeclaredKinds(
+            numbers=self._accepts_number_constraints(types, format_), string="string" in types, array="array" in types
+        )
+
     def _declared_constraint_keywords(self, obj: JsonSchemaObject) -> frozenset[str]:
         """Return the type-dependent keywords whose kind a declared type of the schema holds.
 
         A declared string also holds minItems and maxItems and a declared array also holds minLength and maxLength,
         which are written as their length bounds.
         """
-        if (types := obj.type) is None:
-            return NO_KEYWORDS
-        types = (types,) if isinstance(types, str) else types
-        return declared_keywords(
-            numbers=self._accepts_number_constraints(obj, types), string="string" in types, array="array" in types
+        return declared_keywords(self._declared_kinds(obj.type, obj.format))
+
+    def _keywords_taken(self, kinds: DeclaredKinds, data_type: DataType) -> tuple[frozenset[str], frozenset[str]]:
+        """Return the keywords of the declared kinds that a field of the emitted type writes, and those it leaves out.
+
+        An output model that writes constraints as ``Field()`` arguments writes a number keyword of a declared number
+        only when a number value of the type meets it, and a keyword of a declared string only when the type takes
+        it (``declared_string_keywords_taken``), which a ``date`` or a ``UUID`` does not; another output model writes
+        them all. The kinds of a schema type and format (``_declared_kinds``) ask it of the type they map to before a
+        field is built.
+        """
+        if not self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS:
+            return declared_keywords(kinds), NO_KEYWORDS
+        target = self.target_python_version.version_key
+        return split_declared_keywords(
+            kinds,
+            number_taken=self.data_type_manager.constraint_keywords(
+                data_type, target, number_values=True, target_model_version=self.target_pydantic_version
+            )
+            if kinds.numbers
+            else None,
+            string_taken=declared_string_keywords_taken(
+                self.data_type_manager.constraint_keywords(data_type, target), _imported_type_paths(data_type)
+            )
+            if kinds.string
+            else None,
         )
 
     def _get_constraint_values(self, obj: JsonSchemaObject, data_type: DataType | None = None) -> dict[str, Any]:
-        """Return JSON Schema constraint values, with the type-dependent keywords that the field takes.
+        """Return JSON Schema constraint values, with the type-dependent keywords that the field takes."""
+        return self._split_constraint_values(obj, data_type)[0]
 
-        A declared schema type that holds a keyword's kind (number, string or array) takes the keyword;
-        otherwise the emitted Python type decides each keyword. An output model that writes constraints as
-        ``Field()`` arguments writes the number keywords of a declared number only when a number value of the
-        emitted type meets them, which a type that holds no number, such as ``str`` or ``date``, does not.
+    def _split_constraint_values(
+        self, obj: JsonSchemaObject, data_type: DataType | None = None
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Return the constraint values of the type-dependent keywords that a field takes, and those it leaves out.
+
+        The keywords of a kind a declared schema type holds (number, string or array) follow ``_keywords_taken``;
+        the emitted Python type decides the others. The left-out ones are the declared keywords the type does not
+        take, to warn about, ``minItems`` and ``maxItems`` of a declared string as the lengths they are written as.
         """
         values = {
             constraint: value
@@ -2412,30 +2460,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if data_type is not None and (carried := _carried_constraint_keywords(data_type)):
             values = {key: value for key, value in values.items() if key not in carried}
         if not values:
-            return values
-        declared = self._declared_constraint_keywords(obj)
-        if (
-            data_type is not None
-            and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
-            and not declared.isdisjoint(NUMBER_KEYWORDS)
-        ):
-            declared = number_keywords_taken(
-                declared,
-                self.data_type_manager.constraint_keywords(
-                    data_type,
-                    self.target_python_version.version_key,
-                    number_values=True,
-                    target_model_version=self.target_pydantic_version,
-                ),
+            return values, {}
+        kinds = self._declared_kinds(obj.type, obj.format)
+        if data_type is None:
+            declared = declared_keywords(kinds)
+            return {key: value for key, value in values.items() if key in declared}, {}
+        written, untaken = self._keywords_taken(kinds, data_type)
+        if values.keys() <= written:
+            return values, {}
+        written |= (
+            undeclared_keywords_taken(
+                self.data_type_manager.constraint_keywords(data_type, self.target_python_version.version_key),
+                value_literal=_is_value_literal(data_type),
             )
-        if values.keys() <= declared:
-            return values
-        keywords = (
-            declared | self.data_type_manager.constraint_keywords(data_type, self.target_python_version.version_key)
-            if data_type
-            else declared
+            - untaken
         )
-        return {key: value for key, value in values.items() if key in keywords}
+        return {key: value for key, value in values.items() if key in written}, untaken_values(values, untaken)
 
     def _mark_type_dependent_constraints(self, model_field: DataModelFieldBase, obj: JsonSchemaObject) -> None:
         """Remember the keywords the emitted type decides, so a scoped type override decides them again."""
@@ -2448,19 +2488,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if key not in declared and (value := getattr(obj, key)) is not None
         }:
             model_field.__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent_constraints
-
-    def _untaken_number_constraints(self, obj: JsonSchemaObject, constraints: Mapping[str, Any]) -> dict[str, Any]:
-        """Return the number constraints of a declared number that the emitted type does not take, to warn about."""
-        if not self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS or not (
-            missing := {
-                key: value
-                for key in NUMBER_KEYWORD_ORDER
-                if key not in constraints and (value := getattr(obj, key)) is not None
-            }
-        ):
-            return {}
-        declared = self._declared_constraint_keywords(obj)
-        return {key: value for key, value in missing.items() if key in declared}
 
     def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
         """Check if an array field represents a fixed-length tuple."""
@@ -3823,11 +3850,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         constraints = None
         untaken: dict[str, Any] = {}
         if not skip_constraints and self.is_constraints_field(field):
-            constraints = self._get_constraint_values(field, field_type)
-            untaken = self._untaken_number_constraints(field, constraints)
-        consumed = self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS
-        if constraints is not None and field_type.type in consumed:
-            for key in consumed[field_type.type]:
+            constraints, untaken = self._split_constraint_values(field, field_type)
+            for key in property_consumed_keywords(
+                self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, field_type.type
+            ):
                 constraints.pop(key, None)
         if constraints is not None and self.field_constraints and field.format == "hostname":
             constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
@@ -12325,8 +12351,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         constraints = array_constraints or {}
         untaken: dict[str, Any] = {}
         if not constraints and (self.field_constraints or preserve_constraints):
-            constraints = self._get_constraint_values(obj, data_type)
-            untaken = self._untaken_number_constraints(obj, constraints)
+            constraints, untaken = self._split_constraint_values(obj, data_type)
         if self._should_skip_root_field_constraints_for_multiple_types(obj):
             constraints = {}
         elif self.field_constraints and obj.format == "hostname":

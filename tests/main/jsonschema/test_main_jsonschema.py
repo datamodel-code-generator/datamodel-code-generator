@@ -6354,6 +6354,72 @@ def test_main_number_constraints_on_declared_numbers(
     assert_output("\n".join(rejected) + "\n", EXPECTED_JSON_SCHEMA_PATH / name / f"{stem}_rejected.txt")
 
 
+_STRING_KEYWORD_TYPE_OVERRIDES = {
+    "StringConstraintsOnEmittedTypes.tag": "builtins.str",
+    "StringConstraintsOnEmittedTypes.day": "builtins.str",
+    "StringConstraintsOnEmittedTypes.id": "uuid.UUID",
+}
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--field-constraints"], id="field_constraints"),
+        pytest.param(["--use-annotated"], id="use_annotated"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], id="pydantic_dataclass"),
+        pytest.param(["--field-constraints", "--collapse-root-models"], id="collapse"),
+        pytest.param(
+            ["--field-constraints", "--type-overrides", json.dumps(_STRING_KEYWORD_TYPE_OVERRIDES)], id="type_overrides"
+        ),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec"),
+    ],
+)
+def test_main_string_constraints_on_emitted_types(output_file: Path, extra_args: list[str]) -> None:
+    """Test a string schema keeps a string keyword only where the emitted type takes it, warns otherwise, and validates.
+
+    A date, a time, a UUID, an IP address, a Decimal and the pattern of a SecretStr leave the keyword out with a
+    warning, at a property, a nullable property, a root, an item and a map value; ``minItems`` of a string is read as
+    its length. An ``AnyUrl`` keeps its keywords until a field of it is written without them, with a warning, so
+    collapsing keeps the root of an item that holds them. A str, an EmailStr, a Base64Str and the ``Literal`` of a
+    declared string keep it, and the ``Literal`` of an untyped const keeps none, as before. An override to ``str``
+    takes a left-out keyword back without a warning, and an override to ``UUID`` keeps it out with one.
+    """
+    name = "string_constraints_on_emitted_types"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{warning.message}\n" for warning in recorded_warnings if "is generated without" in str(warning.message)
+        ),
+        name="warnings",
+    )
+    if "msgspec.Struct" in extra_args:
+        return
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "StringConstraintsOnEmittedTypes") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", name="rejected")
+
+
 @LEGACY_BLACK_SKIP
 @pytest.mark.parametrize(
     ("expected_file", "extra_args"),
@@ -18890,18 +18956,23 @@ def test_main_rust_unsupported_pattern(
 def test_main_rust_unsupported_pattern_non_string(args: list[str], expected_file: str, output_file: Path) -> None:
     """Patterns pydantic never compiles as string patterns keep pydantic-core's default regex engine.
 
-    The ``uri`` pattern is dropped for ``AnyUrl``, so the model keeps Rust semantics: Unicode classes
-    compile and ``$`` does not match before a final newline.
+    The ``uri`` pattern is dropped for ``AnyUrl``, with a warning where ``Field()`` arguments would hold it, so the
+    model keeps Rust semantics: Unicode classes compile and ``$`` does not match before a final newline.
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_non_string.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
-        force_exec_validation=True,
-    )
+    with (
+        pytest.warns(UserWarning, match=r"Pydantic does not take pattern on AnyUrl; Model\.site ")
+        if args
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern_non_string.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=["--output-model-type", "pydantic_v2.BaseModel", *args],
+            force_exec_validation=True,
+        )
     assert_generated_model_json_validation(
         output_file,
         module_name="rust_unsupported_pattern_non_string",

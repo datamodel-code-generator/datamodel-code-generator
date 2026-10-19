@@ -48,6 +48,7 @@ allof_refs-pydantic_v2.BaseModel-collapse-root-models	main/schema_intersection_s
 allof_refs-pydantic_v2.BaseModel-default	main/schema_intersection_shapes/schema_intersection_shape_output[allof_refs-pydantic_v2.BaseModel-default].py
 allof_refs-pydantic_v2.BaseModel-field-constraints	main/schema_intersection_shapes/schema_intersection_shape_output[allof_refs-pydantic_v2.BaseModel-field-constraints].py
 allof_refs-pydantic_v2.BaseModel-use-annotated	main/schema_intersection_shapes/schema_intersection_shape_output[allof_refs-pydantic_v2.BaseModel-use-annotated].py
+allof_refs-pydantic_v2.BaseModel-use-annotated	main/schema_intersection_shapes/schema_intersection_shape_output[allof_refs-pydantic_v2.BaseModel-use-annotated].warnings.txt
 allof_refs-pydantic_v2.dataclass-default	main/schema_intersection_shapes/schema_intersection_shape_output[allof_refs-pydantic_v2.dataclass-default].py
 allof_refs-typing.TypedDict-default	main/schema_intersection_shapes/schema_intersection_shape_output[allof_refs-typing.TypedDict-default].py
 allof_values-dataclasses.dataclass-default	main/schema_intersection_shapes/schema_intersection_shape_output[allof_values-dataclasses.dataclass-default].py

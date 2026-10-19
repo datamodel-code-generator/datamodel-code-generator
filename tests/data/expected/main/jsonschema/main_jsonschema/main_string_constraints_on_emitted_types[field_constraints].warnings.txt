@@ -1,0 +1,14 @@
+fields holding AnyUrl are written without max_length; Link is generated without this constraint.
+Pydantic does not take max_length on date; Day is generated without this constraint.
+Pydantic does not take min_length on AwareDatetime; Stamps is generated without this constraint.
+Pydantic does not take pattern on time; Slot is generated without this constraint.
+Pydantic does not take max_length on AwareDatetime; StringConstraintsOnEmittedTypes.at is generated without this constraint.
+Pydantic does not take pattern on date; StringConstraintsOnEmittedTypes.day is generated without this constraint.
+Pydantic does not take min_length on time; StringConstraintsOnEmittedTypes.clock is generated without this constraint.
+Pydantic does not take max_length on timedelta; StringConstraintsOnEmittedTypes.wait is generated without this constraint.
+Pydantic does not take min_length on UUID | None; StringConstraintsOnEmittedTypes.id is generated without this constraint.
+Pydantic does not take max_length on IPv4Address; StringConstraintsOnEmittedTypes.host is generated without this constraint.
+Pydantic does not take max_length on Decimal; StringConstraintsOnEmittedTypes.amount is generated without this constraint.
+Pydantic does not take min_length on UUID; StringConstraintsOnEmittedTypes.tag is generated without this constraint.
+fields holding AnyUrl are written without max_length; StringConstraintsOnEmittedTypes.link is generated without this constraint.
+Pydantic does not take pattern on SecretStr; StringConstraintsOnEmittedTypes.secret is generated without this constraint.

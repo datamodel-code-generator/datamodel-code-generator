@@ -5,11 +5,11 @@ from pydantic import BaseModel, Field
 
 
 class ConstraintsOnTargetBuiltinNames(BaseModel):
-    sentinel_length: sentinel = Field(..., min_length=2)
+    sentinel_length: sentinel
     sentinel_minimum: sentinel
     frozendict_items: frozendict = Field(..., max_length=3)
     import_cycle_minimum: ImportCycleError
-    finalization_length: PythonFinalizationError = Field(..., min_length=2)
+    finalization_length: PythonFinalizationError
     finalization_minimum: PythonFinalizationError
     exception_group_minimum: ExceptionGroup
     zero_division_minimum: ZeroDivisionError

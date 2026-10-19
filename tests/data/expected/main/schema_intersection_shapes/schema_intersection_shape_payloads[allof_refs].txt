@@ -620,8 +620,8 @@ pydantic_v2.BaseModel --use-annotated stamp_len_prop "2020-01-01T00:00:00Z" acce
 pydantic_v2.BaseModel --use-annotated stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
 pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00Z"] raised TypeError
 pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] raised TypeError
-pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00Z"} raised TypeError
-pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} raised TypeError
+pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
 pydantic_v2.BaseModel --use-annotated quantity 1 accepted
 pydantic_v2.BaseModel --use-annotated quantity 0 rejected
 pydantic_v2.BaseModel --use-annotated q_allof 1 raised TypeError

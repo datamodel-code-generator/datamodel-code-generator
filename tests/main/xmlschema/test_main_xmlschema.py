@@ -5,6 +5,7 @@ from __future__ import annotations
 import codecs
 import json
 import warnings
+from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -1161,24 +1162,32 @@ def test_xmlschema_compiled_pattern_alias_without_regex_engine(
 )
 @pytest.mark.filterwarnings("ignore:Possible set symmetric difference:FutureWarning")
 def test_xmlschema_compiled_patterns(output_file: Path, name: str, backend: str, extra_args: list[str]) -> None:
-    """Keep Python pattern semantics across import aliases, inheritance and root model transformations."""
-    run_main_and_assert(
-        input_path=XML_SCHEMA_DATA_PATH / "pattern_runtime.xsd",
-        output_path=output_file,
-        input_file_type="xmlschema",
-        extra_args=[
-            "--output-model-type",
-            backend,
-            "--disable-timestamp",
-            "--target-python-version",
-            "3.10",
-            "--formatters",
-            "builtin",
-            *extra_args,
-        ],
-        assert_func=assert_file_content,
-        expected_file=f"pattern_runtime_{name}.py",
-    )
+    """Keep Python pattern semantics across import aliases, inheritance and root model transformations.
+
+    An ``anyURI`` takes no pattern, so ``Field()`` arguments leave its pattern out with a warning.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"Pydantic does not take pattern on AnyUrl; Parent\.uri ")
+        if "--field-constraints" in extra_args
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "pattern_runtime.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=[
+                "--output-model-type",
+                backend,
+                "--disable-timestamp",
+                "--target-python-version",
+                "3.10",
+                "--formatters",
+                "builtin",
+                *extra_args,
+            ],
+            assert_func=assert_file_content,
+            expected_file=f"pattern_runtime_{name}.py",
+        )
     cases = json.loads((XML_SCHEMA_DATA_PATH / "pattern_runtime.cases.json").read_text(encoding="utf-8"))
     for case in cases["cases"]:
         assert_generated_model_json_validation(

@@ -65,7 +65,7 @@ class RefSiblingInnerValue(RootModel[UUID]):
 
 
 class RefSiblingValue(RootModel[UUID]):
-    root: Annotated[UUID, Field(min_length=2)]
+    root: UUID
 
 
 class UnconstrainedUnionValue(RootModel[str | Any]):
