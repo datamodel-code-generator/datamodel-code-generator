@@ -4,7 +4,8 @@
 a ``ForEachModule`` runs passes once per output module; a ``HookCall`` calls an overridable parser method whose default
 runs a sub-table; a ``Segment`` runs the steps of one phase, entering the phase and the boundary before it. The
 ``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is false and runs every other one inside
-``fact_pass`` (``parser/_finality.py``), with the models the finality check compares after it.
+``fact_pass`` (``parser/_finality.py``), with the models the finality check compares after it. A ``DecisionPhase``
+runs the decision passes of the parser's registry (``parser/_phases.py``), in the order ``decision_order`` computes.
 
 ``check_order`` is the order rule of the tables. For two passes of one segment, a pass that reads what an earlier pass
 writes, where nothing else overlaps, runs after it (a derived edge); every other overlap needs an explicit ``After``
@@ -34,9 +35,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.parser._facts import Fact, Phase, RenderFact
     from datamodel_code_generator.parser._pass_decls import PassDecl
+    from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter, FinalFacts
 
 __all__ = [
     "Boundary",
+    "DecisionPhase",
     "ForEachModule",
     "HookCall",
     "OrderCheck",
@@ -46,6 +49,7 @@ __all__ = [
     "StepLike",
     "anchor_parse_caller",
     "check_order",
+    "decision_order",
     "flatten",
     "release_parse_caller",
     "segment_bodies",
@@ -155,6 +159,26 @@ class HookCall(Generic[P, S]):
 
 @final
 @dataclass(frozen=True, slots=True)
+class DecisionPhase(Generic[P, S]):
+    """The decision passes of the parser's registry: ``run`` seals the facts and runs them through the runner.
+
+    The decisions are no table passes: their declarations live in the registry, not in ``PASS_DECLS``.
+    """
+
+    name: str
+    run: Callable[[Runner, P, S], None]
+
+    def execute(self, runner: Runner, parser: P, state: S) -> None:
+        """Run the decision passes."""
+        self.run(runner, parser, state)
+
+    def passes(self) -> Iterator[PassDecl]:  # noqa: PLR6301
+        """Yield nothing: the registry, not the table, declares the decisions."""
+        yield from ()
+
+
+@final
+@dataclass(frozen=True, slots=True)
 class Segment(Generic[P, R, S]):
     """The steps of one phase over one view of the state.
 
@@ -203,6 +227,13 @@ class Runner:
             return
         with fact_pass(spec.decl, None if spec.checked_models is None else spec.checked_models(parser, state)):
             spec.run(parser, state)
+
+    def run_decision(  # noqa: PLR6301
+        self, decision: DecisionPass[DecisionWriter], facts: FinalFacts, writer: DecisionWriter
+    ) -> None:
+        """Run one decision inside the ``fact_pass`` scope of its declaration."""
+        with fact_pass(decision.spec["decl"]):
+            decision.run(facts, writer)
 
     def run_steps(self, steps: Iterable[StepLike[P, S]], parser: P, state: S) -> None:
         """Run ``steps`` in order on ``state``."""
@@ -296,6 +327,13 @@ def check_order(decls: Sequence[PassDecl], *, computed: bool = False) -> OrderCh
         if cycle:
             problems.append(f"the edges of {', '.join(cycle)} form a cycle")
     return OrderCheck(order, tuple(problems), tuple(provisional))
+
+
+def decision_order(decisions: Sequence[DecisionPass[Any]]) -> tuple[DecisionPass[Any], ...]:
+    """Return ``decisions`` in the order the order rule computes from their declarations, registration breaking ties."""
+    by_name = {decision.spec["decl"].name: decision for decision in decisions}
+    order = check_order([decision.spec["decl"] for decision in decisions], computed=True).order
+    return tuple(by_name[name] for name in order)
 
 
 def _add_explicit_edges(

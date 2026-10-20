@@ -8,6 +8,14 @@ wave-b-declared	parser/pipeline/check_order[wave-b-declared].txt
 wave-b-declared-without-edges	parser/pipeline/check_order[wave-b-declared-without-edges].txt
 wave-b-measured	parser/pipeline/check_order[wave-b-measured].txt
 wave-b-measured-without-edges	parser/pipeline/check_order[wave-b-measured-without-edges].txt
+[test_decision_phase_runs_the_registry_after_the_generic_base_class]
+checked	parser/pipeline/decision_phase_runs_the_registry_after_the_generic_base_class[checked].txt
+unchecked	parser/pipeline/decision_phase_runs_the_registry_after_the_generic_base_class[unchecked].txt	= parser/pipeline/decision_phase_runs_the_registry_after_the_generic_base_class[checked].txt
+[test_decision_registry]
+broken	parser/pipeline/decision_registry[broken].txt
+wave-b-declared	parser/pipeline/decision_registry[wave-b-declared].txt
+wave-b-declared-without-edges	parser/pipeline/decision_registry[wave-b-declared-without-edges].txt
+wave-b-measured	parser/pipeline/decision_registry[wave-b-measured].txt	= parser/pipeline/decision_registry[wave-b-declared].txt
 [test_every_declared_pass_runs]
 	parser/pipeline/every_declared_pass_runs.txt
 [test_pipeline_tables_follow_the_rules]

@@ -8,6 +8,12 @@ Every run checks the tables of ``src/datamodel_code_generator/parser/base.py`` (
 * the segments enter the boundaries in the order ``BOUNDARIES`` gives;
 * the passes of each segment satisfy the order rule (``check_order``);
 * the repair passes are those ``REPAIRS`` lists, a set that only shrinks;
+* the decision registry of ``Parser`` and of every parser class that sets one (``_DECISION_PASSES``) holds global
+  transforms of ``DECIDE`` with unique names that read and write facts only, name their issue, have writer protocols
+  that ``_DecisionWriter`` implements, and satisfy the order rule, which computes their order;
+* ``FinalFacts`` is built in one place, ``GenerationStore.seal_facts``;
+* every member of the views of ``model/_views.py`` reads an ``ATTRIBUTE_FACTS`` row of its class that holds a fact
+  final at B1, or that holds no fact (identity), unless ``VIEW_ACCESSORS`` lists it;
 * no code outside the body of ``Parser`` reaches a name-mangled member of ``Parser``, which the tables call;
 * every ``warn()`` of the parser, model and type modules whose ``stacklevel`` reaches past its caller is listed in
   ``DEEP_WARNINGS`` with the frame it names, so that a warning the pipeline would attribute to its own frames shows.
@@ -38,15 +44,38 @@ PACKAGE = SRC / "datamodel_code_generator"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from typing_extensions import get_protocol_members  # noqa: E402
+
 from datamodel_code_generator.__main__ import main as generate_main  # noqa: E402
-from datamodel_code_generator.parser._facts import Fact, Phase, RenderFact  # noqa: E402, PLC2701
-from datamodel_code_generator.parser._finality import MODULE_TRACE_MARK, recording_pass_trace  # noqa: E402, PLC2701
+from datamodel_code_generator.model._views import (  # noqa: E402, PLC2701
+    DataTypeView,
+    FieldView,
+    ModelView,
+    ReferenceView,
+)
+from datamodel_code_generator.parser._facts import (  # noqa: E402, PLC2701
+    ATTRIBUTE_FACTS,
+    Fact,
+    Phase,
+    RenderFact,
+)
+from datamodel_code_generator.parser._finality import (  # noqa: E402, PLC2701
+    MODULE_TRACE_MARK,
+    _reads_render_fact,
+    recording_pass_trace,
+)
 from datamodel_code_generator.parser._pass_decls import (  # noqa: E402, PLC2701
     PASS_DECLS,
     After,
     PassDecl,
     PassKind,
     Scope,
+)
+from datamodel_code_generator.parser._phases import (  # noqa: E402, PLC2701
+    DecisionPass,
+    DecisionWriter,
+    FinalFacts,
+    _DecisionWriter,
 )
 from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
     Boundary,
@@ -56,15 +85,29 @@ from datamodel_code_generator.parser._pipeline import (  # noqa: E402, PLC2701
     Segment,
     StepLike,
     check_order,
+    decision_order,
     flatten,
     segment_bodies,
 )
 from datamodel_code_generator.parser.base import Parser  # noqa: E402
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator, Sequence
 
-__all__ = ["After", "Fact", "PassDecl", "PassKind", "Phase", "RenderFact", "Scope", "check_order"]
+__all__ = [
+    "After",
+    "DecisionPass",
+    "DecisionWriter",
+    "Fact",
+    "FinalFacts",
+    "PassDecl",
+    "PassKind",
+    "Phase",
+    "RenderFact",
+    "Scope",
+    "check_order",
+    "decision_order",
+]
 
 PIPELINE: tuple[StepLike[Any, Any], ...] = Parser._Parser__PIPELINE  # noqa: SLF001
 BOUNDARIES = (Boundary.PARSED, Boundary.FACTS_FINAL, Boundary.DECIDED, Boundary.RENDER_READY)
@@ -153,6 +196,115 @@ def table_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[
 def provisional_reads(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[str]:
     """Return the provisional reads the explicit edges of every segment record, in table order."""
     return [read for _, body in segment_bodies(pipeline) for read in check_order(body).provisional_reads]
+
+
+def decision_problems(decisions: Sequence[DecisionPass[Any]]) -> list[str]:
+    """Return what is wrong with one decision registry, against the rules of the decision phase."""
+    problems: list[str] = []
+    table = {decl.name for decl in PASS_DECLS}
+    seen: set[str] = set()
+    for decision in decisions:
+        decl = decision.spec["decl"]
+        if decl.name in seen:
+            problems.append(f"decision {decl.name} is registered twice")
+        seen.add(decl.name)
+        if decl.name in table:
+            problems.append(f"decision {decl.name} has the name of a table pass")
+        if (decl.phase, decl.scope, decl.kind) != (Phase.DECIDE, Scope.GLOBAL, PassKind.TRANSFORM):
+            problems.append(
+                f"decision {decl.name} declares a {decl.scope.value} {decl.kind.value} of {decl.phase.name}, "
+                "not a global transform of DECIDE"
+            )
+        if render := sorted(fact.name for fact in decl.reads | decl.writes if isinstance(fact, RenderFact)):
+            problems.append(f"decision {decl.name} reads or writes {', '.join(render)}: decisions read and write facts")
+        if not decision.spec["issue"]:
+            problems.append(f"decision {decl.name} names no issue")
+        if DecisionWriter not in decision.writer.__mro__:
+            problems.append(f"decision {decl.name} writes through {decision.writer.__name__}, no DecisionWriter")
+        elif missing := sorted(get_protocol_members(decision.writer) - set(dir(_DecisionWriter))):
+            problems.append(f"decision {decl.name} writes through {', '.join(missing)}, which _DecisionWriter lacks")
+    if len(seen) == len(decisions):
+        problems.extend(
+            f"decision phase: {problem}"
+            for problem in check_order([decision.spec["decl"] for decision in decisions], computed=True).problems
+        )
+    return problems
+
+
+def _parser_classes(cls: type[Any] = Parser) -> Iterator[type[Any]]:
+    yield cls
+    for subclass in cls.__subclasses__():
+        yield from _parser_classes(subclass)
+
+
+def registry_problems() -> list[str]:
+    """Return what is wrong with the decision registries of ``Parser`` and the loaded parser classes that set one."""
+    return [
+        f"{cls.__qualname__}: {problem}"
+        for cls in dict.fromkeys(_parser_classes())
+        if cls.__module__.startswith("datamodel_code_generator.") and "_DECISION_PASSES" in vars(cls)
+        for problem in decision_problems(cls._DECISION_PASSES)
+    ]
+
+
+VIEW_OWNERS: dict[type[Any], str] = {
+    DataTypeView: "DataType",
+    FieldView: "DataModelFieldBase",
+    ModelView: "DataModel",
+    ReferenceView: "Reference",
+}
+"""The class whose ``ATTRIBUTE_FACTS`` rows each view reads."""
+VIEW_ACCESSORS = {
+    "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
+}
+"""The view members that read no row of their own, each with what it reads."""
+
+
+def view_problems() -> list[str]:
+    """Return the view members that read a render fact, read no row, or that ``VIEW_ACCESSORS`` lists for nothing."""
+    rows = {(row.owner, row.attribute): row for row in ATTRIBUTE_FACTS}
+    problems: list[str] = []
+    members: set[str] = set()
+    for view, owner in VIEW_OWNERS.items():
+        for member in sorted(get_protocol_members(view)):
+            members.add(name := f"{view.__name__}.{member}")
+            if name in VIEW_ACCESSORS:
+                continue
+            if (row := rows.get((owner, member))) is None:
+                problems.append(f"{name} reads no row of {owner}: list it in VIEW_ACCESSORS with what it reads")
+            elif _reads_render_fact(row):
+                problems.append(f"{name} reads a render fact ({', '.join(fact.name for fact in row.facts)})")
+    problems.extend(
+        f"VIEW_ACCESSORS lists {name}, which no view has" for name in sorted(VIEW_ACCESSORS.keys() - members)
+    )
+    return problems
+
+
+FINAL_FACTS_SITE = "parser/generation.py:GenerationStore.seal_facts"
+"""The one place that builds ``FinalFacts``."""
+
+
+def _calls(node: ast.AST, scope: str, name: str) -> Iterator[str]:
+    """Yield the scope, ``Class.function`` within ``node``, of each call of ``name`` under ``node``."""
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            yield from _calls(child, f"{scope}.{child.name}" if scope else child.name, name)
+            continue
+        if isinstance(child, ast.Call) and name in {getattr(child.func, "id", None), getattr(child.func, "attr", None)}:
+            yield scope
+        yield from _calls(child, scope, name)
+
+
+def final_facts_problems(package: Path = PACKAGE) -> list[str]:
+    """Return the places other than ``FINAL_FACTS_SITE`` that build ``FinalFacts``, or that none builds it."""
+    sites = [
+        f"{path.relative_to(package).as_posix()}:{scope}"
+        for path in sorted(package.rglob("*.py"))
+        for scope in _calls(ast.parse(path.read_text(encoding="utf-8")), "", "FinalFacts")
+    ]
+    if sites == [FINAL_FACTS_SITE]:
+        return []
+    return [f"FinalFacts is built in {sites}, not only in {FINAL_FACTS_SITE}"]
 
 
 def _parser_body(tree: ast.Module) -> ast.ClassDef:
@@ -278,7 +430,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.trace is not None:
         sys.stdout.write(pass_trace(args.trace))
         return 0
-    problems = [*table_problems(), *mangling_problems(), *warning_problems()]
+    problems = [
+        *table_problems(),
+        *registry_problems(),
+        *final_facts_problems(),
+        *view_problems(),
+        *mangling_problems(),
+        *warning_problems(),
+    ]
     for problem in problems:
         print(problem, file=sys.stderr)
     return 1 if problems else 0

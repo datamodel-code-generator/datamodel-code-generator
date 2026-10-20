@@ -1,0 +1,19 @@
+1 live models
+5 fields in a tuple
+firstName: str, admits None False, same view True, equals its type name False, default factory None, extras ['description']
+is_optional False, kw_only None
+forced None
+lastName: None, admits None True, same view True, equals its type name False, default factory None, extras ['description']
+is_optional True, kw_only None
+forced None
+age: conint, admits None False, same view True, equals its type name False, default factory None, extras ['description']
+is_optional False, kw_only None
+forced None
+friends: None, admits None False, same view True, equals its type name False, default factory None, extras []
+is_optional False, kw_only None
+forced None
+comment: None, admits None False, same view True, equals its type name False, default factory None, extras []
+is_optional False, kw_only None
+forced None
+Person named Person
+after the decisions: Person

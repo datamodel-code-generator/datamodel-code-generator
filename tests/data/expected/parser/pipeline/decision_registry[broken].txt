@@ -1,0 +1,8 @@
+order: G06 -> apply_generic_base_class -> G08
+problem: decision G06 names no issue
+problem: decision G06 is registered twice
+problem: decision apply_generic_base_class has the name of a table pass
+problem: decision apply_generic_base_class declares a module check of CROSS_MODULE, not a global transform of DECIDE
+problem: decision apply_generic_base_class reads or writes CLASS_NAMES: decisions read and write facts
+problem: decision apply_generic_base_class writes through drop_everything, which _DecisionWriter lacks
+problem: decision G08 writes through BaseModel, no DecisionWriter

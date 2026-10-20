@@ -8,14 +8,19 @@ from __future__ import annotations
 
 from itertools import starmap
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Protocol
 
 import pytest
 
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model.pydantic_v2 import BaseModel
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.parser.openapi import OpenAPIParser
 from scripts import check_pass_pipeline
-from tests.conftest import assert_output
+from tests.conftest import CHECK_FACT_FINALITY_ENV, assert_output
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 DATA = Path(__file__).parents[1] / "data"
 
@@ -192,5 +197,109 @@ def test_check_order(decls: list[check_pass_pipeline.PassDecl], computed: bool) 
             f"order: {' -> '.join(result.order)}\n",
             *(f"problem: {problem}\n" for problem in result.problems),
             *(f"provisional read: {read}\n" for read in result.provisional_reads),
+        ])
+    )
+
+
+class WideWriter(check_pass_pipeline.DecisionWriter, Protocol):
+    """A writer protocol with a write that the decision writer does not implement."""
+
+    def drop_everything(self) -> None:
+        """Drop every default."""
+
+
+def _no_decision(_facts: check_pass_pipeline.FinalFacts, _writer: check_pass_pipeline.DecisionWriter) -> None:
+    """Decide nothing."""
+
+
+def _decision(
+    decl: check_pass_pipeline.PassDecl,
+    *,
+    run: Callable[[check_pass_pipeline.FinalFacts, Any], None] = _no_decision,
+    writer: type[Any] = check_pass_pipeline.DecisionWriter,
+    issue: str = "#0",
+) -> check_pass_pipeline.DecisionPass[Any]:
+    return check_pass_pipeline.DecisionPass({"decl": decl, "issue": issue}, writer, run)
+
+
+WAVE_B_REGISTRATION = ("G03b", "G08", "G06", "G12b")
+"""The wave-B decisions in another order than they run."""
+
+
+def _wave_b_decisions(
+    writes: str,
+    *,
+    edges: bool = True,
+    run: Callable[[check_pass_pipeline.FinalFacts, Any], None] = _no_decision,
+) -> list[check_pass_pipeline.DecisionPass[Any]]:
+    """Return the wave-B decisions by name only, in ``WAVE_B_REGISTRATION`` order."""
+    decls = {decl.name: decl for decl in _wave_b(writes, edges=edges)}
+    return [_decision(decls[name], run=run) for name in WAVE_B_REGISTRATION]
+
+
+DECISION_REGISTRIES = {
+    "wave-b-declared": _wave_b_decisions("declared"),
+    "wave-b-measured": _wave_b_decisions("measured"),
+    "wave-b-declared-without-edges": _wave_b_decisions("declared", edges=False),
+    "broken": [
+        _decision(_decl("G06", {"FIELD_TYPES"}, {"CONTAINERS"}, []), issue=""),
+        _decision(_decl("G06", {"FIELD_TYPES"}, {"CONTAINERS"}, [])),
+        _decision(
+            check_pass_pipeline.PassDecl(
+                "apply_generic_base_class",
+                check_pass_pipeline.Phase.CROSS_MODULE,
+                check_pass_pipeline.Scope.MODULE,
+                check_pass_pipeline.PassKind.CHECK,
+                reads=frozenset({check_pass_pipeline.RenderFact.CLASS_NAMES}),
+            ),
+            writer=WideWriter,
+        ),
+        _decision(_decl("G08", {"DEFAULTS"}, {"DEFAULTS"}, []), writer=BaseModel),
+    ],
+}
+
+
+@pytest.mark.parametrize("decisions", DECISION_REGISTRIES.values(), ids=DECISION_REGISTRIES)
+def test_decision_registry(decisions: list[check_pass_pipeline.DecisionPass[Any]]) -> None:
+    """A registry runs its decisions in the order the order rule computes; its rules report what breaks them."""
+    assert_output(
+        "".join([
+            f"order: {' -> '.join(item.spec['decl'].name for item in check_pass_pipeline.decision_order(decisions))}\n",
+            *(f"problem: {problem}\n" for problem in check_pass_pipeline.decision_problems(decisions)),
+        ])
+    )
+
+
+@pytest.mark.parametrize("finality", ["1", "0"], ids=["checked", "unchecked"])
+def test_decision_phase_runs_the_registry_after_the_generic_base_class(
+    monkeypatch: pytest.MonkeyPatch, finality: str
+) -> None:
+    """The decisions run once each, in their computed order, between the generic base class and render preparation.
+
+    Each reads the field names of the models that render in every module; collapsed root models, which leave their
+    modules later, are not among them.
+    """
+    monkeypatch.setenv(CHECK_FACT_FINALITY_ENV, finality)
+    seen: list[check_pass_pipeline.FinalFacts] = []
+
+    class DecidingParser(OpenAPIParser):
+        _DECISION_PASSES = tuple(_wave_b_decisions("declared", run=lambda facts, _writer: seen.append(facts)))
+
+    parser = DecidingParser(
+        DATA / "openapi" / "modular.yaml", collapse_root_models=True, formatters=[Formatter.BUILTIN]
+    )
+    trace = check_pass_pipeline.call_trace(parser.parse)
+    start = trace.index("apply_generic_base_class")
+    facts = seen[0]
+
+    assert_output(
+        "".join([
+            *(f"{name}\n" for name in trace[start : start + 6]),
+            f"decisions that read these facts: {sum(item is facts for item in seen)}\n",
+            *(
+                f"{'/'.join(module.module)}: {[[field.name for field in m.fields] for m in module.live_models]}\n"
+                for module in facts.modules
+            ),
+            f"live models: {len(facts.live_models)}\n",
         ])
     )

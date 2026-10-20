@@ -1,0 +1,6 @@
+{"pass_name": "read_render_facts", "rule": "render-read", "row": "DataType.is_optional", "facts": ["NULLABLE"], "model": "Person", "phase": "DECIDE", "known": false}
+{"pass_name": "read_render_facts", "rule": "render-read", "row": "DataModelFieldBase.extras[\"kw_only\"]", "facts": ["KEYWORD_ONLY"], "model": "Person", "phase": "DECIDE", "known": false}
+{"pass_name": "read_render_facts", "rule": "render-read", "row": "DataModelFieldBase._forced_field_assignment", "facts": ["FORCED_ASSIGNMENT"], "model": "Person", "phase": "DECIDE", "known": false}
+{"pass_name": "read_render_facts", "rule": "render-read", "row": "DataModel.class_name", "facts": ["CLASS_NAMES"], "model": "Person", "phase": "DECIDE", "known": false}
+{"pass_name": "read_render_facts", "rule": "render-read", "row": "Reference.name", "facts": ["CLASS_NAMES"], "model": "Person", "phase": "DECIDE", "known": false}
+{"pass_name": "<IMPORTS>", "rule": "render-read", "row": "DataModel.class_name", "facts": ["CLASS_NAMES"], "model": "Person", "phase": "IMPORTS", "known": false}

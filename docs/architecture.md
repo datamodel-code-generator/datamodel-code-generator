@@ -383,6 +383,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | `__import_renamed_types` | imports of types that a later module renamed |
 | `__import_enum_member_literal_classes` | imports for enum member literals |
 | `_finalize_modules`: `__apply_generic_base_class` | inserts the generated base model and rewrites base classes |
+| decision phase: the decisions of `Parser._DECISION_PASSES` (none registered yet) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
 | `__prepare_type_alias_fields`, `finalize_type_alias_users` (backend) | type-alias field form, backend config |
 | `__mark_set_item_models_hashable` | identity hash for set item models |
 | `_finalize_structured_imports`, model imports snapshot, unused-model removal | imports, module model lists |
@@ -451,9 +452,10 @@ other conflicting pair needs explicit `after` edges, with their reasons, that co
 edges. An explicit edge replaces the derived edge of its pair; one that runs a reader before a writer of what it reads
 is a provisional read, listed below the table. `scripts/check_pass_pipeline.py` (run by the test suite) checks that the
 tables run every declaration once in `PASS_DECLS` order, in the phase of its segment and with its scope, that the
-segments enter the boundaries in order and satisfy the order rule, that the repair set only shrinks, that no code
-outside `Parser` reaches its name-mangled members, and lists the warnings whose `stacklevel` reaches past their
-caller. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that runs; the test suite keeps the
+segments enter the boundaries in order and satisfy the order rule, that the repair set only shrinks, that every
+decision registry follows the rules of the [Decision Phase](#decision-phase), that only `GenerationStore.seal_facts`
+builds `FinalFacts`, that no code outside `Parser` reaches its name-mangled members, and lists the warnings whose
+`stacklevel` reaches past their caller. A pass trace (`scripts/check_pass_pipeline.py --trace`) records each pass that runs; the test suite keeps the
 traces of a few inputs and checks that some input runs every declared pass. The finality check
 ([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the generator runs;
 reads and the writes of presentation rows are declared from the code. A new pass gets a declaration and a table entry.
@@ -597,6 +599,30 @@ Provisional reads, from the explicit edges:
 - `bind_module_field_names` reads MODULE_IMPORTS before `replan_schema_validators_after_renames` writes it: binding reads the module imports before the helpers are planned again.
 <!-- END AUTO-GENERATED PASS DECLARATIONS -->
 
+### Decision Phase
+
+The `decide` segment (`DECIDE`, entered at B1 right after `__apply_generic_base_class`) runs the decisions of the
+parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry is empty: no decision runs and
+nothing is built. A decision is a `DecisionPass`: a `DecisionSpec` (its `PassDecl`, a global transform of `DECIDE`
+that reads and writes `Fact` members only, and the issue it fixes), the writer protocol of its writes (a
+`DecisionWriter`) and `run(facts, writer)`. When the registry holds decisions, `GenerationStore.seal_facts` builds the
+one `FinalFacts` of the parse: per output module, the models that render (unused models, which leave their modules
+later, are left out), as the read-only views of `model/_views.py` (`ModelView`, `FieldView`, `DataTypeView`,
+`ReferenceView`). The views list the facts final at B1 and rendered nullability through `admits_none`, never the
+`is_optional` that rendering still writes; presentation attributes are not part of them, and type checking rejects
+writes through a view. Every decision writes through `_DecisionWriter`, the one implementation of the writer protocols
+over the store, which records the models it changes (`DecisionOutcome`). A writer never changes a data type node that
+other fields share: it replaces the node in the one field with a copy first.
+
+The decisions run in the order the order rule computes from their declarations (`decision_order`): a decision that
+reads what another writes runs after it, every other conflicting pair needs an `After` edge in `decl.after` (the only
+explicit edges a decision has), and the registration order breaks ties. Each runs inside `fact_pass` with its
+declaration, so the finality check holds its writes to the facts it declares. With the finality check on, `FinalFacts`
+holds guarded views that report each read of a render fact as `render-read` ([Fact Finality](#fact-finality)).
+`scripts/check_pass_pipeline.py` checks every registry: unique names that no table pass has, global transforms of
+`DECIDE` that read and write facts only, an issue each, writer protocols that `_DecisionWriter` implements, and the
+order rule.
+
 ### Hidden Couplings
 
 **Per-module passes that change models in other modules.** L5 receives only the current module's models, but reaches
@@ -699,8 +725,11 @@ computed rows (a property of the model class) are not fingerprinted, and only ty
 their rows. A row is judged by the freeze points of the facts the pass declares, so a pass that declares only
 `IMPORT_ALIASES` (final at render) can change `DataType.type`, `python_type`, `kwargs` or `extras` after B1 without a
 report, and one that declares only `TYPE_ALIAS_BODY` (final at B2) can change a type alias's `data_type` or
-`data_types` after B1, although `FIELD_TYPES` of those rows is final at B1. A decision in the decision phase will not read
-render facts; that check arrives with the phase.
+`data_types` after B1, although `FIELD_TYPES` of those rows is final at B1. A decision of the decision phase reads
+`FinalFacts` through guarded views: reading a render fact, an attribute (or a key of `extras` or `__dict__`) whose row
+holds facts none of which is a `Fact` final at B1, is `render-read`, named after the running decision. The views give
+the graph objects they reach as views and their lists as tuples, and see only what a decision reads on them, not what
+the methods and properties of the classes read inside.
 
 ### Generation Store
 

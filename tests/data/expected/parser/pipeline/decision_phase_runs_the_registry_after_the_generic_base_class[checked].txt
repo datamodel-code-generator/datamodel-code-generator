@@ -1,0 +1,17 @@
+apply_generic_base_class
+G12b
+G06
+G03b
+G08
+collect_all_models
+decisions that read these facts: 4
+_internal: [['code', 'message'], ['event'], ['country'], ['foo', 'nested'], ['flavour', 'id'], ['quality'], ['flavour', 'id', 'self', 'optional'], ['flavour', 'id', 'self', 'optional'], ['field_']]
+woo/boo: [['flavour', 'source', 'cocoa', 'field']]
+nested/foo: []
+foo/bar: [['attributes'], ['attributes'], ['name'], ['others']]
+models: [['dog', 'cat', 'snake'], ['id', 'name', 'tag', 'species'], ['id', 'name', 'tag'], ['name']]
+foo: []
+collections: [['field_'], ['field_'], ['field_'], ['test', 'dev', 'stg', 'prod'], ['apiKey', 'apiVersionNumber', 'apiUrl', 'apiDocumentationUrl', 'stage'], ['field_']]
+bar: []
+: []
+live models: 24

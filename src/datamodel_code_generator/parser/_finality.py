@@ -34,7 +34,10 @@ when the next pass starts (a guarded write outside every pass), at the start and
 (``module_checkpoint``) and when the pipeline leaves a phase (``GenerationStore.enter_phase``). A pass that runs in
 another phase than it declares is ``wrong-phase``. On entering ``DECIDE`` (B1), the ordering-input check compares the
 fields that a pass read from the bases of a model for constructor ordering, with the facts the ordering pass declares
-as reads, with those fields now (``ordering-input``). Only type aliases hold ``TYPE_ALIAS_BODY`` in their rows.
+as reads, with those fields now (``ordering-input``). Only type aliases hold ``TYPE_ALIAS_BODY`` in their rows. In
+``DECIDE``, a decision reads ``FinalFacts`` through the guarded views of ``decision_views``: reading a render fact
+(an attribute, or a key of a dict attribute or of ``__dict__``, whose row holds facts none of which is a ``Fact`` final
+at B1) is ``render-read``.
 
 A row is judged by the freeze points of the facts the pass declares: a pass that declares only ``IMPORT_ALIASES`` (final
 at render) can change ``DataType.type``, ``python_type``, ``kwargs`` or ``extras`` after B1 without a report, and one
@@ -58,6 +61,7 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Mapping
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from dataclasses import dataclass, field, fields, is_dataclass
@@ -99,6 +103,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
     from types import FrameType
 
+    from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.parser.generation import GenerationStore
 
 __all__ = [
@@ -107,6 +112,7 @@ __all__ = [
     "KnownWrite",
     "Rule",
     "arm_parse_checks",
+    "decision_views",
     "fact_pass",
     "module_checkpoint",
     "parse_checks",
@@ -289,6 +295,7 @@ class Rule(Enum):
     UNATTRIBUTED = "unattributed"
     WRONG_PHASE = "wrong-phase"
     ORDERING_INPUT = "ordering-input"
+    RENDER_READ = "render-read"
 
 
 @final
@@ -480,11 +487,11 @@ def _freeze(value: Any, nested: list[Any]) -> Any:  # noqa: PLR0911
 
 
 def _dict_keys() -> dict[str, str]:
-    """Return the ``__dict__`` key that each constant a dict-key fact row names stands for, from the loaded modules.
+    """Return the ``__dict__`` key that each constant a dict-key row names stands for, from the loaded modules.
 
     A module that is not loaded puts no key into any object, so its constants are not needed.
     """
-    names = {row.attribute for row in ATTRIBUTE_FACTS if row.kind is FactKind.FACT and row.access is Access.DICT_KEY}
+    names = {row.attribute for row in ATTRIBUTE_FACTS if row.access is Access.DICT_KEY}
     keys: dict[str, str] = {}
     for module_name, module in sorted(sys.modules.items()):
         if module_name.startswith(f"{_PACKAGE}.") and module is not None:
@@ -900,6 +907,12 @@ class _Finality:
         pass_name = f"<{self.store.phase.name}>" if (run := self.run) is None else run.decl.name
         self.ordering_reads.append(_OrderingRead(pass_name, model, self._ordering_fields(bases)))
 
+    def read_render_fact(self, owner: object, row: AttributeFact) -> None:
+        """Report that the running pass reads ``row`` of ``owner``, a render fact, through a view of ``FinalFacts``."""
+        name = f"<{self.store.phase.name}>" if (run := self.run) is None else run.decl.name
+        source = owner.source if isinstance(owner, Reference) else owner
+        self._violation(name, Rule.RENDER_READ, row, next(iter(self.models_of(source)), None), row.facts)
+
     def _check_ordering_read(self, read: _OrderingRead) -> None:
         """Report a field of a base that ordering read and that changed before B1, or a changed set of fields."""
         now = self._ordering_fields(linearize_data_models(_find_base_classes(read.model)))
@@ -912,6 +925,143 @@ class _Finality:
             if changed is not None:
                 row = changed[1]
                 self._violation(name, Rule.ORDERING_INPUT, row, read.model, row.facts, base=before.base.class_name)
+
+
+def _reads_render_fact(row: AttributeFact) -> bool:
+    """Return whether ``row`` holds facts and none of them is a ``Fact`` final at B1: a render fact for decisions."""
+    return bool(row.facts) and not any(
+        isinstance(fact, Fact) and _freeze_point(row, fact) is FreezePoint.B1 for fact in row.facts
+    )
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class _RenderRows:
+    """The render-fact rows of one class: by attribute, and by key of a dict attribute or of ``__dict__``."""
+
+    attributes: dict[str, AttributeFact]
+    items: dict[str, dict[str, AttributeFact]]
+
+    @classmethod
+    def of(cls, owner_class: type, dict_keys: dict[str, str]) -> _RenderRows:
+        """Collect the render-fact rows of ``owner_class`` from the rows of its package classes."""
+        names = {base.__name__ for base in owner_class.__mro__ if base.__module__.startswith(f"{_PACKAGE}.")}
+        attributes: dict[str, AttributeFact] = {}
+        items: dict[str, dict[str, AttributeFact]] = {}
+        for row in ATTRIBUTE_FACTS:
+            if row.owner not in names or not _reads_render_fact(row):
+                continue
+            match row.access:
+                case Access.ITEM:
+                    container, _, key = row.attribute.removesuffix('"]').partition('["')
+                    items.setdefault(container, {})[key] = row
+                case Access.DICT_KEY:
+                    items.setdefault("__dict__", {})[dict_keys.get(row.attribute, row.attribute)] = row
+                case _:
+                    attributes[row.attribute] = row
+        return cls(attributes, items)
+
+
+@final
+class _ReadGuard:
+    """The views that decisions read while the finality check is armed: reads of render facts are reported.
+
+    A view stands for one model, field, data type or reference: it reads through to the object, gives the graph
+    objects it reaches as views and their lists as tuples, and has no attribute to write. Reading a render fact
+    (``_reads_render_fact``) is reported as ``render-read``, also when it is a key of a dict attribute or of
+    ``__dict__``. What the methods and properties of the classes read inside is theirs, not the decision's.
+    """
+
+    __slots__ = ("_dict_keys", "_finality", "_rows", "_views")
+
+    def __init__(self, finality: _Finality) -> None:
+        self._finality = finality
+        self._dict_keys = _dict_keys()
+        self._rows: dict[type, _RenderRows] = {}
+        self._views: dict[int, _GuardedView] = {}
+
+    def view(self, owner: Any) -> Any:
+        """Return the one view of ``owner``."""
+        if (view := self._views.get(id(owner))) is None:
+            view = self._views[id(owner)] = _GuardedView(self, owner)
+        return view
+
+    def read(self, owner: object, name: str) -> Any:
+        """Return attribute ``name`` of ``owner`` as a view reads it, reporting a render fact."""
+        if (rows := self._rows.get(type(owner))) is None:
+            rows = self._rows[type(owner)] = _RenderRows.of(type(owner), self._dict_keys)
+        if (row := rows.attributes.get(name)) is not None:
+            self._finality.read_render_fact(owner, row)
+        value = getattr(owner, name)
+        if (keys := rows.items.get(name)) is not None:
+            return _GuardedItems(self, owner, value, keys)
+        return self.wrap(value)
+
+    def read_item(self, owner: object, row: AttributeFact | None) -> None:
+        """Report reading a key of a dict attribute of ``owner`` that ``row`` names as a render fact."""
+        if row is not None:
+            self._finality.read_render_fact(owner, row)
+
+    def wrap(self, value: Any) -> Any:
+        """Return ``value`` as a view reads it: graph objects as views, lists and tuples as tuples of what they hold."""
+        if isinstance(value, _GRAPH_CLASSES):
+            return self.view(value)
+        if isinstance(value, (list, tuple)):
+            return tuple(map(self.wrap, value))
+        return value
+
+
+@final
+class _GuardedView:
+    """A view of one graph object that ``_ReadGuard`` gives a decision."""
+
+    __slots__ = ("_guard", "_object")
+
+    def __init__(self, guard: _ReadGuard, owner: object) -> None:
+        self._guard = guard
+        self._object = owner
+
+    def __getattr__(self, name: str) -> Any:
+        """Read attribute ``name`` of the object."""
+        return self._guard.read(self._object, name)
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        """Compare the object with ``other``, or with the object ``other`` views."""
+        return self._object == (other._object if isinstance(other, _GuardedView) else other)
+
+    @override
+    def __hash__(self) -> int:
+        """Hash as the object."""
+        return hash(self._object)
+
+
+@final
+class _GuardedItems(Mapping[str, Any]):
+    """A dict attribute of a graph object, or its ``__dict__``, as a view reads it."""
+
+    __slots__ = ("_guard", "_items", "_owner", "_rows")
+
+    def __init__(
+        self, guard: _ReadGuard, owner: object, items: Mapping[str, Any], rows: dict[str, AttributeFact]
+    ) -> None:
+        self._guard = guard
+        self._owner = owner
+        self._items = items
+        self._rows = rows
+
+    @override
+    def __getitem__(self, key: str) -> Any:
+        self._guard.read_item(self._owner, self._rows.get(key))
+        return self._guard.wrap(self._items[key])
+
+    @override
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._items)
+
+    @override
+    def __len__(self) -> int:
+        return len(self._items)
 
 
 @final
@@ -1173,6 +1323,16 @@ def recording_pass_trace() -> Generator[list[str], None, None]:
         yield trace
     finally:
         _TRACE.reset(token)
+
+
+def decision_views() -> Callable[[DataModel], ModelView] | None:
+    """Return how ``FinalFacts`` gives a decision each model while the finality check is armed, or None when it is not.
+
+    The views report the render facts a decision reads (``_ReadGuard``).
+    """
+    if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
+        return None
+    return _ReadGuard(finality).view
 
 
 def record_ordering_inputs(model: DataModel, bases: Iterable[DataModel]) -> None:

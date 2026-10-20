@@ -66,6 +66,7 @@ from datamodel_code_generator.parser._holders import (
     node_in_cycle,
     parent_is_holder,
 )
+from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
@@ -74,6 +75,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from datamodel_code_generator._checks import CheckMode
+    from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.types import DataType
@@ -1294,6 +1296,21 @@ class GenerationStore:  # noqa: PLR0904
     def enter_phase(self, phase: Phase) -> None:
         """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
         self.phase = phase
+
+    def seal_facts(  # noqa: PLR6301
+        self,
+        modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
+        view: Callable[[DataModel], ModelView] | None = None,
+    ) -> FinalFacts:
+        """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
+
+        ``view`` gives the view a decision reads of each model (the guarded view of the finality check); without it,
+        the view is the model. This is the only construction of ``FinalFacts``.
+        """
+        module_facts = tuple(
+            ModuleFacts(module, tuple(models if view is None else map(view, models))) for module, models in modules
+        )
+        return FinalFacts(module_facts, tuple(model for facts in module_facts for model in facts.live_models))
 
     def register_model(self, model: DataModel) -> None:
         """Register a parsed model while preserving parser append order."""

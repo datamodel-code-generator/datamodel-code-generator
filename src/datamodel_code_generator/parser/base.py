@@ -161,6 +161,7 @@ from datamodel_code_generator.parser import _pass_decls as decls
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._finality import (
     arm_parse_checks,
+    decision_views,
     module_checkpoint,
     parse_checks,
     pass_scope,
@@ -213,8 +214,10 @@ from datamodel_code_generator.parser._passes._shared import (
     replace_model_in_list,
     resolve_default_value_descriptor,
 )
+from datamodel_code_generator.parser._phases import DecisionOutcome, DecisionPass, _DecisionWriter
 from datamodel_code_generator.parser._pipeline import (
     Boundary,
+    DecisionPhase,
     ForEachModule,
     HookCall,
     PassSpec,
@@ -222,6 +225,7 @@ from datamodel_code_generator.parser._pipeline import (
     Segment,
     StepLike,
     anchor_parse_caller,
+    decision_order,
     release_parse_caller,
 )
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
@@ -1361,6 +1365,9 @@ class _ModuleState:
     live_models: list[DataModel] = dataclasses.field(init=False)
 
 
+_NO_DECISIONS: Final = DecisionOutcome(())
+
+
 @final
 @dataclass(slots=True)
 class _FinalizeState:
@@ -1377,6 +1384,8 @@ class _FinalizeState:
     model_imports: dict[DataModel, tuple[Import, ...]] = dataclasses.field(init=False)
     renamed_models: bool = False
     additional_properties_models: list[DataModel] = dataclasses.field(default_factory=list)
+    decisions: DecisionOutcome = _NO_DECISIONS
+    """What the decision phase changed."""
 
     def collect_additional_properties_models(self) -> bool:
         """Take the models whose additional properties reference classes; return whether there is any."""
@@ -3314,6 +3323,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _cache_local_sources_during_parse: ClassVar[bool] = False
     _cache_parsed_sources_from_path: ClassVar[bool] = False
     _collapses_list_item_root_models: ClassVar[bool] = True
+    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = ()
+    """The decisions of the decision phase, in registration order; ``parser/_phases.py`` says how they run."""
     _http_fetch_session: _HTTPFetchSession | None = None
     _dropped_constraint_fields: DroppedConstraintFields = frozenset()
     _schema_graph: SchemaGraphBuilder | None = None
@@ -8683,6 +8694,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import)
         self.__runner().run_steps(Parser.__FINALIZE_SEGMENTS, self, state)
 
+    def __decide(self, runner: Runner, state: _FinalizeState) -> None:
+        """Seal the facts final at B1 and run the decisions of the registry on them, when it holds any."""
+        if not (decisions := self._DECISION_PASSES):
+            return
+        unused = {id(model) for model in state.unused_models}
+        modules = [
+            (ctx.module_key, [model for model in ctx.models if id(model) not in unused]) for ctx in state.contexts
+        ]
+        facts = self.generation_store.seal_facts(modules, decision_views())
+        writer = _DecisionWriter(self.generation_store)
+        for decision in decision_order(decisions):
+            runner.run_decision(decision, facts, writer)
+        state.decisions = writer.outcome(model for _, models in modules for model in models)
+
     def __collect_all_models(self, state: _FinalizeState) -> None:  # noqa: PLR6301
         """Take the models of every module, before unused models leave them."""
         state.all_models = [model for ctx in state.contexts for model in ctx.models]
@@ -9774,7 +9799,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             (PassSpec(decls.APPLY_GENERIC_BASE_CLASS, lambda self, s: self.__apply_generic_base_class(s.contexts)),),
             enters_phase=False,
         ),
-        Segment("decide", Phase.DECIDE, _same_state, (), enter=Boundary.FACTS_FINAL),
+        Segment(
+            "decide",
+            Phase.DECIDE,
+            _same_state,
+            (DecisionPhase("decision_passes", lambda runner, self, s: self.__decide(runner, s)),),
+            enter=Boundary.FACTS_FINAL,
+        ),
         Segment(
             "render_preparation",
             Phase.RENDER_PREPARATION,
