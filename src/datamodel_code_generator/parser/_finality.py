@@ -77,7 +77,7 @@ from typing import TYPE_CHECKING, Any, Final, SupportsIndex
 from weakref import ref
 
 from pydantic import BaseModel
-from typing_extensions import final, override
+from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
 from datamodel_code_generator.model.base import DataModel, DataModelFieldBase, _find_base_classes, linearize_data_models
@@ -443,11 +443,11 @@ _KNOWN: Final = frozenset((known.pass_name, known.rule, known.row) for known in 
 _SWEEPING_KINDS: Final = frozenset({PassKind.TRANSFORM, PassKind.REPAIR})
 _PHASE_FREEZE_POINTS: Final = {FreezePoint.B1: Phase.DECIDE, FreezePoint.B2: Phase.IMPORTS}
 _ITEM_ROW: Final = re.compile(r'(\w+)\["([^"]+)"\]')
-_MISSING: Final = object()
-_IDENTITY: Final = object()
-_SEQUENCE: Final = object()
-_MAPPING: Final = object()
-_SET: Final = object()
+_MISSING: Final = Sentinel("_MISSING")
+_IDENTITY: Final = Sentinel("_IDENTITY")
+_SEQUENCE: Final = Sentinel("_SEQUENCE")
+_MAPPING: Final = Sentinel("_MAPPING")
+_SET: Final = Sentinel("_SET")
 _PLAIN_TYPES: Final = frozenset({str, int, bool, type(None), bytes})
 _BUILTIN_VALUE_TYPES: Final = (bool, int, float, complex, Decimal, str, bytes)
 _DESCENDED: Final = (DataType, DataModelFieldBase)

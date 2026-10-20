@@ -20,6 +20,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 from urllib.parse import ParseResult, unquote, urljoin
 
+from typing_extensions import Sentinel
+
 from datamodel_code_generator import Error
 from datamodel_code_generator._generation_contract import AttemptId, BindingCaptureError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
@@ -847,7 +849,7 @@ _UNDECLARED_PARTS: Final = _PartsRecord(object=True, members=(), extra=None)
 _NO_PART: Final = PartSchema(file=False, repeated=False, text=False, structured=False)
 _BAD_PERCENT: Final = re.compile(r"%(?![0-9a-fA-F]{2})")
 _BAD_ESCAPE: Final = re.compile(r"~(?![01])")
-_MISSING: Final = cast("YamlValue", object())
+_MISSING: Final = cast("YamlValue", Sentinel("_MISSING"))
 
 
 def _pointer_tokens(ref: str) -> tuple[str, ...] | None:

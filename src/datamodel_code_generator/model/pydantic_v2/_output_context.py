@@ -2,4 +2,6 @@
 
 from __future__ import annotations
 
-ANNOTATED_CONSTRAINTS_CONTEXT: object = object()
+from typing_extensions import Sentinel
+
+ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel("ANNOTATED_CONSTRAINTS_CONTEXT")

@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin, get_type_hints
 
 from pydantic import BaseModel
-from typing_extensions import Self
+from typing_extensions import Self, Sentinel
 
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
 from datamodel_code_generator._process_state import PROCESS_STATE_LOCK
@@ -52,20 +52,17 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
 
     from pydantic.json_schema import GenerateJsonSchema
-    from typing_extensions import Sentinel as sentinel  # noqa: N813  # ty uses the pre-4.16 name
 
     from datamodel_code_generator import DataModelType, InputFileType
     from datamodel_code_generator.enums import _OutputModelFamily
     from datamodel_code_generator.input_model_result import LoadedInputModelSchema
-else:
-    from typing_extensions import sentinel
 
 
 class Error(Exception):
     """Error raised during input model loading."""
 
 
-_MISSING_MODULE = object()
+_MISSING_MODULE = Sentinel("_MISSING_MODULE")
 _ModuleRestoreState = tuple[str, object]
 _ParentSchema = tuple[dict[str, object], dict[str, object], frozenset[str]]
 
@@ -262,7 +259,7 @@ _UNSERIALIZABLE_MARKER = "x-python-unserializable"
 _UNION_BRANCH_MARKER = "x-python-union-branch"
 _UNSERIALIZABLE_SCHEMA_KEYS = frozenset({"anyOf", "oneOf", "allOf", "items", "prefixItems", "additionalProperties"})
 _FIELD_SCHEMA_NAME = "x-datamodel-code-generator-field-name"
-_MISSING_FIELD_SCHEMA_NAME = sentinel("_MISSING_FIELD_SCHEMA_NAME")
+_MISSING_FIELD_SCHEMA_NAME = Sentinel("_MISSING_FIELD_SCHEMA_NAME")
 
 
 class _FieldSchemaOwner(int):

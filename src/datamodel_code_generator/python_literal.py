@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from math import isfinite, isnan
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from typing_extensions import Self
+from typing_extensions import Self, Sentinel
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -235,7 +235,7 @@ def _semantic_value_text(value: object) -> str:
     return repr(float(value)) if isinstance(value, _NonFiniteFloat) else str(value)
 
 
-_INTERNAL_TYPE_EXPRESSION_TOKEN = object()
+_INTERNAL_TYPE_EXPRESSION_TOKEN = Sentinel("_INTERNAL_TYPE_EXPRESSION_TOKEN")
 _INTERNAL_TYPE_EXPRESSION_ERROR = "internal type expressions must be created by the parser"
 
 

@@ -6,6 +6,7 @@ from collections.abc import Hashable
 from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel
+from typing_extensions import Sentinel
 
 
 @runtime_checkable
@@ -66,7 +67,7 @@ class Child(Protocol):
 
 
 T = TypeVar("T")
-_NO_PARENT = object()
+_NO_PARENT = Sentinel("_NO_PARENT")
 
 
 def get_most_of_parent(value: Any, type_: type[T] | None = None) -> T | None:

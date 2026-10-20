@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 
+from typing_extensions import Sentinel
+
 from datamodel_code_generator._regex_syntax import is_portable_pattern
 from datamodel_code_generator._requirements import pydantic_target_meets
 
@@ -43,7 +45,7 @@ UniqueItemsPathStep: TypeAlias = (
     | None
 )
 UniqueItemsPath: TypeAlias = tuple[UniqueItemsPathStep, ...]
-_INTERNAL_SCHEMA_RUNTIME_VALIDATION_TOKEN = object()
+_INTERNAL_SCHEMA_RUNTIME_VALIDATION_TOKEN = Sentinel("_INTERNAL_SCHEMA_RUNTIME_VALIDATION_TOKEN")
 _INTERNAL_SCHEMA_RUNTIME_VALIDATION_ERROR = "internal schema runtime validation must be created by the parser"
 
 

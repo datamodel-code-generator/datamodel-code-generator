@@ -30,7 +30,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Unpack, final, override
+from typing_extensions import Sentinel, Unpack, final, override
 
 from datamodel_code_generator import (
     AllOfClassHierarchy,
@@ -396,7 +396,7 @@ _ALL_OF_VALUE_PART_EXCLUDED_EXTRAS = frozenset({
     "then",
     "x-python-type",
 })
-_NO_INHERITED_SCHEMA_MERGE = object()
+_NO_INHERITED_SCHEMA_MERGE = Sentinel("_NO_INHERITED_SCHEMA_MERGE")
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
 _QUALIFIED_PYTHON_TYPE_IMPORT_ALIASES = {
@@ -1047,7 +1047,7 @@ def unescape_json_pointer_segment(segment: str) -> str:
 
 
 _JSON_POINTER_ARRAY_INDEX = re.compile(r"0|[1-9][0-9]*")
-_MISSING_JSON_POINTER = object()
+_MISSING_JSON_POINTER = Sentinel("_MISSING_JSON_POINTER")
 
 
 class _JSONPointerArrayIndexOutOfRangeError(Error):

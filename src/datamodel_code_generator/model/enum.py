@@ -10,7 +10,7 @@ from functools import cached_property, lru_cache
 from math import isnan
 from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
-from typing_extensions import assert_never, override
+from typing_extensions import Sentinel, assert_never, override
 
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_ENUM, IMPORT_INT_ENUM, IMPORT_STR_ENUM, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -30,8 +30,8 @@ _INT: str = "int"
 _FLOAT: str = "float"
 _BYTES: str = "bytes"
 _STR: str = "str"
-_JSON_NUMBER_KEY = object()
-_JSON_NAN_KEY = object()
+_JSON_NUMBER_KEY = Sentinel("_JSON_NUMBER_KEY")
+_JSON_NAN_KEY = Sentinel("_JSON_NAN_KEY")
 
 escape_characters = str.maketrans({
     "\u0000": r"\x00",  # Null byte

@@ -8,6 +8,8 @@ import warnings
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from typing_extensions import Sentinel
+
 from datamodel_code_generator.deprecations import warn_deprecated
 
 if TYPE_CHECKING:
@@ -154,7 +156,7 @@ def _fast_construct_document(loader: Any, root: Any) -> Any:  # noqa: PLR0914, P
     map_tag = "tag:yaml.org,2002:map"
     seq_tag = "tag:yaml.org,2002:seq"
     str_tag = "tag:yaml.org,2002:str"
-    generator_marker = object()
+    generator_marker = Sentinel("generator_marker")
 
     constructors = loader.yaml_constructors
     plain_map = constructors.get(map_tag) is SafeConstructor.construct_yaml_map

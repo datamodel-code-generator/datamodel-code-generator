@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pydantic
 from pydantic import BaseModel
+from typing_extensions import Sentinel
 
 from datamodel_code_generator import Error, generate, is_asyncapi, is_openapi
 from datamodel_code_generator._graph import stable_toposort
@@ -34,7 +35,7 @@ if TYPE_CHECKING:
 _dynamic_models_cache: dict[str, dict[str, type]] = {}
 _dynamic_models_lock = threading.Lock()
 _dynamic_module_counter = itertools.count(1)
-_MISSING_MODULE = object()
+_MISSING_MODULE = Sentinel("_MISSING_MODULE")
 
 
 def _evict_dynamic_models_cache_entries(count: int) -> None:

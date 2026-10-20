@@ -23,6 +23,8 @@ from typing import TYPE_CHECKING, Any
 from warnings import warn
 from weakref import ReferenceType, WeakKeyDictionary, ref
 
+from typing_extensions import Sentinel
+
 from datamodel_code_generator import _format_types
 from datamodel_code_generator.deprecations import warn_deprecated, warn_legacy_dependency
 from datamodel_code_generator.util import load_toml
@@ -213,7 +215,7 @@ def _restore_watch_package(
         setattr(parent_module, child_name, parent_attribute)
 
 
-_MISSING_PARENT_ATTRIBUTE = object()
+_MISSING_PARENT_ATTRIBUTE = Sentinel("_MISSING_PARENT_ATTRIBUTE")
 
 
 def _fresh_watch_package(module: ModuleType) -> ModuleType:

@@ -12,7 +12,7 @@ from functools import wraps
 from math import ceil, floor, isfinite
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
-from typing_extensions import override
+from typing_extensions import Sentinel, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
@@ -77,7 +77,7 @@ class _UNSET:
 UNSET = _UNSET()
 
 
-_ANNOTATED_CONSTRAINTS_CONTEXT: object = object()
+_ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel("_ANNOTATED_CONSTRAINTS_CONTEXT")
 _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
 
 

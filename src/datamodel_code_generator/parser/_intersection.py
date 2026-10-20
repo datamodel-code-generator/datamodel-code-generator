@@ -45,6 +45,8 @@ from math import gcd, isfinite, isnan, lcm
 from typing import TYPE_CHECKING, Any, Final, final
 from warnings import warn
 
+from typing_extensions import Sentinel
+
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
 if TYPE_CHECKING:
@@ -85,7 +87,7 @@ _SCHEMA_MAP_KEYWORDS: Final = ("properties", "patternProperties")
 ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descriptions")
 _HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
 _NUMBER_TYPES: Final = frozenset({"integer", "number"})
-_REMOVED: Final = object()
+_REMOVED: Final = Sentinel("_REMOVED")
 
 
 @final
