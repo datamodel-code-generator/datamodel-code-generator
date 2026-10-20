@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Child",
+  "allOf": [
+    {
+      "$ref": "../base/parent.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "minProperties": 1
+        }
+      }
+    }
+  ]
+}

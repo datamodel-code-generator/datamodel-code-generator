@@ -8,8 +8,8 @@
     "_get_ref_raw_schema": 6,
     "_load_ref_schema_object": 5,
     "_validate_schema_object": 9,
-    "add_ref": 13,
-    "resolve_ref": 21
+    "add_ref": 8,
+    "resolve_ref": 15
   },
   "phases": [
     "_build_generation_parser",
@@ -19,7 +19,7 @@
   "result": null,
   "retained_parsers": 0,
   "artifacts": {
-    "models.py": "26fddd831508a7eee983163f4c3ca528f8bf71698f3ea85bc548bac56634a5c2"
+    "models.py": "32c0209b7b3a6ece51cd0b830c95c363b18eabd3d90eaa6596ba85bcc43fe83e"
   },
   "target_imports": []
 }

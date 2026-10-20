@@ -1537,7 +1537,10 @@ class ModelResolver:  # noqa: PLR0904
 
     def add_ref(self, ref: str, resolved: bool = False) -> Reference:  # noqa: FBT001, FBT002
         """Add a reference and return the Reference object."""
-        path = self.resolve_ref(ref) if not resolved else ref
+        return self._add_ref_at(self.resolve_ref(ref) if not resolved else ref, ref)
+
+    def _add_ref_at(self, path: str, ref: str) -> Reference:
+        """Return the Reference at a resolved ``path``, added and named after ``ref``, its spelling, if it is new."""
         if reference := self.references.get(path):
             return reference
         original_name = self.ref_original_name(ref, path) or self.ref_original_name(path, path)

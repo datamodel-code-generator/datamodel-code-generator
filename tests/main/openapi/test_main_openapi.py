@@ -12905,6 +12905,29 @@ def test_main_openapi_dynamic_ref(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_dynamic_ref_request_response(output_file: Path) -> None:
+    """Find the read/write variants of a component through its `$dynamicRef`, resolved in the component's document."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dynamic_ref.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_ref_request_response",
+        model_name="Tree",
+        valid_json='{"value": "root", "children": [{"value": "leaf"}]}',
+        invalid_json='{"children": [{"value": 1}]}',
+        expected_error_type="string_type",
+    )
+
+
 def test_main_openapi_dynamic_ref_external_generic(output_file: Path) -> None:
     """Specialize external JSON Schema generics referenced from OpenAPI components."""
     run_main_and_assert(

@@ -3,6 +3,7 @@
 [test_fast_constructor_drains_nested_deferred_generators]
 	yaml_fast_constructor/parity.txt
 [test_fast_constructor_matches_schema_fixtures]
+asyncapi/avro-named-types.yaml	yaml_fast_constructor/parity.txt
 asyncapi/discriminator_state_isolation/a.yaml	yaml_fast_constructor/parity.txt
 asyncapi/discriminator_state_isolation/b.yaml	yaml_fast_constructor/parity.txt
 asyncapi/dynamic_ref/events.yaml	yaml_fast_constructor/parity.txt
@@ -15,6 +16,7 @@ asyncapi/non-object-components.yaml	yaml_fast_constructor/parity.txt
 asyncapi/non_finite_embedded_schemas.yaml	yaml_fast_constructor/parity.txt
 asyncapi/protobuf-local-import.yaml	yaml_fast_constructor/parity.txt
 asyncapi/protobuf-schema-format.yaml	yaml_fast_constructor/parity.txt
+asyncapi/root-message-ref.yaml	yaml_fast_constructor/parity.txt
 asyncapi/schema-format-v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/schema_location.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/v2.yaml	yaml_fast_constructor/parity.txt

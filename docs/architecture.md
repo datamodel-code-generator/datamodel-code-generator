@@ -266,21 +266,28 @@ indexed (`SchemaGraphBuilder.index_document`, see [Metadata Output](#metadata-ou
 Referenced documents go through the same steps when `resolve_ref` loads them: documents enter the graph in the order
 L1 asks for them, and the graph never loads one by itself. With `DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH=1`, which
 `tests/conftest.py` sets for the test suite, each registration is compared with the registry that the walk the graph
-replaced (`_register_schema_resources`) leaves for the same document, and each edge with today's resolution: the key
-`get_ref_data_type` and `resolve_ref` compute for it equals the key of its first consumption (`legacy_key`), and the
-object `_load_ref_schema_object`, `get_ref_model`, `_resolve_asyncapi_ref` and the `api` scope load is the registered
-target the edge names, except a pointer the parser splits at another `/` and references of documents that resolve
-references against themselves (`_resolve_lenient_resource_ref`). Every reference whose target is static carries an
+replaced (`_register_schema_resources`) leaves for the same document, and each edge with its resolution at the sites:
+the key `get_ref_data_type` and `resolve_ref` would compute in their own context equals the edge's key, unless that
+context raises or names no value of a loaded document (a reference resolved outside its own document, recorded as
+`fixed-context`), and the object `_load_ref_schema_object`, `get_ref_model`, `_resolve_asyncapi_ref` and the `api`
+scope load is the registered target the edge names, except a pointer the parser splits at another `/` and references
+of documents that resolve references against themselves (`_resolve_lenient_resource_ref`). Every reference whose target is static carries an
 edge: a rewrite of a reference to name its target (rebased, canonicalized, lenient or normalized) keeps it
 (`keep_resolved_ref`); an object a reference names is read as a schema once (`SchemaGraphBuilder.read_as_schema`), so a
 `$ref` the walk read as data or names there (a nested definitions container) gets one too; schemas converted from
 another format are mounted with edges to the locations their targets are mounted at; and a reference the parser derives
 gets the edge of the reference it stands for, with its `RefOrigin` (`_derived_ref`: discriminator mappings and subtypes,
-`x-python-type` names, a merged `$recursiveRef` with a fixed target, a plain-name `$dynamicRef` read by anchor name, an
-`itemSchema` projection, an AsyncAPI Reference Object). Only a `$dynamicRef` bound in the dynamic scope and a
-`$recursiveRef` stay plain strings: their targets depend on the schemas that referenced the model being parsed. With
-`report:<path>`, one line per site and origin counts the references that reached it with their edge and as plain
-strings. Nothing else reads edges yet.
+`x-python-type` names, a merged `$recursiveRef` with a fixed target, an `itemSchema` projection, an AsyncAPI Reference
+Object). Only the references of the dynamic-scope rule (`_dynamic_scope_target`: a `$recursiveRef`, and a plain-name
+`$dynamicRef` bound in the dynamic scope or named by the first `$dynamicAnchor` of its name in the document being
+parsed) stay plain strings: they resolve against the dynamic scope of the model being parsed, not their own document.
+With `report:<path>`, one line per site and origin counts the references that reached it with their edge and as plain
+strings. Every L1 site takes the key of a reference from its edge (`_ref_key`, `_ref_path`): the edge's spelling
+resolved once, at its first consumption, in the document that holds it (`_home_context`: its location, root `$id`
+and, for an OpenAPI input document or under the `api` scope, its `$self`; a schema the parser keeps in a document of its
+own, an Avro schema of an AsyncAPI document, names that document as its edges' `home`) through the external mapping, the embedded
+resource, the normalized spelling and `ModelResolver.resolve_ref`; a new model is named after that spelling
+(`ModelResolver._add_ref_at`). A plain string has no edge and resolves in the context its caller set.
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.

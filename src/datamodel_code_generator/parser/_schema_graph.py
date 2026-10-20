@@ -7,7 +7,8 @@ location table, which ``JsonSchemaObject`` reads through ``SCHEMA_GRAPH`` while 
 `$id` or draft-04 `id`, the implicit component resources of OpenAPI, `$anchor` and `$dynamicAnchor`), and
 ``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record.
 ``SchemaGraphBuilder.with_ref_edges`` makes each `$ref` and `$dynamicRef` keyword of the document a ``ResolvedRef``, the
-string as written that also carries its ``RefEdge``.
+string as written that also carries its ``RefEdge``; ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge
+resolves to in its own document.
 """
 
 from __future__ import annotations
@@ -30,15 +31,18 @@ if TYPE_CHECKING:
 
 __all__ = [
     "SCHEMA_GRAPH",
+    "ConvertedRefs",
     "DocumentId",
     "DocumentResources",
     "RefEdge",
+    "RefKey",
     "RefOrigin",
     "RefReading",
     "ResolvedRef",
     "ResourceRegistry",
     "SchemaGraphBuilder",
     "SchemaGraphView",
+    "canonical_ref_spelling",
     "keep_resolved_ref",
     "walk_schema_resources",
 ]
@@ -80,15 +84,12 @@ class RefOrigin(Enum):
     RECURSIVE_REF = "$recursiveRef with a fixed target"
     """A `$recursiveRef` of a schema merged from another document, as the `$ref` to the schema it resolves to there,
     which the parser writes when the document it is merged into declares no `$recursiveAnchor`."""
-    DYNAMIC_ANCHOR = "$dynamicRef by anchor name"
-    """A plain-name `$dynamicRef` that resolves to no `$dynamicAnchor` of its schema resource, as the first
-    `$dynamicAnchor` of that name in the document being parsed."""
     ITEM_SCHEMA = "itemSchema projection"
     """The items of the array the api scope projects a stream of `itemSchema` values to, as the item schema."""
     DYNAMIC_SCOPE = "dynamic scope"
-    """A `$dynamicRef` bound in the dynamic scope of the model being parsed, or a `$recursiveRef`, which resolves
-    against the document being parsed: its target depends on the schemas that referenced that model, so it has no
-    edge."""
+    """A `$recursiveRef`, or a plain-name `$dynamicRef` bound in the dynamic scope of the model being parsed or named
+    by the first `$dynamicAnchor` of its name in the document being parsed: it resolves against that dynamic scope,
+    not its own document, so it has no edge."""
     UNATTRIBUTED = "unattributed"
     """A plain string that no producer above names."""
 
@@ -107,7 +108,43 @@ class RefEdge:
     keyword: str
     document: DocumentId
     ref: str
+    spelling: str
+    """The reference the parser resolves in ``document`` (``canonical_ref_spelling``): the value it reads there, which
+    for a schema converted from another format is the path it keeps the schema at, not ``ref``."""
     origin: RefOrigin = RefOrigin.KEYWORD
+    home: str | None = None
+    """The document, by reference-path name, that ``spelling`` resolves in when it is not the one holding ``source``:
+    the parser keeps a schema converted from another format in a document of its own."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class RefKey:
+    """What a reference resolves to: the reference key of its target, or the Python package a mapping names."""
+
+    key: str
+    """The reference key of the target (``ModelResolver.resolve_ref``)."""
+    spelling: str
+    """The reference the key resolves from, after the parser normalized it; models are named after it."""
+    mapping: tuple[str, str] | None = None
+    """The package and fragment ``--external-ref-mapping`` maps the reference to; the key then only names it."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class ConvertedRefs:
+    """How the references of a schema converted from another format name their targets."""
+
+    mounted: Callable[[str], str]
+    """Gives the reference to the location a target is mounted at, which an edge carries for a reference."""
+    home: str | None
+    """The document, by reference-path name, the parser resolves the references in when it is not the one holding the
+    schema's value: the parser keeps the schema in a document of its own."""
+
+
+def canonical_ref_spelling(value: str) -> str:
+    """Return a reference as the parser reads it: an empty pointer after a document (`x#/`) names its root (`x#`)."""
+    return value[:-1] if "#" in value and value.endswith("#/") else value
 
 
 @final
@@ -341,7 +378,7 @@ class SchemaGraphBuilder:
     The graph keeps the documents alive, so an identity in the location table stays valid for the whole parse.
     """
 
-    __slots__ = ("_documents", "_legacy_keys", "_mounted", "_ref_sites", "_schema_reads", "locations", "registry")
+    __slots__ = ("_documents", "_edge_keys", "_mounted", "_ref_sites", "_schema_reads", "locations", "registry")
 
     def __init__(self) -> None:
         """Start an empty graph."""
@@ -349,7 +386,7 @@ class SchemaGraphBuilder:
         self.registry = ResourceRegistry()
         self._documents: list[object] = []
         self._mounted: set[int] = set()
-        self._legacy_keys: dict[RefEdge, tuple[str, str]] = {}
+        self._edge_keys: dict[RefEdge, RefKey] = {}
         self._ref_sites: dict[tuple[str, RefOrigin], list[int]] = {}
         self._schema_reads: dict[int, Any] = {}
 
@@ -370,12 +407,14 @@ class SchemaGraphBuilder:
             )
         }
 
-    def legacy_key(self, edge: RefEdge, key: str, site: str) -> tuple[str, str]:
-        """Return the reference key an edge got at its first consumption and the site of that consumption.
+    def edge_key(self, edge: RefEdge, compute: Callable[[RefEdge], RefKey]) -> RefKey:
+        """Return the key of an edge, which ``compute`` resolves in the edge's document once, at its first call.
 
-        The first call for an edge records ``key`` and ``site``.
+        A ``compute`` that raises records nothing, so the next call raises again.
         """
-        return self._legacy_keys.setdefault(edge, (key, site))
+        if (key := self._edge_keys.get(edge)) is None:
+            key = self._edge_keys[edge] = compute(edge)
+        return key
 
     def target(self, edge: RefEdge) -> SchemaLocation | None:
         """Return the registered location an edge names, by registry document name, if its target is registered."""
@@ -394,18 +433,19 @@ class SchemaGraphBuilder:
         root: SchemaLocation,
         document: DocumentId,
         reading: RefReading,
-        edge_ref: Callable[[str], str] = str,
+        converted: ConvertedRefs | None = None,
     ) -> Any:
         """Return a loaded document whose `$ref` and `$dynamicRef` keywords are ``ResolvedRef``s, copied on write.
 
         ``reading`` says how the root, array items and the value under each key are read, and which of these hold
-        keywords rather than names; instance data and extensions hold no schemas. ``edge_ref`` gives the reference
-        an edge carries for a value: the value itself, or, in a schema converted from another format, the reference
-        to the location its target is mounted at.
+        keywords rather than names; instance data and extensions hold no schemas. ``converted`` says how the
+        references of a schema converted from another format name their targets; the value itself is the reference an
+        edge carries otherwise.
         A container that is its own ancestor is not descended again. A value that is already a ``ResolvedRef`` stays.
         A copied container keeps its type and attributes, as ``index_document`` copies them.
         """
         active: set[int] = set()
+        mounted, home = (converted.mounted, converted.home) if converted is not None else (str, None)
 
         def visit(value: Any, tokens: tuple[str, ...], entries: str) -> Any:
             if not isinstance(value, (dict, list)) or (value_id := id(value)) in active:
@@ -429,7 +469,10 @@ class SchemaGraphBuilder:
                 source = SchemaLocation(root.document, tokens)
                 for keyword in REF_KEYWORDS:
                     if type(ref := changed.get(keyword, value.get(keyword))) is str:
-                        changed[keyword] = ResolvedRef(ref, RefEdge(source, keyword, document, edge_ref(ref)))
+                        changed[keyword] = ResolvedRef(
+                            ref,
+                            RefEdge(source, keyword, document, mounted(ref), canonical_ref_spelling(ref), home=home),
+                        )
             active.discard(value_id)
             if not changed:
                 return value

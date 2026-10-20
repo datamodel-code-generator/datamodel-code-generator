@@ -8,8 +8,8 @@
     "_get_ref_raw_schema": 6,
     "_load_ref_schema_object": 5,
     "_validate_schema_object": 9,
-    "add_ref": 13,
-    "resolve_ref": 21
+    "add_ref": 8,
+    "resolve_ref": 15
   },
   "phases": [
     "_build_generation_parser",

@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://json.schemastore.example/grunt-task",
+  "type": "object",
+  "additionalProperties": {"anyOf": [{"$ref": "#/definitions/fileFormat"}, {"$ref": "#/definitions/dynamic"}]},
+  "definitions": {
+    "fileFormat": {"type": "object", "properties": {"src": {"type": "array", "items": {"type": "string"}}}},
+    "dynamic": {"type": "object", "properties": {"expand": {"type": "boolean"}}}
+  }
+}

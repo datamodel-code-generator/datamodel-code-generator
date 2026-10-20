@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://json.schemastore.example/grunt-cssmin-task.json",
+  "title": "Task",
+  "type": "object",
+  "additionalProperties": {
+    "allOf": [
+      {"$ref": "grunt-task#/additionalProperties"},
+      {"type": "object", "properties": {"options": {"$ref": "#/definitions/options"}}}
+    ]
+  },
+  "definitions": {
+    "options": {"type": "object", "properties": {"report": {"enum": ["min", "gzip"]}}}
+  }
+}

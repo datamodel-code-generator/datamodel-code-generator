@@ -10,6 +10,8 @@
 	main/asyncapi/order_events.py
 [test_main_asyncapi_auto_inference]
 	main/asyncapi/user_events.py
+[test_main_asyncapi_avro_named_types]
+	main/asyncapi/main_asyncapi/avro_named_types.py
 [test_main_asyncapi_discriminator_state_isolated_per_document]
 	main/asyncapi/discriminator_state_isolation//*.py
 [test_main_asyncapi_dynamic_ref]
@@ -33,6 +35,8 @@ typed-dict	main/asyncapi/output_model_types/order_events_typing_TypedDict.py
 	main/asyncapi/protobuf_schema_format.py
 [test_main_asyncapi_protobuf_schema_format_local_import]
 	main/asyncapi/protobuf_local_import.py
+[test_main_asyncapi_root_message_ref]
+	main/asyncapi/main_asyncapi/root_message_ref.py
 [test_main_asyncapi_schema_version]
 	main/asyncapi/order_events.py
 [test_main_asyncapi_single_value_enum_as_const]

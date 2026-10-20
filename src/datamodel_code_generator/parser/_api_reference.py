@@ -106,6 +106,12 @@ class ApiModelResolver(ModelResolver):
         canonical = canonical_ref(ref) if resolved else self.resolve_ref(ref)
         return super().add_ref(canonical, resolved=True)
 
+    @override
+    def _add_ref_at(self, path: str, ref: str) -> Reference:
+        """Reserve names from canonical spelling exactly once per declaration, whatever the reference spells."""
+        canonical = canonical_ref(path)
+        return super()._add_ref_at(canonical, canonical)
+
     @staticmethod
     @override
     @lru_cache(maxsize=4096)

@@ -336,17 +336,21 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
     ) -> AsyncAPIContext:
         current_context = self._current_asyncapi_context()
-        context_path = path[len(current_context.root_parts) :]
         return AsyncAPIContext(
             raw_obj=converted_schema,
-            root_parts=[
-                *current_context.root_parts,
-                "__asyncapi_schemas__",
-                *(_escape_context_path_part(part) for part in context_path),
-            ],
+            root_parts=self._converted_schema_root_parts(path),
             base_path=current_context.base_path,
             base_url=current_context.base_url,
         )
+
+    def _converted_schema_root_parts(self, path: list[str]) -> list[str]:
+        """Return the root parts of the document of its own in which a converted schema at ``path`` is parsed."""
+        current_root_parts = self._current_asyncapi_context().root_parts
+        return [
+            *current_root_parts,
+            "__asyncapi_schemas__",
+            *(_escape_context_path_part(part) for part in path[len(current_root_parts) :]),
+        ]
 
     def _iter_converted_schema_schemas(
         self,
@@ -418,8 +422,10 @@ class AsyncAPIParser(OpenAPIParser):
 
                 converted_schema = convert_avro_schema_data(raw_schema)
                 converted_schema.setdefault("title", name)
-                converted_schema = self._mount_converted_schema(converted_schema, location)
+                home = self.model_resolver.join_path(tuple(self._converted_schema_root_parts(path))).partition("#")[0]
+                converted_schema = self._mount_converted_schema(converted_schema, location, home=home)
                 context = self._schema_context_for_converted_schema(converted_schema, path)
+                self.remote_object_cache[str((self.base_path / home).resolve())] = converted_schema
                 return [self._schema(name, converted_schema, context.root_parts, context, parse_as_file=True)]
             case "protobuf":
                 from datamodel_code_generator.parser.protobuf import _convert_protobuf_schema_data  # noqa: PLC0415
@@ -491,7 +497,7 @@ class AsyncAPIParser(OpenAPIParser):
 
     def _resolve_asyncapi_ref(self, ref: str) -> AsyncAPIResolvedRef:
         """Resolve an AsyncAPI Reference Object to raw data and a parser path."""
-        resolved_ref = self.model_resolver.resolve_ref(ref)
+        resolved_ref = self._ref_path(ref)
         file_part, fragment = ([*resolved_ref.split("#", 1), ""])[:2]
         raw_doc = self._get_ref_body(file_part) if file_part else self.raw_obj
         if file_part:

@@ -20,6 +20,7 @@ from tests.main.conftest import (
     BACKEND_GOLDEN_TARGET_ARGS,
     DATA_PATH,
     EXPECTED_ASYNC_API_PATH,
+    assert_generated_model_json_validation,
     run_generate_file_and_assert,
     run_main_and_assert,
 )
@@ -250,6 +251,16 @@ def test_main_asyncapi_external_message_ref(output_file: Path) -> None:
     )
 
 
+def test_main_asyncapi_root_message_ref(output_file: Path) -> None:
+    """Resolve a message reference whose pointer has only empty segments to the root of its document."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "root-message-ref.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+
+
 def test_main_asyncapi_dynamic_ref(output_file: Path) -> None:
     """Resolve $dynamicRef in component schemas and in merged references to another document's components."""
     run_main_and_assert(
@@ -283,6 +294,24 @@ def test_main_asyncapi_multi_format_schema_objects(output_file: Path) -> None:
         assert_func=assert_file_content,
         expected_file="multi_format_schemas.py",
         extra_args=PY310_TARGET_ARGS,
+    )
+
+
+def test_main_asyncapi_avro_named_types(output_file: Path) -> None:
+    """Resolve the named types of an embedded Avro schema in the document the converted schema is kept in."""
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "avro-named-types.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_avro_named_types",
+        model_name="OrdersOrderPayload",
+        valid_json='{"address": {"street": "a"}, "billing": {"street": "b"}, "color": "RED", "favorite": "GREEN"}',
+        invalid_json='{"address": {"street": 1}, "billing": {"street": "b"}, "color": "RED", "favorite": "GREEN"}',
+        expected_error_type="string_type",
     )
 
 

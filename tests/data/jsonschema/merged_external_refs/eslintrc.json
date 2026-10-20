@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Eslintrc",
+  "type": "object",
+  "definitions": {
+    "rule": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        {
+          "enum": [
+            "off",
+            "warn",
+            "error"
+          ]
+        }
+      ]
+    },
+    "possibleErrors": {
+      "properties": {
+        "semi": {
+          "$ref": "#/definitions/rule",
+          "description": "Require semicolons"
+        }
+      }
+    },
+    "stylisticIssues": {
+      "properties": {
+        "semi": {
+          "$ref": "#/definitions/rule",
+          "description": "Require or disallow semicolons"
+        }
+      }
+    }
+  },
+  "properties": {
+    "rules": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/possibleErrors"
+        },
+        {
+          "$ref": "#/definitions/stylisticIssues"
+        },
+        {
+          "$ref": "eslintrc-plugins.json"
+        }
+      ]
+    }
+  }
+}

@@ -558,11 +558,12 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         resolves its references.
         """
         members = super().parse_combined_schema(name, obj, path, target_attribute_name)
+        mapping = obj.schema_location and obj.schema_location.child("discriminator", "mapping")
         selector = (
             _Selector(
                 declared.propertyName,
                 tuple(
-                    (value, self.model_resolver.resolve_ref(self._normalize_discriminator_mapping_ref(ref)))
+                    (value, self._ref_path(self._discriminator_mapping_ref(value, ref, mapping)))
                     for value, ref in (declared.mapping or {}).items()
                 ),
             )
@@ -691,7 +692,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         names no document, such as a malformed URL.
         """
         try:
-            with self._inherited_ref_context(f"{document}#"), self.openapi_self_context(self._api_documents[document]):
+            with self._home_context(document):
                 return self.model_resolver.resolve_ref(f"{ref.partition('#')[0]}#").partition("#")[0]
         except ValueError:
             return None

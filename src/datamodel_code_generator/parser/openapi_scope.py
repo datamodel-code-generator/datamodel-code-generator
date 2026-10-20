@@ -39,6 +39,8 @@ from datamodel_code_generator.reference import ModelResolver, SchemaLocation
 from datamodel_code_generator.types import DataType  # noqa: TC001 - Public annotations support get_type_hints().
 
 if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
+
     from datamodel_code_generator.model import DataModel
 
 _FIXED_HTTP_METHODS = frozenset(method.upper() for method in (*OPERATION_NAMES, "query"))
@@ -341,7 +343,7 @@ class ApiOpenAPIParser(OpenAPIParser):
 
     def _reference_target(self, ref: str, seen: set[str], path: list[str]) -> _ApiObject:
         """Resolve one reference in the current document context to the object it names."""
-        resolved = self.model_resolver.resolve_ref(ref)
+        resolved = self._ref_path(ref)
         if resolved in seen:
             msg = "API_REFERENCE_CYCLE: object references do not reach a declaration"
             raise SchemaParseError(msg, path=path)
@@ -417,6 +419,11 @@ class ApiOpenAPIParser(OpenAPIParser):
                 preserve_root_class_name=preserve_root_class_name,
                 ref=canonical if tokens else None,
             )
+
+    @override
+    def _document_self_context(self, document: str, raw: dict[str, YamlValue]) -> AbstractContextManager[None]:
+        """Return the context in which an API document names itself by its OpenAPI 3.2 `$self`, as each one does."""
+        return self.openapi_self_context(raw)
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
         """Visit declaration categories in their fixed API order."""
@@ -505,7 +512,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     )
         for child, (schema, refs) in potential.items():
             for parent in refs:
-                resolved = self.model_resolver.resolve_ref(parent)
+                resolved = self._ref_path(parent)
                 if resolved in self._discriminator_schemas or resolved.partition("#")[0] != document[:-1]:
                     self._discriminator_subtypes[resolved].append(
                         self._derived_ref(

@@ -25462,6 +25462,152 @@ def test_main_jsonschema_dynamic_ref_merged_generic(output_file: Path) -> None:
     )
 
 
+MERGED_EXTERNAL_REFS = JSON_SCHEMA_DATA_PATH / "merged_external_refs"
+
+
+@pytest.mark.parametrize(
+    ("input_file", "model_name", "valid_json", "invalid_json", "expected_error_type"),
+    [
+        pytest.param(
+            "issue.json", "Model", '{"rules": {"q": "x", "p": 1}}', '{"rules": {"q": 1}}', "string_type", id="issue"
+        ),
+        pytest.param(
+            "eslintrc.json",
+            "Eslintrc",
+            '{"rules": {"semi": 2, "plugin/rule": "warn"}}',
+            '{"rules": {"plugin/rule": "on"}}',
+            "int_parsing",
+            id="eslintrc",
+        ),
+        pytest.param(
+            "package.json",
+            "Package",
+            '{"name": "x", "eslintConfig": {"rules": {"semi": "off"}}}',
+            '{"eslintConfig": {"rules": {"plugin/rule": 3}}}',
+            "less_than_equal",
+            id="package",
+        ),
+        pytest.param(
+            "podman-desktop-extension.json",
+            "Extension",
+            '{"name": "x", "publisher": "p", "eslintConfig": {"rules": {"plugin/rule": 1}}}',
+            '{"name": "x"}',
+            "missing",
+            id="podman-desktop-extension",
+        ),
+        pytest.param(
+            "grunt-cssmin-task.json",
+            "Task",
+            '{"build": {"src": ["a.css"], "options": {"report": "min"}}}',
+            '{"build": {"options": {"report": "max"}}}',
+            "enum",
+            id="grunt-task",
+        ),
+    ],
+)
+def test_main_jsonschema_merged_external_refs(
+    output_file: Path, input_file: str, model_name: str, valid_json: str, invalid_json: str, expected_error_type: str
+) -> None:
+    """Resolve each `$ref` of a schema merged from another document in that document, not where it is merged (#5046).
+
+    The schema is an `allOf` member that names another document, or a schema in one, as minimized from SchemaStore
+    schemas: `eslintrc.json` and the `package.json` and Podman Desktop extension schemas that reference it, and the
+    Grunt task schemas, whose `$id` names the remote task schema they merge.
+    """
+    run_main_and_assert(
+        input_path=MERGED_EXTERNAL_REFS / input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--http-local-ref-path",
+            str(MERGED_EXTERNAL_REFS / "mirror"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"merged_external_refs_{Path(input_file).stem.replace('-', '_')}",
+        model_name=model_name,
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "model_name", "valid_json", "invalid_json", "expected_error_type"),
+    [
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "dynamic_ref_merged_generic" / "holder.json",
+            "Holder",
+            '{"numbers": [1], "plain": {"values": [2]}}',
+            '{"plain": {"values": ["two"]}}',
+            "int_parsing",
+            id="dynamic-ref-merged-generic",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "path_absolute_root_id_refs" / "product-format-declaration.json",
+            "ProductFormatDeclaration",
+            '{"platform_extensions": [{"uri": "a"}], "platform_extension_uri": "b"}',
+            '{"platform_extensions": [{"uri": 1}]}',
+            "string_type",
+            id="path-absolute-root-id-refs",
+        ),
+    ],
+)
+def test_main_jsonschema_request_response_refs_of_other_documents(
+    output_file: Path,
+    input_path: Path,
+    model_name: str,
+    valid_json: str,
+    invalid_json: str,
+    expected_error_type: str,
+) -> None:
+    """Find the read/write variants of a schema through references resolved in the documents that write them.
+
+    A `$dynamicRef` by anchor name in a merged generic, and a `$ref` of a document that another one references by an
+    absolute path from its root `$id`, resolve in their own document, so request/response models generate as the
+    models without the option do.
+    """
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"request_response_refs_of_other_documents_{input_path.stem.replace('-', '_')}",
+        model_name=model_name,
+        valid_json=valid_json,
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
+def test_main_jsonschema_allof_inherited_ref_other_directory(output_dir: Path) -> None:
+    """Read the target of an inherited property's `$ref` from the parent's directory when a child narrows it (#5068).
+
+    The child, in another directory than its `allOf` parent, adds a constraint to a property the parent references
+    from a third directory; the reference keeps the parent's document as its base.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_inherited_ref_other_directory",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        runtime_validation_module="child.child",
+        runtime_validation_model_name="Child",
+        runtime_validation_data={"subject": {"value": "x"}},
+    )
+
+
 def test_main_jsonschema_dynamic_ref_documents(output_file: Path) -> None:
     """Resolve $dynamicRef to other documents and to JSON pointers the way $ref resolves them."""
     run_main_and_assert(
@@ -29845,7 +29991,7 @@ def test_schema_graph_check_of_a_parser_that_changes_the_registry_walk(
 
 
 class _LaterKeyParser(JsonSchemaParser):
-    """Resolves a reference to `#/$defs/Kept` it met before to `#/$defs/Moved`: a later site gets another key."""
+    """Resolves a reference to `#/$defs/Kept` it met before to `#/$defs/Moved`: a site's context gets another key."""
 
     def _normalize_external_ref(self, ref: str) -> str:
         if ref in (seen := self.__dict__.setdefault("seen_refs", set())):
@@ -29861,6 +30007,34 @@ class _OtherTargetParser(JsonSchemaParser):
         return super()._get_ref_raw_schema(resolved_ref.replace("kept", "moved"))
 
 
+class _ContextErrorParser(JsonSchemaParser):
+    """Fails to normalize a reference it met before: the context of a later site resolves it to nothing."""
+
+    def _normalize_external_ref(self, ref: str) -> str:
+        if ref in (seen := self.__dict__.setdefault("seen_refs", set())):
+            msg = f"no target for {ref}"
+            raise Error(msg)
+        seen.add(ref)
+        return super()._normalize_external_ref(ref)
+
+
+@pytest.mark.parametrize("flag", ["check", "report"])
+def test_schema_graph_check_of_a_reference_its_site_cannot_resolve(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A reference whose site context resolves it to nothing is the case edges fix: recorded, never raised.
+
+    The edge key, resolved in the reference's own document, names the target; the check (`1`) generates from it and
+    `report:<path>` appends each such site as a `fixed-context` line.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}"}[flag])
+    parser = _ContextErrorParser(JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN])
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
 @pytest.mark.parametrize(
     ("parser_type", "message"),
@@ -29869,7 +30043,7 @@ class _OtherTargetParser(JsonSchemaParser):
             _LaterKeyParser,
             (
                 "the $ref '#/$defs/Kept' at 'redirect.json#/properties/value' resolves to "
-                "'redirect.json#/$defs/Moved' at resolve_ref, but to 'redirect.json#/$defs/Kept' at get_ref_data_type"
+                "'redirect.json#/$defs/Kept' in its document, but to 'redirect.json#/$defs/Moved' at get_ref_data_type"
             ),
         ),
         (
@@ -29887,9 +30061,10 @@ def test_schema_graph_check_of_reference_edges(
 ) -> None:
     """A reference resolved otherwise than the edge it carries is reported, and generation follows the parser.
 
-    The edge of a `$ref` keeps the key of its first consumption and names its registered target: the check (`1`, as
-    the test suite sets it) raises when a later site resolves another key or loads another target, `report:<path>`
-    appends it as a JSON line, and with the check off (`0`) the parser generates what it resolved.
+    The edge of a `$ref` gets one key, resolved in its own document, and names its registered target: the check (`1`,
+    as the test suite sets it) raises when the context of a site resolves the reference to another loaded value or a
+    site loads another target, `report:<path>` appends it as a JSON line, and with the check off (`0`) the parser
+    generates what the edge key and the loaded target name.
     """
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
@@ -29945,9 +30120,9 @@ def test_schema_graph_check_counts_references_by_origin(
 
     Every reference whose target is static reaches its sites with an edge: a `$ref` written where the walk of the
     document reads data or names but a reference names a schema (a nested definitions container, an AsyncAPI binding),
-    a discriminator mapping or subtype, an `x-python-type` name, a `$recursiveRef` merged with a fixed target, a
-    plain-name `$dynamicRef` read by anchor name, an `itemSchema` projection and the references of converted schemas.
-    Only the references resolved in the dynamic scope arrive as plain strings.
+    a discriminator mapping or subtype, an `x-python-type` name, a `$recursiveRef` merged with a fixed target, an
+    `itemSchema` projection and the references of converted schemas. Only the references resolved in the dynamic scope
+    (a `$recursiveRef`, a plain-name `$dynamicRef` bound there or read by anchor name) arrive as plain strings.
     """
     report_path = tmp_path / "checks.jsonl"
     monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")

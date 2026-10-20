@@ -50,6 +50,7 @@ from datamodel_code_generator.util import BaseModel
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from contextlib import AbstractContextManager
     from urllib.parse import ParseResult
 
     from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
@@ -322,10 +323,11 @@ class OpenAPIParser(JsonSchemaParser):
         self._discriminator_schemas: dict[str, dict[str, Any]] = {}
         self._discriminator_subtypes: dict[str, list[str]] = defaultdict(list)
         self._parameter_models: list[tuple[DataModel, tuple[str, ...]]] = []
+        self._specification_documents: set[str] = set()
 
     def get_ref_model(self, ref: str) -> dict[str, Any]:
         """Resolve a reference to its model definition."""
-        ref_file, ref_path = self.model_resolver.resolve_ref(ref).split("#", 1)
+        ref_file, ref_path = self._ref_path(ref).split("#", 1)
         ref_body = self._get_ref_body(ref_file) if ref_file else self.raw_obj
         model = cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
         self._check_ref_target("get_ref_model", ref, self._raw_location(model))
@@ -347,6 +349,11 @@ class OpenAPIParser(JsonSchemaParser):
             yield
         finally:
             self.root_id = previous_root_id
+
+    @override
+    def _document_self_context(self, document: str, raw: dict[str, Any]) -> AbstractContextManager[None]:
+        """Return the context in which an input specification names itself by its OpenAPI 3.2 `$self`."""
+        return self.openapi_self_context(raw) if document in self._specification_documents else nullcontext()
 
     def _parse_specification(self, specification: dict[str, Any], path_parts: list[str]) -> None:
         """Parse the loaded OpenAPI specification."""
@@ -520,6 +527,11 @@ class OpenAPIParser(JsonSchemaParser):
             }
         return result
 
+    def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
+        """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
+        normalized = self._normalize_discriminator_mapping_ref(value)
+        return self._derived_ref(normalized, mapping, name, normalized, RefOrigin.DISCRIMINATOR_MAPPING)
+
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
         """Resolve one subtype without recursively expanding its discriminator."""
         self.resolve_ref(ref)
@@ -539,13 +551,7 @@ class OpenAPIParser(JsonSchemaParser):
             mapping = discriminator.get("mapping", {})
             if mapping:
                 subtypes = [
-                    self._derived_ref(
-                        normalized := self._normalize_discriminator_mapping_ref(value),
-                        self._raw_location(mapping),
-                        name,
-                        normalized,
-                        RefOrigin.DISCRIMINATOR_MAPPING,
-                    )
+                    self._discriminator_mapping_ref(name, value, self._raw_location(mapping))
                     for name, value in mapping.items()
                     if isinstance(value, str)
                 ]
@@ -570,17 +576,14 @@ class OpenAPIParser(JsonSchemaParser):
 
     def get_ref_data_type(self, ref: str) -> DataType:
         """Get data type for a reference, handling discriminator polymorphism."""
-        if (
-            self._discriminator_schemas
-            and (resolved_ref := self.model_resolver.resolve_ref(ref)) in self._discriminator_schemas
-        ):
+        if self._discriminator_schemas and (resolved_ref := self._ref_path(ref)) in self._discriminator_schemas:
             return self._get_discriminator_union_type(resolved_ref) or super().get_ref_data_type(ref)
         document_count = len(self._discriminator_documents)
         data_type = super().get_ref_data_type(ref)
         if (
             len(self._discriminator_documents) != document_count
             and self._discriminator_schemas
-            and (resolved_ref := self.model_resolver.resolve_ref(ref)) in self._discriminator_schemas
+            and (resolved_ref := self._ref_path(ref)) in self._discriminator_schemas
         ):
             return self._get_discriminator_union_type(resolved_ref) or data_type
         return data_type
@@ -604,11 +607,7 @@ class OpenAPIParser(JsonSchemaParser):
                 isinstance(field, JsonSchemaObject)
                 and field.ref
                 and self._discriminator_schemas
-                and (
-                    discriminator := self._discriminator_schemas.get(
-                        resolved_ref := self.model_resolver.resolve_ref(field.ref)
-                    )
-                )
+                and (discriminator := self._discriminator_schemas.get(resolved_ref := self._ref_path(field.ref)))
             ):
                 new_field_type = self._get_discriminator_union_type(resolved_ref)
                 if new_field_type is None:
@@ -742,7 +741,7 @@ class OpenAPIParser(JsonSchemaParser):
             if item_ref:
                 methods = self.get_ref_model(item_ref)
                 # Extract base path from reference for external file resolution
-                resolved_ref = self.model_resolver.resolve_ref(item_ref)
+                resolved_ref = self._ref_path(item_ref)
                 ref_file = resolved_ref.split("#")[0] if "#" in resolved_ref else resolved_ref
                 ref_base_path = Path(ref_file).parent if ref_file and not is_url(ref_file) else None
             else:
@@ -1148,6 +1147,7 @@ class OpenAPIParser(JsonSchemaParser):
                 self._cache_source_ref_body(source, specification)
                 self.raw_obj = specification
                 self.raw_obj = specification = self._prepare_schema_resources(specification, path_parts)
+                self._specification_documents.add(self._schema_resource_document(path_parts))
                 with self.openapi_self_context(specification):
                     self._parse_specification(specification, path_parts)
 
@@ -1244,9 +1244,7 @@ class OpenAPIParser(JsonSchemaParser):
         for schema_name, refs in potential_subtypes.items():
             for ref_in_allof in refs:
                 resolved_ref = (
-                    f"{document}{ref_in_allof[1:]}"
-                    if ref_in_allof.startswith("#")
-                    else self.model_resolver.resolve_ref(ref_in_allof)
+                    f"{document}{ref_in_allof[1:]}" if ref_in_allof.startswith("#") else self._ref_path(ref_in_allof)
                 )
                 # External parents may be registered after this child document is read.
                 if resolved_ref in self._discriminator_schemas or resolved_ref.partition("#")[0] != document[:-1]:

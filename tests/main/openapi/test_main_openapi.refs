@@ -1095,6 +1095,8 @@ tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
 	main/openapi/dynamic_ref_component_anchors.py
 [test_main_openapi_dynamic_ref_external_generic]
 	main/openapi/dynamic_ref_external_generic.py
+[test_main_openapi_dynamic_ref_request_response]
+	main/openapi/main_openapi/dynamic_ref_request_response.py	= main/openapi/dynamic_ref.py
 [test_main_openapi_empty_dict_default]
 msgspec.Struct-msgspec_empty_dict_default.py	main/openapi/msgspec_empty_dict_default.py
 pydantic_v2.BaseModel-pydantic_v2_empty_dict_default.py	main/openapi/pydantic_v2_empty_dict_default.py

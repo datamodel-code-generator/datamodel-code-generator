@@ -1,0 +1,42 @@
+asyncapi: 3.0.0
+info:
+  title: Avro refs
+  version: 1.0.0
+channels:
+  orders:
+    address: orders
+    messages:
+      order:
+        payload:
+          schemaFormat: application/vnd.apache.avro+yaml;version=1.9.0
+          schema:
+            type: record
+            name: Order
+            namespace: com.example
+            fields:
+              - name: address
+                type:
+                  type: record
+                  name: Address
+                  fields:
+                    - name: street
+                      type: string
+              - name: billing
+                type: Address
+              - name: next
+                type:
+                  - "null"
+                  - Order
+                default: null
+              - name: color
+                type:
+                  type: enum
+                  name: Color
+                  symbols: [RED, GREEN]
+              - name: favorite
+                type: Color
+operations:
+  receiveOrder:
+    action: receive
+    channel:
+      $ref: "#/channels/orders"

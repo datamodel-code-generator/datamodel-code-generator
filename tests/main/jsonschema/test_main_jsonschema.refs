@@ -5979,6 +5979,8 @@ pydantic_v2.dataclass-dataclass-unexpected_keyword_argument	main/jsonschema/allo
 	main/jsonschema/jsonschema_allof_enum_no_external_ref.py
 [test_main_jsonschema_allof_enum_ref]
 	main/jsonschema/jsonschema_allof_enum_ref.py
+[test_main_jsonschema_allof_inherited_ref_other_directory]
+	main/jsonschema/main_jsonschema/allof_inherited_ref_other_directory/
 [test_main_jsonschema_allof_mapping_every_part_null]
 	main/jsonschema/jsonschema_allof_mapping_every_part_null.py
 [test_main_jsonschema_allof_mapping_object_type_list]
@@ -6620,6 +6622,12 @@ conditional	main/jsonschema/merged_copy_duplicates_conditional.py
 recursive	main/jsonschema/merged_copy_duplicates.py
 [test_main_jsonschema_merged_copy_field_names]
 	main/jsonschema/merged_copy_field_names.py
+[test_main_jsonschema_merged_external_refs]
+eslintrc	main/jsonschema/main_jsonschema/merged_external_refs[eslintrc].py
+grunt-task	main/jsonschema/main_jsonschema/merged_external_refs[grunt-task].py
+issue	main/jsonschema/main_jsonschema/merged_external_refs[issue].py
+package	main/jsonschema/main_jsonschema/merged_external_refs[package].py
+podman-desktop-extension	main/jsonschema/main_jsonschema/merged_external_refs[podman-desktop-extension].py
 [test_main_jsonschema_merged_recursive_ref]
 holder	main/jsonschema/merged_recursive_ref_holder.py
 strict	main/jsonschema/merged_recursive_ref_strict.py
@@ -6935,6 +6943,9 @@ tree	main/jsonschema/recursive_ref_resources_tree.py
 	main/jsonschema/underscore_property.py
 [test_main_jsonschema_rename_preserves_source_alias]
 	main/jsonschema/rename_preserve_source_alias.py
+[test_main_jsonschema_request_response_refs_of_other_documents]
+dynamic-ref-merged-generic	main/jsonschema/main_jsonschema/request_response_refs_of_other_documents[dynamic-ref-merged-generic].py	= main/jsonschema/dynamic_ref_merged_generic.py
+path-absolute-root-id-refs	main/jsonschema/main_jsonschema/request_response_refs_of_other_documents[path-absolute-root-id-refs].py
 [test_main_jsonschema_required_and_any_of_required]
 	main/jsonschema/required_and_any_of_required.py
 [test_main_jsonschema_reserved_field_name]
@@ -12319,6 +12330,10 @@ x-python-type	main/jsonschema/main_jsonschema/schema_graph_check_counts_referenc
 off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].report.txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
+[test_schema_graph_check_of_a_reference_its_site_cannot_resolve]
+check	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reference_its_site_cannot_resolve[check].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
+report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reference_its_site_cannot_resolve[report].report.txt
+report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_reference_its_site_cannot_resolve[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 [test_schema_graph_check_of_reference_edges]
 key-off	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 key-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-report].report.txt
