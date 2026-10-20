@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, conint, constr
 
 
 class BaseFirst(BaseModel):
@@ -90,11 +90,14 @@ class PartialContainerBase(BaseModel):
 
 
 class PartialContainerDerived(PartialContainerBase):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     inline: Inline
     mapping: dict[str, PartialItem]
     unionValue: PartialItem
     booleanUnionValue: PartialItem
-    text: constr(pattern=r'.*z$', min_length=3, max_length=5)
+    text: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:.*z$))', min_length=3, max_length=5)
     number: conint(multiple_of=6)
 
 
@@ -139,9 +142,12 @@ class ForwardCollisionDerived(ForwardCollisionBase):
 
 
 class ForwardPartialContainerDerived(ForwardPartialContainerBase):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     inline: Inline
     mapping: dict[str, PartialItem]
     unionValue: PartialItem
     booleanUnionValue: PartialItem
-    text: constr(pattern=r'.*z$', min_length=3, max_length=5)
+    text: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:.*z$))', min_length=3, max_length=5)
     number: conint(multiple_of=6)

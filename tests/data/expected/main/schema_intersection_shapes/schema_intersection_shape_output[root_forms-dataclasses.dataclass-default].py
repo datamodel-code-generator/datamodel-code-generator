@@ -44,9 +44,7 @@ EnumD: TypeAlias = AB
 Value: TypeAlias = int
 
 
-@dataclass
-class Pat:
-    pass
+Pat: TypeAlias = str
 
 
 Untyped: TypeAlias = Any

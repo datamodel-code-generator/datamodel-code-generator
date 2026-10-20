@@ -38,6 +38,11 @@ DOCUMENTS: dict[str, Path] = {
         *sorted((OPEN_API_DATA_PATH / "schema_intersection").glob("*.yaml")),
     )
 }
+OUTPUT_DOCUMENTS: dict[str, Path] = {
+    **DOCUMENTS,
+    "pattern_conjunction_edges": JSON_SCHEMA_DATA_PATH / "pattern_conjunctions" / "edges.yaml",
+}
+"""The documents whose output is pinned: the shapes, and patterns that some engine does not read (no payloads)."""
 RUNS: tuple[tuple[DataModelType, tuple[str, ...]], ...] = (
     (DataModelType.PydanticV2BaseModel, ()),
     (DataModelType.PydanticV2Dataclass, ()),
@@ -77,6 +82,10 @@ def _label(options: tuple[str, ...]) -> str:
     return "-".join(option.removeprefix("--") for option in options if option.startswith("--")) or "default"
 
 
+def _input_file_type(input_path: Path) -> str:
+    return "openapi" if input_path.is_relative_to(OPEN_API_DATA_PATH) else "jsonschema"
+
+
 def _args(input_path: Path, output_path: Path, backend: DataModelType, options: tuple[str, ...]) -> list[str]:
     return [
         "--input",
@@ -84,7 +93,7 @@ def _args(input_path: Path, output_path: Path, backend: DataModelType, options: 
         "--output",
         str(output_path),
         "--input-file-type",
-        "openapi" if input_path.suffix == ".yaml" else "jsonschema",
+        _input_file_type(input_path),
         "--output-model-type",
         backend.value,
         "--disable-timestamp",
@@ -96,20 +105,20 @@ def _args(input_path: Path, output_path: Path, backend: DataModelType, options: 
 
 @pytest.mark.parametrize(
     ("stem", "backend", "options"),
-    [(stem, backend, options) for stem in DOCUMENTS for backend, options in _runs(stem)],
-    ids=[f"{stem}-{backend.value}-{_label(options)}" for stem in DOCUMENTS for backend, options in _runs(stem)],
+    [(stem, backend, options) for stem in OUTPUT_DOCUMENTS for backend, options in _runs(stem)],
+    ids=[f"{stem}-{backend.value}-{_label(options)}" for stem in OUTPUT_DOCUMENTS for backend, options in _runs(stem)],
 )
 def test_schema_intersection_shape_output(
     output_file: Path, stem: str, backend: DataModelType, options: tuple[str, ...]
 ) -> None:
     """Pin the code each backend and option set writes for every intersection shape today."""
-    input_path = DOCUMENTS[stem]
+    input_path = OUTPUT_DOCUMENTS[stem]
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always", UserWarning)
         run_main_and_assert(
             input_path=input_path,
             output_path=output_file,
-            input_file_type="openapi" if input_path.suffix == ".yaml" else "jsonschema",
+            input_file_type=_input_file_type(input_path),
             extra_args=[
                 "--output-model-type",
                 backend.value,

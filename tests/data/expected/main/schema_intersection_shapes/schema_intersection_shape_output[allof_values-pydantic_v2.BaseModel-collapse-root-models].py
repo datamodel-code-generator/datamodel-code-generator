@@ -14,10 +14,6 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(BaseModel):
-    pass
-
-
 class Model(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
@@ -30,10 +26,14 @@ class Model(BaseModel):
     mode_prop: Literal[1, 2] | None = None
     mode_items: list[Literal[1, 2]] | None = None
     mode_map: dict[str, Literal[1, 2]] | None = None
-    pat: Pat | None = None
-    pat_prop: constr(pattern=r'(?=^a)(?=b$)') | None = None
-    pat_items: list[constr(pattern=r'(?=^a)(?=b$)')] | None = None
-    pat_map: dict[str, constr(pattern=r'(?=^a)(?=b$)')] | None = None
+    pat: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
+    pat_prop: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
+    pat_items: list[constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')] | None = (
+        None
+    )
+    pat_map: dict[str, constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')] | None = (
+        None
+    )
     untyped: Any | None = None
     untyped_prop: Any | None = None
     untyped_items: list[Any] | None = None

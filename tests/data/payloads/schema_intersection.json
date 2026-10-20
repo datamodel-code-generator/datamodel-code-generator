@@ -5874,5 +5874,203 @@
         ]
       }
     }
+  },
+  "allof_patterns": {
+    "model": "Model",
+    "fields": {
+      "anchored_tail": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba",
+          "xb"
+        ]
+      },
+      "anchored_tail_sibling": {
+        "valid": [
+          "ab",
+          "axb"
+        ],
+        "invalid": [
+          "a",
+          "ba",
+          "xb"
+        ]
+      },
+      "implied_sibling": {
+        "valid": [
+          "ab",
+          "abc"
+        ],
+        "invalid": [
+          "a",
+          "xab"
+        ]
+      },
+      "class_prefix": {
+        "valid": [
+          "bx",
+          "zbxx"
+        ],
+        "invalid": [
+          "a",
+          "x"
+        ]
+      },
+      "escape_prefix": {
+        "valid": [
+          "1x",
+          "a1x"
+        ],
+        "invalid": [
+          "x1",
+          "1"
+        ]
+      },
+      "literal_head": {
+        "valid": [
+          "a1",
+          "xa2"
+        ],
+        "invalid": [
+          "a",
+          "1"
+        ]
+      },
+      "both_anchored": {
+        "valid": [
+          "ab",
+          "abc"
+        ],
+        "invalid": [
+          "a",
+          "xab"
+        ]
+      },
+      "anchor_mismatch": {
+        "valid": [
+          "ab",
+          "aXab"
+        ],
+        "invalid": [
+          "xab",
+          "aX"
+        ]
+      },
+      "alternation": {
+        "valid": [
+          "ac",
+          "cb"
+        ],
+        "invalid": [
+          "c",
+          "ab"
+        ]
+      },
+      "three": {
+        "valid": [
+          "abc",
+          "axbyc"
+        ],
+        "invalid": [
+          "ab",
+          "bc",
+          "ac"
+        ]
+      },
+      "unportable": {
+        "valid": [
+          "ab",
+          "xab"
+        ],
+        "invalid": [
+          "b",
+          "ax"
+        ]
+      },
+      "inherited": {
+        "valid": [
+          {
+            "s": "ab"
+          },
+          {
+            "s": "axb"
+          }
+        ],
+        "invalid": [
+          {
+            "s": "a"
+          },
+          {
+            "s": "xb"
+          }
+        ]
+      }
+    }
+  },
+  "allof_literals": {
+    "model": "Model",
+    "fields": {
+      "bound_enum": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          5,
+          30
+        ]
+      },
+      "length_enum": {
+        "valid": [
+          "bb"
+        ],
+        "invalid": [
+          "a",
+          "cc"
+        ]
+      },
+      "pattern_enum": {
+        "valid": [
+          "bb"
+        ],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "pattern_enum_items": {
+        "valid": [
+          [
+            "bb"
+          ]
+        ],
+        "invalid": [
+          [
+            "a"
+          ]
+        ]
+      },
+      "own_length_enum": {
+        "valid": [
+          "a",
+          "bb"
+        ],
+        "invalid": [
+          "ccc"
+        ]
+      },
+      "pattern_enum_class": {
+        "valid": [
+          "aa"
+        ],
+        "invalid": [
+          "bb"
+        ]
+      }
+    }
   }
 }

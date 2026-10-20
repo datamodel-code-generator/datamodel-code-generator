@@ -41,8 +41,7 @@ EnumD: TypeAlias = AB
 Value: TypeAlias = int
 
 
-class Pat(TypedDict):
-    pass
+Pat: TypeAlias = str
 
 
 Untyped: TypeAlias = Any

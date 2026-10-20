@@ -106,22 +106,22 @@ NotSiblingItem: TypeAlias = Annotated[int, Meta(ge=1)]
 NotSiblingMap: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
-EnumBoundProp: TypeAlias = Annotated[int, Meta(le=10)]
+EnumBoundProp: TypeAlias = Literal[1, 2]
 
 
-EnumBoundItem: TypeAlias = Annotated[int, Meta(le=10)]
+EnumBoundItem: TypeAlias = Literal[1, 2]
 
 
-EnumBoundMap: TypeAlias = Annotated[int, Meta(le=10)]
+EnumBoundMap: TypeAlias = Literal[1, 2]
 
 
-EnumLengthProp: TypeAlias = Annotated[str, Meta(max_length=3)]
+EnumLengthProp: TypeAlias = Literal['a']
 
 
-EnumLengthItem: TypeAlias = Annotated[str, Meta(max_length=3)]
+EnumLengthItem: TypeAlias = Literal['a']
 
 
-EnumLengthMap: TypeAlias = Annotated[str, Meta(max_length=3)]
+EnumLengthMap: TypeAlias = Literal['a']
 
 
 TwoPatternsProp: TypeAlias = Any

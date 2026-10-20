@@ -22,11 +22,6 @@ ConstModel = TypeAliasType("ConstModel", Annotated[str, Field(..., min_length=1)
 Ratio1 = TypeAliasType("Ratio1", Annotated[float, Field(..., ge=1.0)])
 
 
-PatternedItem = TypeAliasType(
-    "PatternedItem", Annotated[Literal['abc'], Field(..., pattern='^a')]
-)
-
-
 CountModel = TypeAliasType("CountModel", NonNegativeInt)
 
 
@@ -80,4 +75,4 @@ class RedundantConstraints:
     level: Level | None = None
     unmet: Literal['abc'] | None = Field(None, max_length=2)
     ratios: list[Ratio1] | None = None
-    patterned: list[PatternedItem] | None = None
+    patterned: list[Literal['abc']] | None = None

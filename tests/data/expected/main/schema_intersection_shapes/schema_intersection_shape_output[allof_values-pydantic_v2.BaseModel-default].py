@@ -37,21 +37,21 @@ class PatProp(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'(?=^a)(?=b$)')
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class PatItem(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'(?=^a)(?=b$)')
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class PatMap(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'(?=^a)(?=b$)')
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class UntypedProp(RootModel[Any]):
@@ -79,8 +79,11 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(BaseModel):
-    pass
+class Pat(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class Untyped(RootModel[Any]):

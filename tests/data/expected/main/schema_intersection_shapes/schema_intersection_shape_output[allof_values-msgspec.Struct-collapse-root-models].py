@@ -14,16 +14,19 @@ LevelItem: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 LevelMap: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
 
-PatMap: TypeAlias = Annotated[str, Meta(pattern='(?=^a)(?=b$)')]
+PatItem: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
+
+
+PatMap: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
 class Mode(IntEnum):
     integer_1 = 1
     integer_2 = 2
-
-
-class Pat(Struct):
-    pass
 
 
 class Model(Struct):
@@ -35,9 +38,15 @@ class Model(Struct):
     mode_prop: Literal[1, 2] | UnsetType = UNSET
     mode_items: list[Literal[1, 2]] | UnsetType = UNSET
     mode_map: dict[str, Literal[1, 2]] | UnsetType = UNSET
-    pat: Pat | UnsetType = UNSET
-    pat_prop: str | UnsetType = UNSET
-    pat_items: list[str] | UnsetType = UNSET
+    pat: (
+        Annotated[str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')]
+        | UnsetType
+    ) = UNSET
+    pat_prop: (
+        Annotated[str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')]
+        | UnsetType
+    ) = UNSET
+    pat_items: list[PatItem] | UnsetType = UNSET
     pat_map: dict[str, PatMap] | UnsetType = UNSET
     untyped: Any | UnsetType = UNSET
     untyped_prop: Any | UnsetType = UNSET

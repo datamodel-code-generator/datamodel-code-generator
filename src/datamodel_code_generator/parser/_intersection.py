@@ -14,8 +14,12 @@ copied with ``copy.copy``, so a located dump keeps its location. The adapters ar
 ``JsonSchemaParser._intersect_ref_siblings`` (for ``_merge_ref_with_schema`` and
 ``_resolve_inherited_parent_property``) and ``JsonSchemaParser._merge_properties_with_parent_constraints``.
 
-The row's value stays for keywords not intersected here yet: ``pattern`` and literal filtering (they need the static
-pattern scanner), ``format`` (the static ``(type, format)`` table), tuple positions (``prefixItems``, array
+``pattern`` is the conjunction of the parts' patterns (``_regex_syntax.py:conjoin_patterns``) unless the row's pattern
+implies each of them; patterns not every engine runs keep the row's, and patterns no single expression conjoins keep the
+first part's, listed in ``untaken_patterns`` for a warning.
+
+The row's value stays for keywords not intersected here yet: literal filtering (the parser's literal check filters the
+values it writes), ``format`` (the static ``(type, format)`` table), tuple positions (``prefixItems``, array
 ``items``), ``anyOf``, ``oneOf``, ``not`` and ``if`` (combinator parts), ``contains`` groups (each part keeps its own
 group; the parser turns a referenced group into item bounds), ``dependentRequired`` and ``dependentSchemas``, and a
 ``$ref`` that the row replaces by another.
@@ -37,9 +41,11 @@ from copy import copy
 from dataclasses import dataclass
 from fractions import Fraction
 from itertools import chain, starmap
-from math import gcd, isfinite, lcm
+from math import gcd, isfinite, isnan, lcm
 from typing import TYPE_CHECKING, Any, Final, final
 from warnings import warn
+
+from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -55,6 +61,7 @@ __all__ = [
     "is_hash_safe_json_scalar",
     "json_values_equal",
     "warn_unsatisfiable",
+    "warn_untaken_patterns",
 ]
 
 _LOWER_BOUNDS: Final = ("minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties")
@@ -86,21 +93,33 @@ class KeywordIntersection:
     """The schema a site is parsed as, and the keywords whose parts have no value in common.
 
     ``keywords`` is a new dict the caller owns. A keyword listed in ``unsatisfiable`` keeps the row's value.
+    ``untaken_patterns`` are the patterns of the parts that the written ``pattern`` leaves out.
     """
 
     keywords: dict[str, Any]
     unsatisfiable: tuple[str, ...]
+    untaken_patterns: tuple[str, ...] = ()
 
 
 def json_values_equal(left: object, right: object) -> bool:  # ruff: ignore[too-many-return-statements]
-    """Compare JSON values as ``enum``, ``const`` and ``uniqueItems`` do: booleans are not numbers, ``1 == 1.0``."""
+    """Compare JSON values as ``enum``, ``const`` and ``uniqueItems`` do: booleans are not numbers, ``1 == 1.0``.
+
+    NaN, which a YAML document can write, equals NaN.
+    """
     match left:
         case None:
             return right is None
         case bool() as boolean:
             return isinstance(right, bool) and boolean == right
         case int() | float() as number:
-            return not isinstance(right, bool) and isinstance(right, (int, float)) and number == right
+            return (
+                not isinstance(right, bool)
+                and isinstance(right, (int, float))
+                and (
+                    number == right
+                    or (isinstance(number, float) and isinstance(right, float) and isnan(number) and isnan(right))
+                )
+            )
         case str() as string:
             return isinstance(right, str) and string == right
         case list() as array:
@@ -119,8 +138,10 @@ def json_values_equal(left: object, right: object) -> bool:  # ruff: ignore[too-
 
 
 def is_hash_safe_json_scalar(value: object) -> bool:
-    """Return whether a JSON scalar hashes and compares as its base type, so a set can hold it."""
+    """Return whether a JSON scalar hashes and compares as its base type, so a set can hold it; NaN cannot."""
     value_type = type(value)
+    if isinstance(value, float) and isnan(value):
+        return False
     return value_type in _HASHABLE_SCALAR_TYPES or any(
         isinstance(value, scalar_type)
         and value_type.__eq__ is scalar_type.__eq__
@@ -176,6 +197,16 @@ def warn_unsatisfiable(
     warn(
         f"{where}: no value satisfies every part of this schema ({parts}), since no value meets all of their "
         f"{names}; the generated code keeps its earlier {names}.",
+        stacklevel=3,
+    )
+
+
+def warn_untaken_patterns(where: str, pattern: str, untaken: Sequence[str]) -> None:
+    """Warn that the generated code checks a schema's ``pattern`` but not the other patterns of its parts."""
+    names = ", ".join(f"`{other}`" for other in untaken)
+    warn(
+        f"{where}: no single regular expression checks `{pattern}` together with {names} (backreferences, repeated "
+        f"group names, inline flags or syntax Python reads differently); the generated code checks only `{pattern}`.",
         stacklevel=3,
     )
 
@@ -262,12 +293,13 @@ def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int)
 class _Reconciler:
     """Rewrite the keywords of a row whose value enforces something other than the intersection of the parts."""
 
-    __slots__ = ("extras_key", "own_enum_is_part", "unsatisfiable")
+    __slots__ = ("extras_key", "own_enum_is_part", "unsatisfiable", "untaken_patterns")
 
     def __init__(self, extras_key: str, *, own_enum_is_part: bool) -> None:
         self.extras_key = extras_key
         self.own_enum_is_part = own_enum_is_part
         self.unsatisfiable: list[str] = []
+        self.untaken_patterns: list[str] = []
 
     def _enum_parts(self, parts: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
         """Return the parts whose ``enum`` is a part of the site: all but the last under the legacy sibling enum row."""
@@ -288,6 +320,7 @@ class _Reconciler:
             row.get("required") or ()
         ):
             updates["required"] = union
+        self._pattern(parts, row, updates)
         self._type(parts, row, updates)
         self._enum(parts, row, updates)
         self._const(parts)
@@ -324,6 +357,19 @@ class _Reconciler:
                 self.unsatisfiable.extend((lower[0], upper[0]))
             return
         updates.update({keyword: value for keyword, value in merged.items() if row.get(keyword) != value})
+
+    def _pattern(self, parts: Sequence[Mapping[str, Any]], row: dict[str, Any], updates: dict[str, Any]) -> None:
+        """Write the conjunction of the parts' patterns, unless the row's pattern implies each of them."""
+        patterns = [pattern for part in parts if isinstance(pattern := part.get("pattern"), str)]
+        if len(set(patterns)) <= 1 or (
+            isinstance(row_pattern := row.get("pattern"), str)
+            and all(pattern_implies(row_pattern, pattern) for pattern in patterns)
+        ):
+            return
+        conjunction = conjoin_patterns(patterns)
+        self.untaken_patterns.extend(conjunction.untaken)
+        if conjunction.pattern != row_pattern:
+            updates["pattern"] = conjunction.pattern
 
     def _type(self, parts: Sequence[Mapping[str, Any]], row: dict[str, Any], updates: dict[str, Any]) -> None:
         """Write the types every part admits, and null by the null rule.
@@ -432,5 +478,7 @@ def intersect_keywords(
     reconciler = _Reconciler(extras_key, own_enum_is_part=ref_siblings_are_parts)
     keywords = reconciler.schema(parts, row)
     return KeywordIntersection(
-        copy(row) if keywords is None else keywords, tuple(dict.fromkeys(reconciler.unsatisfiable))
+        copy(row) if keywords is None else keywords,
+        tuple(dict.fromkeys(reconciler.unsatisfiable)),
+        tuple(dict.fromkeys(reconciler.untaken_patterns)),
     )

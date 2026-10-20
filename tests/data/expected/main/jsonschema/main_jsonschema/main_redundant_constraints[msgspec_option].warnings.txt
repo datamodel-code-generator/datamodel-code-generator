@@ -1,5 +1,4 @@
 redundant_constraints.json#/properties/unmet: no value satisfies every part of this schema (its values and the constraints beside them), since no value meets all of their `const`, `maxLength`; the generated code keeps its earlier `const`, `maxLength`.
-msgspec.Meta does not take pattern on Literal['abc']; PatternedItem is generated without this constraint.
 msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; ModelIds is generated without this constraint.
 msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; ConstIds is generated without this constraint.
 msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; RedundantConstraints.model is generated without this constraint.

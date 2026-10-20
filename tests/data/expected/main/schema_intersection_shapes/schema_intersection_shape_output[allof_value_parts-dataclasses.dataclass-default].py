@@ -105,22 +105,22 @@ NotSiblingItem: TypeAlias = int
 NotSiblingMap: TypeAlias = int
 
 
-EnumBoundProp: TypeAlias = int
+EnumBoundProp: TypeAlias = Literal[1, 2]
 
 
-EnumBoundItem: TypeAlias = int
+EnumBoundItem: TypeAlias = Literal[1, 2]
 
 
-EnumBoundMap: TypeAlias = int
+EnumBoundMap: TypeAlias = Literal[1, 2]
 
 
-EnumLengthProp: TypeAlias = str
+EnumLengthProp: TypeAlias = Literal['a']
 
 
-EnumLengthItem: TypeAlias = str
+EnumLengthItem: TypeAlias = Literal['a']
 
 
-EnumLengthMap: TypeAlias = str
+EnumLengthMap: TypeAlias = Literal['a']
 
 
 TwoPatternsProp: TypeAlias = Any

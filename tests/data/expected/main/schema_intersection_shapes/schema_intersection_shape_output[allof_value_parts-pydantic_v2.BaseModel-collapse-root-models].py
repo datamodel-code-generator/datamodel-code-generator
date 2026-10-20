@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, conint, constr
+from pydantic import BaseModel, Field, conint
 
 
 class Model(BaseModel):
@@ -42,12 +42,12 @@ class Model(BaseModel):
     not_sibling_prop: conint(ge=1) | None = None
     not_sibling_items: list[conint(ge=1)] | None = None
     not_sibling_map: dict[str, conint(ge=1)] | None = None
-    enum_bound_prop: conint(le=10) | None = None
-    enum_bound_items: list[conint(le=10)] | None = None
-    enum_bound_map: dict[str, conint(le=10)] | None = None
-    enum_length_prop: constr(max_length=3) | None = None
-    enum_length_items: list[constr(max_length=3)] | None = None
-    enum_length_map: dict[str, constr(max_length=3)] | None = None
+    enum_bound_prop: Literal[1, 2] | None = None
+    enum_bound_items: list[Literal[1, 2]] | None = None
+    enum_bound_map: dict[str, Literal[1, 2]] | None = None
+    enum_length_prop: Literal['a'] | None = None
+    enum_length_items: list[Literal['a']] | None = None
+    enum_length_map: dict[str, Literal['a']] | None = None
     two_patterns_prop: Any | None = None
     two_patterns_items: list[Any] | None = None
     two_patterns_map: dict[str, Any] | None = None

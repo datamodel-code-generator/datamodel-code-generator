@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, Field, RootModel, conint
 
 
 class EnumMemberProp(RootModel[Literal[1, 2]]):
@@ -140,28 +140,28 @@ class NotSiblingMap(RootModel[conint(ge=1)]):
     root: conint(ge=1)
 
 
-class EnumBoundProp(RootModel[conint(le=10)]):
-    root: conint(le=10)
+class EnumBoundProp(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class EnumBoundItem(RootModel[conint(le=10)]):
-    root: conint(le=10)
+class EnumBoundItem(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class EnumBoundMap(RootModel[conint(le=10)]):
-    root: conint(le=10)
+class EnumBoundMap(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class EnumLengthProp(RootModel[constr(max_length=3)]):
-    root: constr(max_length=3)
+class EnumLengthProp(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
-class EnumLengthItem(RootModel[constr(max_length=3)]):
-    root: constr(max_length=3)
+class EnumLengthItem(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
-class EnumLengthMap(RootModel[constr(max_length=3)]):
-    root: constr(max_length=3)
+class EnumLengthMap(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
 class TwoPatternsProp(RootModel[Any]):

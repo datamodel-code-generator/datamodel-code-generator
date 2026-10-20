@@ -73,6 +73,11 @@ from datamodel_code_generator._format_types import (
     DatetimeClassType,
 )
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS
+from datamodel_code_generator._regex_syntax import (
+    conjoin_patterns,
+    is_portable_pattern,
+    literal_pattern_value,
+)
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import DefaultPutDict
 from datamodel_code_generator._source import (
@@ -93,7 +98,6 @@ from datamodel_code_generator.model._decisions.enum_kind import (
     literal_value_kind,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type
-from datamodel_code_generator.model._decisions.regex_syntax import is_portable_pattern
 from datamodel_code_generator.model._decisions.tag_value import (
     FieldTag,
     distinct_tags,
@@ -137,12 +141,14 @@ from datamodel_code_generator.parser._graph_ids import BuildFrames
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._intersection import (
     ENUM_METADATA_KEYWORDS,
+    KeywordIntersection,
     enum_metadata,
     intersect_constraint,
     intersect_enum_values,
     intersect_keywords,
     intersect_multiple_of,
     warn_unsatisfiable,
+    warn_untaken_patterns,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
 from datamodel_code_generator.parser._null_facts import (
@@ -727,7 +733,7 @@ def _keep_values_as_written(obj: JsonSchemaObject, values: list[Any]) -> JsonSch
     return obj
 
 
-def _literal_constraints(obj: JsonSchemaObject, written: frozenset[str] = NO_KEYWORDS) -> dict[str, float]:
+def _literal_constraints(obj: JsonSchemaObject, written: frozenset[str] = NO_KEYWORDS) -> dict[str, float | str]:
     """Return the limits of the keywords a literal check decides that a schema sets and its field does not write."""
     return {
         key: value.value if isinstance(value, UnionIntFloat) else value
@@ -757,7 +763,7 @@ def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
 
 
 def _enforced_constraint_keywords(
-    data_type: DataType, zero_bound_classes: Mapping[str, tuple[str, ...]], constraints: Mapping[str, float]
+    data_type: DataType, zero_bound_classes: Mapping[str, tuple[str, ...]], constraints: Mapping[str, float | str]
 ) -> frozenset[str]:
     """Return the keywords of a schema that the type of its field enforces itself.
 
@@ -777,7 +783,7 @@ def _enforced_constraint_keywords(
     return frozenset(zero_bound_classes.get(data_type.type, ())) if data_type.type else NO_KEYWORDS
 
 
-def _literal_meets(values: Sequence[object], constraints: Mapping[str, float]) -> frozenset[str]:
+def _literal_meets(values: Sequence[object], constraints: Mapping[str, float | str]) -> frozenset[str]:
     """Return the keywords of ``constraints`` that the literal check decides and every one of the values meets.
 
     The values of a literal no value of which meets a keyword stay as written (the unsatisfiable warning), so the
@@ -1916,37 +1922,8 @@ _ALL_OF_VALUE_KEYWORDS: Final = frozenset({
 })
 """The keywords of an allOf site that its parts' intersection writes, not its own annotations."""
 _DEFAULT_SCHEMA_PATHS = ("#/definitions", "#/$defs")
-_REGEX_META_CHARACTERS = frozenset(r"\.^$*+?{}[]|()")
-
-
-def _literal_pattern_value(pattern: str) -> str | None:
-    """Recognize plain characters and escaped regex metacharacters only."""
-    if _REGEX_META_CHARACTERS.isdisjoint(pattern):
-        return pattern
-    if re.fullmatch(r"(?:[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()])*", pattern) is None:
-        return None
-    return re.sub(r"\\(.)", r"\1", pattern)
-
-
-def _intersect_patterns(patterns: Sequence[str]) -> str:
-    """Preserve pairwise output unless literal searches need independent positions."""
-    match patterns:
-        case [pattern]:
-            return pattern
-        case [left, right] if left == right:
-            return left
-    literals = [_literal_pattern_value(pattern) for pattern in patterns]
-    if all(literal is not None for literal in literals):
-        longest = max((literal for literal in literals if literal is not None), key=str.__len__)
-        if any(literal is not None and not longest.startswith(literal) for literal in literals):
-            return r"\A" + "".join(rf"(?=[\s\S]*{pattern})" for pattern in dict.fromkeys(patterns))
-    match patterns:
-        case [left, right]:
-            return f"(?={left})(?={right})"
-    result = patterns[0]
-    for pattern in patterns[1:]:
-        result = _intersect_patterns((result, pattern))
-    return result
+_ALL_OF_MEMBER_SUFFIX: Final = re.compile(r"/allOf/\d+$")
+"""The end of an allOf member's location, which a warning about the site leaves out."""
 
 
 def _is_empty_property_schema(item: JsonSchemaObject, *, allowed_keywords: frozenset[str] = frozenset()) -> bool:
@@ -2253,6 +2230,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._inherited_required_cache: dict[tuple[str, ...], frozenset[str]] = {}
         self._ref_target_dumps: dict[tuple[str, str], tuple[dict[str, Any], str]] = {}
         self._unsatisfiable_schemas: set[tuple[str, tuple[str, ...]]] = set()
+        self._untaken_pattern_schemas: set[tuple[str, tuple[str, ...]]] = set()
         self._inherited_parent_property_cache: dict[
             tuple[str | int, str, frozenset[str], bool],
             tuple[
@@ -3420,6 +3398,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._inherited_parent_property_cache.clear()
         self._ref_target_dumps.clear()
         self._unsatisfiable_schemas.clear()
+        self._untaken_pattern_schemas.clear()
         if self.generate_schema_validators:
             self._property_count_rule_cache.clear()
 
@@ -5889,7 +5868,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             extras_key=JsonSchemaObject.__extra_key__,
             ref_siblings_are_parts=siblings_are_parts,
         )
-        self._warn_unsatisfiable(where, intersection.unsatisfiable)
+        self._warn_intersection(where, intersection)
         return intersection.keywords, intersection.unsatisfiable
 
     def _intersect_ref_siblings_schema(
@@ -5909,6 +5888,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if keywords and (where, keywords) not in self._unsatisfiable_schemas:
             self._unsatisfiable_schemas.add((where, keywords))
             warn_unsatisfiable(where, keywords, *parts)
+
+    def _warn_untaken_patterns(self, where: str, pattern: str, untaken: tuple[str, ...]) -> None:
+        """Warn once per parse for each schema whose written pattern leaves out patterns of its parts."""
+        if untaken and (where, (pattern, *untaken)) not in self._untaken_pattern_schemas:
+            self._untaken_pattern_schemas.add((where, (pattern, *untaken)))
+            warn_untaken_patterns(where, pattern, untaken)
+
+    def _warn_intersection(self, where: str, intersection: KeywordIntersection, *parts: str) -> None:
+        """Warn about the keywords of an intersection whose parts have no value in common, and its untaken patterns."""
+        self._warn_unsatisfiable(where, intersection.unsatisfiable, *parts)
+        if intersection.untaken_patterns:
+            self._warn_untaken_patterns(where, intersection.keywords["pattern"], intersection.untaken_patterns)
+
+    def _conjoined_pattern(self, patterns: Sequence[str], where: str) -> str:
+        """Return the conjoined pattern (``conjoin_patterns``), warning about the patterns it leaves out."""
+        conjunction = conjoin_patterns(patterns)
+        self._warn_untaken_patterns(where, conjunction.pattern, conjunction.untaken)
+        return conjunction.pattern
 
     def _mark_reported_value_conflict(  # noqa: PLR6301
         self, schema: JsonSchemaObject, keywords: Sequence[str]
@@ -6177,9 +6174,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         v2 = val2.value if isinstance(val2, UnionIntFloat) else val2
         return val1 if intersect_constraint(field, v1, v2) is v1 else val2
 
-    @classmethod
     def _merge_schema_constraints(
-        cls,
+        self,
         base_dict: dict[str, Any],
         items: list[JsonSchemaObject],
         *,
@@ -6188,7 +6184,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         patterns: list[str] | None = None
         for item in items:
             for field in JsonSchemaObject.__constraint_fields__:
-                if (value := cls._schema_constraint_value(item, field)) is None:
+                if (value := JsonSchemaParser._schema_constraint_value(item, field)) is None:
                     continue
                 if intersect and field == "pattern":
                     if patterns is None:
@@ -6196,11 +6192,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     patterns.append(value)
                     continue
                 if intersect and field in base_dict and base_dict[field] is not None:
-                    base_dict[field] = cls._intersect_constraint(field, base_dict[field], value)
+                    base_dict[field] = JsonSchemaParser._intersect_constraint(field, base_dict[field], value)
                 else:
                     base_dict[field] = value
         if patterns:
-            base_dict["pattern"] = _intersect_patterns(patterns)
+            base_dict["pattern"] = self._conjoined_pattern(
+                patterns,
+                _ALL_OF_MEMBER_SUFFIX.sub(
+                    "", next((str(item.schema_location) for item in items if item.schema_location), "allOf")
+                ),
+            )
         if (
             base_dict.get("type") in ("null", ["null"])
             and all(not item.type or _numeric_type_domain(item.type) is not None for item in items)
@@ -6568,7 +6569,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         intersection = intersect_keywords(dumps, row, extras_key=extras_key)
         keywords = intersection.keywords
         if where is not None:
-            self._warn_unsatisfiable(where, intersection.unsatisfiable, _ALL_OF_PARTS)
+            self._warn_intersection(where, intersection, _ALL_OF_PARTS)
         dropped = set(intersection.unsatisfiable)
         if not _admits_arrays(keywords.get("type")):
             dropped.update(_ALL_OF_VALUE_ITEM_KEYWORDS)
@@ -6599,24 +6600,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _all_of_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
         """Return the schema of the values an inline allOf value schema admits: its parts intersected.
 
-        The lightweight merge (``_all_of_value_row``) stays wherever it enforces what the intersection enforces. A
-        site whose type is literals (an ``enum`` or ``const``) keeps the constraints its earlier form writes beside
-        them, since whether the literals meet the other constraints is not decided here. None when a member is a
-        reference or no schema of one value, when two parts set a ``pattern`` (their conjunction is not intersected here
-        yet), or when an ``enum`` or ``const`` part meets a constraint keyword (literals are not filtered by it here
-        yet): such a site keeps its earlier form.
+        The lightweight merge (``_all_of_value_row``) stays wherever it enforces what the intersection enforces; the
+        values of an ``enum`` or ``const`` are written as the literal check filters them (``_build_lightweight_type``).
+        None when a member is a reference or no schema of one value: such a site keeps its earlier form.
         """
         parts: list[JsonSchemaObject] = []
-        if (
-            not self._collect_all_of_value_parts(obj, parts)
-            or sum(part.pattern is not None for part in parts) > 1
-            or (
-                any(part.enum or "const" in part.extras for part in parts)
-                and any(
-                    getattr(part, keyword) is not None for part in parts for keyword in part.__constraint_field_order__
-                )
-            )
-        ):
+        if not self._collect_all_of_value_parts(obj, parts):
             return None
         return self._intersect_all_of_value_parts(
             parts, self._all_of_value_row(obj), str(obj.schema_location or "allOf")
@@ -6650,8 +6639,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         the referenced type is a model class (a root model), or when the output rejects a constraint that the
         referenced alias sets as well (msgspec ``Meta``). The site then takes the reference alone when the
         intersection of its parts enforces nothing beyond the referenced schema, else that intersection. None for
-        every other site, which keeps its earlier form: members that are no value schemas, nested combinators, and
-        two parts with a ``pattern``.
+        every other site, which keeps its earlier form: members that are no value schemas and nested combinators.
         """
         members = [item for item in obj.allOf if isinstance(item, JsonSchemaObject)]
         refs = [member.ref for member in members if member.ref]
@@ -6662,10 +6650,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             return None
         parts: list[JsonSchemaObject] = []
-        if (
-            (target_parts := self._reference_value_parts(refs[0])) is None
-            or not self._collect_all_of_value_parts(obj, parts, resolve_refs=True)
-            or sum(part.pattern is not None for part in parts) > 1
+        if (target_parts := self._reference_value_parts(refs[0])) is None or not self._collect_all_of_value_parts(
+            obj, parts, resolve_refs=True
         ):
             return None
         target = self._intersect_typed_value_parts(target_parts, None)
@@ -6718,15 +6704,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.get_ref_data_type(schema.ref)
 
         if "const" in schema.extras:
-            return self._get_const_data_type(schema.extras["const"])
+            return self._get_const_data_type(schema.extras["const"], schema)
 
         if schema.enum:
-            literal_values, non_literal_values, has_null = self._partition_enum_values(schema.enum)
-            if not non_literal_values:
-                return self.data_type(literals=literal_values, is_optional=has_null)
-            data_types = [self.data_type(literals=literal_values)] if literal_values else []
-            data_types.extend(self._get_data_type_from_json_value(value) for value in non_literal_values)
-            return build_union(self.data_type, data_types, nullable=has_null)
+            return self._enum_literal(schema)
 
         if schema.is_array:
             return self._build_lightweight_array_type(schema, depth, visited, max_depth, max_union_elements)
@@ -7970,9 +7951,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._merge_property_schemas(parent_dict, child_dict),
                 extras_key=JsonSchemaObject.__extra_key__,
             )
-            self._warn_unsatisfiable(
-                str(child_prop.schema_location or f"property {prop_name!r}"), intersection.unsatisfiable
-            )
+            self._warn_intersection(str(child_prop.schema_location or f"property {prop_name!r}"), intersection)
             merged_property = self.SCHEMA_OBJECT_TYPE.model_validate(intersection.keywords)
             self._mark_reported_value_conflict(merged_property, intersection.unsatisfiable)
             merged_property.__dict__[_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY] = frozenset(
@@ -9161,14 +9140,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         A single ``$ref`` member stays the type when the intersection enforces nothing beyond the referenced schema.
         The site's own annotations win, the members' fill in. None when no part has a value keyword, and where the site
         keeps its earlier form: a part with an ``enum`` or ``const`` (literal references are base classes), two parts
-        with a ``pattern`` or with ``items`` (their conjunction is not intersected here), and two different ``format``.
+        with ``items`` (their conjunction is not intersected here), and two different ``format``.
         """
         if (parts := self._satisfiable_all_of_value_parts(obj)) is None:
             return None
         if (
             not any(self._schema_has_own_value_keywords(part) for part in parts)
             or any(part.enum or "const" in part.extras for part in parts)
-            or sum(part.pattern is not None for part in parts) > 1
             or sum(part.items is not None for part in parts) > 1
             or len({part.format for part in parts if part.format}) > 1
         ):
@@ -12150,7 +12128,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged_property_names.pattern = (
                 pattern
                 if merged_property_names.pattern is None
-                else _intersect_patterns((merged_property_names.pattern, pattern))
+                else self._conjoined_pattern(
+                    (merged_property_names.pattern, pattern),
+                    str(property_names.schema_location or "propertyNames"),
+                )
             )
         if merged_property_names.ref:
             merged_property_names = self._merge_ref_with_schema(merged_property_names)
@@ -12302,9 +12283,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or (
                 # Newly enforced patterns must work without changing the regex engine.
                 # Keep complex patterns on their existing path, including Pydantic 2.0.
-                discard_nonstring
-                and schema.pattern
-                and _literal_pattern_value(schema.pattern.removeprefix("^")) is None
+                discard_nonstring and schema.pattern and literal_pattern_value(schema.pattern.removeprefix("^")) is None
             )
         ):
             return None, False
@@ -13196,7 +13175,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 referenced_value := self._all_of_reference_value_schema(obj)
             ) is not None:
                 value_obj = constraint_obj = referenced_value
-            data_type = self._build_lightweight_type(value_obj)
+            data_type = (
+                self._enum_literal(value_obj, self._literal_written(constraint_obj, value_obj.enum, writes=writes))
+                if value_obj.enum and "const" not in value_obj.extras
+                else self._build_lightweight_type(value_obj)
+            )
             if data_type is None:  # pragma: no cover
                 data_type = self.data_type_manager.get_data_type(Types.any)
         elif (

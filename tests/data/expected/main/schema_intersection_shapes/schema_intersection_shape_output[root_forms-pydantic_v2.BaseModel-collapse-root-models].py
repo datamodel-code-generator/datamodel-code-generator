@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
 
 
 class Tags(RootModel[list[str]]):
@@ -43,21 +43,20 @@ class EnumD(RootModel[AB]):
     root: AB
 
 
-class Pat(BaseModel):
-    pass
-
-
 class Base(RootModel[str]):
     root: str = Field('base', examples=['bb'], title='BaseT')
 
 
 class Model(BaseModel):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     a: Arr | None = None
     b: ArrRef | None = None
     c: EnumC | None = None
     d: EnumD | None = None
     v: conint(ge=3, le=5) | None = None
-    p: Pat | None = None
+    p: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = None
     u: Any | None = None
     two_refs: conint(ge=3, le=5) | None = None
     m: dict[str, Any] | None = None

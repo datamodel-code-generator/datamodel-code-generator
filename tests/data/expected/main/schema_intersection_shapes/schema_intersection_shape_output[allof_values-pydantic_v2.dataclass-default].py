@@ -30,16 +30,27 @@ ModeMap = TypeAliasType("ModeMap", Literal[1, 2])
 
 
 PatProp = TypeAliasType(
-    "PatProp", Annotated[str, Field(pattern=compile('(?=^a)(?=b$)'))]
+    "PatProp",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
 )
 
 
 PatItem = TypeAliasType(
-    "PatItem", Annotated[str, Field(pattern=compile('(?=^a)(?=b$)'))]
+    "PatItem",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
 )
 
 
-PatMap = TypeAliasType("PatMap", Annotated[str, Field(pattern=compile('(?=^a)(?=b$)'))])
+PatMap = TypeAliasType(
+    "PatMap",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
+)
 
 
 UntypedProp = TypeAliasType("UntypedProp", Any)
@@ -62,9 +73,12 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-@dataclass
-class Pat:
-    pass
+Pat = TypeAliasType(
+    "Pat",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
+)
 
 
 Untyped = TypeAliasType("Untyped", Any)

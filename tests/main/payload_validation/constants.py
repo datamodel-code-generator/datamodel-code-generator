@@ -263,7 +263,8 @@ EXCLUDED_CASES: dict[str, str] = {
         "an allOf of untyped constraint members stays an empty model until flat untyped constraints are fixed"
     ),
     "openapi/allof_scalar_roots.yaml::components.schemas.TwoPatterns": (
-        "an allOf with more than one pattern member stays an empty model until pattern intersection is fixed"
+        "hypothesis-jsonschema seldom draws a string that meets both of its patterns; "
+        "test_schema_intersection_shape_payloads checks the same allOf of two patterns (root_forms)"
     ),
     "jsonschema/schema_intersection/allof_values.json": (
         "pins the 0.85.0 output G01 PR 3 fixes: the root allOf of untyped members is an empty model that "
@@ -272,6 +273,10 @@ EXCLUDED_CASES: dict[str, str] = {
     "jsonschema/schema_intersection/allof_ref_item_constraints.json": (
         "pins the 0.85.0 output G01 PR 5 fixes: an item allOf of two scalar references is an empty model that "
         "rejects valid values; test_schema_intersection_shape_payloads records it"
+    ),
+    "jsonschema/schema_intersection/allof_patterns.json": (
+        "hypothesis-jsonschema cannot draw a $ref whose sibling pattern differs from its target's; "
+        "test_schema_intersection_shape_payloads checks the pattern conjunctions"
     ),
     "jsonschema/schema_intersection/enum_refs.json": (
         "pins the 0.85.0 output G01 PR 5 fixes: an allOf of two enum references warns about duplicated members; "

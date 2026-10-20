@@ -14,8 +14,8 @@ pydantic_v2.BaseModel default v 3 accepted
 pydantic_v2.BaseModel default v 5 accepted
 pydantic_v2.BaseModel default v 2 rejected
 pydantic_v2.BaseModel default v 6 rejected
-pydantic_v2.BaseModel default p "ab" rejected
-pydantic_v2.BaseModel default p "axb" rejected
+pydantic_v2.BaseModel default p "ab" accepted
+pydantic_v2.BaseModel default p "axb" accepted
 pydantic_v2.BaseModel default p "a" rejected
 pydantic_v2.BaseModel default p "ba" rejected
 pydantic_v2.BaseModel default u "a" accepted
@@ -59,8 +59,8 @@ pydantic_v2.dataclass default v 3 accepted
 pydantic_v2.dataclass default v 5 accepted
 pydantic_v2.dataclass default v 2 rejected
 pydantic_v2.dataclass default v 6 rejected
-pydantic_v2.dataclass default p "ab" rejected
-pydantic_v2.dataclass default p "axb" rejected
+pydantic_v2.dataclass default p "ab" accepted
+pydantic_v2.dataclass default p "axb" accepted
 pydantic_v2.dataclass default p "a" rejected
 pydantic_v2.dataclass default p "ba" rejected
 pydantic_v2.dataclass default u "a" accepted
@@ -104,8 +104,8 @@ msgspec.Struct default v 3 accepted
 msgspec.Struct default v 5 accepted
 msgspec.Struct default v 2 rejected
 msgspec.Struct default v 6 rejected
-msgspec.Struct default p "ab" rejected
-msgspec.Struct default p "axb" rejected
+msgspec.Struct default p "ab" accepted
+msgspec.Struct default p "axb" accepted
 msgspec.Struct default p "a" rejected
 msgspec.Struct default p "ba" rejected
 msgspec.Struct default u "a" accepted
@@ -149,8 +149,8 @@ pydantic_v2.BaseModel --field-constraints v 3 accepted
 pydantic_v2.BaseModel --field-constraints v 5 accepted
 pydantic_v2.BaseModel --field-constraints v 2 rejected
 pydantic_v2.BaseModel --field-constraints v 6 rejected
-pydantic_v2.BaseModel --field-constraints p "ab" rejected
-pydantic_v2.BaseModel --field-constraints p "axb" rejected
+pydantic_v2.BaseModel --field-constraints p "ab" accepted
+pydantic_v2.BaseModel --field-constraints p "axb" accepted
 pydantic_v2.BaseModel --field-constraints p "a" rejected
 pydantic_v2.BaseModel --field-constraints p "ba" rejected
 pydantic_v2.BaseModel --field-constraints u "a" accepted
@@ -194,8 +194,8 @@ pydantic_v2.BaseModel --use-annotated v 3 accepted
 pydantic_v2.BaseModel --use-annotated v 5 accepted
 pydantic_v2.BaseModel --use-annotated v 2 rejected
 pydantic_v2.BaseModel --use-annotated v 6 rejected
-pydantic_v2.BaseModel --use-annotated p "ab" rejected
-pydantic_v2.BaseModel --use-annotated p "axb" rejected
+pydantic_v2.BaseModel --use-annotated p "ab" accepted
+pydantic_v2.BaseModel --use-annotated p "axb" accepted
 pydantic_v2.BaseModel --use-annotated p "a" rejected
 pydantic_v2.BaseModel --use-annotated p "ba" rejected
 pydantic_v2.BaseModel --use-annotated u "a" accepted
@@ -239,8 +239,8 @@ pydantic_v2.BaseModel --collapse-root-models v 3 accepted
 pydantic_v2.BaseModel --collapse-root-models v 5 accepted
 pydantic_v2.BaseModel --collapse-root-models v 2 rejected
 pydantic_v2.BaseModel --collapse-root-models v 6 rejected
-pydantic_v2.BaseModel --collapse-root-models p "ab" rejected
-pydantic_v2.BaseModel --collapse-root-models p "axb" rejected
+pydantic_v2.BaseModel --collapse-root-models p "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models p "axb" accepted
 pydantic_v2.BaseModel --collapse-root-models p "a" rejected
 pydantic_v2.BaseModel --collapse-root-models p "ba" rejected
 pydantic_v2.BaseModel --collapse-root-models u "a" accepted
@@ -284,8 +284,8 @@ msgspec.Struct --collapse-root-models v 3 accepted
 msgspec.Struct --collapse-root-models v 5 accepted
 msgspec.Struct --collapse-root-models v 2 rejected
 msgspec.Struct --collapse-root-models v 6 rejected
-msgspec.Struct --collapse-root-models p "ab" rejected
-msgspec.Struct --collapse-root-models p "axb" rejected
+msgspec.Struct --collapse-root-models p "ab" accepted
+msgspec.Struct --collapse-root-models p "axb" accepted
 msgspec.Struct --collapse-root-models p "a" rejected
 msgspec.Struct --collapse-root-models p "ba" rejected
 msgspec.Struct --collapse-root-models u "a" accepted

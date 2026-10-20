@@ -45,8 +45,9 @@ EnumD: TypeAlias = AB
 Value: TypeAlias = Annotated[int, Meta(ge=3, le=5)]
 
 
-class Pat(Struct):
-    pass
+Pat: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
 Untyped: TypeAlias = Any

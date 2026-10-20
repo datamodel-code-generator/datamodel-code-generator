@@ -30,20 +30,20 @@ pydantic_v2.BaseModel default mode_items [0] rejected
 pydantic_v2.BaseModel default mode_map {"k": 1} accepted
 pydantic_v2.BaseModel default mode_map {"k": 2} accepted
 pydantic_v2.BaseModel default mode_map {"k": 0} rejected
-pydantic_v2.BaseModel default pat "ab" rejected
-pydantic_v2.BaseModel default pat "axb" rejected
+pydantic_v2.BaseModel default pat "ab" accepted
+pydantic_v2.BaseModel default pat "axb" accepted
 pydantic_v2.BaseModel default pat "a" rejected
 pydantic_v2.BaseModel default pat "ba" rejected
-pydantic_v2.BaseModel default pat_prop "ab" rejected
-pydantic_v2.BaseModel default pat_prop "axb" rejected
+pydantic_v2.BaseModel default pat_prop "ab" accepted
+pydantic_v2.BaseModel default pat_prop "axb" accepted
 pydantic_v2.BaseModel default pat_prop "a" rejected
 pydantic_v2.BaseModel default pat_prop "ba" rejected
-pydantic_v2.BaseModel default pat_items ["ab"] rejected
-pydantic_v2.BaseModel default pat_items ["axb"] rejected
+pydantic_v2.BaseModel default pat_items ["ab"] accepted
+pydantic_v2.BaseModel default pat_items ["axb"] accepted
 pydantic_v2.BaseModel default pat_items ["a"] rejected
 pydantic_v2.BaseModel default pat_items ["ba"] rejected
-pydantic_v2.BaseModel default pat_map {"k": "ab"} rejected
-pydantic_v2.BaseModel default pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel default pat_map {"k": "ab"} accepted
+pydantic_v2.BaseModel default pat_map {"k": "axb"} accepted
 pydantic_v2.BaseModel default pat_map {"k": "a"} rejected
 pydantic_v2.BaseModel default pat_map {"k": "ba"} rejected
 pydantic_v2.BaseModel default untyped "a" accepted
@@ -96,20 +96,20 @@ pydantic_v2.dataclass default mode_items [0] rejected
 pydantic_v2.dataclass default mode_map {"k": 1} accepted
 pydantic_v2.dataclass default mode_map {"k": 2} accepted
 pydantic_v2.dataclass default mode_map {"k": 0} rejected
-pydantic_v2.dataclass default pat "ab" rejected
-pydantic_v2.dataclass default pat "axb" rejected
+pydantic_v2.dataclass default pat "ab" accepted
+pydantic_v2.dataclass default pat "axb" accepted
 pydantic_v2.dataclass default pat "a" rejected
 pydantic_v2.dataclass default pat "ba" rejected
-pydantic_v2.dataclass default pat_prop "ab" rejected
-pydantic_v2.dataclass default pat_prop "axb" rejected
+pydantic_v2.dataclass default pat_prop "ab" accepted
+pydantic_v2.dataclass default pat_prop "axb" accepted
 pydantic_v2.dataclass default pat_prop "a" rejected
 pydantic_v2.dataclass default pat_prop "ba" rejected
-pydantic_v2.dataclass default pat_items ["ab"] rejected
-pydantic_v2.dataclass default pat_items ["axb"] rejected
+pydantic_v2.dataclass default pat_items ["ab"] accepted
+pydantic_v2.dataclass default pat_items ["axb"] accepted
 pydantic_v2.dataclass default pat_items ["a"] rejected
 pydantic_v2.dataclass default pat_items ["ba"] rejected
-pydantic_v2.dataclass default pat_map {"k": "ab"} rejected
-pydantic_v2.dataclass default pat_map {"k": "axb"} rejected
+pydantic_v2.dataclass default pat_map {"k": "ab"} accepted
+pydantic_v2.dataclass default pat_map {"k": "axb"} accepted
 pydantic_v2.dataclass default pat_map {"k": "a"} rejected
 pydantic_v2.dataclass default pat_map {"k": "ba"} rejected
 pydantic_v2.dataclass default untyped "a" accepted
@@ -162,20 +162,20 @@ msgspec.Struct default mode_items [0] rejected
 msgspec.Struct default mode_map {"k": 1} accepted
 msgspec.Struct default mode_map {"k": 2} accepted
 msgspec.Struct default mode_map {"k": 0} rejected
-msgspec.Struct default pat "ab" rejected
-msgspec.Struct default pat "axb" rejected
+msgspec.Struct default pat "ab" accepted
+msgspec.Struct default pat "axb" accepted
 msgspec.Struct default pat "a" rejected
 msgspec.Struct default pat "ba" rejected
 msgspec.Struct default pat_prop "ab" accepted
 msgspec.Struct default pat_prop "axb" accepted
-msgspec.Struct default pat_prop "a" accepted
-msgspec.Struct default pat_prop "ba" accepted
+msgspec.Struct default pat_prop "a" rejected
+msgspec.Struct default pat_prop "ba" rejected
 msgspec.Struct default pat_items ["ab"] accepted
 msgspec.Struct default pat_items ["axb"] accepted
-msgspec.Struct default pat_items ["a"] accepted
-msgspec.Struct default pat_items ["ba"] accepted
-msgspec.Struct default pat_map {"k": "ab"} rejected
-msgspec.Struct default pat_map {"k": "axb"} rejected
+msgspec.Struct default pat_items ["a"] rejected
+msgspec.Struct default pat_items ["ba"] rejected
+msgspec.Struct default pat_map {"k": "ab"} accepted
+msgspec.Struct default pat_map {"k": "axb"} accepted
 msgspec.Struct default pat_map {"k": "a"} rejected
 msgspec.Struct default pat_map {"k": "ba"} rejected
 msgspec.Struct default untyped "a" accepted
@@ -228,22 +228,22 @@ pydantic_v2.BaseModel --field-constraints mode_items [0] rejected
 pydantic_v2.BaseModel --field-constraints mode_map {"k": 1} accepted
 pydantic_v2.BaseModel --field-constraints mode_map {"k": 2} accepted
 pydantic_v2.BaseModel --field-constraints mode_map {"k": 0} rejected
-pydantic_v2.BaseModel --field-constraints pat "ab" rejected
-pydantic_v2.BaseModel --field-constraints pat "axb" rejected
+pydantic_v2.BaseModel --field-constraints pat "ab" accepted
+pydantic_v2.BaseModel --field-constraints pat "axb" accepted
 pydantic_v2.BaseModel --field-constraints pat "a" rejected
 pydantic_v2.BaseModel --field-constraints pat "ba" rejected
 pydantic_v2.BaseModel --field-constraints pat_prop "ab" accepted
 pydantic_v2.BaseModel --field-constraints pat_prop "axb" accepted
-pydantic_v2.BaseModel --field-constraints pat_prop "a" accepted
-pydantic_v2.BaseModel --field-constraints pat_prop "ba" accepted
+pydantic_v2.BaseModel --field-constraints pat_prop "a" rejected
+pydantic_v2.BaseModel --field-constraints pat_prop "ba" rejected
 pydantic_v2.BaseModel --field-constraints pat_items ["ab"] accepted
 pydantic_v2.BaseModel --field-constraints pat_items ["axb"] accepted
-pydantic_v2.BaseModel --field-constraints pat_items ["a"] accepted
-pydantic_v2.BaseModel --field-constraints pat_items ["ba"] accepted
+pydantic_v2.BaseModel --field-constraints pat_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints pat_items ["ba"] rejected
 pydantic_v2.BaseModel --field-constraints pat_map {"k": "ab"} accepted
 pydantic_v2.BaseModel --field-constraints pat_map {"k": "axb"} accepted
-pydantic_v2.BaseModel --field-constraints pat_map {"k": "a"} accepted
-pydantic_v2.BaseModel --field-constraints pat_map {"k": "ba"} accepted
+pydantic_v2.BaseModel --field-constraints pat_map {"k": "a"} rejected
+pydantic_v2.BaseModel --field-constraints pat_map {"k": "ba"} rejected
 pydantic_v2.BaseModel --field-constraints untyped "a" accepted
 pydantic_v2.BaseModel --field-constraints untyped 5 accepted
 pydantic_v2.BaseModel --field-constraints untyped "" accepted
@@ -294,20 +294,20 @@ pydantic_v2.BaseModel --use-annotated mode_items [0] rejected
 pydantic_v2.BaseModel --use-annotated mode_map {"k": 1} accepted
 pydantic_v2.BaseModel --use-annotated mode_map {"k": 2} accepted
 pydantic_v2.BaseModel --use-annotated mode_map {"k": 0} rejected
-pydantic_v2.BaseModel --use-annotated pat "ab" rejected
-pydantic_v2.BaseModel --use-annotated pat "axb" rejected
+pydantic_v2.BaseModel --use-annotated pat "ab" accepted
+pydantic_v2.BaseModel --use-annotated pat "axb" accepted
 pydantic_v2.BaseModel --use-annotated pat "a" rejected
 pydantic_v2.BaseModel --use-annotated pat "ba" rejected
 pydantic_v2.BaseModel --use-annotated pat_prop "ab" accepted
 pydantic_v2.BaseModel --use-annotated pat_prop "axb" accepted
-pydantic_v2.BaseModel --use-annotated pat_prop "a" accepted
-pydantic_v2.BaseModel --use-annotated pat_prop "ba" accepted
+pydantic_v2.BaseModel --use-annotated pat_prop "a" rejected
+pydantic_v2.BaseModel --use-annotated pat_prop "ba" rejected
 pydantic_v2.BaseModel --use-annotated pat_items ["ab"] accepted
 pydantic_v2.BaseModel --use-annotated pat_items ["axb"] accepted
-pydantic_v2.BaseModel --use-annotated pat_items ["a"] accepted
-pydantic_v2.BaseModel --use-annotated pat_items ["ba"] accepted
-pydantic_v2.BaseModel --use-annotated pat_map {"k": "ab"} rejected
-pydantic_v2.BaseModel --use-annotated pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel --use-annotated pat_items ["a"] rejected
+pydantic_v2.BaseModel --use-annotated pat_items ["ba"] rejected
+pydantic_v2.BaseModel --use-annotated pat_map {"k": "ab"} accepted
+pydantic_v2.BaseModel --use-annotated pat_map {"k": "axb"} accepted
 pydantic_v2.BaseModel --use-annotated pat_map {"k": "a"} rejected
 pydantic_v2.BaseModel --use-annotated pat_map {"k": "ba"} rejected
 pydantic_v2.BaseModel --use-annotated untyped "a" accepted
@@ -360,20 +360,20 @@ pydantic_v2.BaseModel --collapse-root-models mode_items [0] rejected
 pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 2} accepted
 pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 0} rejected
-pydantic_v2.BaseModel --collapse-root-models pat "ab" rejected
-pydantic_v2.BaseModel --collapse-root-models pat "axb" rejected
+pydantic_v2.BaseModel --collapse-root-models pat "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models pat "axb" accepted
 pydantic_v2.BaseModel --collapse-root-models pat "a" rejected
 pydantic_v2.BaseModel --collapse-root-models pat "ba" rejected
-pydantic_v2.BaseModel --collapse-root-models pat_prop "ab" rejected
-pydantic_v2.BaseModel --collapse-root-models pat_prop "axb" rejected
+pydantic_v2.BaseModel --collapse-root-models pat_prop "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models pat_prop "axb" accepted
 pydantic_v2.BaseModel --collapse-root-models pat_prop "a" rejected
 pydantic_v2.BaseModel --collapse-root-models pat_prop "ba" rejected
-pydantic_v2.BaseModel --collapse-root-models pat_items ["ab"] rejected
-pydantic_v2.BaseModel --collapse-root-models pat_items ["axb"] rejected
+pydantic_v2.BaseModel --collapse-root-models pat_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models pat_items ["axb"] accepted
 pydantic_v2.BaseModel --collapse-root-models pat_items ["a"] rejected
 pydantic_v2.BaseModel --collapse-root-models pat_items ["ba"] rejected
-pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "ab"} rejected
-pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "axb"} accepted
 pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "a"} rejected
 pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "ba"} rejected
 pydantic_v2.BaseModel --collapse-root-models untyped "a" accepted
@@ -426,20 +426,20 @@ msgspec.Struct --collapse-root-models mode_items [0] rejected
 msgspec.Struct --collapse-root-models mode_map {"k": 1} accepted
 msgspec.Struct --collapse-root-models mode_map {"k": 2} accepted
 msgspec.Struct --collapse-root-models mode_map {"k": 0} rejected
-msgspec.Struct --collapse-root-models pat "ab" rejected
-msgspec.Struct --collapse-root-models pat "axb" rejected
+msgspec.Struct --collapse-root-models pat "ab" accepted
+msgspec.Struct --collapse-root-models pat "axb" accepted
 msgspec.Struct --collapse-root-models pat "a" rejected
 msgspec.Struct --collapse-root-models pat "ba" rejected
 msgspec.Struct --collapse-root-models pat_prop "ab" accepted
 msgspec.Struct --collapse-root-models pat_prop "axb" accepted
-msgspec.Struct --collapse-root-models pat_prop "a" accepted
-msgspec.Struct --collapse-root-models pat_prop "ba" accepted
+msgspec.Struct --collapse-root-models pat_prop "a" rejected
+msgspec.Struct --collapse-root-models pat_prop "ba" rejected
 msgspec.Struct --collapse-root-models pat_items ["ab"] accepted
 msgspec.Struct --collapse-root-models pat_items ["axb"] accepted
-msgspec.Struct --collapse-root-models pat_items ["a"] accepted
-msgspec.Struct --collapse-root-models pat_items ["ba"] accepted
-msgspec.Struct --collapse-root-models pat_map {"k": "ab"} rejected
-msgspec.Struct --collapse-root-models pat_map {"k": "axb"} rejected
+msgspec.Struct --collapse-root-models pat_items ["a"] rejected
+msgspec.Struct --collapse-root-models pat_items ["ba"] rejected
+msgspec.Struct --collapse-root-models pat_map {"k": "ab"} accepted
+msgspec.Struct --collapse-root-models pat_map {"k": "axb"} accepted
 msgspec.Struct --collapse-root-models pat_map {"k": "a"} rejected
 msgspec.Struct --collapse-root-models pat_map {"k": "ba"} rejected
 msgspec.Struct --collapse-root-models untyped "a" accepted

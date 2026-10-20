@@ -4,8 +4,7 @@
     "value": "aa"
   },
   {
-    "accepted": true,
-    "value": "bb"
+    "accepted": false
   },
   {
     "accepted": false

@@ -2395,10 +2395,6 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
             root: Annotated[float, Field(ge=1.0)]
 
 
-        class PatternedItem(RootModel[Literal['abc']]):
-            root: Annotated[Literal['abc'], Field(pattern='^a')]
-
-
         class CountModel(RootModel[NonNegativeInt]):
             root: NonNegativeInt
 
@@ -2460,7 +2456,7 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
             level: Level | None = None
             unmet: Annotated[Literal['abc'] | None, Field(max_length=2)] = None
             ratios: list[Ratio1] | None = None
-            patterned: list[PatternedItem] | None = None
+            patterned: list[Literal['abc']] | None = None
         ```
 
         <!-- fmt: on -->

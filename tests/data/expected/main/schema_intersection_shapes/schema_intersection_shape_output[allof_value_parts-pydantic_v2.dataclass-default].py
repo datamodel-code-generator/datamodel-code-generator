@@ -117,22 +117,22 @@ NotSiblingItem = TypeAliasType("NotSiblingItem", Annotated[int, Field(ge=1)])
 NotSiblingMap = TypeAliasType("NotSiblingMap", Annotated[int, Field(ge=1)])
 
 
-EnumBoundProp = TypeAliasType("EnumBoundProp", Annotated[int, Field(le=10)])
+EnumBoundProp = TypeAliasType("EnumBoundProp", Literal[1, 2])
 
 
-EnumBoundItem = TypeAliasType("EnumBoundItem", Annotated[int, Field(le=10)])
+EnumBoundItem = TypeAliasType("EnumBoundItem", Literal[1, 2])
 
 
-EnumBoundMap = TypeAliasType("EnumBoundMap", Annotated[int, Field(le=10)])
+EnumBoundMap = TypeAliasType("EnumBoundMap", Literal[1, 2])
 
 
-EnumLengthProp = TypeAliasType("EnumLengthProp", Annotated[str, Field(max_length=3)])
+EnumLengthProp = TypeAliasType("EnumLengthProp", Literal['a'])
 
 
-EnumLengthItem = TypeAliasType("EnumLengthItem", Annotated[str, Field(max_length=3)])
+EnumLengthItem = TypeAliasType("EnumLengthItem", Literal['a'])
 
 
-EnumLengthMap = TypeAliasType("EnumLengthMap", Annotated[str, Field(max_length=3)])
+EnumLengthMap = TypeAliasType("EnumLengthMap", Literal['a'])
 
 
 TwoPatternsProp = TypeAliasType("TwoPatternsProp", Any)

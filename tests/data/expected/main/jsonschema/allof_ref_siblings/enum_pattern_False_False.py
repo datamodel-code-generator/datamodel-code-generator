@@ -10,7 +10,6 @@ from pydantic import RootModel, constr
 
 class Root(Enum):
     aa = 'aa'
-    bb = 'bb'
 
 
 class Base(RootModel[constr(pattern=r'^a')]):

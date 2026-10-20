@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 from enum import Enum
+from re import compile
 from typing import Annotated, Any
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -47,9 +48,12 @@ EnumD = TypeAliasType("EnumD", AB)
 Value = TypeAliasType("Value", Annotated[int, Field(ge=3, le=5)])
 
 
-@dataclass
-class Pat:
-    pass
+Pat = TypeAliasType(
+    "Pat",
+    Annotated[
+        str, Field(pattern=compile('\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))'))
+    ],
+)
 
 
 Untyped = TypeAliasType("Untyped", Any)
@@ -88,7 +92,7 @@ InlineRoot = TypeAliasType(
 )
 
 
-@dataclass
+@dataclass(config=ConfigDict(regex_engine="python-re"))
 class Model:
     a: Arr | None = None
     b: ArrRef | None = None

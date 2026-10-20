@@ -140,28 +140,28 @@ class NotSiblingMap(RootModel[int]):
     root: int = Field(..., ge=1)
 
 
-class EnumBoundProp(RootModel[int]):
-    root: int = Field(..., le=10)
+class EnumBoundProp(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class EnumBoundItem(RootModel[int]):
-    root: int = Field(..., le=10)
+class EnumBoundItem(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class EnumBoundMap(RootModel[int]):
-    root: int = Field(..., le=10)
+class EnumBoundMap(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class EnumLengthProp(RootModel[str]):
-    root: str = Field(..., max_length=3)
+class EnumLengthProp(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
-class EnumLengthItem(RootModel[str]):
-    root: str = Field(..., max_length=3)
+class EnumLengthItem(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
-class EnumLengthMap(RootModel[str]):
-    root: str = Field(..., max_length=3)
+class EnumLengthMap(RootModel[Literal['a']]):
+    root: Literal['a']
 
 
 class TwoPatternsProp(RootModel[Any]):

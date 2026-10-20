@@ -20,9 +20,6 @@ ConstModel: TypeAlias = Annotated[str, Meta(min_length=1)]
 Ratio1: TypeAlias = Annotated[float, Meta(ge=1.0)]
 
 
-PatternedItem: TypeAlias = Literal['abc']
-
-
 CountModel: TypeAlias = Annotated[int, Meta(ge=0)]
 
 
@@ -75,4 +72,4 @@ class RedundantConstraints(Struct):
     level: Level | UnsetType = UNSET
     unmet: Literal['abc'] | UnsetType = UNSET
     ratios: list[Ratio1] | UnsetType = UNSET
-    patterned: list[PatternedItem] | UnsetType = UNSET
+    patterned: list[Literal['abc']] | UnsetType = UNSET

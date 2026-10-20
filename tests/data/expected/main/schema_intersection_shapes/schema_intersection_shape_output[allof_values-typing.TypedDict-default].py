@@ -52,8 +52,7 @@ Level: TypeAlias = int
 Mode: TypeAlias = Literal[1, 2]
 
 
-class Pat(TypedDict):
-    pass
+Pat: TypeAlias = str
 
 
 Untyped: TypeAlias = Any

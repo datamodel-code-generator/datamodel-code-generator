@@ -43,18 +43,6 @@ NotSiblingItem: TypeAlias = Annotated[int, Meta(ge=1)]
 NotSiblingMap: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
-EnumBoundItem: TypeAlias = Annotated[int, Meta(le=10)]
-
-
-EnumBoundMap: TypeAlias = Annotated[int, Meta(le=10)]
-
-
-EnumLengthItem: TypeAlias = Annotated[str, Meta(max_length=3)]
-
-
-EnumLengthMap: TypeAlias = Annotated[str, Meta(max_length=3)]
-
-
 class Model(Struct):
     enum_member_prop: Literal[1, 2] | UnsetType = UNSET
     enum_member_items: list[Literal[1, 2]] | UnsetType = UNSET
@@ -89,12 +77,12 @@ class Model(Struct):
     not_sibling_prop: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     not_sibling_items: list[NotSiblingItem] | UnsetType = UNSET
     not_sibling_map: dict[str, NotSiblingMap] | UnsetType = UNSET
-    enum_bound_prop: Annotated[int, Meta(le=10)] | UnsetType = UNSET
-    enum_bound_items: list[EnumBoundItem] | UnsetType = UNSET
-    enum_bound_map: dict[str, EnumBoundMap] | UnsetType = UNSET
-    enum_length_prop: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
-    enum_length_items: list[EnumLengthItem] | UnsetType = UNSET
-    enum_length_map: dict[str, EnumLengthMap] | UnsetType = UNSET
+    enum_bound_prop: Literal[1, 2] | UnsetType = UNSET
+    enum_bound_items: list[Literal[1, 2]] | UnsetType = UNSET
+    enum_bound_map: dict[str, Literal[1, 2]] | UnsetType = UNSET
+    enum_length_prop: Literal['a'] | UnsetType = UNSET
+    enum_length_items: list[Literal['a']] | UnsetType = UNSET
+    enum_length_map: dict[str, Literal['a']] | UnsetType = UNSET
     two_patterns_prop: Any | UnsetType = UNSET
     two_patterns_items: list[Any] | UnsetType = UNSET
     two_patterns_map: dict[str, Any] | UnsetType = UNSET

@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
 
 
 class TwoRefs(RootModel[conint(ge=3, le=5)]):
@@ -55,8 +55,11 @@ class Value(RootModel[conint(ge=3, le=5)]):
     root: conint(ge=3, le=5)
 
 
-class Pat(BaseModel):
-    pass
+class Pat(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class Untyped(RootModel[Any]):

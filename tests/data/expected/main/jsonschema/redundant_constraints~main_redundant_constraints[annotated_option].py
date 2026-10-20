@@ -32,10 +32,6 @@ class Ratio1(RootModel[float]):
     root: Annotated[float, Field(ge=1.0)]
 
 
-class PatternedItem(RootModel[Literal['abc']]):
-    root: Annotated[Literal['abc'], Field(pattern='^a')]
-
-
 class CountModel(RootModel[NonNegativeInt]):
     root: NonNegativeInt
 
@@ -97,4 +93,4 @@ class RedundantConstraints(BaseModel):
     level: Level | None = None
     unmet: Annotated[Literal['abc'] | None, Field(max_length=2)] = None
     ratios: list[Ratio1] | None = None
-    patterned: list[PatternedItem] | None = None
+    patterned: list[Literal['abc']] | None = None

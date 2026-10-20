@@ -20,11 +20,11 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
+from datamodel_code_generator._regex_syntax import LOOKAROUND_PATTERN, scan_regex_syntax
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
-from datamodel_code_generator.model._decisions.regex_syntax import LOOKAROUND_PATTERN, scan_regex_syntax
 from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model.base import (
     ALL_MODEL,

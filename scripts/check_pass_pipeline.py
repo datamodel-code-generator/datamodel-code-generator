@@ -83,6 +83,7 @@ REPAIRS = frozenset({
 DEEP_WARNINGS = {
     "model/pydantic_v2/base_model.py:_warn_template_update": "the caller of render() (L7)",
     "parser/_intersection.py:warn_unsatisfiable": "the parser method that met the unsatisfiable schema (L1)",
+    "parser/_intersection.py:warn_untaken_patterns": "the parser method that conjoined the patterns (L1)",
     "parser/jsonschema.py:_build_allof_type": "the parser method that built the allOf (L1)",
     "parser/jsonschema.py:_check_array_version_features": "the parser method that checked the array (L1)",
     "parser/jsonschema.py:_check_version_specific_features": "the parser method that checked the schema (L1)",

@@ -26,13 +26,19 @@ ModeItem: TypeAlias = Literal[1, 2]
 ModeMap: TypeAlias = Literal[1, 2]
 
 
-PatProp: TypeAlias = str
+PatProp: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
-PatItem: TypeAlias = str
+PatItem: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
-PatMap: TypeAlias = Annotated[str, Meta(pattern='(?=^a)(?=b$)')]
+PatMap: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
 UntypedProp: TypeAlias = Any
@@ -55,8 +61,9 @@ class Mode(IntEnum):
     integer_2 = 2
 
 
-class Pat(Struct):
-    pass
+Pat: TypeAlias = Annotated[
+    str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')
+]
 
 
 Untyped: TypeAlias = Any

@@ -30,10 +30,6 @@ class EnumC(Enum):
 EnumD: TypeAlias = AB
 
 
-class Pat(Struct):
-    pass
-
-
 Base: TypeAlias = Annotated[str, Meta(examples=['bb'], title='BaseT')]
 
 
@@ -43,7 +39,10 @@ class Model(Struct):
     c: EnumC | UnsetType = UNSET
     d: EnumD | UnsetType = UNSET
     v: Annotated[int, Meta(ge=3, le=5)] | UnsetType = UNSET
-    p: Pat | UnsetType = UNSET
+    p: (
+        Annotated[str, Meta(pattern='\\A(?=[\\s\\S]*?(?:^a))(?=[\\s\\S]*?(?:b$))')]
+        | UnsetType
+    ) = UNSET
     u: Any | UnsetType = UNSET
     two_refs: Annotated[int, Meta(ge=3, le=5)] | UnsetType = UNSET
     m: dict[str, Any] | None | UnsetType = UNSET

@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, RootModel, confloat, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, confloat, conint, constr
 from typing_extensions import TypeAliasType
 
 
@@ -82,8 +82,11 @@ class Cat(Pet):
     pass
 
 
-class TwoPatterns(BaseModel):
-    pass
+class TwoPatterns(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
 
 
 class MismatchAlias(Mismatch):

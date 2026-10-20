@@ -44,6 +44,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import final
 
+from datamodel_code_generator._regex_syntax import pattern_admits
 from datamodel_code_generator._requirements import pydantic_target_meets
 
 if TYPE_CHECKING:
@@ -126,7 +127,7 @@ PROPERTY_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({"maxProperties", "mi
 TYPE_DEPENDENT_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | STRING_KEYWORDS | ARRAY_KEYWORDS
 """The keywords whose meaning depends on the type of the value; a type the generator cannot classify takes them all."""
 NO_KEYWORDS: Final[frozenset[str]] = frozenset()
-LITERAL_DECIDABLE_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | LENGTH_KEYWORDS
+LITERAL_DECIDABLE_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | LENGTH_KEYWORDS | {"pattern"}
 """The keywords a literal check decides on the values of a ``const`` or an ``enum`` (``literal_check``)."""
 
 VALUES_AS_WRITTEN_KEY: Final = "_values_as_written"
@@ -637,13 +638,16 @@ def _meets_length(value: object, keyword: str, limit: float) -> bool:
     return len(value) >= limit if keyword == "minLength" else len(value) <= limit
 
 
-def _meets(value: object, keyword: str, limit: float) -> bool | None:
+def _meets(value: object, keyword: str, limit: float | str) -> bool | None:
     """Return whether a JSON value meets a keyword with the limit, or None when the check cannot decide it.
 
     A keyword of a kind that does not apply to the value's JSON type is met, as is every keyword by null (JSON Schema).
     The bounds compare a number by IEEE rules, so NaN meets none; a ``bool`` is no number. ``multipleOf`` is decided on
     the decimal text of the values, and not for a divisor that is not positive and finite or a value that is not finite.
+    A ``pattern`` is decided only where the static scan certifies that every engine reads it alike (``pattern_admits``).
     """
+    if isinstance(limit, str):
+        return pattern_admits(limit, value) if isinstance(value, str) else True
     if keyword in LENGTH_KEYWORDS:
         return _meets_length(value, keyword, limit)
     if isinstance(value, bool) or not isinstance(value, int | float):
@@ -661,7 +665,7 @@ def _is_finite(number: float) -> bool:
 
 
 def literal_check(
-    values: Sequence[object], constraints: Mapping[str, float]
+    values: Sequence[object], constraints: Mapping[str, float | str]
 ) -> tuple[tuple[str, ...], tuple[bool, ...]]:
     """Return the keywords of ``constraints`` the check decides on every value, and whether each value meets them all.
 
