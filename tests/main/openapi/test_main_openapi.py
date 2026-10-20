@@ -10939,6 +10939,47 @@ def test_main_openapi_read_only_write_only_ref(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("input_name", "read_write_mode"),
+    [
+        pytest.param("api.yaml", "request-response", id="request-response"),
+        pytest.param("single/api.yaml", "request-response", id="single-document-request-response"),
+        pytest.param("api.yaml", "all", id="all"),
+        pytest.param("shapes.yaml", "request-response", id="shapes-request-response"),
+    ],
+)
+def test_main_openapi_read_only_write_only_external_directory(
+    output_file: Path,
+    input_name: str,
+    read_write_mode: str,
+) -> None:
+    """Split read/write variants of schemas that documents in subdirectories define.
+
+    The variants of a schema in ``ext/`` or ``ext/sub/`` follow its references in the document that defines it, as
+    those of the same schemas in one document do: under request-response ``api.yaml`` gives the output of
+    ``single/api.yaml``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_external_directory" / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "--read-only-write-only-model-type",
+            read_write_mode,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_read_only_write_only_allof_property_ref_runtime(output_file: Path) -> None:
     """Validate allOf readOnly/writeOnly generation when object properties contain refs."""
     generate(

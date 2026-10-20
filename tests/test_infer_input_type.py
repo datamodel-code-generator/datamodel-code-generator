@@ -137,6 +137,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "paths_external_ref" in file.parts and file.name != "openapi.yaml":
             continue
+        if "read_only_write_only_external_directory" in file.parts and "ext" in file.parts:
+            continue
         if "paths_ref_with_external_schema" in file.parts and file.name != "openapi.yaml":
             continue
         if "webhooks_ref_with_external_schema" in file.parts and file.name != "openapi.yaml":

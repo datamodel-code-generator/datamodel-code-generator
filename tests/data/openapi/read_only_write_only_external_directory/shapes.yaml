@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: Read-only and write-only fields in an external directory
+  version: '1'
+paths:
+  /catalogs:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                catalog:
+                  $ref: 'ext/other.yaml#/Catalog'
+      responses:
+        '200':
+          description: The stored catalog
+          content:
+            application/json:
+              schema:
+                $ref: 'ext/other.yaml#/Catalog'
+components:
+  schemas:
+    LocalOwner:
+      $ref: 'ext/other.yaml#/Owner'
+    LocalDerived:
+      $ref: 'ext/other.yaml#/Derived'
+    LocalStore:
+      $ref: 'ext/sub/other.yaml#/Store'
+    Pet:
+      type: object
+      properties:
+        secret:
+          type: string
+          writeOnly: true
+        name:
+          type: string

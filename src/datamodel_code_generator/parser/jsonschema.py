@@ -3393,10 +3393,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _get_ref_schema_rw_model_field_facts(
         self,
-        ref_path: str,
+        resolved_ref: str,
     ) -> tuple[bool, bool, bool, bool] | None:
         """Return cached effective read/write field facts for a referenced schema."""
-        resolved_ref = self.model_resolver.resolve_ref(ref_path)
         if (cached := self._rw_model_field_facts_cache.get(resolved_ref)) is not None:
             return cached
         try:
@@ -3410,11 +3409,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _ref_schema_generates_variant(
         self,
-        ref_path: str,
+        resolved_ref: str,
         suffix: Literal["Request", "Response"],
     ) -> bool:
         """Check whether a referenced schema generates the requested read/write variant."""
-        resolved_ref = self.model_resolver.resolve_ref(ref_path)
         cache_key = resolved_ref, suffix
         if (cached := self._rw_model_variant_requirement_cache.get(cache_key)) is not None:
             return cached
@@ -3422,7 +3420,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return False
         if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
             return self._request_response_ref_schema_generates_variant(resolved_ref)
-        if (facts := self._get_ref_schema_rw_model_field_facts(ref_path)) is None:
+        if (facts := self._get_ref_schema_rw_model_field_facts(resolved_ref)) is None:
             return False
         has_read_only, has_write_only, has_non_read_only, has_non_write_only = facts
         match suffix:

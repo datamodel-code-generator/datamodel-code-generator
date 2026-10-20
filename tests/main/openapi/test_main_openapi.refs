@@ -1399,6 +1399,11 @@ pattern_with_lookaround_pydantic_v2_dataclass_field_constraints.py-args1	main/op
 	main/openapi/read_only_write_only_duplicate_allof_ref.py
 [test_main_openapi_read_only_write_only_empty_base]
 	main/openapi/read_only_write_only_empty_base.py
+[test_main_openapi_read_only_write_only_external_directory]
+all	main/openapi/main_openapi/read_only_write_only_external_directory[all].py
+request-response	main/openapi/main_openapi/read_only_write_only_external_directory[request-response].py
+shapes-request-response	main/openapi/main_openapi/read_only_write_only_external_directory[shapes-request-response].py
+single-document-request-response	main/openapi/main_openapi/read_only_write_only_external_directory[single-document-request-response].py	= main/openapi/main_openapi/read_only_write_only_external_directory[request-response].py
 [test_main_openapi_read_only_write_only_mixed]
 	main/openapi/read_only_write_only_mixed.py
 [test_main_openapi_read_only_write_only_nested_allof]

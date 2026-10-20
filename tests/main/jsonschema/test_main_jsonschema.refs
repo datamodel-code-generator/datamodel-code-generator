@@ -6869,6 +6869,9 @@ use-annotated	main/jsonschema/main_jsonschema/property_names_root_model_keys[use
 	main/jsonschema/main_jsonschema/read_as_const_marker_in_document.warnings.txt
 [test_main_jsonschema_read_only_write_only_compositions]
 	main/jsonschema/read_only_write_only_compositions.py
+[test_main_jsonschema_read_only_write_only_external_directory]
+all	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[all].py
+request-response	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[request-response].py
 [test_main_jsonschema_recursive_array]
 	main/jsonschema/recursive_array.py
 [test_main_jsonschema_recursive_fixed_length_array_keeps_tuple_shape]

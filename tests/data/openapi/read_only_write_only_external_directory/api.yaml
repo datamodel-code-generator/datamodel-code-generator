@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: Read-only and write-only fields in an external directory
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Local:
+      $ref: 'ext/other.yaml#/Foo'
+    LocalAllOf:
+      allOf:
+        - $ref: 'ext/other.yaml#/Foo'

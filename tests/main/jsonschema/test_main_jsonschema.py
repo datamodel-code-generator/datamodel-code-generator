@@ -14865,6 +14865,27 @@ def test_main_jsonschema_read_only_write_only_compositions(output_file: Path) ->
     )
 
 
+@pytest.mark.parametrize("read_write_mode", ["request-response", "all"])
+def test_main_jsonschema_read_only_write_only_external_directory(output_file: Path, read_write_mode: str) -> None:
+    """Split read/write variants of a schema in a subdirectory by the references of its own document."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "read_only_write_only_external_directory" / "main.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            read_write_mode,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.benchmark
 def test_main_jsonschema_required_and_any_of_required(output_file: Path) -> None:
     """Test required field with anyOf required."""
