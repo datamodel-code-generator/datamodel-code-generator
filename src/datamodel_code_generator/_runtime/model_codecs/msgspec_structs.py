@@ -14,13 +14,15 @@ from .media import plain
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from typing_extensions import TypeForm
+
 T = TypeVar("T")
 
-_DECODERS: Final[dict[int, tuple[object, Decoder[Any]]]] = {}
+_DECODERS: Final[dict[int, tuple[TypeForm[Any], Decoder[Any]]]] = {}
 _ERRORS: Final = (DecodeError, EncodeError)
 
 
-def _decoder(type_: object) -> Decoder[Any]:
+def _decoder(type_: TypeForm[Any]) -> Decoder[Any]:
     """Return the cached msgspec JSON decoder of a type expression, building it on first use."""
     if (cached := _DECODERS.get(id(type_))) is None:
         decoder: Decoder[Any] = Decoder(type_)
@@ -33,7 +35,7 @@ class MsgspecCodec(Generic[T]):
 
     __slots__ = ("type",)
 
-    def __init__(self, type_: object) -> None:
+    def __init__(self, type_: TypeForm[Any]) -> None:
         """Keep the generated type; its JSON decoder is built on first use and shared through the module cache."""
         self.type = type_
 

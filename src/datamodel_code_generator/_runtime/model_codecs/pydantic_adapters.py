@@ -13,13 +13,15 @@ from .media import plain
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from typing_extensions import TypeForm
+
 T = TypeVar("T")
 
-_ADAPTERS: Final[dict[int, tuple[object, TypeAdapter[Any]]]] = {}
+_ADAPTERS: Final[dict[int, tuple[TypeForm[Any], TypeAdapter[Any]]]] = {}
 _ERRORS: Final = (ValidationError, PydanticSerializationError)
 
 
-def adapter(type_: object) -> TypeAdapter[Any]:
+def adapter(type_: TypeForm[Any]) -> TypeAdapter[Any]:
     """Return the cached TypeAdapter of a type expression, building it on first use."""
     if (cached := _ADAPTERS.get(id(type_))) is None:
         built: TypeAdapter[Any] = TypeAdapter(cast("Any", type_))
@@ -32,7 +34,7 @@ class AdapterCodec(Generic[T]):
 
     __slots__ = ("type",)
 
-    def __init__(self, type_: object) -> None:
+    def __init__(self, type_: TypeForm[Any]) -> None:
         """Keep the generated type; its TypeAdapter is built on first use and shared through the module cache."""
         self.type = type_
 

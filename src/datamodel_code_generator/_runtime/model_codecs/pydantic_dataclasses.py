@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
     from pydantic import TypeAdapter
     from pydantic_core import SchemaSerializer
+    from typing_extensions import TypeForm
 
 T = TypeVar("T")
 
@@ -26,7 +27,9 @@ class PydanticDataclassCodec(AdapterCodec[T]):
 
     __slots__ = ("serializer",)
 
-    def __init__(self, type_: object, serializer: Callable[[TypeAdapter[Any]], SchemaSerializer] | None = None) -> None:
+    def __init__(
+        self, type_: TypeForm[Any], serializer: Callable[[TypeAdapter[Any]], SchemaSerializer] | None = None
+    ) -> None:
         """Keep the generated type and the serializer that writes its values, if its adapter's own does not."""
         super().__init__(type_)
         self.serializer = serializer

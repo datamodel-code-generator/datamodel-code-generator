@@ -25,10 +25,10 @@ copied runtime
   model_codecs/errors.py: 18
   model_codecs/media.py: 340
   model_codecs/parameters.py: 344
-  model_codecs/pydantic_adapters.py: 66
+  model_codecs/pydantic_adapters.py: 68
   model_codecs/pydantic_models.py: 31
   model_codecs/unset.py: 11
-total 24 modules, 6166 lines
+total 24 modules, 6168 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py
