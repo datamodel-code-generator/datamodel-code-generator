@@ -1415,7 +1415,7 @@ def _excluded_null_members(obj: JsonSchemaObject, members: Sequence[JsonSchemaOb
         for member in members
         if isinstance(member, JsonSchemaObject)
         and not member.ref
-        and member.type == "null"
+        and member.type in ("null", ["null"])
         and not (member.anyOf or member.oneOf)
     ]
     return null_members if len(null_members) < len(members) else []

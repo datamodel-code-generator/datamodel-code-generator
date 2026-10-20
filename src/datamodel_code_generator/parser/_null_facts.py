@@ -118,6 +118,7 @@ NullRule: TypeAlias = Literal[
   ``type`` list holding null; ``nullable`` and ``enum`` do not count (``schema-type``).
 * ``type-excludes-member-null``: except a member beside a ``type`` that is neither null nor a list holding null,
   without ``nullable: true``: that ``type`` excludes null, so the combined schema drops its members typed only null
+  (``null`` or ``["null"]``) and, when every member is one, is rejected as unsatisfiable
   (``JsonSchemaParser.parse_combined_schema``).
 * ``field-declared``: under ``--strict-nullable`` or ``--use-missing-sentinel`` a field writes the ``nullable`` its
   schema declares.

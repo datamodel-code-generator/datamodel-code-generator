@@ -2,6 +2,8 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_declaration_problems_report_unsound_declarations]
 	parser/fact_finality/declaration_problems_report_unsound_declarations.txt
+[test_fact_finality_lets_a_decision_write_the_facts_it_declares]
+	parser/fact_finality/lets_a_decision_write_the_facts_it_declares.output.txt
 [test_fact_finality_reports_a_write_after_the_phase_the_table_names]
 	parser/fact_finality/reports_a_write_after_the_phase_the_table_names.txt
 [test_fact_finality_reports_a_write_outside_every_pass]

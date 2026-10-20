@@ -291,3 +291,100 @@ def test_fact_finality_raises_at_the_first_render_fact_a_decision_reads(monkeypa
         r"during DECIDE$",
     ):
         NameReadingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
+
+
+MODELS: list[DataModel] = []
+
+
+class CapturingParser(JsonSchemaParser):
+    """Keeps the models of the module it processes, for a decision that writes them."""
+
+    def _process_single_module(self, module_: Any, models: list[DataModel], *args: Any) -> ModuleContext:
+        MODELS[:] = models
+        return super()._process_single_module(module_, models, *args)
+
+
+def _iterate_names(form: str) -> Callable[[Any, Any], None]:
+    """Return a decision that reaches the keys of the ``__dict__`` of the first field only through ``form``."""
+
+    def run(facts: Any, _writer: Any) -> None:
+        MODELS[0].fields[0].__dict__["_forced_field_assignment"] = True
+        keys = facts.live_models[0].fields[0].__dict__
+        READ.append(
+            {
+                "iter": lambda: str(list(iter(keys))),
+                "len": lambda: str(len(keys)),
+                "keys": lambda: str(list(keys.keys())),
+                "items": lambda: str(len(list(keys.items()))),
+                "contains": lambda: str("_forced_field_assignment" in keys),
+            }[form]()
+        )
+
+    return run
+
+
+@pytest.mark.parametrize("form", ["iter", "len", "keys", "items", "contains"])
+def test_fact_finality_reports_render_facts_that_decisions_iterate(monkeypatch: pytest.MonkeyPatch, form: str) -> None:
+    """Iterating, counting, listing or testing the keys of a dict attribute reports its render-fact keys."""
+    _finality_only(monkeypatch, "1")
+    READ.clear()
+
+    class IteratingParser(CapturingParser):
+        _DECISION_PASSES = _decide("iterate_keys", _iterate_names(form))
+
+    with pytest.raises(Error, match=rf"^{CHECK_FACT_FINALITY_ENV}: iterate_keys render-read: .* during DECIDE$"):
+        IteratingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()
+
+
+def _write_default(_facts: Any, _writer: Any) -> None:
+    """Write the default of a field, a fact the decision declares."""
+    MODELS[0].fields[0].default = "written"
+
+
+def _write_description(_facts: Any, _writer: Any) -> None:
+    """Write the description of a model, a fact the decision does not declare."""
+    MODELS[0].description = "written"
+
+
+def _decide_writing(name: str, written: check_pass_pipeline.Fact, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
+    """Return a registry of one decision ``name`` that declares writing ``written`` and runs ``run``."""
+    decl = check_pass_pipeline.PassDecl(
+        name,
+        check_pass_pipeline.Phase.DECIDE,
+        check_pass_pipeline.Scope.GLOBAL,
+        check_pass_pipeline.PassKind.TRANSFORM,
+        reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
+        writes=frozenset({written}),
+    )
+    return (check_pass_pipeline.DecisionPass({"decl": decl, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
+
+
+class DeclaredWritingParser(CapturingParser):
+    """Runs a decision that writes a fact it declares during DECIDE."""
+
+    _DECISION_PASSES = _decide_writing("write_default", check_pass_pipeline.Fact.DEFAULTS, _write_default)
+
+
+class UndeclaredWritingParser(CapturingParser):
+    """Runs a decision that declares one fact and writes another during DECIDE."""
+
+    _DECISION_PASSES = _decide_writing("write_description", check_pass_pipeline.Fact.DEFAULTS, _write_description)
+
+
+def test_fact_finality_lets_a_decision_write_the_facts_it_declares(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A fact is final at B1 for every pass but the decisions, which write what they declare during DECIDE."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(DeclaredWritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse(), name="output")
+
+
+def test_fact_finality_reports_a_decision_write_it_does_not_declare(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A decision that writes a fact other than the ones it declares is reported as any pass is."""
+    _finality_only(monkeypatch, "1")
+
+    with pytest.raises(
+        Error,
+        match=rf"^{CHECK_FACT_FINALITY_ENV}: write_description undeclared: DataModel\.description \(METADATA\) "
+        r"of Person during DECIDE$",
+    ):
+        UndeclaredWritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse()

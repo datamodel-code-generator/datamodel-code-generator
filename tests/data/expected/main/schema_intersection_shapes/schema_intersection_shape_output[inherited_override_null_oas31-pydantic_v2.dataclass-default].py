@@ -34,6 +34,7 @@ class NamedCat(Cat):
     direct: str = Field(..., kw_only=True)
     direct_obj: Dog = Field(..., kw_only=True)
     direct_obj_first: Dog = Field(..., kw_only=True)
+    list_null_first: str = Field(..., kw_only=True)
     kind2: str | None = None
     kind3: str | None = None
     name: str | None = None

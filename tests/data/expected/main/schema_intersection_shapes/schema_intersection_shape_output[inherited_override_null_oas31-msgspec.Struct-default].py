@@ -29,6 +29,7 @@ class NamedCat(Cat, kw_only=True):
     direct: str
     direct_obj: Dog
     direct_obj_first: Dog
+    list_null_first: str
     kind2: str | UnsetType = UNSET
     kind3: str | None | UnsetType = UNSET
     name: str | UnsetType = UNSET

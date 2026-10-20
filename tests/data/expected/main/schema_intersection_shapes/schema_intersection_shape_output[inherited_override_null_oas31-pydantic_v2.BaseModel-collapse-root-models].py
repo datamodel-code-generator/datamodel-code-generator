@@ -28,3 +28,4 @@ class NamedCat(Cat):
     direct_obj: Dog
     direct_obj_first: Dog
     only_null: None = None
+    list_null_first: str

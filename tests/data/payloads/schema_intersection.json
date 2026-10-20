@@ -6170,7 +6170,8 @@
       },
       "direct_obj_first": {
         "n": 1
-      }
+      },
+      "list_null_first": "x"
     },
     "fields": {
       "kind": {
@@ -6236,6 +6237,15 @@
         ],
         "invalid": [
           null
+        ]
+      },
+      "list_null_first": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null,
+          1
         ]
       }
     }

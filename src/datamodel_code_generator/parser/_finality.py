@@ -26,7 +26,8 @@ includes the freeze points B1 and B2. A changed row is
 * ``undeclared`` when the pass declares none of the row's facts,
 * ``other-module`` when a module pass changed a model of another module,
 * ``frozen`` when every declared fact of the row is final at a freeze point the pipeline has passed (B1 for facts,
-  B2 for the rendered nullability rows, the ``RENDER_FACT_FREEZE_POINTS`` entry for render facts),
+  which a decision may still write during ``DECIDE`` and which freeze when ``RENDER_PREPARATION`` begins, B2 for the
+  rendered nullability rows, the ``RENDER_FACT_FREEZE_POINTS`` entry for render facts),
 * ``after-final`` when the phase is later than the row's ``final_after``.
 
 A change that no pass covers is ``unattributed``, found at the next comparison of its model: when a pass touches it,
@@ -441,7 +442,7 @@ after B1 (RP14a's field render plan holds them).
 
 _KNOWN: Final = frozenset((known.pass_name, known.rule, known.row) for known in KNOWN_WRITES)
 _SWEEPING_KINDS: Final = frozenset({PassKind.TRANSFORM, PassKind.REPAIR})
-_PHASE_FREEZE_POINTS: Final = {FreezePoint.B1: Phase.DECIDE, FreezePoint.B2: Phase.IMPORTS}
+_PHASE_FREEZE_POINTS: Final = {FreezePoint.B1: Phase.RENDER_PREPARATION, FreezePoint.B2: Phase.IMPORTS}
 _ITEM_ROW: Final = re.compile(r'(\w+)\["([^"]+)"\]')
 _MISSING: Final = Sentinel("_MISSING")
 _IDENTITY: Final = Sentinel("_IDENTITY")
@@ -1055,12 +1056,20 @@ class _GuardedItems(Mapping[str, Any]):
         self._guard.read_item(self._owner, self._rows.get(key))
         return self._guard.wrap(self._items[key])
 
+    def _report_keys(self) -> None:
+        """Report every key present that ``self._rows`` names as a render fact, as reading it does."""
+        for key in self._items:
+            if (row := self._rows.get(key)) is not None:
+                self._guard.read_item(self._owner, row)
+
     @override
     def __iter__(self) -> Iterator[str]:
+        self._report_keys()
         return iter(self._items)
 
     @override
     def __len__(self) -> int:
+        self._report_keys()
         return len(self._items)
 
 

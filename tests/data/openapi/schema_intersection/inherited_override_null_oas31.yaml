@@ -34,7 +34,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/Cat'
         - type: object
-          required: [kind, ckind, direct, direct_obj, direct_obj_first]
+          required: [kind, ckind, direct, direct_obj, direct_obj_first, list_null_first]
           properties:
             kind:
               type: string
@@ -66,3 +66,8 @@ components:
               type: string
               anyOf:
                 - type: "null"
+            list_null_first:
+              type: string
+              anyOf:
+                - type: ["null"]
+                - type: string
