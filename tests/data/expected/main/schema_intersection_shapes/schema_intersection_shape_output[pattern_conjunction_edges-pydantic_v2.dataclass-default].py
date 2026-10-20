@@ -107,6 +107,30 @@ class BadRangeEnum(Enum):
     b = 'b'
 
 
+NonIdentifierGroupName = TypeAliasType(
+    "NonIdentifierGroupName", Annotated[str, Field(pattern=r'a')]
+)
+
+
+SpacedRepetition = TypeAliasType(
+    "SpacedRepetition", Annotated[str, Field(pattern=r'a')]
+)
+
+
+class SpacedRepetitionEnum(Enum):
+    aa = 'aa'
+    a__2__ = 'a{ 2 }'
+
+
+class NonAsciiClassEscapeEnum(Enum):
+    é = 'é'
+    field_ = '!'
+
+
+class EscapedBackslashLetterEnum(Enum):
+    field_w = '\\w'
+
+
 class NanSibling(Enum):
     float_nan = float('nan')
     x = 'x'
@@ -128,8 +152,8 @@ class Model:
     bad_range_sibling: (
         constr(pattern=r'\A(?=[\s\S]*?(?:[z-a]))(?=[\s\S]*?(?:a1))') | None
     ) = None
-    backreference_sibling: constr(pattern=r'(a)\1') | None = None
-    rust_escape_sibling: constr(pattern=r'^\p{L}') | None = None
+    backreference_sibling: constr(pattern=r'b') | None = None
+    rust_escape_sibling: constr(pattern=r'b$') | None = None
     scoped_flags: ScopedFlags | None = None
     grouped_alternation: GroupedAlternation | None = None
     non_ascii_class: NonAsciiClass | None = None
@@ -140,6 +164,12 @@ class Model:
     python_group_name: PythonGroupName | None = None
     non_portable_enum: NonPortableEnum | None = None
     bad_range_enum: BadRangeEnum | None = None
+    non_identifier_group_name: NonIdentifierGroupName | None = None
+    spaced_repetition: SpacedRepetition | None = None
+    spaced_repetition_enum: SpacedRepetitionEnum | None = None
+    non_ascii_class_escape_enum: NonAsciiClassEscapeEnum | None = None
+    escaped_backslash_letter_enum: EscapedBackslashLetterEnum | None = None
+    lookaround_sibling: constr(pattern=r'b') | None = None
     nan_sibling: NanSibling | None = None
 
 
@@ -154,6 +184,9 @@ BadRange = TypeAliasType("BadRange", Annotated[str, Field(pattern=r'[z-a]')])
 
 
 Letter = TypeAliasType("Letter", Annotated[str, Field(pattern=r'^\p{L}')])
+
+
+Lookahead = TypeAliasType("Lookahead", Annotated[str, Field(pattern=compile('(?=a)'))])
 
 
 Repeated = TypeAliasType("Repeated", Annotated[str, Field(pattern=compile('(a)\\1'))])

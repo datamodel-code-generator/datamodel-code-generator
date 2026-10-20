@@ -1513,6 +1513,8 @@ openapi/request_bodies_scope_empty.yaml::components.schemas.Pet	payloads/native_
 openapi/resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/resolved_models.yaml::components.schemas.Resolved	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/response_header_ref.yaml::components.schemas.Item	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/response_header_ref.yaml::paths./items.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reuse_model_with_type_alias.json::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reuse_model_with_type_alias.json::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/root_model_default_primitive.yaml::components.schemas.Timeout	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3132,6 +3134,8 @@ openapi/request_bodies_scope_empty.yaml::components.schemas.Pet	payloads/native_
 openapi/resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/resolved_models.yaml::components.schemas.Resolved	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/response_header_ref.yaml::components.schemas.Item	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/response_header_ref.yaml::paths./items.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reuse_model_with_type_alias.json::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reuse_model_with_type_alias.json::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/root_model_default_primitive.yaml::components.schemas.Timeout	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

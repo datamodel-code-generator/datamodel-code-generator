@@ -96,6 +96,29 @@ properties:
     type: string
     enum: [a, b]
     pattern: '[z-a]'
+  non_identifier_group_name:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: '(?P<ids[]>b)'}
+  spaced_repetition:
+    allOf:
+      - {type: string, pattern: 'a'}
+      - {pattern: 'a{ 2 }'}
+  spaced_repetition_enum:
+    type: string
+    enum: [aa, 'a{ 2 }']
+    pattern: '^a{ 2 }$'
+  non_ascii_class_escape_enum:
+    type: string
+    enum: ["\u00e9", '!']
+    pattern: '^\W$'
+  escaped_backslash_letter_enum:
+    type: string
+    enum: ["\u00e9", '\w']
+    pattern: '^\\w$'
+  lookaround_sibling:
+    $ref: '#/$defs/Lookahead'
+    pattern: 'b'
   nan_sibling:
     $ref: '#/$defs/Mixed'
     enum: [.nan, x]
@@ -103,4 +126,5 @@ $defs:
   Mixed: {enum: [.nan, 1.5, x, [1]]}
   BadRange: {type: string, pattern: '[z-a]'}
   Letter: {type: string, pattern: '^\p{L}'}
+  Lookahead: {type: string, pattern: '(?=a)'}
   Repeated: {type: string, pattern: '(a)\1'}

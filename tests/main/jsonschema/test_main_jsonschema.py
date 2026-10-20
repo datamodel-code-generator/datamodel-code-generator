@@ -29751,6 +29751,11 @@ def test_schema_graph_check_of_reference_edges(
         ("asyncapi/stable-surface.yaml", "asyncapi", []),
         ("asyncapi/protobuf-schema-format.yaml", "asyncapi", []),
         ("asyncapi/dynamic_ref", "asyncapi", []),
+        (
+            "openapi/response_header_ref.yaml",
+            "openapi",
+            ["--openapi-scopes", "schemas", "paths", "api", "requestbodies"],
+        ),
     ],
     ids=[
         "nested-definitions",
@@ -29764,6 +29769,7 @@ def test_schema_graph_check_of_reference_edges(
         "asyncapi-bindings",
         "asyncapi-converted",
         "dynamic-ref-anchor-name",
+        "openapi-header-map",
     ],
 )
 def test_schema_graph_check_counts_references_by_origin(

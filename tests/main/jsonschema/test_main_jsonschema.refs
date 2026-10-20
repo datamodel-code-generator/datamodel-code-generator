@@ -12295,6 +12295,7 @@ dynamic-ref	main/jsonschema/main_jsonschema/schema_graph_check_counts_references
 dynamic-ref-anchor-name	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[dynamic-ref-anchor-name].txt
 item-schema	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[item-schema].txt
 nested-definitions	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[nested-definitions].txt
+openapi-header-map	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[openapi-header-map].txt
 recursive-ref	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref].txt
 recursive-ref-merged	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref-merged].txt
 x-python-type	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[x-python-type].txt

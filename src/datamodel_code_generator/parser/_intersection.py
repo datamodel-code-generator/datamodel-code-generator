@@ -15,8 +15,8 @@ copied with ``copy.copy``, so a located dump keeps its location. The adapters ar
 ``_resolve_inherited_parent_property``) and ``JsonSchemaParser._merge_properties_with_parent_constraints``.
 
 ``pattern`` is the conjunction of the parts' patterns (``_regex_syntax.py:conjoin_patterns``) unless the row's pattern
-implies each of them; patterns not every engine runs keep the row's, and patterns no single expression conjoins keep the
-first part's, listed in ``untaken_patterns`` for a warning.
+implies each of them; patterns not every engine runs, and patterns no single expression conjoins, keep the row's pattern
+(the output before the conjunction), the others listed in ``untaken_patterns`` for a warning.
 
 The row's value stays for keywords not intersected here yet: literal filtering (the parser's literal check filters the
 values it writes), ``format`` (the static ``(type, format)`` table), tuple positions (``prefixItems``, array
@@ -205,8 +205,9 @@ def warn_untaken_patterns(where: str, pattern: str, untaken: Sequence[str]) -> N
     """Warn that the generated code checks a schema's ``pattern`` but not the other patterns of its parts."""
     names = ", ".join(f"`{other}`" for other in untaken)
     warn(
-        f"{where}: no single regular expression checks `{pattern}` together with {names} (backreferences, repeated "
-        f"group names, inline flags or syntax Python reads differently); the generated code checks only `{pattern}`.",
+        f"{where}: no single regular expression checks `{pattern}` together with {names} (lookarounds, backreferences, "
+        "repeated group names, inline flags or syntax Python reads differently); "
+        f"the generated code checks only `{pattern}`.",
         stacklevel=3,
     )
 
@@ -367,6 +368,9 @@ class _Reconciler:
         ):
             return
         conjunction = conjoin_patterns(patterns)
+        if conjunction.untaken and isinstance(row_pattern, str):
+            self.untaken_patterns.extend(pattern for pattern in dict.fromkeys(patterns) if pattern != row_pattern)
+            return
         self.untaken_patterns.extend(conjunction.untaken)
         if conjunction.pattern != row_pattern:
             updates["pattern"] = conjunction.pattern

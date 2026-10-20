@@ -100,6 +100,11 @@ _LITERAL_PATTERN: Final = re.compile(r"(?:[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]
 _HEAD_CHARACTER: Final = re.compile(r"[^\\.^$*+?{}\[\]|()]|\\[\\.^$*+?{}\[\]|()]")
 _QUANTIFIER_STARTS: Final = frozenset("*+?{")
 _SINGLE_CLASS: Final = re.compile(r"\\[dDwWsSntrfv]|\\x[0-9A-Fa-f]{2}|\[\^?\]?(?:[^\\\[\]]|\\.)*\]", re.DOTALL)
+_COUNTED_REPETITION: Final = re.compile(
+    rf"\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}"
+)
+_PLAIN_REPETITION: Final = re.compile(r"\{[0-9]+(?:,[0-9]*)?\}")
+_NON_ASCII_CLASS_ESCAPE: Final = re.compile(r"(?<!\\)(?:\\\\)*\\[sSwWdDbB]")
 _GROUP_NAME: Final = re.compile(r"\(\?(?P<python>P?)<(?![=!])(?P<name>[^>()\\]*)>")
 _FLAG_GROUP: Final = re.compile(r"\(\?(?P<flags>[A-Za-z-]*)(?P<end>[:)])")
 _SHARED_FLAGS: Final = frozenset("imsxu-")
@@ -167,7 +172,8 @@ def _class_end(pattern: str, position: int) -> tuple[int, bool]:
 def _structure(pattern: str) -> _Structure:
     """Scan a pattern's top level, group names, global flag groups and the syntax Python reads differently.
 
-    Python reads ``(?<name>...)`` and the flags ``U`` and ``R`` not at all.
+    Python reads ``(?<name>...)`` and the flags ``U`` and ``R`` not at all, group names that are not identifiers
+    not as names, and a counted repetition with whitespace (``a{ 2 }``) as literal text where Rust repeats.
     """
     alternation = False
     flags: list[int] = []
@@ -189,11 +195,15 @@ def _structure(pattern: str) -> _Structure:
             depth += 1
             if (name := _GROUP_NAME.match(pattern, position)) is not None:
                 names.add(name["name"])
-                alike &= bool(name["python"])
+                alike &= bool(name["python"]) and name["name"].isidentifier()
             elif (group := _FLAG_GROUP.match(pattern, position)) is not None:
                 alike &= _SHARED_FLAGS.issuperset(group["flags"])
                 if group["end"] == ")":
                     flags.append(position)
+        elif character == "{":
+            alike &= (repetition := _COUNTED_REPETITION.match(pattern, position)) is None or (
+                _PLAIN_REPETITION.fullmatch(repetition.group()) is not None
+            )
         elif character == ")":
             depth -= 1
         elif character == "|" and not depth:
@@ -273,12 +283,18 @@ def _reads_alike(pattern: str) -> bool:
 
 
 def pattern_admits(pattern: str, value: str) -> bool | None:
-    """Return whether a string meets a pattern, or None when no static rule certifies that every engine agrees.
+    r"""Return whether a string meets a pattern, or None when no static rule certifies that every engine agrees.
 
     The pattern must read alike everywhere (``_reads_alike``), and a ``$`` is not decided on a string that ends with
-    a newline (Python's ``$`` matches before it). A pattern Python cannot compile is never decided.
+    a newline (Python's ``$`` matches before it). A pattern Python cannot compile is never decided, nor is a string
+    with non-ASCII characters against a pattern that uses ``\s \S \w \W \d \D \b \B``, which the engines define
+    differently beyond ASCII.
     """
-    if not _reads_alike(pattern) or ("$" in pattern and value.endswith("\n")):
+    if (
+        not _reads_alike(pattern)
+        or ("$" in pattern and value.endswith("\n"))
+        or (not value.isascii() and _NON_ASCII_CLASS_ESCAPE.search(pattern) is not None)
+    ):
         return None
     return _search(pattern, value)
 

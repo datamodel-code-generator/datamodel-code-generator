@@ -80,6 +80,26 @@ class BadRangeEnum(Enum):
     b = 'b'
 
 
+NonIdentifierGroupName: TypeAlias = str
+
+
+SpacedRepetition: TypeAlias = str
+
+
+class SpacedRepetitionEnum(Enum):
+    aa = 'aa'
+    a__2__ = 'a{ 2 }'
+
+
+class NonAsciiClassEscapeEnum(Enum):
+    é = 'é'
+    field_ = '!'
+
+
+class EscapedBackslashLetterEnum(Enum):
+    field_w = '\\w'
+
+
 class NanSibling(Enum):
     float_nan = float('nan')
     x = 'x'
@@ -111,6 +131,12 @@ class Model:
     python_group_name: PythonGroupName | None = None
     non_portable_enum: NonPortableEnum | None = None
     bad_range_enum: BadRangeEnum | None = None
+    non_identifier_group_name: NonIdentifierGroupName | None = None
+    spaced_repetition: SpacedRepetition | None = None
+    spaced_repetition_enum: SpacedRepetitionEnum | None = None
+    non_ascii_class_escape_enum: NonAsciiClassEscapeEnum | None = None
+    escaped_backslash_letter_enum: EscapedBackslashLetterEnum | None = None
+    lookaround_sibling: str | None = None
     nan_sibling: NanSibling | None = None
 
 
@@ -125,6 +151,9 @@ BadRange: TypeAlias = str
 
 
 Letter: TypeAlias = str
+
+
+Lookahead: TypeAlias = str
 
 
 Repeated: TypeAlias = str

@@ -632,7 +632,7 @@ typed-dict	main/openapi/allof_scalar_roots/typed_dict.py
 	main/openapi/allof_with_required_inherited_complex_allof.py
 [test_main_openapi_allof_with_required_inherited_comprehensive]
 	main/openapi/allof_with_required_inherited_comprehensive.py	?
-	main/openapi/allof_with_required_inherited_comprehensive_black_lt_24.py	?
+	main/openapi/allof_with_required_inherited_comprehensive_black_lt_24.py	?	= main/openapi/allof_with_required_inherited_comprehensive.py
 [test_main_openapi_allof_with_required_inherited_coverage]
 	main/openapi/allof_with_required_inherited_coverage.py
 [test_main_openapi_allof_with_required_inherited_edge_cases]

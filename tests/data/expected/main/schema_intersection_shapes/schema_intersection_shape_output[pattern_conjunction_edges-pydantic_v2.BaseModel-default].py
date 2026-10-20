@@ -118,6 +118,28 @@ class BadRangeEnum(Enum):
     b = 'b'
 
 
+class NonIdentifierGroupName(RootModel[constr(pattern=r'a')]):
+    root: constr(pattern=r'a')
+
+
+class SpacedRepetition(RootModel[constr(pattern=r'a')]):
+    root: constr(pattern=r'a')
+
+
+class SpacedRepetitionEnum(Enum):
+    aa = 'aa'
+    a__2__ = 'a{ 2 }'
+
+
+class NonAsciiClassEscapeEnum(Enum):
+    é = 'é'
+    field_ = '!'
+
+
+class EscapedBackslashLetterEnum(Enum):
+    field_w = '\\w'
+
+
 class NanSibling(Enum):
     float_nan = float('nan')
     x = 'x'
@@ -141,8 +163,8 @@ class Model(BaseModel):
     bad_range_sibling: (
         constr(pattern=r'\A(?=[\s\S]*?(?:[z-a]))(?=[\s\S]*?(?:a1))') | None
     ) = None
-    backreference_sibling: constr(pattern=r'(a)\1') | None = None
-    rust_escape_sibling: constr(pattern=r'^\p{L}') | None = None
+    backreference_sibling: constr(pattern=r'b') | None = None
+    rust_escape_sibling: constr(pattern=r'b$') | None = None
     scoped_flags: ScopedFlags | None = None
     grouped_alternation: GroupedAlternation | None = None
     non_ascii_class: NonAsciiClass | None = None
@@ -153,6 +175,12 @@ class Model(BaseModel):
     python_group_name: PythonGroupName | None = None
     non_portable_enum: NonPortableEnum | None = None
     bad_range_enum: BadRangeEnum | None = None
+    non_identifier_group_name: NonIdentifierGroupName | None = None
+    spaced_repetition: SpacedRepetition | None = None
+    spaced_repetition_enum: SpacedRepetitionEnum | None = None
+    non_ascii_class_escape_enum: NonAsciiClassEscapeEnum | None = None
+    escaped_backslash_letter_enum: EscapedBackslashLetterEnum | None = None
+    lookaround_sibling: constr(pattern=r'b') | None = None
     nan_sibling: NanSibling | None = None
 
 
@@ -169,6 +197,13 @@ class BadRange(RootModel[constr(pattern=r'[z-a]')]):
 
 class Letter(RootModel[constr(pattern=r'^\p{L}')]):
     root: constr(pattern=r'^\p{L}')
+
+
+class Lookahead(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'(?=a)')
 
 
 class Repeated(RootModel[str]):

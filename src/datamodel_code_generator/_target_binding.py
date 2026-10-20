@@ -977,8 +977,7 @@ def _freeze_literal(value: object, active: set[int], *, document: bool = False) 
                     error.tokens = (str(len(items_sequence)), *error.tokens)
                     raise
                 return LiteralSequence(kind, tuple(items_sequence))
-            case _:
-                raise _UnsupportedError
+        raise _UnsupportedError
     finally:
         active.remove(id(value))
 

@@ -117,6 +117,28 @@ class BadRangeEnum(Enum):
     b = 'b'
 
 
+class NonIdentifierGroupName(RootModel[str]):
+    root: Annotated[str, Field(pattern='a')]
+
+
+class SpacedRepetition(RootModel[str]):
+    root: Annotated[str, Field(pattern='a')]
+
+
+class SpacedRepetitionEnum(Enum):
+    aa = 'aa'
+    a__2__ = 'a{ 2 }'
+
+
+class NonAsciiClassEscapeEnum(Enum):
+    é = 'é'
+    field_ = '!'
+
+
+class EscapedBackslashLetterEnum(Enum):
+    field_w = '\\w'
+
+
 class NanSibling(Enum):
     float_nan = float('nan')
     x = 'x'
@@ -140,8 +162,8 @@ class Model(BaseModel):
     bad_range_sibling: Annotated[
         str | None, Field(pattern='\\A(?=[\\s\\S]*?(?:[z-a]))(?=[\\s\\S]*?(?:a1))')
     ] = None
-    backreference_sibling: Annotated[str | None, Field(pattern='(a)\\1')] = None
-    rust_escape_sibling: Annotated[str | None, Field(pattern='^\\p{L}')] = None
+    backreference_sibling: Annotated[str | None, Field(pattern='b')] = None
+    rust_escape_sibling: Annotated[str | None, Field(pattern='b$')] = None
     scoped_flags: ScopedFlags | None = None
     grouped_alternation: GroupedAlternation | None = None
     non_ascii_class: NonAsciiClass | None = None
@@ -152,6 +174,12 @@ class Model(BaseModel):
     python_group_name: PythonGroupName | None = None
     non_portable_enum: NonPortableEnum | None = None
     bad_range_enum: BadRangeEnum | None = None
+    non_identifier_group_name: NonIdentifierGroupName | None = None
+    spaced_repetition: SpacedRepetition | None = None
+    spaced_repetition_enum: SpacedRepetitionEnum | None = None
+    non_ascii_class_escape_enum: NonAsciiClassEscapeEnum | None = None
+    escaped_backslash_letter_enum: EscapedBackslashLetterEnum | None = None
+    lookaround_sibling: Annotated[str | None, Field(pattern='b')] = None
     nan_sibling: NanSibling | None = None
 
 
@@ -168,6 +196,13 @@ class BadRange(RootModel[str]):
 
 class Letter(RootModel[str]):
     root: Annotated[str, Field(pattern='^\\p{L}')]
+
+
+class Lookahead(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Annotated[str, Field(pattern='(?=a)')]
 
 
 class Repeated(RootModel[str]):

@@ -55,6 +55,12 @@ ThreeAnchored: TypeAlias = str
 PythonGroupName: TypeAlias = str
 
 
+NonIdentifierGroupName: TypeAlias = str
+
+
+SpacedRepetition: TypeAlias = str
+
+
 class Model(TypedDict):
     rust_escape: NotRequired[RustEscape]
     braced_escape: NotRequired[BracedEscape]
@@ -80,6 +86,12 @@ class Model(TypedDict):
     python_group_name: NotRequired[PythonGroupName]
     non_portable_enum: NotRequired[Literal['aa', 'b']]
     bad_range_enum: NotRequired[Literal['a', 'b']]
+    non_identifier_group_name: NotRequired[NonIdentifierGroupName]
+    spaced_repetition: NotRequired[SpacedRepetition]
+    spaced_repetition_enum: NotRequired[Literal['aa', 'a{ 2 }']]
+    non_ascii_class_escape_enum: NotRequired[Literal['é', '!']]
+    escaped_backslash_letter_enum: NotRequired[Literal['\\w']]
+    lookaround_sibling: NotRequired[str]
     nan_sibling: NotRequired[Literal['x'] | float]
 
 
@@ -90,6 +102,9 @@ BadRange: TypeAlias = str
 
 
 Letter: TypeAlias = str
+
+
+Lookahead: TypeAlias = str
 
 
 Repeated: TypeAlias = str

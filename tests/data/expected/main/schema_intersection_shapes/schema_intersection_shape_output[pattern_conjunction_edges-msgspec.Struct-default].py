@@ -87,6 +87,26 @@ class BadRangeEnum(Enum):
     b = 'b'
 
 
+NonIdentifierGroupName: TypeAlias = Annotated[str, Meta(pattern='a')]
+
+
+SpacedRepetition: TypeAlias = Annotated[str, Meta(pattern='a')]
+
+
+class SpacedRepetitionEnum(Enum):
+    aa = 'aa'
+    a__2__ = 'a{ 2 }'
+
+
+class NonAsciiClassEscapeEnum(Enum):
+    é = 'é'
+    field_ = '!'
+
+
+class EscapedBackslashLetterEnum(Enum):
+    field_w = '\\w'
+
+
 class NanSibling(Enum):
     float_nan = float('nan')
     x = 'x'
@@ -108,8 +128,8 @@ class Model(Struct):
         Annotated[str, Meta(pattern='\\A(?=[\\s\\S]*?(?:[z-a]))(?=[\\s\\S]*?(?:a1))')]
         | UnsetType
     ) = UNSET
-    backreference_sibling: Annotated[str, Meta(pattern='(a)\\1')] | UnsetType = UNSET
-    rust_escape_sibling: Annotated[str, Meta(pattern='^\\p{L}')] | UnsetType = UNSET
+    backreference_sibling: Annotated[str, Meta(pattern='b')] | UnsetType = UNSET
+    rust_escape_sibling: Annotated[str, Meta(pattern='b$')] | UnsetType = UNSET
     scoped_flags: ScopedFlags | UnsetType = UNSET
     grouped_alternation: GroupedAlternation | UnsetType = UNSET
     non_ascii_class: NonAsciiClass | UnsetType = UNSET
@@ -120,6 +140,12 @@ class Model(Struct):
     python_group_name: PythonGroupName | UnsetType = UNSET
     non_portable_enum: NonPortableEnum | UnsetType = UNSET
     bad_range_enum: BadRangeEnum | UnsetType = UNSET
+    non_identifier_group_name: NonIdentifierGroupName | UnsetType = UNSET
+    spaced_repetition: SpacedRepetition | UnsetType = UNSET
+    spaced_repetition_enum: SpacedRepetitionEnum | UnsetType = UNSET
+    non_ascii_class_escape_enum: NonAsciiClassEscapeEnum | UnsetType = UNSET
+    escaped_backslash_letter_enum: EscapedBackslashLetterEnum | UnsetType = UNSET
+    lookaround_sibling: Annotated[str, Meta(pattern='b')] | UnsetType = UNSET
     nan_sibling: NanSibling | UnsetType = UNSET
 
 
@@ -134,6 +160,9 @@ BadRange: TypeAlias = Annotated[str, Meta(pattern='[z-a]')]
 
 
 Letter: TypeAlias = Annotated[str, Meta(pattern='^\\p{L}')]
+
+
+Lookahead: TypeAlias = Annotated[str, Meta(pattern='(?=a)')]
 
 
 Repeated: TypeAlias = Annotated[str, Meta(pattern='(a)\\1')]
