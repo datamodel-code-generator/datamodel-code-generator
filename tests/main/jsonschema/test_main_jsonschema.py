@@ -7367,6 +7367,50 @@ def test_main_jsonschema_enum_const_positions(output_model: str, extra_args: lis
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--target-python-version", "3.14"], id="py314"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--target-python-version", "3.14", "--keep-model-order"], id="py314-keep-order"
+        ),
+        pytest.param(
+            "dataclasses.dataclass",
+            ["--target-python-version", "3.14", "--keep-model-order"],
+            id="py314-keep-order-dataclasses",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--target-python-version", "3.14", "--keep-model-order", "--disable-future-imports"],
+            id="py314-keep-order-no-future",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--target-python-version", "3.13", "--disable-future-imports"],
+            id="py313-no-future",
+        ),
+    ],
+)
+def test_main_jsonschema_enum_const_forward_positions(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write a ``Literal[<Enum>.<member>]`` whose enum the module defines later as a string annotation.
+
+    A member is a value, which a native deferred annotation evaluates to a ``ForwardRef`` that Pydantic and
+    ``dataclasses`` keep inside the ``Literal``. On Python 3.14 targets the module takes the future annotations
+    import, and without future imports the literal is quoted as forward names are. A map key, which the models are
+    not ordered by, names the enum before it is defined, and under --keep-model-order so do a property, an item and a
+    map value.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_const_forward_positions.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin", *extra_args],
+        force_exec_validation=True,
+    )
+
+
 def test_main_jsonschema_enum_const_integral_float(output_file: Path) -> None:
     """Type a value by the enum member that an integral float const equals, as ``1`` for a const ``1.0``.
 

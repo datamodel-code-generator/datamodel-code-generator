@@ -6218,6 +6218,12 @@ typed-dict	main/jsonschema/empty_field_name_typed_dict.py
 [test_main_jsonschema_enum_const_draft_04]
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_draft_04[msgspec.Struct].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_draft_04[pydantic_v2.BaseModel].py
+[test_main_jsonschema_enum_const_forward_positions]
+py313-no-future	main/jsonschema/main_jsonschema/enum_const_forward_positions[py313-no-future].py
+py314	main/jsonschema/main_jsonschema/enum_const_forward_positions[py314].py
+py314-keep-order	main/jsonschema/main_jsonschema/enum_const_forward_positions[py314-keep-order].py
+py314-keep-order-dataclasses	main/jsonschema/main_jsonschema/enum_const_forward_positions[py314-keep-order-dataclasses].py
+py314-keep-order-no-future	main/jsonschema/main_jsonschema/enum_const_forward_positions[py314-keep-order-no-future].py
 [test_main_jsonschema_enum_const_hidden_by_field]
 dataclasses.dataclass-rename-field	main/jsonschema/main_jsonschema/enum_const_hidden_by_field[dataclasses.dataclass-rename-field].py
 dataclasses.dataclass-rename-field	main/jsonschema/main_jsonschema/enum_const_hidden_by_field[dataclasses.dataclass-rename-field].values.txt

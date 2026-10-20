@@ -2319,6 +2319,23 @@ def _annotated_reference(data_type: DataType) -> Reference | None:
     return data_type.reference or data_type._enum_member_literal_reference  # noqa: SLF001
 
 
+def _forward_enum_member_literals(
+    field: DataModelFieldBase, positions: Mapping[str, int], index: int
+) -> list[DataType]:
+    """Return the field's enum member literals whose enum the module defines at or after the model at ``index``.
+
+    A member is a value, so a deferred annotation does not resolve it later: reading the class evaluates the member
+    to a ``ForwardRef`` that stays inside the ``Literal``, unless the annotation is a string. ``positions`` maps each
+    model path in the module to its order.
+    """
+    return [
+        data_type
+        for data_type in field.data_type.all_data_types
+        if (reference := data_type._enum_member_literal_reference) is not None  # noqa: SLF001
+        and positions.get(reference.path, -1) >= index
+    ]
+
+
 def _named_reference(field: DataModelFieldBase, name: str | None) -> Reference | None:
     """Return the referenced type that the field's annotation names ``name``."""
     for data_type in field.data_type.all_data_types:
@@ -7758,6 +7775,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             _flatten_union_members(root)
 
     @classmethod
+    def __quote_forward_enum_member_literals(
+        cls, field: DataModelFieldBase, positions: Mapping[str, int], index: int, *, use_typing_generics: bool
+    ) -> bool:
+        """Write each enum member literal of the field whose enum is defined later as a string; return whether any."""
+        member_literals = _forward_enum_member_literals(field, positions, index)
+        for member_literal in member_literals:
+            member_literal._set_forward_reference(True)  # noqa: FBT003, SLF001
+            cls.__disable_union_operator_for_forward_ref(member_literal, use_typing_generics=use_typing_generics)
+        return bool(member_literals)
+
+    @classmethod
     def __update_type_aliases(  # noqa: PLR0913
         cls,
         models: list[DataModel],
@@ -7768,6 +7796,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         generation_store: GenerationStore,
         can_retain_cache: bool,
         hidden_type_names: Callable[[DataModel], Collection[str | None]],
+        quotes_forward_enum_member_literals: bool,
         use_typing_generics: bool,
     ) -> None:
         """Update type aliases and RootModels to properly handle forward references per PEP 484.
@@ -7778,10 +7807,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         (e.g. Ruff F821) and older runtimes do not trip over the forward reference. The same
         holds, even for native deferred annotations, for the types that ``hidden_type_names`` reports as hidden
         by a field of the model.
+        An enum member literal whose enum the module defines later is written as a string wherever a forward name
+        is quoted, and with ``quotes_forward_enum_member_literals`` in every model, as no deferred annotation holds it.
         ``use_typing_generics`` tells that ``typing`` cannot resolve ``list["Name"]``, so a hidden type, and any
         quoted name of a model that asks for it, is written as ``List["Name"]``.
         """
         model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
+        positions = {m.path: i for i, m in enumerate(models)}
         alias_cycles: Mapping[int, int] | None = None
         quotes_in_typing_generics = use_typing_generics and not use_deferred_annotations
 
@@ -7796,9 +7828,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             # are evaluated immediately, and Pydantic can force native deferred annotations
             # while constructing the class, so their forward references must stay quoted.
             process_all_fields = is_type_alias_or_root or not use_deferred_annotations
+            quotes_member_literals = process_all_fields or quotes_forward_enum_member_literals
             hidden_names = hidden_type_names(model)
             if (
-                not process_all_fields
+                not quotes_member_literals
                 and not hidden_names
                 and not any(field.requires_immediate_forward_reference_resolution for field in model.fields)
             ):
@@ -7808,6 +7841,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
             has_aliased_forward_ref = False
             for field in model.fields:
+                if quotes_member_literals and cls.__quote_forward_enum_member_literals(
+                    field,
+                    positions,
+                    i,
+                    use_typing_generics=quotes_in_typing_generics and model.WRITES_QUOTED_NAMES_IN_TYPING_GENERICS,
+                ):
+                    has_aliased_forward_ref = True
                 if (
                     hidden_only := not process_all_fields and not field.requires_immediate_forward_reference_resolution
                 ) and not hidden_names:
@@ -8585,14 +8625,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return whether a module needs the future annotations import on a target with native deferred annotations.
 
         A type hidden by a field of its class needs it too: ``dataclasses`` evaluates a native annotation while the
-        class still binds the field's name, and ``typing`` resolves a string from the module first.
+        class still binds the field's name, and ``typing`` resolves a string from the module first. So does an enum
+        member literal whose enum the module defines later, which a native annotation cannot hold.
         """
         if not (config.with_import and config.use_deferred_annotations):
             return False
         if self.data_model_type.REQUIRES_EXPLICIT_DEFERRED_ANNOTATIONS_FOR_FORWARD_REFS:
             return self._has_forward_references(models)
-        return not self._quotes_hidden_types and any(
-            model.resolves_hidden_types_from_strings() and _hidden_type_names(model) for model in models
+        if self._quotes_hidden_types:
+            return False
+        if any(model.resolves_hidden_types_from_strings() and _hidden_type_names(model) for model in models):
+            return True
+        positions = {model.path: index for index, model in enumerate(models)}
+        return any(
+            _forward_enum_member_literals(field, positions, index)
+            for index, model in enumerate(models)
+            for field in model.fields
         )
 
     def _get_module_future_imports(
@@ -9204,6 +9252,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             generation_store=self.generation_store,
             can_retain_cache=state.can_retain_cache,
             hidden_type_names=_hidden_type_names if self._quotes_hidden_types else _no_hidden_type_names,
+            quotes_forward_enum_member_literals=self._quotes_hidden_types,
             use_typing_generics=not python_target_meets(
                 "python.builtin_generic_strings", self.target_python_version.version_key
             ),
