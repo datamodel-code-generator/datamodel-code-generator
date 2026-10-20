@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
+
+LevelItem: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
+
 
 LevelMap: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
@@ -29,13 +32,13 @@ class Untyped(Struct):
 
 class Model(Struct):
     level: Annotated[int, Meta(ge=0, le=10)] | UnsetType = UNSET
-    level_prop: int | UnsetType = UNSET
-    level_items: list[int] | UnsetType = UNSET
+    level_prop: Annotated[int, Meta(ge=0, le=10)] | UnsetType = UNSET
+    level_items: list[LevelItem] | UnsetType = UNSET
     level_map: dict[str, LevelMap] | UnsetType = UNSET
     mode: Mode | UnsetType = UNSET
-    mode_prop: int | UnsetType = UNSET
-    mode_items: list[int] | UnsetType = UNSET
-    mode_map: dict[str, int] | UnsetType = UNSET
+    mode_prop: Literal[1, 2] | UnsetType = UNSET
+    mode_items: list[Literal[1, 2]] | UnsetType = UNSET
+    mode_map: dict[str, Literal[1, 2]] | UnsetType = UNSET
     pat: Pat | UnsetType = UNSET
     pat_prop: str | UnsetType = UNSET
     pat_items: list[str] | UnsetType = UNSET
@@ -44,4 +47,4 @@ class Model(Struct):
     untyped_prop: Any | UnsetType = UNSET
     untyped_items: list[Any] | UnsetType = UNSET
     untyped_map: dict[str, Any] | UnsetType = UNSET
-    p: str | UnsetType = UNSET
+    p: Annotated[str, Meta(min_length=2)] | UnsetType = UNSET

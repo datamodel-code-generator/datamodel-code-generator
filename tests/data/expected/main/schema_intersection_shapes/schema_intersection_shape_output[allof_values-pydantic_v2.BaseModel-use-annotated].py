@@ -4,33 +4,33 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class LevelProp(RootModel[int]):
-    root: int
+    root: Annotated[int, Field(ge=0, le=10)]
 
 
 class LevelItem(RootModel[int]):
-    root: int
+    root: Annotated[int, Field(ge=0, le=10)]
 
 
 class LevelMap(RootModel[int]):
     root: Annotated[int, Field(ge=0, le=10)]
 
 
-class ModeProp(RootModel[int]):
-    root: int
+class ModeProp(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class ModeItem(RootModel[int]):
-    root: int
+class ModeItem(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class ModeMap(RootModel[int]):
-    root: int
+class ModeMap(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
 class PatProp(RootModel[str]):
@@ -61,7 +61,7 @@ class UntypedMap(RootModel[Any]):
 
 
 class P(RootModel[str]):
-    root: str
+    root: Annotated[str, Field(min_length=2)]
 
 
 class Level(RootModel[int]):

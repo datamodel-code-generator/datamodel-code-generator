@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 LevelProp: TypeAlias = int
 
@@ -16,13 +16,13 @@ LevelItem: TypeAlias = int
 LevelMap: TypeAlias = int
 
 
-ModeProp: TypeAlias = int
+ModeProp: TypeAlias = Literal[1, 2]
 
 
-ModeItem: TypeAlias = int
+ModeItem: TypeAlias = Literal[1, 2]
 
 
-ModeMap: TypeAlias = int
+ModeMap: TypeAlias = Literal[1, 2]
 
 
 PatProp: TypeAlias = str

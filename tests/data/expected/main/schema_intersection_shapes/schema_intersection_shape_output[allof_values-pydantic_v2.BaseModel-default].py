@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
 
@@ -21,16 +21,16 @@ class LevelMap(RootModel[conint(ge=0, le=10)]):
     root: conint(ge=0, le=10)
 
 
-class ModeProp(RootModel[int]):
-    root: int
+class ModeProp(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class ModeItem(RootModel[int]):
-    root: int
+class ModeItem(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
-class ModeMap(RootModel[int]):
-    root: int
+class ModeMap(RootModel[Literal[1, 2]]):
+    root: Literal[1, 2]
 
 
 class PatProp(RootModel[str]):

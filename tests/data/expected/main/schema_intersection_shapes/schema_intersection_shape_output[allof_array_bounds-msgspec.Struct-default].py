@@ -7,13 +7,13 @@ from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
+TagsLenItem: TypeAlias = Annotated[list[str], Meta(max_length=3, min_length=1)]
+
+
 Tags: TypeAlias = Annotated[list[str], Meta(max_length=3)]
 
 
 TagsLen: TypeAlias = Annotated[Tags, Meta(max_length=5, min_length=1)]
-
-
-TagsLenItem: TypeAlias = Annotated[Tags, Meta(max_length=5, min_length=1)]
 
 
 class Model(Struct):

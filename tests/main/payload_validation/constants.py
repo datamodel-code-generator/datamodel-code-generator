@@ -269,6 +269,10 @@ EXCLUDED_CASES: dict[str, str] = {
         "pins the 0.85.0 output G01 PR 3 fixes: the root allOf of untyped members is an empty model that "
         "rejects valid values; test_schema_intersection_shape_payloads records it"
     ),
+    "jsonschema/schema_intersection/allof_ref_item_constraints.json": (
+        "pins the 0.85.0 output G01 PR 5 fixes: an item allOf of two scalar references is an empty model that "
+        "rejects valid values; test_schema_intersection_shape_payloads records it"
+    ),
     "jsonschema/schema_intersection/enum_refs.json": (
         "pins the 0.85.0 output G01 PR 5 fixes: an allOf of two enum references warns about duplicated members; "
         "test_schema_intersection_shape_output records it"

@@ -68,15 +68,15 @@ pydantic_v2.BaseModel --field-constraints frac_prop 9 accepted
 pydantic_v2.BaseModel --field-constraints frac_prop 0 accepted
 pydantic_v2.BaseModel --field-constraints frac_prop 10 accepted
 pydantic_v2.BaseModel --field-constraints frac_prop 1.5 rejected
-pydantic_v2.BaseModel --field-constraints frac_items [1] raised TypeError
-pydantic_v2.BaseModel --field-constraints frac_items [9] raised TypeError
-pydantic_v2.BaseModel --field-constraints frac_items [0] raised TypeError
-pydantic_v2.BaseModel --field-constraints frac_items [10] raised TypeError
+pydantic_v2.BaseModel --field-constraints frac_items [1] accepted
+pydantic_v2.BaseModel --field-constraints frac_items [9] accepted
+pydantic_v2.BaseModel --field-constraints frac_items [0] rejected
+pydantic_v2.BaseModel --field-constraints frac_items [10] rejected
 pydantic_v2.BaseModel --field-constraints frac_items [1.5] rejected
-pydantic_v2.BaseModel --field-constraints frac_map {"k": 1} raised TypeError
-pydantic_v2.BaseModel --field-constraints frac_map {"k": 9} raised TypeError
-pydantic_v2.BaseModel --field-constraints frac_map {"k": 0} raised TypeError
-pydantic_v2.BaseModel --field-constraints frac_map {"k": 10} raised TypeError
+pydantic_v2.BaseModel --field-constraints frac_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints frac_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints frac_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints frac_map {"k": 10} rejected
 pydantic_v2.BaseModel --field-constraints frac_map {"k": 1.5} rejected
 pydantic_v2.BaseModel --use-annotated frac 1 raised TypeError
 pydantic_v2.BaseModel --use-annotated frac 9 raised TypeError
@@ -88,10 +88,10 @@ pydantic_v2.BaseModel --use-annotated frac_prop 9 accepted
 pydantic_v2.BaseModel --use-annotated frac_prop 0 accepted
 pydantic_v2.BaseModel --use-annotated frac_prop 10 accepted
 pydantic_v2.BaseModel --use-annotated frac_prop 1.5 rejected
-pydantic_v2.BaseModel --use-annotated frac_items [1] raised TypeError
-pydantic_v2.BaseModel --use-annotated frac_items [9] raised TypeError
-pydantic_v2.BaseModel --use-annotated frac_items [0] raised TypeError
-pydantic_v2.BaseModel --use-annotated frac_items [10] raised TypeError
+pydantic_v2.BaseModel --use-annotated frac_items [1] accepted
+pydantic_v2.BaseModel --use-annotated frac_items [9] accepted
+pydantic_v2.BaseModel --use-annotated frac_items [0] rejected
+pydantic_v2.BaseModel --use-annotated frac_items [10] rejected
 pydantic_v2.BaseModel --use-annotated frac_items [1.5] rejected
 pydantic_v2.BaseModel --use-annotated frac_map {"k": 1} accepted
 pydantic_v2.BaseModel --use-annotated frac_map {"k": 9} accepted

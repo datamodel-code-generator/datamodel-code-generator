@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from enum import IntEnum
 from re import compile
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import dataclass
@@ -20,13 +20,13 @@ LevelItem = TypeAliasType("LevelItem", Annotated[int, Field(ge=0, le=10)])
 LevelMap = TypeAliasType("LevelMap", Annotated[int, Field(ge=0, le=10)])
 
 
-ModeProp = TypeAliasType("ModeProp", int)
+ModeProp = TypeAliasType("ModeProp", Literal[1, 2])
 
 
-ModeItem = TypeAliasType("ModeItem", int)
+ModeItem = TypeAliasType("ModeItem", Literal[1, 2])
 
 
-ModeMap = TypeAliasType("ModeMap", int)
+ModeMap = TypeAliasType("ModeMap", Literal[1, 2])
 
 
 PatProp = TypeAliasType(

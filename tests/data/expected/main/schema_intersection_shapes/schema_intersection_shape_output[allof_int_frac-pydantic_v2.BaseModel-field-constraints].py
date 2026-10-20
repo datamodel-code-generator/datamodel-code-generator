@@ -6,19 +6,19 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, RootModel
 
 
+class FracItem(RootModel[int]):
+    root: int = Field(..., ge=1, le=9)
+
+
+class FracMap(RootModel[int]):
+    root: int = Field(..., ge=1, le=9)
+
+
 class Number(RootModel[int]):
     root: int
 
 
 class Frac(RootModel[Number]):
-    root: Number = Field(..., ge=0.5, le=9.5)
-
-
-class FracItem(RootModel[Number]):
-    root: Number = Field(..., ge=0.5, le=9.5)
-
-
-class FracMap(RootModel[Number]):
     root: Number = Field(..., ge=0.5, le=9.5)
 
 

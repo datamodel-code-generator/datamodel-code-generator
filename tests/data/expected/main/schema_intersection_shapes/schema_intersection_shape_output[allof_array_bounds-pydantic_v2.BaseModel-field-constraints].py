@@ -6,19 +6,19 @@ from __future__ import annotations
 from pydantic import BaseModel, Field, RootModel
 
 
+class TagsLenItem(RootModel[list[str]]):
+    root: list[str] = Field(..., max_length=3, min_length=1)
+
+
+class TagsLenMap(RootModel[list[str]]):
+    root: list[str] = Field(..., max_length=3, min_length=1)
+
+
 class Tags(RootModel[list[str]]):
     root: list[str] = Field(..., max_length=3)
 
 
 class TagsLen(RootModel[Tags]):
-    root: Tags = Field(..., max_length=5, min_length=1)
-
-
-class TagsLenItem(RootModel[Tags]):
-    root: Tags = Field(..., max_length=5, min_length=1)
-
-
-class TagsLenMap(RootModel[Tags]):
     root: Tags = Field(..., max_length=5, min_length=1)
 
 

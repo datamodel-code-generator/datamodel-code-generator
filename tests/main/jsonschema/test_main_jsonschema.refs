@@ -2426,7 +2426,7 @@ dynamic-unsupported_allof-False	main/jsonschema/compound_property_names/scalar_k
 api-allof_branch_title-False	main/jsonschema/compound_property_names/allof_custom_template.py
 api-allof_collapsed-False	main/jsonschema/compound_property_names/allof_collapsed.py
 api-allof_custom_template-False	main/jsonschema/compound_property_names/allof_custom_template.py
-api-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
+api-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py	= main/jsonschema/compound_property_names/allof_field_constraints~compound_property_names_compatibility[api-allof_field_constraints-False].py
 api-allof_frozen-False	main/jsonschema/compound_property_names/allof_frozen.py
 api-allof_lookbehind_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
 api-allof_type_alias-False	main/jsonschema/compound_property_names/allof_type_alias.py
@@ -2446,7 +2446,7 @@ api-unsupported_sibling-False	main/jsonschema/compound_property_names/unsupporte
 cli-allof_branch_title-False	main/jsonschema/compound_property_names/allof_custom_template.py
 cli-allof_collapsed-False	main/jsonschema/compound_property_names/allof_collapsed.py
 cli-allof_custom_template-False	main/jsonschema/compound_property_names/allof_custom_template.py
-cli-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
+cli-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py	= main/jsonschema/compound_property_names/allof_field_constraints~compound_property_names_compatibility[api-allof_field_constraints-False].py
 cli-allof_frozen-False	main/jsonschema/compound_property_names/allof_frozen.py
 cli-allof_lookbehind_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
 cli-allof_type_alias-False	main/jsonschema/compound_property_names/allof_type_alias.py
@@ -9316,20 +9316,20 @@ False-AllOfMergeMode.All-ordinary-cli	main/jsonschema/numeric_allof_types/ordina
 False-AllOfMergeMode.All-ordinary-cli	main/jsonschema/numeric_allof_types/ordinary_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 False-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 False-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-False-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 False-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 False-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-False-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings~numeric_allof_types[False-AllOfMergeMode.All-outside_field-cli].txt
 False-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 False-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 False-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 False-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-False-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 False-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 False-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 False-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 False-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-False-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt
 False-AllOfMergeMode.All-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_all_0.py
 False-AllOfMergeMode.All-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_base_runtime.txt
 False-AllOfMergeMode.All-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_runtime.txt
@@ -9544,20 +9544,20 @@ False-AllOfMergeMode.Constraints-ordinary-cli	main/jsonschema/numeric_allof_type
 False-AllOfMergeMode.Constraints-ordinary-cli	main/jsonschema/numeric_allof_types/ordinary_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 False-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 False-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-False-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 False-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 False-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-False-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings~numeric_allof_types[False-AllOfMergeMode.All-outside_field-cli].txt
 False-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 False-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 False-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 False-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-False-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 False-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 False-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 False-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 False-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-False-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt
 False-AllOfMergeMode.Constraints-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_all_0.py
 False-AllOfMergeMode.Constraints-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_base_runtime.txt
 False-AllOfMergeMode.Constraints-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_runtime.txt
@@ -9772,20 +9772,20 @@ False-AllOfMergeMode.NoMerge-ordinary-cli	main/jsonschema/numeric_allof_types/or
 False-AllOfMergeMode.NoMerge-ordinary-cli	main/jsonschema/numeric_allof_types/ordinary_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 False-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 False-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-False-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 False-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 False-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-False-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings~numeric_allof_types[False-AllOfMergeMode.All-outside_field-cli].txt
 False-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 False-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 False-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 False-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-False-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 False-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 False-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 False-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 False-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-False-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+False-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt
 False-AllOfMergeMode.NoMerge-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_all_0.py
 False-AllOfMergeMode.NoMerge-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_base_runtime.txt
 False-AllOfMergeMode.NoMerge-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_runtime.txt
@@ -10000,20 +10000,20 @@ True-AllOfMergeMode.All-ordinary-cli	main/jsonschema/numeric_allof_types/ordinar
 True-AllOfMergeMode.All-ordinary-cli	main/jsonschema/numeric_allof_types/ordinary_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 True-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 True-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-True-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.All-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 True-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 True-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-True-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.All-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings~numeric_allof_types[False-AllOfMergeMode.All-outside_field-cli].txt
 True-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 True-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 True-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 True-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-True-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.All-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 True-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 True-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 True-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 True-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-True-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.All-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt
 True-AllOfMergeMode.All-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_all_0.py
 True-AllOfMergeMode.All-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_base_runtime.txt
 True-AllOfMergeMode.All-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_runtime.txt
@@ -10228,20 +10228,20 @@ True-AllOfMergeMode.Constraints-ordinary-cli	main/jsonschema/numeric_allof_types
 True-AllOfMergeMode.Constraints-ordinary-cli	main/jsonschema/numeric_allof_types/ordinary_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 True-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 True-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-True-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.Constraints-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 True-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 True-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-True-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.Constraints-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings~numeric_allof_types[False-AllOfMergeMode.All-outside_field-cli].txt
 True-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 True-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 True-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 True-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-True-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.Constraints-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 True-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 True-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 True-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 True-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-True-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.Constraints-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt
 True-AllOfMergeMode.Constraints-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_all_0.py
 True-AllOfMergeMode.Constraints-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_base_runtime.txt
 True-AllOfMergeMode.Constraints-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_runtime.txt
@@ -10456,20 +10456,20 @@ True-AllOfMergeMode.NoMerge-ordinary-cli	main/jsonschema/numeric_allof_types/ord
 True-AllOfMergeMode.NoMerge-ordinary-cli	main/jsonschema/numeric_allof_types/ordinary_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
 True-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 True-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-True-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.NoMerge-outside_field-api	main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 True-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_all_0.py
 True-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_runtime.txt
-True-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.NoMerge-outside_field-cli	main/jsonschema/numeric_allof_types/outside_field_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings~numeric_allof_types[False-AllOfMergeMode.All-outside_field-cli].txt
 True-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 True-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 True-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 True-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-True-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.NoMerge-outside_null-api	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/outside_field_warnings.txt
 True-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/native_null_error.txt	?
 True-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_all_0.py
 True-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_native.txt	?
 True-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_runtime.txt	?
-True-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt	= main/jsonschema/numeric_allof_types/field_warnings.txt
+True-AllOfMergeMode.NoMerge-outside_null-cli	main/jsonschema/numeric_allof_types/outside_null_warnings.txt
 True-AllOfMergeMode.NoMerge-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_all_0.py
 True-AllOfMergeMode.NoMerge-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_base_runtime.txt
 True-AllOfMergeMode.NoMerge-outside_root-api	main/jsonschema/numeric_allof_types/outside_root_runtime.txt

@@ -9,6 +9,22 @@ from enum import Enum, IntEnum
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
+class Number5Item(RootModel[int]):
+    root: int = Field(..., ge=5)
+
+
+class Number5Map(RootModel[int]):
+    root: int = Field(..., ge=5)
+
+
+class QAllofItem(RootModel[int]):
+    root: int = Field(..., ge=1, le=10)
+
+
+class QAllofMap(RootModel[int]):
+    root: int = Field(..., ge=1, le=10)
+
+
 class NullsibC(BaseModel):
     x: int | None = None
 
@@ -95,14 +111,6 @@ class AllOfRoot2(RootModel[int]):
     root: int = Field(..., ge=1, le=10)
 
 
-class Number5Item(RootModel[Number]):
-    root: Number = Field(..., ge=5)
-
-
-class Number5Map(RootModel[Number]):
-    root: Number = Field(..., ge=5)
-
-
 class TwoRefsProp(BaseModel):
     pass
 
@@ -116,19 +124,11 @@ class TwoRefsMap(BaseModel):
 
 
 class StampLenItem(RootModel[Stamp]):
-    root: Stamp = Field(..., max_length=40)
+    root: Stamp
 
 
 class StampLenMap(RootModel[Stamp]):
-    root: Stamp = Field(..., max_length=40)
-
-
-class QAllofItem(RootModel[Quantity]):
-    root: Quantity = Field(..., le=10)
-
-
-class QAllofMap(RootModel[Quantity]):
-    root: Quantity = Field(..., le=10)
+    root: Stamp
 
 
 class Model(BaseModel):

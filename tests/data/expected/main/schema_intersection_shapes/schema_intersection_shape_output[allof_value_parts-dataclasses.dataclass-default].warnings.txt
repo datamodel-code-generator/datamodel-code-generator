@@ -1,0 +1,3 @@
+allof_value_parts.json#/properties/const_conflict_prop: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `const`; the generated code keeps its earlier `const`.
+allof_value_parts.json#/properties/const_conflict_items/items: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `const`; the generated code keeps its earlier `const`.
+allof_value_parts.json#/properties/const_conflict_map/additionalProperties: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `const`; the generated code keeps its earlier `const`.

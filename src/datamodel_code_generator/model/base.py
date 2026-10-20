@@ -2045,6 +2045,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     """The config keys that the model can write without a row in ``_requirements.py``, for the debug check."""
     _LITERAL_HOLDS_ENUM_MEMBERS: ClassVar[bool] = True
     """Whether the output validates a ``Literal`` of enum members (msgspec does not)."""
+    _LAYERS_REPEATED_CONSTRAINTS: ClassVar[bool] = True
+    """Whether the output checks a constraint written on an alias whose type sets the same one (msgspec raises)."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False

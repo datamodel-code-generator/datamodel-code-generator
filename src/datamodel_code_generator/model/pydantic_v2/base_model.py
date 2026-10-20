@@ -24,6 +24,7 @@ from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQU
 from datamodel_code_generator.enums import AliasGenerator
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_DICT, IMPORT_UNION, Import
 from datamodel_code_generator.model import _rebuild_model_with_datamodel_namespace
+from datamodel_code_generator.model._decisions.regex_syntax import LOOKAROUND_PATTERN, scan_regex_syntax
 from datamodel_code_generator.model.base import (
     ALL_MODEL,
     TEMPLATE_DIR,
@@ -1066,67 +1067,9 @@ class DataModelField(_PydanticBaseDataModelField):
         return base_imports
 
 
-_LOOKAROUND_PATTERN: re.Pattern[str] = re.compile(r"\(\?<?[=!]")
-
-
 _STRING_PATTERN_TYPES: frozenset[str | None] = frozenset({"str", "constr", "StrictStr"})
 _BYTES_PATTERN_TYPES: frozenset[str | None] = frozenset({"bytes", "StrictBytes"})
-_UNICODE_WHITE_SPACE = "[\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*"
-_REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
-_REGEX_TOKEN: re.Pattern[str] = re.compile(
-    rf"{_REGEX_ESCAPE_TOKENS}|\(\?P?<(?![=!])[^>()\\]*>|\(\?(?P<group>[>(#]|P=)|\(\?(?P<flags>[A-Za-z-]*)[:)]"
-    rf"|(?:\{{{_UNICODE_WHITE_SPACE}[0-9]+{_UNICODE_WHITE_SPACE}"
-    rf"(?:,{_UNICODE_WHITE_SPACE}(?:[0-9]+{_UNICODE_WHITE_SPACE})?)?\}}|[*+?])(?P<possessive>\+)?|(?P<brace>\{{)",
-    re.DOTALL,
-)
-_REGEX_CLASS_TOKEN: re.Pattern[str] = re.compile(rf"\[:\^?[A-Za-z]+:\]|{_REGEX_ESCAPE_TOKENS}|(?P<close>\])", re.DOTALL)
-_RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
-_RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
-_RUST_REJECTED_FLAGS = frozenset("aL")
 _CONTAINER_DATA_TYPE_FLAGS = ("is_dict", "is_list", "is_set", "is_frozen_set", "is_mapping", "is_sequence", "is_tuple")
-_PY_310 = (3, 10)
-_PY_311 = (3, 11)
-_PY_314 = (3, 14)
-
-
-def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
-    """Return whether a token outside character classes is Rust-rejected and the Python its syntax needs."""
-    if (escape := match["escape"]) is not None:
-        return escape in _RUST_REJECTED_ESCAPES, _PY_314 if escape == "z" else _PY_310
-    if (flags := match["flags"]) is not None:
-        return None if "x" in flags else (not _RUST_REJECTED_FLAGS.isdisjoint(flags), _PY_310)
-    if group := match["group"]:
-        return True, _PY_311 if group == ">" else _PY_310
-    return match["brace"] is not None, _PY_311 if match["possessive"] else _PY_310
-
-
-def _scan_regex_syntax(pattern: str) -> tuple[bool, tuple[int, int]] | None:
-    r"""Return whether the Rust regex crate rejects a pattern's syntax, and the oldest Python that parses it.
-
-    The scan follows the Rust grammar of every pydantic-core release from 2.3.0 on, so it never reports a
-    pattern Rust accepts. Capture names such as ``(?P<ids[]>...)``, nested and POSIX character classes, braced
-    escapes such as ``\p{L}``, ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are
-    consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
-    octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
-    ``a`` and ``L`` flags, and braces that cannot start a counted repetition. Atomic groups and possessive
-    quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose patterns, whose
-    whitespace and comments the scan does not model.
-    """
-    rejected = False
-    minimum_python = _PY_310
-    depth = 0
-    position = 0
-    while (match := (_REGEX_CLASS_TOKEN if depth else _REGEX_TOKEN).search(pattern, position)) is not None:
-        position = match.end()
-        if depth or match["open"]:
-            depth += bool(match["open"]) - bool(depth and match["close"])
-            rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES
-            continue
-        if (requirements := _regex_token_requirements(match)) is None:
-            return None
-        rejected |= requirements[0]
-        minimum_python = max(minimum_python, requirements[1])
-    return (rejected, minimum_python)
 
 
 def _string_pattern_data_type(data_type: DataType, model: DataModel | None) -> DataType | None:
@@ -1173,11 +1116,11 @@ def _needs_python_regex_engine(pattern: str, data_type: DataType, field: DataMod
     pydantic-core or on the Python running the generator. A pattern Python's ``re`` also rejects fails at
     import either way.
     """
-    if _LOOKAROUND_PATTERN.search(pattern) is not None:
+    if LOOKAROUND_PATTERN.search(pattern) is not None:
         return True
     if (string_type := _string_pattern_data_type(data_type, field.parent)) is None:
         return False
-    scan = _scan_regex_syntax(pattern)
+    scan = scan_regex_syntax(pattern)
     return scan is not None and scan[0] and field.target_version_key(string_type) >= scan[1]
 
 

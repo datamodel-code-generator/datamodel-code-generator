@@ -9,12 +9,20 @@ from typing import Annotated
 from pydantic import BaseModel, Field, RootModel, StringConstraints
 
 
+class Count1(RootModel[int]):
+    root: Annotated[int, Field(ge=5)]
+
+
 class Limits(RootModel[int]):
     root: Annotated[int, Field(le=10)]
 
 
 class Ap(RootModel[int]):
     root: Annotated[int, Field(ge=1)]
+
+
+class QItem(RootModel[int]):
+    root: Annotated[int, Field(ge=1, le=10)]
 
 
 class QMap(RootModel[int]):
@@ -52,14 +60,6 @@ class Pair(RootModel[list[str]]):
 
 class Quantity(RootModel[int]):
     root: Annotated[int, Field(ge=1)]
-
-
-class Count1(RootModel[Count]):
-    root: Annotated[Count, Field(ge=5)]
-
-
-class QItem(RootModel[Quantity]):
-    root: Annotated[Quantity, Field(le=10)]
 
 
 class Measurement(BaseModel):

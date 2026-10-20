@@ -8,15 +8,15 @@ from typing import Annotated
 from pydantic import BaseModel, Field, RootModel
 
 
+class TagsLenItem(RootModel[list[str]]):
+    root: Annotated[list[str], Field(max_length=3, min_length=1)]
+
+
 class Tags(RootModel[list[str]]):
     root: Annotated[list[str], Field(max_length=3)]
 
 
 class TagsLen(RootModel[Tags]):
-    root: Annotated[Tags, Field(max_length=5, min_length=1)]
-
-
-class TagsLenItem(RootModel[Tags]):
     root: Annotated[Tags, Field(max_length=5, min_length=1)]
 
 

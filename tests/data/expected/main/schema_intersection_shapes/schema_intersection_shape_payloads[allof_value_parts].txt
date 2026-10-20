@@ -1,0 +1,1001 @@
+pydantic_v2.BaseModel default enum_member_prop 1 accepted
+pydantic_v2.BaseModel default enum_member_prop 2 accepted
+pydantic_v2.BaseModel default enum_member_prop 0 rejected
+pydantic_v2.BaseModel default enum_member_prop 3 rejected
+pydantic_v2.BaseModel default enum_member_items [1] accepted
+pydantic_v2.BaseModel default enum_member_items [2] accepted
+pydantic_v2.BaseModel default enum_member_items [0] rejected
+pydantic_v2.BaseModel default enum_member_items [3] rejected
+pydantic_v2.BaseModel default enum_member_map {"k": 1} accepted
+pydantic_v2.BaseModel default enum_member_map {"k": 2} accepted
+pydantic_v2.BaseModel default enum_member_map {"k": 0} rejected
+pydantic_v2.BaseModel default enum_member_map {"k": 3} rejected
+pydantic_v2.BaseModel default narrow_prop 2 accepted
+pydantic_v2.BaseModel default narrow_prop 3 accepted
+pydantic_v2.BaseModel default narrow_prop 1 rejected
+pydantic_v2.BaseModel default narrow_items [2] accepted
+pydantic_v2.BaseModel default narrow_items [3] accepted
+pydantic_v2.BaseModel default narrow_items [1] rejected
+pydantic_v2.BaseModel default narrow_map {"k": 2} accepted
+pydantic_v2.BaseModel default narrow_map {"k": 3} accepted
+pydantic_v2.BaseModel default narrow_map {"k": 1} rejected
+pydantic_v2.BaseModel default literal_prop 1 accepted
+pydantic_v2.BaseModel default literal_prop 2 accepted
+pydantic_v2.BaseModel default literal_prop 0 rejected
+pydantic_v2.BaseModel default literal_prop 3 rejected
+pydantic_v2.BaseModel default literal_items [1] accepted
+pydantic_v2.BaseModel default literal_items [2] accepted
+pydantic_v2.BaseModel default literal_items [0] rejected
+pydantic_v2.BaseModel default literal_items [3] rejected
+pydantic_v2.BaseModel default literal_map {"k": 1} accepted
+pydantic_v2.BaseModel default literal_map {"k": 2} accepted
+pydantic_v2.BaseModel default literal_map {"k": 0} rejected
+pydantic_v2.BaseModel default literal_map {"k": 3} rejected
+pydantic_v2.BaseModel default const_prop "a" accepted
+pydantic_v2.BaseModel default const_prop "b" rejected
+pydantic_v2.BaseModel default const_items ["a"] accepted
+pydantic_v2.BaseModel default const_items ["b"] rejected
+pydantic_v2.BaseModel default const_map {"k": "a"} accepted
+pydantic_v2.BaseModel default const_map {"k": "b"} rejected
+pydantic_v2.BaseModel default nested_prop 1 accepted
+pydantic_v2.BaseModel default nested_prop 3 accepted
+pydantic_v2.BaseModel default nested_prop 0 rejected
+pydantic_v2.BaseModel default nested_prop 4 rejected
+pydantic_v2.BaseModel default nested_items [1] accepted
+pydantic_v2.BaseModel default nested_items [3] accepted
+pydantic_v2.BaseModel default nested_items [0] rejected
+pydantic_v2.BaseModel default nested_items [4] rejected
+pydantic_v2.BaseModel default nested_map {"k": 1} accepted
+pydantic_v2.BaseModel default nested_map {"k": 3} accepted
+pydantic_v2.BaseModel default nested_map {"k": 0} rejected
+pydantic_v2.BaseModel default nested_map {"k": 4} rejected
+pydantic_v2.BaseModel default nested_untyped_prop 1 accepted
+pydantic_v2.BaseModel default nested_untyped_prop 5 accepted
+pydantic_v2.BaseModel default nested_untyped_prop 0 rejected
+pydantic_v2.BaseModel default nested_untyped_prop "a" rejected
+pydantic_v2.BaseModel default nested_untyped_items [1] accepted
+pydantic_v2.BaseModel default nested_untyped_items [5] accepted
+pydantic_v2.BaseModel default nested_untyped_items [0] rejected
+pydantic_v2.BaseModel default nested_untyped_items ["a"] rejected
+pydantic_v2.BaseModel default nested_untyped_map {"k": 1} accepted
+pydantic_v2.BaseModel default nested_untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel default nested_untyped_map {"k": 0} rejected
+pydantic_v2.BaseModel default nested_untyped_map {"k": "a"} rejected
+pydantic_v2.BaseModel default nullable_prop 1 accepted
+pydantic_v2.BaseModel default nullable_prop null accepted
+pydantic_v2.BaseModel default nullable_prop 0 rejected
+pydantic_v2.BaseModel default nullable_items [1] accepted
+pydantic_v2.BaseModel default nullable_items [null] accepted
+pydantic_v2.BaseModel default nullable_items [0] rejected
+pydantic_v2.BaseModel default nullable_map {"k": 1} accepted
+pydantic_v2.BaseModel default nullable_map {"k": null} accepted
+pydantic_v2.BaseModel default nullable_map {"k": 0} rejected
+pydantic_v2.BaseModel default outer_prop 0 accepted
+pydantic_v2.BaseModel default outer_prop 9 accepted
+pydantic_v2.BaseModel default outer_prop -1 rejected
+pydantic_v2.BaseModel default outer_prop 10 rejected
+pydantic_v2.BaseModel default outer_items [0] accepted
+pydantic_v2.BaseModel default outer_items [9] accepted
+pydantic_v2.BaseModel default outer_items [-1] rejected
+pydantic_v2.BaseModel default outer_items [10] rejected
+pydantic_v2.BaseModel default outer_map {"k": 0} accepted
+pydantic_v2.BaseModel default outer_map {"k": 9} accepted
+pydantic_v2.BaseModel default outer_map {"k": -1} rejected
+pydantic_v2.BaseModel default outer_map {"k": 10} rejected
+pydantic_v2.BaseModel default multiple_prop 6 accepted
+pydantic_v2.BaseModel default multiple_prop 12 accepted
+pydantic_v2.BaseModel default multiple_prop 2 rejected
+pydantic_v2.BaseModel default multiple_prop 3 rejected
+pydantic_v2.BaseModel default multiple_items [6] accepted
+pydantic_v2.BaseModel default multiple_items [12] accepted
+pydantic_v2.BaseModel default multiple_items [2] rejected
+pydantic_v2.BaseModel default multiple_items [3] rejected
+pydantic_v2.BaseModel default multiple_map {"k": 6} accepted
+pydantic_v2.BaseModel default multiple_map {"k": 12} accepted
+pydantic_v2.BaseModel default multiple_map {"k": 2} rejected
+pydantic_v2.BaseModel default multiple_map {"k": 3} rejected
+pydantic_v2.BaseModel default const_conflict_prop "a" accepted
+pydantic_v2.BaseModel default const_conflict_prop "b" accepted
+pydantic_v2.BaseModel default const_conflict_items ["a"] accepted
+pydantic_v2.BaseModel default const_conflict_items ["b"] accepted
+pydantic_v2.BaseModel default const_conflict_map {"k": "a"} accepted
+pydantic_v2.BaseModel default const_conflict_map {"k": "b"} accepted
+pydantic_v2.BaseModel default not_sibling_prop 1 accepted
+pydantic_v2.BaseModel default not_sibling_prop 2 accepted
+pydantic_v2.BaseModel default not_sibling_prop 0 rejected
+pydantic_v2.BaseModel default not_sibling_prop 3 accepted
+pydantic_v2.BaseModel default not_sibling_items [1] accepted
+pydantic_v2.BaseModel default not_sibling_items [2] accepted
+pydantic_v2.BaseModel default not_sibling_items [0] rejected
+pydantic_v2.BaseModel default not_sibling_items [3] accepted
+pydantic_v2.BaseModel default not_sibling_map {"k": 1} accepted
+pydantic_v2.BaseModel default not_sibling_map {"k": 2} accepted
+pydantic_v2.BaseModel default not_sibling_map {"k": 0} rejected
+pydantic_v2.BaseModel default not_sibling_map {"k": 3} accepted
+pydantic_v2.BaseModel default enum_bound_prop 1 accepted
+pydantic_v2.BaseModel default enum_bound_prop 2 accepted
+pydantic_v2.BaseModel default enum_bound_prop 30 rejected
+pydantic_v2.BaseModel default enum_bound_prop 11 rejected
+pydantic_v2.BaseModel default enum_bound_items [1] accepted
+pydantic_v2.BaseModel default enum_bound_items [2] accepted
+pydantic_v2.BaseModel default enum_bound_items [30] rejected
+pydantic_v2.BaseModel default enum_bound_items [11] rejected
+pydantic_v2.BaseModel default enum_bound_map {"k": 1} accepted
+pydantic_v2.BaseModel default enum_bound_map {"k": 2} accepted
+pydantic_v2.BaseModel default enum_bound_map {"k": 30} rejected
+pydantic_v2.BaseModel default enum_bound_map {"k": 11} rejected
+pydantic_v2.BaseModel default enum_length_prop "a" accepted
+pydantic_v2.BaseModel default enum_length_prop "bcdefg" rejected
+pydantic_v2.BaseModel default enum_length_prop "zzzz" rejected
+pydantic_v2.BaseModel default enum_length_items ["a"] accepted
+pydantic_v2.BaseModel default enum_length_items ["bcdefg"] rejected
+pydantic_v2.BaseModel default enum_length_items ["zzzz"] rejected
+pydantic_v2.BaseModel default enum_length_map {"k": "a"} accepted
+pydantic_v2.BaseModel default enum_length_map {"k": "bcdefg"} rejected
+pydantic_v2.BaseModel default enum_length_map {"k": "zzzz"} rejected
+pydantic_v2.BaseModel default two_patterns_prop "ab" accepted
+pydantic_v2.BaseModel default two_patterns_prop "acb" accepted
+pydantic_v2.BaseModel default two_patterns_prop "ba" accepted
+pydantic_v2.BaseModel default two_patterns_prop "a" accepted
+pydantic_v2.BaseModel default two_patterns_items ["ab"] accepted
+pydantic_v2.BaseModel default two_patterns_items ["ba"] accepted
+pydantic_v2.BaseModel default two_patterns_map {"k": "ab"} accepted
+pydantic_v2.BaseModel default two_patterns_map {"k": "ba"} accepted
+pydantic_v2.dataclass default enum_member_prop 1 accepted
+pydantic_v2.dataclass default enum_member_prop 2 accepted
+pydantic_v2.dataclass default enum_member_prop 0 rejected
+pydantic_v2.dataclass default enum_member_prop 3 rejected
+pydantic_v2.dataclass default enum_member_items [1] accepted
+pydantic_v2.dataclass default enum_member_items [2] accepted
+pydantic_v2.dataclass default enum_member_items [0] rejected
+pydantic_v2.dataclass default enum_member_items [3] rejected
+pydantic_v2.dataclass default enum_member_map {"k": 1} accepted
+pydantic_v2.dataclass default enum_member_map {"k": 2} accepted
+pydantic_v2.dataclass default enum_member_map {"k": 0} rejected
+pydantic_v2.dataclass default enum_member_map {"k": 3} rejected
+pydantic_v2.dataclass default narrow_prop 2 accepted
+pydantic_v2.dataclass default narrow_prop 3 accepted
+pydantic_v2.dataclass default narrow_prop 1 rejected
+pydantic_v2.dataclass default narrow_items [2] accepted
+pydantic_v2.dataclass default narrow_items [3] accepted
+pydantic_v2.dataclass default narrow_items [1] rejected
+pydantic_v2.dataclass default narrow_map {"k": 2} accepted
+pydantic_v2.dataclass default narrow_map {"k": 3} accepted
+pydantic_v2.dataclass default narrow_map {"k": 1} rejected
+pydantic_v2.dataclass default literal_prop 1 accepted
+pydantic_v2.dataclass default literal_prop 2 accepted
+pydantic_v2.dataclass default literal_prop 0 rejected
+pydantic_v2.dataclass default literal_prop 3 rejected
+pydantic_v2.dataclass default literal_items [1] accepted
+pydantic_v2.dataclass default literal_items [2] accepted
+pydantic_v2.dataclass default literal_items [0] rejected
+pydantic_v2.dataclass default literal_items [3] rejected
+pydantic_v2.dataclass default literal_map {"k": 1} accepted
+pydantic_v2.dataclass default literal_map {"k": 2} accepted
+pydantic_v2.dataclass default literal_map {"k": 0} rejected
+pydantic_v2.dataclass default literal_map {"k": 3} rejected
+pydantic_v2.dataclass default const_prop "a" accepted
+pydantic_v2.dataclass default const_prop "b" rejected
+pydantic_v2.dataclass default const_items ["a"] accepted
+pydantic_v2.dataclass default const_items ["b"] rejected
+pydantic_v2.dataclass default const_map {"k": "a"} accepted
+pydantic_v2.dataclass default const_map {"k": "b"} rejected
+pydantic_v2.dataclass default nested_prop 1 accepted
+pydantic_v2.dataclass default nested_prop 3 accepted
+pydantic_v2.dataclass default nested_prop 0 rejected
+pydantic_v2.dataclass default nested_prop 4 rejected
+pydantic_v2.dataclass default nested_items [1] accepted
+pydantic_v2.dataclass default nested_items [3] accepted
+pydantic_v2.dataclass default nested_items [0] rejected
+pydantic_v2.dataclass default nested_items [4] rejected
+pydantic_v2.dataclass default nested_map {"k": 1} accepted
+pydantic_v2.dataclass default nested_map {"k": 3} accepted
+pydantic_v2.dataclass default nested_map {"k": 0} rejected
+pydantic_v2.dataclass default nested_map {"k": 4} rejected
+pydantic_v2.dataclass default nested_untyped_prop 1 accepted
+pydantic_v2.dataclass default nested_untyped_prop 5 accepted
+pydantic_v2.dataclass default nested_untyped_prop 0 rejected
+pydantic_v2.dataclass default nested_untyped_prop "a" rejected
+pydantic_v2.dataclass default nested_untyped_items [1] accepted
+pydantic_v2.dataclass default nested_untyped_items [5] accepted
+pydantic_v2.dataclass default nested_untyped_items [0] rejected
+pydantic_v2.dataclass default nested_untyped_items ["a"] rejected
+pydantic_v2.dataclass default nested_untyped_map {"k": 1} accepted
+pydantic_v2.dataclass default nested_untyped_map {"k": 5} accepted
+pydantic_v2.dataclass default nested_untyped_map {"k": 0} rejected
+pydantic_v2.dataclass default nested_untyped_map {"k": "a"} rejected
+pydantic_v2.dataclass default nullable_prop 1 accepted
+pydantic_v2.dataclass default nullable_prop null accepted
+pydantic_v2.dataclass default nullable_prop 0 rejected
+pydantic_v2.dataclass default nullable_items [1] accepted
+pydantic_v2.dataclass default nullable_items [null] accepted
+pydantic_v2.dataclass default nullable_items [0] rejected
+pydantic_v2.dataclass default nullable_map {"k": 1} accepted
+pydantic_v2.dataclass default nullable_map {"k": null} accepted
+pydantic_v2.dataclass default nullable_map {"k": 0} rejected
+pydantic_v2.dataclass default outer_prop 0 accepted
+pydantic_v2.dataclass default outer_prop 9 accepted
+pydantic_v2.dataclass default outer_prop -1 rejected
+pydantic_v2.dataclass default outer_prop 10 rejected
+pydantic_v2.dataclass default outer_items [0] accepted
+pydantic_v2.dataclass default outer_items [9] accepted
+pydantic_v2.dataclass default outer_items [-1] rejected
+pydantic_v2.dataclass default outer_items [10] rejected
+pydantic_v2.dataclass default outer_map {"k": 0} accepted
+pydantic_v2.dataclass default outer_map {"k": 9} accepted
+pydantic_v2.dataclass default outer_map {"k": -1} rejected
+pydantic_v2.dataclass default outer_map {"k": 10} rejected
+pydantic_v2.dataclass default multiple_prop 6 accepted
+pydantic_v2.dataclass default multiple_prop 12 accepted
+pydantic_v2.dataclass default multiple_prop 2 rejected
+pydantic_v2.dataclass default multiple_prop 3 rejected
+pydantic_v2.dataclass default multiple_items [6] accepted
+pydantic_v2.dataclass default multiple_items [12] accepted
+pydantic_v2.dataclass default multiple_items [2] rejected
+pydantic_v2.dataclass default multiple_items [3] rejected
+pydantic_v2.dataclass default multiple_map {"k": 6} accepted
+pydantic_v2.dataclass default multiple_map {"k": 12} accepted
+pydantic_v2.dataclass default multiple_map {"k": 2} rejected
+pydantic_v2.dataclass default multiple_map {"k": 3} rejected
+pydantic_v2.dataclass default const_conflict_prop "a" accepted
+pydantic_v2.dataclass default const_conflict_prop "b" accepted
+pydantic_v2.dataclass default const_conflict_items ["a"] accepted
+pydantic_v2.dataclass default const_conflict_items ["b"] accepted
+pydantic_v2.dataclass default const_conflict_map {"k": "a"} accepted
+pydantic_v2.dataclass default const_conflict_map {"k": "b"} accepted
+pydantic_v2.dataclass default not_sibling_prop 1 accepted
+pydantic_v2.dataclass default not_sibling_prop 2 accepted
+pydantic_v2.dataclass default not_sibling_prop 0 rejected
+pydantic_v2.dataclass default not_sibling_prop 3 accepted
+pydantic_v2.dataclass default not_sibling_items [1] accepted
+pydantic_v2.dataclass default not_sibling_items [2] accepted
+pydantic_v2.dataclass default not_sibling_items [0] rejected
+pydantic_v2.dataclass default not_sibling_items [3] accepted
+pydantic_v2.dataclass default not_sibling_map {"k": 1} accepted
+pydantic_v2.dataclass default not_sibling_map {"k": 2} accepted
+pydantic_v2.dataclass default not_sibling_map {"k": 0} rejected
+pydantic_v2.dataclass default not_sibling_map {"k": 3} accepted
+pydantic_v2.dataclass default enum_bound_prop 1 accepted
+pydantic_v2.dataclass default enum_bound_prop 2 accepted
+pydantic_v2.dataclass default enum_bound_prop 30 rejected
+pydantic_v2.dataclass default enum_bound_prop 11 rejected
+pydantic_v2.dataclass default enum_bound_items [1] accepted
+pydantic_v2.dataclass default enum_bound_items [2] accepted
+pydantic_v2.dataclass default enum_bound_items [30] rejected
+pydantic_v2.dataclass default enum_bound_items [11] rejected
+pydantic_v2.dataclass default enum_bound_map {"k": 1} accepted
+pydantic_v2.dataclass default enum_bound_map {"k": 2} accepted
+pydantic_v2.dataclass default enum_bound_map {"k": 30} rejected
+pydantic_v2.dataclass default enum_bound_map {"k": 11} rejected
+pydantic_v2.dataclass default enum_length_prop "a" accepted
+pydantic_v2.dataclass default enum_length_prop "bcdefg" rejected
+pydantic_v2.dataclass default enum_length_prop "zzzz" rejected
+pydantic_v2.dataclass default enum_length_items ["a"] accepted
+pydantic_v2.dataclass default enum_length_items ["bcdefg"] rejected
+pydantic_v2.dataclass default enum_length_items ["zzzz"] rejected
+pydantic_v2.dataclass default enum_length_map {"k": "a"} accepted
+pydantic_v2.dataclass default enum_length_map {"k": "bcdefg"} rejected
+pydantic_v2.dataclass default enum_length_map {"k": "zzzz"} rejected
+pydantic_v2.dataclass default two_patterns_prop "ab" accepted
+pydantic_v2.dataclass default two_patterns_prop "acb" accepted
+pydantic_v2.dataclass default two_patterns_prop "ba" accepted
+pydantic_v2.dataclass default two_patterns_prop "a" accepted
+pydantic_v2.dataclass default two_patterns_items ["ab"] accepted
+pydantic_v2.dataclass default two_patterns_items ["ba"] accepted
+pydantic_v2.dataclass default two_patterns_map {"k": "ab"} accepted
+pydantic_v2.dataclass default two_patterns_map {"k": "ba"} accepted
+msgspec.Struct default enum_member_prop 1 accepted
+msgspec.Struct default enum_member_prop 2 accepted
+msgspec.Struct default enum_member_prop 0 rejected
+msgspec.Struct default enum_member_prop 3 rejected
+msgspec.Struct default enum_member_items [1] accepted
+msgspec.Struct default enum_member_items [2] accepted
+msgspec.Struct default enum_member_items [0] rejected
+msgspec.Struct default enum_member_items [3] rejected
+msgspec.Struct default enum_member_map {"k": 1} accepted
+msgspec.Struct default enum_member_map {"k": 2} accepted
+msgspec.Struct default enum_member_map {"k": 0} rejected
+msgspec.Struct default enum_member_map {"k": 3} rejected
+msgspec.Struct default narrow_prop 2 accepted
+msgspec.Struct default narrow_prop 3 accepted
+msgspec.Struct default narrow_prop 1 rejected
+msgspec.Struct default narrow_items [2] accepted
+msgspec.Struct default narrow_items [3] accepted
+msgspec.Struct default narrow_items [1] rejected
+msgspec.Struct default narrow_map {"k": 2} accepted
+msgspec.Struct default narrow_map {"k": 3} accepted
+msgspec.Struct default narrow_map {"k": 1} rejected
+msgspec.Struct default literal_prop 1 accepted
+msgspec.Struct default literal_prop 2 accepted
+msgspec.Struct default literal_prop 0 rejected
+msgspec.Struct default literal_prop 3 rejected
+msgspec.Struct default literal_items [1] accepted
+msgspec.Struct default literal_items [2] accepted
+msgspec.Struct default literal_items [0] rejected
+msgspec.Struct default literal_items [3] rejected
+msgspec.Struct default literal_map {"k": 1} accepted
+msgspec.Struct default literal_map {"k": 2} accepted
+msgspec.Struct default literal_map {"k": 0} rejected
+msgspec.Struct default literal_map {"k": 3} rejected
+msgspec.Struct default const_prop "a" accepted
+msgspec.Struct default const_prop "b" rejected
+msgspec.Struct default const_items ["a"] accepted
+msgspec.Struct default const_items ["b"] rejected
+msgspec.Struct default const_map {"k": "a"} accepted
+msgspec.Struct default const_map {"k": "b"} rejected
+msgspec.Struct default nested_prop 1 accepted
+msgspec.Struct default nested_prop 3 accepted
+msgspec.Struct default nested_prop 0 rejected
+msgspec.Struct default nested_prop 4 rejected
+msgspec.Struct default nested_items [1] accepted
+msgspec.Struct default nested_items [3] accepted
+msgspec.Struct default nested_items [0] rejected
+msgspec.Struct default nested_items [4] rejected
+msgspec.Struct default nested_map {"k": 1} accepted
+msgspec.Struct default nested_map {"k": 3} accepted
+msgspec.Struct default nested_map {"k": 0} rejected
+msgspec.Struct default nested_map {"k": 4} rejected
+msgspec.Struct default nested_untyped_prop 1 accepted
+msgspec.Struct default nested_untyped_prop 5 accepted
+msgspec.Struct default nested_untyped_prop 0 rejected
+msgspec.Struct default nested_untyped_prop "a" rejected
+msgspec.Struct default nested_untyped_items [1] accepted
+msgspec.Struct default nested_untyped_items [5] accepted
+msgspec.Struct default nested_untyped_items [0] rejected
+msgspec.Struct default nested_untyped_items ["a"] rejected
+msgspec.Struct default nested_untyped_map {"k": 1} accepted
+msgspec.Struct default nested_untyped_map {"k": 5} accepted
+msgspec.Struct default nested_untyped_map {"k": 0} rejected
+msgspec.Struct default nested_untyped_map {"k": "a"} rejected
+msgspec.Struct default nullable_prop 1 accepted
+msgspec.Struct default nullable_prop null accepted
+msgspec.Struct default nullable_prop 0 rejected
+msgspec.Struct default nullable_items [1] accepted
+msgspec.Struct default nullable_items [null] accepted
+msgspec.Struct default nullable_items [0] rejected
+msgspec.Struct default nullable_map {"k": 1} accepted
+msgspec.Struct default nullable_map {"k": null} accepted
+msgspec.Struct default nullable_map {"k": 0} rejected
+msgspec.Struct default outer_prop 0 accepted
+msgspec.Struct default outer_prop 9 accepted
+msgspec.Struct default outer_prop -1 rejected
+msgspec.Struct default outer_prop 10 rejected
+msgspec.Struct default outer_items [0] accepted
+msgspec.Struct default outer_items [9] accepted
+msgspec.Struct default outer_items [-1] rejected
+msgspec.Struct default outer_items [10] rejected
+msgspec.Struct default outer_map {"k": 0} accepted
+msgspec.Struct default outer_map {"k": 9} accepted
+msgspec.Struct default outer_map {"k": -1} rejected
+msgspec.Struct default outer_map {"k": 10} rejected
+msgspec.Struct default multiple_prop 6 accepted
+msgspec.Struct default multiple_prop 12 accepted
+msgspec.Struct default multiple_prop 2 rejected
+msgspec.Struct default multiple_prop 3 rejected
+msgspec.Struct default multiple_items [6] accepted
+msgspec.Struct default multiple_items [12] accepted
+msgspec.Struct default multiple_items [2] rejected
+msgspec.Struct default multiple_items [3] rejected
+msgspec.Struct default multiple_map {"k": 6} accepted
+msgspec.Struct default multiple_map {"k": 12} accepted
+msgspec.Struct default multiple_map {"k": 2} rejected
+msgspec.Struct default multiple_map {"k": 3} rejected
+msgspec.Struct default const_conflict_prop "a" accepted
+msgspec.Struct default const_conflict_prop "b" accepted
+msgspec.Struct default const_conflict_items ["a"] accepted
+msgspec.Struct default const_conflict_items ["b"] accepted
+msgspec.Struct default const_conflict_map {"k": "a"} accepted
+msgspec.Struct default const_conflict_map {"k": "b"} accepted
+msgspec.Struct default not_sibling_prop 1 accepted
+msgspec.Struct default not_sibling_prop 2 accepted
+msgspec.Struct default not_sibling_prop 0 rejected
+msgspec.Struct default not_sibling_prop 3 accepted
+msgspec.Struct default not_sibling_items [1] accepted
+msgspec.Struct default not_sibling_items [2] accepted
+msgspec.Struct default not_sibling_items [0] rejected
+msgspec.Struct default not_sibling_items [3] accepted
+msgspec.Struct default not_sibling_map {"k": 1} accepted
+msgspec.Struct default not_sibling_map {"k": 2} accepted
+msgspec.Struct default not_sibling_map {"k": 0} rejected
+msgspec.Struct default not_sibling_map {"k": 3} accepted
+msgspec.Struct default enum_bound_prop 1 accepted
+msgspec.Struct default enum_bound_prop 2 accepted
+msgspec.Struct default enum_bound_prop 30 rejected
+msgspec.Struct default enum_bound_prop 11 rejected
+msgspec.Struct default enum_bound_items [1] accepted
+msgspec.Struct default enum_bound_items [2] accepted
+msgspec.Struct default enum_bound_items [30] rejected
+msgspec.Struct default enum_bound_items [11] rejected
+msgspec.Struct default enum_bound_map {"k": 1} accepted
+msgspec.Struct default enum_bound_map {"k": 2} accepted
+msgspec.Struct default enum_bound_map {"k": 30} rejected
+msgspec.Struct default enum_bound_map {"k": 11} rejected
+msgspec.Struct default enum_length_prop "a" accepted
+msgspec.Struct default enum_length_prop "bcdefg" rejected
+msgspec.Struct default enum_length_prop "zzzz" rejected
+msgspec.Struct default enum_length_items ["a"] accepted
+msgspec.Struct default enum_length_items ["bcdefg"] rejected
+msgspec.Struct default enum_length_items ["zzzz"] rejected
+msgspec.Struct default enum_length_map {"k": "a"} accepted
+msgspec.Struct default enum_length_map {"k": "bcdefg"} rejected
+msgspec.Struct default enum_length_map {"k": "zzzz"} rejected
+msgspec.Struct default two_patterns_prop "ab" accepted
+msgspec.Struct default two_patterns_prop "acb" accepted
+msgspec.Struct default two_patterns_prop "ba" accepted
+msgspec.Struct default two_patterns_prop "a" accepted
+msgspec.Struct default two_patterns_items ["ab"] accepted
+msgspec.Struct default two_patterns_items ["ba"] accepted
+msgspec.Struct default two_patterns_map {"k": "ab"} accepted
+msgspec.Struct default two_patterns_map {"k": "ba"} accepted
+pydantic_v2.BaseModel --field-constraints enum_member_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints enum_member_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints enum_member_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints enum_member_prop 3 rejected
+pydantic_v2.BaseModel --field-constraints enum_member_items [1] accepted
+pydantic_v2.BaseModel --field-constraints enum_member_items [2] accepted
+pydantic_v2.BaseModel --field-constraints enum_member_items [0] rejected
+pydantic_v2.BaseModel --field-constraints enum_member_items [3] rejected
+pydantic_v2.BaseModel --field-constraints enum_member_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints enum_member_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints enum_member_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints enum_member_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints narrow_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints narrow_prop 3 accepted
+pydantic_v2.BaseModel --field-constraints narrow_prop 1 rejected
+pydantic_v2.BaseModel --field-constraints narrow_items [2] accepted
+pydantic_v2.BaseModel --field-constraints narrow_items [3] accepted
+pydantic_v2.BaseModel --field-constraints narrow_items [1] rejected
+pydantic_v2.BaseModel --field-constraints narrow_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints narrow_map {"k": 3} accepted
+pydantic_v2.BaseModel --field-constraints narrow_map {"k": 1} rejected
+pydantic_v2.BaseModel --field-constraints literal_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints literal_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints literal_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints literal_prop 3 rejected
+pydantic_v2.BaseModel --field-constraints literal_items [1] accepted
+pydantic_v2.BaseModel --field-constraints literal_items [2] accepted
+pydantic_v2.BaseModel --field-constraints literal_items [0] rejected
+pydantic_v2.BaseModel --field-constraints literal_items [3] rejected
+pydantic_v2.BaseModel --field-constraints literal_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints literal_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints literal_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints literal_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints const_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints const_prop "b" rejected
+pydantic_v2.BaseModel --field-constraints const_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints const_items ["b"] rejected
+pydantic_v2.BaseModel --field-constraints const_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints const_map {"k": "b"} rejected
+pydantic_v2.BaseModel --field-constraints nested_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints nested_prop 3 accepted
+pydantic_v2.BaseModel --field-constraints nested_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints nested_prop 4 rejected
+pydantic_v2.BaseModel --field-constraints nested_items [1] accepted
+pydantic_v2.BaseModel --field-constraints nested_items [3] accepted
+pydantic_v2.BaseModel --field-constraints nested_items [0] rejected
+pydantic_v2.BaseModel --field-constraints nested_items [4] rejected
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 3} accepted
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 4} rejected
+pydantic_v2.BaseModel --field-constraints nested_untyped_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints nested_untyped_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints nested_untyped_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints nested_untyped_prop "a" rejected
+pydantic_v2.BaseModel --field-constraints nested_untyped_items [1] accepted
+pydantic_v2.BaseModel --field-constraints nested_untyped_items [5] accepted
+pydantic_v2.BaseModel --field-constraints nested_untyped_items [0] rejected
+pydantic_v2.BaseModel --field-constraints nested_untyped_items ["a"] rejected
+pydantic_v2.BaseModel --field-constraints nested_untyped_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints nested_untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints nested_untyped_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints nested_untyped_map {"k": "a"} rejected
+pydantic_v2.BaseModel --field-constraints nullable_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints nullable_prop null accepted
+pydantic_v2.BaseModel --field-constraints nullable_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints nullable_items [1] accepted
+pydantic_v2.BaseModel --field-constraints nullable_items [null] accepted
+pydantic_v2.BaseModel --field-constraints nullable_items [0] rejected
+pydantic_v2.BaseModel --field-constraints nullable_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints nullable_map {"k": null} accepted
+pydantic_v2.BaseModel --field-constraints nullable_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints outer_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints outer_prop 9 accepted
+pydantic_v2.BaseModel --field-constraints outer_prop -1 rejected
+pydantic_v2.BaseModel --field-constraints outer_prop 10 rejected
+pydantic_v2.BaseModel --field-constraints outer_items [0] accepted
+pydantic_v2.BaseModel --field-constraints outer_items [9] accepted
+pydantic_v2.BaseModel --field-constraints outer_items [-1] rejected
+pydantic_v2.BaseModel --field-constraints outer_items [10] rejected
+pydantic_v2.BaseModel --field-constraints outer_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints outer_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints outer_map {"k": -1} rejected
+pydantic_v2.BaseModel --field-constraints outer_map {"k": 10} rejected
+pydantic_v2.BaseModel --field-constraints multiple_prop 6 accepted
+pydantic_v2.BaseModel --field-constraints multiple_prop 12 accepted
+pydantic_v2.BaseModel --field-constraints multiple_prop 2 rejected
+pydantic_v2.BaseModel --field-constraints multiple_prop 3 rejected
+pydantic_v2.BaseModel --field-constraints multiple_items [6] accepted
+pydantic_v2.BaseModel --field-constraints multiple_items [12] accepted
+pydantic_v2.BaseModel --field-constraints multiple_items [2] rejected
+pydantic_v2.BaseModel --field-constraints multiple_items [3] rejected
+pydantic_v2.BaseModel --field-constraints multiple_map {"k": 6} accepted
+pydantic_v2.BaseModel --field-constraints multiple_map {"k": 12} accepted
+pydantic_v2.BaseModel --field-constraints multiple_map {"k": 2} rejected
+pydantic_v2.BaseModel --field-constraints multiple_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints const_conflict_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints const_conflict_prop "b" accepted
+pydantic_v2.BaseModel --field-constraints const_conflict_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints const_conflict_items ["b"] accepted
+pydantic_v2.BaseModel --field-constraints const_conflict_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints const_conflict_map {"k": "b"} accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_prop 0 rejected
+pydantic_v2.BaseModel --field-constraints not_sibling_prop 3 accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_items [1] accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_items [2] accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_items [0] rejected
+pydantic_v2.BaseModel --field-constraints not_sibling_items [3] accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints not_sibling_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints not_sibling_map {"k": 3} accepted
+pydantic_v2.BaseModel --field-constraints enum_bound_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints enum_bound_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints enum_bound_prop 30 rejected
+pydantic_v2.BaseModel --field-constraints enum_bound_prop 11 rejected
+pydantic_v2.BaseModel --field-constraints enum_bound_items [1] accepted
+pydantic_v2.BaseModel --field-constraints enum_bound_items [2] accepted
+pydantic_v2.BaseModel --field-constraints enum_bound_items [30] rejected
+pydantic_v2.BaseModel --field-constraints enum_bound_items [11] rejected
+pydantic_v2.BaseModel --field-constraints enum_bound_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints enum_bound_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints enum_bound_map {"k": 30} rejected
+pydantic_v2.BaseModel --field-constraints enum_bound_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints enum_length_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints enum_length_prop "bcdefg" rejected
+pydantic_v2.BaseModel --field-constraints enum_length_prop "zzzz" rejected
+pydantic_v2.BaseModel --field-constraints enum_length_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints enum_length_items ["bcdefg"] rejected
+pydantic_v2.BaseModel --field-constraints enum_length_items ["zzzz"] rejected
+pydantic_v2.BaseModel --field-constraints enum_length_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints enum_length_map {"k": "bcdefg"} rejected
+pydantic_v2.BaseModel --field-constraints enum_length_map {"k": "zzzz"} rejected
+pydantic_v2.BaseModel --field-constraints two_patterns_prop "ab" accepted
+pydantic_v2.BaseModel --field-constraints two_patterns_prop "acb" accepted
+pydantic_v2.BaseModel --field-constraints two_patterns_prop "ba" accepted
+pydantic_v2.BaseModel --field-constraints two_patterns_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints two_patterns_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints two_patterns_items ["ba"] accepted
+pydantic_v2.BaseModel --field-constraints two_patterns_map {"k": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints two_patterns_map {"k": "ba"} accepted
+pydantic_v2.BaseModel --use-annotated enum_member_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated enum_member_prop 2 accepted
+pydantic_v2.BaseModel --use-annotated enum_member_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated enum_member_prop 3 rejected
+pydantic_v2.BaseModel --use-annotated enum_member_items [1] accepted
+pydantic_v2.BaseModel --use-annotated enum_member_items [2] accepted
+pydantic_v2.BaseModel --use-annotated enum_member_items [0] rejected
+pydantic_v2.BaseModel --use-annotated enum_member_items [3] rejected
+pydantic_v2.BaseModel --use-annotated enum_member_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated enum_member_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated enum_member_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated enum_member_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-annotated narrow_prop 2 accepted
+pydantic_v2.BaseModel --use-annotated narrow_prop 3 accepted
+pydantic_v2.BaseModel --use-annotated narrow_prop 1 rejected
+pydantic_v2.BaseModel --use-annotated narrow_items [2] accepted
+pydantic_v2.BaseModel --use-annotated narrow_items [3] accepted
+pydantic_v2.BaseModel --use-annotated narrow_items [1] rejected
+pydantic_v2.BaseModel --use-annotated narrow_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated narrow_map {"k": 3} accepted
+pydantic_v2.BaseModel --use-annotated narrow_map {"k": 1} rejected
+pydantic_v2.BaseModel --use-annotated literal_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated literal_prop 2 accepted
+pydantic_v2.BaseModel --use-annotated literal_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated literal_prop 3 rejected
+pydantic_v2.BaseModel --use-annotated literal_items [1] accepted
+pydantic_v2.BaseModel --use-annotated literal_items [2] accepted
+pydantic_v2.BaseModel --use-annotated literal_items [0] rejected
+pydantic_v2.BaseModel --use-annotated literal_items [3] rejected
+pydantic_v2.BaseModel --use-annotated literal_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated literal_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated literal_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated literal_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-annotated const_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated const_prop "b" rejected
+pydantic_v2.BaseModel --use-annotated const_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated const_items ["b"] rejected
+pydantic_v2.BaseModel --use-annotated const_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated const_map {"k": "b"} rejected
+pydantic_v2.BaseModel --use-annotated nested_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated nested_prop 3 accepted
+pydantic_v2.BaseModel --use-annotated nested_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated nested_prop 4 rejected
+pydantic_v2.BaseModel --use-annotated nested_items [1] accepted
+pydantic_v2.BaseModel --use-annotated nested_items [3] accepted
+pydantic_v2.BaseModel --use-annotated nested_items [0] rejected
+pydantic_v2.BaseModel --use-annotated nested_items [4] rejected
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 3} accepted
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 4} rejected
+pydantic_v2.BaseModel --use-annotated nested_untyped_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated nested_untyped_prop 5 accepted
+pydantic_v2.BaseModel --use-annotated nested_untyped_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated nested_untyped_prop "a" rejected
+pydantic_v2.BaseModel --use-annotated nested_untyped_items [1] accepted
+pydantic_v2.BaseModel --use-annotated nested_untyped_items [5] accepted
+pydantic_v2.BaseModel --use-annotated nested_untyped_items [0] rejected
+pydantic_v2.BaseModel --use-annotated nested_untyped_items ["a"] rejected
+pydantic_v2.BaseModel --use-annotated nested_untyped_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated nested_untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated nested_untyped_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated nested_untyped_map {"k": "a"} rejected
+pydantic_v2.BaseModel --use-annotated nullable_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated nullable_prop null accepted
+pydantic_v2.BaseModel --use-annotated nullable_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated nullable_items [1] accepted
+pydantic_v2.BaseModel --use-annotated nullable_items [null] accepted
+pydantic_v2.BaseModel --use-annotated nullable_items [0] rejected
+pydantic_v2.BaseModel --use-annotated nullable_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated nullable_map {"k": null} accepted
+pydantic_v2.BaseModel --use-annotated nullable_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated outer_prop 0 accepted
+pydantic_v2.BaseModel --use-annotated outer_prop 9 accepted
+pydantic_v2.BaseModel --use-annotated outer_prop -1 rejected
+pydantic_v2.BaseModel --use-annotated outer_prop 10 rejected
+pydantic_v2.BaseModel --use-annotated outer_items [0] accepted
+pydantic_v2.BaseModel --use-annotated outer_items [9] accepted
+pydantic_v2.BaseModel --use-annotated outer_items [-1] rejected
+pydantic_v2.BaseModel --use-annotated outer_items [10] rejected
+pydantic_v2.BaseModel --use-annotated outer_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-annotated outer_map {"k": 9} accepted
+pydantic_v2.BaseModel --use-annotated outer_map {"k": -1} rejected
+pydantic_v2.BaseModel --use-annotated outer_map {"k": 10} rejected
+pydantic_v2.BaseModel --use-annotated multiple_prop 6 accepted
+pydantic_v2.BaseModel --use-annotated multiple_prop 12 accepted
+pydantic_v2.BaseModel --use-annotated multiple_prop 2 rejected
+pydantic_v2.BaseModel --use-annotated multiple_prop 3 rejected
+pydantic_v2.BaseModel --use-annotated multiple_items [6] accepted
+pydantic_v2.BaseModel --use-annotated multiple_items [12] accepted
+pydantic_v2.BaseModel --use-annotated multiple_items [2] rejected
+pydantic_v2.BaseModel --use-annotated multiple_items [3] rejected
+pydantic_v2.BaseModel --use-annotated multiple_map {"k": 6} accepted
+pydantic_v2.BaseModel --use-annotated multiple_map {"k": 12} accepted
+pydantic_v2.BaseModel --use-annotated multiple_map {"k": 2} rejected
+pydantic_v2.BaseModel --use-annotated multiple_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-annotated const_conflict_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated const_conflict_prop "b" accepted
+pydantic_v2.BaseModel --use-annotated const_conflict_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated const_conflict_items ["b"] accepted
+pydantic_v2.BaseModel --use-annotated const_conflict_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated const_conflict_map {"k": "b"} accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_prop 2 accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_prop 0 rejected
+pydantic_v2.BaseModel --use-annotated not_sibling_prop 3 accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_items [1] accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_items [2] accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_items [0] rejected
+pydantic_v2.BaseModel --use-annotated not_sibling_items [3] accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated not_sibling_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated not_sibling_map {"k": 3} accepted
+pydantic_v2.BaseModel --use-annotated enum_bound_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated enum_bound_prop 2 accepted
+pydantic_v2.BaseModel --use-annotated enum_bound_prop 30 rejected
+pydantic_v2.BaseModel --use-annotated enum_bound_prop 11 rejected
+pydantic_v2.BaseModel --use-annotated enum_bound_items [1] accepted
+pydantic_v2.BaseModel --use-annotated enum_bound_items [2] accepted
+pydantic_v2.BaseModel --use-annotated enum_bound_items [30] rejected
+pydantic_v2.BaseModel --use-annotated enum_bound_items [11] rejected
+pydantic_v2.BaseModel --use-annotated enum_bound_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated enum_bound_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated enum_bound_map {"k": 30} rejected
+pydantic_v2.BaseModel --use-annotated enum_bound_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated enum_length_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated enum_length_prop "bcdefg" rejected
+pydantic_v2.BaseModel --use-annotated enum_length_prop "zzzz" rejected
+pydantic_v2.BaseModel --use-annotated enum_length_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated enum_length_items ["bcdefg"] rejected
+pydantic_v2.BaseModel --use-annotated enum_length_items ["zzzz"] rejected
+pydantic_v2.BaseModel --use-annotated enum_length_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated enum_length_map {"k": "bcdefg"} rejected
+pydantic_v2.BaseModel --use-annotated enum_length_map {"k": "zzzz"} rejected
+pydantic_v2.BaseModel --use-annotated two_patterns_prop "ab" accepted
+pydantic_v2.BaseModel --use-annotated two_patterns_prop "acb" accepted
+pydantic_v2.BaseModel --use-annotated two_patterns_prop "ba" accepted
+pydantic_v2.BaseModel --use-annotated two_patterns_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated two_patterns_items ["ab"] accepted
+pydantic_v2.BaseModel --use-annotated two_patterns_items ["ba"] accepted
+pydantic_v2.BaseModel --use-annotated two_patterns_map {"k": "ab"} accepted
+pydantic_v2.BaseModel --use-annotated two_patterns_map {"k": "ba"} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_member_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models enum_member_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models enum_member_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models enum_member_prop 3 rejected
+pydantic_v2.BaseModel --collapse-root-models enum_member_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_member_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_member_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models enum_member_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models enum_member_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_member_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_member_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models enum_member_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models narrow_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models narrow_prop 3 accepted
+pydantic_v2.BaseModel --collapse-root-models narrow_prop 1 rejected
+pydantic_v2.BaseModel --collapse-root-models narrow_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models narrow_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models narrow_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models narrow_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models narrow_map {"k": 3} accepted
+pydantic_v2.BaseModel --collapse-root-models narrow_map {"k": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models literal_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models literal_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models literal_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models literal_prop 3 rejected
+pydantic_v2.BaseModel --collapse-root-models literal_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models literal_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models literal_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models literal_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models literal_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models literal_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models literal_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models literal_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models const_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models const_prop "b" rejected
+pydantic_v2.BaseModel --collapse-root-models const_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models const_items ["b"] rejected
+pydantic_v2.BaseModel --collapse-root-models const_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models const_map {"k": "b"} rejected
+pydantic_v2.BaseModel --collapse-root-models nested_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models nested_prop 3 accepted
+pydantic_v2.BaseModel --collapse-root-models nested_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models nested_prop 4 rejected
+pydantic_v2.BaseModel --collapse-root-models nested_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models nested_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 3} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 4} rejected
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_prop "a" rejected
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models nested_untyped_map {"k": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_prop null accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_items [null] accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_map {"k": null} accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models outer_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models outer_prop 9 accepted
+pydantic_v2.BaseModel --collapse-root-models outer_prop -1 rejected
+pydantic_v2.BaseModel --collapse-root-models outer_prop 10 rejected
+pydantic_v2.BaseModel --collapse-root-models outer_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models outer_items [9] accepted
+pydantic_v2.BaseModel --collapse-root-models outer_items [-1] rejected
+pydantic_v2.BaseModel --collapse-root-models outer_items [10] rejected
+pydantic_v2.BaseModel --collapse-root-models outer_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models outer_map {"k": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models outer_map {"k": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models outer_map {"k": 10} rejected
+pydantic_v2.BaseModel --collapse-root-models multiple_prop 6 accepted
+pydantic_v2.BaseModel --collapse-root-models multiple_prop 12 accepted
+pydantic_v2.BaseModel --collapse-root-models multiple_prop 2 rejected
+pydantic_v2.BaseModel --collapse-root-models multiple_prop 3 rejected
+pydantic_v2.BaseModel --collapse-root-models multiple_items [6] accepted
+pydantic_v2.BaseModel --collapse-root-models multiple_items [12] accepted
+pydantic_v2.BaseModel --collapse-root-models multiple_items [2] rejected
+pydantic_v2.BaseModel --collapse-root-models multiple_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models multiple_map {"k": 6} accepted
+pydantic_v2.BaseModel --collapse-root-models multiple_map {"k": 12} accepted
+pydantic_v2.BaseModel --collapse-root-models multiple_map {"k": 2} rejected
+pydantic_v2.BaseModel --collapse-root-models multiple_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models const_conflict_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models const_conflict_prop "b" accepted
+pydantic_v2.BaseModel --collapse-root-models const_conflict_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models const_conflict_items ["b"] accepted
+pydantic_v2.BaseModel --collapse-root-models const_conflict_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models const_conflict_map {"k": "b"} accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_prop 0 rejected
+pydantic_v2.BaseModel --collapse-root-models not_sibling_prop 3 accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models not_sibling_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models not_sibling_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models not_sibling_map {"k": 3} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_bound_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models enum_bound_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models enum_bound_prop 30 rejected
+pydantic_v2.BaseModel --collapse-root-models enum_bound_prop 11 rejected
+pydantic_v2.BaseModel --collapse-root-models enum_bound_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_bound_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_bound_items [30] rejected
+pydantic_v2.BaseModel --collapse-root-models enum_bound_items [11] rejected
+pydantic_v2.BaseModel --collapse-root-models enum_bound_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_bound_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_bound_map {"k": 30} rejected
+pydantic_v2.BaseModel --collapse-root-models enum_bound_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models enum_length_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models enum_length_prop "bcdefg" rejected
+pydantic_v2.BaseModel --collapse-root-models enum_length_prop "zzzz" rejected
+pydantic_v2.BaseModel --collapse-root-models enum_length_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_length_items ["bcdefg"] rejected
+pydantic_v2.BaseModel --collapse-root-models enum_length_items ["zzzz"] rejected
+pydantic_v2.BaseModel --collapse-root-models enum_length_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_length_map {"k": "bcdefg"} rejected
+pydantic_v2.BaseModel --collapse-root-models enum_length_map {"k": "zzzz"} rejected
+pydantic_v2.BaseModel --collapse-root-models two_patterns_prop "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models two_patterns_prop "acb" accepted
+pydantic_v2.BaseModel --collapse-root-models two_patterns_prop "ba" accepted
+pydantic_v2.BaseModel --collapse-root-models two_patterns_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models two_patterns_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models two_patterns_items ["ba"] accepted
+pydantic_v2.BaseModel --collapse-root-models two_patterns_map {"k": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models two_patterns_map {"k": "ba"} accepted
+msgspec.Struct --collapse-root-models enum_member_prop 1 accepted
+msgspec.Struct --collapse-root-models enum_member_prop 2 accepted
+msgspec.Struct --collapse-root-models enum_member_prop 0 rejected
+msgspec.Struct --collapse-root-models enum_member_prop 3 rejected
+msgspec.Struct --collapse-root-models enum_member_items [1] accepted
+msgspec.Struct --collapse-root-models enum_member_items [2] accepted
+msgspec.Struct --collapse-root-models enum_member_items [0] rejected
+msgspec.Struct --collapse-root-models enum_member_items [3] rejected
+msgspec.Struct --collapse-root-models enum_member_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models enum_member_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models enum_member_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models enum_member_map {"k": 3} rejected
+msgspec.Struct --collapse-root-models narrow_prop 2 accepted
+msgspec.Struct --collapse-root-models narrow_prop 3 accepted
+msgspec.Struct --collapse-root-models narrow_prop 1 rejected
+msgspec.Struct --collapse-root-models narrow_items [2] accepted
+msgspec.Struct --collapse-root-models narrow_items [3] accepted
+msgspec.Struct --collapse-root-models narrow_items [1] rejected
+msgspec.Struct --collapse-root-models narrow_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models narrow_map {"k": 3} accepted
+msgspec.Struct --collapse-root-models narrow_map {"k": 1} rejected
+msgspec.Struct --collapse-root-models literal_prop 1 accepted
+msgspec.Struct --collapse-root-models literal_prop 2 accepted
+msgspec.Struct --collapse-root-models literal_prop 0 rejected
+msgspec.Struct --collapse-root-models literal_prop 3 rejected
+msgspec.Struct --collapse-root-models literal_items [1] accepted
+msgspec.Struct --collapse-root-models literal_items [2] accepted
+msgspec.Struct --collapse-root-models literal_items [0] rejected
+msgspec.Struct --collapse-root-models literal_items [3] rejected
+msgspec.Struct --collapse-root-models literal_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models literal_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models literal_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models literal_map {"k": 3} rejected
+msgspec.Struct --collapse-root-models const_prop "a" accepted
+msgspec.Struct --collapse-root-models const_prop "b" rejected
+msgspec.Struct --collapse-root-models const_items ["a"] accepted
+msgspec.Struct --collapse-root-models const_items ["b"] rejected
+msgspec.Struct --collapse-root-models const_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models const_map {"k": "b"} rejected
+msgspec.Struct --collapse-root-models nested_prop 1 accepted
+msgspec.Struct --collapse-root-models nested_prop 3 accepted
+msgspec.Struct --collapse-root-models nested_prop 0 rejected
+msgspec.Struct --collapse-root-models nested_prop 4 rejected
+msgspec.Struct --collapse-root-models nested_items [1] accepted
+msgspec.Struct --collapse-root-models nested_items [3] accepted
+msgspec.Struct --collapse-root-models nested_items [0] rejected
+msgspec.Struct --collapse-root-models nested_items [4] rejected
+msgspec.Struct --collapse-root-models nested_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models nested_map {"k": 3} accepted
+msgspec.Struct --collapse-root-models nested_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models nested_map {"k": 4} rejected
+msgspec.Struct --collapse-root-models nested_untyped_prop 1 accepted
+msgspec.Struct --collapse-root-models nested_untyped_prop 5 accepted
+msgspec.Struct --collapse-root-models nested_untyped_prop 0 rejected
+msgspec.Struct --collapse-root-models nested_untyped_prop "a" rejected
+msgspec.Struct --collapse-root-models nested_untyped_items [1] accepted
+msgspec.Struct --collapse-root-models nested_untyped_items [5] accepted
+msgspec.Struct --collapse-root-models nested_untyped_items [0] rejected
+msgspec.Struct --collapse-root-models nested_untyped_items ["a"] rejected
+msgspec.Struct --collapse-root-models nested_untyped_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models nested_untyped_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models nested_untyped_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models nested_untyped_map {"k": "a"} rejected
+msgspec.Struct --collapse-root-models nullable_prop 1 accepted
+msgspec.Struct --collapse-root-models nullable_prop null accepted
+msgspec.Struct --collapse-root-models nullable_prop 0 rejected
+msgspec.Struct --collapse-root-models nullable_items [1] accepted
+msgspec.Struct --collapse-root-models nullable_items [null] accepted
+msgspec.Struct --collapse-root-models nullable_items [0] rejected
+msgspec.Struct --collapse-root-models nullable_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models nullable_map {"k": null} accepted
+msgspec.Struct --collapse-root-models nullable_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models outer_prop 0 accepted
+msgspec.Struct --collapse-root-models outer_prop 9 accepted
+msgspec.Struct --collapse-root-models outer_prop -1 rejected
+msgspec.Struct --collapse-root-models outer_prop 10 rejected
+msgspec.Struct --collapse-root-models outer_items [0] accepted
+msgspec.Struct --collapse-root-models outer_items [9] accepted
+msgspec.Struct --collapse-root-models outer_items [-1] rejected
+msgspec.Struct --collapse-root-models outer_items [10] rejected
+msgspec.Struct --collapse-root-models outer_map {"k": 0} accepted
+msgspec.Struct --collapse-root-models outer_map {"k": 9} accepted
+msgspec.Struct --collapse-root-models outer_map {"k": -1} rejected
+msgspec.Struct --collapse-root-models outer_map {"k": 10} rejected
+msgspec.Struct --collapse-root-models multiple_prop 6 accepted
+msgspec.Struct --collapse-root-models multiple_prop 12 accepted
+msgspec.Struct --collapse-root-models multiple_prop 2 rejected
+msgspec.Struct --collapse-root-models multiple_prop 3 rejected
+msgspec.Struct --collapse-root-models multiple_items [6] accepted
+msgspec.Struct --collapse-root-models multiple_items [12] accepted
+msgspec.Struct --collapse-root-models multiple_items [2] rejected
+msgspec.Struct --collapse-root-models multiple_items [3] rejected
+msgspec.Struct --collapse-root-models multiple_map {"k": 6} accepted
+msgspec.Struct --collapse-root-models multiple_map {"k": 12} accepted
+msgspec.Struct --collapse-root-models multiple_map {"k": 2} rejected
+msgspec.Struct --collapse-root-models multiple_map {"k": 3} rejected
+msgspec.Struct --collapse-root-models const_conflict_prop "a" accepted
+msgspec.Struct --collapse-root-models const_conflict_prop "b" accepted
+msgspec.Struct --collapse-root-models const_conflict_items ["a"] accepted
+msgspec.Struct --collapse-root-models const_conflict_items ["b"] accepted
+msgspec.Struct --collapse-root-models const_conflict_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models const_conflict_map {"k": "b"} accepted
+msgspec.Struct --collapse-root-models not_sibling_prop 1 accepted
+msgspec.Struct --collapse-root-models not_sibling_prop 2 accepted
+msgspec.Struct --collapse-root-models not_sibling_prop 0 rejected
+msgspec.Struct --collapse-root-models not_sibling_prop 3 accepted
+msgspec.Struct --collapse-root-models not_sibling_items [1] accepted
+msgspec.Struct --collapse-root-models not_sibling_items [2] accepted
+msgspec.Struct --collapse-root-models not_sibling_items [0] rejected
+msgspec.Struct --collapse-root-models not_sibling_items [3] accepted
+msgspec.Struct --collapse-root-models not_sibling_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models not_sibling_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models not_sibling_map {"k": 0} rejected
+msgspec.Struct --collapse-root-models not_sibling_map {"k": 3} accepted
+msgspec.Struct --collapse-root-models enum_bound_prop 1 accepted
+msgspec.Struct --collapse-root-models enum_bound_prop 2 accepted
+msgspec.Struct --collapse-root-models enum_bound_prop 30 rejected
+msgspec.Struct --collapse-root-models enum_bound_prop 11 rejected
+msgspec.Struct --collapse-root-models enum_bound_items [1] accepted
+msgspec.Struct --collapse-root-models enum_bound_items [2] accepted
+msgspec.Struct --collapse-root-models enum_bound_items [30] rejected
+msgspec.Struct --collapse-root-models enum_bound_items [11] rejected
+msgspec.Struct --collapse-root-models enum_bound_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models enum_bound_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models enum_bound_map {"k": 30} rejected
+msgspec.Struct --collapse-root-models enum_bound_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models enum_length_prop "a" accepted
+msgspec.Struct --collapse-root-models enum_length_prop "bcdefg" rejected
+msgspec.Struct --collapse-root-models enum_length_prop "zzzz" rejected
+msgspec.Struct --collapse-root-models enum_length_items ["a"] accepted
+msgspec.Struct --collapse-root-models enum_length_items ["bcdefg"] rejected
+msgspec.Struct --collapse-root-models enum_length_items ["zzzz"] rejected
+msgspec.Struct --collapse-root-models enum_length_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models enum_length_map {"k": "bcdefg"} rejected
+msgspec.Struct --collapse-root-models enum_length_map {"k": "zzzz"} rejected
+msgspec.Struct --collapse-root-models two_patterns_prop "ab" accepted
+msgspec.Struct --collapse-root-models two_patterns_prop "acb" accepted
+msgspec.Struct --collapse-root-models two_patterns_prop "ba" accepted
+msgspec.Struct --collapse-root-models two_patterns_prop "a" accepted
+msgspec.Struct --collapse-root-models two_patterns_items ["ab"] accepted
+msgspec.Struct --collapse-root-models two_patterns_items ["ba"] accepted
+msgspec.Struct --collapse-root-models two_patterns_map {"k": "ab"} accepted
+msgspec.Struct --collapse-root-models two_patterns_map {"k": "ba"} accepted

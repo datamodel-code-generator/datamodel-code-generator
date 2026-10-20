@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, conint, constr
 
@@ -31,9 +31,9 @@ class Model(BaseModel):
     level_items: list[conint(ge=0, le=10)] | None = None
     level_map: dict[str, conint(ge=0, le=10)] | None = None
     mode: Mode | None = None
-    mode_prop: int | None = None
-    mode_items: list[int] | None = None
-    mode_map: dict[str, int] | None = None
+    mode_prop: Literal[1, 2] | None = None
+    mode_items: list[Literal[1, 2]] | None = None
+    mode_map: dict[str, Literal[1, 2]] | None = None
     pat: Pat | None = None
     pat_prop: constr(pattern=r'(?=^a)(?=b$)') | None = None
     pat_items: list[constr(pattern=r'(?=^a)(?=b$)')] | None = None

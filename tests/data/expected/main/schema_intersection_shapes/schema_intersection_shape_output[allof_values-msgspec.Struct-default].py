@@ -4,26 +4,26 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
-LevelProp: TypeAlias = int
+LevelProp: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
 
-LevelItem: TypeAlias = int
+LevelItem: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
 
 LevelMap: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
 
-ModeProp: TypeAlias = int
+ModeProp: TypeAlias = Literal[1, 2]
 
 
-ModeItem: TypeAlias = int
+ModeItem: TypeAlias = Literal[1, 2]
 
 
-ModeMap: TypeAlias = int
+ModeMap: TypeAlias = Literal[1, 2]
 
 
 PatProp: TypeAlias = str
@@ -44,7 +44,7 @@ UntypedItem: TypeAlias = Any
 UntypedMap: TypeAlias = Any
 
 
-P: TypeAlias = str
+P: TypeAlias = Annotated[str, Meta(min_length=2)]
 
 
 Level: TypeAlias = Annotated[int, Meta(ge=0, le=10)]

@@ -1,0 +1,603 @@
+pydantic_v2.BaseModel default disjoint_items [1] accepted
+pydantic_v2.BaseModel default disjoint_items [10] accepted
+pydantic_v2.BaseModel default disjoint_items [0] rejected
+pydantic_v2.BaseModel default disjoint_items [11] accepted
+pydantic_v2.BaseModel default disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel default disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel default disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel default disjoint_map {"k": 11} accepted
+pydantic_v2.BaseModel default overlap_items [5] accepted
+pydantic_v2.BaseModel default overlap_items [6] accepted
+pydantic_v2.BaseModel default overlap_items [4] accepted
+pydantic_v2.BaseModel default overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel default overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel default overlap_map {"k": 4} accepted
+pydantic_v2.BaseModel default redundant_items [1] accepted
+pydantic_v2.BaseModel default redundant_items [2] accepted
+pydantic_v2.BaseModel default redundant_items [0] rejected
+pydantic_v2.BaseModel default redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel default redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel default redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel default looser_items [1] accepted
+pydantic_v2.BaseModel default looser_items [2] accepted
+pydantic_v2.BaseModel default looser_items [0] rejected
+pydantic_v2.BaseModel default looser_map {"k": 1} accepted
+pydantic_v2.BaseModel default looser_map {"k": 2} accepted
+pydantic_v2.BaseModel default looser_map {"k": 0} rejected
+pydantic_v2.BaseModel default member_items [2] accepted
+pydantic_v2.BaseModel default member_items [9] accepted
+pydantic_v2.BaseModel default member_items [1] accepted
+pydantic_v2.BaseModel default member_items [10] accepted
+pydantic_v2.BaseModel default member_map {"k": 2} accepted
+pydantic_v2.BaseModel default member_map {"k": 9} accepted
+pydantic_v2.BaseModel default member_map {"k": 1} accepted
+pydantic_v2.BaseModel default member_map {"k": 10} accepted
+pydantic_v2.BaseModel default two_items [4] rejected
+pydantic_v2.BaseModel default two_items [5] rejected
+pydantic_v2.BaseModel default two_items [3] rejected
+pydantic_v2.BaseModel default two_items [6] rejected
+pydantic_v2.BaseModel default two_map {"k": 4} rejected
+pydantic_v2.BaseModel default two_map {"k": 5} rejected
+pydantic_v2.BaseModel default two_map {"k": 3} rejected
+pydantic_v2.BaseModel default two_map {"k": 6} rejected
+pydantic_v2.BaseModel default stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel default stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel default stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel default stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel default enum_items [1] accepted
+pydantic_v2.BaseModel default enum_items [2] accepted
+pydantic_v2.BaseModel default enum_items [3] accepted
+pydantic_v2.BaseModel default enum_items [20] accepted
+pydantic_v2.BaseModel default enum_map {"k": 1} accepted
+pydantic_v2.BaseModel default enum_map {"k": 2} accepted
+pydantic_v2.BaseModel default enum_map {"k": 3} accepted
+pydantic_v2.BaseModel default enum_map {"k": 20} accepted
+pydantic_v2.BaseModel default nested_items [2] accepted
+pydantic_v2.BaseModel default nested_items [9] accepted
+pydantic_v2.BaseModel default nested_items [1] accepted
+pydantic_v2.BaseModel default nested_items [10] accepted
+pydantic_v2.BaseModel default nested_map {"k": 2} accepted
+pydantic_v2.BaseModel default nested_map {"k": 9} accepted
+pydantic_v2.BaseModel default nested_map {"k": 1} accepted
+pydantic_v2.BaseModel default nested_map {"k": 10} accepted
+pydantic_v2.BaseModel default point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel default point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel default point_map {"k": {"x": 1}} accepted
+pydantic_v2.BaseModel default point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel default false_items [1] accepted
+pydantic_v2.dataclass default disjoint_items [1] accepted
+pydantic_v2.dataclass default disjoint_items [10] accepted
+pydantic_v2.dataclass default disjoint_items [0] rejected
+pydantic_v2.dataclass default disjoint_items [11] accepted
+pydantic_v2.dataclass default disjoint_map {"k": 1} accepted
+pydantic_v2.dataclass default disjoint_map {"k": 10} accepted
+pydantic_v2.dataclass default disjoint_map {"k": 0} rejected
+pydantic_v2.dataclass default disjoint_map {"k": 11} accepted
+pydantic_v2.dataclass default overlap_items [5] accepted
+pydantic_v2.dataclass default overlap_items [6] accepted
+pydantic_v2.dataclass default overlap_items [4] accepted
+pydantic_v2.dataclass default overlap_map {"k": 5} accepted
+pydantic_v2.dataclass default overlap_map {"k": 6} accepted
+pydantic_v2.dataclass default overlap_map {"k": 4} accepted
+pydantic_v2.dataclass default redundant_items [1] accepted
+pydantic_v2.dataclass default redundant_items [2] accepted
+pydantic_v2.dataclass default redundant_items [0] rejected
+pydantic_v2.dataclass default redundant_map {"k": 1} accepted
+pydantic_v2.dataclass default redundant_map {"k": 2} accepted
+pydantic_v2.dataclass default redundant_map {"k": 0} rejected
+pydantic_v2.dataclass default looser_items [1] accepted
+pydantic_v2.dataclass default looser_items [2] accepted
+pydantic_v2.dataclass default looser_items [0] rejected
+pydantic_v2.dataclass default looser_map {"k": 1} accepted
+pydantic_v2.dataclass default looser_map {"k": 2} accepted
+pydantic_v2.dataclass default looser_map {"k": 0} rejected
+pydantic_v2.dataclass default member_items [2] accepted
+pydantic_v2.dataclass default member_items [9] accepted
+pydantic_v2.dataclass default member_items [1] accepted
+pydantic_v2.dataclass default member_items [10] accepted
+pydantic_v2.dataclass default member_map {"k": 2} accepted
+pydantic_v2.dataclass default member_map {"k": 9} accepted
+pydantic_v2.dataclass default member_map {"k": 1} accepted
+pydantic_v2.dataclass default member_map {"k": 10} accepted
+pydantic_v2.dataclass default two_items [4] rejected
+pydantic_v2.dataclass default two_items [5] rejected
+pydantic_v2.dataclass default two_items [3] rejected
+pydantic_v2.dataclass default two_items [6] rejected
+pydantic_v2.dataclass default two_map {"k": 4} rejected
+pydantic_v2.dataclass default two_map {"k": 5} rejected
+pydantic_v2.dataclass default two_map {"k": 3} rejected
+pydantic_v2.dataclass default two_map {"k": 6} rejected
+pydantic_v2.dataclass default stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.dataclass default stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.dataclass default stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.dataclass default stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.dataclass default enum_items [1] accepted
+pydantic_v2.dataclass default enum_items [2] accepted
+pydantic_v2.dataclass default enum_items [3] accepted
+pydantic_v2.dataclass default enum_items [20] accepted
+pydantic_v2.dataclass default enum_map {"k": 1} accepted
+pydantic_v2.dataclass default enum_map {"k": 2} accepted
+pydantic_v2.dataclass default enum_map {"k": 3} accepted
+pydantic_v2.dataclass default enum_map {"k": 20} accepted
+pydantic_v2.dataclass default nested_items [2] accepted
+pydantic_v2.dataclass default nested_items [9] accepted
+pydantic_v2.dataclass default nested_items [1] accepted
+pydantic_v2.dataclass default nested_items [10] accepted
+pydantic_v2.dataclass default nested_map {"k": 2} accepted
+pydantic_v2.dataclass default nested_map {"k": 9} accepted
+pydantic_v2.dataclass default nested_map {"k": 1} accepted
+pydantic_v2.dataclass default nested_map {"k": 10} accepted
+pydantic_v2.dataclass default point_items [{"x": 1}] accepted
+pydantic_v2.dataclass default point_items [{"x": "a"}] rejected
+pydantic_v2.dataclass default point_map {"k": {"x": 1}} accepted
+pydantic_v2.dataclass default point_map {"k": {"x": "a"}} rejected
+pydantic_v2.dataclass default false_items [1] accepted
+msgspec.Struct default disjoint_items [1] import error
+msgspec.Struct default disjoint_items [10] import error
+msgspec.Struct default disjoint_items [0] import error
+msgspec.Struct default disjoint_items [11] import error
+msgspec.Struct default disjoint_map {"k": 1} import error
+msgspec.Struct default disjoint_map {"k": 10} import error
+msgspec.Struct default disjoint_map {"k": 0} import error
+msgspec.Struct default disjoint_map {"k": 11} import error
+msgspec.Struct default overlap_items [5] import error
+msgspec.Struct default overlap_items [6] import error
+msgspec.Struct default overlap_items [4] import error
+msgspec.Struct default overlap_map {"k": 5} import error
+msgspec.Struct default overlap_map {"k": 6} import error
+msgspec.Struct default overlap_map {"k": 4} import error
+msgspec.Struct default redundant_items [1] import error
+msgspec.Struct default redundant_items [2] import error
+msgspec.Struct default redundant_items [0] import error
+msgspec.Struct default redundant_map {"k": 1} import error
+msgspec.Struct default redundant_map {"k": 2} import error
+msgspec.Struct default redundant_map {"k": 0} import error
+msgspec.Struct default looser_items [1] import error
+msgspec.Struct default looser_items [2] import error
+msgspec.Struct default looser_items [0] import error
+msgspec.Struct default looser_map {"k": 1} import error
+msgspec.Struct default looser_map {"k": 2} import error
+msgspec.Struct default looser_map {"k": 0} import error
+msgspec.Struct default member_items [2] import error
+msgspec.Struct default member_items [9] import error
+msgspec.Struct default member_items [1] import error
+msgspec.Struct default member_items [10] import error
+msgspec.Struct default member_map {"k": 2} import error
+msgspec.Struct default member_map {"k": 9} import error
+msgspec.Struct default member_map {"k": 1} import error
+msgspec.Struct default member_map {"k": 10} import error
+msgspec.Struct default two_items [4] import error
+msgspec.Struct default two_items [5] import error
+msgspec.Struct default two_items [3] import error
+msgspec.Struct default two_items [6] import error
+msgspec.Struct default two_map {"k": 4} import error
+msgspec.Struct default two_map {"k": 5} import error
+msgspec.Struct default two_map {"k": 3} import error
+msgspec.Struct default two_map {"k": 6} import error
+msgspec.Struct default stamp_items ["2020-01-01T00:00:00Z"] import error
+msgspec.Struct default stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] import error
+msgspec.Struct default stamp_map {"k": "2020-01-01T00:00:00Z"} import error
+msgspec.Struct default stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} import error
+msgspec.Struct default enum_items [1] import error
+msgspec.Struct default enum_items [2] import error
+msgspec.Struct default enum_items [3] import error
+msgspec.Struct default enum_items [20] import error
+msgspec.Struct default enum_map {"k": 1} import error
+msgspec.Struct default enum_map {"k": 2} import error
+msgspec.Struct default enum_map {"k": 3} import error
+msgspec.Struct default enum_map {"k": 20} import error
+msgspec.Struct default nested_items [2] import error
+msgspec.Struct default nested_items [9] import error
+msgspec.Struct default nested_items [1] import error
+msgspec.Struct default nested_items [10] import error
+msgspec.Struct default nested_map {"k": 2} import error
+msgspec.Struct default nested_map {"k": 9} import error
+msgspec.Struct default nested_map {"k": 1} import error
+msgspec.Struct default nested_map {"k": 10} import error
+msgspec.Struct default point_items [{"x": 1}] import error
+msgspec.Struct default point_items [{"x": "a"}] import error
+msgspec.Struct default point_map {"k": {"x": 1}} import error
+msgspec.Struct default point_map {"k": {"x": "a"}} import error
+msgspec.Struct default false_items [1] import error
+pydantic_v2.BaseModel --field-constraints disjoint_items [1] accepted
+pydantic_v2.BaseModel --field-constraints disjoint_items [10] accepted
+pydantic_v2.BaseModel --field-constraints disjoint_items [0] rejected
+pydantic_v2.BaseModel --field-constraints disjoint_items [11] rejected
+pydantic_v2.BaseModel --field-constraints disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints disjoint_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints overlap_items [5] accepted
+pydantic_v2.BaseModel --field-constraints overlap_items [6] accepted
+pydantic_v2.BaseModel --field-constraints overlap_items [4] rejected
+pydantic_v2.BaseModel --field-constraints overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel --field-constraints overlap_map {"k": 4} rejected
+pydantic_v2.BaseModel --field-constraints redundant_items [1] accepted
+pydantic_v2.BaseModel --field-constraints redundant_items [2] accepted
+pydantic_v2.BaseModel --field-constraints redundant_items [0] rejected
+pydantic_v2.BaseModel --field-constraints redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints looser_items [1] accepted
+pydantic_v2.BaseModel --field-constraints looser_items [2] accepted
+pydantic_v2.BaseModel --field-constraints looser_items [0] rejected
+pydantic_v2.BaseModel --field-constraints looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints looser_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints looser_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints member_items [2] accepted
+pydantic_v2.BaseModel --field-constraints member_items [9] accepted
+pydantic_v2.BaseModel --field-constraints member_items [1] rejected
+pydantic_v2.BaseModel --field-constraints member_items [10] rejected
+pydantic_v2.BaseModel --field-constraints member_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints member_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints member_map {"k": 1} rejected
+pydantic_v2.BaseModel --field-constraints member_map {"k": 10} rejected
+pydantic_v2.BaseModel --field-constraints two_items [4] accepted
+pydantic_v2.BaseModel --field-constraints two_items [5] accepted
+pydantic_v2.BaseModel --field-constraints two_items [3] rejected
+pydantic_v2.BaseModel --field-constraints two_items [6] rejected
+pydantic_v2.BaseModel --field-constraints two_map {"k": 4} accepted
+pydantic_v2.BaseModel --field-constraints two_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints two_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints two_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --field-constraints stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --field-constraints stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --field-constraints stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --field-constraints enum_items [1] accepted
+pydantic_v2.BaseModel --field-constraints enum_items [2] accepted
+pydantic_v2.BaseModel --field-constraints enum_items [3] rejected
+pydantic_v2.BaseModel --field-constraints enum_items [20] rejected
+pydantic_v2.BaseModel --field-constraints enum_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints enum_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints enum_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints enum_map {"k": 20} rejected
+pydantic_v2.BaseModel --field-constraints nested_items [2] accepted
+pydantic_v2.BaseModel --field-constraints nested_items [9] accepted
+pydantic_v2.BaseModel --field-constraints nested_items [1] accepted
+pydantic_v2.BaseModel --field-constraints nested_items [10] accepted
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints nested_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --field-constraints point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel --field-constraints point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.BaseModel --field-constraints point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --field-constraints false_items [1] accepted
+pydantic_v2.BaseModel --use-annotated disjoint_items [1] accepted
+pydantic_v2.BaseModel --use-annotated disjoint_items [10] accepted
+pydantic_v2.BaseModel --use-annotated disjoint_items [0] rejected
+pydantic_v2.BaseModel --use-annotated disjoint_items [11] rejected
+pydantic_v2.BaseModel --use-annotated disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated disjoint_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated overlap_items [5] accepted
+pydantic_v2.BaseModel --use-annotated overlap_items [6] accepted
+pydantic_v2.BaseModel --use-annotated overlap_items [4] rejected
+pydantic_v2.BaseModel --use-annotated overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel --use-annotated overlap_map {"k": 4} rejected
+pydantic_v2.BaseModel --use-annotated redundant_items [1] accepted
+pydantic_v2.BaseModel --use-annotated redundant_items [2] accepted
+pydantic_v2.BaseModel --use-annotated redundant_items [0] rejected
+pydantic_v2.BaseModel --use-annotated redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated looser_items [1] accepted
+pydantic_v2.BaseModel --use-annotated looser_items [2] accepted
+pydantic_v2.BaseModel --use-annotated looser_items [0] rejected
+pydantic_v2.BaseModel --use-annotated looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated looser_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated looser_map {"k": 0} rejected
+pydantic_v2.BaseModel --use-annotated member_items [2] accepted
+pydantic_v2.BaseModel --use-annotated member_items [9] accepted
+pydantic_v2.BaseModel --use-annotated member_items [1] rejected
+pydantic_v2.BaseModel --use-annotated member_items [10] rejected
+pydantic_v2.BaseModel --use-annotated member_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated member_map {"k": 9} accepted
+pydantic_v2.BaseModel --use-annotated member_map {"k": 1} rejected
+pydantic_v2.BaseModel --use-annotated member_map {"k": 10} rejected
+pydantic_v2.BaseModel --use-annotated two_items [4] accepted
+pydantic_v2.BaseModel --use-annotated two_items [5] accepted
+pydantic_v2.BaseModel --use-annotated two_items [3] rejected
+pydantic_v2.BaseModel --use-annotated two_items [6] rejected
+pydantic_v2.BaseModel --use-annotated two_map {"k": 4} accepted
+pydantic_v2.BaseModel --use-annotated two_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated two_map {"k": 3} rejected
+pydantic_v2.BaseModel --use-annotated two_map {"k": 6} rejected
+pydantic_v2.BaseModel --use-annotated stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --use-annotated stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --use-annotated stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --use-annotated stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --use-annotated enum_items [1] accepted
+pydantic_v2.BaseModel --use-annotated enum_items [2] accepted
+pydantic_v2.BaseModel --use-annotated enum_items [3] rejected
+pydantic_v2.BaseModel --use-annotated enum_items [20] rejected
+pydantic_v2.BaseModel --use-annotated enum_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated enum_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated enum_map {"k": 3} accepted
+pydantic_v2.BaseModel --use-annotated enum_map {"k": 20} accepted
+pydantic_v2.BaseModel --use-annotated nested_items [2] accepted
+pydantic_v2.BaseModel --use-annotated nested_items [9] accepted
+pydantic_v2.BaseModel --use-annotated nested_items [1] accepted
+pydantic_v2.BaseModel --use-annotated nested_items [10] accepted
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 9} accepted
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 1} rejected
+pydantic_v2.BaseModel --use-annotated nested_map {"k": 10} rejected
+pydantic_v2.BaseModel --use-annotated point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --use-annotated point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel --use-annotated point_map {"k": {"x": 1}} accepted
+pydantic_v2.BaseModel --use-annotated point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --use-annotated false_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models disjoint_items [11] accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models disjoint_map {"k": 11} accepted
+pydantic_v2.BaseModel --collapse-root-models overlap_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models overlap_items [6] accepted
+pydantic_v2.BaseModel --collapse-root-models overlap_items [4] accepted
+pydantic_v2.BaseModel --collapse-root-models overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel --collapse-root-models overlap_map {"k": 4} accepted
+pydantic_v2.BaseModel --collapse-root-models redundant_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models redundant_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models redundant_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models looser_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models looser_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models looser_items [0] rejected
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models looser_map {"k": 0} rejected
+pydantic_v2.BaseModel --collapse-root-models member_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models member_items [9] accepted
+pydantic_v2.BaseModel --collapse-root-models member_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models member_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models member_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models member_map {"k": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models member_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models member_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models two_items [4] rejected
+pydantic_v2.BaseModel --collapse-root-models two_items [5] rejected
+pydantic_v2.BaseModel --collapse-root-models two_items [3] rejected
+pydantic_v2.BaseModel --collapse-root-models two_items [6] rejected
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 4} rejected
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 5} rejected
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 3} rejected
+pydantic_v2.BaseModel --collapse-root-models two_map {"k": 6} rejected
+pydantic_v2.BaseModel --collapse-root-models stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_items [3] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_items [20] accepted
+pydantic_v2.BaseModel --collapse-root-models enum_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_map {"k": 3} accepted
+pydantic_v2.BaseModel --collapse-root-models enum_map {"k": 20} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_items [9] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 9} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nested_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models point_items [{"x": 1}] accepted
+pydantic_v2.BaseModel --collapse-root-models point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel --collapse-root-models point_map {"k": {"x": 1}} accepted
+pydantic_v2.BaseModel --collapse-root-models point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --collapse-root-models false_items [1] accepted
+msgspec.Struct --collapse-root-models disjoint_items [1] import error
+msgspec.Struct --collapse-root-models disjoint_items [10] import error
+msgspec.Struct --collapse-root-models disjoint_items [0] import error
+msgspec.Struct --collapse-root-models disjoint_items [11] import error
+msgspec.Struct --collapse-root-models disjoint_map {"k": 1} import error
+msgspec.Struct --collapse-root-models disjoint_map {"k": 10} import error
+msgspec.Struct --collapse-root-models disjoint_map {"k": 0} import error
+msgspec.Struct --collapse-root-models disjoint_map {"k": 11} import error
+msgspec.Struct --collapse-root-models overlap_items [5] import error
+msgspec.Struct --collapse-root-models overlap_items [6] import error
+msgspec.Struct --collapse-root-models overlap_items [4] import error
+msgspec.Struct --collapse-root-models overlap_map {"k": 5} import error
+msgspec.Struct --collapse-root-models overlap_map {"k": 6} import error
+msgspec.Struct --collapse-root-models overlap_map {"k": 4} import error
+msgspec.Struct --collapse-root-models redundant_items [1] import error
+msgspec.Struct --collapse-root-models redundant_items [2] import error
+msgspec.Struct --collapse-root-models redundant_items [0] import error
+msgspec.Struct --collapse-root-models redundant_map {"k": 1} import error
+msgspec.Struct --collapse-root-models redundant_map {"k": 2} import error
+msgspec.Struct --collapse-root-models redundant_map {"k": 0} import error
+msgspec.Struct --collapse-root-models looser_items [1] import error
+msgspec.Struct --collapse-root-models looser_items [2] import error
+msgspec.Struct --collapse-root-models looser_items [0] import error
+msgspec.Struct --collapse-root-models looser_map {"k": 1} import error
+msgspec.Struct --collapse-root-models looser_map {"k": 2} import error
+msgspec.Struct --collapse-root-models looser_map {"k": 0} import error
+msgspec.Struct --collapse-root-models member_items [2] import error
+msgspec.Struct --collapse-root-models member_items [9] import error
+msgspec.Struct --collapse-root-models member_items [1] import error
+msgspec.Struct --collapse-root-models member_items [10] import error
+msgspec.Struct --collapse-root-models member_map {"k": 2} import error
+msgspec.Struct --collapse-root-models member_map {"k": 9} import error
+msgspec.Struct --collapse-root-models member_map {"k": 1} import error
+msgspec.Struct --collapse-root-models member_map {"k": 10} import error
+msgspec.Struct --collapse-root-models two_items [4] import error
+msgspec.Struct --collapse-root-models two_items [5] import error
+msgspec.Struct --collapse-root-models two_items [3] import error
+msgspec.Struct --collapse-root-models two_items [6] import error
+msgspec.Struct --collapse-root-models two_map {"k": 4} import error
+msgspec.Struct --collapse-root-models two_map {"k": 5} import error
+msgspec.Struct --collapse-root-models two_map {"k": 3} import error
+msgspec.Struct --collapse-root-models two_map {"k": 6} import error
+msgspec.Struct --collapse-root-models stamp_items ["2020-01-01T00:00:00Z"] import error
+msgspec.Struct --collapse-root-models stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] import error
+msgspec.Struct --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00Z"} import error
+msgspec.Struct --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} import error
+msgspec.Struct --collapse-root-models enum_items [1] import error
+msgspec.Struct --collapse-root-models enum_items [2] import error
+msgspec.Struct --collapse-root-models enum_items [3] import error
+msgspec.Struct --collapse-root-models enum_items [20] import error
+msgspec.Struct --collapse-root-models enum_map {"k": 1} import error
+msgspec.Struct --collapse-root-models enum_map {"k": 2} import error
+msgspec.Struct --collapse-root-models enum_map {"k": 3} import error
+msgspec.Struct --collapse-root-models enum_map {"k": 20} import error
+msgspec.Struct --collapse-root-models nested_items [2] import error
+msgspec.Struct --collapse-root-models nested_items [9] import error
+msgspec.Struct --collapse-root-models nested_items [1] import error
+msgspec.Struct --collapse-root-models nested_items [10] import error
+msgspec.Struct --collapse-root-models nested_map {"k": 2} import error
+msgspec.Struct --collapse-root-models nested_map {"k": 9} import error
+msgspec.Struct --collapse-root-models nested_map {"k": 1} import error
+msgspec.Struct --collapse-root-models nested_map {"k": 10} import error
+msgspec.Struct --collapse-root-models point_items [{"x": 1}] import error
+msgspec.Struct --collapse-root-models point_items [{"x": "a"}] import error
+msgspec.Struct --collapse-root-models point_map {"k": {"x": 1}} import error
+msgspec.Struct --collapse-root-models point_map {"k": {"x": "a"}} import error
+msgspec.Struct --collapse-root-models false_items [1] import error
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_items [11] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models disjoint_map {"k": 11} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models overlap_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models overlap_items [6] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models overlap_items [4] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models overlap_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models overlap_map {"k": 6} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models overlap_map {"k": 4} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models redundant_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models redundant_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models redundant_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models redundant_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models redundant_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models redundant_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models looser_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models looser_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models looser_items [0] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models looser_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models looser_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models looser_map {"k": 0} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [9] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [1] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_items [10] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 1} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models member_map {"k": 10} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_items [4] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_items [3] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_items [6] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_map {"k": 4} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models two_map {"k": 6} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models stamp_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_items [3] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_items [20] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_map {"k": 3} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models enum_map {"k": 20} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_items [9] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k": 9} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models nested_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --collapse-root-models point_items [{"x": 1}] raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models point_items [{"x": "a"}] rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.BaseModel --field-constraints --collapse-root-models point_map {"k": {"x": "a"}} rejected
+pydantic_v2.BaseModel --field-constraints --collapse-root-models false_items [1] accepted
+pydantic_v2.dataclass --field-constraints disjoint_items [1] accepted
+pydantic_v2.dataclass --field-constraints disjoint_items [10] accepted
+pydantic_v2.dataclass --field-constraints disjoint_items [0] rejected
+pydantic_v2.dataclass --field-constraints disjoint_items [11] rejected
+pydantic_v2.dataclass --field-constraints disjoint_map {"k": 1} accepted
+pydantic_v2.dataclass --field-constraints disjoint_map {"k": 10} accepted
+pydantic_v2.dataclass --field-constraints disjoint_map {"k": 0} rejected
+pydantic_v2.dataclass --field-constraints disjoint_map {"k": 11} rejected
+pydantic_v2.dataclass --field-constraints overlap_items [5] accepted
+pydantic_v2.dataclass --field-constraints overlap_items [6] accepted
+pydantic_v2.dataclass --field-constraints overlap_items [4] rejected
+pydantic_v2.dataclass --field-constraints overlap_map {"k": 5} accepted
+pydantic_v2.dataclass --field-constraints overlap_map {"k": 6} accepted
+pydantic_v2.dataclass --field-constraints overlap_map {"k": 4} rejected
+pydantic_v2.dataclass --field-constraints redundant_items [1] accepted
+pydantic_v2.dataclass --field-constraints redundant_items [2] accepted
+pydantic_v2.dataclass --field-constraints redundant_items [0] rejected
+pydantic_v2.dataclass --field-constraints redundant_map {"k": 1} accepted
+pydantic_v2.dataclass --field-constraints redundant_map {"k": 2} accepted
+pydantic_v2.dataclass --field-constraints redundant_map {"k": 0} rejected
+pydantic_v2.dataclass --field-constraints looser_items [1] accepted
+pydantic_v2.dataclass --field-constraints looser_items [2] accepted
+pydantic_v2.dataclass --field-constraints looser_items [0] accepted
+pydantic_v2.dataclass --field-constraints looser_map {"k": 1} accepted
+pydantic_v2.dataclass --field-constraints looser_map {"k": 2} accepted
+pydantic_v2.dataclass --field-constraints looser_map {"k": 0} accepted
+pydantic_v2.dataclass --field-constraints member_items [2] accepted
+pydantic_v2.dataclass --field-constraints member_items [9] accepted
+pydantic_v2.dataclass --field-constraints member_items [1] rejected
+pydantic_v2.dataclass --field-constraints member_items [10] accepted
+pydantic_v2.dataclass --field-constraints member_map {"k": 2} accepted
+pydantic_v2.dataclass --field-constraints member_map {"k": 9} accepted
+pydantic_v2.dataclass --field-constraints member_map {"k": 1} rejected
+pydantic_v2.dataclass --field-constraints member_map {"k": 10} accepted
+pydantic_v2.dataclass --field-constraints two_items [4] accepted
+pydantic_v2.dataclass --field-constraints two_items [5] accepted
+pydantic_v2.dataclass --field-constraints two_items [3] rejected
+pydantic_v2.dataclass --field-constraints two_items [6] rejected
+pydantic_v2.dataclass --field-constraints two_map {"k": 4} accepted
+pydantic_v2.dataclass --field-constraints two_map {"k": 5} accepted
+pydantic_v2.dataclass --field-constraints two_map {"k": 3} rejected
+pydantic_v2.dataclass --field-constraints two_map {"k": 6} rejected
+pydantic_v2.dataclass --field-constraints stamp_items ["2020-01-01T00:00:00Z"] raised TypeError
+pydantic_v2.dataclass --field-constraints stamp_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] raised TypeError
+pydantic_v2.dataclass --field-constraints stamp_map {"k": "2020-01-01T00:00:00Z"} raised TypeError
+pydantic_v2.dataclass --field-constraints stamp_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} raised TypeError
+pydantic_v2.dataclass --field-constraints enum_items [1] accepted
+pydantic_v2.dataclass --field-constraints enum_items [2] accepted
+pydantic_v2.dataclass --field-constraints enum_items [3] accepted
+pydantic_v2.dataclass --field-constraints enum_items [20] rejected
+pydantic_v2.dataclass --field-constraints enum_map {"k": 1} accepted
+pydantic_v2.dataclass --field-constraints enum_map {"k": 2} accepted
+pydantic_v2.dataclass --field-constraints enum_map {"k": 3} accepted
+pydantic_v2.dataclass --field-constraints enum_map {"k": 20} rejected
+pydantic_v2.dataclass --field-constraints nested_items [2] accepted
+pydantic_v2.dataclass --field-constraints nested_items [9] accepted
+pydantic_v2.dataclass --field-constraints nested_items [1] accepted
+pydantic_v2.dataclass --field-constraints nested_items [10] accepted
+pydantic_v2.dataclass --field-constraints nested_map {"k": 2} accepted
+pydantic_v2.dataclass --field-constraints nested_map {"k": 9} accepted
+pydantic_v2.dataclass --field-constraints nested_map {"k": 1} accepted
+pydantic_v2.dataclass --field-constraints nested_map {"k": 10} accepted
+pydantic_v2.dataclass --field-constraints point_items [{"x": 1}] raised TypeError
+pydantic_v2.dataclass --field-constraints point_items [{"x": "a"}] rejected
+pydantic_v2.dataclass --field-constraints point_map {"k": {"x": 1}} raised TypeError
+pydantic_v2.dataclass --field-constraints point_map {"k": {"x": "a"}} rejected
+pydantic_v2.dataclass --field-constraints false_items [1] accepted

@@ -1,0 +1,309 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "disjoint_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "disjoint_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "overlap_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "minimum": 5
+      }
+    },
+    "overlap_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "minimum": 5
+      }
+    },
+    "redundant_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "minimum": 1
+      }
+    },
+    "redundant_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "minimum": 1
+      }
+    },
+    "looser_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "minimum": 0
+      }
+    },
+    "looser_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          }
+        ],
+        "minimum": 0
+      }
+    },
+    "member_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "maximum": 9
+          }
+        ],
+        "minimum": 2
+      }
+    },
+    "member_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "maximum": 9
+          }
+        ],
+        "minimum": 2
+      }
+    },
+    "two_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ],
+        "minimum": 4
+      }
+    },
+    "two_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "$ref": "#/$defs/Big"
+          }
+        ],
+        "minimum": 4
+      }
+    },
+    "stamp_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Stamp"
+          }
+        ],
+        "maxLength": 40
+      }
+    },
+    "stamp_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Stamp"
+          }
+        ],
+        "maxLength": 40
+      }
+    },
+    "enum_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "enum": [
+              1,
+              2,
+              20
+            ]
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "enum_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "enum": [
+              1,
+              2,
+              20
+            ]
+          }
+        ],
+        "maximum": 10
+      }
+    },
+    "nested_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "allOf": [
+              {
+                "maximum": 9
+              }
+            ]
+          }
+        ],
+        "minimum": 2
+      }
+    },
+    "nested_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Quantity"
+          },
+          {
+            "allOf": [
+              {
+                "maximum": 9
+              }
+            ]
+          }
+        ],
+        "minimum": 2
+      }
+    },
+    "point_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Point"
+          }
+        ],
+        "minimum": 5
+      }
+    },
+    "point_map": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Point"
+          }
+        ],
+        "minimum": 5
+      }
+    },
+    "false_items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "allOf": [
+          {
+            "type": "integer"
+          },
+          false
+        ],
+        "minimum": 1
+      }
+    }
+  },
+  "$defs": {
+    "Number": {
+      "type": "integer"
+    },
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Stamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Small": {
+      "type": "integer",
+      "maximum": 5
+    },
+    "Big": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "Point": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

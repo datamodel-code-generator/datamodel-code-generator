@@ -440,12 +440,12 @@ pydantic_v2.BaseModel --field-constraints number5 4 raised TypeError
 pydantic_v2.BaseModel --field-constraints number5_prop 5 accepted
 pydantic_v2.BaseModel --field-constraints number5_prop 6 accepted
 pydantic_v2.BaseModel --field-constraints number5_prop 4 accepted
-pydantic_v2.BaseModel --field-constraints number5_items [5] raised TypeError
-pydantic_v2.BaseModel --field-constraints number5_items [6] raised TypeError
-pydantic_v2.BaseModel --field-constraints number5_items [4] raised TypeError
-pydantic_v2.BaseModel --field-constraints number5_map {"k": 5} raised TypeError
-pydantic_v2.BaseModel --field-constraints number5_map {"k": 6} raised TypeError
-pydantic_v2.BaseModel --field-constraints number5_map {"k": 4} raised TypeError
+pydantic_v2.BaseModel --field-constraints number5_items [5] accepted
+pydantic_v2.BaseModel --field-constraints number5_items [6] accepted
+pydantic_v2.BaseModel --field-constraints number5_items [4] rejected
+pydantic_v2.BaseModel --field-constraints number5_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints number5_map {"k": 6} accepted
+pydantic_v2.BaseModel --field-constraints number5_map {"k": 4} rejected
 pydantic_v2.BaseModel --field-constraints non_negative 0 accepted
 pydantic_v2.BaseModel --field-constraints non_negative 1.5 accepted
 pydantic_v2.BaseModel --field-constraints non_negative -1 rejected
@@ -482,10 +482,10 @@ pydantic_v2.BaseModel --field-constraints stamp_len "2020-01-01T00:00:00Z" raise
 pydantic_v2.BaseModel --field-constraints stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" raised TypeError
 pydantic_v2.BaseModel --field-constraints stamp_len_prop "2020-01-01T00:00:00Z" accepted
 pydantic_v2.BaseModel --field-constraints stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
-pydantic_v2.BaseModel --field-constraints stamp_len_items ["2020-01-01T00:00:00Z"] raised TypeError
-pydantic_v2.BaseModel --field-constraints stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] raised TypeError
-pydantic_v2.BaseModel --field-constraints stamp_len_map {"k": "2020-01-01T00:00:00Z"} raised TypeError
-pydantic_v2.BaseModel --field-constraints stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} raised TypeError
+pydantic_v2.BaseModel --field-constraints stamp_len_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --field-constraints stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
+pydantic_v2.BaseModel --field-constraints stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --field-constraints stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
 pydantic_v2.BaseModel --field-constraints quantity 1 accepted
 pydantic_v2.BaseModel --field-constraints quantity 0 rejected
 pydantic_v2.BaseModel --field-constraints q_allof 1 raised TypeError
@@ -496,14 +496,14 @@ pydantic_v2.BaseModel --field-constraints q_allof_prop 1 accepted
 pydantic_v2.BaseModel --field-constraints q_allof_prop 10 accepted
 pydantic_v2.BaseModel --field-constraints q_allof_prop 0 rejected
 pydantic_v2.BaseModel --field-constraints q_allof_prop 11 accepted
-pydantic_v2.BaseModel --field-constraints q_allof_items [1] raised TypeError
-pydantic_v2.BaseModel --field-constraints q_allof_items [10] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_items [1] accepted
+pydantic_v2.BaseModel --field-constraints q_allof_items [10] accepted
 pydantic_v2.BaseModel --field-constraints q_allof_items [0] rejected
-pydantic_v2.BaseModel --field-constraints q_allof_items [11] raised TypeError
-pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 1} raised TypeError
-pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 10} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_items [11] rejected
+pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 10} accepted
 pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 0} rejected
-pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 11} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_allof_map {"k": 11} rejected
 pydantic_v2.BaseModel --field-constraints q_allof2 1 accepted
 pydantic_v2.BaseModel --field-constraints q_allof2 10 accepted
 pydantic_v2.BaseModel --field-constraints q_allof2 0 rejected
@@ -576,9 +576,9 @@ pydantic_v2.BaseModel --use-annotated number5 4 raised TypeError
 pydantic_v2.BaseModel --use-annotated number5_prop 5 accepted
 pydantic_v2.BaseModel --use-annotated number5_prop 6 accepted
 pydantic_v2.BaseModel --use-annotated number5_prop 4 accepted
-pydantic_v2.BaseModel --use-annotated number5_items [5] raised TypeError
-pydantic_v2.BaseModel --use-annotated number5_items [6] raised TypeError
-pydantic_v2.BaseModel --use-annotated number5_items [4] raised TypeError
+pydantic_v2.BaseModel --use-annotated number5_items [5] accepted
+pydantic_v2.BaseModel --use-annotated number5_items [6] accepted
+pydantic_v2.BaseModel --use-annotated number5_items [4] rejected
 pydantic_v2.BaseModel --use-annotated number5_map {"k": 5} accepted
 pydantic_v2.BaseModel --use-annotated number5_map {"k": 6} accepted
 pydantic_v2.BaseModel --use-annotated number5_map {"k": 4} rejected
@@ -618,8 +618,8 @@ pydantic_v2.BaseModel --use-annotated stamp_len "2020-01-01T00:00:00Z" raised Ty
 pydantic_v2.BaseModel --use-annotated stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" raised TypeError
 pydantic_v2.BaseModel --use-annotated stamp_len_prop "2020-01-01T00:00:00Z" accepted
 pydantic_v2.BaseModel --use-annotated stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
-pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00Z"] raised TypeError
-pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] raised TypeError
+pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00Z"] accepted
+pydantic_v2.BaseModel --use-annotated stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] accepted
 pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
 pydantic_v2.BaseModel --use-annotated stamp_len_map {"k": "2020-01-01T00:00:00.1234567890123456789012+00:00"} accepted
 pydantic_v2.BaseModel --use-annotated quantity 1 accepted
@@ -632,10 +632,10 @@ pydantic_v2.BaseModel --use-annotated q_allof_prop 1 accepted
 pydantic_v2.BaseModel --use-annotated q_allof_prop 10 accepted
 pydantic_v2.BaseModel --use-annotated q_allof_prop 0 rejected
 pydantic_v2.BaseModel --use-annotated q_allof_prop 11 accepted
-pydantic_v2.BaseModel --use-annotated q_allof_items [1] raised TypeError
-pydantic_v2.BaseModel --use-annotated q_allof_items [10] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof_items [1] accepted
+pydantic_v2.BaseModel --use-annotated q_allof_items [10] accepted
 pydantic_v2.BaseModel --use-annotated q_allof_items [0] rejected
-pydantic_v2.BaseModel --use-annotated q_allof_items [11] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_allof_items [11] rejected
 pydantic_v2.BaseModel --use-annotated q_allof_map {"k": 1} accepted
 pydantic_v2.BaseModel --use-annotated q_allof_map {"k": 10} accepted
 pydantic_v2.BaseModel --use-annotated q_allof_map {"k": 0} rejected

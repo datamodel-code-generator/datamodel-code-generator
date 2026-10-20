@@ -53,6 +53,10 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "allof_4716": (
         (DataModelType.PydanticV2BaseModel, ("--type-overrides", json.dumps({"Quantity": "decimal.Decimal"}))),
     ),
+    "allof_ref_item_constraints": (
+        (DataModelType.PydanticV2BaseModel, ("--field-constraints", "--collapse-root-models")),
+        (DataModelType.PydanticV2Dataclass, ("--field-constraints",)),
+    ),
     "ref_sibling_nullable_oas30": ((DataModelType.PydanticV2BaseModel, ("--strict-nullable",)),),
     "ref_siblings": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "root_members": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
@@ -69,7 +73,7 @@ def _runs(stem: str) -> tuple[tuple[DataModelType, tuple[str, ...]], ...]:
 
 
 def _label(options: tuple[str, ...]) -> str:
-    return options[0].removeprefix("--") if options else "default"
+    return "-".join(option.removeprefix("--") for option in options if option.startswith("--")) or "default"
 
 
 def _args(input_path: Path, output_path: Path, backend: DataModelType, options: tuple[str, ...]) -> list[str]:

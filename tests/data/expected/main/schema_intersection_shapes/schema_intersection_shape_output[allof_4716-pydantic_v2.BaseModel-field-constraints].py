@@ -8,6 +8,26 @@ from enum import Enum
 from pydantic import BaseModel, Field, RootModel, constr
 
 
+class Count1(RootModel[int]):
+    root: int = Field(..., ge=5)
+
+
+class Limits(RootModel[int]):
+    root: int = Field(..., le=10)
+
+
+class Ap(RootModel[int]):
+    root: int = Field(..., ge=1)
+
+
+class QItem(RootModel[int]):
+    root: int = Field(..., ge=1, le=10)
+
+
+class QMap(RootModel[int]):
+    root: int = Field(..., ge=1, le=10)
+
+
 class Count(RootModel[int]):
     root: int
 
@@ -39,26 +59,6 @@ class Pair(RootModel[list[str]]):
 
 class Quantity(RootModel[int]):
     root: int = Field(..., ge=1)
-
-
-class Count1(RootModel[Count]):
-    root: Count = Field(..., ge=5)
-
-
-class Limits(RootModel[Count]):
-    root: Count = Field(..., le=10)
-
-
-class Ap(RootModel[Count]):
-    root: Count = Field(..., ge=1)
-
-
-class QItem(RootModel[Quantity]):
-    root: Quantity = Field(..., le=10)
-
-
-class QMap(RootModel[Quantity]):
-    root: Quantity = Field(..., le=10)
 
 
 class Measurement(BaseModel):

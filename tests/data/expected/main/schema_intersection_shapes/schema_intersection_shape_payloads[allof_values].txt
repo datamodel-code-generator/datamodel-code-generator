@@ -23,13 +23,13 @@ pydantic_v2.BaseModel default mode 2 accepted
 pydantic_v2.BaseModel default mode 0 rejected
 pydantic_v2.BaseModel default mode_prop 1 accepted
 pydantic_v2.BaseModel default mode_prop 2 accepted
-pydantic_v2.BaseModel default mode_prop 0 accepted
+pydantic_v2.BaseModel default mode_prop 0 rejected
 pydantic_v2.BaseModel default mode_items [1] accepted
 pydantic_v2.BaseModel default mode_items [2] accepted
-pydantic_v2.BaseModel default mode_items [0] accepted
+pydantic_v2.BaseModel default mode_items [0] rejected
 pydantic_v2.BaseModel default mode_map {"k": 1} accepted
 pydantic_v2.BaseModel default mode_map {"k": 2} accepted
-pydantic_v2.BaseModel default mode_map {"k": 0} accepted
+pydantic_v2.BaseModel default mode_map {"k": 0} rejected
 pydantic_v2.BaseModel default pat "ab" rejected
 pydantic_v2.BaseModel default pat "axb" rejected
 pydantic_v2.BaseModel default pat "a" rejected
@@ -89,13 +89,13 @@ pydantic_v2.dataclass default mode 2 accepted
 pydantic_v2.dataclass default mode 0 rejected
 pydantic_v2.dataclass default mode_prop 1 accepted
 pydantic_v2.dataclass default mode_prop 2 accepted
-pydantic_v2.dataclass default mode_prop 0 accepted
+pydantic_v2.dataclass default mode_prop 0 rejected
 pydantic_v2.dataclass default mode_items [1] accepted
 pydantic_v2.dataclass default mode_items [2] accepted
-pydantic_v2.dataclass default mode_items [0] accepted
+pydantic_v2.dataclass default mode_items [0] rejected
 pydantic_v2.dataclass default mode_map {"k": 1} accepted
 pydantic_v2.dataclass default mode_map {"k": 2} accepted
-pydantic_v2.dataclass default mode_map {"k": 0} accepted
+pydantic_v2.dataclass default mode_map {"k": 0} rejected
 pydantic_v2.dataclass default pat "ab" rejected
 pydantic_v2.dataclass default pat "axb" rejected
 pydantic_v2.dataclass default pat "a" rejected
@@ -137,13 +137,13 @@ msgspec.Struct default level 11 rejected
 msgspec.Struct default level 1.5 rejected
 msgspec.Struct default level_prop 0 accepted
 msgspec.Struct default level_prop 10 accepted
-msgspec.Struct default level_prop -1 accepted
-msgspec.Struct default level_prop 11 accepted
+msgspec.Struct default level_prop -1 rejected
+msgspec.Struct default level_prop 11 rejected
 msgspec.Struct default level_prop 1.5 rejected
 msgspec.Struct default level_items [0] accepted
 msgspec.Struct default level_items [10] accepted
-msgspec.Struct default level_items [-1] accepted
-msgspec.Struct default level_items [11] accepted
+msgspec.Struct default level_items [-1] rejected
+msgspec.Struct default level_items [11] rejected
 msgspec.Struct default level_items [1.5] rejected
 msgspec.Struct default level_map {"k": 0} accepted
 msgspec.Struct default level_map {"k": 10} accepted
@@ -155,13 +155,13 @@ msgspec.Struct default mode 2 accepted
 msgspec.Struct default mode 0 rejected
 msgspec.Struct default mode_prop 1 accepted
 msgspec.Struct default mode_prop 2 accepted
-msgspec.Struct default mode_prop 0 accepted
+msgspec.Struct default mode_prop 0 rejected
 msgspec.Struct default mode_items [1] accepted
 msgspec.Struct default mode_items [2] accepted
-msgspec.Struct default mode_items [0] accepted
+msgspec.Struct default mode_items [0] rejected
 msgspec.Struct default mode_map {"k": 1} accepted
 msgspec.Struct default mode_map {"k": 2} accepted
-msgspec.Struct default mode_map {"k": 0} accepted
+msgspec.Struct default mode_map {"k": 0} rejected
 msgspec.Struct default pat "ab" rejected
 msgspec.Struct default pat "axb" rejected
 msgspec.Struct default pat "a" rejected
@@ -195,7 +195,7 @@ msgspec.Struct default untyped_map {"k": 5} accepted
 msgspec.Struct default untyped_map {"k": ""} accepted
 msgspec.Struct default untyped_map {"k": "abcdef"} accepted
 msgspec.Struct default p "ab" accepted
-msgspec.Struct default p "a" accepted
+msgspec.Struct default p "a" rejected
 pydantic_v2.BaseModel --field-constraints level 0 accepted
 pydantic_v2.BaseModel --field-constraints level 10 accepted
 pydantic_v2.BaseModel --field-constraints level -1 rejected
@@ -203,31 +203,31 @@ pydantic_v2.BaseModel --field-constraints level 11 rejected
 pydantic_v2.BaseModel --field-constraints level 1.5 rejected
 pydantic_v2.BaseModel --field-constraints level_prop 0 accepted
 pydantic_v2.BaseModel --field-constraints level_prop 10 accepted
-pydantic_v2.BaseModel --field-constraints level_prop -1 accepted
-pydantic_v2.BaseModel --field-constraints level_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints level_prop -1 rejected
+pydantic_v2.BaseModel --field-constraints level_prop 11 rejected
 pydantic_v2.BaseModel --field-constraints level_prop 1.5 rejected
 pydantic_v2.BaseModel --field-constraints level_items [0] accepted
 pydantic_v2.BaseModel --field-constraints level_items [10] accepted
-pydantic_v2.BaseModel --field-constraints level_items [-1] accepted
-pydantic_v2.BaseModel --field-constraints level_items [11] accepted
+pydantic_v2.BaseModel --field-constraints level_items [-1] rejected
+pydantic_v2.BaseModel --field-constraints level_items [11] rejected
 pydantic_v2.BaseModel --field-constraints level_items [1.5] rejected
 pydantic_v2.BaseModel --field-constraints level_map {"k": 0} accepted
 pydantic_v2.BaseModel --field-constraints level_map {"k": 10} accepted
-pydantic_v2.BaseModel --field-constraints level_map {"k": -1} accepted
-pydantic_v2.BaseModel --field-constraints level_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints level_map {"k": -1} rejected
+pydantic_v2.BaseModel --field-constraints level_map {"k": 11} rejected
 pydantic_v2.BaseModel --field-constraints level_map {"k": 1.5} rejected
 pydantic_v2.BaseModel --field-constraints mode 1 accepted
 pydantic_v2.BaseModel --field-constraints mode 2 accepted
 pydantic_v2.BaseModel --field-constraints mode 0 rejected
 pydantic_v2.BaseModel --field-constraints mode_prop 1 accepted
 pydantic_v2.BaseModel --field-constraints mode_prop 2 accepted
-pydantic_v2.BaseModel --field-constraints mode_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints mode_prop 0 rejected
 pydantic_v2.BaseModel --field-constraints mode_items [1] accepted
 pydantic_v2.BaseModel --field-constraints mode_items [2] accepted
-pydantic_v2.BaseModel --field-constraints mode_items [0] accepted
+pydantic_v2.BaseModel --field-constraints mode_items [0] rejected
 pydantic_v2.BaseModel --field-constraints mode_map {"k": 1} accepted
 pydantic_v2.BaseModel --field-constraints mode_map {"k": 2} accepted
-pydantic_v2.BaseModel --field-constraints mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints mode_map {"k": 0} rejected
 pydantic_v2.BaseModel --field-constraints pat "ab" rejected
 pydantic_v2.BaseModel --field-constraints pat "axb" rejected
 pydantic_v2.BaseModel --field-constraints pat "a" rejected
@@ -261,7 +261,7 @@ pydantic_v2.BaseModel --field-constraints untyped_map {"k": 5} accepted
 pydantic_v2.BaseModel --field-constraints untyped_map {"k": ""} accepted
 pydantic_v2.BaseModel --field-constraints untyped_map {"k": "abcdef"} accepted
 pydantic_v2.BaseModel --field-constraints p "ab" accepted
-pydantic_v2.BaseModel --field-constraints p "a" accepted
+pydantic_v2.BaseModel --field-constraints p "a" rejected
 pydantic_v2.BaseModel --use-annotated level 0 accepted
 pydantic_v2.BaseModel --use-annotated level 10 accepted
 pydantic_v2.BaseModel --use-annotated level -1 rejected
@@ -269,13 +269,13 @@ pydantic_v2.BaseModel --use-annotated level 11 rejected
 pydantic_v2.BaseModel --use-annotated level 1.5 rejected
 pydantic_v2.BaseModel --use-annotated level_prop 0 accepted
 pydantic_v2.BaseModel --use-annotated level_prop 10 accepted
-pydantic_v2.BaseModel --use-annotated level_prop -1 accepted
-pydantic_v2.BaseModel --use-annotated level_prop 11 accepted
+pydantic_v2.BaseModel --use-annotated level_prop -1 rejected
+pydantic_v2.BaseModel --use-annotated level_prop 11 rejected
 pydantic_v2.BaseModel --use-annotated level_prop 1.5 rejected
 pydantic_v2.BaseModel --use-annotated level_items [0] accepted
 pydantic_v2.BaseModel --use-annotated level_items [10] accepted
-pydantic_v2.BaseModel --use-annotated level_items [-1] accepted
-pydantic_v2.BaseModel --use-annotated level_items [11] accepted
+pydantic_v2.BaseModel --use-annotated level_items [-1] rejected
+pydantic_v2.BaseModel --use-annotated level_items [11] rejected
 pydantic_v2.BaseModel --use-annotated level_items [1.5] rejected
 pydantic_v2.BaseModel --use-annotated level_map {"k": 0} accepted
 pydantic_v2.BaseModel --use-annotated level_map {"k": 10} accepted
@@ -287,13 +287,13 @@ pydantic_v2.BaseModel --use-annotated mode 2 accepted
 pydantic_v2.BaseModel --use-annotated mode 0 rejected
 pydantic_v2.BaseModel --use-annotated mode_prop 1 accepted
 pydantic_v2.BaseModel --use-annotated mode_prop 2 accepted
-pydantic_v2.BaseModel --use-annotated mode_prop 0 accepted
+pydantic_v2.BaseModel --use-annotated mode_prop 0 rejected
 pydantic_v2.BaseModel --use-annotated mode_items [1] accepted
 pydantic_v2.BaseModel --use-annotated mode_items [2] accepted
-pydantic_v2.BaseModel --use-annotated mode_items [0] accepted
+pydantic_v2.BaseModel --use-annotated mode_items [0] rejected
 pydantic_v2.BaseModel --use-annotated mode_map {"k": 1} accepted
 pydantic_v2.BaseModel --use-annotated mode_map {"k": 2} accepted
-pydantic_v2.BaseModel --use-annotated mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-annotated mode_map {"k": 0} rejected
 pydantic_v2.BaseModel --use-annotated pat "ab" rejected
 pydantic_v2.BaseModel --use-annotated pat "axb" rejected
 pydantic_v2.BaseModel --use-annotated pat "a" rejected
@@ -327,7 +327,7 @@ pydantic_v2.BaseModel --use-annotated untyped_map {"k": 5} accepted
 pydantic_v2.BaseModel --use-annotated untyped_map {"k": ""} accepted
 pydantic_v2.BaseModel --use-annotated untyped_map {"k": "abcdef"} accepted
 pydantic_v2.BaseModel --use-annotated p "ab" accepted
-pydantic_v2.BaseModel --use-annotated p "a" accepted
+pydantic_v2.BaseModel --use-annotated p "a" rejected
 pydantic_v2.BaseModel --collapse-root-models level 0 accepted
 pydantic_v2.BaseModel --collapse-root-models level 10 accepted
 pydantic_v2.BaseModel --collapse-root-models level -1 rejected
@@ -353,13 +353,13 @@ pydantic_v2.BaseModel --collapse-root-models mode 2 accepted
 pydantic_v2.BaseModel --collapse-root-models mode 0 rejected
 pydantic_v2.BaseModel --collapse-root-models mode_prop 1 accepted
 pydantic_v2.BaseModel --collapse-root-models mode_prop 2 accepted
-pydantic_v2.BaseModel --collapse-root-models mode_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models mode_prop 0 rejected
 pydantic_v2.BaseModel --collapse-root-models mode_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models mode_items [2] accepted
-pydantic_v2.BaseModel --collapse-root-models mode_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models mode_items [0] rejected
 pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 2} accepted
-pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 0} rejected
 pydantic_v2.BaseModel --collapse-root-models pat "ab" rejected
 pydantic_v2.BaseModel --collapse-root-models pat "axb" rejected
 pydantic_v2.BaseModel --collapse-root-models pat "a" rejected
@@ -401,13 +401,13 @@ msgspec.Struct --collapse-root-models level 11 rejected
 msgspec.Struct --collapse-root-models level 1.5 rejected
 msgspec.Struct --collapse-root-models level_prop 0 accepted
 msgspec.Struct --collapse-root-models level_prop 10 accepted
-msgspec.Struct --collapse-root-models level_prop -1 accepted
-msgspec.Struct --collapse-root-models level_prop 11 accepted
+msgspec.Struct --collapse-root-models level_prop -1 rejected
+msgspec.Struct --collapse-root-models level_prop 11 rejected
 msgspec.Struct --collapse-root-models level_prop 1.5 rejected
 msgspec.Struct --collapse-root-models level_items [0] accepted
 msgspec.Struct --collapse-root-models level_items [10] accepted
-msgspec.Struct --collapse-root-models level_items [-1] accepted
-msgspec.Struct --collapse-root-models level_items [11] accepted
+msgspec.Struct --collapse-root-models level_items [-1] rejected
+msgspec.Struct --collapse-root-models level_items [11] rejected
 msgspec.Struct --collapse-root-models level_items [1.5] rejected
 msgspec.Struct --collapse-root-models level_map {"k": 0} accepted
 msgspec.Struct --collapse-root-models level_map {"k": 10} accepted
@@ -419,13 +419,13 @@ msgspec.Struct --collapse-root-models mode 2 accepted
 msgspec.Struct --collapse-root-models mode 0 rejected
 msgspec.Struct --collapse-root-models mode_prop 1 accepted
 msgspec.Struct --collapse-root-models mode_prop 2 accepted
-msgspec.Struct --collapse-root-models mode_prop 0 accepted
+msgspec.Struct --collapse-root-models mode_prop 0 rejected
 msgspec.Struct --collapse-root-models mode_items [1] accepted
 msgspec.Struct --collapse-root-models mode_items [2] accepted
-msgspec.Struct --collapse-root-models mode_items [0] accepted
+msgspec.Struct --collapse-root-models mode_items [0] rejected
 msgspec.Struct --collapse-root-models mode_map {"k": 1} accepted
 msgspec.Struct --collapse-root-models mode_map {"k": 2} accepted
-msgspec.Struct --collapse-root-models mode_map {"k": 0} accepted
+msgspec.Struct --collapse-root-models mode_map {"k": 0} rejected
 msgspec.Struct --collapse-root-models pat "ab" rejected
 msgspec.Struct --collapse-root-models pat "axb" rejected
 msgspec.Struct --collapse-root-models pat "a" rejected
@@ -459,4 +459,4 @@ msgspec.Struct --collapse-root-models untyped_map {"k": 5} accepted
 msgspec.Struct --collapse-root-models untyped_map {"k": ""} accepted
 msgspec.Struct --collapse-root-models untyped_map {"k": "abcdef"} accepted
 msgspec.Struct --collapse-root-models p "ab" accepted
-msgspec.Struct --collapse-root-models p "a" accepted
+msgspec.Struct --collapse-root-models p "a" rejected

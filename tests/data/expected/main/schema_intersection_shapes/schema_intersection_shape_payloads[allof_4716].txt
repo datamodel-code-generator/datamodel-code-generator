@@ -156,10 +156,10 @@ pydantic_v2.BaseModel --field-constraints tags ["a", "b", "c", "d"] rejected
 pydantic_v2.BaseModel --field-constraints tags ["a", "b", "c", "d", "e", "f"] rejected
 pydantic_v2.BaseModel --field-constraints score 100 raised TypeError
 pydantic_v2.BaseModel --field-constraints score 101 raised TypeError
-pydantic_v2.BaseModel --field-constraints counts [5] raised TypeError
-pydantic_v2.BaseModel --field-constraints counts [4] raised TypeError
-pydantic_v2.BaseModel --field-constraints limits {"k": 10} raised TypeError
-pydantic_v2.BaseModel --field-constraints limits {"k": 11} raised TypeError
+pydantic_v2.BaseModel --field-constraints counts [5] accepted
+pydantic_v2.BaseModel --field-constraints counts [4] rejected
+pydantic_v2.BaseModel --field-constraints limits {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints limits {"k": 11} rejected
 pydantic_v2.BaseModel --field-constraints point {"x": 1} accepted
 pydantic_v2.BaseModel --field-constraints point {"x": "a"} rejected
 pydantic_v2.BaseModel --field-constraints label 123 accepted
@@ -180,20 +180,20 @@ pydantic_v2.BaseModel --field-constraints pp {"a": 1} accepted
 pydantic_v2.BaseModel --field-constraints pp {"b": 9} accepted
 pydantic_v2.BaseModel --field-constraints pp {"a": 0} accepted
 pydantic_v2.BaseModel --field-constraints pp {"b": 10} accepted
-pydantic_v2.BaseModel --field-constraints ap {"k": 1} raised TypeError
-pydantic_v2.BaseModel --field-constraints ap {"k": 0} raised TypeError
+pydantic_v2.BaseModel --field-constraints ap {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints ap {"k": 0} rejected
 pydantic_v2.BaseModel --field-constraints q_allof 1 accepted
 pydantic_v2.BaseModel --field-constraints q_allof 10 accepted
 pydantic_v2.BaseModel --field-constraints q_allof 0 rejected
 pydantic_v2.BaseModel --field-constraints q_allof 11 accepted
-pydantic_v2.BaseModel --field-constraints q_items [1] raised TypeError
-pydantic_v2.BaseModel --field-constraints q_items [10] raised TypeError
+pydantic_v2.BaseModel --field-constraints q_items [1] accepted
+pydantic_v2.BaseModel --field-constraints q_items [10] accepted
 pydantic_v2.BaseModel --field-constraints q_items [0] rejected
-pydantic_v2.BaseModel --field-constraints q_items [11] raised TypeError
-pydantic_v2.BaseModel --field-constraints q_map {"k": 1} raised TypeError
-pydantic_v2.BaseModel --field-constraints q_map {"k": 10} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_items [11] rejected
+pydantic_v2.BaseModel --field-constraints q_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints q_map {"k": 10} accepted
 pydantic_v2.BaseModel --field-constraints q_map {"k": 0} rejected
-pydantic_v2.BaseModel --field-constraints q_map {"k": 11} raised TypeError
+pydantic_v2.BaseModel --field-constraints q_map {"k": 11} rejected
 pydantic_v2.BaseModel --use-annotated count 5 accepted
 pydantic_v2.BaseModel --use-annotated count 4 accepted
 pydantic_v2.BaseModel --use-annotated code "A" accepted
@@ -205,8 +205,8 @@ pydantic_v2.BaseModel --use-annotated tags ["a", "b", "c", "d"] rejected
 pydantic_v2.BaseModel --use-annotated tags ["a", "b", "c", "d", "e", "f"] rejected
 pydantic_v2.BaseModel --use-annotated score 100 raised TypeError
 pydantic_v2.BaseModel --use-annotated score 101 raised TypeError
-pydantic_v2.BaseModel --use-annotated counts [5] raised TypeError
-pydantic_v2.BaseModel --use-annotated counts [4] raised TypeError
+pydantic_v2.BaseModel --use-annotated counts [5] accepted
+pydantic_v2.BaseModel --use-annotated counts [4] rejected
 pydantic_v2.BaseModel --use-annotated limits {"k": 10} accepted
 pydantic_v2.BaseModel --use-annotated limits {"k": 11} rejected
 pydantic_v2.BaseModel --use-annotated point {"x": 1} accepted
@@ -235,10 +235,10 @@ pydantic_v2.BaseModel --use-annotated q_allof 1 accepted
 pydantic_v2.BaseModel --use-annotated q_allof 10 accepted
 pydantic_v2.BaseModel --use-annotated q_allof 0 rejected
 pydantic_v2.BaseModel --use-annotated q_allof 11 accepted
-pydantic_v2.BaseModel --use-annotated q_items [1] raised TypeError
-pydantic_v2.BaseModel --use-annotated q_items [10] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_items [1] accepted
+pydantic_v2.BaseModel --use-annotated q_items [10] accepted
 pydantic_v2.BaseModel --use-annotated q_items [0] rejected
-pydantic_v2.BaseModel --use-annotated q_items [11] raised TypeError
+pydantic_v2.BaseModel --use-annotated q_items [11] rejected
 pydantic_v2.BaseModel --use-annotated q_map {"k": 1} accepted
 pydantic_v2.BaseModel --use-annotated q_map {"k": 10} accepted
 pydantic_v2.BaseModel --use-annotated q_map {"k": 0} rejected

@@ -93,6 +93,7 @@ from datamodel_code_generator.model._decisions.enum_kind import (
     literal_value_kind,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type
+from datamodel_code_generator.model._decisions.regex_syntax import is_portable_pattern
 from datamodel_code_generator.model._decisions.tag_value import (
     FieldTag,
     distinct_tags,
@@ -244,6 +245,8 @@ _CONST_ENUM_TYPES: Final[Mapping[LiteralValueKind, str]] = {
     "float": "number",
 }
 """The ``type`` a merged enum of const branches takes from the kind of the first const that has one."""
+_LIGHTWEIGHT_MAX_DEPTH: Final = 3
+_LIGHTWEIGHT_MAX_UNION_ELEMENTS: Final = 5
 _ARRAY_ITEMS_CONSTRAINT_FIELDS = frozenset({"items", "additionalItems", "prefixItems", "unevaluatedItems"})
 
 
@@ -352,6 +355,16 @@ _COPIED_NULLABLE_KEY = "_copied_nullable"
 _INHERITED_OVERRIDE_KEY = "_inherited_override"
 _REPORTED_VALUE_CONFLICT_KEY = "_reported_value_conflict"
 _VALUE_CONFLICT_KEYWORDS = frozenset({"enum", "const"})
+_ALL_OF_VALUE_PART_EXCLUDED_EXTRAS = frozenset({
+    "contains",
+    "dependentRequired",
+    "dependentSchemas",
+    "else",
+    "if",
+    "not",
+    "then",
+    "x-python-type",
+})
 _NO_INHERITED_SCHEMA_MERGE = object()
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
@@ -1898,6 +1911,16 @@ class _DynamicSpecialization(NamedTuple):
     path: tuple[str, ...]
 
 
+class _AllOfItemGroups(NamedTuple):
+    """The allOf members of one schema by the part of its lightweight type each one gives."""
+
+    refs: list[JsonSchemaObject]
+    ref_data_types: list[DataType]
+    primitives: list[JsonSchemaObject]
+    constraint_only: list[JsonSchemaObject]
+    objects: list[JsonSchemaObject]
+
+
 _BuilderT = TypeVar("_BuilderT", bound="Callable[..., Any]")
 
 
@@ -3222,6 +3245,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for field in fields:
             for data_type in field.data_type.all_data_types:
                 data_type.unregister_reference()
+
+    def _unregister_temporary_type(self, data_type: DataType | None) -> None:  # noqa: PLR6301
+        """Keep a type built only to read facts from out of the live reverse-reference graph."""
+        for item in () if data_type is None else data_type.all_data_types:
+            item.unregister_reference()
+
+    def _temporary_constraint_values(self, obj: JsonSchemaObject, data_type: DataType | None) -> dict[str, Any]:
+        """Return the constraint values ``obj`` writes beside ``data_type``, a type built only to read them."""
+        constraints = self._split_constraint_values(obj, data_type)[0]
+        self._unregister_temporary_type(data_type)
+        return constraints
 
     def _copy_unregistered_fields(
         self,
@@ -5946,7 +5980,39 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for field in NUMBER_KEYWORD_ORDER:
                 base_dict.pop(field, None)
 
-    def _build_allof_type(  # noqa: PLR0911, PLR0912, PLR0913, PLR0915, PLR0917
+    def _group_allof_items(
+        self,
+        allof_items: Sequence[JsonSchemaObject],
+        depth: int,
+        visited: frozenset[int],
+        max_depth: int,
+        max_union_elements: int,
+    ) -> _AllOfItemGroups | None:
+        """Group allOf members by the part of the lightweight type each one gives, or None when one gives none."""
+        groups = _AllOfItemGroups([], [], [], [], [])
+        for item in allof_items:
+            if item.ref:
+                groups.refs.append(item)
+            elif item.type and item.type != "object" and not isinstance(item.type, list):
+                groups.primitives.append(item)
+            elif item.properties or item.additionalProperties or item.type == "object":
+                groups.objects.append(item)
+            elif item.allOf or item.anyOf or item.oneOf:
+                nested_type = self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
+                if nested_type is None:  # pragma: no cover
+                    return None
+                if nested_type.reference:  # pragma: no cover
+                    groups.ref_data_types.append(nested_type)
+                else:
+                    self._unregister_temporary_type(nested_type)
+                    groups.primitives.append(item)
+            elif item.enum:  # pragma: no cover
+                groups.primitives.append(item)
+            elif item.has_constraint:
+                groups.constraint_only.append(item)
+        return groups
+
+    def _build_allof_type(  # noqa: PLR0911, PLR0912, PLR0913, PLR0917
         self,
         allof_items: Sequence[JsonSchemaObject | bool],
         depth: int,
@@ -5967,31 +6033,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return self.get_ref_data_type(item.ref)
             return self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
 
-        ref_items: list[JsonSchemaObject] = []
-        ref_data_types: list[DataType] = []
-        primitive_items: list[JsonSchemaObject] = []
-        constraint_only_items: list[JsonSchemaObject] = []
-        object_items: list[JsonSchemaObject] = []
-
-        for item in allof_effective_items:
-            if item.ref:
-                ref_items.append(item)
-            elif item.type and item.type != "object" and not isinstance(item.type, list):
-                primitive_items.append(item)
-            elif item.properties or item.additionalProperties or item.type == "object":
-                object_items.append(item)
-            elif item.allOf or item.anyOf or item.oneOf:
-                nested_type = self._build_lightweight_type(item, depth + 1, visited, max_depth, max_union_elements)
-                if nested_type is None:  # pragma: no cover
-                    return None
-                if nested_type.reference:  # pragma: no cover
-                    ref_data_types.append(nested_type)
-                else:
-                    primitive_items.append(item)
-            elif item.enum:  # pragma: no cover
-                primitive_items.append(item)
-            elif item.has_constraint:
-                constraint_only_items.append(item)
+        if (
+            groups := self._group_allof_items(allof_effective_items, depth, visited, max_depth, max_union_elements)
+        ) is None:
+            return None
+        ref_items, ref_data_types, primitive_items, constraint_only_items, object_items = groups
 
         if (ref_items or ref_data_types) and not primitive_items and not object_items:
             if ref_data_types:
@@ -6177,16 +6223,205 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         max_depth: int,
         max_union_elements: int,
     ) -> DataType | None:
-        allof_items: Sequence[JsonSchemaObject | bool] = schema.allOf or []
-        if self._schema_has_own_value_keywords(schema):
-            allof_items = [self._without_allof_keywords(schema), *allof_items]
         return self._build_allof_type(
-            allof_items,
+            self._allof_lightweight_items(schema),
             depth,
             visited,
             max_depth,
             max_union_elements,
         )
+
+    def _is_all_of_value_part(self, schema: JsonSchemaObject) -> bool:
+        """Return whether an allOf member is a schema of one value whose keywords the intersection table reads.
+
+        A ``pattern`` the static scanner cannot certify as portable keeps the earlier form of the site.
+        """
+        return not (
+            schema.ref
+            or schema.is_boolean_schema_false
+            or schema.anyOf
+            or schema.oneOf
+            or schema.prefixItems
+            or schema.recursiveRef
+            or schema.dynamicRef
+            or schema.custom_type_path
+            or _ALL_OF_VALUE_PART_EXCLUDED_EXTRAS.intersection(schema.extras)
+            or self._schema_requires_model_type(schema)
+            or (schema.pattern is not None and not is_portable_pattern(schema.pattern))
+        )
+
+    def _collect_all_of_value_parts(
+        self, schema: JsonSchemaObject, parts: list[JsonSchemaObject], *, resolve_refs: bool = False
+    ) -> bool:
+        """Append the parts of an allOf schema to ``parts``: its members in document order, then its own keywords.
+
+        A member that is itself an allOf contributes its parts, and with ``resolve_refs`` a ``$ref`` member contributes
+        those of the schema it references, merged with its siblings. Return False when a part is no schema of one
+        value.
+        """
+        for item in schema.allOf:
+            if item is True:
+                continue
+            if not isinstance(item, JsonSchemaObject):
+                return False
+            member = self._merge_ref_with_schema(item) if resolve_refs else item
+            if not self._is_all_of_value_part(member):
+                return False
+            if member.allOf:
+                if not self._collect_all_of_value_parts(member, parts, resolve_refs=resolve_refs):
+                    return False
+            else:
+                parts.append(member)
+        if self._schema_has_own_value_keywords(schema):
+            if not self._is_all_of_value_part(own := self._without_allof_keywords(schema)):
+                return False
+            parts.append(own)
+        return True
+
+    def _all_of_value_row(self, obj: JsonSchemaObject) -> dict[str, Any]:
+        """Return the schema the lightweight type of an allOf value schema is built from, as a dump.
+
+        It is the merge ``_build_allof_type`` writes for members that are value schemas (the parts of
+        ``_collect_all_of_value_parts``): the first typed member with every member's constraints intersected, and
+        nothing when it writes no type.
+        """
+        items = [item for item in self._allof_lightweight_items(obj) if isinstance(item, JsonSchemaObject)]
+        if len(items) == 1:
+            return items[0].model_dump(exclude_unset=True, by_alias=True)
+        if (
+            groups := self._group_allof_items(
+                items, 0, frozenset(), _LIGHTWEIGHT_MAX_DEPTH, _LIGHTWEIGHT_MAX_UNION_ELEMENTS
+            )
+        ) is None or not groups.primitives:
+            return {}
+        return self._merge_primitive_schemas([*groups.primitives, *groups.constraint_only]).model_dump(
+            exclude_unset=True, by_alias=True
+        )
+
+    def _intersect_all_of_value_parts(
+        self, parts: list[JsonSchemaObject], row: dict[str, Any], where: str | None
+    ) -> JsonSchemaObject:
+        """Return the intersection of the parts of an allOf value schema, keeping the merge ``row`` where it is exact.
+
+        A keyword the row drops (another member's ``enum`` or ``const``, a nested member's bounds, a type list) is
+        taken from the first part that has it before the parts are intersected. A keyword whose parts have no value
+        in common keeps the row's value, with a warning naming ``where`` unless it is None.
+        """
+        row.pop("allOf", None)
+        dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
+        extras_key = JsonSchemaObject.__extra_key__
+        row_extras = row[extras_key] = dict(row.get(extras_key, {}))
+        added = {
+            keyword: next(dump[keyword] for dump in dumps if keyword in dump)
+            for keyword in ("type", "enum", "nullable", *JsonSchemaObject.__constraint_field_order__)
+            if keyword not in row and any(keyword in dump for dump in dumps)
+        }
+        row.update(added)
+        if "const" not in row_extras and (
+            const_part := next((dump for dump in dumps if "const" in dump.get(extras_key, {})), None)
+        ):
+            row_extras["const"] = added["const"] = const_part[extras_key]["const"]
+        intersection = intersect_keywords(dumps, row, extras_key=extras_key)
+        keywords = intersection.keywords
+        if where is not None:
+            self._warn_unsatisfiable(where, intersection.unsatisfiable, "its allOf members and its own keywords")
+        for keyword in added.keys() & set(intersection.unsatisfiable):
+            if keyword == "const":
+                keywords[extras_key] = {key: value for key, value in keywords[extras_key].items() if key != "const"}
+            else:
+                keywords.pop(keyword)
+        return self.SCHEMA_OBJECT_TYPE.model_validate(keywords)
+
+    def _all_of_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return the schema of the values an inline allOf value schema admits: its parts intersected.
+
+        The lightweight merge (``_all_of_value_row``) stays wherever it enforces what the intersection enforces. A
+        site whose type is literals (an ``enum`` or ``const``) keeps the constraints its earlier form writes beside
+        them, since whether the literals meet the other constraints is not decided here. None when a member is a
+        reference or no schema of one value, when two parts set a ``pattern`` (their conjunction is not intersected here
+        yet), or when an ``enum`` or ``const`` part meets a constraint keyword (literals are not filtered by it here
+        yet): such a site keeps its earlier form.
+        """
+        parts: list[JsonSchemaObject] = []
+        if (
+            not self._collect_all_of_value_parts(obj, parts)
+            or sum(part.pattern is not None for part in parts) > 1
+            or (
+                any(part.enum or "const" in part.extras for part in parts)
+                and any(
+                    getattr(part, keyword) is not None for part in parts for keyword in part.__constraint_field_order__
+                )
+            )
+        ):
+            return None
+        return self._intersect_all_of_value_parts(
+            parts, self._all_of_value_row(obj), str(obj.schema_location or "allOf")
+        )
+
+    def _enforced_value_keywords(self, schema: JsonSchemaObject) -> tuple[frozenset[str], bool, dict[str, Any]]:
+        """Return what a value schema enforces: its types, whether it admits null and the constraints its type takes."""
+        types = frozenset(
+            () if schema.type is None else (schema.type,) if isinstance(schema.type, str) else schema.type
+        )
+        constraints = self._temporary_constraint_values(schema, self._build_lightweight_type(schema))
+        return (
+            types,
+            bool(schema.nullable),
+            {key: value.value if isinstance(value, UnionIntFloat) else value for key, value in constraints.items()},
+        )
+
+    def _all_of_reference_value_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return the value schema of an allOf site whose earlier form writes constraints a reference cannot take.
+
+        That form is the type of the first ``$ref`` member with the site's own constraints. It fails to validate when
+        the referenced type is a model class (a root model), or when the output rejects a constraint that the
+        referenced alias sets as well (msgspec ``Meta``). The site then takes the reference alone when the
+        intersection of its parts enforces nothing beyond the referenced schema, else that intersection. None for
+        every other site, which keeps its earlier form: members that are no value schemas, nested combinators, and
+        two parts with a ``pattern``.
+        """
+        members = [item for item in obj.allOf if isinstance(item, JsonSchemaObject)]
+        refs = [member.ref for member in members if member.ref]
+        if (
+            not refs
+            or any(member.allOf or member.anyOf or member.oneOf for member in members)
+            or not (constraints := self._temporary_constraint_values(obj, self.get_ref_data_type(refs[0])))
+        ):
+            return None
+        target_parts: list[JsonSchemaObject] = []
+        parts: list[JsonSchemaObject] = []
+        first_ref = self.SCHEMA_OBJECT_TYPE.model_validate({"allOf": [{"$ref": refs[0]}]})
+        if (
+            not self._collect_all_of_value_parts(first_ref, target_parts, resolve_refs=True)
+            or not self._collect_all_of_value_parts(obj, parts, resolve_refs=True)
+            or sum(part.pattern is not None for part in parts) > 1
+        ):
+            return None
+        target = self._intersect_all_of_value_parts(
+            target_parts,
+            self._merge_primitive_schemas(target_parts).model_dump(exclude_unset=True, by_alias=True),
+            None,
+        )
+        target_keys = {keyword for keyword in target.__constraint_field_order__ if getattr(target, keyword) is not None}
+        if self.data_model_root_type.IS_ALIAS and (
+            self._output_model_context.layers_repeated_constraints or not target_keys.intersection(constraints)
+        ):
+            return None
+        intersection = self._intersect_all_of_value_parts(
+            parts,
+            self._merge_primitive_schemas(parts).model_dump(exclude_unset=True, by_alias=True),
+            str(obj.schema_location or "allOf"),
+        )
+        if len(refs) == 1 and self._enforced_value_keywords(intersection) == self._enforced_value_keywords(target):
+            return self.SCHEMA_OBJECT_TYPE.model_validate({"$ref": refs[0]})
+        return intersection
+
+    def _allof_lightweight_items(self, schema: JsonSchemaObject) -> Sequence[JsonSchemaObject | bool]:
+        """Return the members ``_build_lightweight_allof_type`` builds a type from: own keywords first, then allOf."""
+        allof_items: Sequence[JsonSchemaObject | bool] = schema.allOf or []
+        if self._schema_has_own_value_keywords(schema):
+            return [self._without_allof_keywords(schema), *allof_items]
+        return allof_items
 
     def _raise_unsatisfiable_schema(  # noqa: PLR6301
         self, obj: JsonSchemaObject, path: list[str], keyword: str
@@ -6202,8 +6437,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         schema: JsonSchemaObject,
         depth: int = 0,
         visited: frozenset[int] | None = None,
-        max_depth: int = 3,
-        max_union_elements: int = 5,
+        max_depth: int = _LIGHTWEIGHT_MAX_DEPTH,
+        max_union_elements: int = _LIGHTWEIGHT_MAX_UNION_ELEMENTS,
     ) -> DataType | None:
         """Build a DataType from schema without generating models."""
         if depth > max_depth:  # pragma: no cover
@@ -12514,6 +12749,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse a root type with an internal output representation override."""
         reference: Reference | None = None
         array_constraints: Any = None
+        constraint_obj = obj
         effective_use_annotated = self.use_annotated if use_annotated is None else use_annotated
         writes = (self.field_constraints or preserve_constraints) and not (
             self._should_skip_root_field_constraints_for_multiple_types(obj)
@@ -12557,7 +12793,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 else:  # pragma: no cover
                     data_type = data_types[0]
         elif obj.allOf:
-            data_type = self._build_lightweight_type(obj)
+            value_obj = obj
+            if (inline_value := self._all_of_value_schema(obj)) is not None:
+                value_obj = inline_value
+                if not (inline_value.enum or "const" in inline_value.extras):
+                    constraint_obj = inline_value
+            elif (self.field_constraints or preserve_constraints) and (
+                referenced_value := self._all_of_reference_value_schema(obj)
+            ) is not None:
+                value_obj = constraint_obj = referenced_value
+            data_type = self._build_lightweight_type(value_obj)
             if data_type is None:  # pragma: no cover
                 data_type = self.data_type_manager.get_data_type(Types.any)
         elif (
@@ -12619,13 +12864,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         constraints = array_constraints or {}
         untaken: dict[str, Any] = {}
         if not constraints and (self.field_constraints or preserve_constraints):
-            constraints, untaken = self._split_constraint_values(obj, data_type)
-        if self._should_skip_root_field_constraints_for_multiple_types(obj):
+            constraints, untaken = self._split_constraint_values(constraint_obj, data_type)
+        if self._should_skip_root_field_constraints_for_multiple_types(constraint_obj):
             constraints = {}
-        elif self.field_constraints and obj.format == "hostname":
+        elif self.field_constraints and constraint_obj.format == "hostname":
             constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
         if data_type.is_dict or data_type.is_mapping:
-            constraints.update(self._get_property_count_constraints(obj))
+            constraints.update(self._get_property_count_constraints(constraint_obj))
         fields = [
             self.data_model_field_type(
                 data_type=data_type,
@@ -12645,11 +12890,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         ]
         takes_constraints = self.field_constraints and not self._should_skip_root_field_constraints_for_multiple_types(
-            obj
+            constraint_obj
         )
         if takes_constraints:
-            self._mark_type_dependent_constraints(fields[0], obj)
-        dropped_counts = self._dropped_property_counts(obj, data_type)
+            self._mark_type_dependent_constraints(fields[0], constraint_obj)
+        dropped_counts = self._dropped_property_counts(constraint_obj, data_type)
         self._mark_untaken_constraints(
             fields[0],
             {**(untaken if takes_constraints else {}), **dropped_counts},

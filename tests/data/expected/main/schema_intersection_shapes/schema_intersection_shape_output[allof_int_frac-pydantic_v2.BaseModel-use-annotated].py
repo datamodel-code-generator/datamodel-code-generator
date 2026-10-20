@@ -8,6 +8,10 @@ from typing import Annotated
 from pydantic import BaseModel, Field, RootModel
 
 
+class FracItem(RootModel[int]):
+    root: Annotated[int, Field(ge=1, le=9)]
+
+
 class FracMap(RootModel[int]):
     root: Annotated[int, Field(ge=1, le=9)]
 
@@ -17,10 +21,6 @@ class Number(RootModel[int]):
 
 
 class Frac(RootModel[Number]):
-    root: Annotated[Number, Field(ge=0.5, le=9.5)]
-
-
-class FracItem(RootModel[Number]):
     root: Annotated[Number, Field(ge=0.5, le=9.5)]
 
 

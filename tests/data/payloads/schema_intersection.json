@@ -4525,5 +4525,929 @@
         ]
       }
     }
+  },
+  "allof_value_parts": {
+    "model": "Model",
+    "fields": {
+      "enum_member_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0,
+          3
+        ]
+      },
+      "enum_member_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "enum_member_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "narrow_prop": {
+        "valid": [
+          2,
+          3
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "narrow_items": {
+        "valid": [
+          [
+            2
+          ],
+          [
+            3
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "narrow_map": {
+        "valid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 3
+          }
+        ],
+        "invalid": [
+          {
+            "k": 1
+          }
+        ]
+      },
+      "literal_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0,
+          3
+        ]
+      },
+      "literal_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "literal_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "const_prop": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "b"
+        ]
+      },
+      "const_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            "b"
+          ]
+        ]
+      },
+      "const_map": {
+        "valid": [
+          {
+            "k": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "b"
+          }
+        ]
+      },
+      "nested_prop": {
+        "valid": [
+          1,
+          3
+        ],
+        "invalid": [
+          0,
+          4
+        ]
+      },
+      "nested_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            3
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            4
+          ]
+        ]
+      },
+      "nested_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 3
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 4
+          }
+        ]
+      },
+      "nested_untyped_prop": {
+        "valid": [
+          1,
+          5
+        ],
+        "invalid": [
+          0,
+          "a"
+        ]
+      },
+      "nested_untyped_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            "a"
+          ]
+        ]
+      },
+      "nested_untyped_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": "a"
+          }
+        ]
+      },
+      "nullable_prop": {
+        "valid": [
+          1,
+          null
+        ],
+        "invalid": [
+          0
+        ]
+      },
+      "nullable_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            null
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "nullable_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": null
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "outer_prop": {
+        "valid": [
+          0,
+          9
+        ],
+        "invalid": [
+          -1,
+          10
+        ]
+      },
+      "outer_items": {
+        "valid": [
+          [
+            0
+          ],
+          [
+            9
+          ]
+        ],
+        "invalid": [
+          [
+            -1
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "outer_map": {
+        "valid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 9
+          }
+        ],
+        "invalid": [
+          {
+            "k": -1
+          },
+          {
+            "k": 10
+          }
+        ]
+      },
+      "multiple_prop": {
+        "valid": [
+          6,
+          12
+        ],
+        "invalid": [
+          2,
+          3
+        ]
+      },
+      "multiple_items": {
+        "valid": [
+          [
+            6
+          ],
+          [
+            12
+          ]
+        ],
+        "invalid": [
+          [
+            2
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "multiple_map": {
+        "valid": [
+          {
+            "k": 6
+          },
+          {
+            "k": 12
+          }
+        ],
+        "invalid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "const_conflict_prop": {
+        "valid": [],
+        "invalid": [
+          "a",
+          "b"
+        ]
+      },
+      "const_conflict_items": {
+        "valid": [],
+        "invalid": [
+          [
+            "a"
+          ],
+          [
+            "b"
+          ]
+        ]
+      },
+      "const_conflict_map": {
+        "valid": [],
+        "invalid": [
+          {
+            "k": "a"
+          },
+          {
+            "k": "b"
+          }
+        ]
+      },
+      "not_sibling_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          0,
+          3
+        ]
+      },
+      "not_sibling_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "not_sibling_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 3
+          }
+        ]
+      },
+      "enum_bound_prop": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          30,
+          11
+        ]
+      },
+      "enum_bound_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            30
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "enum_bound_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 30
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "enum_length_prop": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          "bcdefg",
+          "zzzz"
+        ]
+      },
+      "enum_length_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            "bcdefg"
+          ],
+          [
+            "zzzz"
+          ]
+        ]
+      },
+      "enum_length_map": {
+        "valid": [
+          {
+            "k": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "bcdefg"
+          },
+          {
+            "k": "zzzz"
+          }
+        ]
+      },
+      "two_patterns_prop": {
+        "valid": [
+          "ab",
+          "acb"
+        ],
+        "invalid": [
+          "ba",
+          "a"
+        ]
+      },
+      "two_patterns_items": {
+        "valid": [
+          [
+            "ab"
+          ]
+        ],
+        "invalid": [
+          [
+            "ba"
+          ]
+        ]
+      },
+      "two_patterns_map": {
+        "valid": [
+          {
+            "k": "ab"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "ba"
+          }
+        ]
+      }
+    }
+  },
+  "allof_ref_item_constraints": {
+    "model": "Model",
+    "fields": {
+      "disjoint_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      "disjoint_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          },
+          {
+            "k": 11
+          }
+        ]
+      },
+      "overlap_items": {
+        "valid": [
+          [
+            5
+          ],
+          [
+            6
+          ]
+        ],
+        "invalid": [
+          [
+            4
+          ]
+        ]
+      },
+      "overlap_map": {
+        "valid": [
+          {
+            "k": 5
+          },
+          {
+            "k": 6
+          }
+        ],
+        "invalid": [
+          {
+            "k": 4
+          }
+        ]
+      },
+      "redundant_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "redundant_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "looser_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            0
+          ]
+        ]
+      },
+      "looser_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 0
+          }
+        ]
+      },
+      "member_items": {
+        "valid": [
+          [
+            2
+          ],
+          [
+            9
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "member_map": {
+        "valid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 9
+          }
+        ],
+        "invalid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ]
+      },
+      "two_items": {
+        "valid": [
+          [
+            4
+          ],
+          [
+            5
+          ]
+        ],
+        "invalid": [
+          [
+            3
+          ],
+          [
+            6
+          ]
+        ]
+      },
+      "two_map": {
+        "valid": [
+          {
+            "k": 4
+          },
+          {
+            "k": 5
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 6
+          }
+        ]
+      },
+      "stamp_items": {
+        "valid": [
+          [
+            "2020-01-01T00:00:00Z"
+          ]
+        ],
+        "invalid": [
+          [
+            "2020-01-01T00:00:00.1234567890123456789012+00:00"
+          ]
+        ]
+      },
+      "stamp_map": {
+        "valid": [
+          {
+            "k": "2020-01-01T00:00:00Z"
+          }
+        ],
+        "invalid": [
+          {
+            "k": "2020-01-01T00:00:00.1234567890123456789012+00:00"
+          }
+        ]
+      },
+      "enum_items": {
+        "valid": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ],
+        "invalid": [
+          [
+            3
+          ],
+          [
+            20
+          ]
+        ]
+      },
+      "enum_map": {
+        "valid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 2
+          }
+        ],
+        "invalid": [
+          {
+            "k": 3
+          },
+          {
+            "k": 20
+          }
+        ]
+      },
+      "nested_items": {
+        "valid": [
+          [
+            2
+          ],
+          [
+            9
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ],
+          [
+            10
+          ]
+        ]
+      },
+      "nested_map": {
+        "valid": [
+          {
+            "k": 2
+          },
+          {
+            "k": 9
+          }
+        ],
+        "invalid": [
+          {
+            "k": 1
+          },
+          {
+            "k": 10
+          }
+        ]
+      },
+      "point_items": {
+        "valid": [
+          [
+            {
+              "x": 1
+            }
+          ]
+        ],
+        "invalid": [
+          [
+            {
+              "x": "a"
+            }
+          ]
+        ]
+      },
+      "point_map": {
+        "valid": [
+          {
+            "k": {
+              "x": 1
+            }
+          }
+        ],
+        "invalid": [
+          {
+            "k": {
+              "x": "a"
+            }
+          }
+        ]
+      },
+      "false_items": {
+        "valid": [],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      }
+    }
   }
 }

@@ -10,6 +10,10 @@ from typing import Annotated
 from pydantic import AwareDatetime, BaseModel, Field, RootModel
 
 
+class Number5Item(RootModel[int]):
+    root: Annotated[int, Field(ge=5)]
+
+
 class Number5Map(RootModel[int]):
     root: Annotated[int, Field(ge=5)]
 
@@ -24,6 +28,10 @@ class TwoRefsMap(RootModel[int]):
 
 class StampLenMap(RootModel[AwareDatetime]):
     root: AwareDatetime
+
+
+class QAllofItem(RootModel[int]):
+    root: Annotated[int, Field(ge=1, le=10)]
 
 
 class QAllofMap(RootModel[int]):
@@ -120,10 +128,6 @@ class AllOfRoot2(RootModel[int]):
     root: Annotated[int, Field(ge=1, le=10)]
 
 
-class Number5Item(RootModel[Number]):
-    root: Annotated[Number, Field(ge=5)]
-
-
 class TwoRefsProp(BaseModel):
     pass
 
@@ -133,11 +137,7 @@ class TwoRefsItem(BaseModel):
 
 
 class StampLenItem(RootModel[Stamp]):
-    root: Annotated[Stamp, Field(max_length=40)]
-
-
-class QAllofItem(RootModel[Quantity]):
-    root: Annotated[Quantity, Field(le=10)]
+    root: Stamp
 
 
 class Model(BaseModel):
