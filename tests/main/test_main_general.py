@@ -788,6 +788,36 @@ def test_model_graph_check_reports_a_copied_reference(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+@pytest.mark.abnormal_path(
+    "a reference graph snapshot answers as the computation it replaced for every input: only a broken computation "
+    "makes the two differ"
+)
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_model_graph_check_reports_a_differing_reference_graph_answer(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """Quoting the containers of an alias cycle reads the cycles of aliases from the reference graph snapshot.
+
+    The computation the snapshot replaces finds the cycles of its own graph; here it finds none. The model graph check
+    (`1`, as the test suite sets it) raises where the two answers differ; `report:<path>` appends the difference to the
+    file as one JSON line; with the check off (`0`) the snapshot's answer quotes the containers of the cycle.
+    """
+    monkeypatch.setattr("datamodel_code_generator.parser.base.find_circular_sccs", lambda _graph: [])
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    source = JSON_SCHEMA_DATA_PATH / "type_alias_recursive_container.json"
+    options: dict[str, Any] = {"use_type_alias": True, "formatters": [Formatter.BUILTIN]}
+    if flag == "check":
+        with pytest.raises(
+            Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: alias cycles: the reference graph and the computation"
+        ):
+            generate(source, input_file_type=InputFileType.JsonSchema, **options)
+        return
+    assert_output(cast("str", generate(source, input_file_type=InputFileType.JsonSchema, **options)))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 def test_model_graph_check_reports_a_path_lookup_that_names_two_models(monkeypatch: pytest.MonkeyPatch) -> None:
     """A custom parser that moves a model to the path of another one leaves two live models under one path.
 

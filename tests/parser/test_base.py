@@ -1847,8 +1847,8 @@ def test_compute_internal_module_path(
     assert result == expected
 
 
-def test_build_module_dependency_graph_with_missing_ref(parser_fixture: C) -> None:
-    """Test __build_module_dependency_graph when reference path is not in path_to_module."""
+def test_module_dependency_cycles_with_missing_ref(parser_fixture: C) -> None:
+    """Test __module_dependency_cycles when reference path is not in path_to_module."""
     missing_reference = Reference(path="nonexistent.Model", original_name="Missing", name="Missing")
     model1 = BaseModel(
         fields=[DataModelField(data_type=DataType(reference=missing_reference))],
@@ -1860,9 +1860,7 @@ def test_build_module_dependency_graph_with_missing_ref(parser_fixture: C) -> No
         (("pkg",), [model1]),
     ]
 
-    graph = parser_fixture._Parser__build_module_dependency_graph(module_models_list)
-
-    assert graph == {("pkg",): set()}
+    assert parser_fixture._Parser__module_dependency_cycles(module_models_list) == []
 
 
 def test_collapse_root_models_preserves_root_model_used_by_other_modules() -> None:

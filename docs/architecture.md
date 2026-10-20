@@ -100,7 +100,11 @@ GraphQL is the main parser that builds models directly from its own schema API.
 Ordering and module splitting use small graph helpers. `parser/_scc.py` finds strongly connected components with an
 iterative Tarjan traversal so large graphs do not hit Python recursion limits. `parser/_graph.py` provides stable
 topological ordering. Together they keep `sort_data_models()` deterministic and let `_build_module_structure()` move
-circular module SCCs into `_internal.py` forwarder modules when imports would otherwise cycle.
+circular module SCCs into `_internal.py` forwarder modules when imports would otherwise cycle. The passes that read
+cycles or an order among models (module dependencies, class body order, circular root models, keep model order, alias
+cycles, nested model default factories) each take a snapshot of one reference graph, `parser/_reference_graph.py`:
+the models by model key and the edges between them by kind, which answers their components and orders. Under the
+`MODEL_GRAPH` check, each answer is compared with the computation it replaced.
 
 ## Generated Inventory
 

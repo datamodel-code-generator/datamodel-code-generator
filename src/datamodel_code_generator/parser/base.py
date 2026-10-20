@@ -232,6 +232,14 @@ from datamodel_code_generator.parser._pipeline import (
     decision_order,
     release_parse_caller,
 )
+from datamodel_code_generator.parser._reference_graph import (
+    EdgeKind,
+    GraphSnapshot,
+    ReferenceGraph,
+    graph_answer,
+    reference_graph,
+    unchecked,
+)
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, set_model_base_classes
@@ -489,6 +497,8 @@ ComponentEdges: TypeAlias = dict[ComponentId, set[ComponentId]]
 
 ClassNode: TypeAlias = tuple[ModelName, ...]
 ClassGraph: TypeAlias = dict[ClassNode, set[ClassNode]]
+_KEEP_MODEL_ORDER_EDGES: Final = (EdgeKind.DEFINITION, EdgeKind.FIELD)
+"""The edges keep model order keeps the models of one cycle together over."""
 
 ModulePath: TypeAlias = tuple[str, ...]
 ModuleModels: TypeAlias = list[tuple[ModulePath, list[DataModel]]]
@@ -905,6 +915,12 @@ class _KeepModelOrderComponents(NamedTuple):
     comp_of: ComponentOf
 
 
+class _KeepModelOrderGraph(NamedTuple):
+    graph: ReferenceGraph
+    key_of_name: Mapping[ModelName, ModelKey]
+    name_of_key: Mapping[ModelKey, ModelName]
+
+
 class _InheritedConstructorInfo(NamedTuple):
     required_assignment_names: frozenset[str]
     ordering_conflicts: frozenset[str]
@@ -1069,14 +1085,46 @@ def _build_keep_model_order_dependency_maps(
     return _KeepModelOrderDeps(strong=strong_deps, all=all_deps)
 
 
+def _keep_model_order_graph(
+    deps: _KeepModelOrderDeps, model_by_name: Mapping[ModelName, DataModel]
+) -> _KeepModelOrderGraph:
+    """Take the snapshot of the dependencies that keep model order moves the models of one module for."""
+    key_of_name = {name: model_key_of(model.reference) for name, model in model_by_name.items()}
+    graph = reference_graph(
+        GraphSnapshot.KEEP_MODEL_ORDER,
+        key_of_name.values(),
+        {
+            EdgeKind.DEFINITION: {
+                key_of_name[name]: map(key_of_name.__getitem__, deps.strong[name]) for name in deps.strong
+            },
+            EdgeKind.FIELD: {
+                key_of_name[name]: map(key_of_name.__getitem__, all_deps - deps.strong[name])
+                for name, all_deps in deps.all.items()
+            },
+        },
+    )
+    return _KeepModelOrderGraph(graph, key_of_name, {key: name for name, key in key_of_name.items()})
+
+
 def _build_keep_model_order_components(
     all_deps: ModelDeps,
     order_index: OrderIndex,
+    keyed: _KeepModelOrderGraph,
 ) -> _KeepModelOrderComponents:
-    graph: ClassGraph = {(name,): {(dep,) for dep in deps} for name, deps in all_deps.items()}
-    sccs = strongly_connected_components(graph)
-    components: Components = [sorted((node[0] for node in scc), key=order_index.__getitem__) for scc in sccs]
-    components.sort(key=lambda members: min(order_index[n] for n in members))
+    def ordered(sccs: Iterable[Iterable[ModelName]]) -> Components:
+        components = [sorted(scc, key=order_index.__getitem__) for scc in sccs]
+        components.sort(key=lambda members: min(order_index[n] for n in members))
+        return components
+
+    def old() -> Components:
+        class_graph: ClassGraph = {(name,): {(dep,) for dep in deps} for name, deps in all_deps.items()}
+        return ordered((node[0] for node in scc) for scc in strongly_connected_components(class_graph))
+
+    components = graph_answer(
+        GraphSnapshot.KEEP_MODEL_ORDER,
+        ordered(map(keyed.name_of_key.__getitem__, scc) for scc in keyed.graph.components(_KEEP_MODEL_ORDER_EDGES)),
+        old,
+    )
     comp_of: ComponentOf = {name: i for i, members in enumerate(components) for name in members}
     return _KeepModelOrderComponents(components=components, comp_of=comp_of)
 
@@ -1113,17 +1161,35 @@ def _build_keep_model_ordered_names(
     components: Components,
     strong_deps: ModelDeps,
     order_index: OrderIndex,
+    keyed: _KeepModelOrderGraph,
 ) -> list[ModelName]:
+    name_of_key = keyed.name_of_key
     ordered_names: list[ModelName] = []
     for component_id in ordered_comp_ids:
         members = components[component_id]
         if len(members) > 1:
-            strong_edges: dict[ModelName, set[ModelName]] = {n: set() for n in members}
-            member_set = set(members)
-            for base in members:
-                derived_members = {member for member in members if base in strong_deps.get(member, set()) & member_set}
-                strong_edges[base].update(derived_members)
-            members = stable_toposort(members, strong_edges, key=order_index.__getitem__)
+            in_order = members
+
+            def old(members: list[ModelName] = in_order) -> list[ModelName]:
+                strong_edges: dict[ModelName, set[ModelName]] = {n: set() for n in members}
+                member_set = set(members)
+                for base in members:
+                    derived = {member for member in members if base in strong_deps.get(member, set()) & member_set}
+                    strong_edges[base].update(derived)
+                return stable_toposort(members, strong_edges, key=order_index.__getitem__)
+
+            members = graph_answer(
+                GraphSnapshot.KEEP_MODEL_ORDER,
+                [
+                    name_of_key[key]
+                    for key in keyed.graph.dependency_order(
+                        (EdgeKind.DEFINITION,),
+                        [keyed.key_of_name[name] for name in in_order],
+                        lambda key: order_index[name_of_key[key]],
+                    )
+                ],
+                old,
+            )
         ordered_names.extend(members)
     return ordered_names
 
@@ -1153,10 +1219,11 @@ def _reorder_models_keep_model_order(
         pydantic_v2_root_model_type=pydantic_v2_root_model_type,
         use_deferred_annotations=use_deferred_annotations,
     )
-    comps = _build_keep_model_order_components(deps.all, order_index)
+    keyed = _keep_model_order_graph(deps, model_by_name)
+    comps = _build_keep_model_order_components(deps.all, order_index, keyed)
     comp_edges = _build_keep_model_order_component_edges(deps.all, comps.comp_of, len(comps.components))
     ordered_comp_ids = _build_keep_model_order_component_order(comps.components, comp_edges, order_index)
-    ordered_names = _build_keep_model_ordered_names(ordered_comp_ids, comps.components, deps.strong, order_index)
+    ordered_names = _build_keep_model_ordered_names(ordered_comp_ids, comps.components, deps.strong, order_index, keyed)
     models[:] = [model_by_name[name] for name in ordered_names]
 
 
@@ -1166,29 +1233,37 @@ def _sort_models_by_class_body_references(
     runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]],
 ) -> list[DataModel]:
     """Define first the models a class body evaluates: base classes, root types and runtime rule types."""
-    keyed = keyed_models(models, "class body order")
+    keyed = keyed_models(models, GraphSnapshot.CLASS_BODY_ORDER.value)
     order_index = {key: index for index, key in enumerate(keyed.models)}
-    edges: dict[ModelKey, set[ModelKey]] = {key: set() for key in keyed.models}
-
-    def add_dependency(model_key: ModelKey, reference_key: ModelKey) -> None:
-        if reference_key in edges and reference_key != model_key:
-            edges[reference_key].add(model_key)
-
+    targets: dict[ModelKey, set[ModelKey]] = {}
     for model_key, model in keyed.models.items():
-        for base_class in model.base_classes:
-            add_dependency(
-                model_key, keyed.key_of(base_class.reference) if base_class.reference else UNRESOLVED_MODEL_KEY
-            )
-        for reference_key in runtime_validation_references.get(model_key, ()):
-            add_dependency(model_key, reference_key)
+        model_targets = targets[model_key] = {
+            keyed.key_of(base_class.reference) for base_class in model.base_classes if base_class.reference
+        }
+        model_targets.update(runtime_validation_references.get(model_key, ()))
         if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
-            for field in model.fields:
-                for data_type in field.data_type.all_data_types:
-                    add_dependency(
-                        model_key, keyed.key_of(data_type.reference) if data_type.reference else UNRESOLVED_MODEL_KEY
-                    )
+            model_targets.update(
+                keyed.key_of(data_type.reference)
+                for field in model.fields
+                for data_type in field.data_type.all_data_types
+                if data_type.reference
+            )
+        model_targets.discard(model_key)
+    graph = reference_graph(GraphSnapshot.CLASS_BODY_ORDER, keyed.models, {EdgeKind.CLASS_BODY: targets})
 
-    sorted_keys = stable_toposort(list(order_index), edges, key=order_index.__getitem__)
+    def old() -> list[ModelKey]:
+        edges: dict[ModelKey, set[ModelKey]] = {key: set() for key in keyed.models}
+        for model_key, model_targets in targets.items():
+            for reference_key in model_targets:
+                if reference_key in edges:
+                    edges[reference_key].add(model_key)
+        return stable_toposort(list(order_index), edges, key=order_index.__getitem__)
+
+    sorted_keys = graph_answer(
+        GraphSnapshot.CLASS_BODY_ORDER,
+        graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__),
+        old,
+    )
     return [keyed.models[key] for key in sorted_keys]
 
 
@@ -3424,7 +3499,13 @@ def _alias_reference_cycles(models: Sequence[DataModel]) -> dict[int, int]:
                 if in_container:
                     graph[key].add(model_key_of(target.reference))
                     pending.append(target)
-    return {id(aliases[key]): index for index, scc in enumerate(find_circular_sccs(graph)) for key in scc}
+    snapshot = reference_graph(GraphSnapshot.ALIAS_CYCLES, graph, {EdgeKind.CONTAINER_ITEM: graph})
+    cycles = graph_answer(
+        GraphSnapshot.ALIAS_CYCLES,
+        snapshot.circular_components((EdgeKind.CONTAINER_ITEM,)),
+        lambda: find_circular_sccs(graph),
+    )
+    return {id(aliases[key]): index for index, scc in enumerate(cycles) for key in scc}
 
 
 def _iter_cycle_containers(
@@ -6082,30 +6163,58 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         require_dict_key_edge: bool = False,
     ) -> None:
         """Record the root models in circular components before collapsing them."""
+        snapshot = GraphSnapshot.CIRCULAR_ROOT_MODELS
         keyed = keyed_models(
-            (model for _, models in module_models for model in models if self._is_root_model(model)),
-            "circular root models",
+            (model for _, models in module_models for model in models if self._is_root_model(model)), snapshot.value
         )
         index = self.generation_store.index
-        graph = {
-            key: index.referenced_keys_for_model(model, keyed, all_dict_keys=True) & keyed.models.keys()
-            for key, model in keyed.models.items()
+        edges = {
+            EdgeKind.ANY_REFERENCE: {
+                key: index.referenced_keys_for_model(model, keyed, all_dict_keys=True)
+                for key, model in keyed.models.items()
+            }
         }
-        circular_components = find_circular_sccs(graph)
-        if not require_dict_key_edge:
-            circular_keys = {key for component in circular_components for key in component}
-        else:
-            circular_keys = {key for key in keyed.models if key in graph[key]}
+        if require_dict_key_edge:
+            edges[EdgeKind.MAPPING_KEY] = {
+                key: keyed.keys_of(self.__root_dict_key_references(model)) for key, model in keyed.models.items()
+            }
+        graph = reference_graph(snapshot, keyed.models, edges)
 
-            def dict_key_reference_keys(key: ModelKey) -> frozenset[ModelKey]:
-                return keyed.keys_of(self.__root_dict_key_references(keyed.models[key]))
+        def circular_keys(
+            components: list[set[ModelKey]],
+            on_self_loop: Callable[[ModelKey], bool],
+            mapping_keys: Callable[[ModelKey], frozenset[ModelKey]],
+        ) -> frozenset[ModelKey]:
+            if not require_dict_key_edge:
+                return frozenset(key for component in components for key in component)
+            return frozenset(key for key in keyed.models if on_self_loop(key)).union(
+                *(component for component in components if any(mapping_keys(key) & component for key in component))
+            )
 
-            for component in circular_components:
-                if any(dict_key_reference_keys(key) & component for key in component):
-                    circular_keys.update(component)
+        def old() -> frozenset[ModelKey]:
+            silent = unchecked(keyed)
+            old_graph = {
+                key: index.referenced_keys_for_model(model, silent, all_dict_keys=True) & keyed.models.keys()
+                for key, model in keyed.models.items()
+            }
+            return circular_keys(
+                find_circular_sccs(old_graph),
+                lambda key: key in old_graph[key],
+                lambda key: silent.keys_of(self.__root_dict_key_references(keyed.models[key])),
+            )
+
+        circular_roots = graph_answer(
+            snapshot,
+            circular_keys(
+                graph.circular_components((EdgeKind.ANY_REFERENCE,)),
+                lambda key: key in graph.targets(key, (EdgeKind.ANY_REFERENCE,)),
+                lambda key: graph.targets(key, (EdgeKind.MAPPING_KEY,)),
+            ),
+            old,
+        )
         recursion_facts = self._recursion_facts
         self._recursion_facts = RecursionFacts(
-            require_update=recursion_facts["require_update"], circular_roots=frozenset(circular_keys)
+            require_update=recursion_facts["require_update"], circular_roots=circular_roots
         )
 
     def __root_dict_key_references(self, model: DataModel) -> list[Reference]:  # noqa: PLR6301
@@ -7955,28 +8064,40 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         return module_class_mappings
 
-    def __build_module_dependency_graph(
+    def __module_dependency_cycles(
         self,
         module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
-    ) -> dict[tuple[str, ...], set[tuple[str, ...]]]:
-        """Build a directed graph of module dependencies."""
-        keyed = keyed_models((model for _, models in module_models_list for model in models), "module dependencies")
+    ) -> list[set[tuple[str, ...]]]:
+        """Find the modules that import each other, from the snapshot of the references between their models."""
+        snapshot = GraphSnapshot.MODULE_DEPENDENCIES
+        keyed = keyed_models((model for _, models in module_models_list for model in models), snapshot.value)
         module_of: dict[ModelKey, tuple[str, ...]] = {}
         for module, models in module_models_list:
             for model in models:
                 module_of[model_key_of(model.reference)] = module
-
-        graph: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
         index = self.generation_store.index
-        for module, models in module_models_list:
-            graph[module] = set()
+        graph = reference_graph(
+            snapshot,
+            keyed.models,
+            {
+                EdgeKind.REFERENCE: {
+                    key: index.referenced_keys_for_model(model, keyed) for key, model in keyed.models.items()
+                }
+            },
+        )
 
-            for model in models:
-                for reference_key in index.referenced_keys_for_model(model, keyed):
-                    if (target_module := module_of.get(reference_key)) is not None and target_module != module:
-                        graph[module].add(target_module)
+        def old() -> list[set[tuple[str, ...]]]:
+            silent = unchecked(keyed)
+            module_graph: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
+            for module, models in module_models_list:
+                module_graph[module] = set()
+                for model in models:
+                    for reference_key in index.referenced_keys_for_model(model, silent):
+                        if (target_module := module_of.get(reference_key)) is not None and target_module != module:
+                            module_graph[module].add(target_module)
+            return find_circular_sccs(module_graph)
 
-        return graph
+        return graph_answer(snapshot, find_circular_sccs(graph.quotient(module_of, (EdgeKind.REFERENCE,))), old)
 
     def __resolve_circular_imports(
         self,
@@ -7998,9 +8119,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             - Set of _internal modules created
             - Forwarder map: original_module -> (internal_module, [(original_name, new_name)])
         """
-        graph = self.__build_module_dependency_graph(module_models_list)
-
-        circular_sccs = find_circular_sccs(graph)
+        circular_sccs = self.__module_dependency_cycles(module_models_list)
 
         forwarder_map: dict[tuple[str, ...], tuple[tuple[str, ...], list[tuple[str, str]]]] = {}
 
@@ -9191,13 +9310,27 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Record declaration order and recursive model components for default factories."""
         recursive_keys_by_model: dict[ModelKey, frozenset[ModelKey]] = {}
         if require_update:
-            keyed = keyed_models((model for ctx in contexts for model in ctx.models), "nested model default factories")
+            snapshot = GraphSnapshot.NESTED_MODEL_DEFAULT_FACTORIES
+            keyed = keyed_models((model for ctx in contexts for model in ctx.models), snapshot.value)
             index = self.generation_store.index
-            graph = {
-                key: index.referenced_keys_for_model(model, keyed) & keyed.models.keys()
-                for key, model in keyed.models.items()
-            }
-            for component in find_circular_sccs(graph):
+            graph = reference_graph(
+                snapshot,
+                keyed.models,
+                {
+                    EdgeKind.REFERENCE: {
+                        key: index.referenced_keys_for_model(model, keyed) for key, model in keyed.models.items()
+                    }
+                },
+            )
+
+            def old() -> list[set[ModelKey]]:
+                silent = unchecked(keyed)
+                return find_circular_sccs({
+                    key: index.referenced_keys_for_model(model, silent) & keyed.models.keys()
+                    for key, model in keyed.models.items()
+                })
+
+            for component in graph_answer(snapshot, graph.circular_components((EdgeKind.REFERENCE,)), old):
                 recursive_keys = frozenset(component)
                 recursive_keys_by_model.update(dict.fromkeys(recursive_keys, recursive_keys))
 
