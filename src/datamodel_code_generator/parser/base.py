@@ -178,6 +178,7 @@ from datamodel_code_generator.parser._model_shapes import (
     REUSE_MODEL,
     SAME_NAME,
     TREE_SCOPE,
+    KeySlot,
     ModelShapes,
     ShapeRow,
     reuse_candidate_key,
@@ -2208,21 +2209,24 @@ class _ModelShapeSource:
 
     target_python_version: PythonVersion
 
-    def dedup_key(self, model: DataModel, *, own_class_name: bool) -> tuple[HashableComparable, ...]:  # noqa: PLR6301
-        """Return the model's rendered dedup key, as the model cached it."""
-        if own_class_name:
-            return model.get_dedup_key(model.duplicate_class_name, use_default=False)
-        return model.get_dedup_key()
+    def own_class_name(self, model: DataModel) -> str | None:  # noqa: PLR6301
+        """Return the class name the model shares with its duplicates, or None for the name it renders under."""
+        return model.duplicate_class_name
+
+    def render(self, model: DataModel, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:  # noqa: PLR6301
+        """Return the model rendered under a class name, its imports and its values as written, uncached."""
+        model._prepare_dedup_key()  # noqa: SLF001
+        rendered, imports, *written = model._render_dedup_key(class_name)  # noqa: SLF001
+        return rendered, imports, tuple(written)
+
+    def dedup_key(self, model: DataModel, slot: KeySlot) -> tuple[Any, ...]:  # noqa: PLR6301
+        """Return the dedup key the model cached in a slot, rendering and caching it when the slot is empty."""
+        class_name, use_default = slot
+        return model.get_dedup_key(class_name, use_default=use_default)
 
     def forget_dedup_keys(self, model: DataModel) -> None:  # noqa: PLR6301
         """Drop the dedup keys the model cached."""
         model._dedup_key_cache.clear()  # noqa: SLF001
-
-    def masked_rendering(self, model: DataModel) -> tuple[type, str, Hashable, tuple[Hashable, ...]]:  # noqa: PLR6301
-        """Return the model's type, its rendering as ``M`` uncached, its imports and its values as written."""
-        model._prepare_dedup_key()  # noqa: SLF001
-        rendered, imports, *written = model._render_dedup_key("M")  # noqa: SLF001
-        return type(model), rendered, imports, tuple(written)
 
     def mask_pattern(self, text: str) -> re.Pattern[str]:
         """Return the pattern that finds string literals, field declarations and names as the target names them."""

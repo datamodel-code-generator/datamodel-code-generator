@@ -772,19 +772,17 @@ class GenerationIndex:
     def __init__(self, store: GenerationStore) -> None:
         """Create an index over ``store`` facts."""
         self._store = store
-        self._reference_classes_cache: dict[ModelId, frozenset[str]] = {}
         self._recorded_references_cache: dict[tuple[ModelId, bool], tuple[Reference, ...]] = {}
-        self._reference_classes_cache_version = -1
+        self._recorded_references_cache_version = -1
 
     def _facts(self) -> GenerationFacts:
         return self._store.current_facts()
 
-    def _reset_reference_classes_cache_if_needed(self) -> None:
-        if self._reference_classes_cache_version == self._store.facts_version:
+    def _reset_recorded_references_cache_if_needed(self) -> None:
+        if self._recorded_references_cache_version == self._store.facts_version:
             return
-        self._reference_classes_cache.clear()
         self._recorded_references_cache.clear()
-        self._reference_classes_cache_version = self._store.facts_version
+        self._recorded_references_cache_version = self._store.facts_version
 
     def model_fact(self, model: DataModel) -> ModelFact | None:
         """Return the current fact for ``model`` if it is tracked."""
@@ -837,9 +835,6 @@ class GenerationIndex:
         model_id = self._store.model_id(model)
         if model_id is None:
             return frozenset(model.reference_classes)
-        self._reset_reference_classes_cache_if_needed()
-        if (reference_classes := self._reference_classes_cache.get(model_id)) is not None:
-            return reference_classes
         include_dict_key_references = (
             include_dict_key_reference_classes := model._INCLUDE_DICT_KEY_REFERENCE_CLASSES  # noqa: SLF001
         ) is not None and include_dict_key_reference_classes(model)
@@ -851,7 +846,6 @@ class GenerationIndex:
         )
         if len(additional_properties_references := model.additional_properties_reference_classes):
             reference_classes = reference_classes.union(additional_properties_references)
-        self._reference_classes_cache[model_id] = reference_classes
         return reference_classes
 
     def reference_classes_for_model_including_dict_keys(self, model: DataModel) -> frozenset[str]:
@@ -898,7 +892,7 @@ class GenerationIndex:
         self, model: DataModel, model_id: ModelId, keyed: KeyedModels, *, all_dict_keys: bool
     ) -> frozenset[ModelKey]:
         """Return the keys of the models of ``keyed`` named by the references the data types of ``model`` hold."""
-        self._reset_reference_classes_cache_if_needed()
+        self._reset_recorded_references_cache_if_needed()
         cache_key = (model_id, all_dict_keys)
         if (cached := self._recorded_references_cache.get(cache_key)) is None:
             facts = self._facts()

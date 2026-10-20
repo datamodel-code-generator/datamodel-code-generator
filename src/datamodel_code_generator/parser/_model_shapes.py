@@ -7,10 +7,10 @@ merged. The rendering writes nothing to the models: before a model renders for a
 nullability that rendering the types of its fields decides. The candidate key of msgspec layout flattening
 (:func:`reuse_candidate_key`) and the stdout fingerprint (:func:`stdout_fingerprint`) are computed here too.
 
-The users disagree today on whether union tags count, which root models they compare, whether keys cached by an
-earlier pass are compared again (only collapse-reuse renders anew) and how they tell apart the bases of a merged
-model's children. The rows named ``legacy-*`` (:data:`SAME_NAME`, :data:`COLLAPSE_REUSE`, :data:`TREE_SCOPE`,
-:data:`REUSE_MODEL`) keep that output; keys over model facts (G06 for #4834, G07 for #4816) replace them.
+The users disagree today on whether union tags count, which root models they compare and how they tell apart the
+bases of a merged model's children. The rows named ``legacy-*`` (:data:`SAME_NAME`, :data:`COLLAPSE_REUSE`,
+:data:`TREE_SCOPE`, :data:`REUSE_MODEL`) keep that output; keys over model facts (G06 for #4834, G07 for #4816) replace
+them. Every user but collapse-reuse compares the keys a model cached in an earlier pass (:data:`STALE_DEDUP_KEYS`).
 """
 
 from __future__ import annotations
@@ -30,9 +30,11 @@ __all__ = [
     "COLLAPSE_REUSE",
     "REUSE_MODEL",
     "SAME_NAME",
+    "STALE_DEDUP_KEYS",
     "TREE_SCOPE",
     "BaseDedup",
     "KeyCache",
+    "KeySlot",
     "ModelShapes",
     "RootModels",
     "ShapeRow",
@@ -51,8 +53,17 @@ RootModels: TypeAlias = Literal["redirected", "skipped", "compared", "skipped-wh
 * ``compared``: every root model is compared.
 * ``skipped-when-collapsed``: root models are compared unless ``--collapse-root-models`` inlines them.
 """
-KeyCache: TypeAlias = Literal["kept", "cleared"]
-"""Whether a user compares the dedup keys a model cached in an earlier pass (``kept``) or renders them anew."""
+KeySlot: TypeAlias = "tuple[str | None, bool]"
+"""Where a model caches a dedup key: the class name it renders under, or None and whether ``M`` stands in for it."""
+KeyCache: TypeAlias = Literal["legacy-stale-dedup-keys", "rendered"]
+"""Whether a user compares the dedup keys a model cached in an earlier pass or renders them anew."""
+STALE_DEDUP_KEYS: KeyCache = "legacy-stale-dedup-keys"
+"""Compare the dedup key a model cached in an earlier pass, which only render-cache invalidation drops.
+
+A model caches its key the first time a user compares it, and a later pass compares that key again unless a mutation
+through the generation store invalidated the model's render caches. Rendering anew is not proven to change nothing;
+keys over model facts (G06, G07) replace the cache.
+"""
 BaseDedup: TypeAlias = Literal["by-type-hint", "by-reference"]
 """How a user that removes merged models tells apart the bases of their children: by module and type hint, or by
 reference."""
@@ -78,7 +89,7 @@ SAME_NAME: ShapeRow = ShapeRow(
     union_tags=False,
     own_class_name=True,
     root_models="redirected",
-    key_cache="kept",
+    key_cache=STALE_DEDUP_KEYS,
     base_dedup="by-type-hint",
 )
 """L3 ``__delete_duplicate_models``: models of one class name in a module that render alike, union tags left out."""
@@ -87,7 +98,7 @@ COLLAPSE_REUSE: ShapeRow = ShapeRow(
     union_tags=True,
     own_class_name=False,
     root_models="skipped",
-    key_cache="cleared",
+    key_cache="rendered",
     base_dedup="by-reference",
 )
 """L3 ``--collapse-reuse-models``: rounds of merges until none is left, rendering each round anew, roots left out."""
@@ -96,7 +107,7 @@ TREE_SCOPE: ShapeRow = ShapeRow(
     union_tags=True,
     own_class_name=False,
     root_models="compared",
-    key_cache="kept",
+    key_cache=STALE_DEDUP_KEYS,
     base_dedup=None,
 )
 """L3 ``--reuse-scope tree``: models duplicated across modules, root models included."""
@@ -105,10 +116,10 @@ REUSE_MODEL: ShapeRow = ShapeRow(
     union_tags=True,
     own_class_name=False,
     root_models="skipped-when-collapsed",
-    key_cache="kept",
+    key_cache=STALE_DEDUP_KEYS,
     base_dedup=None,
 )
-"""L5 ``--reuse-model``: models of a module, compared by the keys L3 cached, which only collapse-reuse renders anew."""
+"""L5 ``--reuse-model``: models of a module, root models left out only under ``--collapse-root-models``."""
 
 
 def skips_root_model(row: ShapeRow, *, collapse_root_models: bool) -> bool:
@@ -178,16 +189,20 @@ ReferenceT = TypeVar("ReferenceT", bound=_ReferenceLike)
 class ShapeSource(Protocol[ModelT, ReferenceT]):
     """What the keys read off the live models: the adapter (``parser/base.py:_ModelShapeSource``)."""
 
-    def dedup_key(self, model: ModelT, *, own_class_name: bool) -> Key:
-        """Return the model's rendered dedup key, as the model cached it."""
+    def own_class_name(self, model: ModelT) -> str | None:
+        """Return the class name the model shares with its duplicates, or None for the name it renders under."""
+        raise NotImplementedError
+
+    def render(self, model: ModelT, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:
+        """Return the model rendered under a class name, its imports and its values as written, uncached."""
+        raise NotImplementedError
+
+    def dedup_key(self, model: ModelT, slot: KeySlot) -> Key:
+        """Return the dedup key the model cached in a slot, rendering and caching it when the slot is empty."""
         raise NotImplementedError
 
     def forget_dedup_keys(self, model: ModelT) -> None:
         """Drop the dedup keys the model cached."""
-        raise NotImplementedError
-
-    def masked_rendering(self, model: ModelT) -> tuple[type, str, Hashable, tuple[Hashable, ...]]:
-        """Return the model's type, its rendering as ``M`` uncached, its imports and its values as written."""
         raise NotImplementedError
 
     def mask_pattern(self, text: str) -> re.Pattern[str]:
@@ -217,10 +232,15 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         return self.union_tags.get(model, ()) if self.row.union_tags else ()
 
     def key(self, model: ModelT) -> Key:
-        """Return the rendered model with the tags of its discriminated unions when the row compares them."""
-        if self.row.key_cache == "cleared":
+        """Return the rendered model with the tags of its discriminated unions when the row compares them.
+
+        The model renders under its own class name or as ``M``, as the row says, and the key is cached on the model
+        (:data:`STALE_DEDUP_KEYS`).
+        """
+        slot: KeySlot = (self.source.own_class_name(model), False) if self.row.own_class_name else (None, True)
+        if self.row.key_cache == "rendered":
             self.source.forget_dedup_keys(model)
-        key = self.source.dedup_key(model, own_class_name=self.row.own_class_name)
+        key = self.source.dedup_key(model, slot)
         return (*key, *tags) if (tags := self._tags(model)) else key
 
     def shape(self, model: ModelT) -> tuple[Key, Sequence[ReferenceT]]:
@@ -237,11 +257,11 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         masks: dict[str, str] = {}
         for reference in references:
             masks.setdefault(reference.short_name, f"<{len(masks)}>")
-        model_type, rendered, imports, written = self.source.masked_rendering(model)
+        rendered, imports, written = self.source.render(model, "M")
         masked = self.source.mask_pattern(rendered).sub(
             lambda match: masks.get(name, name) if (name := match[1]) else match[0], rendered
         )
-        key = (model_type, masked, imports, len(references), *written)
+        key = (type(model), masked, imports, len(references), *written)
         self.memo[model] = shape = ((*key, *tags) if (tags := self._tags(model)) else key), references
         return shape
 

@@ -475,6 +475,9 @@ type_array_maps	main/jsonschema/object_maps/schema_validators[type_array_maps].w
 [test_object_maps_schema_validators_cross_document]
 	main/jsonschema/object_maps/schema_validators_cross_document.payloads.txt
 	main/jsonschema/object_maps/schema_validators_cross_document.py
+[test_object_maps_schema_validators_false_property]
+	main/jsonschema/object_maps/schema_validators_false_property.payloads.txt
+	main/jsonschema/object_maps/schema_validators_false_property.py
 [test_object_maps_schema_validators_target_pydantic_version]
 root_models	main/jsonschema/object_maps/schema_validators_target_pydantic_version[root_models].payloads.txt	= main/jsonschema/object_maps/schema_validators[pattern_checks].payloads.txt
 root_models	main/jsonschema/object_maps/schema_validators_target_pydantic_version[root_models].py	= main/jsonschema/object_maps/schema_validators[pattern_checks].py

@@ -205,6 +205,24 @@ def test_object_maps_schema_validators_cross_document(output_file: Path) -> None
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+def test_object_maps_schema_validators_false_property(output_file: Path) -> None:
+    """Treat a property that is the boolean schema false as no plain object when the maps beside it are compared."""
+    input_path = OBJECT_MAPS / "false_property.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--generate-schema-validators"],
+    )
+    payloads = json.loads((PAYLOADS / "false_property.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
 def test_object_maps_released_pattern_properties_hook(tmp_path: Path) -> None:
     """Call a ``parse_pattern_properties`` override written for 0.86.0 with the arguments of that release.
 
