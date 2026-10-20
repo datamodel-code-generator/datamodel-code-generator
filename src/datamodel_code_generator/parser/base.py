@@ -165,6 +165,7 @@ from datamodel_code_generator.parser._finality import (
     pass_scope,
     record_ordering_inputs,
 )
+from datamodel_code_generator.parser._graph_ids import is_root_or_owned
 from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
 from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
@@ -9731,6 +9732,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 models=[{"class_name": name, "path": path} for name, path in paths],
             )
 
+    def _check_model_owners(self, mode: CheckMode) -> None:
+        """Report the models parsed from a JSON document that have no owner and are not roots (`is_root_or_owned`)."""
+        if unowned := [model for model in self.results if not is_root_or_owned(model.reference)]:
+            paths = [(model.class_name, redact_reference(model.reference.path)) for model in unowned]
+            names = ", ".join(f"{name} ({path})" for name, path in paths)
+            mode.violation(
+                Error,
+                f"models without an owner that are not roots: {names}",
+                models=[{"class_name": name, "path": path} for name, path in paths],
+            )
+
     def _close_http_fetch_session(self) -> None:
         """Close and discard the parser-scoped HTTP session without masking parser results."""
         if (session := self._http_fetch_session) is None:
@@ -9840,6 +9852,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         }
         if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
             self._check_schema_locations(mode)
+        if self._schema_graph is not None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
+            self._check_model_owners(mode)
         self.generation_store.enter_phase(Phase.SETTLE)
         arm_parse_checks(self.generation_store, "Parser.__prepare_parse")
         with fact_pass(decls.SETTLE_YIELDING_NAMES):

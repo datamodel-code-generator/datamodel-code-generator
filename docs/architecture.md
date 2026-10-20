@@ -641,12 +641,17 @@ them dirty, either incrementally for appended and changed models or with a full 
 
 A `Reference` takes a `ModelKey` when it is built: `Reference.model_post_init` stores the next value of a process-wide
 counter in its `__dict__`, beside its schema location, and `parser/_graph_ids.py:model_key_of` reads it
-(`identity_of` returns the `ModelIdentity` record: the key, the schema location and an owner that is not recorded
-yet). The store keys `model_by_ref_id`, `reverse_edges` and the reference counts of root collapse by it, through
+(`identity_of` returns the `ModelIdentity` record: the key, the schema location and the owner). The owner
+(`owner_of`) is the model whose builder built this one: each model builder of `JsonSchemaParser` runs in a frame whose
+cell takes the model it built when it returns, and a model records the frames open when it is recorded. A read or
+write variant stands for its base model in those frames, so it takes the base's owner; a document parse (`_parse_file`,
+also for a `$ref` target) starts with no frame open, so its models are roots. The store keys `model_by_ref_id`,
+`reverse_edges` and the reference counts of root collapse by it, through
 `GenerationStore.model_key`, instead of `id(reference)`, which Python reuses once a Reference is freed. Copies of a
 Reference (`deepcopy`, `model_copy`, pickling) keep the key of their original, so the store would take a copy for
 the model it was copied from. `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH` reports a Reference object that the store
-records or is asked about when another one took its key first. Because the key sits in `__dict__`, two distinct
+records or is asked about when another one took its key first, and, at the end of L1, a model parsed from a JSON
+document that has no owner and is not a root. Because the key sits in `__dict__`, two distinct
 References with equal fields compare unequal under pydantic before 2.6, whose `==` compares `__dict__`; no parser
 comparison depends on that (GR5 turns the remaining `==` sites into `is`). Other parser maps still identify models by
 path, class name or `id()`.

@@ -63,6 +63,7 @@ from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import (
     CHECK_MODEL_GRAPH_ENV,
     CHECK_MODULE_IMPORTS_ENV,
+    CHECK_SCHEMA_LOCATIONS_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -782,6 +783,28 @@ def test_model_graph_check_reports_a_copied_reference(
     assert_output(cast("str", parser.parse()))
     if flag == "report":
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_model_graph_check_reports_a_model_without_an_owner(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that registers a model no model builder built leaves it without an owner and not a root.
+
+    The model graph check (`1`, as the test suite sets it) raises for it at the end of parsing. The location check,
+    which reports the same model, is off here.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class AddingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            reference = self.model_resolver.add(["#/added"], "Added", class_name=True, loaded=True)
+            self.generation_store.register_model(self.data_model_type(reference=reference, fields=[]))
+
+    monkeypatch.setenv(CHECK_SCHEMA_LOCATIONS_ENV, "0")
+    parser = AddingParser(
+        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: models without an owner that are not roots: Added "):
+        parser.parse()
 
 
 def test_debug(monkeypatch: pytest.MonkeyPatch) -> None:

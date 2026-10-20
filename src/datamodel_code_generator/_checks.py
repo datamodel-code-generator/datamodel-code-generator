@@ -35,7 +35,8 @@ class CheckArea(Enum):
     module's import text is written."""
 
     MODEL_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH"
-    """Collapse stops before it would build a data type cycle; the store never meets a copied Reference."""
+    """Collapse stops before it would build a data type cycle; the store never meets a copied Reference; every model
+    parsed from a JSON document has an owner or is a root at the end of L1."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did."""

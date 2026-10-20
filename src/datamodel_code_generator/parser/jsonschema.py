@@ -132,6 +132,7 @@ from datamodel_code_generator.model.runtime_validation import (
     _is_internal_schema_runtime_validation,
     _make_internal_schema_runtime_validation,
 )
+from datamodel_code_generator.parser._graph_ids import BuildFrames
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._intersection import (
     ENUM_METADATA_KEYWORDS,
@@ -1878,16 +1879,12 @@ def _mark_location_conflict(reference: Reference) -> None:
     reference.__dict__[SCHEMA_LOCATION_CONFLICT_KEY] = True
 
 
-def _owner_frames_of_base(base_reference: Reference) -> tuple[list[Reference | None], ...]:
-    """Return the frames of the model that builds a base model: the base's frames without its own builder's."""
-    return base_reference.__dict__.get(SCHEMA_OWNER_FRAMES_KEY, ())[1:]
-
-
 def _builds_model(method: _BuilderT) -> _BuilderT:
-    """Run a model builder in a frame whose cell becomes the reference of the model it returns.
+    """Run a model builder in a frame whose cell becomes the reference of the model it returns, if it built it.
 
     A model records the frames it is built in, so the innermost filled frame of another model names the model whose
-    parse built it.
+    parse built it (`owner_of`). A returned model recorded outside the frame, such as a `$ref` target, leaves the cell
+    empty.
     """
 
     @wraps(method)
@@ -1898,11 +1895,30 @@ def _builds_model(method: _BuilderT) -> _BuilderT:
             result = method(self, *args, **kwargs)
         finally:
             self._model_frames.pop()
-        if isinstance(result, DataType) and result.reference is not None:
-            cell[0] = result.reference
+        if (
+            isinstance(result, DataType)
+            and (reference := result.reference) is not None
+            and (record := reference.__dict__.get(SCHEMA_OWNER_FRAMES_KEY)) is not None
+            and any(frame is cell for frame in record.frames)
+        ):
+            cell[0] = reference
         return result
 
     return cast("_BuilderT", build)
+
+
+def _parses_document(method: _BuilderT) -> _BuilderT:
+    """Run a document parse with no model builder frame open, so its models are roots whatever parse reached it."""
+
+    @wraps(method)
+    def parse(self: JsonSchemaParser, *args: Any, **kwargs: Any) -> Any:
+        frames, self._model_frames = self._model_frames, []
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            self._model_frames = frames
+
+    return cast("_BuilderT", parse)
 
 
 def _registry_entries(value: object) -> object:
@@ -3817,7 +3833,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         model_fields = [self._copy_model_field(field) for field in model_fields]
         reference = self._get_rw_model_variant_reference(base_reference, suffix, loaded=True)
         self._update_field_refs_for_variant(model_fields, suffix)
-        self._record_schema_object(reference, obj, owner_frames=_owner_frames_of_base(base_reference))
+        self._record_schema_object(reference, obj, variant_of=base_reference)
         self._update_variant_additional_properties_metadata(reference.path, obj, suffix)
         self._copy_schema_runtime_validation_for_variant(
             base_reference.path,
@@ -4432,16 +4448,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         reference: Reference,
         location: SchemaLocation | None,
         *,
-        owner_frames: tuple[list[Reference | None], ...] | None = None,
+        variant_of: Reference | None = None,
     ) -> None:
         """Record where the model of ``reference`` is built from and the frames of the models building it (L1).
 
         Both are kept on the Reference object, so they stay valid when later passes change ``Reference.path``. The
-        frames are innermost first; each cell holds the reference of the model its builder returned, once it returns.
+        frames are innermost first; each cell holds the reference of the model its builder built, once it returns. A
+        read or write variant stands for its base model in the frames, so it takes the base's owner.
         """
         _set_schema_location(reference, location)
-        reference.__dict__[SCHEMA_OWNER_FRAMES_KEY] = (
-            tuple(reversed(self._model_frames)) if owner_frames is None else owner_frames
+        reference.__dict__[SCHEMA_OWNER_FRAMES_KEY] = BuildFrames(
+            reference if variant_of is None else variant_of, tuple(reversed(self._model_frames))
         )
 
     def _record_schema_object(
@@ -4449,10 +4466,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         reference: Reference,
         obj: JsonSchemaObject,
         *,
-        owner_frames: tuple[list[Reference | None], ...] | None = None,
+        variant_of: Reference | None = None,
     ) -> None:
         """Record the schema object the model of ``reference`` is built from, and take its template data."""
-        self._record_schema_location(reference, obj.schema_location, owner_frames=owner_frames)
+        self._record_schema_location(reference, obj.schema_location, variant_of=variant_of)
         self._set_schema_metadata(reference.path, obj)
         self.set_schema_extensions(reference.path, obj)
 
@@ -10459,7 +10476,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 variant_fields = [self._copy_model_field(field) for field in fields]
                 variant_reference = self._get_rw_model_variant_reference(reference, suffix, loaded=True)
                 self._update_field_refs_for_variant(variant_fields, suffix)
-                self._record_schema_object(variant_reference, obj, owner_frames=_owner_frames_of_base(reference))
+                self._record_schema_object(variant_reference, obj, variant_of=reference)
                 self._update_variant_additional_properties_metadata(
                     variant_reference.path,
                     obj,
@@ -14554,6 +14571,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             name = str(key)
             yield from self._iter_schema_definition_entry(name, model, [*base_path, name])
 
+    @_parses_document
     def _parse_file(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         raw: dict[str, Any],
