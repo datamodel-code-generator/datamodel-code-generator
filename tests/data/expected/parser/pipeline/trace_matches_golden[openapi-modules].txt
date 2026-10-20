@@ -29,7 +29,6 @@ replace_duplicate_name_in_module
 apply_forced_invalid_dotted_stdout_repair
 reuse_model_tree_scope
 resolve_circular_imports
-remap_require_update_action_paths
 configure_code_formatter
 detect_standard_generation_templates
 reset_per_run_state

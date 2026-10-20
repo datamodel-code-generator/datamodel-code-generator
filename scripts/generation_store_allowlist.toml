@@ -128,7 +128,7 @@ required = 1
 
 ["src/datamodel_code_generator/model/base.py"."_set_nested_model_default_factory_order"]
 '__dict__[_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY]' = 1
-'__dict__[_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_PATHS_KEY]' = 1
+'__dict__[_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY]' = 1
 
 ["src/datamodel_code_generator/model/dataclass.py"."DataClass.restore_required_inherited_field_state"]
 'extras.pop("init")' = 1

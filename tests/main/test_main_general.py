@@ -102,6 +102,8 @@ from tests.main.conftest import (
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
+    from datamodel_code_generator.reference import Reference
+
 assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 BLACK_VERSION = version.parse(black.__version__)
 BLACK_LT_233 = version.parse("23.3.0") > BLACK_VERSION
@@ -783,6 +785,123 @@ def test_model_graph_check_reports_a_copied_reference(
     assert_output(cast("str", parser.parse()))
     if flag == "report":
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_model_graph_check_reports_a_path_lookup_that_names_two_models(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that moves a model to the path of another one leaves two live models under one path.
+
+    The sort tells the two models apart by model key, but a reference the parser builds outside the resolver names no
+    model by its key and both by its path. The model graph check (`1`, as the test suite sets it) raises where the sort
+    looks that path up.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import DataType
+
+    class MovingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            top, child = self.results
+            self.generation_store.move_model(child, new_path=top.path)
+            keyless = Reference(path=top.path, name=top.reference.name)
+            self.generation_store.replace_field_type(child.fields[0], DataType(reference=keyless))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
+    parser = MovingParser(
+        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    with pytest.raises(
+        Error,
+        match=rf"^{CHECK_MODEL_GRAPH_ENV}: sort_data_models: a lookup by the path "
+        r"annotated_forward_reference_required_order\.json# names 2 models$",
+    ):
+        parser.parse()
+
+
+def test_model_graph_check_reports_models_whose_references_share_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that adds a deep copy of a model leaves two live models whose Reference objects share a key.
+
+    By model key the sort would take the two models for one. The model graph check (`1`, as the test suite sets it)
+    raises where the sort keys them.
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class DuplicatingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            self.results.append(deepcopy(self.results[1]))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
+    parser = DuplicatingParser(
+        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    with pytest.raises(
+        Error,
+        match=rf"^{CHECK_MODEL_GRAPH_ENV}: sort_data_models: two Reference objects of live models share the model key "
+        r"of annotated_forward_reference_required_order\.json#/definitions/Child$",
+    ):
+        parser.parse()
+
+
+def test_model_graph_check_reports_a_reference_whose_path_names_another_model(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A custom parser that types a field with a copy of its Reference moved to the path of another model.
+
+    The copy keeps the model key of the model the field references, while its path names another model. With
+    `report:<path>`, the check appends the copy and each site that reads the copy's key and path to the file.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from datamodel_code_generator.types import DataType
+
+    class RepointingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            top = self.results[0]
+            field = next(field for model in self.results for field in model.fields if field.data_type.reference)
+
+            moved = cast("Reference", field.data_type.reference).model_copy(update={"path": top.path})
+            self.generation_store.replace_field_type(field, DataType(reference=moved))
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, f"report:{report_path}")
+    parser = RepointingParser(
+        JSON_SCHEMA_DATA_PATH / "annotated_forward_reference_required_order.json", formatters=[Formatter.BUILTIN]
+    )
+    assert_output(cast("str", parser.parse()))
+    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_process_single_module_override_lists_a_model_for_the_reference_update_action() -> None:
+    """A custom parser whose ``_process_single_module`` lists one more model path gives that model the update action.
+
+    The model takes the call as the models on reference cycles do, though it references no model.
+    """
+    from typing_extensions import override
+
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class ListingParser(JsonSchemaParser):
+        @override
+        def _process_single_module(self, *args: Any) -> Any:
+            *_, require_update_action_models, _ = args
+            require_update_action_models.append(args[1][0].path)
+            return super()._process_single_module(*args)
+
+    model_types = get_data_model_types(DataModelType.PydanticV2BaseModel)
+    parser = ListingParser(
+        JSON_SCHEMA_DATA_PATH / "person.json",
+        data_model_type=model_types.data_model,
+        data_model_root_type=model_types.root_model,
+        data_model_field_type=model_types.field_model,
+        data_type_manager_type=model_types.data_type_manager,
+        dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(cast("str", parser.parse(disable_future_imports=True)))
 
 
 def test_model_graph_check_reports_a_model_without_an_owner(monkeypatch: pytest.MonkeyPatch) -> None:

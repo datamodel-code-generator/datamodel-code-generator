@@ -252,14 +252,6 @@ RESOLVE_CIRCULAR_IMPORTS = PassDecl(
     ),
     summary="Merges modules that import each other into _internal modules.",
 )
-REMAP_REQUIRE_UPDATE_ACTION_PATHS = PassDecl(
-    "remap_require_update_action_paths",
-    Phase.STRUCTURE,
-    Scope.GLOBAL,
-    PassKind.BOOKKEEPING,
-    reads=_facts(RenderFact.MODULE_MEMBERSHIP),
-    condition="circular imports moved models",
-)
 CONFIGURE_CODE_FORMATTER = PassDecl(
     "configure_code_formatter",
     Phase.STRUCTURE,

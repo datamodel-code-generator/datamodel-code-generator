@@ -78,7 +78,7 @@ from datamodel_code_generator.parser.base import (
     sort_data_models,
     to_hashable,
 )
-from datamodel_code_generator.reference import Reference, snake_to_upper_camel
+from datamodel_code_generator.reference import Reference, model_key_of, snake_to_upper_camel
 from datamodel_code_generator.types import DataType
 
 
@@ -325,17 +325,18 @@ def test_sort_data_models() -> None:
     ]
 
     unresolved, resolved, require_update_action_models = sort_data_models(reference)
+    keys = {item.path: model_key_of(item) for item in (reference_a, reference_b, reference_c)}
     expected = OrderedDict()
-    expected["B"] = reference[1]
-    expected["C"] = reference[2]
-    expected["A"] = reference[0]
+    expected[keys["B"]] = reference[1]
+    expected[keys["C"]] = reference[2]
+    expected[keys["A"]] = reference[0]
 
     assert resolved == expected
     assert unresolved == []
-    assert require_update_action_models == ["B", "A"]
+    assert require_update_action_models == [keys["B"], keys["A"]]
 
-    _, _, seeded_require_update_action_models = sort_data_models(reference, require_update_action_models=["B"])
-    assert seeded_require_update_action_models == ["B", "A"]
+    _, _, seeded_require_update_action_models = sort_data_models(reference, require_update_action_models=[keys["B"]])
+    assert seeded_require_update_action_models == [keys["B"], keys["A"]]
 
 
 def test_sort_data_models_unresolved() -> None:
@@ -1986,7 +1987,7 @@ def test_root_dict_key_reference_paths_ignores_primitive_keys(parser_fixture: C)
         reference=_reference("Model"),
     )
 
-    assert not parser_fixture._Parser__root_dict_key_reference_paths(model)
+    assert not parser_fixture._Parser__root_dict_key_references(model)
 
 
 def test_finalize_modules_plans_schema_helpers_after_root_collapse() -> None:

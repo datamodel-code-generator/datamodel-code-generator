@@ -39,7 +39,7 @@ from warnings import warn
 from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import Protocol, Unpack, final
+from typing_extensions import Protocol, ReadOnly, TypedDict, Unpack, final
 
 from datamodel_code_generator import (
     AllExportsCollisionStrategy,
@@ -67,6 +67,7 @@ from datamodel_code_generator._internal_utils import (
     HashableComparable,
     get_most_of_parent,
 )
+from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._naming_hint import collecting_class_names
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
@@ -165,7 +166,12 @@ from datamodel_code_generator.parser._finality import (
     pass_scope,
     record_ordering_inputs,
 )
-from datamodel_code_generator.parser._graph_ids import is_root_or_owned
+from datamodel_code_generator.parser._graph_ids import (
+    UNRESOLVED_MODEL_KEY,
+    KeyedModels,
+    is_root_or_owned,
+    keyed_models,
+)
 from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
 from datamodel_code_generator.parser._model_shapes import (
     COLLAPSE_REUSE,
@@ -260,7 +266,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.http import _HTTPFetchSession
     from datamodel_code_generator.model._decisions.tag_value import TagFieldMatch, VariantTagSource
     from datamodel_code_generator.model_metadata import GeneratedModelMetadata, ModelFieldMetadata, ModelMetadata
-    from datamodel_code_generator.parser._scc import ModuleGraph
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder
 
 
@@ -926,8 +931,10 @@ def _build_keep_model_order_dependency_maps(
 ) -> _KeepModelOrderDeps:
     strong_deps: ModelDeps = {}
     all_deps: ModelDeps = {}
-    runtime_validation_references = _runtime_validation_reference_paths(models, same_module=False)
-    class_names = {model.path: model.class_name for model in models} if runtime_validation_references else {}
+    runtime_validation_references = _runtime_validation_reference_keys(models, same_module=False)
+    class_names = (
+        {model_key_of(model.reference): model.class_name for model in models} if runtime_validation_references else {}
+    )
     for model in models:
         strong, deps = _collect_keep_model_order_deps(
             model,
@@ -936,8 +943,8 @@ def _build_keep_model_order_dependency_maps(
             pydantic_v2_root_model_type=pydantic_v2_root_model_type,
             use_deferred_annotations=use_deferred_annotations,
         )
-        if reference_paths := runtime_validation_references.get(model.path):
-            runtime_validation_deps = {class_names[reference_path] for reference_path in reference_paths} - imported
+        if reference_keys := runtime_validation_references.get(model_key_of(model.reference)):
+            runtime_validation_deps = {class_names[reference_key] for reference_key in reference_keys} - imported
             strong |= runtime_validation_deps
             deps |= runtime_validation_deps
         strong_deps[model.class_name] = strong
@@ -1039,64 +1046,69 @@ def _reorder_models_keep_model_order(
 def _sort_models_by_class_body_references(
     models: list[DataModel],
     pydantic_v2_root_model_type: type[DataModel] | None,
-    runtime_validation_references: Mapping[str, frozenset[str]],
+    runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]],
 ) -> list[DataModel]:
     """Define first the models a class body evaluates: base classes, root types and runtime rule types."""
-    model_paths = {model.path for model in models}
-    order_index = {model.path: index for index, model in enumerate(models)}
-    edges: dict[str, set[str]] = {model.path: set() for model in models}
+    keyed = keyed_models(models, "class body order")
+    order_index = {key: index for index, key in enumerate(keyed.models)}
+    edges: dict[ModelKey, set[ModelKey]] = {key: set() for key in keyed.models}
 
-    def add_dependency(model: DataModel, reference_path: str | None) -> None:
-        if reference_path in model_paths and reference_path != model.path:
-            edges[reference_path].add(model.path)
+    def add_dependency(model_key: ModelKey, reference_key: ModelKey) -> None:
+        if reference_key in edges and reference_key != model_key:
+            edges[reference_key].add(model_key)
 
-    for model in models:
+    for model_key, model in keyed.models.items():
         for base_class in model.base_classes:
-            add_dependency(model, base_class.reference.path if base_class.reference else None)
-        for reference_path in runtime_validation_references.get(model.path, ()):
-            add_dependency(model, reference_path)
+            add_dependency(
+                model_key, keyed.key_of(base_class.reference) if base_class.reference else UNRESOLVED_MODEL_KEY
+            )
+        for reference_key in runtime_validation_references.get(model_key, ()):
+            add_dependency(model_key, reference_key)
         if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
             for field in model.fields:
                 for data_type in field.data_type.all_data_types:
-                    add_dependency(model, data_type.reference.path if data_type.reference else None)
+                    add_dependency(
+                        model_key, keyed.key_of(data_type.reference) if data_type.reference else UNRESOLVED_MODEL_KEY
+                    )
 
-    sorted_paths = stable_toposort(list(order_index), edges, key=order_index.__getitem__)
-    model_by_path = {model.path: model for model in models}
-    return [model_by_path[path] for path in sorted_paths]
+    sorted_keys = stable_toposort(list(order_index), edges, key=order_index.__getitem__)
+    return [keyed.models[key] for key in sorted_keys]
 
 
-def _runtime_validation_reference_paths(models: Sequence[DataModel], *, same_module: bool) -> dict[str, frozenset[str]]:
+def _runtime_validation_reference_keys(
+    models: Sequence[DataModel], *, same_module: bool
+) -> dict[ModelKey, frozenset[ModelKey]]:
     """Map models to the listed models their runtime rules name; with ``same_module``, other modules are imported."""
-    references_by_path: dict[str, frozenset[str]] = {}
-    model_paths: set[str] = set()
+    references_by_key: dict[ModelKey, frozenset[ModelKey]] = {}
+    keyed: KeyedModels | None = None
     for model in models:
         if not (references := model.schema_runtime_validation_references):
             continue
-        model_paths = model_paths or {listed_model.path for listed_model in models}
+        keyed = keyed or keyed_models(models, "runtime validation references")
         module_path = model.module_path if same_module else None
-        if reference_paths := frozenset(
-            reference.path
+        if reference_keys := frozenset(
+            reference_key
             for reference in references
-            if reference.path in model_paths
+            if (reference_key := keyed.key_of(reference)) in keyed.models
             and (
                 module_path is None
                 or (isinstance(source := reference.source, DataModel) and source.module_path == module_path)
             )
         ):
-            references_by_path[model.path] = reference_paths
-    return references_by_path
+            references_by_key[model_key_of(model.reference)] = reference_keys
+    return references_by_key
 
 
 def _runtime_validation_names_later_model(
     models: list[DataModel],
-    runtime_validation_references: Mapping[str, frozenset[str]],
+    runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]],
 ) -> bool:
     """Return whether a runtime rule names a model that ``models`` list after the rule's model."""
-    positions = {model.path: index for index, model in enumerate(models)}
+    positions = {model_key_of(model.reference): index for index, model in enumerate(models)}
     return any(
-        positions.get(reference_path, -1) > index
+        positions.get(reference_key, -1) > index
         for index, model in enumerate(models)
-        for reference_path in runtime_validation_references.get(model.path, ())
+        for reference_key in runtime_validation_references.get(model_key_of(model.reference), ())
     )
 
 
@@ -1204,7 +1216,20 @@ def _can_retain_model_imports_cache(
 
 
 ReferenceMapSet = dict[str, set[str]]
-SortedDataModels = dict[str, DataModel]
+SortedDataModels = dict[ModelKey, DataModel]
+
+
+class RecursionFacts(TypedDict):
+    """What makes models recursive in the output, by model key, for the passes after the one that finds it."""
+
+    require_update: ReadOnly[frozenset[ModelKey]]
+    """The models whose module calls the reference update action for them: the models the sort finds on a reference
+    cycle or after a model they reference, and the models that reuse and the shared module make need it later."""
+    circular_roots: ReadOnly[frozenset[ModelKey]]
+    """The root models on a cycle of root models, which collapsing keeps named."""
+
+
+_NO_RECURSION: Final = RecursionFacts(require_update=frozenset(), circular_roots=frozenset())
 
 
 class _ParseArgs(NamedTuple):
@@ -1229,7 +1254,6 @@ class _PipelineRun:
     suppress_parse_warnings: bool
     config: ParseConfig = dataclasses.field(init=False)
     sorted_data_models: SortedDataModels = dataclasses.field(init=False)
-    require_update_action_models: list[str] = dataclasses.field(init=False)
     model_identities: Mapping[DataModel, str] | None = None
     module_models: ModuleModels = dataclasses.field(init=False)
     internal_modules: set[ModulePath] = dataclasses.field(init=False)
@@ -1251,7 +1275,6 @@ class _SettleRun(Protocol):
     suppress_parse_warnings: bool
     config: ParseConfig
     sorted_data_models: SortedDataModels
-    require_update_action_models: list[str]
     model_identities: Mapping[DataModel, str] | None
 
 
@@ -1303,14 +1326,12 @@ class _StructureState:
     """The state of one ``_build_module_structure`` call."""
 
     sorted_data_models: SortedDataModels
-    require_update_action_models: list[str]
     module_split_mode: ModuleSplitMode | None
     module_models: ModuleModels = dataclasses.field(init=False)
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = dataclasses.field(init=False)
     model_path_to_module_name: dict[str, str] = dataclasses.field(init=False)
     internal_modules: set[ModulePath] = dataclasses.field(init=False)
     forwarder_map: ForwarderMap = dataclasses.field(init=False)
-    path_mapping: dict[str, str] = dataclasses.field(init=False)
 
 
 @final
@@ -1419,14 +1440,19 @@ def _named_model_path(path: str, models: Mapping[str, DataModel]) -> str:
 def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     unsorted_data_models: list[DataModel],
     sorted_data_models: SortedDataModels | None = None,
-    require_update_action_models: list[str] | None = None,
+    require_update_action_models: list[ModelKey] | None = None,
     recursion_count: int = MAX_RECURSION_COUNT,
     generation_index: GenerationIndex | None = None,
     *,
     pydantic_v2_root_model_type: type[DataModel] | None = None,
-    runtime_validation_references: Mapping[str, frozenset[str]] | None = None,
-) -> tuple[list[DataModel], SortedDataModels, list[str]]:
-    """Sort data models by dependency order for correct forward references."""
+    runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]] | None = None,
+    keyed: KeyedModels | None = None,
+) -> tuple[list[DataModel], SortedDataModels, list[ModelKey]]:
+    """Sort data models by dependency order for correct forward references.
+
+    Models, their references and the models needing a reference update action are keyed by model key; ``keyed``
+    holds the models of the outermost call, which the paths that models list themselves resolve against.
+    """
     if sorted_data_models is None:
         sorted_data_models = OrderedDict()
 
@@ -1434,43 +1460,48 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
     if require_update_action_models is None:
         require_update_action_models = []
-    require_update_action_model_paths = set(require_update_action_models)
+    require_update_action_model_keys = set(require_update_action_models)
+    universe = (
+        keyed_models((*sorted_data_models.values(), *unsorted_data_models), "sort_data_models")
+        if keyed is None
+        else keyed
+    )
 
-    def add_require_update_action_model(model: DataModel) -> None:
-        if model.is_alias:
+    def add_require_update_action_model(model: DataModel, key: ModelKey) -> None:
+        if model.is_alias or key in require_update_action_model_keys:
             return
-        path = model.path
-        if path in require_update_action_model_paths:
-            return
-        require_update_action_models.append(path)
-        require_update_action_model_paths.add(path)
+        require_update_action_models.append(key)
+        require_update_action_model_keys.add(key)
 
-    def get_reference_classes(model: DataModel) -> frozenset[str]:
-        reference_classes = (
-            model.reference_classes if generation_index is None else generation_index.reference_classes_for_model(model)
+    def get_reference_keys(model: DataModel, key: ModelKey) -> frozenset[ModelKey]:
+        reference_keys = (
+            universe.resolve(model.reference_classes)
+            if generation_index is None
+            else generation_index.referenced_keys_for_model(model, universe)
         )
-        if model_runtime_validation_references := runtime_validation_references.get(model.path):
-            return reference_classes | model_runtime_validation_references
-        return reference_classes
+        if model_runtime_validation_references := runtime_validation_references.get(key):
+            return reference_keys | model_runtime_validation_references
+        return reference_keys
 
     sorted_model_count: int = len(sorted_data_models)
-    sorted_model_paths = set(sorted_data_models)
+    sorted_model_keys = set(sorted_data_models)
 
     unresolved_references: list[DataModel] = []
     for model in unsorted_data_models:
-        reference_classes = get_reference_classes(model)
-        if not reference_classes:
-            sorted_data_models[model.path] = model
-            sorted_model_paths.add(model.path)
-        elif model.path in reference_classes and len(reference_classes) == 1:  # only self-referencing
-            sorted_data_models[model.path] = model
-            sorted_model_paths.add(model.path)
-            add_require_update_action_model(model)
-        elif not reference_classes - {model.path} - sorted_model_paths:  # reference classes have been resolved
-            sorted_data_models[model.path] = model
-            sorted_model_paths.add(model.path)
-            if model.path in reference_classes:
-                add_require_update_action_model(model)
+        key = model_key_of(model.reference)
+        reference_keys = get_reference_keys(model, key)
+        if not reference_keys:
+            sorted_data_models[key] = model
+            sorted_model_keys.add(key)
+        elif key in reference_keys and len(reference_keys) == 1:  # only self-referencing
+            sorted_data_models[key] = model
+            sorted_model_keys.add(key)
+            add_require_update_action_model(model, key)
+        elif not reference_keys - {key} - sorted_model_keys:  # reference classes have been resolved
+            sorted_data_models[key] = model
+            sorted_model_keys.add(key)
+            if key in reference_keys:
+                add_require_update_action_model(model, key)
         else:
             unresolved_references.append(model)
 
@@ -1485,29 +1516,30 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     generation_index,
                     pydantic_v2_root_model_type=pydantic_v2_root_model_type,
                     runtime_validation_references=runtime_validation_references,
+                    keyed=universe,
                 )
             except RecursionError:  # pragma: no cover
                 pass
 
         # sort on base_class dependency
-        seen_orderings: set[tuple[str, ...]] = set()
+        seen_orderings: set[tuple[ModelKey, ...]] = set()
         while True:
             ordered_models: list[tuple[int, DataModel]] = []
             # Build lookup dict for O(1) index access instead of O(n) list.index()
-            path_to_index = {m.path: idx for idx, m in enumerate(unresolved_references)}
+            key_to_index = {model_key_of(m.reference): idx for idx, m in enumerate(unresolved_references)}
             for model in unresolved_references:
                 if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
                     indexes = [
-                        path_to_index[ref_path]
+                        key_to_index[reference_key]
                         for f in model.fields
                         for t in f.data_type.all_data_types
-                        if t.reference and (ref_path := t.reference.path) in path_to_index
+                        if t.reference and (reference_key := universe.key_of(t.reference)) in key_to_index
                     ]
                 else:
                     indexes = [
-                        path_to_index[b.reference.path]
+                        key_to_index[reference_key]
                         for b in model.base_classes
-                        if b.reference and b.reference.path in path_to_index
+                        if b.reference and (reference_key := universe.key_of(b.reference)) in key_to_index
                     ]
 
                 if indexes:
@@ -1525,7 +1557,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             if sorted_unresolved_models == unresolved_references:
                 break
 
-            sig = tuple(m.path for m in sorted_unresolved_models)
+            sig = tuple(model_key_of(m.reference) for m in sorted_unresolved_models)
             if sig in seen_orderings:
                 # Base-class dependency order has no fixed point (e.g. cyclic inheritance with
                 # discriminators). Further iterations only permute the list; use stable order.
@@ -1543,30 +1575,46 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             )
 
         # circular reference
-        unsorted_data_model_names = set(path_to_index.keys())
+        unsorted_data_model_keys = set(key_to_index)
         for model in unresolved_references:
-            reference_classes = get_reference_classes(model)
-            unresolved_model = reference_classes - {model.path} - sorted_model_paths
-            base_models = [getattr(s.reference, "path", None) for s in model.base_classes]
-            update_action_parent = require_update_action_model_paths.intersection(base_models)
+            key = model_key_of(model.reference)
+            reference_keys = get_reference_keys(model, key)
+            unresolved_model = reference_keys - {key} - sorted_model_keys
+            base_model_keys = {universe.key_of(s.reference) for s in model.base_classes if s.reference}
+            update_action_parent = require_update_action_model_keys.intersection(base_model_keys)
             if not unresolved_model:
-                sorted_data_models[model.path] = model
-                sorted_model_paths.add(model.path)
+                sorted_data_models[key] = model
+                sorted_model_keys.add(key)
                 if update_action_parent:
-                    add_require_update_action_model(model)
+                    add_require_update_action_model(model, key)
                 continue
 
-            if not unresolved_model - unsorted_data_model_names:
-                sorted_data_models[model.path] = model
-                sorted_model_paths.add(model.path)
-                add_require_update_action_model(model)
+            if not unresolved_model - unsorted_data_model_keys:
+                sorted_data_models[key] = model
+                sorted_model_keys.add(key)
+                add_require_update_action_model(model, key)
                 continue
 
             # unresolved
-            models_by_path = {**sorted_data_models, **{item.path: item for item in unresolved_references}}
+            models_by_path = {
+                **{item.path: item for item in sorted_data_models.values()},
+                **{item.path: item for item in unresolved_references},
+            }
+
+            def reference_paths(item: DataModel) -> frozenset[str]:
+                reference_classes = (
+                    item.reference_classes
+                    if generation_index is None
+                    else generation_index.reference_classes_for_model(item)
+                )
+                return reference_classes | {
+                    universe.models[reference_key].path
+                    for reference_key in runtime_validation_references.get(model_key_of(item.reference), ())
+                }
+
             unresolved_classes = ", ".join(
                 f"[class: {_named_model_path(item.path, models_by_path)} references: "
-                f"{frozenset(_named_model_path(path, models_by_path) for path in get_reference_classes(item))}]"
+                f"{frozenset(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
                 for item in unresolved_references
             )
             msg = f"A Parser can not resolve classes: {unresolved_classes}."
@@ -1588,6 +1636,7 @@ def sort_base_classes_for_mro(
     For example, if B inherits from A, then class C(A, B) is invalid but
     class C(B, A) is valid.
     """
+    sorted_keyed = keyed_models(sorted_data_models.values(), "base class sources")
     for model in sorted_data_models.values():
         base_classes = model.base_classes
         if len(base_classes) <= 1:
@@ -1601,17 +1650,19 @@ def sort_base_classes_for_mro(
                 source_model := (
                     base_class.reference.source
                     if isinstance(base_class.reference.source, DataModel)
-                    else sorted_data_models.get(base_class.reference.path)
+                    else sorted_data_models.get(sorted_keyed.key_of(base_class.reference))
                 )
             )
             is not None
         ]
-        model_order = {
-            source_model.path: index for index, source_model in enumerate(sort_data_models_for_mro(source_models))
-        }
+        ordered_models = sort_data_models_for_mro(source_models)
+        ordered = keyed_models(ordered_models, "base class order")
+        model_order = {model_key_of(source_model.reference): index for index, source_model in enumerate(ordered_models)}
         sorted_base_classes = sorted(
             base_classes,
-            key=lambda base_class: model_order.get(base_class.reference.path, 0) if base_class.reference else 0,
+            key=lambda base_class: (
+                model_order.get(ordered.key_of(base_class.reference), 0) if base_class.reference else 0
+            ),
         )
         if all(
             sorted_base_class is base_class
@@ -3196,18 +3247,18 @@ def _flatten_union_members(data_type: DataType, enclosing: tuple[DataType, ...] 
 
 def _alias_reference_cycles(models: Sequence[DataModel]) -> dict[int, int]:
     """Map each alias on a cycle whose every reference is a container item to that cycle."""
-    aliases: dict[ModulePath, DataModel] = {}
-    graph: ModuleGraph = {}
+    aliases: dict[ModelKey, DataModel] = {}
+    graph: dict[ModelKey, set[ModelKey]] = {}
     pending = [model for model in models if model.DEFERS_RECURSIVE_TYPE_HINT]
     while pending:
-        if (key := ((model := pending.pop()).path,)) in graph:
+        if (key := model_key_of((model := pending.pop()).reference)) in graph:
             continue
         aliases[key] = model
         graph[key] = set()
         for field in model.fields:
             for target, in_container in _iter_alias_references(field.data_type):
                 if in_container:
-                    graph[key].add((target.path,))
+                    graph[key].add(model_key_of(target.reference))
                     pending.append(target)
     return {id(aliases[key]): index for index, scc in enumerate(find_circular_sccs(graph)) for key in scc}
 
@@ -3430,6 +3481,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
         self._collapsed_reuse_users: dict[int, tuple[DataType, Reference]] = {}
         self._reuse_union_tags: dict[DataModel, tuple[HashableComparable, ...]] = {}
+        self._recursion_facts: RecursionFacts = _NO_RECURSION
         self._reused_variant_tag_fields: dict[int, DataModelFieldBase] = {}
         self._quotes_hidden_types = False
 
@@ -5162,10 +5214,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     model_field.default = model_field.data_type.reference.source.default
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
+    def __require_update_action(
+        self, models: Sequence[DataModel], require_update_action_models: list[str] | None = None
+    ) -> None:
+        """Add the models that are not type aliases to the models needing a reference update action.
+
+        ``require_update_action_models`` is the list of their paths that ``_process_single_module`` takes.
+        """
+        recursion_facts = self._recursion_facts
+        for model in models:
+            add_model_path_to_list(require_update_action_models, model)
+        self._recursion_facts = RecursionFacts(
+            require_update=recursion_facts["require_update"].union(
+                model_key_of(model.reference) for model in models if not model.is_alias
+            ),
+            circular_roots=recursion_facts["circular_roots"],
+        )
+
     def __reuse_model(self, models: list[DataModel], require_update_action_models: list[str]) -> None:
         if not self.reuse_model or self.reuse_scope == ReuseScope.Tree:
             return
         duplicates = []
+        require_update = self._recursion_facts["require_update"]
+        updated_models: list[DataModel] = []
         reuse_candidates = (
             model
             for model in self._reuse_optimization_context.eligible_models(models.copy())
@@ -5200,12 +5271,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             else:
                 inherited_model = model.create_reuse_model(cached_model_reference)
                 self.generation_store.redirect_model_reference_users(model, models, inherited_model.reference)
-                if cached_model_reference.path in require_update_action_models:
-                    add_model_path_to_list(require_update_action_models, inherited_model)
+                if model_key_of(cached_model_reference) in require_update:
+                    updated_models.append(inherited_model)
                 replace_model_in_list(models, model, inherited_model)
 
         for duplicate in duplicates:
             models.remove(duplicate)
+        if updated_models:
+            self.__require_update_action(updated_models, require_update_action_models)
 
     def __redirect_removed_reuse_users(self, duplicate: DataModel, canonical: DataModel) -> None:
         """Redirect every user of a duplicate that reuse removes, remembering what each user referred to.
@@ -5279,7 +5352,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self,
         module_models: list[tuple[tuple[str, ...], list[DataModel]]],
         duplicates: list[tuple[tuple[str, ...], DataModel, tuple[str, ...], DataModel]],
-        require_update_action_models: list[str],
         reference_models: list[DataModel] | None,
     ) -> tuple[tuple[str, ...], list[DataModel]]:
         """Create shared module with canonical models and replace duplicates with inherited models.
@@ -5303,6 +5375,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             shared_models.append(canonical)
 
         supports_inheritance = self.data_model_type.SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE
+        require_update = self._recursion_facts["require_update"]
+        updated_models: list[DataModel] = []
 
         module_models_sets: dict[tuple[str, ...], set[DataModel]] = {
             module: set(models) for module, models in module_models
@@ -5335,8 +5409,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         reference_models if reference_models is not None else models,
                         inherited_model.reference,
                     )
-                    if shared_ref.path in require_update_action_models:
-                        add_model_path_to_list(require_update_action_models, inherited_model)
+                    if model_key_of(shared_ref) in require_update:
+                        updated_models.append(inherited_model)
                     replace_model_in_list(models, duplicate_model, inherited_model)
                 break
 
@@ -5356,18 +5430,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         if reference_models is not None:
             # Relocation can introduce forward references after the initial sort.
-            later_shared_paths: set[str] = set()
+            keyed = keyed_models(shared_models, "shared module forward references")
+            later_shared_keys: set[ModelKey] = set()
             for model in reversed(shared_models):
-                if self.generation_store.index.reference_classes_for_model(model) & later_shared_paths:
-                    add_model_path_to_list(require_update_action_models, model)
-                later_shared_paths.add(model.path)
+                if self.generation_store.index.referenced_keys_for_model(model, keyed) & later_shared_keys:
+                    updated_models.append(model)
+                later_shared_keys.add(model_key_of(model.reference))
+        if updated_models:
+            self.__require_update_action(updated_models)
 
         return (shared_module,), shared_models
 
     def __reuse_model_tree_scope(
         self,
         module_models: list[tuple[tuple[str, ...], list[DataModel]]],
-        require_update_action_models: list[str],
         module_split_mode: ModuleSplitMode | None,
     ) -> tuple[tuple[str, ...], list[DataModel]] | None:
         """Deduplicate models across all modules, placing shared models in shared.py."""
@@ -5387,9 +5463,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if module_split_mode == ModuleSplitMode.Single
             else None
         )
-        return self.__create_shared_module_from_duplicates(
-            module_models, duplicates, require_update_action_models, reference_models
-        )
+        return self.__create_shared_module_from_duplicates(module_models, duplicates, reference_models)
 
     def __collapse_root_models(  # noqa: PLR0913
         self,
@@ -5416,13 +5490,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 internal_modules=internal_modules or set(),
             )
 
-    def _keeps_root_model_named(self, model: DataModel, circular_root_model_paths: Collection[str]) -> bool:
+    def _keeps_root_model_named(self, model: DataModel, circular_root_models: Collection[ModelKey]) -> bool:
         """Return whether collapsing keeps a root model named wherever it is referenced.
 
         A circular root model cannot be fully inlined, runtime rules the model owns would be lost with it, and
         flattening it would discard constraints that live on a nested array or union alias, or on a mapping.
         """
-        if not model.fields or model.path in circular_root_model_paths or model.has_runtime_object_validation:
+        if (
+            not model.fields
+            or model_key_of(model.reference) in circular_root_models
+            or model.has_runtime_object_validation
+        ):
             return True
         if not self.field_constraints and _has_preservable_root_constraints(model):
             return True
@@ -5453,7 +5531,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         generation_store = self.generation_store
         generation_index = generation_store.index
-        circular_root_model_paths = getattr(self, "_circular_root_model_paths", ())
+        circular_root_models = self._recursion_facts["circular_roots"]
         is_root_model = self._is_root_model
         collapses_list_item_root_models = self._collapses_list_item_root_models
         redirected_holders: list[tuple[DataModel, DataType, Import | None]] = []
@@ -5465,7 +5543,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if (
                         not reference
                         or not is_root_model(root_type_model := cast("DataModel", reference.source))
-                        or self._keeps_root_model_named(root_type_model, circular_root_model_paths)
+                        or self._keeps_root_model_named(root_type_model, circular_root_models)
                     ):
                         continue
                     root_type_field = root_type_model.fields[0]
@@ -5709,6 +5787,25 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 return module_name
         return _get_model_module_name(model, model_path_to_module_name)
 
+    def __take_recursion_facts(self, model: DataModel, path_owner: DataModel) -> None:
+        """Give ``model``, which takes the path of ``path_owner``, the recursion facts of ``path_owner``, not its own.
+
+        Legacy row ``legacy-recursion-follows-path``: the facts were reference paths that only the relocation into
+        ``_internal`` modules followed, so a model that took another model's path took that model's facts.
+        """
+        recursion_facts = self._recursion_facts
+        key, owner_key = model_key_of(model.reference), model_key_of(path_owner.reference)
+
+        def taken(keys: frozenset[ModelKey]) -> frozenset[ModelKey]:
+            if (key in keys) == (owner_key in keys):
+                return keys
+            return keys ^ {key}
+
+        self._recursion_facts = RecursionFacts(
+            require_update=taken(recursion_facts["require_update"]),
+            circular_roots=taken(recursion_facts["circular_roots"]),
+        )
+
     def __replace_root_model_by_inner_model(
         self,
         root_model: DataModel,
@@ -5728,6 +5825,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             new_path=root_model.reference.path,
         )
         self._replaced_root_models[id(root_model)] = root_model
+        self.__take_recursion_facts(inner_model, root_model)
         model_path_to_module_name[inner_model.path] = inner_module_name
         if inner_model.class_name != old_class_name:
             self._renamed_types.setdefault(inner_model.path, []).append(_RenamedType(old_class_name, old_path))
@@ -5784,36 +5882,36 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         require_dict_key_edge: bool = False,
     ) -> None:
-        """Cache root-model paths in circular components before collapsing them."""
-        root_models = {
-            model.path: model for _, models in module_models for model in models if self._is_root_model(model)
-        }
-        graph: ModuleGraph = {
-            (path,): {
-                (reference_path,)
-                for reference_path in self.generation_store.index.reference_classes_for_model_including_dict_keys(model)
-                if reference_path in root_models
-            }
-            for path, model in root_models.items()
+        """Record the root models in circular components before collapsing them."""
+        keyed = keyed_models(
+            (model for _, models in module_models for model in models if self._is_root_model(model)),
+            "circular root models",
+        )
+        index = self.generation_store.index
+        graph = {
+            key: index.referenced_keys_for_model(model, keyed, all_dict_keys=True) & keyed.models.keys()
+            for key, model in keyed.models.items()
         }
         circular_components = find_circular_sccs(graph)
         if not require_dict_key_edge:
-            self._circular_root_model_paths = frozenset(
-                path for component in circular_components for (path,) in component
-            )
-            return
+            circular_keys = {key for component in circular_components for key in component}
+        else:
+            circular_keys = {key for key in keyed.models if key in graph[key]}
 
-        dict_key_edges = {path: self.__root_dict_key_reference_paths(model) for path, model in root_models.items()}
-        circular_paths = {path for path in root_models if (path,) in graph[path,]}
-        for component in circular_components:
-            component_paths = {path for (path,) in component}
-            if any(dict_key_edges[path] & component_paths for path in component_paths):
-                circular_paths.update(component_paths)
-        self._circular_root_model_paths = frozenset(circular_paths)
+            def dict_key_reference_keys(key: ModelKey) -> frozenset[ModelKey]:
+                return keyed.keys_of(self.__root_dict_key_references(keyed.models[key]))
 
-    def __root_dict_key_reference_paths(self, model: DataModel) -> set[str]:  # noqa: PLR6301
-        """Return model-reference paths reached through mapping-key annotations."""
-        reference_paths: set[str] = set()
+            for component in circular_components:
+                if any(dict_key_reference_keys(key) & component for key in component):
+                    circular_keys.update(component)
+        recursion_facts = self._recursion_facts
+        self._recursion_facts = RecursionFacts(
+            require_update=recursion_facts["require_update"], circular_roots=frozenset(circular_keys)
+        )
+
+    def __root_dict_key_references(self, model: DataModel) -> list[Reference]:  # noqa: PLR6301
+        """Return the model references that mapping-key annotations of ``model`` reach."""
+        references: list[Reference] = []
         data_types = [field.data_type for field in model.fields]
         seen_data_types: set[int] = set()
         while data_types:
@@ -5823,10 +5921,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             seen_data_types.add(id(data_type))
             if (dict_key := data_type.dict_key) is not None:
                 if dict_key.reference:
-                    reference_paths.add(dict_key.reference.path)
+                    references.append(dict_key.reference)
                 data_types.append(dict_key)
             data_types.extend(data_type.data_types)
-        return reference_paths
+        return references
 
     def __set_default_enum_member(
         self,
@@ -7633,19 +7731,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_to_original_module: dict[int, tuple[str, ...]],
         internal_module: tuple[str, ...],
         internal_path: Path,
-    ) -> tuple[defaultdict[tuple[str, ...], list[tuple[str, str]]], dict[str, str]]:
+    ) -> defaultdict[tuple[str, ...], list[tuple[str, str]]]:
         """Rename duplicate classes and relocate models to internal module.
 
         Class names follow ``_merged_class_names``; forwarders re-export each model under its original name.
 
         Returns:
-            Tuple of:
-            - Mapping from original module to list of (original_name, new_name) tuples.
-            - Mapping from old reference paths to new reference paths.
+            Mapping from original module to list of (original_name, new_name) tuples.
         """
         internal_module_str = ".".join(internal_module)
         module_class_mappings: defaultdict[tuple[str, ...], list[tuple[str, str]]] = defaultdict(list)
-        path_mapping: dict[str, str] = {}
         original_class_names = [model.class_name for model in all_scc_models]
         new_class_names = _merged_class_names(original_class_names)
 
@@ -7654,8 +7749,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 all_scc_models, original_class_names, new_class_names, strict=True
             ):
                 original_module = model_to_original_module[id(model)]
-                old_path = model.path  # Save old path before updating
-
                 new_path = f"{internal_module_str}.{new_class_name}"
                 self.generation_store.rename_model(
                     model,
@@ -7665,46 +7758,39 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 )
 
                 module_class_mappings[original_module].append((original_class_name, new_class_name))
-                path_mapping[old_path] = new_path
 
-        return module_class_mappings, path_mapping
+        return module_class_mappings
 
     def __build_module_dependency_graph(
         self,
         module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
     ) -> dict[tuple[str, ...], set[tuple[str, ...]]]:
         """Build a directed graph of module dependencies."""
-        path_to_module: dict[str, tuple[str, ...]] = {}
+        keyed = keyed_models((model for _, models in module_models_list for model in models), "module dependencies")
+        module_of: dict[ModelKey, tuple[str, ...]] = {}
         for module, models in module_models_list:
             for model in models:
-                path_to_module[model.path] = module
+                module_of[model_key_of(model.reference)] = module
 
         graph: dict[tuple[str, ...], set[tuple[str, ...]]] = {}
-
-        def add_cross_module_edge(ref_path: str, source_module: tuple[str, ...]) -> None:
-            """Add edge if ref_path points to a different module."""
-            if ref_path in path_to_module:
-                target_module = path_to_module[ref_path]
-                if target_module != source_module:
-                    graph[source_module].add(target_module)
-
+        index = self.generation_store.index
         for module, models in module_models_list:
             graph[module] = set()
 
             for model in models:
-                for reference_path in self.generation_store.index.reference_classes_for_model(model):
-                    add_cross_module_edge(reference_path, module)
+                for reference_key in index.referenced_keys_for_model(model, keyed):
+                    if (target_module := module_of.get(reference_key)) is not None and target_module != module:
+                        graph[module].add(target_module)
 
         return graph
 
-    def __resolve_circular_imports(  # noqa: PLR0914
+    def __resolve_circular_imports(
         self,
         module_models_list: list[tuple[tuple[str, ...], list[DataModel]]],
     ) -> tuple[
         list[tuple[tuple[str, ...], list[DataModel]]],
         set[tuple[str, ...]],
         dict[tuple[str, ...], tuple[tuple[str, ...], list[tuple[str, str]]]],
-        dict[str, str],
     ]:
         """Resolve circular imports by merging all SCCs into _internal.py modules.
 
@@ -7717,17 +7803,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             - Updated module_models_list with models moved to _internal modules
             - Set of _internal modules created
             - Forwarder map: original_module -> (internal_module, [(original_name, new_name)])
-            - Path mapping: old_reference_path -> new_reference_path
         """
         graph = self.__build_module_dependency_graph(module_models_list)
 
         circular_sccs = find_circular_sccs(graph)
 
         forwarder_map: dict[tuple[str, ...], tuple[tuple[str, ...], list[tuple[str, str]]]] = {}
-        all_path_mappings: dict[str, str] = {}
 
         if not circular_sccs:
-            return module_models_list, set(), forwarder_map, all_path_mappings
+            return module_models_list, set(), forwarder_map
 
         # All circular SCCs are problematic and should be merged into _internal.py
         # to break the import cycles.
@@ -7746,15 +7830,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             internal_path = Path("/".join(internal_module))
 
             all_scc_models, model_to_original_module = self.__collect_scc_models(scc, result_modules)
-            module_class_mappings, path_mapping = self.__rename_and_relocate_scc_models(
+            module_class_mappings = self.__rename_and_relocate_scc_models(
                 all_scc_models, model_to_original_module, internal_module, internal_path
             )
             all_scc_models = _sort_models_by_class_body_references(
                 all_scc_models,
                 self.pydantic_v2_root_model_type,
-                _runtime_validation_reference_paths(all_scc_models, same_module=False),
+                _runtime_validation_reference_keys(all_scc_models, same_module=False),
             )
-            all_path_mappings.update(path_mapping)
 
             for scc_module in scc:
                 if scc_module in result_modules:  # pragma: no branch
@@ -7774,12 +7857,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if module not in internal_modules_created:  # pragma: no branch
                 new_module_models.append((module, result_modules.get(module, [])))
 
-        return new_module_models, internal_modules_created, forwarder_map, all_path_mappings
+        return new_module_models, internal_modules_created, forwarder_map
 
     def __get_resolve_reference_action_parts(
         self,
         models: list[DataModel],
-        require_update_action_models: list[str],
+        require_update: Collection[ModelKey],
         *,
         use_deferred_annotations: bool,
     ) -> list[str]:
@@ -7787,20 +7870,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if self.dump_resolve_reference_action is None:
             return []
 
-        require_update_action_model_paths = set(require_update_action_models)
-        required_paths_in_module = {m.path for m in models if m.path in require_update_action_model_paths}
+        keyed = keyed_models(models, "reference update actions")
+        required_keys_in_module = {key for key in keyed.models if key in require_update}
 
         if (
             use_deferred_annotations
-            and required_paths_in_module
+            and required_keys_in_module
             and get_resolve_reference_action_capabilities(self.dump_resolve_reference_action).filter_forward_references
         ):
             module_positions = {m.reference.short_name: i for i, m in enumerate(models) if m.reference}
             module_model_names = set(module_positions)
 
-            forward_needed: set[str] = set()
+            forward_needed: set[ModelKey] = set()
             for model in models:
-                if model.path not in required_paths_in_module or not model.reference:
+                if (key := model_key_of(model.reference)) not in required_keys_in_module:
                     continue
                 name = model.reference.short_name
                 pos = module_positions[name]
@@ -7811,7 +7894,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if t.reference and t.reference.short_name in module_model_names
                 }
                 if name in refs or any(module_positions.get(r, -1) > pos for r in refs):
-                    forward_needed.add(model.path)
+                    forward_needed.add(key)
 
             # Propagate requirement through inheritance.
             changed = True
@@ -7819,19 +7902,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             while changed:
                 changed = False
                 for model in models:
-                    if not model.reference or model.path in required_filtered:
+                    if (key := model_key_of(model.reference)) in required_filtered:
                         continue
-                    base_paths = {b.reference.path for b in model.base_classes if b.reference}
-                    if base_paths & required_filtered:
-                        required_filtered.add(model.path)
+                    base_keys = {keyed.key_of(b.reference) for b in model.base_classes if b.reference}
+                    if base_keys & required_filtered:
+                        required_filtered.add(key)
                         changed = True
 
-            required_paths_in_module = required_filtered
+            required_keys_in_module = required_filtered
 
         return [
             "\n",
             self.dump_resolve_reference_action(
-                m.reference.short_name for m in models if m.reference and m.path in required_paths_in_module
+                m.reference.short_name for m in models if model_key_of(m.reference) in required_keys_in_module
             ),
         ]
 
@@ -8258,13 +8341,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _build_module_structure(
         self,
         sorted_data_models: SortedDataModels,
-        require_update_action_models: list[str],
         module_split_mode: ModuleSplitMode | None,
     ) -> tuple[
         ModuleModels,
         set[ModulePath],
         ForwarderMap,
-        dict[str, str],
         dict[DataModel, tuple[ModulePath, list[DataModel]]],
         dict[str, str],
     ]:
@@ -8273,13 +8354,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Reuse compares the tags of discriminated unions as their mappings give them before any model is merged,
         since merging redirects the variants of a union to models that its mapping does not name.
         """
-        state = _StructureState(sorted_data_models, require_update_action_models, module_split_mode)
+        state = _StructureState(sorted_data_models, module_split_mode)
         self.__runner().run_steps(Parser.__STRUCTURE_BODY, self, state)
         return (
             state.module_models,
             state.internal_modules,
             state.forwarder_map,
-            state.path_mapping,
             state.model_to_module_models,
             state.model_path_to_module_name,
         )
@@ -8322,11 +8402,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def __apply_reuse_model_tree_scope(self, state: _StructureState) -> None:
         """Move the duplicates of tree-scope reuse into a shared module first in the module list."""
-        if not (
-            shared_module_entry := self.__reuse_model_tree_scope(
-                state.module_models, state.require_update_action_models, state.module_split_mode
-            )
-        ):
+        if not (shared_module_entry := self.__reuse_model_tree_scope(state.module_models, state.module_split_mode)):
             return
         state.module_models.insert(0, shared_module_entry)
         if state.module_split_mode == ModuleSplitMode.Single:
@@ -8336,15 +8412,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def __resolve_module_circular_imports(self, state: _StructureState) -> None:
         """Break the import cycles between modules."""
-        state.module_models, state.internal_modules, state.forwarder_map, state.path_mapping = (
-            self.__resolve_circular_imports(state.module_models)
+        state.module_models, state.internal_modules, state.forwarder_map = self.__resolve_circular_imports(
+            state.module_models
         )
-
-    def __remap_require_update_action_paths(self, state: _StructureState) -> None:  # noqa: PLR6301
-        """Follow the models that breaking import cycles moved in the paths of models needing an update action."""
-        state.require_update_action_models[:] = [
-            state.path_mapping.get(path, path) for path in state.require_update_action_models
-        ]
 
     def _process_single_module(  # noqa: PLR0913, PLR0917
         self,
@@ -8904,27 +8974,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _set_nested_model_default_factory_metadata(
         self,
         contexts: list[ModuleContext],
-        require_update_action_models: list[str],
+        require_update: Collection[ModelKey],
     ) -> None:
         """Record declaration order and recursive model components for default factories."""
-        recursive_paths_by_model: dict[str, frozenset[str]] = {}
-        if require_update_action_models:
-            models = [model for ctx in contexts for model in ctx.models]
-            live_paths = {model.path for model in models}
-            graph: ModuleGraph = {
-                (model.path,): {
-                    (reference_path,)
-                    for reference_path in self.generation_store.index.reference_classes_for_model(model)
-                    if reference_path in live_paths
-                }
-                for model in models
+        recursive_keys_by_model: dict[ModelKey, frozenset[ModelKey]] = {}
+        if require_update:
+            keyed = keyed_models((model for ctx in contexts for model in ctx.models), "nested model default factories")
+            index = self.generation_store.index
+            graph = {
+                key: index.referenced_keys_for_model(model, keyed) & keyed.models.keys()
+                for key, model in keyed.models.items()
             }
             for component in find_circular_sccs(graph):
-                recursive_paths = frozenset(node[0] for node in component)
-                recursive_paths_by_model.update((path, recursive_paths) for path in recursive_paths)
+                recursive_keys = frozenset(component)
+                recursive_keys_by_model.update(dict.fromkeys(recursive_keys, recursive_keys))
 
         for module_index, ctx in enumerate(contexts):
-            _set_nested_model_default_factory_order(ctx.models, module_index, recursive_paths_by_model)
+            _set_nested_model_default_factory_order(ctx.models, module_index, recursive_keys_by_model)
 
     def _generate_module_output(  # noqa: PLR0912, PLR0913, PLR0917
         self,
@@ -8932,7 +8998,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         config: ParseConfig,
         contexts: list[ModuleContext],
         forwarder_map: ForwarderMap,
-        require_update_action_models: list[str],
+        require_update: Collection[ModelKey],
         future_imports_str: str,
     ) -> Result | None:
         """Generate output for a single module."""
@@ -8990,7 +9056,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
             result += self.__get_resolve_reference_action_parts(
                 ctx.models,
-                require_update_action_models,
+                require_update,
                 use_deferred_annotations=config.use_deferred_annotations,
             )
 
@@ -9311,14 +9377,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def __sort_data_models(self, run: _SettleRun) -> None:
         """Sort the parsed models so that each follows the models it needs."""
-        _, run.sorted_data_models, run.require_update_action_models = sort_data_models(
+        _, run.sorted_data_models, require_update = sort_data_models(
             self.results,
             generation_index=self.generation_store.index,
             pydantic_v2_root_model_type=self.pydantic_v2_root_model_type,
             runtime_validation_references=(
-                None if self.keep_model_order else _runtime_validation_reference_paths(self.results, same_module=True)
+                None if self.keep_model_order else _runtime_validation_reference_keys(self.results, same_module=True)
             ),
         )
+        self._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())
 
     def __record_source_reference_paths(self, run: _SettleRun) -> None:  # noqa: PLR6301
         """Record the reference path each model was parsed from, for the model metadata."""
@@ -9330,12 +9397,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             run.module_models,
             run.internal_modules,
             run.forwarder_map,
-            _,
             run.model_to_module_models,
             run.model_path_to_module_name,
-        ) = self._build_module_structure(
-            run.sorted_data_models, run.require_update_action_models, run.args.module_split_mode
-        )
+        ) = self._build_module_structure(run.sorted_data_models, run.args.module_split_mode)
 
     def __configure_code_formatter(self, run: _StructuredRun) -> None:
         """Build the code formatter of the run, unless the builtin defaults need none."""
@@ -9412,6 +9476,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def __process_each_module(self, run: _ModulesRun) -> None:
         """Process every output module through ``_process_single_module``, in module order."""
         module_models = run.module_models
+        require_update = self._recursion_facts["require_update"]
+        require_update_action_models = [
+            model.path
+            for _, models in module_models
+            for model in models
+            if model_key_of(model.reference) in require_update
+        ]
         for position, (module_, models) in enumerate(module_models, 1):
             self._defers_tagged_unions = position < len(module_models)
             with pass_scope("Parser._process_single_module", Phase.MODULES), module_checkpoint(models):
@@ -9422,11 +9493,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     run.config,
                     run.internal_modules,
                     run.model_path_to_module_name,
-                    run.require_update_action_models,
+                    require_update_action_models,
                     run.unused_models,
                 )
             run.module_to_import[module_] = ctx.imports
             run.contexts.append(ctx)
+        self.__settle_update_actions(require_update_action_models, _context_models(run.contexts))
+
+    def __settle_update_actions(self, listed_paths: Iterable[str], models: Iterable[DataModel]) -> None:
+        """Give the reference update action to the models at the paths that ``_process_single_module`` listed.
+
+        The parser lists the paths of the models needing the action. A listed path that none of them holds, as one a
+        parser extension lists, names the model at it (row ``legacy-keyless-reference-by-path``).
+        """
+        keyed = keyed_models(models, "listed reference update actions")
+        recursion_facts = self._recursion_facts
+        require_update = recursion_facts["require_update"]
+        held = {keyed.models[key].path for key in require_update & keyed.models.keys()}
+        self._recursion_facts = RecursionFacts(
+            require_update=require_update.union(
+                keyed.resolve(path for path in listed_paths if path not in held) - {UNRESOLVED_MODEL_KEY}
+            ),
+            circular_roots=recursion_facts["circular_roots"],
+        )
 
     def __tag_fields_of_tagged_bases(self, run: _FinishRun) -> None:  # noqa: PLR6301
         """Make the fields of tagged msgspec bases tags, and remember the models that opt out."""
@@ -9455,7 +9544,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_identities=run.model_identities,
             config=run.config,
             forwarder_map=run.forwarder_map,
-            require_update_action_models=run.require_update_action_models,
+            require_update=self._recursion_facts["require_update"],
         )
 
     __STRUCTURE_BODY: ClassVar[tuple[StepLike[Parser[Any, Any], _StructureState], ...]] = (
@@ -9484,11 +9573,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ),
         PassSpec(decls.REUSE_MODEL_TREE_SCOPE, lambda self, s: self.__apply_reuse_model_tree_scope(s)),
         PassSpec(decls.RESOLVE_CIRCULAR_IMPORTS, lambda self, s: self.__resolve_module_circular_imports(s)),
-        PassSpec(
-            decls.REMAP_REQUIRE_UPDATE_ACTION_PATHS,
-            lambda self, s: self.__remap_require_update_action_paths(s),
-            when=lambda _, s: bool(s.path_mapping),
-        ),
     )
     """The passes of ``_build_module_structure``."""
 
@@ -10030,7 +10114,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 PassSpec(
                     decls.SET_NESTED_MODEL_DEFAULT_FACTORY_METADATA,
                     lambda self, run: self._set_nested_model_default_factory_metadata(
-                        run.contexts, run.require_update_action_models
+                        run.contexts, self._recursion_facts["require_update"]
                     ),
                     when=lambda self, _: self.use_default_factory_for_optional_nested_models,
                 ),
@@ -10244,7 +10328,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_identities: Mapping[DataModel, str] | None,
         config: ParseConfig,
         forwarder_map: ForwarderMap,
-        require_update_action_models: list[str],
+        require_update: Collection[ModelKey],
     ) -> str | dict[tuple[str, ...], Result]:
         """Render the shared result mapping and apply final output-only transformations."""
         future_imports = self._import_ledger.extract_future(self.imports, _FUTURE_IMPORTS)
@@ -10262,7 +10346,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         for ctx in contexts:
             result = self._generate_module_output(
-                ctx, config, contexts, forwarder_map, require_update_action_models, future_imports_str
+                ctx, config, contexts, forwarder_map, require_update, future_imports_str
             )
             if result is not None:
                 results[ctx.module] = result

@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, final
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
-    from datamodel_code_generator.parser._graph_ids import ModelKey
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.types import DataType
 
 NodeKey = NewType("NodeKey", int)

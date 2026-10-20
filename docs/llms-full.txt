@@ -62002,7 +62002,7 @@ writes, and moves fields whose default the template keeps after the fields witho
 | L3 `__resolve_circular_imports` | module dependency graph, class names | merges cyclic modules into `_internal` modules, relocates models; a model whose class name an earlier model of the merge holds takes `<name>_<n>` with the smallest `n` no merged model holds (`_merged_class_names`) |
 | L4 `__flatten_conflicting_base_layouts` (msgspec) | bases, fields, possible tags (`__find_possible_tag_names`) and reuse duplicates (`__find_possible_reuse_duplicates`) | copies base fields into Structs whose generated bases have conflicting layouts, sorted by the construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`), and drops those bases |
 | L4 `unconstrain_union_members` (msgspec) | union members | field types |
-| L4 `__set_circular_root_model_paths` | root-model reference graph | circular root-model paths that every module's collapse reads |
+| L4 `__set_circular_root_model_paths` | root-model reference graph | the circular root models (`RecursionFacts` by model key) that every module's collapse reads |
 
 Module order is not dependency order: `_internal` modules of import cycles come first, then the tree-scope shared
 module, then `_group_models_by_module`'s sort (longest module path first, reverse lexical).
@@ -62149,7 +62149,6 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | STRUCTURE | `apply_forced_invalid_dotted_stdout_repair` | global | transform | CLASS_NAMES, MODULE_MEMBERSHIP | CLASS_NAMES, MODULE_MEMBERSHIP | Flattens the modules of dotted stdout output that a retry found invalid, then regroups. After `replace_duplicate_name_in_module`: flattens invalid roots under the names deduplication gave. |
 | STRUCTURE | `reuse_model_tree_scope` | global | transform | BASES, FIELD_SET, FIELD_TYPES, MODELS_EXIST, MODULE_MEMBERSHIP, NULLABLE | every Fact, FIELD_ORDER, MODULE_MEMBERSHIP, PLANS | Moves models duplicated across modules into a shared module. Runs when: reuse_model with the tree scope. After `apply_forced_invalid_dotted_stdout_repair`: shares the duplicates of the repaired module layout. |
 | STRUCTURE | `resolve_circular_imports` | global | transform | CLASS_NAMES, MODULE_MEMBERSHIP | BASES, FIELD_TYPES, MODULE_MEMBERSHIP | Merges modules that import each other into _internal modules. After `reuse_model_tree_scope`: breaks the cycles of the modules tree-scope reuse leaves, its shared module included. |
-| STRUCTURE | `remap_require_update_action_paths` | global | bookkeeping | - | MODULE_MEMBERSHIP | Runs when: circular imports moved models. |
 | STRUCTURE | `configure_code_formatter` | global | setup | - | MODULE_MEMBERSHIP | Runs when: format_. |
 | STRUCTURE | `detect_standard_generation_templates` | global | setup | - | - |  |
 | PLAN | `reset_per_run_state` | global | bookkeeping | - | - |  |

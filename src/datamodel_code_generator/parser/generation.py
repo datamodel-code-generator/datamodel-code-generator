@@ -51,10 +51,11 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
+from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
-from datamodel_code_generator.parser._graph_ids import ModelKey, identity_of, model_key_of
+from datamodel_code_generator.parser._graph_ids import identity_of
 from datamodel_code_generator.parser._holders import (
     KNOWN_PARENT_MISMATCHES,
     ChildList,
@@ -74,6 +75,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._checks import CheckMode
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
+    from datamodel_code_generator.parser._graph_ids import KeyedModels
     from datamodel_code_generator.types import DataType
 
     OwnerModels: TypeAlias = DataModel | tuple[DataModel, ...] | None
@@ -746,6 +748,23 @@ def _model_fact(model_id: ModelId, parse_order: int, model: DataModel) -> ModelF
     )
 
 
+def _unrecorded_references(model: DataModel, *, all_dict_keys: bool) -> Iterator[Reference]:
+    """Return the references whose paths ``DataModel.reference_classes`` lists, for a model the facts do not record.
+
+    With ``all_dict_keys``, the dict keys of the field types count too.
+    """
+    data_types = chain(
+        model.base_classes,
+        *(
+            field.data_type.all_data_types
+            if all_dict_keys
+            else chain(*(member.all_data_types for member in field.data_type.data_types), (field.data_type,))
+            for field in model.fields
+        ),
+    )
+    return (data_type.reference for data_type in data_types if data_type.reference)
+
+
 @final
 class GenerationIndex:
     """Query layer over the current generation facts."""
@@ -754,6 +773,7 @@ class GenerationIndex:
         """Create an index over ``store`` facts."""
         self._store = store
         self._reference_classes_cache: dict[ModelId, frozenset[str]] = {}
+        self._recorded_references_cache: dict[tuple[ModelId, bool], tuple[Reference, ...]] = {}
         self._reference_classes_cache_version = -1
 
     def _facts(self) -> GenerationFacts:
@@ -763,6 +783,7 @@ class GenerationIndex:
         if self._reference_classes_cache_version == self._store.facts_version:
             return
         self._reference_classes_cache.clear()
+        self._recorded_references_cache.clear()
         self._reference_classes_cache_version = self._store.facts_version
 
     def model_fact(self, model: DataModel) -> ModelFact | None:
@@ -853,6 +874,48 @@ class GenerationIndex:
         if len(additional_properties_references := model.additional_properties_reference_classes):
             return reference_classes.union(additional_properties_references)
         return reference_classes
+
+    def referenced_keys_for_model(
+        self, model: DataModel, keyed: KeyedModels, *, all_dict_keys: bool = False
+    ) -> frozenset[ModelKey]:
+        """Return the keys of the models that ``model`` references, whose paths `reference_classes_for_model` returns.
+
+        With ``all_dict_keys``, dict keys count as `reference_classes_for_model_including_dict_keys` counts them. The
+        references of the model (those its recorded data types hold, or for a model the facts do not record, its bases
+        and the data types of its fields) resolve against ``keyed``, and so do the paths of its additional-properties
+        snapshot, which for an unrecorded model only `reference_classes_for_model_including_dict_keys` reads.
+        """
+        self._facts()
+        if (model_id := self._store.model_id(model)) is None:
+            keys = keyed.keys_of(_unrecorded_references(model, all_dict_keys=all_dict_keys))
+            additional_properties_references = model.additional_properties_reference_classes if all_dict_keys else ()
+        else:
+            keys = self._recorded_reference_keys(model, model_id, keyed, all_dict_keys=all_dict_keys)
+            additional_properties_references = model.additional_properties_reference_classes
+        return keys | keyed.resolve(additional_properties_references) if additional_properties_references else keys
+
+    def _recorded_reference_keys(
+        self, model: DataModel, model_id: ModelId, keyed: KeyedModels, *, all_dict_keys: bool
+    ) -> frozenset[ModelKey]:
+        """Return the keys of the models of ``keyed`` named by the references the data types of ``model`` hold."""
+        self._reset_reference_classes_cache_if_needed()
+        cache_key = (model_id, all_dict_keys)
+        if (cached := self._recorded_references_cache.get(cache_key)) is None:
+            facts = self._facts()
+            include_dict_keys = all_dict_keys or (
+                (include_dict_key_reference_classes := model._INCLUDE_DICT_KEY_REFERENCE_CLASSES) is not None  # noqa: SLF001
+                and include_dict_key_reference_classes(model)
+            )
+            references = tuple(
+                reference
+                for data_type_id in facts.data_types_by_model.get(model_id, ())
+                if (reference := (fact := facts.data_type_facts[data_type_id]).reference) is not None
+                if include_dict_keys or fact.role != "dict_key"
+            )
+            for reference in references:
+                self._store.model_key(reference)
+            cached = self._recorded_references_cache[cache_key] = references
+        return keyed.keys_of(cached)
 
     def owner_model_for_data_type(self, data_type: DataType) -> DataModel | None:
         """Return the tracked model that owns ``data_type`` if known."""

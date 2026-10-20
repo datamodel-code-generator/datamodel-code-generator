@@ -38,8 +38,9 @@ from urllib.parse import ParseResult, urlparse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import TypeIs, override
 
-from datamodel_code_generator import Error, NamingStrategy
+from datamodel_code_generator import Error, NamingStrategy, _model_keys
 from datamodel_code_generator._format_types import PythonVersion
+from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._target_unicode import (
     is_identifier,
     is_nfkc,
@@ -66,7 +67,11 @@ if TYPE_CHECKING:
 
 _ALIAS_RESOLUTION_CLASS_NAME_KEY: Final = "_alias_resolution_class_name"
 _EXPLICIT_FIELD_ALIAS_KEY: Final = "_explicit_field_alias"
-_MODEL_KEY: Final = "_model_key"
+_MODEL_KEY: Final = MODEL_KEY_ATTRIBUTE
+
+ModelKey = _model_keys.ModelKey
+"""The identity of the model a `Reference` names (defined in a leaf module that every layer can import)."""
+model_key_of = _model_keys.model_key_of
 _MODEL_KEYS: Final = count()
 
 

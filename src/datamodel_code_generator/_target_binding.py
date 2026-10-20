@@ -670,12 +670,12 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         config: ParseConfig,
         contexts: list[ModuleContext],
         forwarder_map: ForwarderMap,
-        require_update_action_models: list[str],
+        require_update: Collection[ModelKey],
         future_imports_str: str,
     ) -> Result | None:
         """Record the module's final models and the imports the parser finalized for it once its output exists."""
         result = super()._generate_module_output(
-            ctx, config, contexts, forwarder_map, require_update_action_models, future_imports_str
+            ctx, config, contexts, forwarder_map, require_update, future_imports_str
         )
         if result is not None:
             self.module_outputs.append((ctx.module, tuple(ctx.models), result))
@@ -3948,8 +3948,9 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterable, Iterator, Mapping
+    from collections.abc import Callable, Collection, Container, Iterable, Iterator, Mapping
 
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind

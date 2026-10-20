@@ -27,6 +27,7 @@ from datamodel_code_generator import Error, cached_path_exists
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
+from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import (
@@ -63,7 +64,7 @@ from datamodel_code_generator.types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Hashable, Iterable, Iterator, Mapping, Sequence
 
     from jinja2 import Environment, Template
 
@@ -95,7 +96,7 @@ _MAX_CUSTOM_TEMPLATE_SIGNATURES = 128
 _MAX_CUSTOM_TEMPLATE_DEPENDENCIES = 128
 _ORIGINAL_TEMPLATE_LOADER_MARKER = "__datamodel_code_generator_original_template_loader__"
 _NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY = "_nested_model_default_factory_order"
-_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_PATHS_KEY = "_nested_model_default_factory_recursive_paths"
+_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY = "_nested_model_default_factory_recursive_keys"
 _NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY = "_nested_model_required_constructor_fields"
 _REQUIRED_INHERITED_DEFAULT_FACTORY_KEY = "_required_inherited_default_factory"
 _UNTAKEN_CONSTRAINTS_KEY = "_untaken_constraints"
@@ -1500,8 +1501,8 @@ def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[Dat
         if data_type.is_dict:
             continue
         if data_type.reference and isinstance(source := data_type.reference.source, model_cls):
-            if field.parent is not None and source.path in field.parent.__dict__.get(
-                _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_PATHS_KEY, ()
+            if field.parent is not None and model_key_of(source.reference) in field.parent.__dict__.get(
+                _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY, ()
             ):
                 return None
             if (required_fields := source.__dict__.get(_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY)) is None:
@@ -1529,13 +1530,13 @@ def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[Dat
 def _set_nested_model_default_factory_order(
     models: list[DataModel],
     module_index: int,
-    recursive_paths_by_model: Mapping[str, frozenset[str]],
+    recursive_keys_by_model: Mapping[ModelKey, frozenset[ModelKey]],
 ) -> None:
-    """Record final declaration order and recursive paths for nested model factories."""
+    """Record final declaration order and the models of each model's reference cycle for nested model factories."""
     for model_index, model in enumerate(models):
         model.__dict__[_NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY] = (module_index, model_index)
-        if recursive_paths := recursive_paths_by_model.get(model.path):
-            model.__dict__[_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_PATHS_KEY] = recursive_paths
+        if recursive_keys := recursive_keys_by_model.get(model_key_of(model.reference)):
+            model.__dict__[_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY] = recursive_keys
 
 
 def _build_environment(loader: Any, *, auto_reload: bool = True) -> Environment:
@@ -3190,9 +3191,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         ]
 
 
-def _model_ancestor_paths(model: DataModel) -> set[str]:
-    """Collect generated ancestors without assuming direct bases are already sorted."""
-    ancestors: set[str] = set()
+def _model_ancestor_keys(model: DataModel) -> set[ModelKey]:
+    """Collect the model keys of generated ancestors without assuming direct bases are already sorted."""
+    ancestors: set[ModelKey] = set()
     to_visit = [
         base_class.reference.source
         for base_class in model.base_classes
@@ -3200,9 +3201,9 @@ def _model_ancestor_paths(model: DataModel) -> set[str]:
     ]
     while to_visit:
         parent = to_visit.pop()
-        if parent.path in ancestors:
+        if (parent_key := model_key_of(parent.reference)) in ancestors:
             continue
-        ancestors.add(parent.path)
+        ancestors.add(parent_key)
         to_visit.extend(
             base_class.reference.source
             for base_class in parent.base_classes
@@ -3211,18 +3212,23 @@ def _model_ancestor_paths(model: DataModel) -> set[str]:
     return ancestors
 
 
+def _model_key_of_model(model: DataModel) -> ModelKey:
+    """Return the model key of ``model``, the identity C3 merges compare."""
+    return model_key_of(model.reference)
+
+
 def sort_data_models_for_mro(models: list[DataModel]) -> list[DataModel]:
     """Match the stable descendant-before-ancestor order used for rendered bases."""
     if len(models) <= 1:
         return models.copy()
-    ancestor_paths = {model.path: _model_ancestor_paths(model) for model in models}
+    ancestor_keys = {model_key_of(model.reference): _model_ancestor_keys(model) for model in models}
     return sorted(
         models,
-        key=lambda model: sum(model.path in ancestors for ancestors in ancestor_paths.values()),
+        key=lambda model: sum(model_key_of(model.reference) in ancestors for ancestors in ancestor_keys.values()),
     )
 
 
-def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], str]) -> list[MroT]:
+def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], Hashable]) -> list[MroT]:
     """Merge inheritance sequences using C3 with a deterministic cycle fallback."""
     result: list[MroT] = []
     while sequences := [sequence for sequence in sequences if sequence]:
@@ -3243,12 +3249,13 @@ def linearize_data_models(models: list[DataModel]) -> list[DataModel]:
     if len(models) == 1 and not models[0].base_classes:
         return models.copy()
 
-    linearized_models: dict[str, list[DataModel]] = {}
+    linearized_models: dict[ModelKey, list[DataModel]] = {}
 
-    def linearize(model: DataModel, active: frozenset[str] = frozenset()) -> list[DataModel]:
-        if cached := linearized_models.get(model.path):
+    def linearize(model: DataModel, active: frozenset[ModelKey] = frozenset()) -> list[DataModel]:
+        model_key = model_key_of(model.reference)
+        if cached := linearized_models.get(model_key):
             return cached
-        if model.path in active:
+        if model_key in active:
             return [model]
         parents = sort_data_models_for_mro([
             base_class.reference.source
@@ -3259,13 +3266,13 @@ def linearize_data_models(models: list[DataModel]) -> list[DataModel]:
             model,
             *c3_merge(
                 [
-                    *[linearize(parent, active | {model.path}).copy() for parent in parents],
+                    *[linearize(parent, active | {model_key}).copy() for parent in parents],
                     parents.copy(),
                 ],
-                key=lambda item: item.path,
+                key=_model_key_of_model,
             ),
         ]
-        linearized_models[model.path] = result
+        linearized_models[model_key] = result
         return result
 
     direct_models = sort_data_models_for_mro(models)
@@ -3274,7 +3281,7 @@ def linearize_data_models(models: list[DataModel]) -> list[DataModel]:
             *[linearize(model).copy() for model in direct_models],
             direct_models.copy(),
         ],
-        key=lambda item: item.path,
+        key=_model_key_of_model,
     )
 
 

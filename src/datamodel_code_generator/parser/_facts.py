@@ -880,7 +880,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModel",
-        "_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_PATHS_KEY",
+        "_NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY",
         FactKind.PRESENTATION,
         (RenderFact.DEFAULT_EXPRESSION,),
         Phase.IMPORTS,
@@ -983,9 +983,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         access=Access.CONTAINER,
     ),
     AttributeFact("Parser", "_reuse_union_tags", FactKind.FACT, (RenderFact.PLANS,), Phase.STRUCTURE, FreezePoint.B1),
-    AttributeFact(
-        "Parser", "_circular_root_model_paths", FactKind.FACT, (RenderFact.PLANS,), Phase.PLAN, FreezePoint.B1
-    ),
+    AttributeFact("Parser", "_recursion_facts", FactKind.FACT, (RenderFact.PLANS,), Phase.MODULES, FreezePoint.B1),
     AttributeFact(
         "ModuleContext",
         "models",
