@@ -194,6 +194,29 @@
       ]
     },
     {
+      "id": "openapi.paths-bodies-as-definitions",
+      "decision": "paths-bodies-as-definitions",
+      "applies_to": {
+        "input_file_types": [
+          "openapi"
+        ]
+      },
+      "when": {
+        "signal": "inline_object_bodies",
+        "op": ">=",
+        "value": 1
+      },
+      "set": {
+        "openapi_paths_bodies_as_definitions": true
+      },
+      "reason": "Request or response bodies of the paths or webhooks scope are object schemas that generation types inline although their schema definitions get models ({inline_object_bodies}), such as a type array [object, null]. With them modeled as definitions, each body gets that model, and a document whose only bodies are such schemas generates models instead of failing with 'Models not found in the input data'.",
+      "evidence": [
+        "OpenAPI request body {type: [object, null], additionalProperties: {...}} under --openapi-scopes paths: 'Models not found in the input data' without the option, a PetsPostRequest root model of dict[str, ...] | None with it",
+        "OpenAPI response body of the same shape: 'Models not found in the input data' without the option, a PetsGetResponse root model with it",
+        "nullable_map_value_types.yaml test input: the POST /scores request body [object, null] gains ScoresPostRequest; every other model is unchanged"
+      ]
+    },
+    {
       "id": "reuse.identical-inline-shapes",
       "decision": "reuse",
       "when": {
@@ -852,6 +875,11 @@
     "openapi_include_paths": {
       "not_recommended": "io",
       "reason": "Selects which OpenAPI paths to generate; the project decides what it needs."
+    },
+    "openapi_paths_bodies_as_definitions": {
+      "rules": [
+        "openapi.paths-bodies-as-definitions"
+      ]
     },
     "openapi_scopes": {
       "not_recommended": "style",

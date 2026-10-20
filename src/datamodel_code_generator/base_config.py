@@ -257,6 +257,7 @@ class BaseGenerateConfig(BaseModel):
     include_path_parameters: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
+    openapi_paths_bodies_as_definitions: bool = False
     graphql_no_typename: bool = False
     wrap_string_literal: bool | None = None
     use_title_as_name: bool = False

@@ -1335,6 +1335,8 @@ openapi/item_schema.yaml::components.schemas.Event	payloads/native_numeric_empty
 openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/map_keyword_bodies.yaml::paths./codes.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/map_keyword_bodies.yaml::paths./scores.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/max_items_enum.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/max_min_number.yaml::components.schemas.product	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/missing_sentinel_nullable.yaml::components.schemas.MissingSentinelNullable	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1574,6 +1576,8 @@ openapi/type_alias_forward_ref_multiple.yaml::components.schemas.RegularModel	pa
 openapi/type_alias_forward_ref_multiple.yaml::components.schemas.Third	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias_recursive.yaml::components.schemas.ElementaryType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias_recursive.yaml::components.schemas.File	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/type_array_request_body.yaml::paths./pets.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/type_array_response_body.yaml::paths./pets.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_mappings_byte_to_binary.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Constrained	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2937,6 +2941,8 @@ openapi/item_schema.yaml::components.schemas.Event	payloads/native_numeric_empty
 openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/map_keyword_bodies.yaml::paths./codes.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/map_keyword_bodies.yaml::paths./scores.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/max_items_enum.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/max_min_number.yaml::components.schemas.product	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/missing_sentinel_nullable.yaml::components.schemas.MissingSentinelNullable	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3176,6 +3182,8 @@ openapi/type_alias_forward_ref_multiple.yaml::components.schemas.RegularModel	pa
 openapi/type_alias_forward_ref_multiple.yaml::components.schemas.Third	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias_recursive.yaml::components.schemas.ElementaryType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias_recursive.yaml::components.schemas.File	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/type_array_request_body.yaml::paths./pets.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/type_array_response_body.yaml::paths./pets.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_mappings_byte_to_binary.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Constrained	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

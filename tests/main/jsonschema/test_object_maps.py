@@ -15,6 +15,7 @@ from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
 from pydantic import TypeAdapter, ValidationError
 
+from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from tests.conftest import assert_output
@@ -190,19 +191,89 @@ def test_object_map_bodies(output_file: Path, recwarn: pytest.WarningsRecorder, 
         "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
         name="warnings",
     )
-    document = yaml.safe_load(input_path.read_text())
+    payloads = json.loads((PAYLOADS / "object_map_bodies.json").read_text())
+    assert_output(_body_verdicts(input_path, output_file, output_model_type, payloads), name="payloads")
+
+
+def _body_verdicts(input_path: Path, output_file: Path, output_model_type: str, payloads: dict[str, Any]) -> str:
+    """Check each body payload against its schema in the document and return whether its generated model accepts it."""
+    document = yaml.safe_load(input_path.read_text(encoding="utf-8"))
     verdicts: list[str] = []
-    for model_name, payloads in json.loads((PAYLOADS / "object_map_bodies.json").read_text()).items():
-        validator = Draft202012Validator(reduce(operator.getitem, payloads["schema"], document))
-        for payload in payloads["valid"]:
+    for model_name, body in payloads.items():
+        validator = Draft202012Validator(reduce(operator.getitem, body["schema"], document))
+        for payload in body["valid"]:
             validator.validate(payload)
-        for payload in payloads["invalid"]:
+        for payload in body["invalid"]:
             with pytest.raises(SchemaValidationError):
                 validator.validate(payload)
         with _generated_model(output_file, "object_map_bodies_model", model_name) as model:
             verdicts.extend(
                 f"{model_name} {kind} {json.dumps(payload)}: {_verdict(model, output_model_type, payload)}\n"
                 for kind in ("valid", "invalid")
-                for payload in payloads[kind]
+                for payload in body[kind]
             )
-    assert_output("".join(verdicts), name="payloads")
+    return "".join(verdicts)
+
+
+PATHS_BODIES = ("type_array_request_body", "type_array_response_body", "map_keyword_bodies", "nullable_map_value_types")
+
+
+@pytest.mark.cli_doc(
+    options=["--openapi-paths-bodies-as-definitions"],
+    option_description="""Give the bodies of the paths and webhooks scopes the models their schema definitions get.
+
+With `--openapi-scopes paths` (or `webhooks`), request and response bodies are parsed by their own dispatch,
+which types some object bodies inline although a schema definition of the same body gets a model: a body
+whose type array admits objects, such as `type: [object, "null"]`, or one with `additionalProperties`,
+`patternProperties` or `propertyNames` and no `type`. With `--openapi-paths-bodies-as-definitions`, such a
+body gets the model its definition would get, such as a root model of `dict[str, Any] | None`, whose values
+`--use-typed-nullable-map-values` types as declared. A document whose only bodies are such schemas then
+generates models instead of failing with "Models not found in the input data", whose message names this
+option when it applies. Bodies typed as objects, arrays, combinations, enums and references, and the `api`
+scope, are unchanged.""",
+    input_schema="openapi/type_array_request_body.yaml",
+    cli_args=["--openapi-scopes", "paths", "--openapi-paths-bodies-as-definitions"],
+    golden_output=(
+        "jsonschema/object_maps/paths_bodies_as_definitions[default-pydantic_v2.BaseModel-type_array_request_body].py"
+    ),
+)
+@pytest.mark.parametrize("name", PATHS_BODIES)
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+@pytest.mark.parametrize("option_set", ["default", "typed_map_values"])
+def test_paths_bodies_as_definitions(output_file: Path, output_model_type: str, name: str, option_set: str) -> None:
+    """Build the models that definitions of the same schemas get for object bodies the paths scope types inline."""
+    input_path = OPEN_API_DATA_PATH / f"{name}.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "paths",
+            "--openapi-paths-bodies-as-definitions",
+            *OPTION_SETS[option_set],
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "paths_bodies_as_definitions.json").read_text())[name]
+    assert_output(_body_verdicts(input_path, output_file, output_model_type, payloads), name="payloads")
+
+
+@pytest.mark.parametrize("name", PATHS_BODIES[:3])
+def test_paths_bodies_inline_hint(output_file: Path, capsys: pytest.CaptureFixture[str], name: str) -> None:
+    """Name --openapi-paths-bodies-as-definitions when the only bodies are object bodies typed inline."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--formatters", "builtin", "--openapi-scopes", "paths"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "Models not found in the input data; request or response bodies of the paths or webhooks scope are "
+            "typed inline, and --openapi-paths-bodies-as-definitions gives them the models their schema definitions get"
+        ),
+    )

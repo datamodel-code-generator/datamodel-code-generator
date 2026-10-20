@@ -1,0 +1,46 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  OpenAPI 3.1.0 (OpenAPI scopes: paths)
+  components                       0, 0 operations
+  inline objects / enums           0 / 0, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   none; 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   0
+
+Start from  --preset standard-py314-20261017
+
+Add (1 option)
+  --openapi-paths-bodies-as-definitions   [openapi.paths-bodies-as-definitions]
+      Request or response bodies of the paths or webhooks scope are object schemas that generation
+      types inline although their schema definitions get models (1), such as a type array [object,
+      null]. With them modeled as definitions, each body gets that model, and a document whose only
+      bodies are such schemas generates models instead of failing with 'Models not found in the
+      input data'.
+      measured: OpenAPI request body {type: [object, null], additionalProperties: {...}} under
+      --openapi-scopes paths: 'Models not found in the input data' without the option, a
+      PetsPostRequest root model of dict[str, ...] | None with it
+      measured: OpenAPI response body of the same shape: 'Models not found in the input data'
+      without the option, a PetsGetResponse root model with it
+      measured: nullable_map_value_types.yaml test input: the POST /scores request body [object,
+      null] gains ScoresPostRequest; every other model is unchanged
+
+Your configuration
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261019
+
+Command
+  datamodel-codegen --input paths_bodies_path_item_ref.yaml --openapi-paths-bodies-as-definitions --openapi-scopes paths --preset standard-py314-20261017
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  input = "paths_bodies_path_item_ref.yaml"
+  openapi-paths-bodies-as-definitions = true
+  openapi-scopes = ["paths"]
+  preset = "standard-py314-20261017"

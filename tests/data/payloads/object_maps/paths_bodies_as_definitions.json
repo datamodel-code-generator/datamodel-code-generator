@@ -1,0 +1,175 @@
+{
+  "type_array_request_body": {
+    "PetsPostRequest": {
+      "schema": [
+        "paths",
+        "/pets",
+        "post",
+        "requestBody",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "valid": [
+        null,
+        {},
+        {
+          "a": {
+            "name": "Rex"
+          }
+        },
+        {
+          "a": {}
+        }
+      ],
+      "invalid": [
+        [],
+        "x",
+        {
+          "a": {
+            "name": 1
+          }
+        },
+        {
+          "a": null
+        }
+      ]
+    }
+  },
+  "type_array_response_body": {
+    "PetsGetResponse": {
+      "schema": [
+        "paths",
+        "/pets",
+        "get",
+        "responses",
+        "200",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "valid": [
+        null,
+        {},
+        {
+          "a": "Rex"
+        }
+      ],
+      "invalid": [
+        [],
+        1,
+        {
+          "a": 1
+        },
+        {
+          "a": null
+        }
+      ]
+    }
+  },
+  "nullable_map_value_types": {
+    "ScoresPostRequest": {
+      "schema": [
+        "paths",
+        "/scores",
+        "post",
+        "requestBody",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "valid": [
+        null,
+        {},
+        {
+          "a": 1
+        }
+      ],
+      "invalid": [
+        [],
+        "x",
+        {
+          "a": "x"
+        },
+        {
+          "a": null
+        }
+      ]
+    }
+  },
+  "map_keyword_bodies": {
+    "CountsPostRequest": {
+      "schema": [
+        "paths",
+        "/counts",
+        "post",
+        "requestBody",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "valid": [
+        {},
+        {
+          "a1": 1
+        }
+      ],
+      "invalid": [
+        {
+          "a1": "x"
+        },
+        {
+          "b": 1
+        }
+      ]
+    },
+    "CodesPostRequest": {
+      "schema": [
+        "paths",
+        "/codes",
+        "post",
+        "requestBody",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "valid": [
+        {},
+        {
+          "abc": 1
+        }
+      ],
+      "invalid": [
+        {
+          "abcd": 1
+        },
+        {
+          "abc": "x"
+        }
+      ]
+    },
+    "ScoresPostRequest": {
+      "schema": [
+        "paths",
+        "/scores",
+        "post",
+        "requestBody",
+        "content",
+        "application/json",
+        "schema"
+      ],
+      "valid": [
+        {},
+        {
+          "a": 1
+        },
+        5
+      ],
+      "invalid": [
+        {
+          "a": "x"
+        }
+      ]
+    }
+  }
+}

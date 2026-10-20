@@ -1,0 +1,42 @@
+openapi: 3.1.0
+info:
+  title: Map keyword bodies without a type
+  version: "1.0"
+paths:
+  /counts:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              patternProperties:
+                "^a":
+                  type: integer
+              additionalProperties: false
+      responses:
+        "204":
+          description: The counts are stored.
+  /codes:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              propertyNames:
+                maxLength: 3
+              additionalProperties:
+                type: integer
+      responses:
+        "204":
+          description: The codes are stored.
+  /scores:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties:
+                type: integer
+      responses:
+        "204":
+          description: The scores are stored.

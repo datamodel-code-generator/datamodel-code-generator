@@ -1395,6 +1395,14 @@ openapi_options.add_argument(
     default=None,
 )
 openapi_options.add_argument(
+    "--openapi-paths-bodies-as-definitions",
+    help="Give the request and response bodies of the paths and webhooks scopes the model a schema definition of "
+    "the same body gets: an object body with a type array such as [object, null], or with map keywords and no type, "
+    "becomes a model instead of an inline type",
+    action="store_true",
+    default=None,
+)
+openapi_options.add_argument(
     "--validation",
     help=f"Deprecated: {deprecation_message('cli.validation')}",
     action="store_true",

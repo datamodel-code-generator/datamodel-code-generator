@@ -1,0 +1,8 @@
+PetsPostRequest valid null: accepted
+PetsPostRequest valid {}: accepted
+PetsPostRequest valid {"a": {"name": "Rex"}}: accepted
+PetsPostRequest valid {"a": {}}: accepted
+PetsPostRequest invalid []: rejected
+PetsPostRequest invalid "x": rejected
+PetsPostRequest invalid {"a": {"name": 1}}: rejected
+PetsPostRequest invalid {"a": null}: rejected

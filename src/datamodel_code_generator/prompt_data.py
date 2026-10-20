@@ -117,6 +117,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--no-use-union-operator": "Use Union[X, Y] / Optional[X] instead of X | Y union operator.",
     "--openapi-include-info-version": "Emit OpenAPI info.version as a generated constant.",
     "--openapi-include-paths": "Filter OpenAPI paths to include in model generation.",
+    "--openapi-paths-bodies-as-definitions": "Give the bodies of the paths and webhooks scopes the models their sch...",
     "--openapi-scopes": "Specify OpenAPI scopes to generate (schemas, paths, parameters).",
     "--original-field-name-delimiter": "Specify delimiter for original field names when using snake-case conversion.",
     "--output": "Specify the destination path for generated Python code.",

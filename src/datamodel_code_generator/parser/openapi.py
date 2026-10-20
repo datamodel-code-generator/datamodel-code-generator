@@ -219,6 +219,20 @@ class ComponentsObject(BaseModel):
     headers: dict[str, Union[ReferenceObject, HeaderObject]] = Field(default_factory=dict)  # noqa: UP007
 
 
+def is_inline_object_body(obj: JsonSchemaObject) -> bool:
+    """Return whether the legacy paths and webhooks dispatch types an object body inline that a definition models.
+
+    Such a body admits objects by its type array, or by its map keywords without a type; a definition of the same
+    schema gets a model, and so does the body with ``--openapi-paths-bodies-as-definitions``. Bodies that are
+    ``is_object``, arrays, combinations, enums, or references get the definitions' model kind either way.
+    """
+    if obj.ref or obj.is_array or obj.is_object or obj.enum or any((obj.allOf, obj.oneOf, obj.anyOf)):
+        return False
+    if obj.type is not None:
+        return isinstance(obj.type, list) and "object" in obj.type
+    return any(keyword is not None for keyword in (obj.additionalProperties, obj.patternProperties, obj.propertyNames))
+
+
 @cache
 def _operation_name_resolver(target_python_version: PythonVersion) -> FieldNameResolver:
     """Return the resolver that names operation models by the rules of the target Python version."""
@@ -285,6 +299,7 @@ class OpenAPIParser(JsonSchemaParser):
         self.openapi_include_paths: list[str] | None = self.config.openapi_include_paths
         self.openapi_include_info_version: bool = self.config.openapi_include_info_version
         self.openapi_info_version: str | None = None
+        self.inline_object_bodies = False
         if (
             self.openapi_include_paths
             and OpenAPIScope.Paths not in self.open_api_scopes
@@ -786,11 +801,14 @@ class OpenAPIParser(JsonSchemaParser):
                 self.parse_object(name, obj, path)
         elif obj.is_object:
             data_type = self._parse_object_kind_schema(name, obj, path) or self.parse_object(name, obj, path)
+        elif is_inline_object_body(obj) and self.config.openapi_paths_bodies_as_definitions:
+            data_type = self._parse_object_kind_schema(name, obj, path) or self.parse_root_type(name, obj, path)
         elif obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(obj):
             data_type = self.parse_enum(name, self._definition_enum(obj), path)
         elif obj.ref:  # pragma: no cover
             data_type = self.get_ref_data_type(obj.ref)
         else:
+            self.inline_object_bodies |= is_inline_object_body(obj)
             data_type = self.get_data_type(obj)
         self.parse_ref(obj, path)
         return data_type

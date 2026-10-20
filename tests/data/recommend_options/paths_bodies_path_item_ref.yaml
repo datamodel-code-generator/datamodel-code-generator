@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info:
+  title: Object bodies of a referenced path item
+  version: "1"
+paths:
+  /pets:
+    $ref: "#/components/pathItems/Pets"
+components:
+  pathItems:
+    Pets:
+      post:
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: [object, "null"]
+                additionalProperties:
+                  type: string
+        responses:
+          "204":
+            description: Stored.

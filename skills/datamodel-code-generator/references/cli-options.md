@@ -203,6 +203,7 @@ OpenAPI-specific generation behavior.
 - `--include-path-parameters`: Include path parameters in generated parameter models in addition to query parameters (Only OpenAPI)
 - `--openapi-include-paths`: Include only OpenAPI paths matching fnmatch patterns. Use wildcards: '*' matches any chars, '?' matches single char. Example: '/users/*' '/products'. Requires '--openapi-scopes' to include 'paths'.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as OPENAPI_INFO_VERSION in generated models
+- `--openapi-paths-bodies-as-definitions`: Give the request and response bodies of the paths and webhooks scopes the model a schema definition of the same body gets: an object body with a type array such as [object, null], or with map keywords and no type, becomes a model instead of an inline type
 - `--validation` (deprecated): Deprecated: The `--validation` option is deprecated and will be removed in a future release. Use --field-constraints instead.
 - `--read-only-write-only-model-type`: Model generation for readOnly/writeOnly fields: 'request-response' = Request/Response models only (no base model), 'all' = Base + Request + Response models. Choices: `request-response`, `all`.
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)

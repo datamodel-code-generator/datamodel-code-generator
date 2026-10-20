@@ -220,6 +220,7 @@ class OpenAPIParserConfigDict(JSONSchemaParserConfigDict, closed=True):
     use_status_code_in_response_name: NotRequired[bool]
     openapi_include_paths: NotRequired[list[str] | None]
     openapi_include_info_version: NotRequired[bool]
+    openapi_paths_bodies_as_definitions: NotRequired[bool]
     openapi_version: NotRequired[OpenAPIVersion | None]
 
 
@@ -229,6 +230,7 @@ class AsyncAPIParserConfigDict(JSONSchemaParserConfigDict, closed=True):
     use_status_code_in_response_name: NotRequired[bool]
     openapi_include_paths: NotRequired[list[str] | None]
     openapi_include_info_version: NotRequired[bool]
+    openapi_paths_bodies_as_definitions: NotRequired[bool]
     openapi_version: NotRequired[OpenAPIVersion | None]
     asyncapi_version: NotRequired[AsyncAPIVersion | None]
 

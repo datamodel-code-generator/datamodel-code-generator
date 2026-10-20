@@ -247,7 +247,9 @@ if TYPE_CHECKING:
         _SharedParserConfigDict,
         _PythonTypeExpressions | None,
     ]
-    _ParsedGeneration: TypeAlias = tuple[_ParserResults, ModelMetadata | None, tuple[str, ...], DataModelSet, bool]
+    _ParsedGeneration: TypeAlias = tuple[
+        _ParserResults, ModelMetadata | None, tuple[str, ...], DataModelSet, bool, bool
+    ]
     _ParsedRun: TypeAlias = tuple[
         _ParserResults,
         ModelMetadata | None,
@@ -259,6 +261,7 @@ if TYPE_CHECKING:
         str | None,
         Path,
         RemoteReferenceLock | None,
+        bool,
         bool,
         InputFileType,
     ]
@@ -1169,6 +1172,7 @@ def _openapi_shared_options(config: GenerateConfig) -> OpenAPIParserConfigDict:
         "use_status_code_in_response_name": config.use_status_code_in_response_name,
         "openapi_include_paths": config.openapi_include_paths,
         "openapi_include_info_version": config.openapi_include_info_version,
+        "openapi_paths_bodies_as_definitions": config.openapi_paths_bodies_as_definitions,
     }
 
 
@@ -1562,6 +1566,10 @@ def _emit_stdout_results(
 _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR = "Single-module output requires a file path, not a directory"
 _MODULAR_OUTPUT_FILE_ERROR = "Modular references require an output directory, not a file"
 _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file path, not a directory"
+_INLINE_OBJECT_BODIES_HINT = (
+    "request or response bodies of the paths or webhooks scope are typed inline, and "
+    "--openapi-paths-bodies-as-definitions gives them the models their schema definitions get"
+)
 
 
 def _ensure_file_output_path(path: Path, error_message: str) -> None:
@@ -1731,6 +1739,7 @@ def _emit_results(  # noqa: PLR0913
     data_model_types: DataModelSet,
     settings_path: Path,
     allow_empty_api: bool = False,
+    inline_object_bodies: bool = False,
 ) -> str | GeneratedModules | None:
     if not input_filename:  # pragma: no cover
         input_filename = _default_input_filename(input_)
@@ -1738,6 +1747,8 @@ def _emit_results(  # noqa: PLR0913
         if allow_empty_api:
             return None
         msg = "Models not found in the input data"
+        if inline_object_bodies:
+            msg += f"; {_INLINE_OBJECT_BODIES_HINT}"
         raise Error(msg)
 
     custom_file_header = _read_custom_file_header(custom_file_header, config.custom_file_header_path, config.encoding)
@@ -2744,6 +2755,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         parser.record_dropped_constraints()
         pydantic_floor = floors.of(parser)
         class_names = parser.generated_class_names
+        inline_object_bodies: bool = getattr(parser, "inline_object_bodies", False)
         if repair_modules := parser.invalid_dotted_stdout_repair_modules:
             legacy_inventory = parser.generated_model_inventory
             legacy_source_fingerprint = parser.source_data_fingerprint
@@ -2860,7 +2872,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             UserWarning,
             stacklevel=2,
         )
-    return results, model_metadata, model_identities, data_model_types, defer_formatting
+    return results, model_metadata, model_identities, data_model_types, defer_formatting, inline_object_bodies
 
 
 def _emit_generation(  # noqa: PLR0913
@@ -2876,6 +2888,7 @@ def _emit_generation(  # noqa: PLR0913
     settings_path: Path,
     owned_remote_lock: RemoteReferenceLock | None,
     allow_empty_api: bool = False,
+    inline_object_bodies: bool = False,
 ) -> str | GeneratedModules | None:
     """Emit generated artifacts and commit a generation-owned remote lock.
 
@@ -2899,6 +2912,7 @@ def _emit_generation(  # noqa: PLR0913
         defer_formatting=defer_formatting,
         data_model_types=data_model_types,
         settings_path=settings_path,
+        inline_object_bodies=inline_object_bodies,
     )
     if metadata is not None:
         _write_model_metadata(*metadata, config.encoding)
@@ -2941,6 +2955,7 @@ def _run_generation(
                 emit_settings_path,
                 owned_remote_lock,
                 allow_empty_api,
+                inline_object_bodies,
                 _,
             ) = _parse_run(
                 input_,
@@ -2963,6 +2978,7 @@ def _run_generation(
                 settings_path=emit_settings_path,
                 owned_remote_lock=owned_remote_lock,
                 allow_empty_api=allow_empty_api,
+                inline_object_bodies=inline_object_bodies,
             )
     except BaseException:
         if capture is not None:
@@ -2983,8 +2999,10 @@ def _parse_run(  # noqa: PLR0913, PLR0914
 ) -> _ParsedRun:
     """Prepare one generation run and parse it up to its results and model metadata, writing nothing.
 
-    Returns what emitting needs: the parse results and metadata, the prepared input and config, and the emit
-    settings, remote lock and API-scope switch; last, the input file type the run parsed, detected when it was auto.
+    Returns what emitting needs: the parse results and metadata, the prepared input and config, the emit settings,
+    remote lock and API-scope switch, and whether paths bodies were typed inline that
+    ``--openapi-paths-bodies-as-definitions`` models; last, the input file type the run parsed, detected when it was
+    auto.
     """
     config, output_context_path, emit_settings_path = _prepare_generation_config(config, caller_cwd)
     input_filename = config.input_filename
@@ -3043,28 +3061,30 @@ def _parse_run(  # noqa: PLR0913, PLR0914
         parser_factory = capture.parser_factory
         parse_generation = partial(_parse_generation, openapi_parser_factory=parser_factory)
         allow_empty_api = getattr(parser_factory, "_supports_api_scope", False) is True
-    results, model_metadata, model_identities, data_model_types, defer_formatting = parse_generation(
-        input_,
-        input_text,
-        input_file_type,
-        source_override,
-        config,
-        source,
-        additional_options,
-        data_model_types,
-        defer_formatting,
-        extra_template_data,
-        dataclass_arguments,
-        python_type_expressions=python_type_expressions,
-        skip_root_model=skip_root_model,
-        schema_versions=schema_versions,
-        diagnostic_source_path=diagnostic_source_path,
-        prefetched_source=prefetched_source,
-        parser_settings_path=parser_settings_path,
-        use_output_cwd=use_output_cwd,
-        output_context_path=output_context_path,
-        collect_model_metadata=collect_model_metadata,
-        capture=capture,
+    results, model_metadata, model_identities, data_model_types, defer_formatting, inline_object_bodies = (
+        parse_generation(
+            input_,
+            input_text,
+            input_file_type,
+            source_override,
+            config,
+            source,
+            additional_options,
+            data_model_types,
+            defer_formatting,
+            extra_template_data,
+            dataclass_arguments,
+            python_type_expressions=python_type_expressions,
+            skip_root_model=skip_root_model,
+            schema_versions=schema_versions,
+            diagnostic_source_path=diagnostic_source_path,
+            prefetched_source=prefetched_source,
+            parser_settings_path=parser_settings_path,
+            use_output_cwd=use_output_cwd,
+            output_context_path=output_context_path,
+            collect_model_metadata=collect_model_metadata,
+            capture=capture,
+        )
     )
     return (
         results,
@@ -3078,6 +3098,7 @@ def _parse_run(  # noqa: PLR0913, PLR0914
         emit_settings_path,
         owned_remote_lock,
         allow_empty_api,
+        inline_object_bodies,
         input_file_type,
     )
 

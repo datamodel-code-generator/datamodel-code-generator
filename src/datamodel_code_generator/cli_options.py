@@ -898,6 +898,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--openapi-include-info-version": CLIOptionMeta(
         name="--openapi-include-info-version", category=OptionCategory.OPENAPI
     ),
+    "--openapi-paths-bodies-as-definitions": CLIOptionMeta(
+        name="--openapi-paths-bodies-as-definitions",
+        category=OptionCategory.OPENAPI,
+        topic=OptionTopic.OPENAPI,
+        group=OptionGroup.OPENAPI_PATHS,
+    ),
     "--validation": CLIOptionMeta(
         name="--validation",
         category=OptionCategory.OPENAPI,

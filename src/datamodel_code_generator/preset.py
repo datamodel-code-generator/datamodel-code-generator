@@ -656,6 +656,15 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "one enum."
         ),
     ),
+    PresetOptionGroup(
+        title="Paths bodies modeled as definitions",
+        config=PresetConfig(openapi_paths_bodies_as_definitions=True),
+        description=(
+            "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema "
+            "definition of the same body gets, so an object body with a type array such as [object, null] is a "
+            "model instead of an inline type."
+        ),
+    ),
 )
 
 _STANDARD_20261019_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
@@ -967,7 +976,9 @@ def render_presets_markdown() -> str:
         (
             "The 20261019 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of "
             "one value, and an enum that admits the const beside it, render as that const's Literal value instead "
-            "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum."
+            "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add "
+            "`--openapi-paths-bodies-as-definitions`: request and response bodies of the OpenAPI paths and webhooks "
+            "scopes get the model a schema definition of the same body gets."
         ),
         "",
         "## Override Preset Options",

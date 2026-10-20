@@ -155,12 +155,12 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 181 | Shared generation options. |
-| `GenerateConfig` | 196 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 182 | Shared generation options. |
+| `GenerateConfig` | 197 | Public `generate()` configuration. |
 | `ParserConfig` | 147 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 149 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 155 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 156 | AsyncAPI-specific parser options. |
+| `OpenAPIParserConfig` | 156 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 157 | AsyncAPI-specific parser options. |
 | `XMLSchemaParserConfig` | 150 | XML Schema-specific parser options. |
 | `ProtobufParserConfig` | 150 | Protocol Buffers-specific parser options. |
 | `AvroParserConfig` | 149 | Avro-specific parser options. |

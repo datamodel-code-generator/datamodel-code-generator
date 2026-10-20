@@ -80,6 +80,10 @@ jsonschema	main/recommend_options/service_config.txt
 jsonschema-contested-option-set	main/recommend_options/service_config_naming_set.txt
 older-preset	main/recommend_options/api_older_preset.txt
 openapi-scopes	main/recommend_options/operations.txt
+paths-bodies-api-scope	main/recommend_options/paths_bodies_api.txt
+paths-bodies-as-definitions	main/recommend_options/paths_bodies.txt
+paths-bodies-included-paths	main/recommend_options/paths_bodies_included.txt
+paths-bodies-referenced-path-item	main/recommend_options/paths_bodies_path_item_ref.txt
 paths-scope	main/recommend_options/operations_paths.txt
 pattern-properties	main/recommend_options/deployment.txt
 preset-value	main/recommend_options/api_practical.txt

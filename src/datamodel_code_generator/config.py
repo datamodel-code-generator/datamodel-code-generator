@@ -333,6 +333,7 @@ class OpenAPIParserConfig(JSONSchemaParserConfig):
     use_status_code_in_response_name: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
+    openapi_paths_bodies_as_definitions: bool = False
     openapi_version: OpenAPIVersion | None = None
 
 
@@ -344,6 +345,7 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     use_status_code_in_response_name: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
+    openapi_paths_bodies_as_definitions: bool = False
     openapi_version: OpenAPIVersion | None = None
     asyncapi_version: AsyncAPIVersion | None = None
 

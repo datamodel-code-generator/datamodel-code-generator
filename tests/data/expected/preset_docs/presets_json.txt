@@ -5155,13 +5155,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-standard-collections --use-subclass-enum --use-union-operator",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-standard-collections --use-subclass-enum --use-union-operator",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.10"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.10\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.10\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
     },
     "description": "This immutable preset enables the project-recommended Python output style for new code targeting Python 3.10. It is output-model aware and keeps stdlib dataclass and TypedDict keys compatible with their input names.",
     "name": "standard-py310-20261019",
@@ -5234,6 +5234,13 @@
           "--use-single-value-enum-as-const"
         ],
         "title": "Enums read as their const"
+      },
+      {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
       }
     ],
     "requires_target_python_version": false,
@@ -5242,13 +5249,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.11"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.11\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.11\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
     },
     "description": "This immutable preset enables the project-recommended Python output style for new code targeting Python 3.11. It is output-model aware and keeps stdlib dataclass and TypedDict keys compatible with their input names.",
     "name": "standard-py311-20261019",
@@ -5328,6 +5335,13 @@
           "--use-single-value-enum-as-const"
         ],
         "title": "Enums read as their const"
+      },
+      {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
       }
     ],
     "requires_target_python_version": false,
@@ -5336,13 +5350,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.12"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.12\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.12\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
     },
     "description": "This immutable preset enables the project-recommended Python output style for new code targeting Python 3.12. It is output-model aware and keeps stdlib dataclass and TypedDict keys compatible with their input names.",
     "name": "standard-py312-20261019",
@@ -5422,6 +5436,13 @@
           "--use-single-value-enum-as-const"
         ],
         "title": "Enums read as their const"
+      },
+      {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
       }
     ],
     "requires_target_python_version": false,
@@ -5430,13 +5451,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.13"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.13\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.13\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
     },
     "description": "This immutable preset enables the project-recommended Python output style for new code targeting Python 3.13. It is output-model aware and keeps stdlib dataclass and TypedDict keys compatible with their input names.",
     "name": "standard-py313-20261019",
@@ -5516,6 +5537,13 @@
           "--use-single-value-enum-as-const"
         ],
         "title": "Enums read as their const"
+      },
+      {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
       }
     ],
     "requires_target_python_version": false,
@@ -5524,13 +5552,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.14"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.14\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.14\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
     },
     "description": "This immutable preset enables the project-recommended Python output style for new code targeting Python 3.14. It is output-model aware and keeps stdlib dataclass and TypedDict keys compatible with their input names.",
     "name": "standard-py314-20261019",
@@ -5610,6 +5638,13 @@
           "--use-single-value-enum-as-const"
         ],
         "title": "Enums read as their const"
+      },
+      {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
       }
     ],
     "requires_target_python_version": false,
@@ -5618,13 +5653,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-frozen-field --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-union-operator",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.15"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.15\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.15\"\nuse-annotated = true\nuse-frozen-field = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-union-operator = true"
     },
     "description": "This immutable preset enables the project-recommended Python output style for new code targeting Python 3.15. It is output-model aware and keeps stdlib dataclass and TypedDict keys compatible with their input names.",
     "name": "standard-py315-20261019",
@@ -5704,6 +5739,13 @@
           "--use-single-value-enum-as-const"
         ],
         "title": "Enums read as their const"
+      },
+      {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
       }
     ],
     "requires_target_python_version": false,
@@ -5712,13 +5754,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.10 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.10"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.10\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.10\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
     },
     "description": "This immutable preset extends `standard-py310-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.",
     "name": "practical-py310-20261019",
@@ -5793,6 +5835,13 @@
         "title": "Enums read as their const"
       },
       {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
+      },
+      {
         "description": "Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names.",
         "options": [
           "--reuse-model",
@@ -5829,13 +5878,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.11 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.11"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.11\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.11\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
     },
     "description": "This immutable preset extends `standard-py311-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.",
     "name": "practical-py311-20261019",
@@ -5917,6 +5966,13 @@
         "title": "Enums read as their const"
       },
       {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
+      },
+      {
         "description": "Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names.",
         "options": [
           "--reuse-model",
@@ -5953,13 +6009,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.12 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.12"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.12\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.12\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
     },
     "description": "This immutable preset extends `standard-py312-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.",
     "name": "practical-py312-20261019",
@@ -6041,6 +6097,13 @@
         "title": "Enums read as their const"
       },
       {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
+      },
+      {
         "description": "Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names.",
         "options": [
           "--reuse-model",
@@ -6077,13 +6140,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.13 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.13"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.13\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.13\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
     },
     "description": "This immutable preset extends `standard-py313-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.",
     "name": "practical-py313-20261019",
@@ -6165,6 +6228,13 @@
         "title": "Enums read as their const"
       },
       {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
+      },
+      {
         "description": "Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names.",
         "options": [
           "--reuse-model",
@@ -6201,13 +6271,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.14 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.14"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.14\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.14\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
     },
     "description": "This immutable preset extends `standard-py314-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.",
     "name": "practical-py314-20261019",
@@ -6289,6 +6359,13 @@
         "title": "Enums read as their const"
       },
       {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
+      },
+      {
         "description": "Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names.",
         "options": [
           "--reuse-model",
@@ -6325,13 +6402,13 @@
   },
   {
     "copyable_config": {
-      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
+      "cli": "datamodel-codegen --allow-population-by-field-name --collapse-reuse-models --collapse-root-models --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --formatters builtin --input schema.json --input-file-type jsonschema --naming-strategy primary-first --openapi-paths-bodies-as-definitions --output model.py --output-model-type pydantic_v2.BaseModel --reuse-model --snake-case-field --strict-nullable --target-python-version 3.15 --use-annotated --use-default-kwarg --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-line-docstring --use-single-value-enum-as-const --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-fixed-items --use-union-operator --use-unique-items-as-set",
       "context": {
         "input_file_type": "jsonschema",
         "output_model_type": "pydantic_v2.BaseModel",
         "target_python_version": "3.15"
       },
-      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.15\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
+      "pyproject_toml": "[tool.datamodel-codegen]\nallow-population-by-field-name = true\ncollapse-reuse-models = true\ncollapse-root-models = true\ndeserialize-default-values = [\"decimal\", \"enum\"]\ndisable-timestamp = true\nenum-field-as-literal = \"one\"\nformatters = [\"builtin\"]\ninput = \"schema.json\"\ninput-file-type = \"jsonschema\"\nnaming-strategy = \"primary-first\"\nopenapi-paths-bodies-as-definitions = true\noutput = \"model.py\"\noutput-model-type = \"pydantic_v2.BaseModel\"\nreuse-model = true\nsnake-case-field = true\nstrict-nullable = true\ntarget-python-version = \"3.15\"\nuse-annotated = true\nuse-default-kwarg = true\nuse-field-description = true\nuse-field-description-example = true\nuse-frozen-field = true\nuse-object-type = true\nuse-schema-description = true\nuse-single-line-docstring = true\nuse-single-value-enum-as-const = true\nuse-specialized-enum = true\nuse-standard-collections = true\nuse-subclass-enum = true\nuse-title-as-name = true\nuse-tuple-for-fixed-items = true\nuse-union-operator = true\nuse-unique-items-as-set = true"
     },
     "description": "This immutable preset extends `standard-py315-20261019` with options that make generated models easier to read and use in real projects. It favors schema-authored names, model reuse, and embedded schema documentation over the most conservative output-shape stability.",
     "name": "practical-py315-20261019",
@@ -6411,6 +6488,13 @@
           "--use-single-value-enum-as-const"
         ],
         "title": "Enums read as their const"
+      },
+      {
+        "description": "Give the request and response bodies of the OpenAPI paths and webhooks scopes the model a schema definition of the same body gets, so an object body with a type array such as [object, null] is a model instead of an inline type.",
+        "options": [
+          "--openapi-paths-bodies-as-definitions"
+        ],
+        "title": "Paths bodies modeled as definitions"
       },
       {
         "description": "Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names.",

@@ -133,6 +133,7 @@ class BaseGenerateConfig(TypedDict):
     include_path_parameters: NotRequired[bool]
     openapi_include_paths: NotRequired[list[str] | None]
     openapi_include_info_version: NotRequired[bool]
+    openapi_paths_bodies_as_definitions: NotRequired[bool]
     graphql_no_typename: NotRequired[bool]
     wrap_string_literal: NotRequired[bool | None]
     use_title_as_name: NotRequired[bool]

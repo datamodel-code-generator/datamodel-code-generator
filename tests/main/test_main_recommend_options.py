@@ -202,6 +202,30 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param("deployment.json", [], "deployment.txt", id="pattern-properties"),
         pytest.param("settings.json", [], "settings.txt", id="draft-07-pattern-map"),
         pytest.param("enum_const.yaml", [], "enum_const.txt", id="enums-read-as-their-const"),
+        pytest.param(
+            "paths_bodies.yaml",
+            ["--openapi-scopes", "paths", "webhooks", "--preset", "standard-py314-20261017"],
+            "paths_bodies.txt",
+            id="paths-bodies-as-definitions",
+        ),
+        pytest.param(
+            "paths_bodies.yaml",
+            ["--openapi-scopes", "paths", "--openapi-include-paths", "/owners", "--preset", "standard-py314-20261017"],
+            "paths_bodies_included.txt",
+            id="paths-bodies-included-paths",
+        ),
+        pytest.param(
+            "paths_bodies.yaml",
+            ["--openapi-scopes", "api", "webhooks", "--preset", "standard-py314-20261017"],
+            "paths_bodies_api.txt",
+            id="paths-bodies-api-scope",
+        ),
+        pytest.param(
+            "paths_bodies_path_item_ref.yaml",
+            ["--openapi-scopes", "paths", "--preset", "standard-py314-20261017"],
+            "paths_bodies_path_item_ref.txt",
+            id="paths-bodies-referenced-path-item",
+        ),
     ],
 )
 def test_recommend_options_for_schemas(

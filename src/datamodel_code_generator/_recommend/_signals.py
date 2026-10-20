@@ -59,6 +59,7 @@ SignalName: TypeAlias = Literal[
     "unique_items",
     "pattern_properties",
     "unmodeled_pattern_properties",
+    "inline_object_bodies",
     "multiple_of",
     "nullable_keywords",
     "boolean_exclusive_bounds",
@@ -209,6 +210,11 @@ def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
     return node
 
 
+def _dereferenced(document: Mapping[str, Any], node: object) -> object:
+    """Return the local object a ``$ref`` node points at, or the node itself when it has no ``$ref``."""
+    return _resolve_local(document, node["$ref"]) if isinstance(node, dict) and "$ref" in node else node
+
+
 def _items(value: object) -> Iterable[tuple[str, Any]]:
     return value.items() if isinstance(value, dict) else ()
 
@@ -272,6 +278,48 @@ def _operation_schemas(
     )
     for name, body in _items(bodies):
         yield from _media_schemas(name, body)
+
+
+def _legacy_body_operations(
+    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
+) -> Iterator[Mapping[str, Any]]:
+    """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions.
+
+    Local path item references resolve as generation resolves them; remote ones are not read.
+    """
+    for section in () if "api" in scopes else ("paths", "webhooks"):
+        for path, item in _items(document.get(section) if section in scopes else None):
+            if section == "webhooks" or _path_selected(path, include_paths):
+                yield from (
+                    operation
+                    for method, operation in _items(_dereferenced(document, item))
+                    if method in _HTTP_METHODS and isinstance(operation, dict)
+                )
+
+
+def _is_inline_object_body(schema: object) -> bool:
+    """Return whether generation types a paths or webhooks body inline although its schema definition gets a model."""
+    from pydantic import ValidationError  # noqa: PLC0415
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaObject  # noqa: PLC0415
+    from datamodel_code_generator.parser.openapi import is_inline_object_body  # noqa: PLC0415
+
+    if not isinstance(schema, dict):
+        return False
+    try:
+        return is_inline_object_body(JsonSchemaObject.model_validate(schema))
+    except ValidationError:
+        return False
+
+
+def _inline_object_bodies(document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]) -> int:
+    """Count the request and response bodies that ``--openapi-paths-bodies-as-definitions`` gives a model."""
+    return sum(
+        _is_inline_object_body(schema)
+        for operation in _legacy_body_operations(document, scopes, include_paths)
+        for holder in (operation.get("requestBody"), *dict(_items(operation.get("responses"))).values())
+        for _, schema in _media_schemas("", _dereferenced(document, holder))
+    )
 
 
 def _operation_parts(key: str, operation: object) -> Iterator[tuple[str, object]]:
@@ -683,6 +731,7 @@ def measure_signals(
     extra: list[tuple[str, object]] = []
     if kind == "openapi":
         extra = list(_operation_schemas(document, openapi_scopes, include_paths))
+        counts["inline_object_bodies"] = _inline_object_bodies(document, openapi_scopes, include_paths)
     elif kind == "asyncapi":
         extra = list(_message_schemas(document))
     for key, node in extra:

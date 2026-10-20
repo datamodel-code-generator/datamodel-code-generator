@@ -275,6 +275,7 @@ openapi/item_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema_31.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer.yaml	yaml_fast_constructor/parity.txt
 openapi/lazy_resolved_models.yaml	yaml_fast_constructor/parity.txt
+openapi/map_keyword_bodies.yaml	yaml_fast_constructor/parity.txt
 openapi/max_items_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/max_min_number.yaml	yaml_fast_constructor/parity.txt
 openapi/missing_sentinel_nullable.yaml	yaml_fast_constructor/parity.txt
@@ -428,6 +429,8 @@ openapi/type_alias_cross_module_collision/b.yaml	yaml_fast_constructor/parity.tx
 openapi/type_alias_forward_ref_multiple.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias_mutual_recursive.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias_recursive.yaml	yaml_fast_constructor/parity.txt
+openapi/type_array_request_body.yaml	yaml_fast_constructor/parity.txt
+openapi/type_array_response_body.yaml	yaml_fast_constructor/parity.txt
 openapi/type_mappings_byte_to_binary.yaml	yaml_fast_constructor/parity.txt
 openapi/type_overrides_constructor_order.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/base_class.yaml	yaml_fast_constructor/parity.txt

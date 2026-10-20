@@ -184,6 +184,7 @@ How do I convert enums to Literal types?
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
+- `--openapi-paths-bodies-as-definitions`: Give the bodies of the paths and webhooks scopes the models their sch...
 - `--openapi-scopes`: Specify OpenAPI scopes to generate (schemas, paths, parameters).
 - `--read-only-write-only-model-type`: Generate separate request and response models for readOnly/writeOnly fields.
 - `--use-operation-id-as-name`: Use OpenAPI operationId as the generated function/class name.
@@ -939,6 +940,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use wildcards: '*' matches any chars, '?' matches
                         single char. Example: '/users/*' '/products'. Requires
                         '--openapi-scopes' to include 'paths'.
+  --openapi-paths-bodies-as-definitions
+                        Give the request and response bodies of the paths and
+                        webhooks scopes the model a schema definition of the
+                        same body gets: an object body with a type array such
+                        as [object, null], or with map keywords and no type,
+                        becomes a model instead of an inline type
   --openapi-scopes {schemas,paths,tags,parameters,webhooks,requestbodies,api} [{schemas,paths,tags,parameters,webhooks,requestbodies,api} ...]
                         Scopes of OpenAPI model generation (default: schemas)
   --read-only-write-only-model-type {request-response,all}

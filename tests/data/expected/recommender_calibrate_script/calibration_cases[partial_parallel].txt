@@ -140,6 +140,7 @@ A rule should fire on a schema when the grid's best configuration with its value
 | enums.inline-value-sets-as-literal | enum-shape | - | pets | config | - |
 
 - Not covered: enums.read-as-their-const (decision enum-const-reading has no grid axis)
+- Not covered: openapi.paths-bodies-as-definitions (decision paths-bodies-as-definitions has no grid axis)
 - Not covered: reuse.identical-inline-shapes (decision reuse has no grid axis)
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
@@ -856,6 +857,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "formats": 0,
           "inline_enums": 2,
           "inline_names_equal_component": 0,
+          "inline_object_bodies": 0,
           "inline_object_union_variants": 0,
           "inline_objects": 1,
           "inline_scalar_union_variants": 0,
@@ -1528,6 +1530,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "formats": 0,
           "inline_enums": 4,
           "inline_names_equal_component": 0,
+          "inline_object_bodies": 0,
           "inline_object_union_variants": 0,
           "inline_objects": 2,
           "inline_scalar_union_variants": 0,
@@ -1805,6 +1808,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "covered": "decision enum-const-reading has no grid axis",
       "decision": "enum-const-reading",
       "rule": "enums.read-as-their-const"
+    },
+    {
+      "covered": "decision paths-bodies-as-definitions has no grid axis",
+      "decision": "paths-bodies-as-definitions",
+      "rule": "openapi.paths-bodies-as-definitions"
     },
     {
       "covered": "decision reuse has no grid axis",

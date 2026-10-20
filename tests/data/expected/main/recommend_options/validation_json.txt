@@ -39,6 +39,7 @@
     "formats": 6,
     "inline_enums": 0,
     "inline_names_equal_component": 0,
+    "inline_object_bodies": 0,
     "inline_object_union_variants": 0,
     "inline_objects": 0,
     "inline_scalar_union_variants": 0,
