@@ -39,7 +39,8 @@ class CheckArea(Enum):
     parsed from a JSON document has an owner or is a root at the end of L1."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
-    """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did."""
+    """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did, and each
+    `$ref` edge gets one key and names the target the parser loads."""
 
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations."""
@@ -74,8 +75,14 @@ class CheckMode:
         text = f"{self.area.value}: {message}"
         if self.report_path is None:
             raise error(text)
+        self.record(text, **details)
+
+    def record(self, message: str, **details: object) -> None:
+        """Append the message and its details to the report as one JSON line; with no report file, do nothing."""
+        if self.report_path is None:
+            return
         with self.report_path.open("a", encoding="utf-8") as report:
-            report.write(f"{json.dumps({'area': self.area.name, 'message': text, **details}, ensure_ascii=False)}\n")
+            report.write(f"{json.dumps({'area': self.area.name, 'message': message, **details}, ensure_ascii=False)}\n")
 
 
 _NO_CHECKS: Final[Mapping[CheckArea, CheckMode]] = MappingProxyType({})

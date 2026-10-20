@@ -255,6 +255,10 @@ querystring	main/generation_platform/client/packages/querystring/pydantic_v2_Bas
 querystring	main/generation_platform/client/querystring.txt
 querystring-targets	main/generation_platform/client/packages/querystring-targets/pydantic_v2_BaseModel//*.py
 querystring-targets	main/generation_platform/client/querystring-targets.txt
+ref-instance-data	main/generation_platform/client/packages/ref-instance-data/pydantic_v2_BaseModel//*.py
+ref-instance-data	main/generation_platform/client/ref-instance-data.txt
+ref-name-positions	main/generation_platform/client/packages/ref-name-positions/pydantic_v2_BaseModel//*.py
+ref-name-positions	main/generation_platform/client/ref-name-positions.txt
 reference-errors	main/generation_platform/client/reference-errors.txt
 references	main/generation_platform/client/packages/references/pydantic_v2_BaseModel//*.py
 references	main/generation_platform/client/references.txt

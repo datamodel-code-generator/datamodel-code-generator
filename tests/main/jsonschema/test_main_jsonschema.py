@@ -29667,6 +29667,65 @@ def test_schema_graph_check_of_a_parser_that_changes_the_registry_walk(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+class _LaterKeyParser(JsonSchemaParser):
+    """Resolves a reference to `#/$defs/Kept` it met before to `#/$defs/Moved`: a later site gets another key."""
+
+    def _normalize_external_ref(self, ref: str) -> str:
+        if ref in (seen := self.__dict__.setdefault("seen_refs", set())):
+            return ref.replace("Kept", "Moved")
+        seen.add(ref)
+        return super()._normalize_external_ref(ref)
+
+
+class _OtherTargetParser(JsonSchemaParser):
+    """Loads `#/properties/moved` for a reference to `#/properties/kept`: a target other than the edge names."""
+
+    def _get_ref_raw_schema(self, resolved_ref: str) -> Any:
+        return super()._get_ref_raw_schema(resolved_ref.replace("kept", "moved"))
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+@pytest.mark.parametrize(
+    ("parser_type", "message"),
+    [
+        (
+            _LaterKeyParser,
+            (
+                "the $ref '#/$defs/Kept' at 'redirect.json#/properties/value' resolves to "
+                "'redirect.json#/$defs/Moved' at resolve_ref, but to 'redirect.json#/$defs/Kept' at get_ref_data_type"
+            ),
+        ),
+        (
+            _OtherTargetParser,
+            (
+                "the $ref '#/properties/kept' at 'redirect.json#/properties/other' names "
+                "'redirect.json#/properties/kept', but _load_ref_schema_object loads 'redirect.json#/properties/moved'"
+            ),
+        ),
+    ],
+    ids=["key", "target"],
+)
+def test_schema_graph_check_of_reference_edges(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str, parser_type: type[JsonSchemaParser], message: str
+) -> None:
+    """A reference resolved otherwise than the edge it carries is reported, and generation follows the parser.
+
+    The edge of a `$ref` keeps the key of its first consumption and names its registered target: the check (`1`, as
+    the test suite sets it) raises when a later site resolves another key or loads another target, `report:<path>`
+    appends it as a JSON line, and with the check off (`0`) the parser generates what it resolved.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = parser_type(JSON_SCHEMA_DATA_PATH / "ref_edges" / "redirect.json", formatters=[Formatter.BUILTIN])
+    if flag == "check":
+        with pytest.raises(Error, match=f"^{re.escape(f'{CHECK_SCHEMA_GRAPH_ENV}: {message}')}$"):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 NESTED_FACTORY_DATA = JSON_SCHEMA_DATA_PATH / "optional_nested_factory_requirements"
 
 

@@ -602,6 +602,7 @@ jsonschema/recursive_ref_no_anchor.json	payloads/native_numeric_empty_errors.txt
 jsonschema/recursive_ref_resources/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reduce_duplicate_field_types.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/redundant_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/ref_edges/redirect.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/ref_merge_additional_properties.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/ref_merge_field_metadata.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/ref_nullable_import_fast_path.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1496,6 +1497,8 @@ openapi/read_only_write_only_variant_graph.yaml::components.schemas.ReadOnlyLeaf
 openapi/read_only_write_only_variant_graph.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_variant_graph.yaml::components.schemas.UserRequest	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/recursive_ref_discriminator.yaml::components.schemas.ComparisonFilter	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_edges/operation_refs.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_edges/operation_refs.yaml::components.schemas.Identifier	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NonNullableChild	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NullableMerged	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2221,6 +2224,7 @@ jsonschema/recursive_ref_no_anchor.json	payloads/native_numeric_empty_errors.txt
 jsonschema/recursive_ref_resources/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reduce_duplicate_field_types.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/redundant_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/ref_edges/redirect.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/ref_merge_additional_properties.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/ref_merge_field_metadata.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/ref_nullable_import_fast_path.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3110,6 +3114,8 @@ openapi/read_only_write_only_variant_graph.yaml::components.schemas.ReadOnlyLeaf
 openapi/read_only_write_only_variant_graph.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_variant_graph.yaml::components.schemas.UserRequest	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/recursive_ref_discriminator.yaml::components.schemas.ComparisonFilter	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_edges/operation_refs.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_edges/operation_refs.yaml::components.schemas.Identifier	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NonNullableChild	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NullableMerged	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

@@ -991,7 +991,10 @@ def _facts(
     try:
         for key, value in raw.items():
             if key in keys:
-                facts.append((key, _freeze_literal(value, set())))
+                facts.append((
+                    key,
+                    _freeze_literal(str(value) if key == "$ref" and isinstance(value, str) else value, set()),
+                ))
     except _LiteralCycleError as error:
         raise MetadataCycleError(declaration.document, declaration.child(key, *error.tokens).pointer) from error
     return tuple(facts)

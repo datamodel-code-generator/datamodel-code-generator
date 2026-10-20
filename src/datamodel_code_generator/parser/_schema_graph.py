@@ -6,6 +6,8 @@ location table, which ``JsonSchemaObject`` reads through ``SCHEMA_GRAPH`` while 
 ``walk_schema_resources`` finds which absolute URI names which schema of the document (its root, every schema with an
 `$id` or draft-04 `id`, the implicit component resources of OpenAPI, `$anchor` and `$dynamicAnchor`), and
 ``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record.
+``SchemaGraphBuilder.with_ref_edges`` makes each `$ref` and `$dynamicRef` keyword of the document a ``ResolvedRef``, the
+string as written that also carries its ``RefEdge``.
 """
 
 from __future__ import annotations
@@ -13,24 +15,29 @@ from __future__ import annotations
 from contextvars import ContextVar
 from copy import copy
 from dataclasses import dataclass, field
+from operator import is_not
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias
-from urllib.parse import urljoin
+from urllib.parse import unquote, urljoin
 
-from typing_extensions import final
+from typing_extensions import Self, final, override
 
 from datamodel_code_generator.reference import SchemaLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
 __all__ = [
     "SCHEMA_GRAPH",
     "DocumentId",
     "DocumentResources",
+    "RefEdge",
+    "RefReading",
+    "ResolvedRef",
     "ResourceRegistry",
     "SchemaGraphBuilder",
     "SchemaGraphView",
+    "keep_resolved_ref",
     "walk_schema_resources",
 ]
 
@@ -39,6 +46,70 @@ DocumentId = NewType("DocumentId", str)
 
 SchemaPath: TypeAlias = tuple[str | int, ...]
 """The keys and indexes from a schema to a schema-valued keyword below it."""
+
+REF_KEYWORDS: Final = ("$ref", "$dynamicRef")
+"""The keywords whose values become ``ResolvedRef``s."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class RefReading:
+    """How ``SchemaGraphBuilder.with_ref_edges`` reads the objects of a document, each reading named by a string."""
+
+    child: Callable[[Any, object], str | None]
+    """Says how the value under a key of a JSON object read as an entry is read, or None when it holds no schemas."""
+    objects: str
+    """How a schema or document object is read: array items and the objects where keys are keywords, not names."""
+    root: str
+    """How the root is read."""
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class RefEdge:
+    """A `$ref` or `$dynamicRef` keyword of a loaded document.
+
+    ``ref`` is the value the prepared document holds; it resolves against the base URI of the root of ``document``.
+    """
+
+    source: SchemaLocation
+    """The location of the object that holds the keyword."""
+    keyword: str
+    document: DocumentId
+    ref: str
+
+
+@final
+class ResolvedRef(str):  # noqa: FURB189 - it must be a str wherever the parser reads one
+    """A `$ref` or `$dynamicRef` value of a loaded document, carrying its edge.
+
+    It equals, hashes, prints and dumps as the string it holds; a deep copy is itself; it pickles as a plain ``str``.
+    """
+
+    __slots__ = ("edge",)
+    edge: RefEdge
+
+    def __new__(cls, value: str, edge: RefEdge) -> Self:
+        """Return ``value`` carrying ``edge``."""
+        resolved = super().__new__(cls, value)
+        resolved.edge = edge
+        return resolved
+
+    def __deepcopy__(self, memo: dict[int, object]) -> Self:
+        """Return this value: it is immutable."""
+        return self
+
+    @override
+    def __reduce__(self) -> tuple[type[str], tuple[str]]:
+        """Pickle as the plain string."""
+        return str, (str(self),)
+
+
+def keep_resolved_ref(value: object, result: str) -> str:
+    """Return ``result``, the validated form of the reference keyword ``value``, with the edge of ``value``."""
+    if not isinstance(value, ResolvedRef):
+        return result
+    return value if result == value else ResolvedRef(result, value.edge)
 
 
 class ResourceChildren(Protocol):
@@ -199,6 +270,15 @@ class ResourceRegistry:
             self.embedded[document, resource] = dict(identifiers)
         self.keys[document] = set(resources.names)
 
+    def location(self, absolute: str) -> str | None:
+        """Return the location an absolute reference names in a registered schema resource, if any."""
+        if (location := self.locations.get(absolute)) is not None:
+            return location
+        resource, _, fragment = absolute.partition("#")
+        if (not fragment or fragment.startswith("/")) and (root := self.locations.get(resource)):
+            return f"{root}{fragment}" if fragment else root
+        return None
+
     def copy(self) -> ResourceRegistry:
         """Return a copy whose dicts and sets can change without changing this registry."""
         return ResourceRegistry(
@@ -230,7 +310,7 @@ class SchemaGraphBuilder:
     The graph keeps the documents alive, so an identity in the location table stays valid for the whole parse.
     """
 
-    __slots__ = ("_documents", "_mounted", "locations", "registry")
+    __slots__ = ("_documents", "_legacy_keys", "_mounted", "_ref_sites", "locations", "registry")
 
     def __init__(self) -> None:
         """Start an empty graph."""
@@ -238,6 +318,82 @@ class SchemaGraphBuilder:
         self.registry = ResourceRegistry()
         self._documents: list[object] = []
         self._mounted: set[int] = set()
+        self._legacy_keys: dict[RefEdge, tuple[str, str]] = {}
+        self._ref_sites: dict[str, list[int]] = {}
+
+    def count_ref(self, site: str, ref: str) -> None:
+        """Count a reference that reached a check ``site``, with or without its edge."""
+        self._ref_sites.setdefault(site, [0, 0])[isinstance(ref, ResolvedRef)] += 1
+
+    def ref_site_counts(self) -> Mapping[str, tuple[int, int]]:
+        """Return, by site, how many references reached it as a plain string and how many carried their edge."""
+        return {site: (plain, carried) for site, (plain, carried) in sorted(self._ref_sites.items())}
+
+    def legacy_key(self, edge: RefEdge, key: str, site: str) -> tuple[str, str]:
+        """Return the reference key an edge got at its first consumption and the site of that consumption.
+
+        The first call for an edge records ``key`` and ``site``.
+        """
+        return self._legacy_keys.setdefault(edge, (key, site))
+
+    def target(self, edge: RefEdge) -> SchemaLocation | None:
+        """Return the registered location an edge names, by registry document name, if its target is registered."""
+        if (base := self.registry.root_bases.get(edge.document)) is None or (
+            location := self.registry.location(urljoin(base, edge.ref))
+        ) is None:
+            return None
+        document, _, pointer = location.partition("#")
+        return SchemaLocation(
+            document, tuple(unquote(token).replace("~1", "/").replace("~0", "~") for token in pointer.split("/")[1:])
+        )
+
+    @staticmethod
+    def with_ref_edges(
+        raw: Any,
+        root: SchemaLocation,
+        document: DocumentId,
+        reading: RefReading,
+    ) -> Any:
+        """Return a loaded document whose `$ref` and `$dynamicRef` keywords are ``ResolvedRef``s, copied on write.
+
+        ``reading`` says how the root, array items and the value under each key are read, and which of these hold
+        keywords rather than names; instance data and extensions hold no schemas.
+        A container that is its own ancestor is not descended again. A value that is already a ``ResolvedRef`` stays.
+        A copied container keeps its type and attributes, as ``index_document`` copies them.
+        """
+        active: set[int] = set()
+
+        def visit(value: Any, tokens: tuple[str, ...], entries: str) -> Any:
+            if not isinstance(value, (dict, list)) or (value_id := id(value)) in active:
+                return value
+            active.add(value_id)
+            if isinstance(value, list):
+                items = [visit(item, (*tokens, str(index)), reading.objects) for index, item in enumerate(value)]
+                active.discard(value_id)
+                if not any(map(is_not, items, value)):
+                    return value
+                copied = copy(value)
+                copied[:] = items
+                return copied
+            changed = {
+                key: updated
+                for key, child in value.items()
+                if (child_kind := reading.child(entries, key)) is not None
+                and (updated := visit(child, (*tokens, str(key)), child_kind)) is not child
+            }
+            if entries in {reading.objects, reading.root}:
+                source = SchemaLocation(root.document, tokens)
+                for keyword in REF_KEYWORDS:
+                    if type(ref := changed.get(keyword, value.get(keyword))) is str:
+                        changed[keyword] = ResolvedRef(ref, RefEdge(source, keyword, document, ref))
+            active.discard(value_id)
+            if not changed:
+                return value
+            copied = copy(value)
+            copied.update(changed)
+            return copied
+
+        return visit(raw, root.tokens, reading.root)
 
     def is_mounted(self, value: object) -> bool:
         """Return whether a converted schema was indexed at the location of the value it was converted from."""

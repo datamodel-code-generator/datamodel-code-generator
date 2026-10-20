@@ -1,0 +1,20 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel, RootModel
+
+
+class Kept(RootModel[str]):
+    root: str
+
+
+class Moved(RootModel[int]):
+    root: int
+
+
+class Holder(BaseModel):
+    value: Optional[Kept] = None
+    other: Optional[Kept] = None
+    kept: Optional[str] = None
+    moved: Optional[int] = None

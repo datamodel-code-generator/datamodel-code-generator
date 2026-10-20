@@ -352,6 +352,7 @@ class ApiOpenAPIParser(OpenAPIParser):
             self._api_documents[document] = raw_document
         tokens = self._checked_pointer(raw_document, resolved)
         raw = self._get_model_by_json_pointer(raw_document, tokens, resolved) if tokens else raw_document
+        self._check_ref_target("_reference_target", ref, self._raw_location(raw))
         return _ApiObject(SchemaLocation(document, tuple(tokens)), raw_document, _mapping(raw, [resolved]))
 
     def get_ref_model(self, ref: str) -> dict[str, YamlValue]:

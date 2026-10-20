@@ -9263,6 +9263,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._check_schema_locations(mode)
         if self._schema_graph is not None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
             self._check_model_owners(mode)
+        if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is not None:
+            for site, (plain, carried) in self._schema_graph.ref_site_counts().items():
+                mode.record(
+                    f"{CheckArea.SCHEMA_GRAPH.value}: {site} read {carried} references with their edge and {plain} "
+                    f"as plain strings",
+                    kind="ref-sites",
+                    site=site,
+                    plain=plain,
+                    carried=carried,
+                )
         arm_parse_checks(self.generation_store, "Parser.parse")
 
     def __parse_raw(self, run: _SettleRun) -> None:

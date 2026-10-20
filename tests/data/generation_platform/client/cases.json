@@ -5466,5 +5466,45 @@
         "models.py"
       ]
     ]
+  },
+  "ref-instance-data": {
+    "input": "ref-instance-data.yaml",
+    "model": {
+      "field_extra_keys": [
+        "x-note"
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "models.py"
+      ]
+    ],
+    "config": {
+      "body_arguments": "both"
+    }
+  },
+  "ref-name-positions": {
+    "input": "ref-name-positions.yaml",
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
   }
 }

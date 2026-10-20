@@ -42,8 +42,10 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.model import base as model_base
+from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.reference import get_singular_name
 from tests.conftest import (
+    CHECK_SCHEMA_GRAPH_ENV,
     HttpxGetMockFactory,
     MockHttpxResponse,
     assert_directory_content,
@@ -10534,6 +10536,22 @@ def test_main_openapi_webhooks_with_parameters(output_file: Path) -> None:
         assert_func=assert_file_content,
         extra_args=["--openapi-scopes", "schemas", "webhooks", "parameters"],
     )
+
+
+def test_schema_graph_check_counts_references_without_an_edge(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Every `$ref` of a path item, operation, request body, response and media type reaches its site with an edge.
+
+    The report of the schema graph check counts, by site, the references that arrived as plain strings.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
+    parser = OpenAPIParser(
+        OPEN_API_DATA_PATH / "ref_edges" / "operation_refs.yaml",
+        openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Paths, OpenAPIScope.Parameters, OpenAPIScope.RequestBodies],
+        formatters=[Formatter.BUILTIN],
+    )
+    parser.parse()
+    assert_output(report_path.read_text(encoding="utf-8"))
 
 
 def test_webhooks_ref_with_external_schema(output_file: Path) -> None:

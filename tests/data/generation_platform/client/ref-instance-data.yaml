@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info:
+  title: Reference-shaped instance data
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /things:
+    post:
+      operationId: createThing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Thing"
+            example:
+              pointer:
+                $ref: "#/components/schemas/Target"
+            examples:
+              spelled:
+                value:
+                  $ref: "#/components/schemas/Target"
+      responses:
+        "204":
+          description: Created.
+components:
+  schemas:
+    Target:
+      type: string
+    Thing:
+      type: object
+      x-note:
+        $ref: "#/components/schemas/Target"
+      properties:
+        pointer:
+          type: object
+          default:
+            $ref: "#/components/schemas/Target"
+          examples:
+            - $ref: "#/components/schemas/Target"
+          x-note:
+            $ref: "#/components/schemas/Target"
+        fixed:
+          const:
+            $ref: "#/components/schemas/Target"
+        choice:
+          enum:
+            - $ref: "#/components/schemas/Target"
+            - "#/components/schemas/Target"
+        spelled:
+          type: string
+          default: "#/components/schemas/Target"
+        target:
+          $ref: "#/components/schemas/Target"

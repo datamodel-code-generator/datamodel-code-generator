@@ -509,11 +509,9 @@ class AsyncAPIParser(OpenAPIParser):
         path_pointer = [unescape_json_pointer_segment(p) for p in pointer]
         if not path_pointer:
             return AsyncAPIResolvedRef(raw_doc, [*root_parts, "#/"], context)
-        return AsyncAPIResolvedRef(
-            get_model_by_path(raw_doc, pointer),
-            [*root_parts, f"#/{path_pointer[0]}", *path_pointer[1:]],
-            context,
-        )
+        target = get_model_by_path(raw_doc, pointer)
+        self._check_ref_target("_resolve_asyncapi_ref", ref, self._raw_location(target))
+        return AsyncAPIResolvedRef(target, [*root_parts, f"#/{path_pointer[0]}", *path_pointer[1:]], context)
 
     def _iter_message_payload_schemas(
         self,

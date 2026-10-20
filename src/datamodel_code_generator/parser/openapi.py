@@ -18,7 +18,7 @@ from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
 from warnings import warn
 
-from pydantic import Field, StrictBool, ValidationError
+from pydantic import Field, StrictBool, ValidationError, field_validator
 from typing_extensions import Unpack, override
 
 from datamodel_code_generator import (
@@ -30,6 +30,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIVersion, VersionMode
+from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -51,7 +52,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from urllib.parse import ParseResult
 
-    from pydantic import GetCoreSchemaHandler
+    from pydantic import GetCoreSchemaHandler, ValidatorFunctionWrapHandler
     from pydantic_core import CoreSchema
 
     from datamodel_code_generator._format_types import PythonVersion
@@ -94,6 +95,12 @@ class ReferenceObject(BaseModel):
     """Represent an OpenAPI reference object ($ref)."""
 
     ref: str = Field(..., alias="$ref")
+
+    @field_validator("ref", mode="wrap")
+    @classmethod
+    def _keep_resolved_ref(cls, value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+        """Keep the edge of a reference of a loaded document."""
+        return keep_resolved_ref(value, handler(value))
 
 
 class ExampleObject(BaseModel):
@@ -320,7 +327,9 @@ class OpenAPIParser(JsonSchemaParser):
         """Resolve a reference to its model definition."""
         ref_file, ref_path = self.model_resolver.resolve_ref(ref).split("#", 1)
         ref_body = self._get_ref_body(ref_file) if ref_file else self.raw_obj
-        return cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
+        model = cast("dict[str, Any]", get_model_by_path(ref_body, ref_path.split("/")[1:]))
+        self._check_ref_target("get_ref_model", ref, self._raw_location(model))
+        return model
 
     @contextmanager
     def openapi_self_context(self, specification: dict[str, Any]) -> Generator[None, None, None]:

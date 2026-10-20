@@ -157,8 +157,11 @@ from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
     DocumentId,
     DocumentResources,
+    RefReading,
+    ResolvedRef,
     ResourceRegistry,
     SchemaGraphBuilder,
+    keep_resolved_ref,
     walk_schema_resources,
 )
 from datamodel_code_generator.parser.base import (
@@ -1127,6 +1130,60 @@ def _document_child_entries(
     return child
 
 
+_RefEdgeEntries = Literal["root", "object", "names", "maps"]
+_REF_EDGE_NAME_MAPS = frozenset({"headers", "paths"})
+_REF_EDGE_KEYWORDS = (
+    _JSON_SCHEMA_MAP_KEYWORDS
+    | _JSON_SCHEMA_SEQUENCE_KEYWORDS
+    | _JSON_SCHEMA_SINGLE_KEYWORDS
+    | _JSON_SCHEMA_SINGLE_OR_SEQUENCE_KEYWORDS
+    | _NAMED_ENTRY_MAP_KEYWORDS
+    | _REF_EDGE_NAME_MAPS
+    | {
+        "additionalOperations",
+        "components",
+        "delete",
+        "get",
+        "head",
+        "message",
+        "messageTraits",
+        "operationTraits",
+        "options",
+        "patch",
+        "payload",
+        "pathItems",
+        "post",
+        "put",
+        "query",
+        "reply",
+        "requestBodies",
+        "requestBody",
+        "schema",
+        "schemas",
+        "itemSchema",
+        "trace",
+        "traits",
+        "x-propertyNames",
+    }
+)
+"""The keywords of a schema, path item, operation or message object under which another such object is read."""
+
+
+def _ref_edge_child_entries(
+    entries: _RefEdgeEntries, key: object, named_entry_maps: frozenset[str]
+) -> _DocumentEntries | None:
+    """Return how the value under a key of a document object is read for `$ref` edges, or None for data.
+
+    Below the root, only the keywords that hold schemas or the objects around them are read; names of OAuth scopes,
+    discriminator mappings and unknown keywords are data, so a `$ref` key there is not a reference. The keys of the
+    root are read as written, since a referenced document names its schemas there.
+    """
+    if entries == "object" and key not in _REF_EDGE_KEYWORDS:
+        return None
+    read: _DocumentEntries = "object" if entries == "root" else entries
+    return _document_child_entries(read, key, named_entry_maps | _REF_EDGE_NAME_MAPS)
+
+
 def _single_value_enum_as_const(
     value: YamlValue, named_entry_maps: frozenset[str], entries: _DocumentEntries = "object"
 ) -> YamlValue:
@@ -1501,6 +1558,12 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
             if "#/" in value or value[0] == "#" or value[-1] == "#":
                 return value
         return value
+
+    @field_validator("ref", "dynamicRef", mode="wrap")
+    @classmethod
+    def _keep_resolved_ref(cls, value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
+        """Keep the edge of a reference keyword of a loaded document, also when validation normalizes its value."""
+        return keep_resolved_ref(value, handler(value))
 
     @field_validator("required", mode="before")
     @classmethod
@@ -4511,8 +4574,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if mapped is not None:
             return mapped
 
-        ref = self._normalize_external_ref(ref)
+        written, ref = ref, self._normalize_external_ref(ref)
         resolved_ref = self.model_resolver.resolve_ref(ref)
+        self._check_ref_key("get_ref_data_type", written, resolved_ref)
         if (facts := self._ref_data_type_facts.get(resolved_ref)) is None:
             ref_schema = self._load_ref_schema_object(ref)
             facts = (
@@ -5262,7 +5326,75 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
         """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
         resolved_ref = self.model_resolver.resolve_ref(ref)
-        return self._validate_schema_object(self._get_ref_raw_schema(resolved_ref), [resolved_ref])
+        loaded = self._validate_schema_object(self._get_ref_raw_schema(resolved_ref), [resolved_ref])
+        self._check_ref_target("_load_ref_schema_object", ref, loaded.schema_location)
+        return loaded
+
+    def _check_ref_key(self, site: str, ref: str, key: str) -> None:
+        """Report a reference keyword whose key at ``site`` differs from the key its edge got at its first consumption.
+
+        Only the schema graph check reads edges.
+        """
+        if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is None:
+            return
+        graph = cast("SchemaGraphBuilder", self._schema_graph)
+        graph.count_ref(site, ref)
+        if not isinstance(ref, ResolvedRef):
+            return
+        if (first := graph.legacy_key(ref.edge, key, site))[0] == key:
+            return
+        mode.violation(
+            Error,
+            f"the {ref.edge.keyword} {redact_url(ref)!r} at {redact_url(str(ref.edge.source))!r} resolves to "
+            f"{redact_url(key)!r} at {site}, but to {redact_url(first[0])!r} at {first[1]}",
+            kind="key",
+            site=site,
+            first_site=first[1],
+            ref=redact_url(ref),
+            source=redact_url(str(ref.edge.source)),
+            key=redact_url(key),
+            first_key=redact_url(first[0]),
+        )
+
+    def _check_ref_target(self, site: str, ref: str, location: SchemaLocation | None) -> None:
+        """Report a reference keyword whose target at ``site`` is not the registered location its edge names.
+
+        Only the schema graph check reads edges; an edge whose target is not registered is not compared. A target
+        whose pointer the parser splits at another `/` (a key with an unescaped or percent-encoded slash, which the
+        parser matches against the keys of the document) is the listed slash-key class, and a reference of a document
+        that resolves references against itself (``_resolve_lenient_resource_ref``, which warns where JSON Schema
+        resolves otherwise) is the listed lenient-document class; neither is a mismatch.
+        """
+        if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is None:
+            return
+        graph = cast("SchemaGraphBuilder", self._schema_graph)
+        graph.count_ref(site, ref)
+        if (
+            not isinstance(ref, ResolvedRef)
+            or location is None
+            or ref.edge.document in self._lenient_documents
+            or (target := graph.target(ref.edge)) is None
+        ):
+            return
+        if self._schema_resource_document([location.document]) == target.document and "/".join(
+            location.tokens
+        ) == "/".join(target.tokens):
+            return
+        named = SchemaLocation(
+            self.model_resolver.join_path(tuple(self._schema_resource_path_parts[target.document])).partition("#")[0],
+            target.tokens,
+        )
+        mode.violation(
+            Error,
+            f"the {ref.edge.keyword} {redact_url(ref)!r} at {redact_url(str(ref.edge.source))!r} names "
+            f"{redact_url(str(named))!r}, but {site} loads {redact_url(str(location))!r}",
+            kind="target",
+            site=site,
+            ref=redact_url(ref),
+            source=redact_url(str(ref.edge.source)),
+            target=redact_url(str(named)),
+            loaded=redact_url(str(location)),
+        )
 
     def _uses_builtin_false_ref_facts(self) -> bool:
         """Return whether cached local false-ref facts preserve parser hooks."""
@@ -13894,6 +14026,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             reference.loaded = True
             return reference
 
+        written = object_ref
         if self._has_embedded_schema_resources:
             document = self._schema_resource_document(list(self.model_resolver.current_root))
             object_ref = self._resolve_schema_resource_ref(
@@ -13902,6 +14035,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         # https://swagger.io/docs/specification/using-ref/
         object_ref = self._normalize_external_ref(object_ref)
         ref = self.model_resolver.resolve_ref(object_ref)
+        self._check_ref_key("resolve_ref", written, ref)
         if get_ref_type(object_ref) == JSONReference.LOCAL or get_ref_type(ref) == JSONReference.LOCAL:
             reference = self.model_resolver.add_ref(ref, resolved=True)
             self.reserved_refs[tuple(self.model_resolver.current_root)].add(ref)
@@ -14272,7 +14406,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._resolve_lenient_resource_ref(reference, base, document)
         absolute = urljoin(base, reference)
         resource, _, fragment = absolute.partition("#")
-        if (location := self._registered_location(absolute)) is not None:
+        if (location := self._schema_resource_registry.location(absolute)) is not None:
             return _document_location(location, document)
         if (
             fragment
@@ -14286,15 +14420,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             absolute = _file_uri_path(resource).as_posix() + absolute[len(resource) :]
         return absolute if nested_scope else reference
 
-    def _registered_location(self, absolute: str) -> str | None:
-        """Return the registry location an absolute reference names in a registered schema resource, if any."""
-        if (location := self._schema_resource_locations.get(absolute)) is not None:
-            return location
-        resource, _, fragment = absolute.partition("#")
-        if (not fragment or fragment.startswith("/")) and (root := self._schema_resource_locations.get(resource)):
-            return f"{root}{fragment}" if fragment else root
-        return None
-
     def _resolve_lenient_resource_ref(self, reference: str, base: str, document: str) -> str:
         """Resolve a reference of a document that resolves references against itself, like OpenAPI.
 
@@ -14305,7 +14430,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if _is_plain_name_fragment(reference):
             location = self._schema_resource_locations.get(urljoin(base, reference))
             return reference if location is None else _document_location(location, document)
-        if (location := self._registered_location(urljoin(base, reference))) is None:
+        if (location := self._schema_resource_registry.location(urljoin(base, reference))) is None:
             return reference
         if (target := _document_location(location, document)) == reference or not target.startswith("#"):
             return reference
@@ -14446,8 +14571,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if (graph := self._schema_graph) is None or graph.is_mounted(raw):
             return raw
-        document = self.model_resolver.join_path(tuple(path_parts)).partition("#")[0]
-        indexed = graph.index_document(raw, SchemaLocation(document, ()))
+        root = SchemaLocation(self.model_resolver.join_path(tuple(path_parts)).partition("#")[0], ())
+        indexed = graph.index_document(
+            graph.with_ref_edges(
+                raw,
+                root,
+                DocumentId(self._schema_resource_document(path_parts)),
+                RefReading(partial(_ref_edge_child_entries, named_entry_maps=self._named_entry_maps), "object", "root"),
+            ),
+            root,
+        )
         if (entry := self._documents_as_written.get(id(raw))) is not None and entry[0] is raw:
             self._documents_as_written[id(indexed)] = indexed, entry[1]
         return indexed

@@ -369,6 +369,7 @@ openapi/read_only_write_only_url_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_url_ref_remote.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_variant_graph.yaml	yaml_fast_constructor/parity.txt
 openapi/recursive_ref_discriminator.yaml	yaml_fast_constructor/parity.txt
+openapi/ref_edges/operation_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_merge_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/ref_nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/reference_same_hierarchy_directory/common/cat.yaml	yaml_fast_constructor/parity.txt

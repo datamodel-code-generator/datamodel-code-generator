@@ -12288,6 +12288,13 @@ True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_runtime.t
 off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].report.txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
+[test_schema_graph_check_of_reference_edges]
+key-off	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
+key-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-report].report.txt
+key-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
+target-off	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[target-off].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
+target-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[target-report].report.txt
+target-report	main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[target-report].txt	= main/jsonschema/main_jsonschema/schema_graph_check_of_reference_edges[key-off].txt
 [test_schema_import_paths_for_target]
 python-3.10	main/jsonschema/schema_import_paths_target_310.py
 python-3.12	main/jsonschema/schema_import_paths_target_312.py
