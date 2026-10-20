@@ -162,6 +162,7 @@ class BaseGenerateConfig(TypedDict):
     use_serialize_as_any: NotRequired[bool]
     use_non_positive_negative_number_constrained_types: NotRequired[bool]
     use_decimal_for_multiple_of: NotRequired[bool]
+    omit_redundant_constraints: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]
     use_double_quotes: NotRequired[bool]
     use_union_operator: NotRequired[bool]

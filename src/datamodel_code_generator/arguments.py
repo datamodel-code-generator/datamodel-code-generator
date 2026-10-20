@@ -800,6 +800,13 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--omit-redundant-constraints",
+    help="Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class "
+    "such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--set-default-enum-member",
     help=f"Deprecated: {deprecation_message('cli.set-default-enum-member')}",
     action="store_true",

@@ -79,6 +79,7 @@
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-snake-case-field`
+- `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
 - `--serialization-aliases`: Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
@@ -446,6 +447,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Format: JSON object mapping symbols to module paths.
                         Example: '{"TypedDict": "my_project.typing_compat",
                         "NotRequired": "my_project.typing_compat"}'.
+  --omit-redundant-constraints
+                        Do not write a constraint again beside a type that
+                        already enforces it: the bound of a zero-bound class
+                        such as NonNegativeInt, and the length and number
+                        constraints a const or enum Literal meets by its
+                        values
   --set-default-enum-member
                         Deprecated: --set-default-enum-member is deprecated.
                         Use --deserialize-default-values enum instead.

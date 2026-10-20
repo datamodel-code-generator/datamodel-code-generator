@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 36 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 30 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 31 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 46 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 9 | OpenAPI-specific features |
@@ -264,6 +264,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### O {#o}
 
+- [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints)
 - [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version)
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths)
 - [`--openapi-paths-bodies-as-definitions`](openapi-only-options.md#openapi-paths-bodies-as-definitions)

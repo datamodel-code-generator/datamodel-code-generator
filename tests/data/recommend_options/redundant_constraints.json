@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inventory",
+  "type": "object",
+  "$defs": {
+    "Count": {"type": "integer", "minimum": 0}
+  },
+  "properties": {
+    "stock": {"type": "integer", "minimum": 0},
+    "reserved": {"type": ["integer", "null"], "minimum": 0},
+    "range": {"type": "integer", "minimum": 0, "maximum": 0},
+    "flag": {"type": "integer", "minimum": 0, "exclusiveMinimum": true},
+    "kind": {"type": "string", "const": "box", "minLength": 1},
+    "count": {"$ref": "#/$defs/Count"}
+  }
+}

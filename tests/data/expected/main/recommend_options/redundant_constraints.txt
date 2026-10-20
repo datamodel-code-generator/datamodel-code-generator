@@ -1,0 +1,69 @@
+Option recommendations (experimental; quick mode; rules 2026-10-19)
+
+Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
+  components                       1, 0 operations
+  inline objects / enums           0 / 0, nesting depth 0
+  shared property names            0 (none)
+  inline names = component names   0
+  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets
+  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key
+  inline titles                    0 objects, most repeated 0 (none)
+  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants
+  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent
+  component keys                   PascalCase (1 of 1); 0 dotted in 0 namespaces
+  constraint keywords              uniqueItems 0, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 1
+  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
+  integer/number/boolean schemas   5
+  root schema                      object model 1, title words 1
+
+Start from  --preset standard-py314-20261017
+
+Add (2 options)
+  --omit-redundant-constraints   [constraints.omit-redundant]
+      Schemas set constraints that the generated type enforces itself (3): a const or an enum beside
+      a length or number keyword its values meet, or exactly one number bound equal to 0, which
+      --use-non-positive-negative-number-constrained-types turns into a class such as
+      NonNegativeInt. With redundant constraints omitted, the field does not write them again beside
+      the type, and a const branch whose constraints its value meets stays a Literal instead of a
+      root model.
+      measured: {type: string, const: abc, minLength: 1} under --use-annotated: Literal['abc']
+      instead of Annotated[Literal['abc'], Field(min_length=1)]
+      measured: {type: [integer, null], minimum: 0} under --use-annotated and
+      --use-non-positive-negative-number-constrained-types: NonNegativeInt | None instead of
+      Annotated[NonNegativeInt | None, Field(ge=0)]
+      measured: anyOf of {type: string, minLength: 1} and {const: gpt-live-1} referenced beside
+      minLength: 1: Model | Literal['gpt-live-1'] instead of a second root model Model1
+  --class-name RedundantConstraints   [root.class-name-for-root-object]
+      The root schema is an object model. Without --class-name its class is Model (with
+      --use-title-as-name, its title: Inventory), and full-path prefixes that name onto root-level
+      models. The suggested name comes from the input file name; replace it with the name the
+      project wants.
+      measured: SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile
+      became TsConfig, names over 40 characters 6 -> 0
+      measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
+      Workflow, Compose and PackageJson
+
+Optional (policy; not in the command)
+  --strict-types int float bool   [policy.strict-scalar-types]
+      Pydantic validates in lax mode, which coerces input into the 5 integer, number and boolean
+      schemas: it accepts the string "5" and true as integers, "1.5" as a number, and "true" or 1 as
+      booleans. Strict types reject such input. Whether to accept it depends on the project's
+      clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an
+      integer, so leave int out to accept it.
+      measured: 11 JSON documents for integer, number, boolean and string properties, 6 of them
+      invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one
+      rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
+      rejected
+
+Your configuration
+  --preset standard-py314-20261017: a newer preset is available, standard-py314-20261019
+
+Command
+  datamodel-codegen --class-name RedundantConstraints --input redundant_constraints.json --omit-redundant-constraints --preset standard-py314-20261017
+
+pyproject.toml
+  [tool.datamodel-codegen]
+  class-name = "RedundantConstraints"
+  input = "redundant_constraints.json"
+  omit-redundant-constraints = true
+  preset = "standard-py314-20261017"

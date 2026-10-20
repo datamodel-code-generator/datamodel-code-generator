@@ -87,6 +87,7 @@ paths-bodies-referenced-path-item	main/recommend_options/paths_bodies_path_item_
 paths-scope	main/recommend_options/operations_paths.txt
 pattern-properties	main/recommend_options/deployment.txt
 preset-value	main/recommend_options/api_practical.txt
+redundant-constraints	main/recommend_options/redundant_constraints.txt
 root-name-taken	main/recommend_options/order.txt
 swagger	main/recommend_options/swagger.txt
 swagger-definitions	main/recommend_options/swagger_jsonschema.txt

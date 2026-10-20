@@ -488,6 +488,7 @@ class DataTypeManager(_DataTypeManager):
         target_date_class: DateClassType | None = None,
         treat_dot_as_module: bool | None = None,  # noqa: FBT001
         use_serialize_as_any: bool = False,  # noqa: FBT001, FBT002
+        omit_redundant_constraints: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize type manager with dataclass datetime defaults."""
         super().__init__(
@@ -505,6 +506,7 @@ class DataTypeManager(_DataTypeManager):
             target_date_class=target_date_class,
             treat_dot_as_module=treat_dot_as_module,
             use_serialize_as_any=use_serialize_as_any,
+            omit_redundant_constraints=omit_redundant_constraints,
         )
 
 

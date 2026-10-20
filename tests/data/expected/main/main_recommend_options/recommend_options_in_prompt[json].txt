@@ -265,6 +265,7 @@
 +      "operations": 2,
 +      "parent_copy_union_branches": 0,
 +      "pattern_properties": 0,
++      "redundant_constraints": 0,
 +      "root_is_object": 0,
 +      "root_title_words": 0,
 +      "shared_inline_enum_names": 2,

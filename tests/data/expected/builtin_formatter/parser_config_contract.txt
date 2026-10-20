@@ -74,6 +74,7 @@ reviewed-safe model_extra_keys_without_x_prefix
 reviewed-safe model_name_map
 reviewed-safe naming_strategy
 reviewed-safe no_alias
+reviewed-safe omit_redundant_constraints
 reviewed-safe original_field_name_delimiter
 reviewed-safe parent_scoped_naming
 reviewed-safe read_only_write_only_model_type

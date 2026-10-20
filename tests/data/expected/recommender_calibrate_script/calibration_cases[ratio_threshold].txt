@@ -85,6 +85,7 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: naming.qualify-shared-inline-names (its values are not a grid value)
 - Not covered: enums.read-as-their-const (decision enum-const-reading has no grid axis)
 - Not covered: openapi.paths-bodies-as-definitions (decision paths-bodies-as-definitions has no grid axis)
+- Not covered: constraints.omit-redundant (decision redundant-constraints has no grid axis)
 - Not covered: reuse.identical-inline-shapes (decision reuse has no grid axis)
 - Not covered: root.class-name-for-root-object (decision root-name has no grid axis)
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
@@ -706,6 +707,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "redundant_constraints": 0,
           "root_is_object": 0,
           "root_title_words": 0,
           "shared_inline_enum_names": 1,
@@ -922,6 +924,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "covered": "decision paths-bodies-as-definitions has no grid axis",
       "decision": "paths-bodies-as-definitions",
       "rule": "openapi.paths-bodies-as-definitions"
+    },
+    {
+      "covered": "decision redundant-constraints has no grid axis",
+      "decision": "redundant-constraints",
+      "rule": "constraints.omit-redundant"
     },
     {
       "covered": "decision reuse has no grid axis",

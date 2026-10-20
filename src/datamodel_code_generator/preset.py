@@ -665,6 +665,15 @@ _STANDARD_20261019_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "model instead of an inline type."
         ),
     ),
+    PresetOptionGroup(
+        title="Redundant constraints omitted",
+        config=PresetConfig(omit_redundant_constraints=True),
+        description=(
+            "Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound "
+            "class such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by "
+            "its values, which also keeps such a const branch inline instead of a root model."
+        ),
+    ),
 )
 
 _STANDARD_20261019_PRESET_NAMES_BY_TARGET: dict[PythonVersion, PresetName] = {
@@ -978,7 +987,8 @@ def render_presets_markdown() -> str:
             "one value, and an enum that admits the const beside it, render as that const's Literal value instead "
             "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add "
             "`--openapi-paths-bodies-as-definitions`: request and response bodies of the OpenAPI paths and webhooks "
-            "scopes get the model a schema definition of the same body gets."
+            "scopes get the model a schema definition of the same body gets, and `--omit-redundant-constraints`: a "
+            "constraint that a zero-bound class or a const or enum Literal already enforces is not written again."
         ),
         "",
         "## Override Preset Options",

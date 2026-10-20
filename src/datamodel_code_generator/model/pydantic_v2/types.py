@@ -189,6 +189,7 @@ _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, 
 
 bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
+_INT_TYPES: frozenset[Types] = frozenset({Types.int32, Types.int64, Types.integer})
 _ZERO_BOUND_KEYWORDS: tuple[str, ...] = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
 """The bounds of which exactly one equal to 0 gives a zero-bound class in the field forms, in schema order."""
 
@@ -250,6 +251,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         target_date_class: DateClassType | None = None,  # noqa: ARG002
         treat_dot_as_module: bool | None = None,  # noqa: FBT001
         use_serialize_as_any: bool = False,  # noqa: FBT001, FBT002
+        omit_redundant_constraints: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize the DataTypeManager with Pydantic type mappings."""
         super().__init__(
@@ -265,6 +267,7 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             target_datetime_class=target_datetime_class,
             treat_dot_as_module=treat_dot_as_module,
             use_serialize_as_any=use_serialize_as_any,
+            omit_redundant_constraints=omit_redundant_constraints,
         )
 
         self.type_map: dict[Types, DataType] = self.type_map_factory(
@@ -478,13 +481,25 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             and not kwargs.get("string_format")
         )
 
-    def _field_form_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
-        """Return the arguments a type of a field form is built from: the constraints it takes, and the others."""
+    def _is_strict_number(self, types: Types) -> bool:
+        """Return whether ``--strict-types`` makes the number type a schema type maps to strict."""
+        if types in _INT_TYPES:
+            return StrictTypes.int in self.strict_types
+        return types in _FLOAT_TYPES and StrictTypes.float in self.strict_types
+
+    def _field_form_kwargs(self, types: Types, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """Return the arguments a type of a field form is built from: the constraints it takes, and the others.
+
+        Under ``omit_redundant_constraints`` a strict number takes no zero bound: its field writes the bound beside
+        ``StrictInt`` or ``StrictFloat`` instead of a strict ``con*`` type that repeats it.
+        """
         if kwargs.get("base64_encoded"):
             return kwargs
         taken = {key: value for key, value in kwargs.items() if key not in self.kwargs_schema_to_model}
-        if self.use_non_positive_negative_number_constrained_types and (
-            len(zero_bounds := [key for key in _ZERO_BOUND_KEYWORDS if kwargs.get(key) == 0]) == 1
+        if (
+            self.use_non_positive_negative_number_constrained_types
+            and not (self.omit_redundant_constraints and self._is_strict_number(types))
+            and len(zero_bounds := [key for key in _ZERO_BOUND_KEYWORDS if kwargs.get(key) == 0]) == 1
         ):
             taken[zero_bounds[0]] = kwargs[zero_bounds[0]]
         return taken
@@ -502,16 +517,17 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         The parser passes every constraint the schema declares for the type. In the field forms
         (``field_constraints``) the field writes them, so the type takes none of them but the lengths of bytes decoded
         from base64 text and, under ``use_non_positive_negative_number_constrained_types``, the one bound equal to 0
-        of a schema that has exactly one (row ``legacy-consumed-at-object-property`` writes it again); a number with
+        of a schema that has exactly one (row ``legacy-consumed-at-object-property`` writes it again, except under
+        ``omit_redundant_constraints``, where a strict number takes none of them); a number with
         ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of``, strict under ``--strict-types float``.
         """
         if field_constraints:
             if self._is_decimal_multiple(types, kwargs):
                 return self.data_type.from_import(IMPORT_DECIMAL, strict=StrictTypes.float in self.strict_types)
-            kwargs = self._field_form_kwargs(kwargs)
+            kwargs = self._field_form_kwargs(types, kwargs)
         if types == Types.string:
             return self.get_data_str_type(types, **kwargs)
-        if types in {Types.int32, Types.int64, Types.integer}:
+        if types in _INT_TYPES:
             return self.get_data_int_type(types, **kwargs)
         if types in _FLOAT_TYPES and not kwargs.get("string_format"):
             return self.get_data_float_type(types, **kwargs)
@@ -637,6 +653,7 @@ class DataTypeManager(_PydanticDataTypeManager):
         target_date_class: DateClassType | None = None,
         treat_dot_as_module: bool | None = None,  # noqa: FBT001
         use_serialize_as_any: bool = False,  # noqa: FBT001, FBT002
+        omit_redundant_constraints: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize with pydantic v2-specific DataType."""
         self._target_date_class = target_date_class
@@ -654,6 +671,7 @@ class DataTypeManager(_PydanticDataTypeManager):
             target_date_class=target_date_class,
             treat_dot_as_module=treat_dot_as_module,
             use_serialize_as_any=use_serialize_as_any,
+            omit_redundant_constraints=omit_redundant_constraints,
         )
 
         # Override the data_type with our pydantic v2 version

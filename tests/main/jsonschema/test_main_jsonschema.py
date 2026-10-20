@@ -6604,6 +6604,90 @@ def test_main_decimal_multiple_of_in_field_forms(output_file: Path, extra_args: 
     assert_output("\n".join(rejected) + "\n", name="rejected")
 
 
+@pytest.mark.cli_doc(
+    options=["--omit-redundant-constraints"],
+    option_description="""Do not write a constraint again beside a type that already enforces it.
+
+In the field forms (`--field-constraints`, `--use-annotated`), a zero-bound class from
+`--use-non-positive-negative-number-constrained-types`, such as `NonNegativeInt`, enforces its bound, so a nullable
+field, a root model or an item writes `NonNegativeInt | None` instead of repeating `Field(ge=0)`; under
+`--strict-types` the field writes the bound beside `StrictInt` instead of a strict `conint`. The `Literal` of a const
+or an enum enforces the length and number constraints beside it by its values: values that violate them are left
+out and the field writes none of them, and a const branch of a oneOf or anyOf whose constraints its value meets stays
+a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check cannot decide stay written.""",
+    input_schema="jsonschema/redundant_constraints.json",
+    cli_args=[
+        "--use-annotated",
+        "--use-non-positive-negative-number-constrained-types",
+        "--use-single-value-enum-as-const",
+        "--omit-redundant-constraints",
+    ],
+    golden_output="main/jsonschema/redundant_constraints~main_redundant_constraints[annotated_option].py",
+    comparison_output="main/jsonschema/redundant_constraints.py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--use-annotated"], id="annotated"),
+        pytest.param(["--use-annotated", "--omit-redundant-constraints"], id="annotated_option"),
+        pytest.param(["--field-constraints", "--omit-redundant-constraints"], id="field_constraints_option"),
+        pytest.param(
+            ["--use-annotated", "--strict-types", "int", "float", "--omit-redundant-constraints"], id="strict_option"
+        ),
+        pytest.param(
+            ["--use-annotated", "--enum-field-as-literal", "all", "--omit-redundant-constraints"], id="literal_option"
+        ),
+        pytest.param(["--omit-redundant-constraints"], id="default_option"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints", "--omit-redundant-constraints"],
+            id="pydantic_dataclass_option",
+        ),
+        pytest.param(["--output-model-type", "msgspec.Struct", "--omit-redundant-constraints"], id="msgspec_option"),
+    ],
+)
+def test_main_redundant_constraints(output_file: Path, extra_args: list[str]) -> None:
+    """Test ``--omit-redundant-constraints`` writes no constraint that the type of its field already enforces.
+
+    A zero-bound class leaves its bound out of a nullable property, an item and a root, and writes the other bound
+    only; under strict types the bound is written beside ``StrictInt`` or ``StrictFloat``. A const or an enum
+    ``Literal`` leaves out the lengths and bounds its values meet, and a const branch beside a constraint it meets
+    stays inline. A const that meets no constraint keeps its value with the unsatisfiable warning.
+    """
+    name = "redundant_constraints"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                "--use-non-positive-negative-number-constrained-types",
+                "--use-single-value-enum-as-const",
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
+    if "msgspec.Struct" in extra_args:
+        return
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "RedundantConstraints") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with suppress(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+                continue
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", name="rejected")
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

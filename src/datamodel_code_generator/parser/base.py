@@ -3687,6 +3687,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             target_date_class=config.target_date_class,
             treat_dot_as_module=config.treat_dot_as_module or False,
             use_serialize_as_any=config.use_serialize_as_any,
+            omit_redundant_constraints=config.omit_redundant_constraints,
         )
         self.data_model_type: type[DataModel] = config.data_model_type
         self.data_model_root_type: type[DataModel] = config.data_model_root_type

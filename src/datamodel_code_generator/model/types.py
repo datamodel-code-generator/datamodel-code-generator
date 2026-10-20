@@ -127,6 +127,7 @@ class DataTypeManager(_DataTypeManager):
         target_date_class: DateClassType | None = None,  # noqa: ARG002
         treat_dot_as_module: bool | None = None,  # noqa: FBT001
         use_serialize_as_any: bool = False,  # noqa: FBT001, FBT002
+        omit_redundant_constraints: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize type manager with basic type mapping."""
         super().__init__(
@@ -142,6 +143,7 @@ class DataTypeManager(_DataTypeManager):
             target_datetime_class=target_datetime_class,
             treat_dot_as_module=treat_dot_as_module,
             use_serialize_as_any=use_serialize_as_any,
+            omit_redundant_constraints=omit_redundant_constraints,
         )
 
         datetime_map = (

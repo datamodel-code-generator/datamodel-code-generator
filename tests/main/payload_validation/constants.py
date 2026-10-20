@@ -351,6 +351,18 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         for name in ("nested", "siblings", "inherited")
     },
     "jsonschema/type_alias_lookaround/annotated_root.json": {PayloadBackend.PYDANTIC_V2: ("--use-annotated",)},
+    "jsonschema/redundant_constraints.json": {
+        backend: (
+            "--use-non-positive-negative-number-constrained-types",
+            "--use-single-value-enum-as-const",
+            "--omit-redundant-constraints",
+            form,
+        )
+        for backend, form in (
+            (PayloadBackend.PYDANTIC_V2, "--use-annotated"),
+            (PayloadBackend.PYDANTIC_V2_DATACLASS, "--field-constraints"),
+        )
+    },
     "jsonschema/decimal_multiple_of_field_forms.json": {
         PayloadBackend.PYDANTIC_V2: ("--use-decimal-for-multiple-of", "--use-annotated"),
         PayloadBackend.PYDANTIC_V2_DATACLASS: ("--use-decimal-for-multiple-of", "--field-constraints"),

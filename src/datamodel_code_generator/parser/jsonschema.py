@@ -197,6 +197,7 @@ from datamodel_code_generator.reference import (
 )
 from datamodel_code_generator.types import (
     ANY,
+    NONE,
     DataType,
     EmptyDataType,
     FloatConstraint,
@@ -714,6 +715,39 @@ def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
     return data_type._consumed_constraints.union(  # noqa: SLF001
         *(member._consumed_constraints for member in data_type.data_types)  # noqa: SLF001
     )
+
+
+def _enforced_constraint_keywords(
+    data_type: DataType, zero_bound_classes: Mapping[str, tuple[str, ...]], constraints: Mapping[str, float]
+) -> frozenset[str]:
+    """Return the keywords of a schema that the type of its field enforces itself.
+
+    ``--omit-redundant-constraints`` leaves them out of the field. A zero-bound class enforces its bound
+    (``zero_bound_classes``), the ``Literal`` of a const or an enum every keyword of ``constraints`` that all its
+    values meet (``_literal_meets``), and a union the keywords every member but ``None`` enforces; a container
+    enforces none of its own.
+    """
+    if data_type.is_list or data_type.is_dict or data_type.is_tuple or data_type.is_set or data_type.is_frozen_set:
+        return NO_KEYWORDS
+    if members := [member for member in data_type.data_types if member.type != NONE or member.data_types]:
+        return frozenset.intersection(
+            *(_enforced_constraint_keywords(member, zero_bound_classes, constraints) for member in members)
+        )
+    if _is_value_literal(data_type):
+        return _literal_meets(data_type.literals, constraints)
+    return frozenset(zero_bound_classes.get(data_type.type, ())) if data_type.type else NO_KEYWORDS
+
+
+def _literal_meets(values: Sequence[object], constraints: Mapping[str, float]) -> frozenset[str]:
+    """Return the keywords of ``constraints`` that the literal check decides and every one of the values meets.
+
+    The values of a literal no value of which meets a keyword stay as written (the unsatisfiable warning), so the
+    literal does not enforce that keyword.
+    """
+    decided, met = literal_check(values, constraints)
+    if all(met):
+        return frozenset(decided)
+    return frozenset(key for key in decided if all(literal_check(values, {key: constraints[key]})[1]))
 
 
 def _imported_type_paths(data_type: DataType) -> Iterator[str]:
@@ -2374,9 +2408,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the keywords a literal check leaves to the field of a schema's values, as the field writes them.
 
         A field that writes Field() arguments (``writes`` at its site) writes beside the ``Literal`` of the values the
-        keywords ``_split_constraint_values`` gives it, which Pydantic checks on the ``Literal``.
+        keywords ``_split_constraint_values`` gives it, which Pydantic checks on the ``Literal``; under
+        ``--omit-redundant-constraints`` the literal check decides them all and the field writes none of them.
         """
-        if not (writes and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS and _literal_constraints(obj)):
+        if not (
+            writes
+            and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
+            and not self.config.omit_redundant_constraints
+            and _literal_constraints(obj)
+        ):
             return NO_KEYWORDS
         return (
             frozenset(self._split_constraint_values(obj, self._literal_values_type(values))[0])
@@ -2578,7 +2618,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for constraint in obj.__constraint_field_order__
             if (value := getattr(obj, constraint)) is not None
         }
-        if data_type is not None and (carried := _carried_constraint_keywords(data_type)):
+        if data_type is not None and (carried := self._type_enforced_keywords(obj, data_type)):
             values = {key: value for key, value in values.items() if key not in carried}
         if not values:
             return values, {}
@@ -2597,6 +2637,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             - untaken
         )
         return {key: value for key, value in values.items() if key in written}, untaken_values(values, untaken)
+
+    def _const_literal_enforces_constraints(self, obj: JsonSchemaObject) -> bool:
+        """Return whether ``--omit-redundant-constraints`` types a schema by the ``Literal`` of its const alone.
+
+        The ``Literal`` enforces every constraint beside the const when the const meets each of them as the literal
+        check decides it, so an item of the schema needs no root model to write them on.
+        """
+        if not self.config.omit_redundant_constraints or "const" not in obj.extras:
+            return False
+        if not self._const_is_literal(const := obj.extras["const"]):
+            return False
+        constraints = _literal_constraints(obj)
+        return constraints.keys() == obj.__constraint_fields__ & obj.model_fields_set and len(
+            _literal_meets([const], constraints)
+        ) == len(constraints)
+
+    def _type_enforced_keywords(self, obj: JsonSchemaObject, data_type: DataType) -> frozenset[str]:
+        """Return the keywords of a schema that the type of its field enforces itself, which the field leaves out.
+
+        The keywords the type consumed (``_carried_constraint_keywords``), and under ``--omit-redundant-constraints``
+        also those it enforces by its class or its literal values (``_enforced_constraint_keywords``).
+        """
+        carried = _carried_constraint_keywords(data_type)
+        if not self.config.omit_redundant_constraints:
+            return carried
+        return carried | _enforced_constraint_keywords(
+            data_type, self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, _literal_constraints(obj)
+        )
 
     def _mark_type_dependent_constraints(self, model_field: DataModelFieldBase, obj: JsonSchemaObject) -> None:
         """Remember the keywords the emitted type decides, so a scoped type override decides them again."""
@@ -11911,7 +11979,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         parent: JsonSchemaObject | None,
     ) -> DataType:
         """Parse a single JSON Schema item whose $ref sibling keywords are already merged."""
-        if parent and not item.enum:
+        if parent and not item.enum and not self._const_literal_enforces_constraints(item):
             has_materialized_container_constraints = bool(
                 item.__dict__.get(_INHERITED_MATERIALIZED_TYPE_SHAPE_KEY)
                 and (item.is_array or item.is_object or item.propertyNames is not None)

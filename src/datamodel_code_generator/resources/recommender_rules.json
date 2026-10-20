@@ -217,6 +217,24 @@
       ]
     },
     {
+      "id": "constraints.omit-redundant",
+      "decision": "redundant-constraints",
+      "when": {
+        "signal": "redundant_constraints",
+        "op": ">=",
+        "value": 1
+      },
+      "set": {
+        "omit_redundant_constraints": true
+      },
+      "reason": "Schemas set constraints that the generated type enforces itself ({redundant_constraints}): a const or an enum beside a length or number keyword its values meet, or exactly one number bound equal to 0, which --use-non-positive-negative-number-constrained-types turns into a class such as NonNegativeInt. With redundant constraints omitted, the field does not write them again beside the type, and a const branch whose constraints its value meets stays a Literal instead of a root model.",
+      "evidence": [
+        "{type: string, const: abc, minLength: 1} under --use-annotated: Literal['abc'] instead of Annotated[Literal['abc'], Field(min_length=1)]",
+        "{type: [integer, null], minimum: 0} under --use-annotated and --use-non-positive-negative-number-constrained-types: NonNegativeInt | None instead of Annotated[NonNegativeInt | None, Field(ge=0)]",
+        "anyOf of {type: string, minLength: 1} and {const: gpt-live-1} referenced beside minLength: 1: Model | Literal['gpt-live-1'] instead of a second root model Model1"
+      ]
+    },
+    {
       "id": "reuse.identical-inline-shapes",
       "decision": "reuse",
       "when": {
@@ -867,6 +885,11 @@
     "no_color": {
       "not_recommended": "command",
       "reason": "Disables colored help."
+    },
+    "omit_redundant_constraints": {
+      "rules": [
+        "constraints.omit-redundant"
+      ]
     },
     "openapi_include_info_version": {
       "not_recommended": "style",

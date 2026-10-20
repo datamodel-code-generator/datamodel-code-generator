@@ -7596,6 +7596,30 @@ unrelated-custom-explicit-target-2.12	main/jsonschema/pydantic_v2_dataclass_refe
 unrelated-custom-explicit-target-unset	main/jsonschema/pydantic_v2_dataclass_reference_alias_defaults_modern.py
 [test_main_pydantic_v2_model_rebuild_inheritance]
 	main/jsonschema/pydantic_v2_model_rebuild_inheritance.py
+[test_main_redundant_constraints]
+annotated	main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].rejected.txt
+annotated	main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt
+annotated	main/jsonschema/redundant_constraints.py
+annotated_option	main/jsonschema/main_jsonschema/main_redundant_constraints[annotated_option].rejected.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].rejected.txt
+annotated_option	main/jsonschema/main_jsonschema/main_redundant_constraints[annotated_option].warnings.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt
+annotated_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[annotated_option].py
+default_option	main/jsonschema/main_jsonschema/main_redundant_constraints[default_option].rejected.txt
+default_option	main/jsonschema/main_jsonschema/main_redundant_constraints[default_option].warnings.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt
+default_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[default_option].py
+field_constraints_option	main/jsonschema/main_jsonschema/main_redundant_constraints[field_constraints_option].rejected.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].rejected.txt
+field_constraints_option	main/jsonschema/main_jsonschema/main_redundant_constraints[field_constraints_option].warnings.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt
+field_constraints_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[field_constraints_option].py
+literal_option	main/jsonschema/main_jsonschema/main_redundant_constraints[literal_option].rejected.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].rejected.txt
+literal_option	main/jsonschema/main_jsonschema/main_redundant_constraints[literal_option].warnings.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt
+literal_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[literal_option].py
+msgspec_option	main/jsonschema/main_jsonschema/main_redundant_constraints[msgspec_option].warnings.txt
+msgspec_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[msgspec_option].py
+pydantic_dataclass_option	main/jsonschema/main_jsonschema/main_redundant_constraints[pydantic_dataclass_option].rejected.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].rejected.txt
+pydantic_dataclass_option	main/jsonschema/main_jsonschema/main_redundant_constraints[pydantic_dataclass_option].warnings.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt
+pydantic_dataclass_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[pydantic_dataclass_option].py
+strict_option	main/jsonschema/main_jsonschema/main_redundant_constraints[strict_option].rejected.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].rejected.txt
+strict_option	main/jsonschema/main_jsonschema/main_redundant_constraints[strict_option].warnings.txt	= main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt
+strict_option	main/jsonschema/redundant_constraints.py	= main/jsonschema/redundant_constraints~main_redundant_constraints[strict_option].py
 [test_main_ref_nullable_import_fast_path]
 	main/jsonschema/ref_nullable_import_fast_path.py
 [test_main_refreshes_modified_custom_template_between_calls]

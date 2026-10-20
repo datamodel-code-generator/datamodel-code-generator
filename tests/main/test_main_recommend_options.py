@@ -203,6 +203,12 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param("settings.json", [], "settings.txt", id="draft-07-pattern-map"),
         pytest.param("enum_const.yaml", [], "enum_const.txt", id="enums-read-as-their-const"),
         pytest.param(
+            "redundant_constraints.json",
+            ["--preset", "standard-py314-20261017"],
+            "redundant_constraints.txt",
+            id="redundant-constraints",
+        ),
+        pytest.param(
             "paths_bodies.yaml",
             ["--openapi-scopes", "paths", "webhooks", "--preset", "standard-py314-20261017"],
             "paths_bodies.txt",

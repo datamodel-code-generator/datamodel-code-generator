@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RedundantConstraints",
+  "type": "object",
+  "$defs": {
+    "Count": {"type": "integer", "minimum": 0},
+    "NullableCount": {"type": ["integer", "null"], "minimum": 0},
+    "Bounded": {"type": "integer", "minimum": 0, "maximum": 9},
+    "Ratio": {"type": "number", "exclusiveMinimum": 0},
+    "ModelIds": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "string", "enum": ["gpt-live-1"]}]},
+    "ConstIds": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "string", "const": "gpt-live-1"}]},
+    "Code": {"type": "string", "const": "abc", "minLength": 1},
+    "Level": {"type": "string", "enum": ["a", "bb", "ccc"], "minLength": 2}
+  },
+  "properties": {
+    "count": {"type": ["integer", "null"], "minimum": 0},
+    "plain": {"type": "integer", "minimum": 0},
+    "negative": {"type": ["integer", "null"], "exclusiveMaximum": 0},
+    "positive": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "both": {"type": ["integer", "null"], "minimum": 0, "maximum": 10},
+    "counts": {"type": "array", "items": {"type": ["integer", "null"], "minimum": 0}},
+    "root_count": {"$ref": "#/$defs/Count"},
+    "nullable_count": {"$ref": "#/$defs/NullableCount"},
+    "bounded": {"$ref": "#/$defs/Bounded"},
+    "ratio": {"$ref": "#/$defs/Ratio"},
+    "model": {"$ref": "#/$defs/ModelIds", "minLength": 1},
+    "const_model": {"$ref": "#/$defs/ConstIds", "minLength": 1},
+    "direct": {"type": "string", "const": "abc", "minLength": 1},
+    "number": {"type": "integer", "const": 5, "minimum": 1},
+    "codes": {"type": "array", "items": {"type": "string", "const": "abc", "minLength": 2}},
+    "code": {"$ref": "#/$defs/Code"},
+    "level": {"$ref": "#/$defs/Level"},
+    "unmet": {"type": "string", "const": "abc", "maxLength": 2},
+    "ratios": {"type": "array", "items": {"type": "number", "const": 1.5, "minimum": 1}},
+    "patterned": {"type": "array", "items": {"type": "string", "const": "abc", "pattern": "^a", "minLength": 1}}
+  }
+}

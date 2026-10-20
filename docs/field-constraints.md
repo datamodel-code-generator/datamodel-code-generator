@@ -303,6 +303,49 @@ class Level(IntEnum):
 
 ---
 
+## ✂️ Constraints the type already enforces
+
+By default a field of the field forms (`--field-constraints`, `--use-annotated`) writes some constraints again beside a
+type that enforces them: the bound of a zero-bound class from `--use-non-positive-negative-number-constrained-types`
+at a nullable property, an item or a root model, and the keywords beside the `Literal` of a `const`, or of an enum
+with `--enum-field-as-literal`. A const branch of a `oneOf` or `anyOf` beside such a keyword becomes a root model that
+writes it. `--omit-redundant-constraints` writes none of them again:
+
+- a zero-bound class, such as `NonNegativeInt` for `minimum: 0`, enforces its bound wherever it is the type, and the
+  field writes only the other keywords (`NonNegativeInt | None = Field(None, le=10)`); under `--strict-types` the
+  bound is written beside `StrictInt` or `StrictFloat` instead of a strict `conint` or `confloat` that repeats it;
+- the `Literal` of a `const` or an enum enforces each length or number keyword that all its values meet (values that
+  do not meet it are left out first), so the field writes none of them, and a const branch that meets the keywords
+  beside it stays a `Literal` instead of a root model (`Model | Literal["gpt-live-1"]`);
+- a `pattern`, a `multipleOf` the check cannot decide and a keyword no value meets stay written where they were.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "count": {"type": ["integer", "null"], "minimum": 0, "maximum": 10},
+    "code": {"type": "string", "const": "abc", "minLength": 1}
+  }
+}
+```
+
+```python
+# --use-annotated --use-non-positive-negative-number-constrained-types
+class Model(BaseModel):
+    count: Annotated[NonNegativeInt | None, Field(ge=0, le=10)] = None
+    code: Annotated[Literal["abc"] | None, Field(min_length=1)] = None
+
+
+# with --omit-redundant-constraints
+class Model(BaseModel):
+    count: Annotated[NonNegativeInt | None, Field(le=10)] = None
+    code: Literal["abc"] | None = None
+```
+
+The 20261019 presets turn it on.
+
+---
+
 ## 📖 See Also
 
 - 🖥️ [CLI Reference: `--field-constraints`](cli-reference/field-customization.md#field-constraints) - Detailed CLI option documentation with examples

@@ -60,6 +60,7 @@ SignalName: TypeAlias = Literal[
     "pattern_properties",
     "unmodeled_pattern_properties",
     "inline_object_bodies",
+    "redundant_constraints",
     "multiple_of",
     "nullable_keywords",
     "boolean_exclusive_bounds",
@@ -83,6 +84,8 @@ SIGNAL_NAMES: frozenset[str] = frozenset(get_args(SignalName))
 
 _HTTP_METHODS = frozenset({"get", "put", "post", "delete", "patch", "head", "options", "trace"})
 _SCHEMA_MAP_KEYWORDS = ("properties", "patternProperties", "dependentSchemas")
+_ZERO_BOUND_KEYWORDS = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
+_LITERAL_CHECKED_KEYWORDS = frozenset({*_ZERO_BOUND_KEYWORDS, "multipleOf", "minLength", "maxLength"})
 _SUBSCHEMA_KEYWORDS = (
     "allOf",
     "anyOf",
@@ -137,6 +140,22 @@ def _is_enum(node: Mapping[str, Any]) -> bool:
 
 def _is_null(node: Mapping[str, Any]) -> bool:
     return node.get("type") in ("null", ["null"]) or node.get("enum") == [None]
+
+
+def _redundant_constraint(node: Mapping[str, Any], *, at_property: bool) -> bool:
+    """Return whether ``--omit-redundant-constraints`` leaves a constraint of a schema out of its field.
+
+    A const or an enum beside a length or number keyword its literal check decides, or exactly one number bound equal
+    to 0, which the zero-bound class enforces, outside an object property of no null type (written once there).
+    """
+    if ("const" in node or _is_enum(node)) and not _LITERAL_CHECKED_KEYWORDS.isdisjoint(node):
+        return True
+    zero_bounds = [
+        key
+        for key in _ZERO_BOUND_KEYWORDS
+        if isinstance(value := node.get(key), int | float) and not isinstance(value, bool) and value == 0
+    ]
+    return len(zero_bounds) == 1 and (not at_property or "null" in _types(node) or node.get("nullable") is True)
 
 
 def _single_literal(node: object) -> tuple[str, object] | None:
@@ -509,6 +528,7 @@ class _Walker:
         """
         if isinstance(node, dict) and not self.count_reference(node, key):
             self.count_keywords(node)
+            self.counts["redundant_constraints"] += _redundant_constraint(node, at_property=False)
             self.walk_children(node, parent=key, name="", depth=0, component=key)
 
     def record_name(self, name: str, parent: str, parents: defaultdict[str, set[str]]) -> None:
@@ -517,11 +537,14 @@ class _Walker:
             self.name_parents[name].add(parent)
             parents[name].add(parent)
 
-    def walk(self, node: object, *, parent: str, name: str, depth: int, component: str) -> None:
-        """Walk one inline schema reached under a parent model through a property or keyword."""
+    def walk(  # noqa: PLR0913
+        self, node: object, *, parent: str, name: str, depth: int, component: str, at_property: bool = False
+    ) -> None:
+        """Walk one inline schema reached under a parent model through a property (``at_property``) or keyword."""
         if not isinstance(node, dict) or _is_null(node) or self.count_reference(node, component):
             return
         self.count_keywords(node)
+        self.counts["redundant_constraints"] += _redundant_constraint(node, at_property=at_property)
         if _is_enum(node):
             self.counts["inline_enums"] += 1
             self.record_name(name, parent, self.enum_name_parents)
@@ -544,7 +567,12 @@ class _Walker:
             members = node.get(keyword)
             for member_name, member in members.items() if isinstance(members, dict) else ():
                 self.walk(
-                    member, parent=parent, name=normalize_name(str(member_name)), depth=depth, component=component
+                    member,
+                    parent=parent,
+                    name=normalize_name(str(member_name)),
+                    depth=depth,
+                    component=component,
+                    at_property=keyword == "properties",
                 )
         for keyword in ("oneOf", "anyOf"):
             if isinstance(branches := node.get(keyword), list):
