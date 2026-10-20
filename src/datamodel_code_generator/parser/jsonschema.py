@@ -107,6 +107,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
 )
 from datamodel_code_generator.model.base import (
     UNDEFINED,
+    _keyed_answer,
     c3_merge,
     get_inherited_fields,
     sanitize_module_name,
@@ -13240,7 +13241,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             not self._should_localize_array_union_constraints(obj, non_array_types)
             and direct_data_types
             and any(
-                data_type.reference == reference
+                _keyed_answer(
+                    "array self reference",
+                    data_type.reference is reference,
+                    lambda data_type=data_type: data_type.reference == reference,
+                )
                 for data_type in direct_data_types[0].all_data_types
                 if data_type.reference
             )

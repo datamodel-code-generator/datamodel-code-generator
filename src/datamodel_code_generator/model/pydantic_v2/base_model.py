@@ -20,6 +20,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._regex_syntax import LOOKAROUND_PATTERN, scan_regex_syntax
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
 from datamodel_code_generator.enums import AliasGenerator
@@ -35,6 +36,7 @@ from datamodel_code_generator.model.base import (
     DataModelFieldBase,
     _find_base_classes,
     _get_template_with_custom_dir,
+    _ModelKeys,
     _uses_original_template_loader,
     get_effective_fields,
 )
@@ -108,6 +110,7 @@ if TYPE_CHECKING:
     from typing_extensions import TypedDict, Unpack
 
     from datamodel_code_generator._format_types import PythonVersion
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Imports
@@ -1420,28 +1423,32 @@ def _has_native_hash_field(field: DataModelFieldBase) -> bool:
     )
 
 
-def _has_frozen_hash_config(model: DataModel, cache: dict[str, bool | None]) -> bool:
-    """Read effective Pydantic frozen configuration in base declaration order."""
+def _has_frozen_hash_config(
+    model: DataModel, cache: dict[ModelKey, bool | None], keys: _ModelKeys | None = None
+) -> bool:
+    """Read effective Pydantic frozen configuration in base declaration order.
+
+    ``cache`` holds the configuration found for each model by the model key that ``keys`` gives it.
+    """
     from datamodel_code_generator.model.pydantic_v2 import ConfigDict  # noqa: PLC0415
 
+    keys = keys or _ModelKeys("frozen hash config")
     pending = [model]
-    visited: set[str] = set()
+    visited = _ModelKeys("frozen hash config bases")
     value = None
     while pending:
         current = pending.pop()
-        path = current.reference.path
-        if path in visited:
+        if not visited.first(current):
             continue
-        visited.add(path)
-        if path in cache:
-            if (value := cache[path]) is not None:
+        if (key := keys.of(current)) in cache:
+            if (value := cache[key]) is not None:
                 break
             continue
         if isinstance(config := current.extra_template_data.get("config"), ConfigDict) and config.frozen is not None:
             value = config.frozen
             break
         pending.extend(_find_base_classes(current))
-    cache[model.reference.path] = value
+    cache[keys.of(model)] = value
     return value is True
 
 
@@ -1508,24 +1515,26 @@ class BaseModel(BaseModelBase):
     @classmethod
     @override
     def get_native_hash_model_paths(cls, models: list[DataModel]) -> set[str]:  # noqa: PLR0912
-        """Preserve native hashes only for proven builtin frozen value models."""
+        """Preserve native hashes only for proven builtin frozen value models.
+
+        The walks tell models apart by model key; the result names the models by path.
+        """
         native_paths: set[str] = set()
-        frozen_configs: dict[str, bool | None] = {}
-        checked_models: dict[str, bool] = {}
+        keys = _ModelKeys("native hash models")
+        frozen_configs: dict[ModelKey, bool | None] = {}
+        checked_models: dict[ModelKey, bool] = {}
         checked_fields: dict[int, bool] = {}
         template_dirs: dict[Path, bool] = {}
         for model in models:
-            if not _has_frozen_hash_config(model, frozen_configs):
+            if not _has_frozen_hash_config(model, frozen_configs, keys):
                 continue
             pending = [model]
-            visited: set[str] = set()
+            visited = _ModelKeys("native hash model bases")
             while pending:
                 current = pending.pop()
-                path = current.reference.path
-                if path in visited:
+                if not visited.first(current):
                     continue
-                visited.add(path)
-                if path not in checked_models:
+                if (key := keys.of(current)) not in checked_models:
                     opaque = bool(
                         not isinstance(current, BaseModel)
                         or not current._uses_builtin_hash_implementation()  # noqa: SLF001
@@ -1539,18 +1548,18 @@ class BaseModel(BaseModelBase):
                         if directory not in template_dirs:
                             template_dirs[directory] = directory.resolve() == TEMPLATE_DIR.resolve()
                         opaque = opaque or not template_dirs[directory]
-                    checked_models[path] = not opaque
-                if not checked_models[path]:
+                    checked_models[key] = not opaque
+                if not checked_models[key]:
                     break
                 pending.extend(_find_base_classes(current))
             else:
                 for field in get_effective_fields(model):
                     if field.is_class_var:
                         continue
-                    key = id(field)
-                    if key not in checked_fields:
-                        checked_fields[key] = _has_native_hash_field(field)
-                    if not checked_fields[key]:
+                    field_id = id(field)
+                    if field_id not in checked_fields:
+                        checked_fields[field_id] = _has_native_hash_field(field)
+                    if not checked_fields[field_id]:
                         break
                 else:
                     native_paths.add(model.reference.path)
@@ -2231,13 +2240,13 @@ class BaseModel(BaseModelBase):
         cls,
         model: DataModel,
         *,
-        seen: set[str],
+        seen: set[ModelKey],
         local_model_ids: set[int] | None = None,
     ) -> bool:
-        """Return whether a model already inherits the generated runtime validation base."""
-        if model.reference.path in seen:
+        """Return whether a model already inherits the generated runtime validation base; ``seen`` holds model keys."""
+        if (key := model_key_of(model.reference)) in seen:
             return False
-        seen.add(model.reference.path)
+        seen.add(key)
         for base_class in model.base_classes:
             if not base_class.reference or not isinstance(base_class.reference.source, DataModel):
                 continue
@@ -2475,14 +2484,20 @@ class BaseModel(BaseModelBase):
             self._prepare_validator_method_names(self, {})
 
     @classmethod
-    def _prepare_validator_method_names(cls, model: DataModel, scopes: dict[str, set[str]]) -> set[str]:
-        """Reserve inherited methods after their model references have been resolved."""
-        if (reserved_names := scopes.get(model.path)) is not None:
+    def _prepare_validator_method_names(
+        cls, model: DataModel, scopes: dict[ModelKey, set[str]], keys: _ModelKeys | None = None
+    ) -> set[str]:
+        """Reserve inherited methods after their model references have been resolved.
+
+        ``scopes`` holds the names reserved for each model by the model key that ``keys`` gives it.
+        """
+        keys = keys or _ModelKeys("validator method scopes")
+        if (reserved_names := scopes.get(key := keys.of(model))) is not None:
             return reserved_names
-        reserved_names = scopes[model.path] = {field.name for field in model.fields if field.name is not None}
+        reserved_names = scopes[key] = {field.name for field in model.fields if field.name is not None}
         reserved_names.update(re.findall(r"\bdef\s+(\w+)\s*\(", "\n".join(model.methods)))
         for ancestor in cls._get_schema_runtime_validation_base_models(model):
-            reserved_names.update(cls._prepare_validator_method_names(ancestor, scopes))
+            reserved_names.update(cls._prepare_validator_method_names(ancestor, scopes, keys))
         from datamodel_code_generator.validators import _reserve_validator_name  # noqa: PLC0415
 
         next_suffixes: dict[str, int] = {}
@@ -2508,9 +2523,10 @@ class BaseModel(BaseModelBase):
         validator_models = [
             (model, validators) for model in models if (validators := getattr(model, "_validator_bindings", None))
         ]
-        method_scopes: dict[str, set[str]] = {}
+        method_scopes: dict[ModelKey, set[str]] = {}
+        method_keys = _ModelKeys("validator method scopes")
         for model, _ in validator_models:
-            cls._prepare_validator_method_names(model, method_scopes)
+            cls._prepare_validator_method_names(model, method_scopes, method_keys)
         validator_imports = {import_ for _, validators in validator_models for _, import_ in validators}
         reserved_names = {model.class_name for model in models}
         reserved_names.update(

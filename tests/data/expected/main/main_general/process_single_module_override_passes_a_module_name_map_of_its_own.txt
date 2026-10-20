@@ -1,0 +1,33 @@
+# __init__.py
+
+# a.py
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class A(BaseModel):
+    n: Optional[int] = None
+
+# b.py
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class Dup(BaseModel):
+    x: Optional[str] = None
+
+
+class Wrapper(Dup):
+    pass
+
+
+class User(BaseModel):
+    w: Optional[Wrapper] = None
+    d: Optional[Dup] = None
+

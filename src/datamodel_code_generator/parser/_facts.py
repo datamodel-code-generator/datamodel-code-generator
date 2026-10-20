@@ -862,6 +862,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("DataModel", "reused_reference", FactKind.FACT, (Fact.MODELS_EXIST,), Phase.MODULES, FreezePoint.B1),
     AttributeFact(
         "DataModel",
+        "_PATH_PARTNER_KEY",
+        FactKind.BOOKKEEPING,
+        (),
+        Phase.MODULES,
+        None,
+        access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataModel",
         "_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY",
         FactKind.CACHE,
         (),

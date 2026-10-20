@@ -21,9 +21,10 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, 
 from warnings import warn
 
 from pydantic import ConfigDict, Field
-from typing_extensions import Self, override
+from typing_extensions import Self, final, override
 
 from datamodel_code_generator import Error, cached_path_exists
+from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
@@ -97,6 +98,7 @@ _MAX_CUSTOM_TEMPLATE_DEPENDENCIES = 128
 _ORIGINAL_TEMPLATE_LOADER_MARKER = "__datamodel_code_generator_original_template_loader__"
 _NESTED_MODEL_DEFAULT_FACTORY_ORDER_KEY = "_nested_model_default_factory_order"
 _NESTED_MODEL_DEFAULT_FACTORY_RECURSIVE_KEYS_KEY = "_nested_model_default_factory_recursive_keys"
+_PATH_PARTNER_KEY = "_path_partner_model_key"
 _NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY = "_nested_model_required_constructor_fields"
 _REQUIRED_INHERITED_DEFAULT_FACTORY_KEY = "_required_inherited_default_factory"
 _UNTAKEN_CONSTRAINTS_KEY = "_untaken_constraints"
@@ -134,6 +136,7 @@ _BUILTIN_TEMPLATE_INTERNAL_DATA_KEYS: frozenset[str] = frozenset({
 })
 _RESOLVE_REFERENCE_ACTION_CAPABILITIES_MARKER = "__datamodel_code_generator_resolve_reference_action_capabilities__"
 MroT = TypeVar("MroT")
+_AnswerT = TypeVar("_AnswerT")
 _CustomTemplateSignature = bytes
 
 
@@ -780,7 +783,12 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self.parent is None or not self.parent.reference:  # pragma: no cover
             self.__dict__["_self_reference_cache"] = False
             return False
-        result = self.parent.reference.path in {d.reference.path for d in self.data_type.all_data_types if d.reference}
+        parent = self.parent
+        result = any(
+            _reference_names_model(d.reference, parent, "self reference")
+            for d in self.data_type.all_data_types
+            if d.reference
+        )
         self.__dict__["_self_reference_cache"] = result
         return result
 
@@ -2550,13 +2558,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             unique_fields.append(field)
         return unique_fields
 
-    def iter_all_fields(self, visited: set[str] | None = None) -> Iterator[DataModelFieldBase]:
-        """Yield all fields including those from base classes (parent fields first)."""
+    def iter_all_fields(self, visited: set[ModelKey] | None = None) -> Iterator[DataModelFieldBase]:
+        """Yield all fields including those from base classes (parent fields first), each model once by model key."""
         if visited is None:
             visited = set()
-        if self.reference.path in visited:  # pragma: no cover
+        if (key := model_key_of(self.reference)) in visited:  # pragma: no cover
             return
-        visited.add(self.reference.path)
+        visited.add(key)
         for base_class in self.base_classes:
             if base_class.reference and isinstance(base_class.reference.source, DataModel):
                 yield from base_class.reference.source.iter_all_fields(visited)
@@ -3021,7 +3029,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             reference
             for rule_data_type in runtime_validation.data_types
             for data_type in rule_data_type.all_data_types
-            if (reference := data_type.reference) is not None and reference.path != self.path
+            if (reference := data_type.reference) is not None
+            and not _reference_names_model(reference, self, "schema runtime validation references")
         )
 
     @property
@@ -3215,6 +3224,75 @@ def _model_ancestor_keys(model: DataModel) -> set[ModelKey]:
 def _model_key_of_model(model: DataModel) -> ModelKey:
     """Return the model key of ``model``, the identity C3 merges compare."""
     return model_key_of(model.reference)
+
+
+def _keyed_answer(site: str, by_key: _AnswerT, by_path: Callable[[], _AnswerT]) -> _AnswerT:
+    """Return ``by_key``, what a site finds by model key or Reference identity.
+
+    Under the ``MODEL_GRAPH`` check, a ``by_key`` that differs from ``by_path()``, what the site found by path, name or
+    Reference equality before, is a violation.
+    """
+    if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None and by_key != by_path():
+        mode.violation(Error, f"{site}: the lookups by model key and by path disagree", site=site)
+    return by_key
+
+
+@final
+class _ModelKeys:
+    """The model keys of the models that one walk, map or cache meets, which it tells models apart by.
+
+    Under the ``MODEL_GRAPH`` check, a model met at the path of another model the same walk met is a violation
+    (`_keyed_answer`): told apart by path, the two would be taken for one model.
+    """
+
+    __slots__ = ("_keys_by_path", "_met", "_site")
+
+    def __init__(self, site: str) -> None:
+        """Start the keys of one walk, map or cache, which ``site`` names in a violation."""
+        self._site = site
+        self._keys_by_path: dict[str, ModelKey] = {}
+        self._met: set[ModelKey] = set()
+
+    def of(self, model: DataModel) -> ModelKey:
+        """Return the model key of ``model``."""
+        key = model_key_of(model.reference)
+        return _keyed_answer(self._site, key, lambda: self._keys_by_path.setdefault(model.path, key))
+
+    def first(self, model: DataModel) -> bool:
+        """Return whether the walk meets ``model`` for the first time, and remember it as met."""
+        if (key := self.of(model)) in self._met:
+            return False
+        self._met.add(key)
+        return True
+
+
+def _share_path_identity(root_model: DataModel, inner_model: DataModel) -> None:
+    """Make the root model that collapse replaces and the inner model that takes its path name each other.
+
+    Row ``legacy-replaced-root-shares-path``: models were told apart by path, so a reference to either of the two named
+    both (`_reference_names_model`).
+    """
+    root_model.__dict__[_PATH_PARTNER_KEY] = model_key_of(inner_model.reference)
+    inner_model.__dict__[_PATH_PARTNER_KEY] = model_key_of(root_model.reference)
+
+
+def _reference_names_model(reference: Reference, model: DataModel, site: str) -> bool:
+    """Return whether ``reference`` names ``model``: whether the two carry one model key.
+
+    Row ``legacy-keyless-reference-by-path``: a reference that no model was built with (one built outside the resolver,
+    such as by a parser extension) names the model at its path. Row ``legacy-replaced-root-shares-path``: a reference
+    to the model that shares the path of ``model`` since collapse replaced one by the other names it too
+    (`_share_path_identity`). Under the ``MODEL_GRAPH`` check, a reference whose path and model key disagree on
+    whether it names ``model`` is a violation (`_keyed_answer`).
+    """
+    by_path = reference.path == model.path
+    key = model_key_of(reference)
+    named = (
+        by_path
+        if reference.source is None
+        else key in {model_key_of(model.reference), model.__dict__.get(_PATH_PARTNER_KEY)}
+    )
+    return _keyed_answer(site, named, lambda: by_path)
 
 
 def sort_data_models_for_mro(models: list[DataModel]) -> list[DataModel]:

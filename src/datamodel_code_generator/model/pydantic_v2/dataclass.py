@@ -23,6 +23,7 @@ from datamodel_code_generator.model.base import (
     _classify_field_assignment,
     _find_base_classes,
     _nested_model_default_factory,
+    _reference_names_model,
 )
 from datamodel_code_generator.model.dataclass import _DataclassReuseMixin
 from datamodel_code_generator.model.pydantic_v2._config import (
@@ -234,7 +235,8 @@ class DataClass(_DataclassReuseMixin, DataModel):
         if (
             as_string
             and any(
-                (reference := data_type.reference) is not None and reference.path == self.path
+                (reference := data_type.reference) is not None
+                and _reference_names_model(reference, self, "dataclass own name")
                 for data_type in field.data_type.all_data_types
             )
             and model_target_meets(self, "pydantic.dataclass_own_name")

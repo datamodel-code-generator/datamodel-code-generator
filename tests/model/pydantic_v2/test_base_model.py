@@ -36,7 +36,7 @@ from datamodel_code_generator.model.runtime_validation import (
 )
 from datamodel_code_generator.parser.base import Parser, _get_builtin_pydantic_v2_field_constructor
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.reference import Reference
+from datamodel_code_generator.reference import Reference, model_key_of
 from datamodel_code_generator.types import DataType
 from tests.conftest import assert_output
 
@@ -133,7 +133,7 @@ def test_schema_runtime_validation_base_inheritance_detects_transitive_base() ->
     assert BaseModel._inherits_schema_runtime_validation_base(runtime_leaf, seen=set())
     assert not BaseModel._inherits_schema_runtime_validation_base(
         runtime_leaf,
-        seen={runtime_leaf.reference.path},
+        seen={model_key_of(runtime_leaf.reference)},
     )
 
 

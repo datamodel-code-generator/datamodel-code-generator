@@ -29,6 +29,7 @@ import datamodel_code_generator
 from datamodel_code_generator import (
     _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT,
     AllExportsScope,
+    CollapseRootModelsNameStrategy,
     CustomFileHeaderMode,
     DanglingRefWarning,
     DataModelType,
@@ -902,6 +903,63 @@ def test_process_single_module_override_lists_a_model_for_the_reference_update_a
         formatters=[Formatter.BUILTIN],
     )
     assert_output(cast("str", parser.parse(disable_future_imports=True)))
+
+
+def test_model_graph_check_reports_a_module_name_written_by_path_after_its_module(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A custom parser whose ``_process_single_module`` gives the module's models another module name by path.
+
+    Module names are looked up by model key, which still names the module the models are in. The model graph check
+    (`1`, as the test suite sets it) raises where a later module imports one of the models.
+    """
+    from typing_extensions import override
+
+    from datamodel_code_generator.parser.openapi import OpenAPIParser
+
+    class RelabelingParser(OpenAPIParser):
+        @override
+        def _process_single_module(self, *args: Any) -> Any:
+            context = super()._process_single_module(*args)
+            model_path_to_module_name = args[5]
+            for model in args[1]:
+                model_path_to_module_name[model.path] = "elsewhere"
+            return context
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
+    parser = RelabelingParser(OPEN_API_DATA_PATH / "modular.yaml", formatters=[Formatter.BUILTIN])
+    with pytest.raises(
+        Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: module names: the lookups by model key and by path disagree$"
+    ):
+        parser.parse()
+
+
+def test_process_single_module_override_passes_a_module_name_map_of_its_own() -> None:
+    """A custom parser whose ``_process_single_module`` hands the base implementation a copy of the module names.
+
+    The module names that the module's processing and root-model collapse write go to that copy, by path only.
+    """
+    from typing_extensions import override
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class CopyingParser(JsonSchemaParser):
+        @override
+        def _process_single_module(self, *args: Any) -> Any:
+            *leading, model_path_to_module_name, require_update_action_models, unused_models = args
+            return super()._process_single_module(
+                *leading, dict(model_path_to_module_name), require_update_action_models, unused_models
+            )
+
+    parser = CopyingParser(
+        JSON_SCHEMA_DATA_PATH / "collapse_root_models_name_strategy_reuse",
+        collapse_root_models=True,
+        collapse_root_models_name_strategy=CollapseRootModelsNameStrategy.Parent,
+        reuse_model=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    modules = cast("dict[tuple[str, ...], Any]", parser.parse())
+    assert_output("".join(f"# {'/'.join(module)}\n{modules[module].body}\n" for module in sorted(modules)))
 
 
 def test_model_graph_check_reports_a_model_without_an_owner(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1166,6 +1166,9 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/item_schema_31.py
 [test_main_openapi_json_pointer]
 	main/openapi/json_pointer.py
+[test_main_openapi_keep_model_order_same_short_name_in_another_module]
+	main/openapi/main_openapi/keep_model_order_same_short_name_in_another_module.report.txt
+	main/openapi/main_openapi/keep_model_order_same_short_name_in_another_module/
 [test_main_openapi_keyword_only_dataclass]
 	main/openapi/dataclass_keyword_only.py
 [test_main_openapi_keyword_only_msgspec]

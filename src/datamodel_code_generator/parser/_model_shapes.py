@@ -24,7 +24,7 @@ from typing_extensions import Protocol, TypeVar
 
 if TYPE_CHECKING:
     import re
-    from collections.abc import Hashable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping, Sequence
 
 __all__ = [
     "COLLAPSE_REUSE",
@@ -217,6 +217,17 @@ class ShapeSource(Protocol[ModelT, ReferenceT]):
         """Return the model a reference names, or None when it names no model."""
         raise NotImplementedError
 
+    def identity(self, reference: ReferenceT) -> Hashable:
+        """Return what tells apart the models that references name: the model key."""
+        raise NotImplementedError
+
+    def agreed(self, site: str, *, by_key: bool, by_path: Callable[[], bool]) -> bool:
+        """Return ``by_key``, what a site found by `identity`.
+
+        Under the adapter's check, a different ``by_path()``, what the site found by path, is a violation.
+        """
+        raise NotImplementedError
+
 
 @final
 @dataclass(slots=True)
@@ -271,14 +282,16 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
         Type hints carry only reference names, and references from different sources can share a name until
         module-level renaming, so equal render output does not prove equal field types. Referenced models are compared
         pairwise with the names of their own references masked, so models that differ only in how deeper references
-        are named still match. Reference pairs already under comparison are assumed to match, which keeps recursive
-        models finite, and models that reference the very same models match without rendering them again.
+        are named still match. Reference pairs already under comparison, told apart by `ShapeSource.identity`, are
+        assumed to match, which keeps recursive models finite, and models that reference the very same models match
+        without rendering them again.
         """
         left_references, right_references = self.source.references(left), self.source.references(right)
         if len(left_references) == len(right_references) and all(map(is_, left_references, right_references)):
             return True
         pending: list[tuple[ModelT | None, ModelT | None]] = [(left, right)]
-        assumed_pairs: set[tuple[str, str]] = set()
+        assumed_pairs: set[tuple[Hashable, Hashable]] = set()
+        assumed_paths: set[tuple[str, str]] = set()
         while pending:
             left_model, right_model = pending.pop()
             if (
@@ -288,10 +301,18 @@ class ModelShapes(Generic[ModelT, ReferenceT]):
             ):
                 return False
             for left_reference, right_reference in zip(left_shape[1], right_shape[1], strict=True):
-                pair = (left_reference.path, right_reference.path)
-                if left_reference is right_reference or pair in assumed_pairs:
+                if left_reference is right_reference:
+                    continue
+                pair = (self.source.identity(left_reference), self.source.identity(right_reference))
+                paths = (left_reference.path, right_reference.path)
+                if self.source.agreed(
+                    "assumed reference pairs",
+                    by_key=pair in assumed_pairs,
+                    by_path=lambda paths=paths: paths in assumed_paths,
+                ):
                     continue
                 assumed_pairs.add(pair)
+                assumed_paths.add(paths)
                 pending.append((self.source.model_of(left_reference), self.source.model_of(right_reference)))
         return True
 

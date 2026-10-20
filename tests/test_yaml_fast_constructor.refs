@@ -274,6 +274,7 @@ openapi/invalid_dotted_schema_name.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema_31.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer.yaml	yaml_fast_constructor/parity.txt
+openapi/keep_model_order_same_short_name.yaml	yaml_fast_constructor/parity.txt
 openapi/lazy_resolved_models.yaml	yaml_fast_constructor/parity.txt
 openapi/map_keyword_bodies.yaml	yaml_fast_constructor/parity.txt
 openapi/max_items_enum.yaml	yaml_fast_constructor/parity.txt

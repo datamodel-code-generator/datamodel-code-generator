@@ -133,9 +133,13 @@ from datamodel_code_generator.model.base import (
     DataModelFieldBase,
     _apply_literal_default,
     _find_base_classes,
+    _keyed_answer,
+    _ModelKeys,
     _overlay_constraints,
+    _reference_names_model,
     _refresh_custom_template_paths,
     _set_nested_model_default_factory_order,
+    _share_path_identity,
     c3_merge,
     get_inherited_fields,
     get_resolve_reference_action_capabilities,
@@ -589,18 +593,94 @@ def _group_models_by_module(
     return module_models
 
 
+@final
+class _ModuleNames(dict[str, str]):  # noqa: FURB189
+    """The module name scope planning gives each model, by path and by model key.
+
+    The paths are what `Parser._process_single_module` takes and a subclass of the parser may read or write; the
+    lookups (`_get_model_module_name`, `_get_data_type_target_full_name`) read the model keys. Row
+    ``legacy-keyless-reference-by-path``: a model with no entry by key, as for an entry a subclass wrote by path, and
+    a reference that no model was built with are looked up by path. Row ``legacy-module-follows-path``: the entries
+    were paths, so a model that moves to another path leaves its entry behind (`forget`), and a root model whose
+    inner model takes its path takes the inner model's entry. Under the ``MODEL_GRAPH`` check, an entry by key that
+    differs from the entry at the model's path is a violation.
+    """
+
+    __slots__ = ("assigned", "by_key")
+
+    def __init__(self) -> None:
+        """Start without entries."""
+        super().__init__()
+        self.by_key: dict[ModelKey, str] = {}
+        self.assigned: dict[str, str] = {}
+
+    def assign(self, model: DataModel, module_name: str, *, keep: bool = False) -> None:
+        """Give ``model`` the module name, or with ``keep`` only when it has none yet."""
+        path = model.path
+        if keep:
+            if path not in self:
+                self[path] = self.assigned[path] = module_name
+            self.by_key.setdefault(model_key_of(model.reference), module_name)
+            return
+        self[path] = self.assigned[path] = module_name
+        self.by_key[model_key_of(model.reference)] = module_name
+
+    def forget(self, models: Iterable[DataModel]) -> None:
+        """Drop the entries by key of models that moved to another path, whose entries by path name them no more.
+
+        The models that import cycles merge into an internal module move there after their module names were given.
+        """
+        for model in models:
+            self.by_key.pop(model_key_of(model.reference), None)
+
+    def of(self, reference: Reference) -> str | None:
+        """Return the module name of the model ``reference`` names, or None when it has none.
+
+        An entry that a subclass wrote by path, before or after the parser gave the name, wins over the one by key;
+        under the ``MODEL_GRAPH`` check, the two differing is a violation.
+        """
+        path = reference.path
+        by_path = self.get(path)
+        written = by_path != self.assigned.get(path)
+        by_key = None if reference.source is None else self.by_key.get(model_key_of(reference))
+        if written:
+            return by_path if by_key is None else _keyed_answer("module names", by_path, lambda: by_key)
+        if by_key is None:
+            return by_path
+        return _keyed_answer("module names", by_key, lambda: by_path)
+
+
 def _index_module_models(
     module_models: ModuleModels, module_split_mode: ModuleSplitMode | None
-) -> tuple[dict[DataModel, tuple[ModulePath, list[DataModel]]], dict[str, str]]:
+) -> tuple[dict[DataModel, tuple[ModulePath, list[DataModel]]], _ModuleNames]:
     """Build model lookups for already-grouped output modules."""
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = {}
-    model_path_to_module_name: dict[str, str] = {}
+    model_path_to_module_name = _ModuleNames()
     for module, models in module_models:
         for model in models:
             model_to_module_models[model] = module, models
             if module_split_mode == ModuleSplitMode.Single:
-                model_path_to_module_name[model.path] = ".".join(module)
+                model_path_to_module_name.assign(model, ".".join(module))
     return model_to_module_models, model_path_to_module_name
+
+
+def _assign_module_name(
+    model_path_to_module_name: dict[str, str], model: DataModel, module_name: str, *, keep: bool = False
+) -> None:
+    """Give ``model`` the module name in the map, by model key too unless a subclass of the parser built the map."""
+    if isinstance(model_path_to_module_name, _ModuleNames):
+        model_path_to_module_name.assign(model, module_name, keep=keep)
+    elif keep:
+        model_path_to_module_name.setdefault(model.path, module_name)
+    else:
+        model_path_to_module_name[model.path] = module_name
+
+
+def _module_name_of(model_path_to_module_name: Mapping[str, str], reference: Reference) -> str | None:
+    """Return the module name scope planning gives the model ``reference`` names, or None."""
+    if isinstance(model_path_to_module_name, _ModuleNames):
+        return model_path_to_module_name.of(reference)
+    return model_path_to_module_name.get(reference.path)
 
 
 def _expand_result_module_path(input_tuple: tuple[str, ...]) -> tuple[str, ...]:
@@ -897,33 +977,63 @@ def _apply_constructor_field_adjustments(
         model.enable_model_keyword_only()
 
 
-def _collect_keep_model_order_deps(
+def _collect_keep_model_order_deps(  # noqa: PLR0913
     model: DataModel,
     *,
+    keyed: KeyedModels,
     model_names: ModelNames,
     imported: ModelNames,
     pydantic_v2_root_model_type: type[DataModel] | None,
     use_deferred_annotations: bool,
 ) -> tuple[set[ModelName], set[ModelName]]:
-    """Collect (strong_deps, all_deps) used by keep_model_order sorting.
+    """Collect (strong_deps, all_deps) used by keep_model_order sorting, by the class names of the models referenced.
 
     - strong_deps: base class references (within-module, non-imported)
     - all_deps: base class refs + (optionally) field refs (within-module, non-imported)
+
+    Row ``legacy-keep-order-short-name``: a reference names a model of the module by its short name, so it also adds a
+    false dependency on a same-named model of another module imported as a module. Under the ``MODEL_GRAPH`` check,
+    the dependencies by model key (`KeyedModels.key_of`) that differ are a violation.
     """
     class_name = model.class_name
-    base_class_refs = {b.reference.short_name for b in model.base_classes if b.reference}
-    field_refs = {t.reference.short_name for f in model.fields for t in f.data_type.all_data_types if t.reference}
+    base_class_references = [b.reference for b in model.base_classes if b.reference]
+    field_references = [t.reference for f in model.fields for t in f.data_type.all_data_types if t.reference]
 
     if (
         use_deferred_annotations
         and not isinstance(model, TypeAliasBase)
         and not _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type)
     ):
-        field_refs = set()
+        field_references = []
 
-    strong = {r for r in base_class_refs if r in model_names and r not in imported and r != class_name}
-    deps = {r for r in (base_class_refs | field_refs) if r in model_names and r not in imported and r != class_name}
-    return strong, deps
+    def module_names(references: Iterable[Reference]) -> set[ModelName]:
+        return {
+            name
+            for reference in references
+            if (key := keyed.key_of(reference)) in keyed.models
+            and (name := keyed.models[key].class_name) not in imported
+            and name != class_name
+        }
+
+    def names_by_short_name(references: Iterable[Reference]) -> set[ModelName]:
+        return {
+            r
+            for r in {reference.short_name for reference in references}
+            if r in model_names and r not in imported and r != class_name
+        }
+
+    def by_key() -> tuple[set[ModelName], set[ModelName]]:
+        strong = module_names(base_class_references)
+        return strong, strong | module_names(field_references)
+
+    return _keyed_answer(
+        "keep model order",
+        (
+            names_by_short_name(base_class_references),
+            names_by_short_name([*base_class_references, *field_references]),
+        ),
+        by_key,
+    )
 
 
 def _build_keep_model_order_dependency_maps(
@@ -940,9 +1050,11 @@ def _build_keep_model_order_dependency_maps(
     class_names = (
         {model_key_of(model.reference): model.class_name for model in models} if runtime_validation_references else {}
     )
+    keyed = keyed_models(models, "keep model order")
     for model in models:
         strong, deps = _collect_keep_model_order_deps(
             model,
+            keyed=keyed,
             model_names=model_names,
             imported=imported,
             pydantic_v2_root_model_type=pydantic_v2_root_model_type,
@@ -1334,7 +1446,7 @@ class _StructureState:
     module_split_mode: ModuleSplitMode | None
     module_models: ModuleModels = dataclasses.field(init=False)
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = dataclasses.field(init=False)
-    model_path_to_module_name: dict[str, str] = dataclasses.field(init=False)
+    model_path_to_module_name: _ModuleNames = dataclasses.field(init=False)
     internal_modules: set[ModulePath] = dataclasses.field(init=False)
     forwarder_map: ForwarderMap = dataclasses.field(init=False)
 
@@ -1999,20 +2111,40 @@ def _annotated_reference(data_type: DataType) -> Reference | None:
     return data_type.reference or data_type._enum_member_literal_reference  # noqa: SLF001
 
 
-def _forward_enum_member_literals(
-    field: DataModelFieldBase, positions: Mapping[str, int], index: int
-) -> list[DataType]:
+@final
+class _ModelPositions:
+    """The position of each model in the model list of a module, found by model key."""
+
+    __slots__ = ("_keyed", "_positions", "paths")
+
+    def __init__(self, models: list[DataModel], site: str) -> None:
+        """Index ``models``, which ``site`` names in a violation."""
+        self._keyed = keyed_models(models, site)
+        self._positions = {model_key_of(model.reference): index for index, model in enumerate(models)}
+        self.paths: Mapping[str, int] = {model.path: index for index, model in enumerate(models)}
+        """The position of each model by path, as the ``DataModel`` hooks that take positions read them."""
+
+    def get(self, reference: Reference) -> int | None:
+        """Return the position of the model of the list that ``reference`` names (`KeyedModels.key_of`), or None."""
+        return self._positions.get(self._keyed.key_of(reference))
+
+    def rank(self, reference: Reference) -> int:
+        """Return the position of the model of the list that ``reference`` names, or -1."""
+        return self._positions.get(self._keyed.key_of(reference), -1)
+
+
+def _forward_enum_member_literals(field: DataModelFieldBase, positions: _ModelPositions, index: int) -> list[DataType]:
     """Return the field's enum member literals whose enum the module defines at or after the model at ``index``.
 
     A member is a value, so a deferred annotation does not resolve it later: reading the class evaluates the member
-    to a ``ForwardRef`` that stays inside the ``Literal``, unless the annotation is a string. ``positions`` maps each
-    model path in the module to its order.
+    to a ``ForwardRef`` that stays inside the ``Literal``, unless the annotation is a string. ``positions`` gives each
+    model of the module its order.
     """
     return [
         data_type
         for data_type in field.data_type.all_data_types
         if (reference := data_type._enum_member_literal_reference) is not None  # noqa: SLF001
-        and positions.get(reference.path, -1) >= index
+        and positions.rank(reference) >= index
     ]
 
 
@@ -2053,20 +2185,31 @@ def _same_named_reference(model: DataModel, name: str | None, *, skips_aliases: 
     )
 
 
-def _model_family(model: DataModel, derived_models: Mapping[str, list[DataModel]]) -> dict[str, DataModel]:
-    """Return the models that the model inherits from or passes its fields on to, transitively, by path."""
-    family = {model.path: model}
+def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataModel]]:
+    """Map the model key of each base model to the models of ``models`` derived from it directly."""
+    keys = _ModelKeys("derived models")
+    derived_models: defaultdict[ModelKey, list[DataModel]] = defaultdict(list)
+    for derived_model in models:
+        for base_model in _find_base_classes(derived_model):
+            derived_models[keys.of(base_model)].append(derived_model)
+    return derived_models
+
+
+def _model_family(model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]]) -> dict[ModelKey, DataModel]:
+    """Return the models that the model inherits from or passes its fields on to, transitively, by model key."""
+    keys = _ModelKeys("model family")
+    family = {keys.of(model): model}
     pending = [model]
     while pending:
         current = pending.pop()
-        for kin in chain(_find_base_classes(current), derived_models.get(current.path, ())):
-            if kin.path not in family:
-                family[kin.path] = kin
+        for kin in chain(_find_base_classes(current), derived_models.get(model_key_of(current.reference), ())):
+            if (kin_key := keys.of(kin)) not in family:
+                family[kin_key] = kin
                 pending.append(kin)
     return family
 
 
-def _family_field_names(family: Mapping[str, DataModel]) -> set[str]:
+def _family_field_names(family: Mapping[ModelKey, DataModel]) -> set[str]:
     """Return the Python names and aliases of the fields of the family's models."""
     return {
         name
@@ -2248,6 +2391,14 @@ class _ModelShapeSource:
     def model_of(self, reference: Reference) -> DataModel | None:  # noqa: PLR6301
         """Return the model a reference names, or None when it names no model."""
         return source if isinstance(source := reference.source, DataModel) else None
+
+    def identity(self, reference: Reference) -> ModelKey:  # noqa: PLR6301
+        """Return what tells apart the models that references name: the model key."""
+        return model_key_of(reference)
+
+    def agreed(self, site: str, *, by_key: bool, by_path: Callable[[], bool]) -> bool:  # noqa: PLR6301
+        """Return ``by_key``; under the ``MODEL_GRAPH`` check, a different ``by_path()`` is a violation."""
+        return _keyed_answer(site, by_key, by_path)
 
 
 def _distinct_bases(row: ShapeRow, bases: Iterable[BaseClassDataType]) -> Iterable[BaseClassDataType]:
@@ -2474,19 +2625,18 @@ def _format_tags(tags: list[DiscriminatorValue]) -> str:
 
 
 def _iter_derived_fields(
-    model: DataModel, derived_models: dict[str, list[DataModel]], visited: set[str]
+    model: DataModel, derived_models: Mapping[ModelKey, list[DataModel]], visited: _ModelKeys
 ) -> Iterator[DataModelFieldBase]:
-    """Yield the fields that the classes derived from the model declare."""
-    for derived_model in derived_models.get(model.path, ()):
-        if derived_model.path in visited:  # pragma: no cover
+    """Yield the fields that the classes derived from the model declare, each class once."""
+    for derived_model in derived_models.get(model_key_of(model.reference), ()):
+        if not visited.first(derived_model):  # pragma: no cover
             continue
-        visited.add(derived_model.path)
         yield from derived_model.fields
         yield from _iter_derived_fields(derived_model, derived_models, visited)
 
 
 def _has_related_instance_field(
-    model: DataModel, source_name: str, tagged_fields: set[int], derived_models: dict[str, list[DataModel]]
+    model: DataModel, source_name: str, tagged_fields: set[int], derived_models: Mapping[ModelKey, list[DataModel]]
 ) -> bool:
     """Return whether a base or derived struct keeps an instance field of that name once the unions are tagged."""
     return any(
@@ -2495,14 +2645,14 @@ def _has_related_instance_field(
         and _tag_field_matches(field, "source-name", source_name)
         for field in chain(
             (field for base_model in _find_base_classes(model) for field in base_model.iter_all_fields()),
-            _iter_derived_fields(model, derived_models, set()),
+            _iter_derived_fields(model, derived_models, _ModelKeys("derived fields")),
         )
     )
 
 
 def _tag_discriminator_unions(
     unions: list[_DiscriminatorUnion],
-    derived_models: dict[str, list[DataModel]],
+    derived_models: Mapping[ModelKey, list[DataModel]],
     *,
     can_retain_cache: bool,
     defers_related: bool,
@@ -3078,7 +3228,8 @@ def _get_single_discriminator_default(
 
 def _get_model_module_name(model: DataModel, model_path_to_module_name: Mapping[str, str]) -> str:
     """Return the module name scope planning gives a model, or the model's own module name."""
-    return model_path_to_module_name.get(model.path, model.module_name)
+    module_name = _module_name_of(model_path_to_module_name, model.reference)
+    return model.module_name if module_name is None else module_name
 
 
 def _get_data_type_target_full_name(
@@ -3086,7 +3237,7 @@ def _get_data_type_target_full_name(
     reference: Reference,
     model_path_to_module_name: Mapping[str, str],
 ) -> str:
-    if (ref_module_name := model_path_to_module_name.get(reference.path)) is None:
+    if (ref_module_name := _module_name_of(model_path_to_module_name, reference)) is None:
         ref_module_name = data_type.full_name.rsplit(".", 1)[0] if "." in data_type.full_name else ""
     return f"{ref_module_name}.{reference.short_name}" if ref_module_name else reference.short_name
 
@@ -3483,14 +3634,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._has_bound_python_types = False
         self._has_runtime_expressions = False
         self._constrained_decimal_alias_model_ids: set[int] = set()
-        self._hidden_named_types: dict[tuple[str, str | None], bool] = {}
-        self._hiding_field_names: dict[tuple[str, str | None], str] = {}
+        self._hidden_named_types: dict[tuple[ModelKey, str | None], bool] = {}
+        self._hiding_field_names: dict[tuple[ModelKey, str | None], str] = {}
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
         self._deferred_tagged_unions: list[_DiscriminatorUnion] = []
         self._defers_tagged_unions = False
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
-        self._renamed_types: dict[str, list[_RenamedType]] = {}
-        self._replaced_root_models: dict[int, DataModel] = {}
+        self._renamed_types: dict[ModelKey, list[_RenamedType]] = {}
+        """The class names each renamed model had before, by model key."""
+        self._renamed_type_paths: dict[str, list[_RenamedType]] = {}
+        """The class names each renamed model had before, by its path when it was renamed: row
+        ``legacy-keyless-reference-by-path`` reads it for a reference that no model was built with."""
+        self._replaced_root_models: dict[int, tuple[DataModel, DataModel]] = {}
+        """Each root model that collapse replaced by its inner model, by id: the root model and its inner model."""
         self._emitting_module_names: dict[int, str] = {}
         self._emitting_module_lists: list[tuple[str, list[DataModel]]] = []
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
@@ -4182,7 +4338,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 for child in model.reference.iter_data_model_children():
                     self.generation_store.set_base_classes(
                         child,
-                        [bc for bc in child.base_classes if bc.reference != model.reference],
+                        [
+                            bc
+                            for bc in child.base_classes
+                            if not _keyed_answer(
+                                "removed base class",
+                                bc.reference is model.reference,
+                                lambda bc=bc, model=model: bc.reference == model.reference,
+                            )
+                        ],
                     )
                     if not child.base_classes:  # pragma: no cover
                         self.generation_store.reset_base_classes(child)
@@ -4336,7 +4500,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_path_to_module_name: dict[str, str] | None = None,
     ) -> None:
         models = self.__module_members(models)
-        model_paths = {model.path for model in models}
+        members = keyed_models(models, "module members")
         internal_modules = internal_modules or set()
         model_path_to_module_name = model_path_to_module_name or {}
 
@@ -4354,7 +4518,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 match data_type.reference:
                     case None:
                         continue
-                    case reference if reference.path in model_paths:
+                    case reference if members.key_of(reference) in members.models:
                         continue
                     case reference:
                         pass
@@ -4387,7 +4551,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return models
         return [model for model in models if id(model) not in replaced_root_models]
 
-    def __names_left_by_replaced_roots(self, models: list[DataModel], member_paths: Collection[str]) -> set[str]:
+    def __names_left_by_replaced_roots(self, models: list[DataModel], members: KeyedModels) -> set[str]:
         """Return the class names that roots replaced by their inner models leave free in a module.
 
         A root keeps its name for the inner model when the inner model, which takes the root's path, is in the same
@@ -4395,7 +4559,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         replaced_root_models = self._replaced_root_models
         return {
-            model.class_name for model in models if id(model) in replaced_root_models and model.path not in member_paths
+            model.class_name
+            for model in models
+            if (replacement := replaced_root_models.get(id(model))) is not None
+            and not _keyed_answer(
+                "names left by replaced roots",
+                model_key_of(replacement[1].reference) in members.models,
+                lambda model=model: model.path in members.keys_by_path,
+            )
         }
 
     def __set_reference_expression(  # noqa: PLR0913
@@ -4454,7 +4625,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 }
             ):
                 continue
-            model_paths = {model.path for model in ctx.models}
+            members = keyed_models(ctx.models, "module members")
             for model in ctx.models:
                 for data_type in model.all_data_types:
                     user, paths = users.get(id(data_type), (None, ()))
@@ -4471,11 +4642,22 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         _get_data_type_target_full_name(data_type, reference, model_path_to_module_name),
                         ctx.imports,
                         ctx.scoped_model_resolver,
-                        same_module=reference.path in model_paths,
+                        same_module=members.key_of(reference) in members.models,
                         init=ctx.is_init,
                         internal_modules=internal_modules,
                         producer=producer,
                     )
+
+    def __record_renamed_type(self, model: DataModel, renamed_type: _RenamedType) -> None:
+        """Record a class name that ``model`` had before a rename, under its model key and its current path."""
+        self._renamed_types.setdefault(model_key_of(model.reference), []).append(renamed_type)
+        self._renamed_type_paths.setdefault(model.path, []).append(renamed_type)
+
+    def __renamed_types_of(self, reference: Reference) -> list[_RenamedType] | None:
+        """Return the class names that the model ``reference`` names had before it was renamed, or None."""
+        by_path = self._renamed_type_paths.get(reference.path)
+        by_key = by_path if reference.source is None else self._renamed_types.get(model_key_of(reference))
+        return _keyed_answer("renamed types", by_key, lambda: by_path)
 
     def __import_renamed_types(
         self,
@@ -4493,18 +4675,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         It releases the name it binds for the new one, found by name, as neither the import of a package ``__init__``
         nor a ``from .`` path leads back to the path it was added under.
         """
-        if not (renamed := self._renamed_types):
+        if not self._renamed_types:
             return
         for ctx in contexts:
             members = self.__module_members(ctx.models)
-            model_paths = {model.path for model in members}
+            keyed_members = keyed_models(members, "module members")
             stale_users = [
                 (data_type, reference, model, import_)
                 for model in members
                 for data_type in model.all_data_types
                 if (reference := data_type.reference) is not None
-                and (renamed_types := renamed.get(reference.path)) is not None
-                and reference.path not in model_paths
+                and (renamed_types := self.__renamed_types_of(reference)) is not None
+                and keyed_members.key_of(reference) not in keyed_members.models
                 and (import_ := _stale_renamed_import(ctx.imports, data_type, renamed_types)) is not None
             ]
             if not stale_users:
@@ -4513,7 +4695,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self._import_ledger.remove(ctx.imports, import_, ImportProducer("import-renamed-types", model))
             ctx.scoped_model_resolver.delete_names(
                 {import_.binding_name for *_, import_ in stale_users}.union(
-                    self.__names_left_by_replaced_roots(ctx.models, model_paths)
+                    self.__names_left_by_replaced_roots(ctx.models, keyed_members)
                 )
             )
             for data_type, reference, model, _ in stale_users:
@@ -4542,14 +4724,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         changes after the literal is made.
         """
         for ctx in contexts:
-            model_paths = {model.path for model in ctx.models}
+            members = keyed_models(ctx.models, "module members")
             for model in ctx.models:
                 for data_type in model.all_data_types:
                     if (reference := data_type._enum_member_literal_reference) is None or data_type.alias:  # noqa: SLF001
                         continue
                     enum_class = (
                         reference.short_name
-                        if reference.path in model_paths
+                        if members.key_of(reference) in members.models
                         else register_reference_import(
                             reference,
                             _get_model_module_name(model, model_path_to_module_name),
@@ -4671,7 +4853,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             changed = False
             for field in model.fields:
                 pending = [
-                    (key, holder, frozenset[str]())
+                    (key, holder, frozenset[ModelKey]())
                     for holder in field.data_type.all_data_types
                     if (key := holder.dict_key) is not None and key.reference is not None
                 ]
@@ -4683,7 +4865,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if (
                         not isinstance(root_model := reference.source, DataModel)
                         or not root_model._keys_take_root_type  # ruff: ignore[private-member-access]
-                        or reference.path in expanded
+                        or model_key_of(root_model.reference) in expanded
                         or (root_type := self.__root_key_data_type(root_model)) is None
                     ):
                         continue
@@ -4707,7 +4889,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 producer=producer,
                             )
                     self._import_ledger.append(imports, root_type.imports, producer)
-                    pending.append((root_type, parent, expanded | {reference.path}))
+                    pending.append((root_type, parent, expanded | {model_key_of(root_model.reference)}))
                     changed = True
             if changed:
                 self.generation_store.note_changed_models(model)
@@ -5121,13 +5303,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 else:
                     _apply_discriminator_tags(tags, tag_field, can_retain_cache=can_retain_cache)
         if (deferred := self._deferred_tagged_unions) or unions:
-            derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
-            for derived_model in {id(model): model for model in chain(self.results, models)}.values():
-                for base_model in _find_base_classes(derived_model):
-                    derived_models[base_model.path].append(derived_model)
             self._deferred_tagged_unions = _tag_discriminator_unions(
                 [*deferred, *unions],
-                derived_models,
+                _derived_models({id(model): model for model in chain(self.results, models)}.values()),
                 can_retain_cache=can_retain_cache or bool(deferred),
                 defers_related=self._defers_tagged_unions,
             )
@@ -5178,26 +5356,28 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             _clear_model_imports_cache(models)
 
     @classmethod
-    def __collect_set_item_references(cls, models: list[DataModel]) -> set[str]:
-        """Collect reference paths of all types used as set/frozenset items."""
-        references: set[str] = set()
-        for model in models:
-            for field in model.fields:
-                for data_type in field.data_type.all_data_types:
-                    if data_type.is_set or data_type.is_frozen_set:
-                        for item_type in data_type.data_types:
-                            references.update(
-                                nested.reference.path for nested in item_type.all_data_types if nested.reference
-                            )
-        return references
+    def __collect_set_item_references(cls, models: list[DataModel]) -> list[Reference]:
+        """Collect the references of all types used as set/frozenset items."""
+        return [
+            nested.reference
+            for model in models
+            for field in model.fields
+            for data_type in field.data_type.all_data_types
+            if data_type.is_set or data_type.is_frozen_set
+            for item_type in data_type.data_types
+            for nested in item_type.all_data_types
+            if nested.reference
+        ]
 
     def __mark_set_item_models_hashable(self, models: list[DataModel]) -> None:
-        """Mark models used as set/frozenset items with hash flag for __hash__ generation."""
+        """Mark models used as set/frozenset items with hash flag for __hash__ generation, found by model key."""
         set_item_references = self.__collect_set_item_references(models)
         if not set_item_references:
             return
+        keyed = keyed_models(models, "set item models")
+        set_item_keys = keyed.keys_of(set_item_references)
         set_item_models = [
-            model for model in models if model.reference.path in set_item_references and not isinstance(model, Enum)
+            model for model in models if model_key_of(model.reference) in set_item_keys and not isinstance(model, Enum)
         ]
         # User imports may shadow the builtin annotations recognized by the backend.
         native_hash_paths = (
@@ -5839,11 +6019,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             class_name=root_model.class_name,
             new_path=root_model.reference.path,
         )
-        self._replaced_root_models[id(root_model)] = root_model
+        self._replaced_root_models[id(root_model)] = root_model, inner_model
+        _share_path_identity(root_model, inner_model)
         self.__take_recursion_facts(inner_model, root_model)
-        model_path_to_module_name[inner_model.path] = inner_module_name
+        _assign_module_name(model_path_to_module_name, inner_model, inner_module_name)
+        _assign_module_name(model_path_to_module_name, root_model, inner_module_name)
         if inner_model.class_name != old_class_name:
-            self._renamed_types.setdefault(inner_model.path, []).append(_RenamedType(old_class_name, old_path))
+            self.__record_renamed_type(inner_model, _RenamedType(old_class_name, old_path))
 
     def __import_collapsed_inner_models(  # noqa: PLR0913
         self,
@@ -5868,7 +6050,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._import_ledger.remove(imports, root_imports, _COLLAPSE_ROOT_MODELS)
         scoped_model_resolver.delete_names(
             {root_import.binding_name for root_import in root_imports}.difference(_iter_import_bindings(imports)).union(
-                self.__names_left_by_replaced_roots(models, {model.path for model in self.__module_members(models)})
+                self.__names_left_by_replaced_roots(
+                    models, keyed_models(self.__module_members(models), "module members")
+                )
             )
         )
         for holder, data_type, _ in redirected_holders:
@@ -6431,9 +6615,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         source = cast("DataModel", colliding_reference.source)
                         resolver.exclude_names.add(cast("str", field_name))
                         new_class_name = resolver.add(["type"], cast("str", source.class_name)).name  # ty: ignore[redundant-cast]
-                        self._renamed_types.setdefault(colliding_reference.path, []).append(
-                            _RenamedType(source.class_name, colliding_reference.path)
-                        )
+                        self.__record_renamed_type(source, _RenamedType(source.class_name, colliding_reference.path))
                         self.generation_store.rename_model(source, class_name=new_class_name)
                         all_class_names.add(new_class_name)
                     else:
@@ -6474,7 +6656,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self,
         model: DataModel,
         field: DataModelFieldBase,
-        positions: Mapping[str, int],
+        positions: _ModelPositions,
         *,
         use_deferred_annotations: bool,
     ) -> bool:
@@ -6491,7 +6673,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ]
         if not users:
             return False
-        index = positions.get(model.path)
+        index = positions.get(model.reference)
         writes_strings = use_deferred_annotations and not python_target_meets(
             "python.deferred_annotations", self.target_python_version.version_key
         )
@@ -6512,11 +6694,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 and use_deferred_annotations
                 and index is not None
                 and bool(field.field)
-                and model.assigns_forward_reference_field(field, positions, index)
+                and model.assigns_forward_reference_field(field, positions.paths, index)
             )
         )
         for user, reference in users:
-            is_forward = index is not None and positions.get(reference.path, -1) >= index
+            is_forward = index is not None and positions.rank(reference) >= index
             if model.class_attribute_hides_named_type(
                 user,
                 assigned=assigned,
@@ -6532,7 +6714,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         reference: Reference,
         class_names: set[str],
         all_models: Collection[DataModel],
-        derived_models: Mapping[str, list[DataModel]],
+        derived_models: Mapping[ModelKey, list[DataModel]],
     ) -> None:
         """Rename the type that the field hides to a name that no field of a family using the type has."""
         source = cast("DataModel", reference.source)
@@ -6548,12 +6730,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for user in all_models
             if any(
                 (user_reference := _annotated_reference(data_type)) is not None
-                and user_reference.path == reference.path
+                and _reference_names_model(user_reference, source, "users of a renamed type")
                 for data_type in user.all_data_types
             )
             for name in _family_field_names(_model_family(user, derived_models))
         )
-        self._renamed_types.setdefault(reference.path, []).append(_RenamedType(source.class_name, reference.path))
+        self.__record_renamed_type(source, _RenamedType(source.class_name, reference.path))
         self.generation_store.rename_model(source, class_name=resolver.add(["type"], source.class_name).name)
         class_names.add(source.class_name)
 
@@ -6561,8 +6743,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self,
         model: DataModel,
         field_name: str | None,
-        derived_models: Mapping[str, list[DataModel]],
-        positions: Mapping[str, int],
+        derived_models: Mapping[ModelKey, list[DataModel]],
+        positions: _ModelPositions,
         *,
         use_deferred_annotations: bool,
     ) -> bool:
@@ -6570,7 +6752,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         The classes of one family write the field under one name, so one decision covers all of them.
         """
-        if (hidden := self._hidden_named_types.get((model.path, field_name))) is not None:
+        if (hidden := self._hidden_named_types.get((model_key_of(model.reference), field_name))) is not None:
             return hidden
         family = _model_family(model, derived_models)
         hidden = any(
@@ -6579,7 +6761,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             for member in family.values()
             for field in self.__same_named_fields(member)
         )
-        self._hidden_named_types.update(dict.fromkeys(((path, field_name) for path in family), hidden))
+        self._hidden_named_types.update(dict.fromkeys(((key, field_name) for key in family), hidden))
         return hidden
 
     def __rename_fields_hiding_types(
@@ -6596,12 +6778,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         declarations = [(model, fields) for model in models if (fields := self.__same_named_fields(model))]
         if not declarations:
             return
-        positions = {model.path: index for index, model in enumerate(models)}
-        derived_models: defaultdict[str, list[DataModel]] = defaultdict(list)
+        positions = _ModelPositions(models, "hidden named types")
         all_models = {id(model): model for model in chain(self.results, models)}.values()
-        for derived_model in all_models:
-            for base_class in _find_base_classes(derived_model):
-                derived_models[base_class.path].append(derived_model)
+        derived_models = _derived_models(all_models)
         rename_type = (
             self.field_type_collision_strategy == FieldTypeCollisionStrategy.RenameType
             and model_type.SUPPORTS_FIELD_TYPE_RENAMING
@@ -6620,7 +6799,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if rename_type:
                     self.__rename_named_type(field, reference, class_names, all_models, derived_models)
                     continue
-                if (new_name := self._hiding_field_names.get((model.path, field_name))) is None:
+                if (new_name := self._hiding_field_names.get((model_key_of(model.reference), field_name))) is None:
                     family = _model_family(model, derived_models)
                     resolver = ModelResolver(
                         exclude_names=_family_field_names(family),
@@ -6629,7 +6808,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         target_python_version=self.target_python_version,
                     )
                     new_name = resolver._get_unique_field_name(cast("str", field_name))  # noqa: SLF001
-                    self._hiding_field_names.update(dict.fromkeys(((path, field_name) for path in family), new_name))
+                    self._hiding_field_names.update(dict.fromkeys(((key, field_name) for key in family), new_name))
                 _rename_field_preserving_alias(field, new_name)
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
@@ -7177,7 +7356,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     @classmethod
     def __quote_forward_enum_member_literals(
-        cls, field: DataModelFieldBase, positions: Mapping[str, int], index: int, *, use_typing_generics: bool
+        cls, field: DataModelFieldBase, positions: _ModelPositions, index: int, *, use_typing_generics: bool
     ) -> bool:
         """Write each enum member literal of the field whose enum is defined later as a string; return whether any."""
         member_literals = _forward_enum_member_literals(field, positions, index)
@@ -7214,7 +7393,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         quoted name of a model that asks for it, is written as ``List["Name"]``.
         """
         model_index: dict[str, int] = {m.class_name: i for i, m in enumerate(models)}
-        positions = {m.path: i for i, m in enumerate(models)}
+        positions = _ModelPositions(models, "type aliases")
         alias_cycles: Mapping[int, int] | None = None
         quotes_in_typing_generics = use_typing_generics and not use_deferred_annotations
 
@@ -7955,14 +8134,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         This remains an instance method because ``snooper_to_methods`` does not
         preserve staticmethod descriptors on parser subclasses.
         """
-        positions = {model.path: index for index, model in enumerate(models)}
+        positions = _ModelPositions(models, "forward references")
         for index, model in enumerate(models):
             hidden_names = _hidden_type_names(model)
             for field in model.fields:
                 for data_type in field.data_type.all_data_types:
                     if (
                         (reference := data_type.reference)
-                        and (reference_index := positions.get(reference.path)) is not None
+                        and (reference_index := positions.get(reference)) is not None
                         and (reference_index >= index or (reference.short_name in hidden_names and not data_type.alias))
                     ):
                         return True
@@ -7983,7 +8162,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return False
         if any(model.resolves_hidden_types_from_strings() and _hidden_type_names(model) for model in models):
             return True
-        positions = {model.path: index for index, model in enumerate(models)}
+        positions = _ModelPositions(models, "forward enum member literals")
         return any(
             _forward_enum_member_literals(field, positions, index)
             for index, model in enumerate(models)
@@ -8430,6 +8609,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         state.module_models, state.internal_modules, state.forwarder_map = self.__resolve_circular_imports(
             state.module_models
         )
+        if state.internal_modules:
+            state.model_path_to_module_name.forget(
+                model for module, models in state.module_models if module in state.internal_modules for model in models
+            )
 
     def _process_single_module(  # noqa: PLR0913, PLR0917
         self,
@@ -8450,7 +8633,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         # their ownership in this module for relative import planning without
         # changing the file path used by generated filename headers.
         for model in models:
-            model_path_to_module_name.setdefault(model.path, module_name)
+            _assign_module_name(model_path_to_module_name, model, module_name, keep=True)
         can_retain_cache = _can_retain_model_imports_cache(
             models,
             configured_types_are_builtin=self._configured_generation_types_are_builtin,
@@ -9482,6 +9665,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._deferred_tagged_unions.clear()
         self._removed_reuse_users.clear()
         self._renamed_types.clear()
+        self._renamed_type_paths.clear()
         self._replaced_root_models.clear()
 
     def __unconstrain_union_members(self, run: _StructuredRun) -> None:

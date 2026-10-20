@@ -33,6 +33,7 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _ModelKeys,
     _nested_model_default_factory,
     linearize_data_models,
 )
@@ -157,6 +158,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterator, Mapping
     from pathlib import Path
 
+    from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
     from datamodel_code_generator.reference import Reference
 
@@ -349,39 +351,43 @@ class Struct(DataModel):
         Field introduction depths distinguish inherited slots from extensions.
         Encounter ranks retain the original diagnostic order independently of
         the parent-first traversal needed to establish each model's layout.
-        The view tells the fields that take slots and the model whose layout a model has.
+        The view tells the fields that take slots and the model whose layout a model has. Models are told apart by
+        model key.
         """
         pending = [(view.layout_model(base), False) for base in bases]
-        visited: dict[str, int] = {}
-        owner_depths: dict[str, int] = {}
+        keys = _ModelKeys("struct layout")
+        visited: dict[ModelKey, int] = {}
+        owner_depths: dict[ModelKey, int] = {}
         field_depths: dict[str | None, int] = {}
         owners: list[DataModel] = []
         while pending:
             base, complete = pending.pop()
-            if not complete and base.path in visited:
+            if not complete and keys.of(base) in visited:
                 continue
             parents = Struct._layout_parents(base, view)
             if not complete:
-                visited[base.path] = len(visited)
+                visited[keys.of(base)] = len(visited)
                 if Struct._has_unknown_layout(base, view):
                     return None
                 pending.append((base, True))
                 pending.extend((parent, False) for parent in reversed(parents))
                 continue
-            parent_depth = max((owner_depths.get(parent.path, 0) for parent in parents), default=0)
+            parent_depth = max((owner_depths.get(keys.of(parent), 0) for parent in parents), default=0)
             if new_names := [
                 field.name
                 for field in base.fields
                 if view.is_slot(field) and field_depths.get(field.name, len(owners) + 1) > parent_depth
             ]:
                 if parent_depth != len(owners):
-                    other = min(owners[parent_depth:], key=lambda owner: visited[owner.path])
-                    return Struct._select_layout_conflict((other, base), pending, owners, owner_depths, visited, view)
+                    other = min(owners[parent_depth:], key=lambda owner: visited[keys.of(owner)])
+                    return Struct._select_layout_conflict(
+                        (other, base), pending, owners, owner_depths, visited, view, keys
+                    )
                 owners.append(base)
                 for name in new_names:
                     field_depths[name] = len(owners)
                 parent_depth = len(owners)
-            owner_depths[base.path] = parent_depth
+            owner_depths[keys.of(base)] = parent_depth
         return None
 
     @staticmethod
@@ -389,9 +395,10 @@ class Struct(DataModel):
         conflict: tuple[DataModel, DataModel],
         pending: list[tuple[DataModel, bool]],
         owners: list[DataModel],
-        owner_depths: dict[str, int],
-        encounter_ranks: dict[str, int],
+        owner_depths: dict[ModelKey, int],
+        encounter_ranks: dict[ModelKey, int],
         view: BaseLayoutView,
+        keys: _ModelKeys,
     ) -> tuple[DataModel, DataModel] | None:
         """Prefer an earlier active slot owner without repeating the layout proof.
 
@@ -403,23 +410,23 @@ class Struct(DataModel):
             if not complete:
                 continue
             parents = Struct._layout_parents(base, view)
-            ancestor_paths: set[str] = set()
+            ancestor_keys: set[ModelKey] = set()
             inherited_names: set[str | None] = set()
             parent_depth = 0
             while parents:
                 parent = parents.pop()
-                if parent.path in ancestor_paths:
+                if (parent_key := keys.of(parent)) in ancestor_keys:
                     continue
                 if Struct._has_unknown_layout(parent, view):
                     return None
-                ancestor_paths.add(parent.path)
-                parent_depth = max(parent_depth, owner_depths.get(parent.path, 0))
+                ancestor_keys.add(parent_key)
+                parent_depth = max(parent_depth, owner_depths.get(parent_key, 0))
                 inherited_names.update(field.name for field in parent.fields if view.is_slot(field))
                 parents.extend(Struct._layout_parents(parent, view))
             if parent_depth < len(owners) and any(
                 field.name not in inherited_names and view.is_slot(field) for field in base.fields
             ):
-                other = min(owners[parent_depth:], key=lambda owner: encounter_ranks[owner.path])
+                other = min(owners[parent_depth:], key=lambda owner: encounter_ranks[keys.of(owner)])
                 conflict = other, base
         return conflict
 
