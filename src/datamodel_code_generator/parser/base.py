@@ -2336,6 +2336,18 @@ def _forward_enum_member_literals(
     ]
 
 
+def _value_positions(field: DataModelFieldBase) -> list[tuple[DataModelFieldBase | DataType, DataType]]:
+    """Return each data type of ``field`` with the field or data type that holds it, the field's type first."""
+    return [
+        (field, field.data_type),
+        *(
+            (holder, nested)
+            for holder in field.data_type.all_data_types
+            for nested in (*holder.data_types, *((holder.dict_key,) if holder.dict_key is not None else ()))
+        ),
+    ]
+
+
 def _named_reference(field: DataModelFieldBase, name: str | None) -> Reference | None:
     """Return the referenced type that the field's annotation names ``name``."""
     for data_type in field.data_type.all_data_types:
@@ -5038,13 +5050,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Runs once the referenced enum is final: after reuse and collapse redirect the value and after member and
         discriminator names are settled. A value of a named enum whose root types no enum, as when its const already
         makes it a Literal or None, keeps its type. The values that keep the enum type are warned about once msgspec
-        tags are final.
+        tags are final. A value that collapse shares between the root model and its holders is replaced in each holder.
         """
         if not self._const_narrowed_values:
             return
+        narrowed: dict[int, DataType] = {}
         for model in models:
             for field in model.fields:
-                for data_type in tuple(field.data_type.all_data_types):
+                for owner, data_type in _value_positions(field):
                     entry = self._const_narrowed_values.get(id(data_type))
                     if entry is None or entry[0] is not data_type or data_type.reference is None:
                         continue
@@ -5054,10 +5067,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if (new_data_type := self.__const_narrowed_data_type(data_type, narrowing, enum)) is None:
                         self._enum_admits_other_values.append((field, narrowing))
                         continue
-                    self.generation_store.detach_data_type_ref(data_type)
-                    if data_type is field.data_type:
+                    narrowed[id(data_type)] = data_type
+                    if owner is field:
                         self.generation_store.replace_field_type(field, new_data_type)
-                    elif (parent := cast("DataType", data_type.parent)).dict_key is data_type:
+                    elif (parent := cast("DataType", owner)).dict_key is data_type:
                         self.generation_store.replace_nested_data_type(parent, data_type, new_data_type)
                     else:
                         self.generation_store.set_nested_data_types(
@@ -5067,6 +5080,24 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         imports, new_data_type.imports, ImportProducer("const-narrowed-values", model, field)
                     )
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
+        for data_type in narrowed.values():
+            self.generation_store.detach_data_type_ref(data_type)
+
+    def __carry_const_narrowings(self, source: DataType, copied: DataType) -> None:
+        """Give each node of ``copied`` that collapse inlines the const narrowing of the ``source`` node it copies.
+
+        A copy has the shape of its source; a node that the copy shares with its source already has its narrowing.
+        """
+        if not self._const_narrowed_values:
+            return
+        pending = [(source, copied)]
+        while pending:
+            source_node, copied_node = pending.pop()
+            if (entry := self._const_narrowed_values.get(id(source_node))) is not None and entry[0] is source_node:
+                self._const_narrowed_values[id(copied_node)] = (copied_node, entry[1])
+            pending.extend(zip(source_node.data_types, copied_node.data_types, strict=True))
+            if (key := source_node.dict_key) is not None:
+                pending.append((key, cast("DataType", copied_node.dict_key)))
 
     def __type_dict_keys_by_root_types(
         self,
@@ -6014,6 +6045,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 data_type,
                             )
                         generation_store.collapse_root_data_type(data_type, inner_reference)
+                        self.__carry_const_narrowings(root_type_field.data_type, data_type)
 
                         redirected_holders.append((
                             model,
@@ -6040,6 +6072,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         if source_module_name != target_module_name
                         else root_type_field.data_type.model_copy()
                     )
+                    self.__carry_const_narrowings(root_type_field.data_type, copied_data_type)
                     if (
                         has_remaining_root_references := generation_store._root_collapse_has_data_type_references(  # noqa: SLF001
                             root_type_model.reference,

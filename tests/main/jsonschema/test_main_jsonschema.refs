@@ -6212,6 +6212,17 @@ typed-dict	main/jsonschema/empty_field_name_typed_dict.py
 	main/jsonschema/jsonschema_empty_items_array.py
 [test_main_jsonschema_enum_complex_values_literal]
 	main/jsonschema/enum_complex_values_literal.py
+[test_main_jsonschema_enum_const_collapsed_root_models]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[dataclasses.dataclass].py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[dataclasses.dataclass].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[msgspec.Struct].py
+msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[msgspec.Struct].warnings.txt
+pydantic-v2-child	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[pydantic-v2-child].py
+pydantic-v2-child	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[pydantic-v2-child].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_collapsed_root_models[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_main_jsonschema_enum_const_collapsed_root_modules]
+	main/jsonschema/main_jsonschema/enum_const_collapsed_root_modules/
 [test_main_jsonschema_enum_const_discriminator_tag]
 	main/jsonschema/main_jsonschema/enum_const_discriminator_tag.py
 	main/jsonschema/main_jsonschema/enum_const_discriminator_tag.warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt

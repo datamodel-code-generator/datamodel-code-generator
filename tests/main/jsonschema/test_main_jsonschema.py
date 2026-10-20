@@ -7644,6 +7644,77 @@ def test_main_jsonschema_enum_const_draft_04(output_model: str, output_file: Pat
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2.BaseModel"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--collapse-root-models-name-strategy", "child"], id="pydantic-v2-child"
+        ),
+        pytest.param("dataclasses.dataclass", [], id="dataclasses.dataclass"),
+        pytest.param("msgspec.Struct", [], id="msgspec.Struct"),
+    ],
+)
+def test_main_jsonschema_enum_const_collapsed_root_models(
+    output_model: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Type the values that --collapse-root-models inlines by the const that narrows their enum.
+
+    A union branch, a map key, a map value and an item of a root model, and a root model of the enum under a name
+    strategy, are ``Literal[Kind.b]`` in the holder as in the root model. msgspec keeps the enum type and warns once.
+    Since the const narrowing after 0.86.0 the root model's values were narrowed in place of the holder's, which then
+    lost them (``dict[, int]``).
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always", UserWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "enum_const_collapsed_root_models.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                "--use-subclass-enum",
+                "--collapse-root-models",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+    if output_model != "msgspec.Struct":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="enum_const_collapsed_root_models",
+            model_name="Holder",
+            valid_json='{"u": "b", "m": {"b": 1}, "v": {"x": "b"}, "l": ["b"], "p": "b", "lu": ["b", 1]}',
+            invalid_json='{"m": {"a": 1}}',
+            expected_error_type="literal_error",
+        )
+
+
+def test_main_jsonschema_enum_const_collapsed_root_modules(output_dir: Path) -> None:
+    """Type the values that --collapse-root-models inlines from another module by the const that narrows their enum.
+
+    The holder's copies of the root types are narrowed whichever module is processed first.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enum_const_collapsed_root_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--use-subclass-enum", "--collapse-root-models"],
+        force_exec_validation=True,
+        runtime_validation_module="holder",
+        runtime_validation_model_name="Holder",
+        runtime_validation_data={"u": "b", "m": {"b": 1}},
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--empty-enum-field-name"],
     option_description="""Name for empty string enum field values.
