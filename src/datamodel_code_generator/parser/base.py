@@ -9282,6 +9282,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     self.__change_imported_model_name(ctx.models, ctx.imports, ctx.scoped_model_resolver)
                     or renamed_models
                 )
+        if additional_properties_models := [
+            model for model in all_models if len(model.additional_properties_reference_classes)
+        ]:
+            with fact_pass(decls.NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES, additional_properties_models):
+                for model in additional_properties_models:
+                    model._name_final_classes()  # noqa: SLF001
         if self.use_root_model_sequence_interface and renamed_models:
             with fact_pass(decls.REFRESH_SEQUENCE_INTERFACE_AFTER_RENAMES, all_models):
                 for model in all_models:

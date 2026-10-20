@@ -424,6 +424,11 @@ openapi/type_alias_mutual_recursive.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias_recursive.yaml	yaml_fast_constructor/parity.txt
 openapi/type_mappings_byte_to_binary.yaml	yaml_fast_constructor/parity.txt
 openapi/type_overrides_constructor_order.yaml	yaml_fast_constructor/parity.txt
+openapi/typed_dict_extra_items_final_name/base_class.yaml	yaml_fast_constructor/parity.txt
+openapi/typed_dict_extra_items_final_name/dotted.yaml	yaml_fast_constructor/parity.txt
+openapi/typed_dict_extra_items_final_name/renamed.yaml	yaml_fast_constructor/parity.txt
+openapi/typed_dict_extra_items_final_name/renamed_external.yaml	yaml_fast_constructor/parity.txt
+openapi/typed_dict_extra_items_final_name/variant.yaml	yaml_fast_constructor/parity.txt
 openapi/union_default_object.yaml	yaml_fast_constructor/parity.txt
 openapi/unique_items_default_set.yaml	yaml_fast_constructor/parity.txt
 openapi/unquoted_null.yaml	yaml_fast_constructor/parity.txt

@@ -2865,6 +2865,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def finalize_sequence_interface(self) -> None:
         """Finalize sequence helper metadata after parser type transformations."""
 
+    def _name_final_classes(self) -> None:
+        """Render the backend settings that name the classes of additional properties once class names are final."""
+
     @classmethod
     def get_native_hash_model_paths(cls, models: list[DataModel]) -> set[str]:  # noqa: ARG003
         """Return models whose backend hash can replace the legacy set-item hash."""

@@ -177,7 +177,11 @@ from datamodel_code_generator.parser.schema_version import (
     detect_jsonschema_version,
     get_data_formats,
 )
-from datamodel_code_generator.python_literal import _safe_non_finite_value, _semantic_value_text
+from datamodel_code_generator.python_literal import (
+    _make_referencing_type_expression,
+    _safe_non_finite_value,
+    _semantic_value_text,
+)
 from datamodel_code_generator.reference import (
     _ALIAS_RESOLUTION_CLASS_NAME_KEY,
     SCHEMA_LOCATION_CONFLICT_KEY,
@@ -3726,7 +3730,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         }
         self._output_model_context.store_additional_properties_type(
             metadata,
-            additional_type.type_hint,
+            _make_referencing_type_expression(additional_type) if reference_classes else additional_type.type_hint,
             reference_classes,
             imports=tuple(additional_type.all_imports),
         )
@@ -4395,7 +4399,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 self._output_model_context.store_additional_properties_type(
                     self.extra_template_data[path],
-                    additional_props_type.type_hint,
+                    _make_referencing_type_expression(additional_props_type)
+                    if reference_classes
+                    else additional_props_type.type_hint,
                     reference_classes,
                     imports=tuple(additional_props_type.all_imports),
                     target_python_version=self.target_python_version,

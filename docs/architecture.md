@@ -369,6 +369,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | `_finalize_structured_imports`, model imports snapshot, unused-model removal | imports, module model lists |
 | `remove_unused`, `resolve_module_import_conflicts` (backend), `_bind_module_field_names` | module imports, field binding |
 | `__change_imported_model_name` | renames models that collide with imports (the last class-name change) |
+| `model._name_final_classes` (model hook) | renders TypedDict `extra_items` again from the data type it was built from, so that it names the final class |
 | `_check_model_inheritance`, warnings, `_set_nested_model_default_factory_metadata` | errors, warnings, default-factory metadata |
 
 Three L6 passes repair results that L5 built from facts that changed afterwards: `__import_removed_reuse_canonicals`
@@ -509,6 +510,7 @@ runs inside `fact_pass`.
 | IMPORTS | `resolve_module_import_conflicts` | global | transform | IMPORT_ALIASES, MODULE_IMPORTS | FIELD_NAMES, MODULE_IMPORTS | Lets the backend alias imports that clash with names of the module (model hook). |
 | IMPORTS | `bind_module_field_names` | global | repair | IMPORT_ALIASES, UNBOUND_FIELDS | FIELD_NAMES, MODULE_IMPORTS | Removed by RP15b. |
 | IMPORTS | `change_imported_model_name` | global | transform | CLASS_NAMES | CLASS_NAMES, MODULE_IMPORTS | Renames models that collide with imports, the last class-name change. |
+| IMPORTS | `name_final_classes_of_additional_properties` | global | transform | BACKEND_CONFIG | CLASS_NAMES | Renders backend settings that name the classes of additional properties (TypedDict extra_items) from their final names (model hook). Runs when: additional properties reference classes. |
 | IMPORTS | `refresh_sequence_interface_after_renames` | global | repair | BACKEND_CONFIG | CLASS_NAMES | Runs when: use_root_model_sequence_interface and a model was renamed. Removed by RP15b. |
 | IMPORTS | `replan_schema_validators_after_renames` | global | repair | MODULE_CODE, MODULE_IMPORTS | CLASS_NAMES | Runs when: generate_schema_validators and a model was renamed. Removed by RP15b. |
 | IMPORTS | `remap_import_overrides` | global | transform | MODULE_IMPORTS | MODULE_IMPORTS | Runs when: import_overrides. |

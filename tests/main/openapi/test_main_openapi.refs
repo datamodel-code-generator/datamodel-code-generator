@@ -1570,6 +1570,11 @@ field-constraints-field-type-override-gains-field-argument	main/openapi/main_ope
 field-type-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order[field-type-override-gains-field-argument].py
 strip-default-none-field-constraints-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-constraints-field-type-override].py
 strip-default-none-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-type-override].py
+[test_main_openapi_typed_dict_extra_items_final_name]
+base_class	main/openapi/main_openapi/typed_dict_extra_items_final_name[base_class].py
+dotted	main/openapi/main_openapi/typed_dict_extra_items_final_name[dotted].py
+renamed	main/openapi/main_openapi/typed_dict_extra_items_final_name[renamed].py
+variant	main/openapi/main_openapi/typed_dict_extra_items_final_name[variant].py
 [test_main_openapi_union_default_object]
 msgspec.Struct-msgspec_union_default_object.py	main/openapi/msgspec_union_default_object.py
 pydantic_v2.BaseModel-pydantic_v2_union_default_object.py	main/openapi/pydantic_v2_union_default_object.py

@@ -841,6 +841,17 @@ CHANGE_IMPORTED_MODEL_NAME = PassDecl(
     writes=_facts(RenderFact.CLASS_NAMES),
     summary="Renames models that collide with imports, the last class-name change.",
 )
+NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
+    "name_final_classes_of_additional_properties",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(RenderFact.CLASS_NAMES),
+    writes=_facts(RenderFact.BACKEND_CONFIG),
+    condition="additional properties reference classes",
+    summary="Renders backend settings that name the classes of additional properties (TypedDict extra_items) "
+    "from their final names (model hook).",
+)
 REFRESH_SEQUENCE_INTERFACE_AFTER_RENAMES = PassDecl(
     "refresh_sequence_interface_after_renames",
     Phase.IMPORTS,

@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info: {title: t, version: '1'}
+paths: {}
+components:
+  schemas:
+    Foo:
+      type: object
+      x-is-base-class: true
+      properties:
+        name: {type: string}
+      additionalProperties: {$ref: '#/components/schemas/Bar'}
+    Child:
+      allOf:
+        - $ref: '#/components/schemas/Foo'
+        - type: object
+          properties:
+            age: {type: integer}
+    Bar:
+      type: object
+      properties:
+        c: {type: string}

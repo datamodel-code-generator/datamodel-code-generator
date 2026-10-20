@@ -178,9 +178,25 @@ class TypedDict(DataModel):
                 typed_dict_kwargs["extra_items"] = represent_untrusted_public_type_name(additional_props_type)
 
         if typed_dict_kwargs:
-            kwargs_str = ", ".join(f"{k}={v}" for k, v in typed_dict_kwargs.items())
-            self._set_internal_template_data("typed_dict_kwargs", typed_dict_kwargs)
-            self._set_internal_template_data("typed_dict_kwargs_suffix", f", {kwargs_str}")
+            self._set_typed_dict_kwargs(typed_dict_kwargs)
+
+    def _set_typed_dict_kwargs(self, typed_dict_kwargs: dict[str, str]) -> None:
+        kwargs_str = ", ".join(f"{k}={v}" for k, v in typed_dict_kwargs.items())
+        self._set_internal_template_data("typed_dict_kwargs", typed_dict_kwargs)
+        self._set_internal_template_data("typed_dict_kwargs_suffix", f", {kwargs_str}")
+
+    @override
+    def _name_final_classes(self) -> None:
+        """Render ``extra_items`` again from the data type it was built from, as field types render."""
+        typed_dict_kwargs: dict[str, str] = self._internal_template_data.get("typed_dict_kwargs", {})
+        additional_props_type = self.extra_template_data.get("additionalPropertiesType")
+        if (
+            "extra_items" not in typed_dict_kwargs
+            or not isinstance(additional_props_type, _InternalTypeExpression)
+            or (source := additional_props_type.source) is None
+        ):
+            return
+        self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": repr(source.type_hint)})
 
     @property
     def _has_pep728_kwargs(self) -> bool:

@@ -13677,3 +13677,30 @@ def test_main_openapi_ignored_content_type_header_refs(output_file: Path) -> Non
         extra_args=["--openapi-scopes", "schemas", "api", "--formatters", "builtin"],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("variant.yaml", ["--read-only-write-only-model-type", "all"], id="variant"),
+        pytest.param("renamed.yaml", ["--naming-strategy", "primary-first"], id="renamed"),
+        pytest.param("dotted.yaml", ["--read-only-write-only-model-type", "request-response"], id="dotted"),
+        pytest.param("base_class.yaml", [], id="base_class"),
+    ],
+)
+def test_main_openapi_typed_dict_extra_items_final_name(
+    output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Name the final class of a referenced model in TypedDict ``extra_items``.
+
+    Up to 0.86.0 ``extra_items`` kept the name the class had when the schema was parsed, so a class renamed later (a
+    variant suffix taken, a name collision, a dotted name) was named wrongly or not at all. A base class keeps no
+    ``extra_items``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "typed_dict_extra_items_final_name" / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "typing.TypedDict", "--formatters", "builtin", *extra_args],
+        force_exec_validation=True,
+    )

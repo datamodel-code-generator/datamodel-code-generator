@@ -1575,6 +1575,10 @@ openapi/type_overrides_constructor_order.yaml::components.schemas.Base	payloads/
 openapi/type_overrides_constructor_order.yaml::components.schemas.Constrained	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Gain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_union_nullable.json::components.schemas.Root	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/base_class.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/renamed.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/renamed_external.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/variant.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/union_default_object.yaml::components.schemas.Interval	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unique_items_default_set.yaml::components.schemas.TestModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unsorted_optional_fields.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3169,6 +3173,10 @@ openapi/type_overrides_constructor_order.yaml::components.schemas.Base	payloads/
 openapi/type_overrides_constructor_order.yaml::components.schemas.Constrained	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_overrides_constructor_order.yaml::components.schemas.Gain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_union_nullable.json::components.schemas.Root	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/base_class.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/renamed.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/renamed_external.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/typed_dict_extra_items_final_name/variant.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/union_default_object.yaml::components.schemas.Interval	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unique_items_default_set.yaml::components.schemas.TestModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/unsorted_optional_fields.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
