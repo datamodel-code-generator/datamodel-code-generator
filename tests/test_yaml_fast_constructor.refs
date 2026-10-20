@@ -440,6 +440,8 @@ openapi/type_array_request_body.yaml	yaml_fast_constructor/parity.txt
 openapi/type_array_response_body.yaml	yaml_fast_constructor/parity.txt
 openapi/type_mappings_byte_to_binary.yaml	yaml_fast_constructor/parity.txt
 openapi/type_overrides_constructor_order.yaml	yaml_fast_constructor/parity.txt
+openapi/type_overrides_constructor_order_deep_base.yaml	yaml_fast_constructor/parity.txt
+openapi/type_overrides_constructor_order_modules.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/base_class.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/dotted.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/renamed.yaml	yaml_fast_constructor/parity.txt

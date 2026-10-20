@@ -14,8 +14,9 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import DataModelType, Error, PythonVersion
 from datamodel_code_generator.format import Formatter
+from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from scripts import check_fact_finality, check_pass_pipeline
 from tests.conftest import (
@@ -346,7 +347,7 @@ def _write_description(_facts: Any, _writer: Any) -> None:
     MODELS[0].description = "written"
 
 
-def _decide_writing(name: str, written: check_pass_pipeline.Fact, run: Callable[[Any, Any], None]) -> tuple[Any, ...]:
+def _decide_writing(name: str, run: Callable[[Any, Any], None], *written: check_pass_pipeline.Fact) -> tuple[Any, ...]:
     """Return a registry of one decision ``name`` that declares writing ``written`` and runs ``run``."""
     decl = check_pass_pipeline.PassDecl(
         name,
@@ -354,7 +355,7 @@ def _decide_writing(name: str, written: check_pass_pipeline.Fact, run: Callable[
         check_pass_pipeline.Scope.GLOBAL,
         check_pass_pipeline.PassKind.TRANSFORM,
         reads=frozenset({check_pass_pipeline.Fact.DEFAULTS}),
-        writes=frozenset({written}),
+        writes=frozenset(written),
     )
     return (check_pass_pipeline.DecisionPass({"decl": decl, "issue": "#0"}, check_pass_pipeline.DecisionWriter, run),)
 
@@ -362,13 +363,40 @@ def _decide_writing(name: str, written: check_pass_pipeline.Fact, run: Callable[
 class DeclaredWritingParser(CapturingParser):
     """Runs a decision that writes a fact it declares during DECIDE."""
 
-    _DECISION_PASSES = _decide_writing("write_default", check_pass_pipeline.Fact.DEFAULTS, _write_default)
+    _DECISION_PASSES = _decide_writing("write_default", _write_default, check_pass_pipeline.Fact.DEFAULTS)
+
+
+def _write_required(_facts: Any, _writer: Any) -> None:
+    """Make a field required: the cross-module passes write requiredness last, and the decision declares it."""
+    MODELS[0].fields[1].required = True
+
+
+class RequiredWritingParser(CapturingParser):
+    """Runs a decision that writes requiredness, which it declares, during DECIDE."""
+
+    _DECISION_PASSES = _decide_writing("write_required", _write_required, check_pass_pipeline.Fact.REQUIRED)
+
+
+def _default_base_field(_facts: Any, _writer: Any) -> None:
+    """Give the field of the base a default, which a field of the subclass without one then follows."""
+    base = next(model for model in MODELS if model.class_name == "Base")
+    base.fields[0].required = False
+    base.fields[0].default = "x"
+    base.clear_imports_cache()
+
+
+class BaseDefaultingParser(CapturingParser):
+    """Runs a decision that makes a base field optional with a default, writing facts it declares."""
+
+    _DECISION_PASSES = _decide_writing(
+        "default_base_field", _default_base_field, check_pass_pipeline.Fact.DEFAULTS, check_pass_pipeline.Fact.REQUIRED
+    )
 
 
 class UndeclaredWritingParser(CapturingParser):
     """Runs a decision that declares one fact and writes another during DECIDE."""
 
-    _DECISION_PASSES = _decide_writing("write_description", check_pass_pipeline.Fact.DEFAULTS, _write_description)
+    _DECISION_PASSES = _decide_writing("write_description", _write_description, check_pass_pipeline.Fact.DEFAULTS)
 
 
 def test_fact_finality_lets_a_decision_write_the_facts_it_declares(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -376,6 +404,106 @@ def test_fact_finality_lets_a_decision_write_the_facts_it_declares(monkeypatch: 
     _finality_only(monkeypatch, "1")
 
     assert_output(DeclaredWritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse(), name="output")
+
+
+def test_fact_finality_lets_a_decision_write_requiredness(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A decision writes requiredness it declares, although the module passes are the last passes to write it."""
+    _finality_only(monkeypatch, "1")
+
+    assert_output(RequiredWritingParser(SCHEMA, formatters=[Formatter.BUILTIN]).parse())
+
+
+def test_constructor_order_follows_a_decided_base_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Constructor ordering runs after the decisions: a default a decision gives a base field orders the subclass."""
+    _finality_only(monkeypatch, "1")
+    schema = tmp_path / "inheritance.json"
+    schema.write_text(
+        json.dumps({
+            "$defs": {
+                "Base": {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]},
+                "Child": {
+                    "allOf": [
+                        {"$ref": "#/$defs/Base"},
+                        {"type": "object", "properties": {"b": {"type": "string"}}, "required": ["b"]},
+                    ]
+                },
+            },
+            "$ref": "#/$defs/Child",
+        }),
+        encoding="utf-8",
+    )
+    model_types = get_data_model_types(DataModelType.DataclassesDataclass, target_python_version=PythonVersion.PY_311)
+
+    assert_output(
+        BaseDefaultingParser(
+            schema,
+            data_model_type=model_types.data_model,
+            data_model_root_type=model_types.root_model,
+            data_model_field_type=model_types.field_model,
+            data_type_manager_type=model_types.data_type_manager,
+            dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+            target_python_version=PythonVersion.PY_311,
+            formatters=[Formatter.BUILTIN],
+        ).parse()
+    )
+
+
+INHERITANCE_SCHEMA = {
+    "$defs": {
+        "Base": {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]},
+        "Child": {
+            "allOf": [
+                {"$ref": "#/$defs/Base"},
+                {"type": "object", "properties": {"b": {"type": "string"}}, "required": ["b"]},
+            ]
+        },
+    },
+    "$ref": "#/$defs/Child",
+}
+
+
+class BaseDefaultingAfterOrderingParser(JsonSchemaParser):
+    """Gives the field of a base a default after constructor ordering read it."""
+
+    def _finalize_modules(self, *args: Any) -> None:
+        base = next(model for model in self.results if model.class_name == "Base")
+        base.fields[0].default = "x"
+        base.fields[0].invalidate_semantic_caches()
+        super()._finalize_modules(*args)
+
+
+class BaseFieldDroppingAfterOrderingParser(JsonSchemaParser):
+    """Removes the field of a base after constructor ordering read it."""
+
+    def _finalize_modules(self, *args: Any) -> None:
+        base = next(model for model in self.results if model.class_name == "Base")
+        base.fields.clear()
+        super()._finalize_modules(*args)
+
+
+@pytest.mark.parametrize("parser_type", [BaseDefaultingAfterOrderingParser, BaseFieldDroppingAfterOrderingParser])
+def test_fact_finality_reports_a_base_field_that_changes_after_constructor_ordering(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, parser_type: type[JsonSchemaParser]
+) -> None:
+    """A field of a base that constructor ordering read, or the set of them, must not change before the imports."""
+    report = tmp_path / "violations.jsonl"
+    _finality_only(monkeypatch, f"report:{report}")
+    schema = tmp_path / "inheritance.json"
+    schema.write_text(json.dumps(INHERITANCE_SCHEMA), encoding="utf-8")
+    model_types = get_data_model_types(DataModelType.DataclassesDataclass, target_python_version=PythonVersion.PY_311)
+
+    parser_type(
+        schema,
+        data_model_type=model_types.data_model,
+        data_model_root_type=model_types.root_model,
+        data_model_field_type=model_types.field_model,
+        data_type_manager_type=model_types.data_type_manager,
+        dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+        target_python_version=PythonVersion.PY_311,
+        formatters=[Formatter.BUILTIN],
+    ).parse()
+
+    assert_output(_reported(report))
 
 
 def test_fact_finality_reports_a_decision_write_it_does_not_declare(monkeypatch: pytest.MonkeyPatch) -> None:

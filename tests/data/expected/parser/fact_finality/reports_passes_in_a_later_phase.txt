@@ -1,1 +1,5 @@
-{"pass_name": "apply_generic_base_class", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
+{"pass_name": "collect_all_models", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
+{"pass_name": "prepare_type_alias_fields", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
+{"pass_name": "finalize_type_alias_users", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
+{"pass_name": "mark_set_item_models_hashable", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}
+{"pass_name": "finalize_structured_imports", "rule": "wrong-phase", "row": "-", "facts": [], "model": null, "phase": "IMPORTS", "known": false}

@@ -12,5 +12,5 @@ from .a import Base
 
 @dataclass
 class Child(Base):
-    Bar_1: a.Bar = Field(..., alias='Bar', kw_only=True)
+    Bar_1: a.Bar = Field(..., alias='Bar')
     Zed: str | None = None

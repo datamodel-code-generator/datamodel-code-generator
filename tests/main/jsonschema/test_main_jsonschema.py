@@ -3639,6 +3639,34 @@ def test_main_jsonschema_field_type_collision_cross_module(
 
 
 @pytest.mark.parametrize(
+    "output_model_type",
+    [
+        pytest.param(DataModelType.PydanticV2Dataclass, id="pydantic-dataclass"),
+        pytest.param(DataModelType.DataclassesDataclass, id="dataclass"),
+    ],
+)
+def test_main_jsonschema_discriminator_tag_of_earlier_module(
+    output_model_type: DataModelType, output_dir: Path
+) -> None:
+    """Order a variant after the union of a later module adds its discriminator tag, so that the package imports."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_tag_of_earlier_module",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type.value,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
     ("input_name", "backend", "options", "expected_name", "child_module", "field_name"),
     [
         pytest.param(
@@ -14483,6 +14511,24 @@ def test_use_default_msgspec_field_ordering(output_file: Path) -> None:
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         extra_args=["--use-default", "--output-model-type", "msgspec.Struct"],
+    )
+
+
+def test_use_generic_base_class_msgspec_literal_default_field_ordering(output_file: Path) -> None:
+    """The empty generated base does not hide a local order conflict, so the required field still comes first."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "generic_base_class_literal_default_order.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-generic-base-class",
+            "--allow-population-by-field-name",
+            "--use-one-literal-as-default",
+        ],
+        force_exec_validation=True,
     )
 
 

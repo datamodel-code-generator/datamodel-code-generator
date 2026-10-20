@@ -6160,6 +6160,9 @@ pydantic_v2.BaseModel-discriminator_literals.py	main/jsonschema/discriminator_li
 	main/jsonschema/jsonschema_discriminator_multiple_aliases_pydantic_v2.py
 [test_main_jsonschema_discriminator_no_literal_multiple_aliases_pydantic_v2]
 	main/jsonschema/jsonschema_discriminator_no_literal_multiple_aliases_pydantic_v2.py
+[test_main_jsonschema_discriminator_tag_of_earlier_module]
+dataclass	main/jsonschema/main_jsonschema/discriminator_tag_of_earlier_module[dataclass]/
+pydantic-dataclass	main/jsonschema/main_jsonschema/discriminator_tag_of_earlier_module[pydantic-dataclass]/
 [test_main_jsonschema_duplicate_name]
 	main/jsonschema/duplicate_name//*.py
 [test_main_jsonschema_duration]
@@ -14011,6 +14014,8 @@ external-cli-True-True-unknown_keyword	main/jsonschema/unknown_pattern_annotatio
 	main/jsonschema/use_default_required_null_default.py
 [test_use_default_strict_nullable_required]
 	main/jsonschema/use_default_strict_nullable_required.py
+[test_use_generic_base_class_msgspec_literal_default_field_ordering]
+	main/jsonschema/use_generic_base_class_msgspec_literal_default_field_ordering.py
 [test_validator_collisions]
 False-api-collisions-extra_template_data	main/jsonschema/validator_collisions.py
 False-api-collisions-extra_template_data	payloads/validator_runtime/collision.txt

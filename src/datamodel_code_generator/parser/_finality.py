@@ -28,14 +28,16 @@ includes the freeze points B1 and B2. A changed row is
 * ``frozen`` when every declared fact of the row is final at a freeze point the pipeline has passed (B1 for facts,
   which a decision may still write during ``DECIDE`` and which freeze when ``RENDER_PREPARATION`` begins, B2 for the
   rendered nullability rows, the ``RENDER_FACT_FREEZE_POINTS`` entry for render facts),
-* ``after-final`` when the phase is later than the row's ``final_after``.
+* ``after-final`` when the phase is later than the row's ``final_after``; a decision writes the facts it declares
+  until ``DECIDE`` ends.
 
 A change that no pass covers is ``unattributed``, found at the next comparison of its model: when a pass touches it,
 when the next pass starts (a guarded write outside every pass), at the start and the end of each module
 (``module_checkpoint``) and when the pipeline leaves a phase (``GenerationStore.enter_phase``). A pass that runs in
-another phase than it declares is ``wrong-phase``. On entering ``DECIDE`` (B1), the ordering-input check compares the
-fields that a pass read from the bases of a model for constructor ordering, with the facts the ordering pass declares
-as reads, with those fields now (``ordering-input``). Only type aliases hold ``TYPE_ALIAS_BODY`` in their rows. In
+another phase than it declares is ``wrong-phase``. On entering ``IMPORTS`` (B2), the ordering-input check compares
+the fields that a pass read from the bases of a model for constructor ordering, after the decision phase, with the
+facts the ordering pass declares as reads, with those fields now (``ordering-input``). Only type aliases hold
+``TYPE_ALIAS_BODY`` in their rows. In
 ``DECIDE``, a decision reads ``FinalFacts`` through the guarded views of ``decision_views``: reading a render fact
 (an attribute, or a key of a dict attribute or of ``__dict__``, whose row holds facts none of which is a ``Fact`` final
 at B1) is ``render-read``.
@@ -81,7 +83,12 @@ from pydantic import BaseModel
 from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode
-from datamodel_code_generator.model.base import DataModel, DataModelFieldBase, _find_base_classes, linearize_data_models
+from datamodel_code_generator.model.base import (
+    DataModel,
+    DataModelFieldBase,
+    direct_base_models,
+    linearize_data_models,
+)
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser import _pass_decls as decls
 from datamodel_code_generator.parser._facts import (
@@ -380,36 +387,11 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
     ),
     KnownWrite(
         "fix_constructor_field_ordering",
-        Rule.ORDERING_INPUT,
-        "DataModel.fields",
-        "--input tests/data/openapi/type_overrides_constructor_order.yaml --input-file-type openapi "
-        "--output-model-type pydantic_v2.dataclass --target-python-version 3.10 "
-        '--type-overrides \'{"Base": "decimal.Decimal"}\' --formatters builtin',
-        "PH2",
-    ),
-    KnownWrite(
-        "fix_constructor_field_ordering",
-        Rule.ORDERING_INPUT,
-        "DataModelFieldBase.data_type",
-        _TAGGED_MODULES_WITNESS,
-        "PH2",
-    ),
-    KnownWrite(
-        "fix_constructor_field_ordering",
-        Rule.ORDERING_INPUT,
-        "DataModelFieldBase.name",
-        "--input tests/data/jsonschema/field_type_collision_inherited_modules --input-file-type jsonschema "
-        "--output-model-type pydantic_v2.dataclass --target-python-version 3.11 --formatters builtin",
-        "PH2",
-    ),
-    KnownWrite(
-        "fix_constructor_field_ordering",
-        Rule.ORDERING_INPUT,
-        "DataType.enum_member_literals",
-        "--input tests/data/generation_platform/binding/session-discriminator-forward.json --input-file-type openapi "
-        "--openapi-scopes api --module-split-mode single --use-subclass-enum --reuse-model "
-        "--use-enum-values-in-discriminator --output-model-type dataclasses.dataclass --formatters builtin",
-        "PH2",
+        Rule.FROZEN,
+        'DataModelFieldBase.extras["init"]',
+        "--input tests/data/openapi/allof_required_inherited_dataclass_metadata.yaml --input-file-type openapi "
+        "--output-model-type dataclasses.dataclass --field-extra-keys init --formatters builtin",
+        "RP14c",
     ),
     KnownWrite(
         "prepare_type_alias_fields",
@@ -434,8 +416,9 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
 
 A module pass writes models of other modules: the discriminator pass writes the tags of variants (RP17 plans them
 first), reuse redirects the users of removed duplicates (G07's reuse groups), and L3 deduplication redirects users
-and bases module by module (DC11b makes it one step). Constructor ordering reads the fields of bases that change
-before B1 (PH2 orders once after the decision phase). Import collection and rendering write rendered nullability and
+and bases module by module (DC11b makes it one step). Constructor ordering, after the decision phase, gives a
+required field back the place in the constructor it left out while its base excluded it (RP14c's dataclass field
+plan holds it). Import collection and rendering write rendered nullability and
 types after B2 (RP13 writes rendered nullability once), and alias preparation records compiled patterns in field extras
 after B1 (RP14a's field render plan holds them).
 """
@@ -600,6 +583,13 @@ def _freeze_point(row: AttributeFact, fact: Fact | RenderFact) -> FreezePoint:
     return FreezePoint.B1
 
 
+def _final_phase(row: AttributeFact, decl: PassDecl) -> Phase:
+    """Return the last phase in which ``decl`` may write ``row``: for a decision, at the earliest the end of DECIDE."""
+    if decl.phase is Phase.DECIDE and row.final_after.value < Phase.DECIDE.value:
+        return Phase.DECIDE
+    return row.final_after
+
+
 def _passed(point: FreezePoint, phase: Phase) -> bool:
     return (entered := _PHASE_FREEZE_POINTS.get(point)) is not None and phase.value >= entered.value
 
@@ -634,7 +624,11 @@ class _OrderingRead:
 
     pass_name: str
     model: DataModel
+    bases: tuple[DataModel, ...]
+    """The linearized bases ordering read, a base a type override replaced as the generated model it stood for."""
     fields: tuple[_OrderingField, ...]
+    stand_ins: Mapping[int, Reference | None]
+    """The generated models that the bases a type override replaced stand for, at every level of the chain."""
 
 
 @final
@@ -755,8 +749,8 @@ class _Finality:
             self._violation(decl.name, Rule.OTHER_MODULE, row, model, facts, module_done=id(model) in self.done)
         elif all(_passed(_freeze_point(row, fact), phase) for fact in declared):
             self._violation(decl.name, Rule.FROZEN, row, model, declared)
-        elif phase.value > row.final_after.value:
-            self._violation(decl.name, Rule.AFTER_FINAL, row, model, facts, final_after=row.final_after.name)
+        elif phase.value > (final_after := _final_phase(row, decl)).value:
+            self._violation(decl.name, Rule.AFTER_FINAL, row, model, facts, final_after=final_after.name)
 
     def _violation(
         self,
@@ -881,7 +875,7 @@ class _Finality:
         self._settle(tuple(model_print.model for model_print in self.prints.values()))
 
     def check_ordering_reads(self) -> None:
-        """Check, at B1, that the constructor fields the passes read from bases did not change since."""
+        """Check, at B2, that the constructor fields the passes read from bases did not change since."""
         for read in self.ordering_reads:
             self._check_ordering_read(read)
 
@@ -903,10 +897,13 @@ class _Finality:
                 result.append(_OrderingField(base_field, base, values, held))
         return tuple(result)
 
-    def record_ordering(self, model: DataModel, bases: Iterable[DataModel]) -> None:
+    def record_ordering(
+        self, model: DataModel, bases: Iterable[DataModel], stand_ins: Mapping[int, Reference | None]
+    ) -> None:
         """Record the constructor fields that the running pass, or the phase, reads from the bases of ``model``."""
         pass_name = f"<{self.store.phase.name}>" if (run := self.run) is None else run.decl.name
-        self.ordering_reads.append(_OrderingRead(pass_name, model, self._ordering_fields(bases)))
+        read = tuple(bases)
+        self.ordering_reads.append(_OrderingRead(pass_name, model, read, self._ordering_fields(read), stand_ins))
 
     def read_render_fact(self, owner: object, row: AttributeFact) -> None:
         """Report that the running pass reads ``row`` of ``owner``, a render fact, through a view of ``FinalFacts``."""
@@ -915,8 +912,10 @@ class _Finality:
         self._violation(name, Rule.RENDER_READ, row, next(iter(self.models_of(source)), None), row.facts)
 
     def _check_ordering_read(self, read: _OrderingRead) -> None:
-        """Report a field of a base that ordering read and that changed before B1, or a changed set of fields."""
-        now = self._ordering_fields(linearize_data_models(_find_base_classes(read.model)))
+        """Report a field of a base that ordering read and that changed before B2, or a changed set of fields."""
+        now = self._ordering_fields(
+            linearize_data_models(direct_base_models(read.model, read.stand_ins), read.stand_ins)
+        )
         name = read.pass_name
         if [id(item.field) for item in now] != [id(item.field) for item in read.fields]:
             self._violation(name, Rule.ORDERING_INPUT, _FIELDS_ROW, read.model, _FIELDS_ROW.facts)
@@ -1122,7 +1121,7 @@ class _ParseChecks:
             def enter_checked_phase(phase: Phase) -> None:
                 finality.leave_phase()
                 enter_phase(phase)
-                if phase is Phase.DECIDE:
+                if phase is Phase.IMPORTS:
                     finality.check_ordering_reads()
 
             store.__dict__["enter_phase"] = enter_checked_phase
@@ -1344,7 +1343,9 @@ def decision_views() -> Callable[[DataModel], ModelView] | None:
     return _ReadGuard(finality).view
 
 
-def record_ordering_inputs(model: DataModel, bases: Iterable[DataModel]) -> None:
+def record_ordering_inputs(
+    model: DataModel, bases: Iterable[DataModel], stand_ins: Mapping[int, Reference | None]
+) -> None:
     """Record the fields constructor ordering reads from ``bases`` for ``model``, when the finality check is armed."""
     if (checks := _CHECKS.get()) is not None and (finality := checks.finality) is not None:
-        finality.record_ordering(model, bases)
+        finality.record_ordering(model, bases, stand_ins)

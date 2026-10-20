@@ -1,0 +1,23 @@
+{
+  "title": "Owner",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "oneOf": [
+        {
+          "$ref": "b.json"
+        },
+        {
+          "$ref": "c.json"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "kind",
+        "mapping": {
+          "cat": "b.json#",
+          "dog": "c.json#"
+        }
+      }
+    }
+  }
+}

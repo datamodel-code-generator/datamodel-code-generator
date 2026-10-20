@@ -1,0 +1,2 @@
+{"pass_name": "<RENDER_PREPARATION>", "rule": "unattributed", "row": "DataModel.fields", "facts": ["FIELD_ORDER", "FIELD_SET"], "model": "Base", "phase": "RENDER_PREPARATION", "known": false}
+{"pass_name": "fix_constructor_field_ordering", "rule": "ordering-input", "row": "DataModel.fields", "facts": ["FIELD_ORDER", "FIELD_SET"], "model": "Child", "phase": "IMPORTS", "known": false}

@@ -3647,6 +3647,79 @@ def test_main_openapi_type_overrides_constructor_order(
         )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--type-overrides", '{"Gain.g": "decimal.Decimal"}'], id="base-override-gains-field-argument"),
+        pytest.param(
+            [
+                "--strip-default-none",
+                "--type-overrides",
+                '{"Child.n": "decimal.Decimal", "Base.b": "decimal.Decimal"}',
+            ],
+            id="base-override-drops-inherited-default",
+        ),
+    ],
+)
+def test_main_openapi_type_overrides_constructor_order_modules(extra_args: list[str], output_dir: Path) -> None:
+    """Order a subclass by the fields its base has after the base's own module applied --type-overrides.
+
+    The base lives in a module processed after the subclass's. A field-type override that gives the base's required
+    field a ``Field()`` argument makes the subclass's required field keyword-only, so the package imports; an override
+    that removes the inherited default leaves the subclass's fields positional.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "type_overrides_constructor_order_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    [
+        pytest.param(DataModelType.PydanticV2Dataclass, id="pydantic-dataclass"),
+        pytest.param(DataModelType.DataclassesDataclass, id="dataclass"),
+    ],
+)
+def test_main_openapi_type_overrides_constructor_order_deep_base(
+    output_model_type: DataModelType, output_file: Path
+) -> None:
+    """Order a model by the generated base that --type-overrides replaced two levels above it.
+
+    ``Base`` is replaced by another class, yet the fields it generated still decide the order of ``Child``, whose
+    required field stays keyword-only after the default of ``Base`` as it is in ``Mid``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "type_overrides_constructor_order_deep_base.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type.value,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--type-overrides",
+            '{"Base": "decimal.Decimal"}',
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_disable_timestamp(output_file: Path) -> None:
     """Test OpenAPI generation with timestamp disabled."""
     run_main_and_assert(

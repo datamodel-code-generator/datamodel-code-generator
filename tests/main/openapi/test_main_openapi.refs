@@ -1580,6 +1580,12 @@ field-constraints-field-type-override-gains-field-argument	main/openapi/main_ope
 field-type-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order[field-type-override-gains-field-argument].py
 strip-default-none-field-constraints-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-constraints-field-type-override].py
 strip-default-none-field-type-override	main/openapi/main_openapi/type_overrides_constructor_order[strip-default-none-field-type-override].py
+[test_main_openapi_type_overrides_constructor_order_deep_base]
+dataclass	main/openapi/main_openapi/type_overrides_constructor_order_deep_base[dataclass].py
+pydantic-dataclass	main/openapi/main_openapi/type_overrides_constructor_order_deep_base[pydantic-dataclass].py
+[test_main_openapi_type_overrides_constructor_order_modules]
+base-override-drops-inherited-default	main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-drops-inherited-default]/
+base-override-gains-field-argument	main/openapi/main_openapi/type_overrides_constructor_order_modules[base-override-gains-field-argument]/
 [test_main_openapi_typed_dict_extra_items_final_name]
 base_class	main/openapi/main_openapi/typed_dict_extra_items_final_name[base_class].py
 dotted	main/openapi/main_openapi/typed_dict_extra_items_final_name[dotted].py

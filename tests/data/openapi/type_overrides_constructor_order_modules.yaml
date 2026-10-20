@@ -1,0 +1,45 @@
+openapi: 3.1.0
+info:
+  title: Constructor order across modules under type overrides
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    common.S:
+      type: [object, "null"]
+      properties:
+        a: {type: string}
+    aa.Base:
+      type: object
+      required: [r]
+      properties:
+        b:
+          $ref: '#/components/schemas/common.S'
+        r: {type: string}
+        c:
+          type: integer
+          minimum: 1
+    zz.Child:
+      allOf:
+        - $ref: '#/components/schemas/aa.Base'
+        - type: object
+          required: [y]
+          properties:
+            n:
+              $ref: '#/components/schemas/common.S'
+            y: {type: string}
+    aa.Gain:
+      type: object
+      required: [g]
+      properties:
+        g:
+          type: array
+          items: {type: string}
+          minimum: 5
+    zz.GainChild:
+      allOf:
+        - $ref: '#/components/schemas/aa.Gain'
+        - type: object
+          required: [y]
+          properties:
+            y: {type: string}

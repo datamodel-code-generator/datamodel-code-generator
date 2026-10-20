@@ -19,7 +19,22 @@ from typing_extensions import final
 
 from datamodel_code_generator.parser._facts import Fact, Phase, RenderFact
 
-__all__ = ["PASS_DECLS", "After", "PassDecl", "PassKind", "Scope"]
+__all__ = [
+    "ASSIGN_FORWARD_REFERENCE_FIELDS",
+    "CLEAR_MODULE_IMPORTS_CACHE",
+    "COLLECT_LIVE_MODELS",
+    "FIX_CONSTRUCTOR_FIELD_ORDERING",
+    "FIX_TAG_OPT_OUT_FIELD_ORDERING",
+    "PASS_DECLS",
+    "SET_VALIDATE_DEFAULT_ON_FIELDS",
+    "UNBIND_HIDDEN_TYPE_FIELDS",
+    "UPDATE_TYPE_ALIASES",
+    "WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS",
+    "After",
+    "PassDecl",
+    "PassKind",
+    "Scope",
+]
 
 
 @unique
@@ -562,27 +577,6 @@ TYPE_DICT_KEYS_BY_ROOT_TYPES = PassDecl(
     after=(After("apply_field_type_overrides", "types dict keys after field types are overridden"),),
     summary="Types each dict key that names a root model whose instances cannot be dict keys by its root type.",
 )
-FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
-    "fix_constructor_field_ordering",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.TRANSFORM,
-    reads=_facts(
-        Fact.FIELD_SET,
-        Fact.FIELD_NAMES,
-        Fact.FIELD_TYPES,
-        Fact.REQUIRED,
-        Fact.NULLABLE,
-        Fact.DEFAULTS,
-        RenderFact.FIELD_ORDER,
-        RenderFact.KEYWORD_ONLY,
-        RenderFact.FORCED_ASSIGNMENT,
-        RenderFact.BACKEND_CONFIG,
-    ),
-    writes=_facts(Fact.REQUIRED, RenderFact.FIELD_ORDER, RenderFact.KEYWORD_ONLY, RenderFact.FORCED_ASSIGNMENT),
-    summary="Orders constructor fields so that fields without a default come first, reading the fields of bases.",
-    target=Phase.RENDER_PREPARATION,
-)
 SNAPSHOT_MODULE_UNUSED_MODELS = PassDecl(
     "snapshot_module_unused_models",
     Phase.MODULES,
@@ -601,76 +595,6 @@ APPLY_BASE_CLASS_TYPE_OVERRIDES = PassDecl(
             "type_dict_keys_by_root_types", "both add module imports; base overrides come after field types are final"
         ),
     ),
-    target=Phase.RENDER_PREPARATION,
-)
-UNBIND_HIDDEN_TYPE_FIELDS = PassDecl(
-    "unbind_hidden_type_fields",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.TRANSFORM,
-    reads=_facts(Fact.FIELD_NAMES, RenderFact.CLASS_NAMES),
-    writes=_facts(RenderFact.UNBOUND_FIELDS),
-    summary="Leaves fields unbound that hide a type their class names (model hook).",
-    target=Phase.RENDER_PREPARATION,
-)
-UPDATE_TYPE_ALIASES = PassDecl(
-    "update_type_aliases",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.TRANSFORM,
-    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODEL_ORDER, RenderFact.CLASS_NAMES, RenderFact.UNBOUND_FIELDS),
-    writes=_facts(Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.QUOTING),
-    after=(After("fix_constructor_field_ordering", "ordering reads the field types before aliases quote them"),),
-    summary="Quotes forward references and defers recursive containers.",
-    removed_by="RP16b",
-    target=Phase.RENDER_PREPARATION,
-)
-COLLECT_LIVE_MODELS = PassDecl(
-    "collect_live_models",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.BOOKKEEPING,
-)
-SET_VALIDATE_DEFAULT_ON_FIELDS = PassDecl(
-    "set_validate_default_on_fields",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.TRANSFORM,
-    reads=_facts(Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST),
-    writes=_facts(Fact.DEFAULTS, Fact.CONSTRAINTS, RenderFact.DEFAULT_VALIDATION, RenderFact.DEFAULT_EXPRESSION),
-    target=Phase.RENDER_PREPARATION,
-)
-ASSIGN_FORWARD_REFERENCE_FIELDS = PassDecl(
-    "assign_forward_reference_fields",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.TRANSFORM,
-    reads=_facts(Fact.FIELD_TYPES, Fact.DEFAULTS, RenderFact.MODEL_ORDER, RenderFact.FIELD_ORDER),
-    writes=_facts(RenderFact.ASSIGNMENT_FORM, RenderFact.FIELD_ORDER),
-    condition="use_annotated with deferred annotations",
-    target=Phase.RENDER_PREPARATION,
-)
-WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS = PassDecl(
-    "warn_required_assignments_after_defaults",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.CHECK,
-    writes=_facts(RenderFact.STDERR),
-    reads=_facts(
-        Fact.REQUIRED,
-        Fact.DEFAULTS,
-        RenderFact.FIELD_ORDER,
-        RenderFact.FORCED_ASSIGNMENT,
-        RenderFact.KEYWORD_ONLY,
-    ),
-    target=Phase.RENDER_PREPARATION,
-)
-CLEAR_MODULE_IMPORTS_CACHE = PassDecl(
-    "clear_module_imports_cache",
-    Phase.MODULES,
-    Scope.MODULE,
-    PassKind.BOOKKEEPING,
-    condition="the module cannot keep its imports cache",
 )
 
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
@@ -681,16 +605,6 @@ TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     reads=_facts(Fact.BASES, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET),
     writes=_facts(Fact.DISCRIMINATOR_TAGS, Fact.FIELD_SET),
     summary="Tags the structs that declare the tag field of a tagged base, or opts them out of the tag.",
-    condition="msgspec",
-)
-FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
-    "fix_tag_opt_out_field_ordering",
-    Phase.CROSS_MODULE,
-    Scope.GLOBAL,
-    PassKind.REPAIR,
-    reads=_facts(Fact.BASES, Fact.FIELD_SET, Fact.REQUIRED, Fact.DEFAULTS, RenderFact.KEYWORD_ONLY),
-    writes=_facts(RenderFact.KEYWORD_ONLY),
-    removed_by="PH2",
     condition="msgspec",
 )
 WARN_ENUMS_ADMITTING_OTHER_VALUES = PassDecl(
@@ -750,6 +664,112 @@ APPLY_GENERIC_BASE_CLASS = PassDecl(
     summary="Inserts the generated base model and rewrites the base classes; B1 follows.",
 )
 
+FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
+    "fix_constructor_field_ordering",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.FIELD_SET,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_TYPES,
+        Fact.REQUIRED,
+        Fact.NULLABLE,
+        Fact.DEFAULTS,
+        RenderFact.FIELD_ORDER,
+        RenderFact.KEYWORD_ONLY,
+        RenderFact.FORCED_ASSIGNMENT,
+        RenderFact.BACKEND_CONFIG,
+    ),
+    writes=_facts(Fact.REQUIRED, RenderFact.FIELD_ORDER, RenderFact.KEYWORD_ONLY, RenderFact.FORCED_ASSIGNMENT),
+    summary="Orders constructor fields so that fields without a default come first, reading the fields of bases.",
+)
+UNBIND_HIDDEN_TYPE_FIELDS = PassDecl(
+    "unbind_hidden_type_fields",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_NAMES, RenderFact.CLASS_NAMES),
+    writes=_facts(RenderFact.UNBOUND_FIELDS),
+    summary="Leaves fields unbound that hide a type their class names (model hook).",
+)
+UPDATE_TYPE_ALIASES = PassDecl(
+    "update_type_aliases",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODEL_ORDER, RenderFact.CLASS_NAMES, RenderFact.UNBOUND_FIELDS),
+    writes=_facts(Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.QUOTING, RenderFact.TYPE_ALIAS_BODY),
+    after=(After("fix_constructor_field_ordering", "ordering reads the field types before aliases quote them"),),
+    summary="Quotes forward references and defers recursive containers.",
+    removed_by="RP16b",
+)
+COLLECT_LIVE_MODELS = PassDecl(
+    "collect_live_models",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.BOOKKEEPING,
+)
+SET_VALIDATE_DEFAULT_ON_FIELDS = PassDecl(
+    "set_validate_default_on_fields",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST),
+    writes=_facts(
+        Fact.DEFAULTS,
+        Fact.CONSTRAINTS,
+        RenderFact.DEFAULT_VALIDATION,
+        RenderFact.DEFAULT_EXPRESSION,
+        RenderFact.IMPORT_ALIASES,
+    ),
+)
+ASSIGN_FORWARD_REFERENCE_FIELDS = PassDecl(
+    "assign_forward_reference_fields",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES, Fact.DEFAULTS, RenderFact.MODEL_ORDER, RenderFact.FIELD_ORDER),
+    writes=_facts(RenderFact.ASSIGNMENT_FORM, RenderFact.FIELD_ORDER),
+    condition="use_annotated with deferred annotations",
+)
+WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS = PassDecl(
+    "warn_required_assignments_after_defaults",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.CHECK,
+    writes=_facts(RenderFact.STDERR),
+    reads=_facts(
+        Fact.REQUIRED,
+        Fact.DEFAULTS,
+        RenderFact.FIELD_ORDER,
+        RenderFact.FORCED_ASSIGNMENT,
+        RenderFact.KEYWORD_ONLY,
+    ),
+)
+CLEAR_MODULE_IMPORTS_CACHE = PassDecl(
+    "clear_module_imports_cache",
+    Phase.RENDER_PREPARATION,
+    Scope.MODULE,
+    PassKind.BOOKKEEPING,
+    condition="the module cannot keep its imports cache",
+)
+FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
+    "fix_tag_opt_out_field_ordering",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.REPAIR,
+    reads=_facts(Fact.BASES, Fact.FIELD_SET, Fact.REQUIRED, Fact.DEFAULTS, RenderFact.KEYWORD_ONLY),
+    writes=_facts(RenderFact.KEYWORD_ONLY),
+    after=(
+        After(
+            "warn_required_assignments_after_defaults",
+            "the pydantic warning and this msgspec repair never read or write the same models",
+        ),
+    ),
+    removed_by="G08",
+    condition="msgspec",
+)
 COLLECT_ALL_MODELS = PassDecl(
     "collect_all_models",
     Phase.RENDER_PREPARATION,

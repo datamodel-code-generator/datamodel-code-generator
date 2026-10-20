@@ -151,6 +151,7 @@ from datamodel_code_generator.model.base import (
     _set_nested_model_default_factory_order,
     _share_path_identity,
     c3_merge,
+    direct_base_models,
     get_inherited_fields,
     get_resolve_reference_action_capabilities,
     linearize_data_models,
@@ -1439,6 +1440,9 @@ class _ParseArgs(NamedTuple):
     collect_model_metadata: bool
 
 
+_NO_DECISIONS: Final = DecisionOutcome(())
+
+
 @final
 @dataclass(slots=True)
 class _PipelineRun:
@@ -1459,6 +1463,7 @@ class _PipelineRun:
     module_to_import: dict[ModulePath, Imports] = dataclasses.field(default_factory=dict)
     contexts: list[ModuleContext] = dataclasses.field(default_factory=list)
     opted_out: list[DataModel] = dataclasses.field(default_factory=list)
+    decisions: DecisionOutcome = _NO_DECISIONS
     output: str | dict[tuple[str, ...], Result] = dataclasses.field(init=False)
 
 
@@ -1495,6 +1500,8 @@ class _FinishRun(_ModulesRun, Protocol):
     """What the passes after the output modules are processed read and write."""
 
     opted_out: list[DataModel]
+    decisions: DecisionOutcome
+    """What the decision phase changed."""
     output: str | dict[tuple[str, ...], Result]
 
 
@@ -1554,7 +1561,33 @@ class _ModuleState:
     live_models: list[DataModel] = dataclasses.field(init=False)
 
 
-_NO_DECISIONS: Final = DecisionOutcome(())
+@final
+@dataclass(slots=True, kw_only=True)
+class _PreparedModule:
+    """One output module as ``_process_single_module`` left it, for its render preparation after the decision phase.
+
+    ``model_list`` holds the models of the module that render, ``model_list_before_override_removal`` also those a
+    model-level type override replaces, which constructor ordering still orders, and ``current_unused_models`` the
+    unused models the module added.
+    """
+
+    model_list: list[DataModel]
+    model_list_before_override_removal: list[DataModel]
+    can_retain_cache: bool
+    config: ParseConfig
+    current_unused_models: Sequence[DataModel]
+    live_models: list[DataModel] = dataclasses.field(init=False)
+
+    @classmethod
+    def of(cls, state: _ModuleState) -> _PreparedModule:
+        """Take the module of ``state`` with its model lists as they are now."""
+        return cls(
+            model_list=list(state.model_list),
+            model_list_before_override_removal=list(state.model_list_before_override_removal),
+            can_retain_cache=state.can_retain_cache,
+            config=state.config,
+            current_unused_models=state.current_unused_models,
+        )
 
 
 @final
@@ -1573,8 +1606,6 @@ class _FinalizeState:
     model_imports: dict[DataModel, tuple[Import, ...]] = dataclasses.field(init=False)
     renamed_models: bool = False
     additional_properties_models: list[DataModel] = dataclasses.field(default_factory=list)
-    decisions: DecisionOutcome = _NO_DECISIONS
-    """What the decision phase changed."""
 
     def collect_additional_properties_models(self) -> bool:
         """Take the models whose additional properties reference classes; return whether there is any."""
@@ -1589,6 +1620,10 @@ def _same_state(state: _FinalizeState) -> _FinalizeState:
 
 
 def _module_models(_parser: object, state: _ModuleState) -> list[DataModel]:
+    return state.model_list
+
+
+def _prepared_models(_parser: object, state: _PreparedModule) -> list[DataModel]:
     return state.model_list
 
 
@@ -3752,6 +3787,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._variant_discriminator_tags: dict[tuple[int, str], _VariantDiscriminatorTags] = {}
         self._deferred_tagged_unions: list[_DiscriminatorUnion] = []
         self._defers_tagged_unions = False
+        self._prepared_modules: list[_PreparedModule] = []
+        """The output modules ``_process_single_module`` processed, in module order, for their render preparation."""
+        self._base_stand_ins: dict[int, Reference | None] = {}
+        """The reference of each base that a model-level type override replaced, by the base's id: its model stands
+        in for the replacing class in constructor ordering."""
+        self._generic_base_model: DataModel | None = None
+        """The empty base model ``--use-generic-base-class`` generated, which constructor ordering reads as no base."""
         self._removed_reuse_users: dict[int, tuple[DataType, list[str]]] = {}
         self._renamed_types: dict[ModelKey, list[_RenamedType]] = {}
         """The class names each renamed model had before, by model key."""
@@ -7146,22 +7188,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             previous_key = key
         return False
 
-    @classmethod
-    def __get_inherited_constructor_info(cls, model: DataModel) -> _InheritedConstructorInfo | None:
+    def __get_inherited_constructor_info(self, model: DataModel) -> _InheritedConstructorInfo | None:
         """Return inherited value leaks and exact positional ordering conflicts."""
         if not model.SUPPORTS_KW_ONLY:
             return None
         if not model.base_classes:
             return None
 
-        inherited_models = linearize_data_models([
-            base.reference.source
-            for base in model.base_classes
-            if base.reference and isinstance(base.reference.source, DataModel)
-        ])
+        inherited_models = [
+            base
+            for base in linearize_data_models(direct_base_models(model, self._base_stand_ins), self._base_stand_ins)
+            if base is not self._generic_base_model
+        ]
         if not inherited_models:
-            return None  # pragma: no cover
-        record_ordering_inputs(model, inherited_models)
+            return None
+        record_ordering_inputs(model, inherited_models, self._base_stand_ins)
 
         supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
         required_assignment_names: set[str] = set()
@@ -7245,17 +7286,19 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 model.clear_imports_cache()
 
     def __apply_base_class_type_overrides(self, models: list[DataModel]) -> None:
-        """Replace base classes that model-level overrides name with custom import types, after constructor ordering.
+        """Replace base classes that model-level overrides name with custom import types, before constructor ordering.
 
-        Constructor ordering reads an overridden base as the generated model, the only description of the class that
-        replaces it.
+        Each replaced base keeps the generated model it referenced as its stand-in: constructor ordering, after the
+        decision phase, reads it as the only description of the class that replaces it.
         """
         if not self._model_type_override_imports:
             return
         for model in models:
             base_classes_overridden = False
             for base_class in model.base_classes:
+                reference = base_class.reference
                 if self._apply_override_to_data_type(base_class):
+                    self._base_stand_ins[id(base_class)] = reference
                     base_classes_overridden = True
                     for import_ in base_class.all_imports:
                         Parser._append_model_import(model, import_)
@@ -7758,6 +7801,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
 
         base_class_model.file_path = first_root_file_path
+        self._generic_base_model = base_class_model
         first_root_models.insert(0, base_class_model)
 
         base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)
@@ -8808,7 +8852,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             unused_models=unused_models,
         )
         self.__runner().run_module_body(Parser.__MODULE_BODY, self, state)
-
+        self._prepared_modules.append(_PreparedModule.of(state))
         return ModuleContext(module, module_, state.model_list, is_init, imports, scoped_model_resolver)
 
     def __record_decimal_alias_models(self, state: _ModuleState) -> None:
@@ -8889,13 +8933,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.generation_store.note_changed_models(model)
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
-    def __unbind_hidden_type_fields(self, state: _ModuleState) -> None:  # noqa: PLR6301
+    def __unbind_hidden_type_fields(self, state: _PreparedModule) -> None:  # noqa: PLR6301
         """Leave fields unbound where they hide a type of their class's annotations and the model can."""
         for model in state.model_list:
             if (names := _hidden_type_names(model)) and model.unbind_fields(names):
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=state.can_retain_cache)
 
-    def __update_module_type_aliases(self, state: _ModuleState) -> None:
+    def __update_module_type_aliases(self, state: _PreparedModule) -> None:
         """Quote forward references and defer recursive containers; without future imports a hidden type is a string."""
         self.__update_type_aliases(
             state.model_list,
@@ -8913,7 +8957,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ),
         )
 
-    def __collect_live_models(self, state: _ModuleState) -> None:  # noqa: PLR6301
+    def __collect_live_models(self, state: _PreparedModule) -> None:  # noqa: PLR6301
         """Take the models of the module that are not unused."""
         if not (unused_models := state.current_unused_models):
             state.live_models = state.model_list
@@ -9024,23 +9068,25 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]],
         module_to_import: dict[ModulePath, Imports],
     ) -> None:
-        """Finalize module processing: apply generic base class and remove unused imports."""
+        """Finish the render preparation of every module and collect the imports of each module.
+
+        The pipeline runs it after the generic base class, the decision phase and the render preparation of each
+        module, which ``_process_single_module`` hands over.
+        """
         state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import)
         self.__runner().run_steps(Parser.__FINALIZE_SEGMENTS, self, state)
 
-    def __decide(self, runner: Runner, state: _FinalizeState) -> None:
+    def __decide(self, runner: Runner, run: _FinishRun) -> None:
         """Seal the facts final at B1 and run the decisions of the registry on them, when it holds any."""
         if not (decisions := self._DECISION_PASSES):
             return
-        unused = {id(model) for model in state.unused_models}
-        modules = [
-            (ctx.module_key, [model for model in ctx.models if id(model) not in unused]) for ctx in state.contexts
-        ]
+        unused = {id(model) for model in run.unused_models}
+        modules = [(ctx.module_key, [model for model in ctx.models if id(model) not in unused]) for ctx in run.contexts]
         facts = self.generation_store.seal_facts(modules, decision_views())
         writer = _DecisionWriter(self.generation_store)
         for decision in decision_order(decisions):
             runner.run_decision(decision, facts, writer)
-        state.decisions = writer.outcome(model for _, models in modules for model in models)
+        run.decisions = writer.outcome(model for _, models in modules for model in models)
 
     def __collect_all_models(self, state: _FinalizeState) -> None:  # noqa: PLR6301
         """Take the models of every module, before unused models leave them."""
@@ -9828,6 +9874,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._hiding_field_names.clear()
         self._variant_discriminator_tags.clear()
         self._deferred_tagged_unions.clear()
+        self._prepared_modules.clear()
+        self._base_stand_ins.clear()
+        self._generic_base_model = None
         self._removed_reuse_users.clear()
         self._renamed_types.clear()
         self._renamed_type_paths.clear()
@@ -10086,11 +10135,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             checked_models=_module_models,
         ),
         PassSpec(
-            decls.FIX_CONSTRUCTOR_FIELD_ORDERING,
-            lambda self, s: self.__fix_constructor_field_ordering(s.model_list_before_override_removal),
-            checked_models=lambda _, s: s.model_list_before_override_removal,
-        ),
-        PassSpec(
             decls.SNAPSHOT_MODULE_UNUSED_MODELS,
             lambda self, s: self.__snapshot_module_unused_models(s),
             checked_models=_module_models,
@@ -10100,20 +10144,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             lambda self, s: self.__apply_base_class_type_overrides(s.model_list),
             checked_models=_module_models,
         ),
+    )
+    """The passes of ``_process_single_module``, for one output module."""
+
+    __MODULE_RENDER_PREPARATION_BODY: ClassVar[tuple[PassSpec[Parser[Any, Any], _PreparedModule], ...]] = (
+        PassSpec(
+            decls.FIX_CONSTRUCTOR_FIELD_ORDERING,
+            lambda self, s: self.__fix_constructor_field_ordering(s.model_list_before_override_removal),
+            checked_models=lambda _, s: s.model_list_before_override_removal,
+        ),
         PassSpec(
             decls.UNBIND_HIDDEN_TYPE_FIELDS,
             lambda self, s: self.__unbind_hidden_type_fields(s),
-            checked_models=_module_models,
+            checked_models=_prepared_models,
         ),
         PassSpec(
             decls.UPDATE_TYPE_ALIASES,
             lambda self, s: self.__update_module_type_aliases(s),
-            checked_models=_module_models,
+            checked_models=_prepared_models,
         ),
         PassSpec(
             decls.COLLECT_LIVE_MODELS,
             lambda self, s: self.__collect_live_models(s),
-            checked_models=_module_models,
+            checked_models=_prepared_models,
         ),
         PassSpec(
             decls.SET_VALIDATE_DEFAULT_ON_FIELDS,
@@ -10124,7 +10177,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             decls.ASSIGN_FORWARD_REFERENCE_FIELDS,
             lambda self, s: self.__assign_forward_reference_fields(s.model_list, can_retain_cache=s.can_retain_cache),
             when=lambda self, s: self.use_annotated and s.config.use_deferred_annotations,
-            checked_models=_module_models,
+            checked_models=_prepared_models,
         ),
         PassSpec(
             decls.WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS,
@@ -10135,28 +10188,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             decls.CLEAR_MODULE_IMPORTS_CACHE,
             lambda _, s: _clear_model_imports_cache(s.model_list),
             when=lambda _, s: not s.can_retain_cache,
-            checked_models=_module_models,
+            checked_models=_prepared_models,
         ),
     )
-    """The passes of ``_process_single_module``, for one output module."""
+    """The render preparation of one output module, after the decision phase: constructor order, then the rest."""
 
     __FINALIZE_SEGMENTS: ClassVar[tuple[StepLike[Parser[Any, Any], _FinalizeState], ...]] = (
         Segment(
-            "generic_base_class",
-            Phase.CROSS_MODULE,
-            _same_state,
-            (PassSpec(decls.APPLY_GENERIC_BASE_CLASS, lambda self, s: self.__apply_generic_base_class(s.contexts)),),
-            enters_phase=False,
-        ),
-        Segment(
-            "decide",
-            Phase.DECIDE,
-            _same_state,
-            (DecisionPhase("decision_passes", lambda runner, self, s: self.__decide(runner, s)),),
-            enter=Boundary.FACTS_FINAL,
-        ),
-        Segment(
-            "render_preparation",
+            "finalize_render_preparation",
             Phase.RENDER_PREPARATION,
             _same_state,
             (
@@ -10194,7 +10233,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     checked_models=_all_models,
                 ),
             ),
-            enter=Boundary.DECIDED,
+            enters_phase=False,
         ),
         Segment(
             "imports",
@@ -10291,7 +10330,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             enter=Boundary.RENDER_READY,
         ),
     )
-    """The segments of ``_finalize_modules``: the generic base class, then B1, render preparation, B2 and imports."""
+    """The segments of ``_finalize_modules``: the render preparation over every module, then B2 and imports."""
 
     __PIPELINE: ClassVar[tuple[StepLike[Parser[Any, Any], _PipelineRun], ...]] = (
         Segment(
@@ -10418,14 +10457,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     checked_models=lambda _, run: _context_models(run.contexts),
                 ),
                 PassSpec(
-                    decls.FIX_TAG_OPT_OUT_FIELD_ORDERING,
-                    lambda self, run: self.__fix_tag_opt_out_field_ordering(
-                        run.opted_out, _context_models(run.contexts)
-                    ),
-                    when=lambda self, _: self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR,
-                    checked_models=lambda _, run: _context_models(run.contexts),
-                ),
-                PassSpec(
                     decls.WARN_ENUMS_ADMITTING_OTHER_VALUES,
                     lambda self, _: self.__warn_enums_admitting_other_values(),
                 ),
@@ -10453,6 +10484,47 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         model_path_to_module_name=run.model_path_to_module_name,
                     ),
                 ),
+            ),
+            scope_name="Parser.parse",
+        ),
+        Segment(
+            "generic_base_class",
+            Phase.CROSS_MODULE,
+            _as_finish_run,
+            (
+                PassSpec(
+                    decls.APPLY_GENERIC_BASE_CLASS, lambda self, run: self.__apply_generic_base_class(run.contexts)
+                ),
+            ),
+            enters_phase=False,
+            scope_name="Parser.parse",
+        ),
+        Segment(
+            "decide",
+            Phase.DECIDE,
+            _as_finish_run,
+            (DecisionPhase("decision_passes", lambda runner, self, run: self.__decide(runner, run)),),
+            enter=Boundary.FACTS_FINAL,
+            scope_name="Parser.parse",
+        ),
+        Segment(
+            "render_preparation",
+            Phase.RENDER_PREPARATION,
+            _as_finish_run,
+            (
+                ForEachModule(
+                    "prepare_module_rendering",
+                    lambda self, _: self._prepared_modules,
+                    __MODULE_RENDER_PREPARATION_BODY,
+                ),
+                PassSpec(
+                    decls.FIX_TAG_OPT_OUT_FIELD_ORDERING,
+                    lambda self, run: self.__fix_tag_opt_out_field_ordering(
+                        run.opted_out, _context_models(run.contexts)
+                    ),
+                    when=lambda self, _: self.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR,
+                    checked_models=lambda _, run: _context_models(run.contexts),
+                ),
                 HookCall(
                     "finalize_modules",
                     lambda self, run: self._finalize_modules(
@@ -10461,6 +10533,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     __FINALIZE_SEGMENTS,
                 ),
             ),
+            enter=Boundary.DECIDED,
             scope_name="Parser.parse",
         ),
         Segment(

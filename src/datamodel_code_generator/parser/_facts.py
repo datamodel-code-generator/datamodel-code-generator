@@ -739,7 +739,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "fields",
         FactKind.FACT,
         (Fact.FIELD_SET, RenderFact.FIELD_ORDER),
-        Phase.CROSS_MODULE,
+        Phase.RENDER_PREPARATION,
         FreezePoint.B2,
         store_ops=("append_field", "insert_field", "remove_field", "set_fields"),
         access=Access.CONTAINER,

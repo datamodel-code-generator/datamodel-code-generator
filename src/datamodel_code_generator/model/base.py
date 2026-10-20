@@ -3206,9 +3206,24 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         ]
 
 
-def _base_walk(snapshot: GraphSnapshot, models: Iterable[DataModel]) -> ReachedModels[DataModel]:
-    """Take the snapshot of ``models`` and the generated models they inherit from, however distant."""
-    return walk_graph(snapshot, EdgeKind.BASE, models, _model_key_of_model, _find_base_classes)
+def direct_base_models(model: DataModel, stand_ins: Mapping[int, Reference | None] | None = None) -> list[DataModel]:
+    """Return the generated models ``model`` inherits from; a base a type override replaced is its stand-in model."""
+    if not stand_ins:
+        return _find_base_classes(model)
+    references = (base.reference or stand_ins.get(id(base)) for base in model.base_classes)
+    return [reference.source for reference in references if reference and isinstance(reference.source, DataModel)]
+
+
+def _base_walk(
+    snapshot: GraphSnapshot, models: Iterable[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
+) -> ReachedModels[DataModel]:
+    """Take the snapshot of ``models`` and the generated models they inherit from, however distant.
+
+    A base a type override replaced is its stand-in model in ``stand_ins``, at every level of the chain.
+    """
+    return walk_graph(
+        snapshot, EdgeKind.BASE, models, _model_key_of_model, lambda model: direct_base_models(model, stand_ins)
+    )
 
 
 def _walked_inherited_field_models(model: DataModel, met: set[ModelKey]) -> list[DataModel]:
@@ -3223,24 +3238,26 @@ def _walked_inherited_field_models(model: DataModel, met: set[ModelKey]) -> list
     return models
 
 
-def _model_ancestor_keys(model: DataModel) -> frozenset[ModelKey]:
+def _model_ancestor_keys(model: DataModel, stand_ins: Mapping[int, Reference | None] | None) -> frozenset[ModelKey]:
     """Collect the model keys of generated ancestors without assuming direct bases are already sorted."""
-    walk = _base_walk(GraphSnapshot.ANCESTORS, (model,))
+    walk = _base_walk(GraphSnapshot.ANCESTORS, (model,), stand_ins)
     return graph_answer(
-        GraphSnapshot.ANCESTORS, walk.graph.reached(walk.starts[0], (EdgeKind.BASE,)), lambda: _walked_ancestors(model)
+        GraphSnapshot.ANCESTORS,
+        walk.graph.reached(walk.starts[0], (EdgeKind.BASE,)),
+        lambda: _walked_ancestors(model, stand_ins),
     )
 
 
-def _walked_ancestors(model: DataModel) -> frozenset[ModelKey]:
+def _walked_ancestors(model: DataModel, stand_ins: Mapping[int, Reference | None] | None) -> frozenset[ModelKey]:
     """Collect the model keys of the generated ancestors of ``model`` by walking its bases."""
     ancestors: set[ModelKey] = set()
-    to_visit = _find_base_classes(model)
+    to_visit = direct_base_models(model, stand_ins)
     while to_visit:
         parent = to_visit.pop()
         if (parent_key := model_key_of(parent.reference)) in ancestors:
             continue
         ancestors.add(parent_key)
-        to_visit.extend(_find_base_classes(parent))
+        to_visit.extend(direct_base_models(parent, stand_ins))
     return frozenset(ancestors)
 
 
@@ -3318,9 +3335,11 @@ def _reference_names_model(reference: Reference, model: DataModel, site: str) ->
     return _keyed_answer(site, named, lambda: by_path)
 
 
-def sort_data_models_for_mro(models: list[DataModel]) -> list[DataModel]:
+def sort_data_models_for_mro(
+    models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
+) -> list[DataModel]:
     """Match the stable descendant-before-ancestor order used for rendered bases."""
-    return _sort_for_mro(models, _model_ancestor_keys)
+    return _sort_for_mro(models, lambda model: _model_ancestor_keys(model, stand_ins))
 
 
 def _sort_for_mro(models: list[DataModel], ancestors_of: Callable[[DataModel], frozenset[ModelKey]]) -> list[DataModel]:
@@ -3350,19 +3369,21 @@ def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], Hashable]) -> li
     return result
 
 
-def linearize_data_models(models: list[DataModel]) -> list[DataModel]:
-    """Return the effective C3 order for direct generated models.
+def linearize_data_models(
+    models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None = None
+) -> list[DataModel]:
+    """Return the effective C3 order for direct generated models; ``stand_ins`` give the bases overrides replaced.
 
-    Each model is linearized after its bases, from the snapshot of the models reached through base classes. An
-    inheritance cycle, which the generated code cannot define, keeps the depth-first walk that cuts the cycle where it
-    meets a model again (`_linearize_depth_first`).
+    Each model is linearized after its bases, from the snapshot of the models reached through base classes, a base a
+    type override replaced counted at every level. An inheritance cycle, which the generated code cannot define, keeps
+    the depth-first walk that cuts the cycle where it meets a model again (`_linearize_depth_first`).
     """
     if len(models) == 1 and not models[0].base_classes:
         return models.copy()
-    walk = _base_walk(GraphSnapshot.BASE_CLASS_ORDER, models)
+    walk = _base_walk(GraphSnapshot.BASE_CLASS_ORDER, models, stand_ins)
     graph = walk.graph
     if (order := graph.acyclic_order((EdgeKind.BASE,))) is None:
-        return _linearize_depth_first(models)
+        return _linearize_depth_first(models, stand_ins)
     node_of = walk.node_of
 
     def ancestors_of(model: DataModel) -> frozenset[ModelKey]:
@@ -3382,12 +3403,14 @@ def linearize_data_models(models: list[DataModel]) -> list[DataModel]:
         for key in graph_answer(
             GraphSnapshot.BASE_CLASS_ORDER,
             list(map(_model_key_of_model, merged(list(models)))),
-            lambda: list(map(_model_key_of_model, _linearize_depth_first(models))),
+            lambda: list(map(_model_key_of_model, _linearize_depth_first(models, stand_ins))),
         )
     ]
 
 
-def _linearize_depth_first(models: list[DataModel]) -> list[DataModel]:
+def _linearize_depth_first(
+    models: list[DataModel], stand_ins: Mapping[int, Reference | None] | None
+) -> list[DataModel]:
     """Return the effective C3 order for direct generated models by a depth-first walk of their bases."""
     linearized_models: dict[ModelKey, list[DataModel]] = {}
 
@@ -3397,11 +3420,7 @@ def _linearize_depth_first(models: list[DataModel]) -> list[DataModel]:
             return cached
         if model_key in active:
             return [model]
-        parents = sort_data_models_for_mro([
-            base_class.reference.source
-            for base_class in model.base_classes
-            if base_class.reference and isinstance(base_class.reference.source, DataModel)
-        ])
+        parents = sort_data_models_for_mro(direct_base_models(model, stand_ins), stand_ins)
         result = [
             model,
             *c3_merge(
@@ -3415,7 +3434,7 @@ def _linearize_depth_first(models: list[DataModel]) -> list[DataModel]:
         linearized_models[model_key] = result
         return result
 
-    direct_models = sort_data_models_for_mro(models)
+    direct_models = sort_data_models_for_mro(models, stand_ins)
     return c3_merge(
         [
             *[linearize(model).copy() for model in direct_models],

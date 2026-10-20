@@ -1,0 +1,9 @@
+{
+  "title": "Task",
+  "type": "object",
+  "properties": {
+    "command": {"const": "restart"},
+    "previousTaskId": {"type": "string"}
+  },
+  "required": ["command", "previousTaskId"]
+}
