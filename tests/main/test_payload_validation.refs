@@ -287,6 +287,7 @@ jsonschema/exact_imports_collapse_root_models/datatypes/FooStats.json	payloads/n
 jsonschema/exact_imports_collapse_root_models_module_split_oneof.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/exact_imports_collapse_root_models_title/datatypes/FooStats.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_names.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/explicit_alias_names_diamond.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_names_inherited.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_names_unicode.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_namespace_inheritance/earlier.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1920,6 +1921,7 @@ jsonschema/exact_imports_collapse_root_models/datatypes/FooStats.json	payloads/n
 jsonschema/exact_imports_collapse_root_models_module_split_oneof.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/exact_imports_collapse_root_models_title/datatypes/FooStats.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_names.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/explicit_alias_names_diamond.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_names_inherited.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_names_unicode.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/explicit_alias_namespace_inheritance/earlier.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

@@ -8,7 +8,7 @@ Keys never reach output.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Final, final
 
 from datamodel_code_generator import Error
@@ -167,3 +167,8 @@ def keyed_models(models: Iterable[DataModel], site: str) -> KeyedModels:
         if key not in (keys := keys_by_path.get(path := model.path, ())):
             keys_by_path[path] = (*keys, key)
     return KeyedModels(site, by_key, keys_by_path, mode)
+
+
+def unchecked(keyed: KeyedModels) -> KeyedModels:
+    """Return ``keyed`` without its check mode, for the computation `graph_answer` compares, so no violation repeats."""
+    return replace(keyed, mode=None)

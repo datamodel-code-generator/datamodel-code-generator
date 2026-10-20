@@ -16,6 +16,7 @@ from typing_extensions import Sentinel, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import IMPORT_UNION, Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
@@ -33,6 +34,7 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _model_key_of_model,
     _ModelKeys,
     _nested_model_default_factory,
     linearize_data_models,
@@ -520,8 +522,8 @@ class Struct(DataModel):
         """Clear the tag and tag_field that msgspec makes the struct inherit."""
         self.add_base_class_kwarg("tag", "False")
 
-    def _tag_options(self) -> tuple[Any, Any]:
-        """Return the tag and tag_field options of the struct and its generated bases (``struct_tag_options``)."""
+    def _own_tag_options(self, bases: list[tuple[Any, Any]]) -> tuple[Any, Any]:
+        """Return the tag and tag_field options of the struct, given those of its generated bases."""
         options = self.extra_template_data.get("base_class_kwargs")
         options = {
             **(options if isinstance(options, dict) else {}),
@@ -531,15 +533,34 @@ class Struct(DataModel):
                 if key in {"tag", "tag_field"}
             },
         }
-        return struct_tag_options(
-            own_tag=options.get("tag"),
-            own_tag_field=options.get("tag_field"),
-            bases=[
-                base._tag_options()  # noqa: SLF001
-                for base_class in self.base_classes
-                if base_class.reference and isinstance(base := base_class.reference.source, Struct)
-            ],
+        return struct_tag_options(own_tag=options.get("tag"), own_tag_field=options.get("tag_field"), bases=bases)
+
+    def _tag_options(self) -> tuple[Any, Any]:
+        """Return the tag and tag_field options of the struct and its generated bases (``struct_tag_options``).
+
+        Each struct is answered after its bases, from the snapshot of the structs reached through base classes, a
+        component of structs that inherit from one another in a cycle as one unit: the bases a struct takes options
+        from are those outside its component. The generated code cannot define such a cycle, which L6 reports.
+        """
+        walk = walk_graph(GraphSnapshot.STRUCT_TAGS, EdgeKind.BASE, (self,), _model_key_of_model, _struct_bases)
+        graph = walk.graph
+        options: dict[ModelKey, tuple[Any, Any]] = {}
+        for component in graph.components((EdgeKind.BASE,)):
+            for key in component:
+                options[key] = walk.node_of[key]._own_tag_options([  # noqa: SLF001
+                    options[base] for base in graph.ordered_targets(key, EdgeKind.BASE) if base not in component
+                ])
+        return graph_answer(
+            GraphSnapshot.STRUCT_TAGS,
+            options[walk.starts[0]],
+            lambda: (
+                options[walk.starts[0]] if graph.acyclic_order((EdgeKind.BASE,)) is None else self._walked_tag_options()
+            ),
         )
+
+    def _walked_tag_options(self) -> tuple[Any, Any]:
+        """Return the tag and tag_field options of the struct by walking its generated bases."""
+        return self._own_tag_options([base._walked_tag_options() for base in _struct_bases(self)])  # noqa: SLF001
 
     @property
     @override
@@ -600,6 +621,15 @@ class Struct(DataModel):
         )
 
         return base_model
+
+
+def _struct_bases(struct: Struct) -> list[Struct]:
+    """Return the generated structs that ``struct`` inherits from, in the order its base classes list them."""
+    return [
+        base
+        for base_class in struct.base_classes
+        if base_class.reference and isinstance(base := base_class.reference.source, Struct)
+    ]
 
 
 class Constraints(_Constraints):

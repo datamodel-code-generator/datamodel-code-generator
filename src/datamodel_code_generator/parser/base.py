@@ -71,12 +71,21 @@ from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._naming_hint import collecting_class_names
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._python_target_names import target_builtin_names
+from datamodel_code_generator._reference_graph import (
+    EdgeKind,
+    GraphSnapshot,
+    ReferenceGraph,
+    graph_answer,
+    reference_graph,
+    walk_graph,
+)
 from datamodel_code_generator._requirements import (
     REQUIREMENTS,
     pydantic_floor,
     pydantic_target_meets,
     python_target_meets,
 )
+from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator._shared_types import (
     DefaultPutDict,
     LiteralType,
@@ -134,6 +143,7 @@ from datamodel_code_generator.model.base import (
     _apply_literal_default,
     _find_base_classes,
     _keyed_answer,
+    _model_key_of_model,
     _ModelKeys,
     _overlay_constraints,
     _reference_names_model,
@@ -176,6 +186,7 @@ from datamodel_code_generator.parser._graph_ids import (
     KeyedModels,
     is_root_or_owned,
     keyed_models,
+    unchecked,
 )
 from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
 from datamodel_code_generator.parser._model_shapes import (
@@ -232,15 +243,6 @@ from datamodel_code_generator.parser._pipeline import (
     decision_order,
     release_parse_caller,
 )
-from datamodel_code_generator.parser._reference_graph import (
-    EdgeKind,
-    GraphSnapshot,
-    ReferenceGraph,
-    graph_answer,
-    reference_graph,
-    unchecked,
-)
-from datamodel_code_generator.parser._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser.generation import GenerationIndex, GenerationStore, set_model_base_classes
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
@@ -1931,31 +1933,51 @@ def _copy_data_types(data_types: list[DataType], *, register_references: bool = 
     return [_copy_data_type(data_type, register_references=register_references) for data_type in data_types]
 
 
-def _has_preservable_root_constraints(model: DataModel, *, seen_models: set[int] | None = None) -> bool:
-    """Return whether flattening a root wrapper would discard field-owned constraints."""
+def _root_type_models(model: DataModel) -> list[DataModel]:
+    """Return the models that the type of the root field of ``model`` names."""
+    if not model.fields:
+        return []
+    return [
+        source_model
+        for data_type in model.fields[0].data_type.all_data_types
+        if data_type.reference and isinstance(source_model := data_type.reference.source, DataModel)
+    ]
+
+
+def _constrains_root_field(model: DataModel) -> bool:
+    """Return whether the root field of ``model`` carries a constraint other than ``unique_items``."""
     if not model.fields:
         return False
-    if seen_models is None:
-        seen_models = set()
-    if id(model) in seen_models:
+    constraints = model.fields[0].constraints
+    return isinstance(constraints, ConstraintsBase) and any(
+        value is not None for name, value in constraints.model_dump().items() if name != "unique_items"
+    )
+
+
+def _has_preservable_root_constraints(model: DataModel) -> bool:
+    """Return whether flattening a root wrapper would discard field-owned constraints.
+
+    True when ``model``, or a model the snapshot of root types reaches from it, constrains its root field.
+    """
+    walk = walk_graph(
+        GraphSnapshot.ROOT_CONSTRAINTS, EdgeKind.ROOT_TYPE, (model,), _model_key_of_model, _root_type_models
+    )
+    return graph_answer(
+        GraphSnapshot.ROOT_CONSTRAINTS,
+        any(map(_constrains_root_field, walk.node_of.values())),
+        lambda: _walks_to_preservable_root_constraints(model, seen_models=set()),
+    )
+
+
+def _walks_to_preservable_root_constraints(model: DataModel, *, seen_models: set[int]) -> bool:
+    """Return whether flattening a root wrapper would discard field-owned constraints, by walking the root types."""
+    if not model.fields or id(model) in seen_models:
         return False
     seen_models.add(id(model))
-
-    root_field = model.fields[0]
-    constraints = root_field.constraints
-    if isinstance(constraints, ConstraintsBase) and any(
-        value is not None for name, value in constraints.model_dump().items() if name != "unique_items"
-    ):
-        return True
-
-    for data_type in root_field.data_type.all_data_types:
-        if (
-            data_type.reference
-            and isinstance(source_model := data_type.reference.source, DataModel)
-            and _has_preservable_root_constraints(source_model, seen_models=seen_models)
-        ):
-            return True
-    return False
+    return _constrains_root_field(model) or any(
+        _walks_to_preservable_root_constraints(source_model, seen_models=seen_models)
+        for source_model in _root_type_models(model)
+    )
 
 
 def _copy_data_model_field(
@@ -2803,6 +2825,16 @@ def _apply_discriminator_tags(tags: list[_DiscriminatorTag], tag_field: str, *, 
 
 def _has_cyclic_ancestry(model: DataModel) -> bool:
     """Return whether the base classes of a model, however distant, inherit from one another in a cycle."""
+    walk = walk_graph(GraphSnapshot.CYCLIC_ANCESTRY, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes)
+    return graph_answer(
+        GraphSnapshot.CYCLIC_ANCESTRY,
+        walk.graph.acyclic_order((EdgeKind.BASE,)) is None,
+        lambda: _walks_to_cyclic_ancestry(model),
+    )
+
+
+def _walks_to_cyclic_ancestry(model: DataModel) -> bool:
+    """Return whether the base classes of a model inherit from one another in a cycle, by walking them."""
     visiting: dict[int, bool] = {id(model): True}
     stack = [(id(model), iter(_find_base_classes(model)))]
     while stack:

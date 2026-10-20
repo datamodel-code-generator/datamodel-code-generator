@@ -16,6 +16,7 @@ from datamodel_code_generator._format_types import (
     PythonVersion,
     PythonVersionMin,
 )
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
 from datamodel_code_generator.model._constraints import Constraints  # noqa: TC001 # needed for pydantic
 from datamodel_code_generator.model._decisions.assignment import (
@@ -27,6 +28,7 @@ from datamodel_code_generator.model.base import (
     UNDEFINED,
     _default_factory_type_name,
     _has_field_assignment,
+    _model_key_of_model,
     _nested_model_default_factory,
     get_effective_fields,
 )
@@ -117,9 +119,28 @@ def _walks_to_repeated_mapping_default_path(model: DataClass, active_paths: froz
 def _has_recursive_nested_mapping_default(model: DataClass) -> bool:
     """Return whether materializing model defaults would recurse through mapping factories.
 
-    True when a mapping-default edge path from model reaches a model path already on it. One depth-first search
-    expands each model path once; its state lives only for this call. A path shared by two models falls back to
-    walking every edge path.
+    True when a mapping-default edge path from model reaches a model path already on it: when a walk through the
+    snapshot of the models that mapping defaults materialize meets two models of one path, or one model twice.
+    """
+    walk = walk_graph(
+        GraphSnapshot.MAPPING_DEFAULTS,
+        EdgeKind.MAPPING_DEFAULT,
+        (model,),
+        _model_key_of_model,
+        _iter_nested_mapping_default_sources,
+    )
+    return graph_answer(
+        GraphSnapshot.MAPPING_DEFAULTS,
+        walk.graph.meets_a_group_twice(walk.node_of, lambda key: walk.node_of[key].path, (EdgeKind.MAPPING_DEFAULT,)),
+        lambda: _walks_to_recursive_nested_mapping_default(model),
+    )
+
+
+def _walks_to_recursive_nested_mapping_default(model: DataClass) -> bool:
+    """Return whether a mapping-default edge path from model reaches a model path already on it, by walking the paths.
+
+    One depth-first search expands each model path once. A path shared by two models falls back to walking every edge
+    path.
     """
     owners = {model.path: model}
     active_paths = {model.path}

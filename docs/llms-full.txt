@@ -61763,14 +61763,17 @@ JSON Schema is the main reusable parser surface. OpenAPI and AsyncAPI extend it.
 raw data, and MCP tools convert to a JSON Schema-shaped document before using the same model-building machinery.
 GraphQL is the main parser that builds models directly from its own schema API.
 
-Ordering and module splitting use small graph helpers. `parser/_scc.py` finds strongly connected components with an
+Ordering and module splitting use small graph helpers. `_scc.py` finds strongly connected components with an
 iterative Tarjan traversal so large graphs do not hit Python recursion limits. `parser/_graph.py` provides stable
 topological ordering. Together they keep `sort_data_models()` deterministic and let `_build_module_structure()` move
 circular module SCCs into `_internal.py` forwarder modules when imports would otherwise cycle. The passes that read
 cycles or an order among models (module dependencies, class body order, circular root models, keep model order, alias
-cycles, nested model default factories) each take a snapshot of one reference graph, `parser/_reference_graph.py`:
-the models by model key and the edges between them by kind, which answers their components and orders. Under the
-`MODEL_GRAPH` check, each answer is compared with the computation it replaced.
+cycles, nested model default factories) each take a snapshot of one reference graph, `_reference_graph.py`:
+the models by model key and the edges between them by kind, which answers their components and orders. The
+predicates that models answer on demand by walking base classes, root types or mapping defaults (inherited fields,
+ancestors, cyclic ancestry, the C3 order of bases, msgspec struct tags, pydantic protected namespaces, preservable root
+constraints, recursive dataclass mapping defaults) take a snapshot of the models they reach when asked and answer
+from it, each model once. Under the `MODEL_GRAPH` check, each answer is compared with the computation it replaced.
 
 ## Generated Inventory
 

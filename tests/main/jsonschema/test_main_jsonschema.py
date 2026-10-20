@@ -27830,6 +27830,23 @@ def test_explicit_alias_names_configured_namespace(
         )
 
 
+def test_explicit_alias_names_configured_namespace_diamond(output_file: Path) -> None:
+    """Read protected namespace configuration from a base that both generated bases of the model inherit."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "explicit_alias_names_diamond.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--aliases",
+            json.dumps({"a": "model_validate"}),
+            "--extra-template-data",
+            str(ALIASES_DATA_PATH / "explicit_alias_names_config_inherited.json"),
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("backend", list(DataModelType))
 def test_explicit_alias_names_unicode(backend: DataModelType, output_file: Path) -> None:
     """Preserve Unicode names alongside synthetic root and boolean-schema fields."""

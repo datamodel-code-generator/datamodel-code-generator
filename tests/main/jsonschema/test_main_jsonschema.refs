@@ -2955,6 +2955,8 @@ True-TargetPydanticVersion.V2	main/jsonschema/explicit_alias_names_configured_Tr
 True-TargetPydanticVersion.V2	main/jsonschema/main_jsonschema/explicit_alias_names_configured_namespace[True-TargetPydanticVersion.V2].py	= main/jsonschema/explicit_alias_names_configured_True.py
 True-TargetPydanticVersion.V2_11	main/jsonschema/explicit_alias_names_configured_True.py
 True-TargetPydanticVersion.V2_11	main/jsonschema/main_jsonschema/explicit_alias_names_configured_namespace[True-TargetPydanticVersion.V2_11].py	= main/jsonschema/explicit_alias_names_configured_True.py
+[test_explicit_alias_names_configured_namespace_diamond]
+	main/jsonschema/main_jsonschema/explicit_alias_names_configured_namespace_diamond.py
 [test_explicit_alias_names_custom_namespace]
 False	main/jsonschema/explicit_alias_names_custom_False.py
 True	main/jsonschema/explicit_alias_names_custom_True.py

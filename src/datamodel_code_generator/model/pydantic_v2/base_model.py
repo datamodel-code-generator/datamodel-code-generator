@@ -21,6 +21,7 @@ from typing_extensions import override
 from datamodel_code_generator import Error
 from datamodel_code_generator._alias_generators import to_camel, to_pascal, to_snake
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._regex_syntax import LOOKAROUND_PATTERN, scan_regex_syntax
 from datamodel_code_generator._requirements import CONFIG_KEY_REQUIREMENTS, REQUIREMENTS
 from datamodel_code_generator.enums import AliasGenerator
@@ -36,6 +37,7 @@ from datamodel_code_generator.model.base import (
     DataModelFieldBase,
     _find_base_classes,
     _get_template_with_custom_dir,
+    _model_key_of_model,
     _ModelKeys,
     _uses_original_template_loader,
     get_effective_fields,
@@ -1335,19 +1337,42 @@ def _explicit_alias_conflicts_with_pydantic(field: DataModelFieldBase, name: str
     namespaces = (
         ("model_validate", "model_dump") if model_target_meets(model, "pydantic.protected_namespaces") else ("model_",)
     )
-    pending = [model]
-    while pending:
-        model = pending.pop()
-        config = model.extra_template_data.get("config")
-        if (configured := getattr(config, "protected_namespaces", None)) is not None:
-            namespaces = configured
-            break
-        base_classes = _find_base_classes(model)
-        if not base_classes and model.custom_base_class and model.custom_base_class != "pydantic.BaseModel":
-            # This later external base may override any earlier generated base's namespaces.
-            return False
-        pending.extend(base_classes)
-    return name.startswith(namespaces)
+
+    def conflicts(models: Iterable[tuple[DataModel, bool]]) -> bool:
+        """Read the namespaces from the first of ``models``, each with whether it has generated bases, that sets them.
+
+        A model with no generated bases and an external base class first leaves them unknown.
+        """
+        for current, has_bases in models:
+            if (
+                configured := getattr(current.extra_template_data.get("config"), "protected_namespaces", None)
+            ) is not None:
+                return name.startswith(configured)
+            if not has_bases and current.custom_base_class and current.custom_base_class != "pydantic.BaseModel":
+                return False
+        return name.startswith(namespaces)
+
+    def walked() -> Iterator[tuple[DataModel, bool]]:
+        pending = [model]
+        while pending:
+            current = pending.pop()
+            base_classes = _find_base_classes(current)
+            yield current, bool(base_classes)
+            pending.extend(base_classes)
+
+    walk = walk_graph(
+        GraphSnapshot.PROTECTED_NAMESPACES, EdgeKind.BASE, (model,), _model_key_of_model, _find_base_classes
+    )
+    graph = walk.graph
+    answer = conflicts(
+        (walk.node_of[key], bool(graph.ordered_targets(key, EdgeKind.BASE)))
+        for key in graph.preorder(walk.starts[0], EdgeKind.BASE)
+    )
+    return graph_answer(
+        GraphSnapshot.PROTECTED_NAMESPACES,
+        answer,
+        lambda: answer if graph.acyclic_order((EdgeKind.BASE,)) is None else conflicts(walked()),
+    )
 
 
 _NATIVE_HASH_SCALARS = frozenset({"str", "int", "float", "bool", "None"})

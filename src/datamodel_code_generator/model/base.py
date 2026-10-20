@@ -29,6 +29,7 @@ from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN
 from datamodel_code_generator._format_types import PythonVersion  # noqa: TC001 - used by Pydantic at runtime
 from datamodel_code_generator._internal_utils import get_most_of_parent, to_hashable
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, graph_answer, walk_graph
 from datamodel_code_generator._requirements import backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import (
@@ -71,6 +72,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator import types as _types
+    from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model import runtime_validation as _runtime_validation
@@ -2559,16 +2561,20 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         return unique_fields
 
     def iter_all_fields(self, visited: set[ModelKey] | None = None) -> Iterator[DataModelFieldBase]:
-        """Yield all fields including those from base classes (parent fields first), each model once by model key."""
-        if visited is None:
-            visited = set()
-        if (key := model_key_of(self.reference)) in visited:  # pragma: no cover
-            return
-        visited.add(key)
-        for base_class in self.base_classes:
-            if base_class.reference and isinstance(base_class.reference.source, DataModel):
-                yield from base_class.reference.source.iter_all_fields(visited)
-        yield from self.fields
+        """Yield all fields including those from base classes (parent fields first), each model once by model key.
+
+        The models of ``visited`` are left out, with the bases reached only through them; every model yielded from is
+        added to it.
+        """
+        met = set() if visited is None else visited
+        met_before = set(met)
+        walk = _base_walk(GraphSnapshot.INHERITED_FIELDS, (self,))
+        for key in graph_answer(
+            GraphSnapshot.INHERITED_FIELDS,
+            walk.graph.postorder(walk.starts[0], EdgeKind.BASE, met),
+            lambda: [_model_key_of_model(model) for model in _walked_inherited_field_models(self, met_before)],
+        ):
+            yield from walk.node_of[key].fields
 
     def get_dedup_key(self, class_name: str | None = None, *, use_default: bool = True) -> tuple[Any, ...]:
         """Generate hashable key for model deduplication.
@@ -3200,25 +3206,42 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         ]
 
 
-def _model_ancestor_keys(model: DataModel) -> set[ModelKey]:
-    """Collect the model keys of generated ancestors without assuming direct bases are already sorted."""
-    ancestors: set[ModelKey] = set()
-    to_visit = [
-        base_class.reference.source
-        for base_class in model.base_classes
-        if base_class.reference and isinstance(base_class.reference.source, DataModel)
+def _base_walk(snapshot: GraphSnapshot, models: Iterable[DataModel]) -> ReachedModels[DataModel]:
+    """Take the snapshot of ``models`` and the generated models they inherit from, however distant."""
+    return walk_graph(snapshot, EdgeKind.BASE, models, _model_key_of_model, _find_base_classes)
+
+
+def _walked_inherited_field_models(model: DataModel, met: set[ModelKey]) -> list[DataModel]:
+    """Return the models whose fields ``model`` inherits, bases first, each once, by walking its bases."""
+    if (key := model_key_of(model.reference)) in met:
+        return []
+    met.add(key)
+    models = [
+        inherited for base in _find_base_classes(model) for inherited in _walked_inherited_field_models(base, met)
     ]
+    models.append(model)
+    return models
+
+
+def _model_ancestor_keys(model: DataModel) -> frozenset[ModelKey]:
+    """Collect the model keys of generated ancestors without assuming direct bases are already sorted."""
+    walk = _base_walk(GraphSnapshot.ANCESTORS, (model,))
+    return graph_answer(
+        GraphSnapshot.ANCESTORS, walk.graph.reached(walk.starts[0], (EdgeKind.BASE,)), lambda: _walked_ancestors(model)
+    )
+
+
+def _walked_ancestors(model: DataModel) -> frozenset[ModelKey]:
+    """Collect the model keys of the generated ancestors of ``model`` by walking its bases."""
+    ancestors: set[ModelKey] = set()
+    to_visit = _find_base_classes(model)
     while to_visit:
         parent = to_visit.pop()
         if (parent_key := model_key_of(parent.reference)) in ancestors:
             continue
         ancestors.add(parent_key)
-        to_visit.extend(
-            base_class.reference.source
-            for base_class in parent.base_classes
-            if base_class.reference and isinstance(base_class.reference.source, DataModel)
-        )
-    return ancestors
+        to_visit.extend(_find_base_classes(parent))
+    return frozenset(ancestors)
 
 
 def _model_key_of_model(model: DataModel) -> ModelKey:
@@ -3297,9 +3320,14 @@ def _reference_names_model(reference: Reference, model: DataModel, site: str) ->
 
 def sort_data_models_for_mro(models: list[DataModel]) -> list[DataModel]:
     """Match the stable descendant-before-ancestor order used for rendered bases."""
+    return _sort_for_mro(models, _model_ancestor_keys)
+
+
+def _sort_for_mro(models: list[DataModel], ancestors_of: Callable[[DataModel], frozenset[ModelKey]]) -> list[DataModel]:
+    """Order ``models`` descendants first, stably, by the model keys of the ancestors ``ancestors_of`` gives."""
     if len(models) <= 1:
         return models.copy()
-    ancestor_keys = {model_key_of(model.reference): _model_ancestor_keys(model) for model in models}
+    ancestor_keys = {model_key_of(model.reference): ancestors_of(model) for model in models}
     return sorted(
         models,
         key=lambda model: sum(model_key_of(model.reference) in ancestors for ancestors in ancestor_keys.values()),
@@ -3323,10 +3351,44 @@ def c3_merge(sequences: list[list[MroT]], key: Callable[[MroT], Hashable]) -> li
 
 
 def linearize_data_models(models: list[DataModel]) -> list[DataModel]:
-    """Return the effective C3 order for direct generated models."""
+    """Return the effective C3 order for direct generated models.
+
+    Each model is linearized after its bases, from the snapshot of the models reached through base classes. An
+    inheritance cycle, which the generated code cannot define, keeps the depth-first walk that cuts the cycle where it
+    meets a model again (`_linearize_depth_first`).
+    """
     if len(models) == 1 and not models[0].base_classes:
         return models.copy()
+    walk = _base_walk(GraphSnapshot.BASE_CLASS_ORDER, models)
+    graph = walk.graph
+    if (order := graph.acyclic_order((EdgeKind.BASE,))) is None:
+        return _linearize_depth_first(models)
+    node_of = walk.node_of
 
+    def ancestors_of(model: DataModel) -> frozenset[ModelKey]:
+        return graph.reached(model_key_of(model.reference), (EdgeKind.BASE,))
+
+    def merged(heads: list[DataModel]) -> list[DataModel]:
+        heads = _sort_for_mro(heads, ancestors_of)
+        return c3_merge(
+            [*[lineages[model_key_of(head.reference)].copy() for head in heads], heads.copy()], key=_model_key_of_model
+        )
+
+    lineages: dict[ModelKey, list[DataModel]] = {}
+    for key in order:
+        lineages[key] = [node_of[key], *merged([node_of[base] for base in graph.ordered_targets(key, EdgeKind.BASE)])]
+    return [
+        node_of[key]
+        for key in graph_answer(
+            GraphSnapshot.BASE_CLASS_ORDER,
+            list(map(_model_key_of_model, merged(list(models)))),
+            lambda: list(map(_model_key_of_model, _linearize_depth_first(models))),
+        )
+    ]
+
+
+def _linearize_depth_first(models: list[DataModel]) -> list[DataModel]:
+    """Return the effective C3 order for direct generated models by a depth-first walk of their bases."""
     linearized_models: dict[ModelKey, list[DataModel]] = {}
 
     def linearize(model: DataModel, active: frozenset[ModelKey] = frozenset()) -> list[DataModel]:
