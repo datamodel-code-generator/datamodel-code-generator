@@ -76,6 +76,7 @@ NullSite: TypeAlias = Literal[
 
 NullRule: TypeAlias = Literal[
     "type-or-member-null",
+    "type-excludes-member-null",
     "field-declared",
     "field-strict-not-null",
     "field-undecided",
@@ -115,6 +116,9 @@ NullRule: TypeAlias = Literal[
 
 * ``type-or-member-null``: a ``type`` list holding null, or a direct ``anyOf``/``oneOf`` member typed null or with a
   ``type`` list holding null; ``nullable`` and ``enum`` do not count (``schema-type``).
+* ``type-excludes-member-null``: except a member beside a ``type`` that is neither null nor a list holding null,
+  without ``nullable: true``: that ``type`` excludes null, so the combined schema drops its members typed only null
+  (``JsonSchemaParser.parse_combined_schema``).
 * ``field-declared``: under ``--strict-nullable`` or ``--use-missing-sentinel`` a field writes the ``nullable`` its
   schema declares.
 * ``field-strict-not-null``: under ``--strict-nullable`` a required or defaulted field without ``nullable`` is not
@@ -249,6 +253,8 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     type_null = sources.type_has_null
     match site:
         case "schema-type":
+            if sources.member_null and _type_excludes_null(sources):
+                return NullFacts("type-excludes-member-null", admits_null=False)
             return NullFacts("type-or-member-null", admits_null=sources.type_lists_null or sources.member_null)
         case "field":
             if (mode.strict_nullable or mode.use_missing_sentinel) and sources.nullable is not None:
@@ -328,3 +334,8 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     if sources.typed and not type_null and sources.nullable is not True:
         return NullFacts("inherited-typed-without-null", admits_null=False)
     return NullFacts("inherited-keeps-null")
+
+
+def _type_excludes_null(sources: NullSources) -> bool:
+    """Return whether the schema object's own ``type`` excludes null: set, without null, and not ``nullable: true``."""
+    return sources.typed and not (sources.type_null or sources.type_lists_null) and sources.nullable is not True

@@ -6156,5 +6156,88 @@
         ]
       }
     }
+  },
+  "inherited_override_null_oas31": {
+    "model": "NamedCat",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "base": {
+      "lives": 9,
+      "kind": "x",
+      "ckind": "xy",
+      "direct": "x",
+      "direct_obj": {
+        "n": 1
+      },
+      "direct_obj_first": {
+        "n": 1
+      }
+    },
+    "fields": {
+      "kind": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      },
+      "kind2": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null
+        ]
+      },
+      "kind3": {
+        "valid": [
+          null,
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "ckind": {
+        "valid": [
+          "xy"
+        ],
+        "invalid": [
+          null,
+          "x"
+        ]
+      },
+      "direct": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      },
+      "direct_obj": {
+        "valid": [
+          {
+            "n": 1
+          }
+        ],
+        "invalid": [
+          null,
+          "x"
+        ]
+      },
+      "direct_obj_first": {
+        "valid": [
+          {
+            "n": 1
+          }
+        ],
+        "invalid": [
+          null
+        ]
+      }
+    }
   }
 }

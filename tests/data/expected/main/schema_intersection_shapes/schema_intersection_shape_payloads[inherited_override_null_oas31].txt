@@ -1,0 +1,133 @@
+pydantic_v2.BaseModel default kind "x" accepted
+pydantic_v2.BaseModel default kind null accepted
+pydantic_v2.BaseModel default kind 1 rejected
+pydantic_v2.BaseModel default kind2 "x" accepted
+pydantic_v2.BaseModel default kind2 null accepted
+pydantic_v2.BaseModel default kind3 null accepted
+pydantic_v2.BaseModel default kind3 "x" accepted
+pydantic_v2.BaseModel default kind3 1 rejected
+pydantic_v2.BaseModel default ckind "xy" accepted
+pydantic_v2.BaseModel default ckind null rejected
+pydantic_v2.BaseModel default ckind "x" rejected
+pydantic_v2.BaseModel default direct "x" accepted
+pydantic_v2.BaseModel default direct null rejected
+pydantic_v2.BaseModel default direct 1 rejected
+pydantic_v2.BaseModel default direct_obj {"n": 1} accepted
+pydantic_v2.BaseModel default direct_obj null rejected
+pydantic_v2.BaseModel default direct_obj "x" rejected
+pydantic_v2.BaseModel default direct_obj_first {"n": 1} accepted
+pydantic_v2.BaseModel default direct_obj_first null rejected
+pydantic_v2.dataclass default kind "x" accepted
+pydantic_v2.dataclass default kind null accepted
+pydantic_v2.dataclass default kind 1 rejected
+pydantic_v2.dataclass default kind2 "x" accepted
+pydantic_v2.dataclass default kind2 null accepted
+pydantic_v2.dataclass default kind3 null accepted
+pydantic_v2.dataclass default kind3 "x" accepted
+pydantic_v2.dataclass default kind3 1 rejected
+pydantic_v2.dataclass default ckind "xy" accepted
+pydantic_v2.dataclass default ckind null rejected
+pydantic_v2.dataclass default ckind "x" rejected
+pydantic_v2.dataclass default direct "x" accepted
+pydantic_v2.dataclass default direct null rejected
+pydantic_v2.dataclass default direct 1 rejected
+pydantic_v2.dataclass default direct_obj {"n": 1} accepted
+pydantic_v2.dataclass default direct_obj null rejected
+pydantic_v2.dataclass default direct_obj "x" rejected
+pydantic_v2.dataclass default direct_obj_first {"n": 1} accepted
+pydantic_v2.dataclass default direct_obj_first null rejected
+msgspec.Struct default kind "x" accepted
+msgspec.Struct default kind null accepted
+msgspec.Struct default kind 1 rejected
+msgspec.Struct default kind2 "x" accepted
+msgspec.Struct default kind2 null rejected
+msgspec.Struct default kind3 null accepted
+msgspec.Struct default kind3 "x" accepted
+msgspec.Struct default kind3 1 rejected
+msgspec.Struct default ckind "xy" accepted
+msgspec.Struct default ckind null rejected
+msgspec.Struct default ckind "x" rejected
+msgspec.Struct default direct "x" accepted
+msgspec.Struct default direct null rejected
+msgspec.Struct default direct 1 rejected
+msgspec.Struct default direct_obj {"n": 1} accepted
+msgspec.Struct default direct_obj null rejected
+msgspec.Struct default direct_obj "x" rejected
+msgspec.Struct default direct_obj_first {"n": 1} accepted
+msgspec.Struct default direct_obj_first null rejected
+pydantic_v2.BaseModel --field-constraints kind "x" accepted
+pydantic_v2.BaseModel --field-constraints kind null accepted
+pydantic_v2.BaseModel --field-constraints kind 1 rejected
+pydantic_v2.BaseModel --field-constraints kind2 "x" accepted
+pydantic_v2.BaseModel --field-constraints kind2 null accepted
+pydantic_v2.BaseModel --field-constraints kind3 null accepted
+pydantic_v2.BaseModel --field-constraints kind3 "x" accepted
+pydantic_v2.BaseModel --field-constraints kind3 1 rejected
+pydantic_v2.BaseModel --field-constraints ckind "xy" accepted
+pydantic_v2.BaseModel --field-constraints ckind null rejected
+pydantic_v2.BaseModel --field-constraints ckind "x" rejected
+pydantic_v2.BaseModel --field-constraints direct "x" accepted
+pydantic_v2.BaseModel --field-constraints direct null rejected
+pydantic_v2.BaseModel --field-constraints direct 1 rejected
+pydantic_v2.BaseModel --field-constraints direct_obj {"n": 1} accepted
+pydantic_v2.BaseModel --field-constraints direct_obj null rejected
+pydantic_v2.BaseModel --field-constraints direct_obj "x" rejected
+pydantic_v2.BaseModel --field-constraints direct_obj_first {"n": 1} accepted
+pydantic_v2.BaseModel --field-constraints direct_obj_first null rejected
+pydantic_v2.BaseModel --use-annotated kind "x" accepted
+pydantic_v2.BaseModel --use-annotated kind null accepted
+pydantic_v2.BaseModel --use-annotated kind 1 rejected
+pydantic_v2.BaseModel --use-annotated kind2 "x" accepted
+pydantic_v2.BaseModel --use-annotated kind2 null accepted
+pydantic_v2.BaseModel --use-annotated kind3 null accepted
+pydantic_v2.BaseModel --use-annotated kind3 "x" accepted
+pydantic_v2.BaseModel --use-annotated kind3 1 rejected
+pydantic_v2.BaseModel --use-annotated ckind "xy" accepted
+pydantic_v2.BaseModel --use-annotated ckind null rejected
+pydantic_v2.BaseModel --use-annotated ckind "x" rejected
+pydantic_v2.BaseModel --use-annotated direct "x" accepted
+pydantic_v2.BaseModel --use-annotated direct null rejected
+pydantic_v2.BaseModel --use-annotated direct 1 rejected
+pydantic_v2.BaseModel --use-annotated direct_obj {"n": 1} accepted
+pydantic_v2.BaseModel --use-annotated direct_obj null rejected
+pydantic_v2.BaseModel --use-annotated direct_obj "x" rejected
+pydantic_v2.BaseModel --use-annotated direct_obj_first {"n": 1} accepted
+pydantic_v2.BaseModel --use-annotated direct_obj_first null rejected
+pydantic_v2.BaseModel --collapse-root-models kind "x" accepted
+pydantic_v2.BaseModel --collapse-root-models kind null accepted
+pydantic_v2.BaseModel --collapse-root-models kind 1 rejected
+pydantic_v2.BaseModel --collapse-root-models kind2 "x" accepted
+pydantic_v2.BaseModel --collapse-root-models kind2 null accepted
+pydantic_v2.BaseModel --collapse-root-models kind3 null accepted
+pydantic_v2.BaseModel --collapse-root-models kind3 "x" accepted
+pydantic_v2.BaseModel --collapse-root-models kind3 1 rejected
+pydantic_v2.BaseModel --collapse-root-models ckind "xy" accepted
+pydantic_v2.BaseModel --collapse-root-models ckind null rejected
+pydantic_v2.BaseModel --collapse-root-models ckind "x" rejected
+pydantic_v2.BaseModel --collapse-root-models direct "x" accepted
+pydantic_v2.BaseModel --collapse-root-models direct null rejected
+pydantic_v2.BaseModel --collapse-root-models direct 1 rejected
+pydantic_v2.BaseModel --collapse-root-models direct_obj {"n": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models direct_obj null rejected
+pydantic_v2.BaseModel --collapse-root-models direct_obj "x" rejected
+pydantic_v2.BaseModel --collapse-root-models direct_obj_first {"n": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models direct_obj_first null rejected
+msgspec.Struct --collapse-root-models kind "x" accepted
+msgspec.Struct --collapse-root-models kind null accepted
+msgspec.Struct --collapse-root-models kind 1 rejected
+msgspec.Struct --collapse-root-models kind2 "x" accepted
+msgspec.Struct --collapse-root-models kind2 null rejected
+msgspec.Struct --collapse-root-models kind3 null accepted
+msgspec.Struct --collapse-root-models kind3 "x" accepted
+msgspec.Struct --collapse-root-models kind3 1 rejected
+msgspec.Struct --collapse-root-models ckind "xy" accepted
+msgspec.Struct --collapse-root-models ckind null rejected
+msgspec.Struct --collapse-root-models ckind "x" accepted
+msgspec.Struct --collapse-root-models direct "x" accepted
+msgspec.Struct --collapse-root-models direct null rejected
+msgspec.Struct --collapse-root-models direct 1 rejected
+msgspec.Struct --collapse-root-models direct_obj {"n": 1} accepted
+msgspec.Struct --collapse-root-models direct_obj null rejected
+msgspec.Struct --collapse-root-models direct_obj "x" rejected
+msgspec.Struct --collapse-root-models direct_obj_first {"n": 1} accepted
+msgspec.Struct --collapse-root-models direct_obj_first null rejected

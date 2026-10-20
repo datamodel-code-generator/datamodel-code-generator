@@ -1403,6 +1403,24 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
     )
 
 
+def _excluded_null_members(obj: JsonSchemaObject, members: Sequence[JsonSchemaObject | bool]) -> list[JsonSchemaObject]:
+    """Return the members typed only null that the ``type`` beside them excludes (row ``type-excludes-member-null``).
+
+    None of them when every member is one: the combined schema keeps them rather than admit no value.
+    """
+    if resolve_null_facts(_type_null_sources(obj), "schema-type").rule != "type-excludes-member-null":
+        return []
+    null_members = [
+        member
+        for member in members
+        if isinstance(member, JsonSchemaObject)
+        and not member.ref
+        and member.type == "null"
+        and not (member.anyOf or member.oneOf)
+    ]
+    return null_members if len(null_members) < len(members) else []
+
+
 def _non_null_types(type_: str | list[str] | None) -> str | list[str] | None:
     """Return a ``type`` keyword without null in its list."""
     return [item for item in type_ if item != "null"] if isinstance(type_, list) else type_
@@ -9401,9 +9419,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         combined_schemas: list[JsonSchemaObject] = []
         refs = []
         use_builtin_false_ref_facts: bool | None = None
-        for index, target_attribute in enumerate(getattr(obj, target_attribute_name, [])):
+        items = getattr(obj, target_attribute_name, [])
+        dropped = {
+            id(member)
+            for member in _excluded_null_members(obj, [item for item in items if not self._is_false_schema_item(item)])
+        }
+        dropped_before = 0
+        for index, target_attribute in enumerate(items):
             if self._is_false_schema_item(target_attribute):
                 continue
+            if id(target_attribute) in dropped:
+                dropped_before += 1
+                continue
+            ref_index = index - dropped_before
             if target_attribute is True:
                 combined_schemas.append(
                     _mark_copied_nullable(self.SCHEMA_OBJECT_TYPE.model_validate(base_object), base_object, None)
@@ -9423,7 +9451,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._preserve_inherited_materialized_type_shape(target_attribute, merged_attr)
                     if merged_attr.ref:
                         combined_schemas.append(merged_attr)
-                        refs.append(index)
+                        refs.append(ref_index)
                     else:
                         combined_schemas.append(
                             _mark_copied_nullable(
@@ -9446,7 +9474,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         )
                 else:
                     combined_schemas.append(target_attribute)
-                    refs.append(index)
+                    refs.append(ref_index)
             else:
                 combined_schemas.append(
                     _mark_copied_nullable(
