@@ -1477,6 +1477,7 @@ class DataTypeManager(ABC):
         r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])\.)*"
         r"([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$"
     )
+    omit_redundant_constraints: bool = False
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
         _applicability.BASE_OUTPUT.zero_bound_classes
     )
@@ -1513,7 +1514,6 @@ class DataTypeManager(ABC):
         target_date_class: DateClassType | None = None,
         treat_dot_as_module: bool | None = None,  # noqa: FBT001
         use_serialize_as_any: bool = False,  # noqa: FBT001, FBT002
-        omit_redundant_constraints: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize DataTypeManager with code generation options."""
         self.python_version = python_version
@@ -1531,7 +1531,6 @@ class DataTypeManager(ABC):
         self.target_date_class: DateClassType | None = target_date_class
         self.treat_dot_as_module: bool = treat_dot_as_module or False
         self.use_serialize_as_any: bool = use_serialize_as_any
-        self.omit_redundant_constraints: bool = omit_redundant_constraints
 
         self.data_type: type[DataType] = _create_context_data_type(
             "ContextDataType",

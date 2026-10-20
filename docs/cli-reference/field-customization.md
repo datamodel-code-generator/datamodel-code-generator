@@ -2347,7 +2347,9 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
         "codes": {"type": "array", "items": {"type": "string", "const": "abc", "minLength": 2}},
         "code": {"$ref": "#/$defs/Code"},
         "level": {"$ref": "#/$defs/Level"},
-        "unmet": {"type": "string", "const": "abc", "maxLength": 2}
+        "unmet": {"type": "string", "const": "abc", "maxLength": 2},
+        "ratios": {"type": "array", "items": {"type": "number", "const": 1.5, "minimum": 1}},
+        "patterned": {"type": "array", "items": {"type": "string", "const": "abc", "pattern": "^a", "minLength": 1}}
       }
     }
     ```
@@ -2387,6 +2389,14 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
 
         class ConstModel(RootModel[str]):
             root: Annotated[str, Field(min_length=1)]
+
+
+        class Ratio1(RootModel[float]):
+            root: Annotated[float, Field(ge=1.0)]
+
+
+        class PatternedItem(RootModel[Literal['abc']]):
+            root: Annotated[Literal['abc'], Field(pattern='^a')]
 
 
         class CountModel(RootModel[NonNegativeInt]):
@@ -2449,6 +2459,8 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
             code: Code | None = None
             level: Level | None = None
             unmet: Annotated[Literal['abc'] | None, Field(max_length=2)] = None
+            ratios: list[Ratio1] | None = None
+            patterned: list[PatternedItem] | None = None
         ```
 
         <!-- fmt: on -->
@@ -2498,6 +2510,14 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
 
         class Code(RootModel[Literal['abc']]):
             root: Annotated[Literal['abc'], Field(min_length=2)]
+
+
+        class Ratio1(RootModel[float]):
+            root: Annotated[float, Field(ge=1.0)]
+
+
+        class PatternedItem(RootModel[Literal['abc']]):
+            root: Annotated[Literal['abc'], Field(min_length=1, pattern='^a')]
 
 
         class CountModel(RootModel[NonNegativeInt]):
@@ -2560,6 +2580,8 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
             code: CodeModel | None = None
             level: Level | None = None
             unmet: Annotated[Literal['abc'] | None, Field(max_length=2)] = None
+            ratios: list[Ratio1] | None = None
+            patterned: list[PatternedItem] | None = None
         ```
 
         <!-- fmt: on -->

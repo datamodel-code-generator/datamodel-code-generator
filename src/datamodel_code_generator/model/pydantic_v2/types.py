@@ -251,7 +251,6 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         target_date_class: DateClassType | None = None,  # noqa: ARG002
         treat_dot_as_module: bool | None = None,  # noqa: FBT001
         use_serialize_as_any: bool = False,  # noqa: FBT001, FBT002
-        omit_redundant_constraints: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize the DataTypeManager with Pydantic type mappings."""
         super().__init__(
@@ -267,7 +266,6 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             target_datetime_class=target_datetime_class,
             treat_dot_as_module=treat_dot_as_module,
             use_serialize_as_any=use_serialize_as_any,
-            omit_redundant_constraints=omit_redundant_constraints,
         )
 
         self.type_map: dict[Types, DataType] = self.type_map_factory(
@@ -653,7 +651,6 @@ class DataTypeManager(_PydanticDataTypeManager):
         target_date_class: DateClassType | None = None,
         treat_dot_as_module: bool | None = None,  # noqa: FBT001
         use_serialize_as_any: bool = False,  # noqa: FBT001, FBT002
-        omit_redundant_constraints: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize with pydantic v2-specific DataType."""
         self._target_date_class = target_date_class
@@ -671,7 +668,6 @@ class DataTypeManager(_PydanticDataTypeManager):
             target_date_class=target_date_class,
             treat_dot_as_module=treat_dot_as_module,
             use_serialize_as_any=use_serialize_as_any,
-            omit_redundant_constraints=omit_redundant_constraints,
         )
 
         # Override the data_type with our pydantic v2 version
