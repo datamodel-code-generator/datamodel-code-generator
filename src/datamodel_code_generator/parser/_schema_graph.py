@@ -15,6 +15,7 @@ from __future__ import annotations
 from contextvars import ContextVar
 from copy import copy
 from dataclasses import dataclass, field
+from enum import Enum
 from operator import is_not
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias
@@ -32,6 +33,7 @@ __all__ = [
     "DocumentId",
     "DocumentResources",
     "RefEdge",
+    "RefOrigin",
     "RefReading",
     "ResolvedRef",
     "ResourceRegistry",
@@ -64,12 +66,40 @@ class RefReading:
     """How the root is read."""
 
 
+class RefOrigin(Enum):
+    """The code that produced a reference string an L1 site reads."""
+
+    KEYWORD = "keyword"
+    """A `$ref` or `$dynamicRef` keyword of a loaded document, also after the parser rewrote it to name its target."""
+    DISCRIMINATOR_MAPPING = "discriminator mapping"
+    """A value of a discriminator `mapping`, as a reference: a schema name becomes one under `#/components/schemas`."""
+    DISCRIMINATOR_SUBTYPE = "discriminator subtype"
+    """A component schema whose `allOf` names a schema with a discriminator, as a subtype of that schema."""
+    TYPE_DEFINITION = "x-python-type definition"
+    """A name of an `x-python-type` expression, as the `$defs` entry of the current document that may import it."""
+    RECURSIVE_REF = "$recursiveRef with a fixed target"
+    """A `$recursiveRef` of a schema merged from another document, as the `$ref` to the schema it resolves to there,
+    which the parser writes when the document it is merged into declares no `$recursiveAnchor`."""
+    DYNAMIC_ANCHOR = "$dynamicRef by anchor name"
+    """A plain-name `$dynamicRef` that resolves to no `$dynamicAnchor` of its schema resource, as the first
+    `$dynamicAnchor` of that name in the document being parsed."""
+    ITEM_SCHEMA = "itemSchema projection"
+    """The items of the array the api scope projects a stream of `itemSchema` values to, as the item schema."""
+    DYNAMIC_SCOPE = "dynamic scope"
+    """A `$dynamicRef` bound in the dynamic scope of the model being parsed, or a `$recursiveRef`, which resolves
+    against the document being parsed: its target depends on the schemas that referenced that model, so it has no
+    edge."""
+    UNATTRIBUTED = "unattributed"
+    """A plain string that no producer above names."""
+
+
 @final
 @dataclass(frozen=True, slots=True)
 class RefEdge:
-    """A `$ref` or `$dynamicRef` keyword of a loaded document.
+    """A reference of a loaded document: a `$ref` or `$dynamicRef` keyword, or a reference the parser derives.
 
-    ``ref`` is the value the prepared document holds; it resolves against the base URI of the root of ``document``.
+    ``ref`` resolves against the base URI of the root of ``document``; for a keyword it is the value the prepared
+    document holds.
     """
 
     source: SchemaLocation
@@ -77,6 +107,7 @@ class RefEdge:
     keyword: str
     document: DocumentId
     ref: str
+    origin: RefOrigin = RefOrigin.KEYWORD
 
 
 @final
@@ -310,7 +341,7 @@ class SchemaGraphBuilder:
     The graph keeps the documents alive, so an identity in the location table stays valid for the whole parse.
     """
 
-    __slots__ = ("_documents", "_legacy_keys", "_mounted", "_ref_sites", "locations", "registry")
+    __slots__ = ("_documents", "_legacy_keys", "_mounted", "_ref_sites", "_schema_reads", "locations", "registry")
 
     def __init__(self) -> None:
         """Start an empty graph."""
@@ -319,15 +350,25 @@ class SchemaGraphBuilder:
         self._documents: list[object] = []
         self._mounted: set[int] = set()
         self._legacy_keys: dict[RefEdge, tuple[str, str]] = {}
-        self._ref_sites: dict[str, list[int]] = {}
+        self._ref_sites: dict[tuple[str, RefOrigin], list[int]] = {}
+        self._schema_reads: dict[int, Any] = {}
 
-    def count_ref(self, site: str, ref: str) -> None:
-        """Count a reference that reached a check ``site``, with or without its edge."""
-        self._ref_sites.setdefault(site, [0, 0])[isinstance(ref, ResolvedRef)] += 1
+    def count_ref(self, site: str, ref: str, plain_origin: RefOrigin) -> None:
+        """Count a reference that reached a check ``site``, by its origin, with or without its edge.
 
-    def ref_site_counts(self) -> Mapping[str, tuple[int, int]]:
-        """Return, by site, how many references reached it as a plain string and how many carried their edge."""
-        return {site: (plain, carried) for site, (plain, carried) in sorted(self._ref_sites.items())}
+        A plain string counts under ``plain_origin``, the producer the parser names for it.
+        """
+        origin = ref.edge.origin if isinstance(ref, ResolvedRef) else plain_origin
+        self._ref_sites.setdefault((site, origin), [0, 0])[isinstance(ref, ResolvedRef)] += 1
+
+    def ref_site_counts(self) -> Mapping[tuple[str, RefOrigin], tuple[int, int]]:
+        """Return, by site and origin, how many references reached it as plain strings and how many with their edge."""
+        return {
+            key: (plain, carried)
+            for key, (plain, carried) in sorted(
+                self._ref_sites.items(), key=lambda item: (item[0][0], item[0][1].value)
+            )
+        }
 
     def legacy_key(self, edge: RefEdge, key: str, site: str) -> tuple[str, str]:
         """Return the reference key an edge got at its first consumption and the site of that consumption.
@@ -353,11 +394,14 @@ class SchemaGraphBuilder:
         root: SchemaLocation,
         document: DocumentId,
         reading: RefReading,
+        edge_ref: Callable[[str], str] = str,
     ) -> Any:
         """Return a loaded document whose `$ref` and `$dynamicRef` keywords are ``ResolvedRef``s, copied on write.
 
         ``reading`` says how the root, array items and the value under each key are read, and which of these hold
-        keywords rather than names; instance data and extensions hold no schemas.
+        keywords rather than names; instance data and extensions hold no schemas. ``edge_ref`` gives the reference
+        an edge carries for a value: the value itself, or, in a schema converted from another format, the reference
+        to the location its target is mounted at.
         A container that is its own ancestor is not descended again. A value that is already a ``ResolvedRef`` stays.
         A copied container keeps its type and attributes, as ``index_document`` copies them.
         """
@@ -385,7 +429,7 @@ class SchemaGraphBuilder:
                 source = SchemaLocation(root.document, tokens)
                 for keyword in REF_KEYWORDS:
                     if type(ref := changed.get(keyword, value.get(keyword))) is str:
-                        changed[keyword] = ResolvedRef(ref, RefEdge(source, keyword, document, ref))
+                        changed[keyword] = ResolvedRef(ref, RefEdge(source, keyword, document, edge_ref(ref)))
             active.discard(value_id)
             if not changed:
                 return value
@@ -394,6 +438,20 @@ class SchemaGraphBuilder:
             return copied
 
         return visit(raw, root.tokens, reading.root)
+
+    def read_as_schema(
+        self, raw: dict[str, Any], location: SchemaLocation, document: DocumentId, reading: RefReading
+    ) -> dict[str, Any]:
+        """Return the JSON object at ``location`` of a loaded document that a reference names, read as a schema.
+
+        Its `$ref` and `$dynamicRef` keywords, and those of the schemas below it, are ``ResolvedRef``s also where the
+        walk of the whole document read it as names or data, as a key of a nested definitions container; ``reading``
+        reads the object itself as a schema. A changed object is copied once, at its location.
+        """
+        if (read := self._schema_reads.get(id(raw))) is None:
+            edged = self.with_ref_edges(raw, location, document, reading)
+            read = self._schema_reads[id(raw)] = raw if edged is raw else self.mount(edged, location)
+        return read
 
     def is_mounted(self, value: object) -> bool:
         """Return whether a converted schema was indexed at the location of the value it was converted from."""

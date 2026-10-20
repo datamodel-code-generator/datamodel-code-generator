@@ -165,6 +165,8 @@ from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
     DocumentId,
     DocumentResources,
+    RefEdge,
+    RefOrigin,
     RefReading,
     ResolvedRef,
     ResourceRegistry,
@@ -1137,7 +1139,7 @@ def _document_child_entries(
 
 
 _RefEdgeEntries = Literal["root", "object", "names", "maps"]
-_REF_EDGE_NAME_MAPS = frozenset({"headers", "paths"})
+_REF_EDGE_NAME_MAPS = frozenset({"bindings", "paths"})
 _REF_EDGE_KEYWORDS = (
     _JSON_SCHEMA_MAP_KEYWORDS
     | _JSON_SCHEMA_SEQUENCE_KEYWORDS
@@ -1147,10 +1149,12 @@ _REF_EDGE_KEYWORDS = (
     | _REF_EDGE_NAME_MAPS
     | {
         "additionalOperations",
+        "channel",
         "components",
         "delete",
         "get",
         "head",
+        "headers",
         "message",
         "messageTraits",
         "operationTraits",
@@ -1159,6 +1163,7 @@ _REF_EDGE_KEYWORDS = (
         "payload",
         "pathItems",
         "post",
+        "publish",
         "put",
         "query",
         "reply",
@@ -1167,6 +1172,7 @@ _REF_EDGE_KEYWORDS = (
         "schema",
         "schemas",
         "itemSchema",
+        "subscribe",
         "trace",
         "traits",
         "x-propertyNames",
@@ -4856,7 +4862,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _resolve_type_import_from_defs(self, type_name: str) -> Import | PythonTypeExpr | None:
         """Resolve import for a type name from $defs with x-python-import."""
         try:
-            ref_schema = self._load_ref_schema_object(f"#/$defs/{type_name}")
+            ref = f"#/$defs/{type_name}"
+            ref_schema = self._load_ref_schema_object(
+                self._derived_ref(ref, self._current_document_root(), "x-python-type", ref, RefOrigin.TYPE_DEFINITION)
+            )
             x_python_import = ref_schema.extras.get("x-python-import")
             if isinstance(x_python_import, dict) and (full_path := self._get_x_python_import_path(x_python_import)):
                 return self._get_x_python_import_expression(
@@ -5290,7 +5299,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if fragment:
             pointer = split_json_pointer(raw_doc, fragment)
             target_schema = _get_model_by_decoded_path(raw_doc, pointer)
-        return target_schema
+        return self._read_as_schema(target_schema)
+
+    def _read_as_schema(self, raw: YamlValue) -> YamlValue:
+        """Return a value of a loaded document that a reference names, with the references it holds as a schema."""
+        if (
+            (graph := self._schema_graph) is None
+            or not isinstance(raw, dict)
+            or (location := graph.locations.get(id(raw))) is None
+        ):
+            return raw
+        document = DocumentId(self._schema_resource_document([location.document]))
+        return graph.read_as_schema(raw, location, document, self._ref_reading("object"))
+
+    def _ref_reading(self, root: Literal["root", "object"]) -> RefReading:
+        """Return how ``SchemaGraphBuilder.with_ref_edges`` reads a document (``root``) or a schema (``object``)."""
+        return RefReading(partial(_ref_edge_child_entries, named_entry_maps=self._named_entry_maps), "object", root)
 
     def _ref_schema_exists(self, resolved_ref: str) -> bool:
         """Return whether a resolved JSON pointer identifies a source schema."""
@@ -5309,6 +5333,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._check_ref_target("_load_ref_schema_object", ref, loaded.schema_location)
         return loaded
 
+    def _current_document_root(self) -> SchemaLocation:
+        """Return the location of the root of the document whose schemas are being parsed."""
+        return SchemaLocation(
+            self.model_resolver.join_path(tuple(self.model_resolver.current_root)).partition("#")[0], ()
+        )
+
+    def _derived_ref(self, value: str, source: SchemaLocation | None, keyword: str, ref: str, origin: RefOrigin) -> str:
+        """Return ``value``, a reference the parser derives from the JSON object at ``source`` of a loaded document.
+
+        It carries the edge of ``ref``, the reference under ``keyword`` of that object that names the same target from
+        its document. An object the schema graph does not locate gives no edge; a ``ResolvedRef`` keeps its own.
+        """
+        if source is None or isinstance(value, ResolvedRef):
+            return value
+        document = DocumentId(self._schema_resource_document([source.document]))
+        return ResolvedRef(value, RefEdge(source, keyword, document, ref, origin))
+
     def _check_ref_key(self, site: str, ref: str, key: str) -> None:
         """Report a reference keyword whose key at ``site`` differs from the key its edge got at its first consumption.
 
@@ -5317,7 +5358,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is None:
             return
         graph = cast("SchemaGraphBuilder", self._schema_graph)
-        graph.count_ref(site, ref)
+        graph.count_ref(site, ref, self._plain_ref_origin)
         if not isinstance(ref, ResolvedRef):
             return
         if (first := graph.legacy_key(ref.edge, key, site))[0] == key:
@@ -5347,7 +5388,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is None:
             return
         graph = cast("SchemaGraphBuilder", self._schema_graph)
-        graph.count_ref(site, ref)
+        graph.count_ref(site, ref, self._plain_ref_origin)
         if (
             not isinstance(ref, ResolvedRef)
             or location is None
@@ -5470,8 +5511,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             anchor_name = ref[1:]
             root_key = tuple(self.model_resolver.current_root)
             anchor_map = self._dynamic_anchor_index.get(root_key, {})
-            if anchor_name in anchor_map:
-                return anchor_map[anchor_name]
+            if (anchor := anchor_map.get(anchor_name)) is not None:
+                return self._derived_ref(anchor, item.schema_location, "$dynamicRef", anchor, RefOrigin.DYNAMIC_ANCHOR)
             return ref
         return ref
 
@@ -5710,11 +5751,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         remote or piped generic can bind $dynamicRef to an anchor of the schema that referenced it.
         """
         target_document, _, pointer = location.partition("#")
-        if target_document == self._schema_resource_document(list(self.model_resolver.current_root)):
-            yield f"#{pointer}"
-            return
-        with self._schema_document_context([]), self.root_id_context({}):
-            yield self._location_ref(location)
+        with self._dynamic_scope_refs():
+            if target_document == self._schema_resource_document(list(self.model_resolver.current_root)):
+                yield f"#{pointer}"
+                return
+            with self._schema_document_context([]), self.root_id_context({}):
+                yield self._location_ref(location)
+
+    @contextmanager
+    def _dynamic_scope_refs(self) -> Generator[None, None, None]:
+        """Name the references read inside as resolved in the dynamic scope, for the counts of the schema graph check.
+
+        Such a reference stays a plain string: its target depends on the schemas that referenced the model being
+        parsed.
+        """
+        origin, self._plain_ref_origin = self._plain_ref_origin, RefOrigin.DYNAMIC_SCOPE
+        try:
+            yield
+        finally:
+            self._plain_ref_origin = origin
 
     def _dynamic_specialization_reference(self, ref: str, resolved_ref: str) -> Reference | None:
         """Return a model of the referenced schema specialized for the current dynamic scope, if it differs.
@@ -5977,7 +6032,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for keyword in ("$ref", "$dynamicRef"):
                 match node.get(keyword):
                     case str() as ref if keyword == "$ref" or not _is_plain_name_fragment(ref):
-                        node[keyword] = self._schema_location(self._resolve_inherited_child_ref(ref, defining_ref))
+                        node[keyword] = keep_resolved_ref(
+                            ref, self._schema_location(self._resolve_inherited_child_ref(ref, defining_ref))
+                        )
             match node:
                 case {"$recursiveRef": "#"} if "$ref" not in node and (
                     target := self._recursive_ref_target(defining_ref, path)
@@ -6005,7 +6062,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 tuple(self.model_resolver.current_root)
             ):
                 return None
-        return self._schema_location(self._resolve_inherited_child_ref(target, defining_ref))
+        return self._derived_ref(
+            self._schema_location(self._resolve_inherited_child_ref(target, defining_ref)),
+            SchemaLocation(file_part, tuple(parts)),
+            "$recursiveRef",
+            target,
+            RefOrigin.RECURSIVE_REF,
+        )
 
     def _document_recursive_anchors(self, raw: dict[str, Any]) -> list[str]:
         """Return the $recursiveAnchor references a document registers when parsed: its root and definitions."""
@@ -8321,7 +8384,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         match value:
             case dict() as mapping:
                 if isinstance(ref := mapping.get("$ref"), str):
-                    mapping["$ref"] = self._resolve_inherited_child_ref(ref, parent_ref)
+                    mapping["$ref"] = keep_resolved_ref(ref, self._resolve_inherited_child_ref(ref, parent_ref))
                 for nested_value in mapping.values():
                     self._resolve_schema_refs_in_place(nested_value, parent_ref)
             case list() as items:
@@ -12601,7 +12664,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     preserve_constraints=has_materialized_container_constraints,
                 )
         if item.recursiveRef and not item.ref:
-            return self.get_ref_data_type(self._resolve_recursive_ref(item, path) or "#")
+            with self._dynamic_scope_refs():
+                return self.get_ref_data_type(self._resolve_recursive_ref(item, path) or "#")
         if item.dynamicRef and not item.ref:
             return self._get_dynamic_ref_data_type(item, item.dynamicRef)
         if item.is_ref_with_nullable_only and item.ref:
@@ -13813,7 +13877,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or (document := self._schema_resource_document(list(self.model_resolver.current_root))) not in documents
         ):
             return ref
-        return self._resolve_lenient_resource_ref(ref, self._schema_resource_root_bases[document], document)
+        return keep_resolved_ref(
+            ref, self._resolve_lenient_resource_ref(ref, self._schema_resource_root_bases[document], document)
+        )
 
     def _normalize_external_ref(self, ref: str) -> str:
         """Resolve an external anchor before falling back to legacy shorthand pointers."""
@@ -13830,8 +13896,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         ref_body = self._get_ref_body(relative_path)
         if (anchor_pointer := _find_json_schema_anchor_pointer(ref_body, object_path)) is not None:
-            return f"{relative_path}#{'' if anchor_pointer == '/' else anchor_pointer}"
-        return f"{relative_path}#/{object_path}"
+            return keep_resolved_ref(ref, f"{relative_path}#{'' if anchor_pointer == '/' else anchor_pointer}")
+        return keep_resolved_ref(ref, f"{relative_path}#/{object_path}")
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         if cached_path := self._local_ref_path_cache.get(path):
@@ -14206,7 +14272,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.resolve_ref(obj.ref)
             return
         if obj.recursiveRef:
-            self.resolve_ref(self._resolve_recursive_ref(obj, path) or "#")
+            with self._dynamic_scope_refs():
+                self.resolve_ref(self._resolve_recursive_ref(obj, path) or "#")
             return
         if not (dynamic_ref := obj.dynamicRef):
             return
@@ -14240,6 +14307,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = registry.dynamic_anchors
         self._embedded_resources: dict[tuple[str, str], dict[str, str]] = registry.embedded
         self._dynamic_scope_pointer = ""
+        self._plain_ref_origin = RefOrigin.UNATTRIBUTED
         self._schema_resource_path_parts: dict[str, list[str]] = {}
         self._dynamic_document: str | None = None
         self._dynamic_scope_path: tuple[str, ...] = ()
@@ -14563,7 +14631,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 raw,
                 root,
                 DocumentId(self._schema_resource_document(path_parts)),
-                RefReading(partial(_ref_edge_child_entries, named_entry_maps=self._named_entry_maps), "object", "root"),
+                self._ref_reading("root"),
             ),
             root,
         )
@@ -14571,11 +14639,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._documents_as_written[id(indexed)] = indexed, entry[1]
         return indexed
 
-    def _mount_converted_schema(self, converted: dict[str, Any], location: SchemaLocation | None) -> dict[str, Any]:
-        """Locate a JSON Schema converted from a value of a document at the location of that value (L0)."""
+    def _mount_converted_schema(
+        self, converted: dict[str, Any], location: SchemaLocation | None, container: str = ""
+    ) -> dict[str, Any]:
+        """Locate a JSON Schema converted from a value of a document at the location of that value (L0).
+
+        Its references are local: below ``container``, the pointer the parser keeps the schema at in the document, or
+        to its own root. Their edges name the locations their targets are mounted at.
+        """
         if location is None or (graph := self._schema_graph) is None:
             return converted  # pragma: no cover - the values a parser converts are in documents it has indexed
-        return graph.mount(converted, location)
+
+        def mounted_ref(ref: str) -> str:
+            return f"#{location.pointer}{ref.partition('#')[2].removeprefix(container)}"
+
+        document = DocumentId(self._schema_resource_document([location.document]))
+        edged = graph.with_ref_edges(converted, location, document, self._ref_reading("object"), mounted_ref)
+        return graph.mount(edged, location)
 
     def _add_id_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Add $id and $anchor to model resolver."""
@@ -14679,7 +14759,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self, document: object, tokens: Sequence[str], target: YamlValue, path: list[str]
     ) -> JsonSchemaObject:
         """Validate the value a JSON pointer names in a document; a boolean schema is located by the pointer."""
-        return self._validate_member(target, path, self._member_location(document, *map(str, tokens)))
+        return self._validate_member(
+            self._read_as_schema(target), path, self._member_location(document, *map(str, tokens))
+        )
 
     def _record_boolean_schema_location(self, raw: YamlValue, path: list[str], location: SchemaLocation | None) -> None:
         """Record ``location`` for the model parsed at ``path`` from a boolean schema, whose value cannot carry it."""

@@ -24,6 +24,7 @@ from datamodel_code_generator.parser._api_reference import (
     pointer_fragment,
     pointer_tokens,
 )
+from datamodel_code_generator.parser._schema_graph import RefOrigin
 from datamodel_code_generator.parser.base import Result  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -482,7 +483,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         self._register_discriminator_schema("#", raw)
         components = _mapping(raw.get("components", {}), [document, "components"])
         schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
-        potential: dict[str, list[str]] = {}
+        potential: dict[str, tuple[dict[str, YamlValue], list[str]]] = {}
         for name, schema in schemas.items():
             local_ref = "#" + pointer_fragment(("components", "schemas", name))
             match schema:
@@ -497,16 +498,24 @@ class ApiOpenAPIParser(OpenAPIParser):
                             if isinstance(item, dict) and isinstance(ref := item.get("$ref"), str)
                         ]
                         if refs:
-                            potential[local_ref] = refs
+                            potential[local_ref] = schema, refs
                 case _:
                     self._validate_member(
                         schema, [document, "components", "schemas", name], self._member_location(schemas, name)
                     )
-        for child, refs in potential.items():
+        for child, (schema, refs) in potential.items():
             for parent in refs:
                 resolved = self.model_resolver.resolve_ref(parent)
                 if resolved in self._discriminator_schemas or resolved.partition("#")[0] != document[:-1]:
-                    self._discriminator_subtypes[resolved].append(self.model_resolver.resolve_ref(child))
+                    self._discriminator_subtypes[resolved].append(
+                        self._derived_ref(
+                            self.model_resolver.resolve_ref(child),
+                            self._raw_location(schema),
+                            "allOf",
+                            child,
+                            RefOrigin.DISCRIMINATOR_SUBTYPE,
+                        )
+                    )
 
     def _acquire_schema(
         self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole
@@ -561,7 +570,10 @@ class ApiOpenAPIParser(OpenAPIParser):
         )
         # The existing media helper owns this fresh projection, not the source mapping.
         array_schema = _mapping(projected, path)
-        array_schema["items"] = {"$ref": "#" + pointer_fragment(declaration.tokens)}
+        item_ref = "#" + pointer_fragment(declaration.tokens)
+        array_schema["items"] = {
+            "$ref": self._derived_ref(item_ref, declaration, "itemSchema", item_ref, RefOrigin.ITEM_SCHEMA)
+        }
         projected_path = self._media_schema_path(path, from_item_schema=True)
         with self._schema_frame(
             name,

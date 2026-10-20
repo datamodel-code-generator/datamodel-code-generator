@@ -9255,12 +9255,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if self._schema_graph is not None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
             self._check_model_owners(mode)
         if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is not None:
-            for site, (plain, carried) in self._schema_graph.ref_site_counts().items():
+            for (site, origin), (plain, carried) in self._schema_graph.ref_site_counts().items():
                 mode.record(
-                    f"{CheckArea.SCHEMA_GRAPH.value}: {site} read {carried} references with their edge and {plain} "
-                    f"as plain strings",
+                    f"{CheckArea.SCHEMA_GRAPH.value}: {site} read {carried} references of origin {origin.value} with "
+                    f"their edge and {plain} as plain strings",
                     kind="ref-sites",
                     site=site,
+                    origin=origin.value,
                     plain=plain,
                     carried=carried,
                 )

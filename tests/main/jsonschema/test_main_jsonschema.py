@@ -29737,6 +29737,62 @@ def test_schema_graph_check_of_reference_edges(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+@pytest.mark.parametrize(
+    ("input_path", "input_file_type", "extra_args"),
+    [
+        ("jsonschema/nested_json_pointer.json", "jsonschema", []),
+        ("jsonschema/merged_recursive_ref/holder.json", "jsonschema", []),
+        ("jsonschema/recursive_ref.json", "jsonschema", []),
+        ("jsonschema/dynamic_ref_embedded_generic_specialization.json", "jsonschema", []),
+        ("jsonschema/x_python_type_nested_unknown_type.json", "jsonschema", []),
+        ("openapi/discriminator_allof.yaml", "openapi", []),
+        ("generation_platform/api_scope/items-object.json", "openapi", ["--openapi-scopes", "schemas", "paths", "api"]),
+        ("asyncapi/user-events.yaml", "asyncapi", []),
+        ("asyncapi/stable-surface.yaml", "asyncapi", []),
+        ("asyncapi/protobuf-schema-format.yaml", "asyncapi", []),
+        ("asyncapi/dynamic_ref", "asyncapi", []),
+    ],
+    ids=[
+        "nested-definitions",
+        "recursive-ref-merged",
+        "recursive-ref",
+        "dynamic-ref",
+        "x-python-type",
+        "discriminator",
+        "item-schema",
+        "asyncapi-subscribe",
+        "asyncapi-bindings",
+        "asyncapi-converted",
+        "dynamic-ref-anchor-name",
+    ],
+)
+def test_schema_graph_check_counts_references_by_origin(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, input_path: str, input_file_type: str, extra_args: list[str]
+) -> None:
+    """The report of the schema graph check counts the references each site reads by the code that produced them.
+
+    Every reference whose target is static reaches its sites with an edge: a `$ref` written where the walk of the
+    document reads data or names but a reference names a schema (a nested definitions container, an AsyncAPI binding),
+    a discriminator mapping or subtype, an `x-python-type` name, a `$recursiveRef` merged with a fixed target, a
+    plain-name `$dynamicRef` read by anchor name, an `itemSchema` projection and the references of converted schemas.
+    Only the references resolved in the dynamic scope arrive as plain strings.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
+    source = DATA_PATH / input_path
+    output = tmp_path / ("out" if source.is_dir() else "out.py")
+    run_main_with_args([
+        "--input",
+        str(source),
+        "--input-file-type",
+        input_file_type,
+        "--output",
+        str(output),
+        *extra_args,
+    ])
+    assert_output(report_path.read_text(encoding="utf-8"))
+
+
 NESTED_FACTORY_DATA = JSON_SCHEMA_DATA_PATH / "optional_nested_factory_requirements"
 
 

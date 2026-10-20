@@ -12286,6 +12286,18 @@ True-True-null_pattern-api	main/jsonschema/root_alias_constraints/null_runtime.t
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_native_error.txt	?	= main/jsonschema/numeric_allof_types/native_null_error.txt
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_pattern.py	= main/jsonschema/root_alias_constraints/null_pattern_annotated_api.py
 True-True-null_pattern-cli	main/jsonschema/root_alias_constraints/null_runtime.txt
+[test_schema_graph_check_counts_references_by_origin]
+asyncapi-bindings	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[asyncapi-bindings].txt
+asyncapi-converted	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[asyncapi-converted].txt
+asyncapi-subscribe	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[asyncapi-subscribe].txt
+discriminator	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[discriminator].txt
+dynamic-ref	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[dynamic-ref].txt
+dynamic-ref-anchor-name	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[dynamic-ref-anchor-name].txt
+item-schema	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[item-schema].txt
+nested-definitions	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[nested-definitions].txt
+recursive-ref	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref].txt
+recursive-ref-merged	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[recursive-ref-merged].txt
+x-python-type	main/jsonschema/main_jsonschema/schema_graph_check_counts_references_by_origin[x-python-type].txt
 [test_schema_graph_check_of_a_parser_that_changes_the_registry_walk]
 off	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[off].txt
 report	main/jsonschema/main_jsonschema/schema_graph_check_of_a_parser_that_changes_the_registry_walk[report].report.txt

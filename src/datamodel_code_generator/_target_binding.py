@@ -943,7 +943,13 @@ def _literal_scalar(value: object) -> LiteralScalar | None:  # noqa: PLR0911
             return None
 
 
-def _freeze_literal(value: object, active: set[int]) -> FrozenLiteral:
+def _freeze_literal(value: object, active: set[int], *, document: bool = False) -> FrozenLiteral:
+    """Freeze a literal; with ``document``, a value read from a loaded document, whose strings freeze as plain ``str``.
+
+    A loaded document holds JSON values, and its `$ref` and `$dynamicRef` values carry their edge as a ``str`` subclass.
+    """
+    if document and isinstance(value, str):
+        value = str(value)
     if (scalar := _literal_scalar(value)) is not None:
         return scalar
     if id(value) in active:
@@ -955,7 +961,10 @@ def _freeze_literal(value: object, active: set[int]) -> FrozenLiteral:
                 items: list[tuple[FrozenLiteral, FrozenLiteral]] = []
                 try:
                     for key, item in value.items():
-                        items.append((_freeze_literal(key, active), _freeze_literal(item, active)))
+                        items.append((
+                            _freeze_literal(key, active, document=document),
+                            _freeze_literal(item, active, document=document),
+                        ))
                 except _LiteralCycleError as error:
                     error.tokens = (str(key), *error.tokens)
                     raise
@@ -963,7 +972,7 @@ def _freeze_literal(value: object, active: set[int]) -> FrozenLiteral:
             case list() | tuple() | set() | frozenset() if (kind := _SEQUENCES.get(type(value))) is not None:
                 items_sequence: list[FrozenLiteral] = []
                 try:
-                    items_sequence.extend(_freeze_literal(item, active) for item in value)
+                    items_sequence.extend(_freeze_literal(item, active, document=document) for item in value)
                 except _LiteralCycleError as error:
                     error.tokens = (str(len(items_sequence)), *error.tokens)
                     raise
@@ -991,10 +1000,7 @@ def _facts(
     try:
         for key, value in raw.items():
             if key in keys:
-                facts.append((
-                    key,
-                    _freeze_literal(str(value) if key == "$ref" and isinstance(value, str) else value, set()),
-                ))
+                facts.append((key, _freeze_literal(value, set(), document=True)))
     except _LiteralCycleError as error:
         raise MetadataCycleError(declaration.document, declaration.child(key, *error.tokens).pointer) from error
     return tuple(facts)

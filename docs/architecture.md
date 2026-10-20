@@ -263,8 +263,17 @@ replaced (`_register_schema_resources`) leaves for the same document, and each e
 `get_ref_data_type` and `resolve_ref` compute for it equals the key of its first consumption (`legacy_key`), and the
 object `_load_ref_schema_object`, `get_ref_model`, `_resolve_asyncapi_ref` and the `api` scope load is the registered
 target the edge names, except a pointer the parser splits at another `/` and references of documents that resolve
-references against themselves (`_resolve_lenient_resource_ref`). With `report:<path>`, one line per site also counts the references that reached it
-as plain strings, without an edge. Nothing else reads edges yet.
+references against themselves (`_resolve_lenient_resource_ref`). Every reference whose target is static carries an
+edge: a rewrite of a reference to name its target (rebased, canonicalized, lenient or normalized) keeps it
+(`keep_resolved_ref`); an object a reference names is read as a schema once (`SchemaGraphBuilder.read_as_schema`), so a
+`$ref` the walk read as data or names there (a nested definitions container) gets one too; schemas converted from
+another format are mounted with edges to the locations their targets are mounted at; and a reference the parser derives
+gets the edge of the reference it stands for, with its `RefOrigin` (`_derived_ref`: discriminator mappings and subtypes,
+`x-python-type` names, a merged `$recursiveRef` with a fixed target, a plain-name `$dynamicRef` read by anchor name, an
+`itemSchema` projection, an AsyncAPI Reference Object). Only a `$dynamicRef` bound in the dynamic scope and a
+`$recursiveRef` stay plain strings: their targets depend on the schemas that referenced the model being parsed. With
+`report:<path>`, one line per site and origin counts the references that reached it with their edge and as plain
+strings. Nothing else reads edges yet.
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.

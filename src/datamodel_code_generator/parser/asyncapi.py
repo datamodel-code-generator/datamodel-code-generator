@@ -19,6 +19,7 @@ from datamodel_code_generator import Error, InputFileType, snooper_to_methods
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import AsyncAPIVersion
+from datamodel_code_generator.parser._schema_graph import RefOrigin
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     get_model_by_path,
@@ -362,7 +363,9 @@ class AsyncAPIParser(OpenAPIParser):
         ref_prefix = f"#/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}/components/schemas"
         converted_schema = _move_json_schema_definitions_to_components(converted_schema, ref_prefix=ref_prefix)
         converted_schema.setdefault("title", name)
-        converted_schema = self._mount_converted_schema(converted_schema, location)
+        converted_schema = self._mount_converted_schema(
+            converted_schema, location, f"/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}"
+        )
         context.raw_obj.setdefault(INTERNAL_SCHEMA_CONTAINER, {})[converted_schema_key] = converted_schema
         root_path = [*context.root_parts, f"#/{INTERNAL_SCHEMA_CONTAINER}", converted_schema_key]
         schemas = [self._schema(name, converted_schema, root_path, context)] if include_root_schema else []
@@ -459,7 +462,9 @@ class AsyncAPIParser(OpenAPIParser):
     ) -> AsyncAPIResolvedRef | None:
         if not isinstance(value, dict) or not isinstance(ref := value.get("$ref"), str):
             return None
-        resolved = self._resolve_asyncapi_ref(ref)
+        resolved = self._resolve_asyncapi_ref(
+            self._derived_ref(ref, self._raw_location(value), "$ref", ref, RefOrigin.KEYWORD)
+        )
         return None if tuple(resolved.path) in seen_paths else resolved
 
     def _recurse_into_ref(

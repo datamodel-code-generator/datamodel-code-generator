@@ -30,7 +30,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIVersion, VersionMode
-from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
+from datamodel_code_generator.parser._schema_graph import RefOrigin, keep_resolved_ref
 from datamodel_code_generator.parser.base import Result, get_special_path
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
@@ -539,11 +539,19 @@ class OpenAPIParser(JsonSchemaParser):
             mapping = discriminator.get("mapping", {})
             if mapping:
                 subtypes = [
-                    self._normalize_discriminator_mapping_ref(v) for v in mapping.values() if isinstance(v, str)
+                    self._derived_ref(
+                        normalized := self._normalize_discriminator_mapping_ref(value),
+                        self._raw_location(mapping),
+                        name,
+                        normalized,
+                        RefOrigin.DISCRIMINATOR_MAPPING,
+                    )
+                    for name, value in mapping.items()
+                    if isinstance(value, str)
                 ]
                 if subtypes and ref.partition("#")[0] == current_document:
                     return build_union(self.data_type, [self._get_discriminator_subtype_data_type(v) for v in subtypes])
-                subtypes = [self._resolve_inherited_child_ref(v, ref) for v in subtypes]
+                subtypes = [keep_resolved_ref(v, self._resolve_inherited_child_ref(v, ref)) for v in subtypes]
         if not subtypes:
             return None
         data_types: list[DataType] = []
@@ -557,8 +565,7 @@ class OpenAPIParser(JsonSchemaParser):
                 ):
                     data_types.append(self._get_discriminator_subtype_data_type(subtype))
             else:
-                local_ref = f"#{fragment}"
-                data_types.append(self._get_discriminator_subtype_data_type(local_ref))
+                data_types.append(self._get_discriminator_subtype_data_type(keep_resolved_ref(subtype, f"#{fragment}")))
         return build_union(self.data_type, data_types)
 
     def get_ref_data_type(self, ref: str) -> DataType:
@@ -1243,8 +1250,16 @@ class OpenAPIParser(JsonSchemaParser):
                 )
                 # External parents may be registered after this child document is read.
                 if resolved_ref in self._discriminator_schemas or resolved_ref.partition("#")[0] != document[:-1]:
-                    subtype_ref = self.model_resolver.resolve_ref(f"#/components/schemas/{schema_name}")
-                    self._discriminator_subtypes[resolved_ref].append(subtype_ref)
+                    local_ref = f"#/components/schemas/{schema_name}"
+                    self._discriminator_subtypes[resolved_ref].append(
+                        self._derived_ref(
+                            self.model_resolver.resolve_ref(local_ref),
+                            self._raw_location(schemas[schema_name]),
+                            "allOf",
+                            local_ref,
+                            RefOrigin.DISCRIMINATOR_SUBTYPE,
+                        )
+                    )
 
     def _register_discriminator_schema(self, ref: str, schema: dict[str, Any]) -> None:
         discriminator = schema.get("discriminator")
