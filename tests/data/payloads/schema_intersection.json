@@ -6112,5 +6112,49 @@
         ]
       }
     }
+  },
+  "null_multiple_types_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "u": {
+        "valid": [
+          "s",
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          1,
+          {
+            "x": "a"
+          }
+        ]
+      },
+      "v": {
+        "valid": [
+          null,
+          "s",
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "w": {
+        "valid": [
+          "s",
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          null,
+          1
+        ]
+      }
+    }
   }
 }

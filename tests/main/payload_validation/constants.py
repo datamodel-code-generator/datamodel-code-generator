@@ -325,6 +325,15 @@ EXCLUDED_CASES: dict[str, str] = {
         "top-level nullable object components need a wrapper policy; "
         "test_main_openapi_strip_default_none_constructor_order imports the models that reference them",
     ),
+    **dict.fromkeys(
+        (
+            "openapi/schema_intersection/null_multiple_types_oas30.yaml::components.schemas.U",
+            "openapi/schema_intersection/null_multiple_types_oas30.yaml::components.schemas.V",
+            "openapi/schema_intersection/null_multiple_types_oas30.yaml::components.schemas.W",
+        ),
+        "a top-level type list holding object is a model beside the root model that holds it, and the payload type "
+        "is the model; test_schema_intersection_shape_payloads checks them through Model",
+    ),
     "openapi/type_overrides_constructor_order.yaml::components.schemas.Nullable": (
         "top-level nullable object components need a wrapper policy; "
         "test_main_openapi_type_overrides_constructor_order imports the models that reference it"

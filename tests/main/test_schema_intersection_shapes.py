@@ -17,6 +17,7 @@ from datamodel_code_generator import DataModelType
 from tests.conftest import assert_output
 from tests.main.conftest import (
     DATA_PATH,
+    EXPERIMENTAL_MISSING_IMPORT_WARNING,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
     _generated_model,
@@ -65,6 +66,11 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "nullable_array_items_oas30": (
         (DataModelType.PydanticV2BaseModel, ("--strict-nullable", "--use-annotated", "--field-constraints")),
         (DataModelType.MsgspecStruct, ("--strict-nullable",)),
+    ),
+    "null_multiple_types_oas30": (
+        (DataModelType.PydanticV2BaseModel, ("--use-missing-sentinel",)),
+        (DataModelType.PydanticV2BaseModel, ("--strict-nullable", "--use-missing-sentinel")),
+        (DataModelType.PydanticV2Dataclass, ("--use-missing-sentinel",)),
     ),
     "ref_sibling_nullable_oas30": ((DataModelType.PydanticV2BaseModel, ("--strict-nullable",)),),
     "ref_siblings": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
@@ -152,6 +158,7 @@ def _outcome(decode: Callable[[str], Any], rejected: type[Exception], instance: 
     return "accepted"
 
 
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
 @pytest.mark.parametrize("stem", DOCUMENTS)
 def test_schema_intersection_shape_payloads(tmp_path: Path, stem: str) -> None:
     """Prove the payload lists with jsonschema, then record what each generated model accepts today."""

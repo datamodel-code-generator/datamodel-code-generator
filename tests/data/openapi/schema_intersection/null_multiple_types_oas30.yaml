@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: t
+  version: "1"
+paths: {}
+components:
+  schemas:
+    U:
+      type: [object, string]
+      nullable: true
+      properties:
+        x:
+          type: integer
+    V:
+      type: [object, string, "null"]
+      properties:
+        x:
+          type: integer
+    W:
+      type: [object, string]
+      properties:
+        x:
+          type: integer
+    Model:
+      type: object
+      properties:
+        u:
+          $ref: '#/components/schemas/U'
+        v:
+          $ref: '#/components/schemas/V'
+        w:
+          $ref: '#/components/schemas/W'

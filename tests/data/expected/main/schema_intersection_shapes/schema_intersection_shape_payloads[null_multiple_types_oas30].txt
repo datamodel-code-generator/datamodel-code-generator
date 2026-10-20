@@ -1,0 +1,120 @@
+pydantic_v2.BaseModel default u "s" accepted
+pydantic_v2.BaseModel default u {"x": 1} accepted
+pydantic_v2.BaseModel default u 1 rejected
+pydantic_v2.BaseModel default u {"x": "a"} rejected
+pydantic_v2.BaseModel default v null accepted
+pydantic_v2.BaseModel default v "s" accepted
+pydantic_v2.BaseModel default v {"x": 1} accepted
+pydantic_v2.BaseModel default v 1 rejected
+pydantic_v2.BaseModel default w "s" accepted
+pydantic_v2.BaseModel default w {"x": 1} accepted
+pydantic_v2.BaseModel default w null accepted
+pydantic_v2.BaseModel default w 1 rejected
+pydantic_v2.dataclass default u "s" accepted
+pydantic_v2.dataclass default u {"x": 1} accepted
+pydantic_v2.dataclass default u 1 rejected
+pydantic_v2.dataclass default u {"x": "a"} rejected
+pydantic_v2.dataclass default v null accepted
+pydantic_v2.dataclass default v "s" accepted
+pydantic_v2.dataclass default v {"x": 1} accepted
+pydantic_v2.dataclass default v 1 rejected
+pydantic_v2.dataclass default w "s" accepted
+pydantic_v2.dataclass default w {"x": 1} accepted
+pydantic_v2.dataclass default w null accepted
+pydantic_v2.dataclass default w 1 rejected
+msgspec.Struct default u "s" accepted
+msgspec.Struct default u {"x": 1} accepted
+msgspec.Struct default u 1 rejected
+msgspec.Struct default u {"x": "a"} rejected
+msgspec.Struct default v null accepted
+msgspec.Struct default v "s" accepted
+msgspec.Struct default v {"x": 1} accepted
+msgspec.Struct default v 1 rejected
+msgspec.Struct default w "s" accepted
+msgspec.Struct default w {"x": 1} accepted
+msgspec.Struct default w null rejected
+msgspec.Struct default w 1 rejected
+pydantic_v2.BaseModel --field-constraints u "s" accepted
+pydantic_v2.BaseModel --field-constraints u {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints u 1 rejected
+pydantic_v2.BaseModel --field-constraints u {"x": "a"} rejected
+pydantic_v2.BaseModel --field-constraints v null accepted
+pydantic_v2.BaseModel --field-constraints v "s" accepted
+pydantic_v2.BaseModel --field-constraints v {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints v 1 rejected
+pydantic_v2.BaseModel --field-constraints w "s" accepted
+pydantic_v2.BaseModel --field-constraints w {"x": 1} accepted
+pydantic_v2.BaseModel --field-constraints w null accepted
+pydantic_v2.BaseModel --field-constraints w 1 rejected
+pydantic_v2.BaseModel --use-annotated u "s" accepted
+pydantic_v2.BaseModel --use-annotated u {"x": 1} accepted
+pydantic_v2.BaseModel --use-annotated u 1 rejected
+pydantic_v2.BaseModel --use-annotated u {"x": "a"} rejected
+pydantic_v2.BaseModel --use-annotated v null accepted
+pydantic_v2.BaseModel --use-annotated v "s" accepted
+pydantic_v2.BaseModel --use-annotated v {"x": 1} accepted
+pydantic_v2.BaseModel --use-annotated v 1 rejected
+pydantic_v2.BaseModel --use-annotated w "s" accepted
+pydantic_v2.BaseModel --use-annotated w {"x": 1} accepted
+pydantic_v2.BaseModel --use-annotated w null accepted
+pydantic_v2.BaseModel --use-annotated w 1 rejected
+pydantic_v2.BaseModel --collapse-root-models u "s" accepted
+pydantic_v2.BaseModel --collapse-root-models u {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models u 1 rejected
+pydantic_v2.BaseModel --collapse-root-models u {"x": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models v null accepted
+pydantic_v2.BaseModel --collapse-root-models v "s" accepted
+pydantic_v2.BaseModel --collapse-root-models v {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models v 1 rejected
+pydantic_v2.BaseModel --collapse-root-models w "s" accepted
+pydantic_v2.BaseModel --collapse-root-models w {"x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models w null accepted
+pydantic_v2.BaseModel --collapse-root-models w 1 rejected
+msgspec.Struct --collapse-root-models u "s" accepted
+msgspec.Struct --collapse-root-models u {"x": 1} accepted
+msgspec.Struct --collapse-root-models u 1 rejected
+msgspec.Struct --collapse-root-models u {"x": "a"} rejected
+msgspec.Struct --collapse-root-models v null accepted
+msgspec.Struct --collapse-root-models v "s" accepted
+msgspec.Struct --collapse-root-models v {"x": 1} accepted
+msgspec.Struct --collapse-root-models v 1 rejected
+msgspec.Struct --collapse-root-models w "s" accepted
+msgspec.Struct --collapse-root-models w {"x": 1} accepted
+msgspec.Struct --collapse-root-models w null rejected
+msgspec.Struct --collapse-root-models w 1 rejected
+pydantic_v2.BaseModel --use-missing-sentinel u "s" accepted
+pydantic_v2.BaseModel --use-missing-sentinel u {"x": 1} accepted
+pydantic_v2.BaseModel --use-missing-sentinel u 1 rejected
+pydantic_v2.BaseModel --use-missing-sentinel u {"x": "a"} rejected
+pydantic_v2.BaseModel --use-missing-sentinel v null accepted
+pydantic_v2.BaseModel --use-missing-sentinel v "s" accepted
+pydantic_v2.BaseModel --use-missing-sentinel v {"x": 1} accepted
+pydantic_v2.BaseModel --use-missing-sentinel v 1 rejected
+pydantic_v2.BaseModel --use-missing-sentinel w "s" accepted
+pydantic_v2.BaseModel --use-missing-sentinel w {"x": 1} accepted
+pydantic_v2.BaseModel --use-missing-sentinel w null rejected
+pydantic_v2.BaseModel --use-missing-sentinel w 1 rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel u "s" accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel u {"x": 1} accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel u 1 rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel u {"x": "a"} rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel v null accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel v "s" accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel v {"x": 1} accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel v 1 rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel w "s" accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel w {"x": 1} accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel w null rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel w 1 rejected
+pydantic_v2.dataclass --use-missing-sentinel u "s" accepted
+pydantic_v2.dataclass --use-missing-sentinel u {"x": 1} accepted
+pydantic_v2.dataclass --use-missing-sentinel u 1 rejected
+pydantic_v2.dataclass --use-missing-sentinel u {"x": "a"} rejected
+pydantic_v2.dataclass --use-missing-sentinel v null accepted
+pydantic_v2.dataclass --use-missing-sentinel v "s" accepted
+pydantic_v2.dataclass --use-missing-sentinel v {"x": 1} accepted
+pydantic_v2.dataclass --use-missing-sentinel v 1 rejected
+pydantic_v2.dataclass --use-missing-sentinel w "s" accepted
+pydantic_v2.dataclass --use-missing-sentinel w {"x": 1} accepted
+pydantic_v2.dataclass --use-missing-sentinel w null rejected
+pydantic_v2.dataclass --use-missing-sentinel w 1 rejected

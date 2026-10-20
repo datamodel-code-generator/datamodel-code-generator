@@ -90,13 +90,13 @@ NullRule: TypeAlias = Literal[
     "map-type-list",
     "map-strict-nullable",
     "legacy-map-copied-nullable",
-    "legacy-all-of-own-nullable-ungated",
+    "all-of-own-null",
     "all-of-every-part-null",
     "all-of-not-null",
     "force-optional",
     "legacy-root-type-nullable-ungated",
     "root-type-not-nullable",
-    "legacy-multiple-types-nullable-not-recorded",
+    "multiple-types-root-declared",
     "array-force-optional",
     "array-strict",
     "legacy-array-nullable-ungated",
@@ -124,14 +124,16 @@ NullRule: TypeAlias = Literal[
 * ``legacy-nullable-as-type-list``: OpenAPI reads the type as a ``type`` list holding null instead, from the moment
   ``JsonSchemaParser._get_data_type`` first builds the type of the schema object: the sites that read the schema
   object afterwards see the null of a ``type`` list, those before see none, and ``JsonSchemaObject.type_has_null``
-  keeps the answer of its first read.
+  keeps the answer of its first read. RP13 deletes the row with rows ``legacy-root-model-type-only`` and
+  ``legacy-ref-target-null-type-only``: a use writes the null of its target once, at render preparation.
 * ``scalar-not-null``: a scalar type adds no null.
 * ``object-type-or-strict-nullable``: an object model is nullable by ``type-or-member-null`` or by ``nullable: true``
   under ``--strict-nullable``.
 * ``legacy-root-model-type-only``: a root model is nullable by ``type-or-member-null`` only; ``nullable`` does not
-  count (O3).
+  count (O3). RP13 deletes the row (see ``legacy-nullable-as-type-list``).
 * ``legacy-ref-target-null-type-only``: a referenced schema makes its references nullable when its ``type`` is the one
   string null, or by ``nullable: true`` under ``--strict-nullable``; a ``type`` list holding null does not count.
+  RP13 deletes the row (see ``legacy-nullable-as-type-list``).
 * ``strict-nullable-ref``: a ``$ref`` beside only ``nullable: true`` admits null under ``--strict-nullable``.
 * ``type-union-null``: the union of a ``type`` list admits null by ``type-or-member-null``.
 * ``map-type-list``: an object map whose ``type`` list holds object and null admits null.
@@ -139,17 +141,17 @@ NullRule: TypeAlias = Literal[
   ``--strict-nullable``.
 * ``legacy-map-copied-nullable``: except a ``nullable`` that a combined schema copied into its branch, whose union
   admits it.
-* ``legacy-all-of-own-nullable-ungated``: the schema an ``allOf`` merges admits null by its own ``nullable``, also
-  without ``--strict-nullable``, or by its own ``type`` list holding null.
+* ``all-of-own-null``: the schema an ``allOf`` merges admits null by its own ``nullable`` or its own ``type`` list
+  holding null, also without ``--strict-nullable``, as root types read it (``legacy-root-type-nullable-ungated``).
 * ``all-of-every-part-null``: a merged map also admits null when every typed part lists null (G01 decision 3).
 * ``all-of-not-null``: neither holds.
 * ``force-optional``: ``--force-optional`` makes a root field optional and leaves its nullability undecided.
 * ``legacy-root-type-nullable-ungated``: a root field is optional and nullable by its ``nullable``, also without
   ``--strict-nullable``; ``type`` lists do not count.
 * ``root-type-not-nullable``: otherwise its default decides.
-* ``legacy-multiple-types-nullable-not-recorded``: the root field of a ``type`` list with an object is optional by
-  ``nullable`` or ``type-or-member-null``, but records only the latter, under ``--strict-nullable`` or
-  ``--use-missing-sentinel``.
+* ``multiple-types-root-declared``: the root field of a ``type`` list with an object is optional by ``nullable`` or
+  ``type-or-member-null``, and under ``--strict-nullable`` or ``--use-missing-sentinel`` writes that null, as
+  ``field-declared`` does.
 * ``array-force-optional``: ``--force-optional`` makes an array field optional with undecided nullability.
 * ``array-strict``: under ``--strict-nullable`` an array field is required without a default and writes the
   ``nullable`` its schema declares.
@@ -284,7 +286,7 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
             return NullFacts("map-strict-nullable", admits_null=bool(mode.strict_nullable and sources.nullable))
         case "all-of-map" | "all-of-value":
             if sources.nullable or sources.type_lists_null:
-                return NullFacts("legacy-all-of-own-nullable-ungated", admits_null=True)
+                return NullFacts("all-of-own-null", admits_null=True)
             if site == "all-of-map" and parts_null:
                 return NullFacts("all-of-every-part-null", admits_null=True)
             return NullFacts("all-of-not-null", admits_null=False)
@@ -295,10 +297,11 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
                 return NullFacts("legacy-root-type-nullable-ungated", admits_null=True, required=False)
             return NullFacts("root-type-not-nullable")
         case "multiple-types-root":
+            declared = bool(sources.nullable) or type_null
             return NullFacts(
-                "legacy-multiple-types-nullable-not-recorded",
-                admits_null=type_null if (mode.strict_nullable or mode.use_missing_sentinel) else None,
-                required=not (mode.force_optional or sources.nullable or type_null),
+                "multiple-types-root-declared",
+                admits_null=declared if (mode.strict_nullable or mode.use_missing_sentinel) else None,
+                required=not (mode.force_optional or declared),
             )
         case "array-field":
             if mode.force_optional:

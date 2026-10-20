@@ -393,6 +393,7 @@ openapi/schema_extensions.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_extensions_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/discriminator_narrowing.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/discriminator_narrowing_inline.yaml	yaml_fast_constructor/parity.txt
+openapi/schema_intersection/null_multiple_types_oas30.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/nullable_array_items_oas30.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/ref_sibling_nullable_oas30.yaml	yaml_fast_constructor/parity.txt
 openapi/schema_intersection/ref_siblings_oas30.yaml	yaml_fast_constructor/parity.txt
