@@ -1,7 +1,9 @@
 """Debug checks that watch how the passes of one parse change the model graph.
 
 Two check areas share this module. With neither variable set, ``Parser.parse`` installs nothing, and the scopes the
-drivers of ``parser/base.py`` open (``pass_scope``, ``fact_pass``, ``module_checkpoint``) are one shared no-op.
+drivers of ``parser/base.py`` open (``pass_scope``, ``fact_pass``, ``module_checkpoint``) are one shared no-op. Inside
+``recording_pass_trace``, ``fact_pass`` and ``module_checkpoint`` also record each pass and module, whether an area is
+on or not (``scripts/check_pass_pipeline.py``).
 
 ``DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES``: after L1, a data type, a field or a model may change a fact or
 presentation attribute of ``ATTRIBUTE_FACTS`` only while a ``GenerationStore`` operation that some row names in
@@ -10,7 +12,7 @@ finality check's. A write outside every store operation is reported with the lin
 ran in and the pass scope and phase of the drivers (``pass_scope``), once per line and parse; the construction of an
 object (its ``__init__`` and what that calls) writes freely.
 
-``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``: the drivers run every pass that can change models inside
+``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``: the drivers run every pass inside
 ``fact_pass(DECL)`` with its declaration from ``parser/_pass_decls.py``. The parse keeps one fingerprint per model: the
 values of the ``fact`` rows of ``ATTRIBUTE_FACTS`` on the model, its fields and every data type of their types and of
 its bases, holding the objects it keys. When a pass ends, the fingerprints of the models it touched are compared with
@@ -101,6 +103,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "KNOWN_WRITES",
+    "MODULE_TRACE_MARK",
     "KnownWrite",
     "Rule",
     "arm_parse_checks",
@@ -109,6 +112,7 @@ __all__ = [
     "parse_checks",
     "pass_scope",
     "record_ordering_inputs",
+    "recording_pass_trace",
 ]
 
 _PACKAGE_ROOT: Final = Path(__file__).parents[1]
@@ -135,6 +139,9 @@ _LIST_MUTATORS: Final = (
 _KEYED_MUTATORS: Final = frozenset({"__delitem__", "__setitem__", "pop"})
 
 _CHECKS: Final[ContextVar[_ParseChecks | None]] = ContextVar("parse_checks", default=None)
+_TRACE: Final[ContextVar[list[str] | None]] = ContextVar("pass_trace", default=None)
+MODULE_TRACE_MARK: Final = "-- module"
+"""The line a pass trace records when the pipeline starts processing an output module."""
 _NO_SCOPE: Final = nullcontext()
 
 
@@ -1139,18 +1146,33 @@ def _scope(checks: _ParseChecks, name: str, phase: Phase) -> Generator[None, Non
 def fact_pass(decl: PassDecl, models: Sequence[DataModel] | None = None) -> AbstractContextManager[None]:
     """Run the pass ``decl`` declares; ``models`` are the models it works on (those of its module, for a module pass).
 
-    A no-op unless the finality check is armed.
+    A no-op unless the finality check is armed or a pass trace is recorded.
     """
+    if (trace := _TRACE.get()) is not None:
+        trace.append(decl.name)
     if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
         return _NO_SCOPE
     return finality.pass_scope(decl, models)
 
 
 def module_checkpoint(models: list[DataModel]) -> AbstractContextManager[None]:
-    """Process the module whose models are ``models``; a no-op unless the finality check is armed."""
+    """Process the module whose models are ``models``; a no-op unless the finality check is armed or a trace records."""
+    if (trace := _TRACE.get()) is not None:
+        trace.append(MODULE_TRACE_MARK)
     if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
         return _NO_SCOPE
     return finality.module_scope(models)
+
+
+@contextmanager
+def recording_pass_trace() -> Generator[list[str], None, None]:
+    """Record the name of every pass that runs while the block runs, and ``MODULE_TRACE_MARK`` before each module."""
+    trace: list[str] = []
+    token = _TRACE.set(trace)
+    try:
+        yield trace
+    finally:
+        _TRACE.reset(token)
 
 
 def record_ordering_inputs(model: DataModel, bases: Iterable[DataModel]) -> None:

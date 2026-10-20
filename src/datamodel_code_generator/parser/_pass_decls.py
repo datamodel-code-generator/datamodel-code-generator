@@ -1,12 +1,11 @@
 """What each pass of ``Parser.parse()`` reads and writes, in today's execution order.
 
 One ``PassDecl`` per pass: the methods of ``parser/base.py`` that the drivers call and the named blocks of the drivers
-themselves. ``reads`` and ``writes`` use the facts of ``parser/_facts.py``. The drivers run each pass that can change
-models inside ``fact_pass(DECL)`` (``parser/_finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``
-checks the writes against the declaration; the bookkeeping steps that only fill local variables are declared but run
-outside a scope. The writes of ``fact`` rows are checked at run time; reads and the writes of presentation rows are
-declared from the code. ``PASS_DECLS`` lists every declaration in execution order and is the source of the generated
-pass table in ``docs/architecture.md``.
+themselves. ``reads`` and ``writes`` use the facts of ``parser/_facts.py``. The drivers run every pass inside
+``fact_pass(DECL)`` (``parser/_finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` checks the
+writes against the declaration and a pass trace records the pass. The writes of ``fact`` rows are checked at run time;
+reads and the writes of presentation rows are declared from the code. ``PASS_DECLS`` lists every declaration in
+execution order and is the source of the generated pass table in ``docs/architecture.md``.
 """
 
 from __future__ import annotations
@@ -101,6 +100,14 @@ PARSE_RAW = PassDecl(
     PassKind.TRANSFORM,
     writes=_facts(*Fact, RenderFact.MODEL_ORDER, RenderFact.CLASS_NAMES),
     summary="L0 and L1, the parser subclass hook: builds and registers every model.",
+)
+INDEX_CONST_NARROWED_VALUES = PassDecl(
+    "index_const_narrowed_values",
+    Phase.PARSE,
+    Scope.GLOBAL,
+    PassKind.BOOKKEEPING,
+    reads=_facts(Fact.FIELD_TYPES),
+    summary="Indexes the data types whose value a const narrows, by data type.",
 )
 
 SETTLE_YIELDING_NAMES = PassDecl(
@@ -287,6 +294,14 @@ SET_CIRCULAR_ROOT_MODEL_PATHS = PassDecl(
     reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_MEMBERSHIP),
     writes=_facts(RenderFact.PLANS),
     condition="collapse_root_models",
+)
+RECORD_EMITTING_MODULES = PassDecl(
+    "record_emitting_modules",
+    Phase.PLAN,
+    Scope.GLOBAL,
+    PassKind.BOOKKEEPING,
+    reads=_facts(RenderFact.MODULE_MEMBERSHIP),
+    summary="Records the module that writes each model, for the names --collapse-root-models-name-strategy gives.",
 )
 
 RECORD_DECIMAL_ALIAS_MODELS = PassDecl(

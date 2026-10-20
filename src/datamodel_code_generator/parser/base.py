@@ -8799,12 +8799,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Reuse compares the tags of discriminated unions as their mappings give them before any model is merged,
         since merging redirects the variants of a union to models that its mapping does not name.
         """
-        module_models = _group_models_by_module(
-            sorted_data_models.values(), module_split_mode, self.target_python_version
-        )
-        model_to_module_models, model_path_to_module_name = _index_module_models(module_models, module_split_mode)
-        self._collapsed_reuse_models.clear()
-        self._collapsed_reuse_users.clear()
+        with fact_pass(decls.GROUP_MODELS_BY_MODULE):
+            module_models = _group_models_by_module(
+                sorted_data_models.values(), module_split_mode, self.target_python_version
+            )
+            model_to_module_models, model_path_to_module_name = _index_module_models(module_models, module_split_mode)
+        with fact_pass(decls.RESET_COLLAPSED_REUSE_STATE):
+            self._collapsed_reuse_models.clear()
+            self._collapsed_reuse_users.clear()
         with fact_pass(decls.SNAPSHOT_UNION_TAGS):
             self._reuse_union_tags = (
                 {model: tags for _, models in module_models for model in models if (tags := _union_tags(model))}
@@ -8845,7 +8847,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
 
         if path_mapping:
-            require_update_action_models[:] = [path_mapping.get(path, path) for path in require_update_action_models]
+            with fact_pass(decls.REMAP_REQUIRE_UPDATE_ACTION_PATHS):
+                require_update_action_models[:] = [
+                    path_mapping.get(path, path) for path in require_update_action_models
+                ]
 
         return (
             module_models,
@@ -8896,7 +8901,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_path_to_module_name=model_path_to_module_name,
             can_retain_cache=can_retain_cache,
         )
-        unused_models_start = len(unused_models)
+        with fact_pass(decls.MARK_UNUSED_MODELS_START, models):
+            unused_models_start = len(unused_models)
         models = self.__process_module_models(
             models,
             unused_models=unused_models,
@@ -8909,9 +8915,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             is_init=is_init,
             internal_modules=internal_modules,
         )
-        current_unused_models: Sequence[DataModel] = ()
-        if unused_models_start != len(unused_models):
-            current_unused_models = unused_models[unused_models_start:]
+        with fact_pass(decls.SNAPSHOT_MODULE_UNUSED_MODELS, models):
+            current_unused_models: Sequence[DataModel] = ()
+            if unused_models_start != len(unused_models):
+                current_unused_models = unused_models[unused_models_start:]
         self.__finalize_module_models(
             models,
             unused_models=current_unused_models,
@@ -8935,7 +8942,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> bool:
         """Prepare aliases, imports, and inherited enums before default processing."""
         if "Decimal" in all_module_fields:
-            self._constrained_decimal_alias_model_ids.update(map(id, models))
+            with fact_pass(decls.RECORD_DECIMAL_ALIAS_MODELS, models):
+                self._constrained_decimal_alias_model_ids.update(map(id, models))
         with fact_pass(decls.ALIAS_SHADOWED_IMPORTS, models):
             self.__alias_shadowed_imports(models, all_module_fields, can_retain_cache=can_retain_cache)
         with fact_pass(decls.OVERRIDE_REQUIRED_FIELD, models):
@@ -8953,10 +8961,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
         with fact_pass(decls.EXTRACT_INHERITED_ENUM, models):
             self.__extract_inherited_enum(models)
-        return can_retain_cache and _can_retain_model_imports_cache(
-            models,
-            configured_types_are_builtin=self._configured_generation_types_are_builtin,
-        )
+        with fact_pass(decls.REFRESH_IMPORT_CACHE_RETENTION, models):
+            return can_retain_cache and _can_retain_model_imports_cache(
+                models,
+                configured_types_are_builtin=self._configured_generation_types_are_builtin,
+            )
 
     def __process_module_models(  # noqa: PLR0913
         self,
@@ -9078,11 +9087,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     "python.builtin_generic_strings", self.target_python_version.version_key
                 ),
             )
-        if not unused_models:
-            live_models = models
-        else:
-            unused_model_ids = {id(model) for model in unused_models}
-            live_models = [model for model in models if id(model) not in unused_model_ids]
+        with fact_pass(decls.COLLECT_LIVE_MODELS, models):
+            if not unused_models:
+                live_models = models
+            else:
+                unused_model_ids = {id(model) for model in unused_models}
+                live_models = [model for model in models if id(model) not in unused_model_ids]
         with fact_pass(decls.SET_VALIDATE_DEFAULT_ON_FIELDS, live_models):
             self.__set_validate_default_on_fields(live_models, can_retain_cache=can_retain_cache)
         if self.use_annotated and use_deferred_annotations:
@@ -9091,7 +9101,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         with fact_pass(decls.WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS, live_models):
             self.__warn_required_assignments_after_defaults(live_models)
         if not can_retain_cache:
-            _clear_model_imports_cache(models)
+            with fact_pass(decls.CLEAR_MODULE_IMPORTS_CACHE, models):
+                _clear_model_imports_cache(models)
 
     def _finalize_structured_imports(self, contexts: list[ModuleContext]) -> None:
         """Resolve aliases introduced after generic base classes are applied."""
@@ -9195,7 +9206,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.__apply_generic_base_class(contexts)
         self.generation_store.enter_phase(Phase.DECIDE)
         self.generation_store.enter_phase(Phase.RENDER_PREPARATION)
-        all_models = [model for ctx in contexts for model in ctx.models]
+        with fact_pass(decls.COLLECT_ALL_MODELS):
+            all_models = [model for ctx in contexts for model in ctx.models]
         with fact_pass(decls.PREPARE_TYPE_ALIAS_FIELDS, all_models):
             self.__prepare_type_alias_fields(contexts, unused_models)
         with fact_pass(decls.FINALIZE_TYPE_ALIAS_USERS, all_models):
@@ -9205,8 +9217,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         with fact_pass(decls.FINALIZE_STRUCTURED_IMPORTS, all_models):
             self._finalize_structured_imports(contexts)
         if self.use_default_factory_for_optional_nested_models:
-            # Inherited defaults may have changed since a consumer first queried its factory imports.
-            _clear_model_imports_cache(all_models)
+            with fact_pass(decls.CLEAR_DEFAULT_FACTORY_IMPORT_CACHES, all_models):
+                # Inherited defaults may have changed since a consumer first queried its factory imports.
+                _clear_model_imports_cache(all_models)
         if self.use_root_model_sequence_interface:
             with fact_pass(decls.FINALIZE_SEQUENCE_INTERFACE, all_models):
                 for model in all_models:
@@ -9825,7 +9838,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         finally:
             SCHEMA_GRAPH.reset(token)
 
-    def __prepare_parse(  # noqa: PLR0913
+    def __prepare_parse(  # noqa: PLR0912, PLR0913, PLR0915
         self,
         *,
         with_import: bool | None,
@@ -9839,25 +9852,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> str | dict[tuple[str, ...], Result]:
         """Prepare parsed models and formatting before processing output modules."""
         if (custom_template_dir := self.custom_template_dir) is not None:
-            _refresh_custom_template_paths(custom_template_dir)
-        self._set_typed_extra_annotation_mode(
-            use_deferred_annotations=self._uses_deferred_annotations(with_import, disable_future_imports)
-        )
+            with fact_pass(decls.REFRESH_CUSTOM_TEMPLATE_PATHS):
+                _refresh_custom_template_paths(custom_template_dir)
+        with fact_pass(decls.SET_TYPED_EXTRA_ANNOTATION_MODE):
+            self._set_typed_extra_annotation_mode(
+                use_deferred_annotations=self._uses_deferred_annotations(with_import, disable_future_imports)
+            )
         run_context = self._run_context
         suppress_parse_warnings = run_context is not None and run_context.suppress_parse_warnings
-        try:
-            if suppress_parse_warnings:
-                self._run_with_suppressed_warnings(self.parse_raw)
-            else:
-                self.parse_raw()
-        finally:
-            self._close_http_fetch_session()
-        self._const_narrowed_values = {
-            id(fact.data_type): (fact.data_type, narrowing)
-            for reference, narrowing in self._const_narrowed_references
-            for fact in self.generation_store.index.data_type_facts_for_reference(reference)
-            if fact.role != "base"
-        }
+        with fact_pass(decls.PARSE_RAW):
+            try:
+                if suppress_parse_warnings:
+                    self._run_with_suppressed_warnings(self.parse_raw)
+                else:
+                    self.parse_raw()
+            finally:
+                self._close_http_fetch_session()
+        with fact_pass(decls.INDEX_CONST_NARROWED_VALUES):
+            self._const_narrowed_values = {
+                id(fact.data_type): (fact.data_type, narrowing)
+                for reference, narrowing in self._const_narrowed_references
+                for fact in self.generation_store.index.data_type_facts_for_reference(reference)
+                if fact.role != "base"
+            }
         if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_LOCATIONS)) is not None:
             self._check_schema_locations(mode)
         if self._schema_graph is not None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
@@ -9877,13 +9894,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             with fact_pass(decls.WARN_ABOUT_UNMATCHED_MODEL_NAME_KEYS):
                 self.__warn_about_unmatched_model_name_keys()
 
-        config = self._prepare_parse_config(
-            with_import,
-            disable_future_imports,
-            all_exports_scope,
-            all_exports_collision_strategy,
-            module_split_mode,
-        )
+        with fact_pass(decls.PREPARE_PARSE_CONFIG):
+            config = self._prepare_parse_config(
+                with_import,
+                disable_future_imports,
+                all_exports_scope,
+                all_exports_collision_strategy,
+                module_split_mode,
+            )
 
         with fact_pass(decls.SORT_DATA_MODELS):
             _, sorted_data_models, require_update_action_models = sort_data_models(
@@ -9896,9 +9914,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     else _runtime_validation_reference_paths(self.results, same_module=True)
                 ),
             )
-        model_identities: Mapping[DataModel, str] | None = (
-            {model: model.reference.path for model in sorted_data_models.values()} if collect_model_metadata else None
-        )
+        model_identities: Mapping[DataModel, str] | None = None
+        if collect_model_metadata:
+            with fact_pass(decls.RECORD_SOURCE_REFERENCE_PATHS):
+                model_identities = {model: model.reference.path for model in sorted_data_models.values()}
         with fact_pass(decls.SORT_BASE_CLASSES_FOR_MRO):
             sort_base_classes_for_mro(sorted_data_models, self.generation_store)
 
@@ -9914,45 +9933,47 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ) = self._build_module_structure(sorted_data_models, require_update_action_models, module_split_mode)
 
         if format_:
-            match self.formatters:
-                case [] if (
-                    not self.custom_formatter
-                    and "_build_code_formatter" not in self.__dict__
-                    and type(self)._build_code_formatter is Parser._build_code_formatter  # noqa: SLF001
-                ):
-                    pass
-                case _:
-                    config = config._replace(
-                        code_formatter=self._build_code_formatter(
-                            settings_path,
-                            is_multi_module_output=self.defer_formatting or len(module_models) > 1,
-                        ),
-                    )
+            with fact_pass(decls.CONFIGURE_CODE_FORMATTER):
+                match self.formatters:
+                    case [] if (
+                        not self.custom_formatter
+                        and "_build_code_formatter" not in self.__dict__
+                        and type(self)._build_code_formatter is Parser._build_code_formatter  # noqa: SLF001
+                    ):
+                        pass
+                    case _:
+                        config = config._replace(
+                            code_formatter=self._build_code_formatter(
+                                settings_path,
+                                is_multi_module_output=self.defer_formatting or len(module_models) > 1,
+                            ),
+                        )
 
-        self._uses_standard_generation_templates = bool(
-            (code_formatter := config.code_formatter)
-            and code_formatter.use_builtin_formatter
-            and self._configured_generation_types_are_builtin
-            and not (parser_config := self.config).custom_template_dir
-            and not any((
-                parser_config.additional_imports,
-                parser_config.class_decorators,
-                parser_config.base_class,
-                parser_config.base_class_map,
-                parser_config.extra_template_data,
-                parser_config.validators,
-                parser_config.generate_schema_validators,
-                parser_config.alias_generator,
-                parser_config.custom_class_name_generator,
-                parser_config.dump_resolve_reference_action is not None
-                and not get_resolve_reference_action_capabilities(
-                    parser_config.dump_resolve_reference_action
-                ).generated_formatter_safe,
-                parser_config.type_mappings,
-                parser_config.type_overrides,
-                parser_config.import_overrides,
-            ))
-        )
+        with fact_pass(decls.DETECT_STANDARD_GENERATION_TEMPLATES):
+            self._uses_standard_generation_templates = bool(
+                (code_formatter := config.code_formatter)
+                and code_formatter.use_builtin_formatter
+                and self._configured_generation_types_are_builtin
+                and not (parser_config := self.config).custom_template_dir
+                and not any((
+                    parser_config.additional_imports,
+                    parser_config.class_decorators,
+                    parser_config.base_class,
+                    parser_config.base_class_map,
+                    parser_config.extra_template_data,
+                    parser_config.validators,
+                    parser_config.generate_schema_validators,
+                    parser_config.alias_generator,
+                    parser_config.custom_class_name_generator,
+                    parser_config.dump_resolve_reference_action is not None
+                    and not get_resolve_reference_action_capabilities(
+                        parser_config.dump_resolve_reference_action
+                    ).generated_formatter_safe,
+                    parser_config.type_mappings,
+                    parser_config.type_overrides,
+                    parser_config.import_overrides,
+                ))
+            )
 
         return self.__process_modules(
             module_models,
@@ -9985,13 +10006,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         unused_models: list[DataModel] = []
         module_to_import: dict[ModulePath, Imports] = {}
         contexts: list[ModuleContext] = []
-        self._hidden_named_types.clear()
-        self._hiding_field_names.clear()
-        self._variant_discriminator_tags.clear()
-        self._deferred_tagged_unions.clear()
-        self._removed_reuse_users.clear()
-        self._renamed_types.clear()
-        self._replaced_root_models.clear()
+        with fact_pass(decls.RESET_PER_RUN_STATE):
+            self._hidden_named_types.clear()
+            self._hiding_field_names.clear()
+            self._variant_discriminator_tags.clear()
+            self._deferred_tagged_unions.clear()
+            self._removed_reuse_users.clear()
+            self._renamed_types.clear()
+            self._replaced_root_models.clear()
         with pass_scope("Parser.__process_modules", Phase.PLAN):
             with fact_pass(decls.FLATTEN_CONFLICTING_BASE_LAYOUTS):
                 self.__flatten_conflicting_base_layouts(module_models)
@@ -10009,14 +10031,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         module_models,
                         require_dict_key_edge=not self.run_context.preserve_circular_root_models,
                     )
-        self._emitting_module_lists = (
-            [(_module_name_from_module_path(module_), models) for module_, models in module_models]
-            if self.collapse_root_models and self.collapse_root_models_name_strategy is not None
-            else []
-        )
-        self._emitting_module_names = {
-            id(model): module_name for module_name, models in self._emitting_module_lists for model in models
-        }
+        with fact_pass(decls.RECORD_EMITTING_MODULES):
+            self._emitting_module_lists = (
+                [(_module_name_from_module_path(module_), models) for module_, models in module_models]
+                if self.collapse_root_models and self.collapse_root_models_name_strategy is not None
+                else []
+            )
+            self._emitting_module_names = {
+                id(model): module_name for module_name, models in self._emitting_module_lists for model in models
+            }
 
         self.generation_store.enter_phase(Phase.MODULES)
         for position, (module_, models) in enumerate(module_models, 1):
@@ -10066,9 +10089,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._finalize_modules(contexts, unused_models, model_to_module_models, module_to_import)
         with pass_scope("Parser.__process_modules", Phase.IMPORTS):
             if collecting_class_names():
-                self.generated_class_names = tuple(
-                    (model.class_name, model.duplicate_class_name) for ctx in contexts for model in ctx.models
-                )
+                with fact_pass(decls.RECORD_GENERATED_CLASS_NAMES):
+                    self.generated_class_names = tuple(
+                        (model.class_name, model.duplicate_class_name) for ctx in contexts for model in ctx.models
+                    )
             if self.typed_nullable_maps or self.run_context.untyped_nullable_maps:
                 with fact_pass(decls.RECORD_MODEL_PLACEMENT):
                     self.__record_model_placement(contexts, bool(internal_modules))
@@ -10088,11 +10112,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             with fact_pass(decls.RECORD_PYDANTIC_FLOOR):
                 self.__record_pydantic_floor(contexts)
 
-        root_init: ModulePath = ("__init__.py",)
-        if root_init not in results:
-            top_level_dirs = {k[0] for k in results if len(k) >= 2}  # noqa: PLR2004
-            if len(top_level_dirs) > 1:
-                results[root_init] = Result(body="")
+        with fact_pass(decls.ADD_ROOT_INIT_RESULT):
+            root_init: ModulePath = ("__init__.py",)
+            if root_init not in results:
+                top_level_dirs = {k[0] for k in results if len(k) >= 2}  # noqa: PLR2004
+                if len(top_level_dirs) > 1:
+                    results[root_init] = Result(body="")
 
         self.generation_store.enter_phase(Phase.RENDER)
         with pass_scope("Parser.__render_modules", Phase.RENDER), fact_pass(decls.RENDER_MODULES):

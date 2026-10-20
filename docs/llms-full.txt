@@ -62057,9 +62057,9 @@ once per output module over that module's models), kind (`transform`, `plan`, `r
 (`after`), the change that removes a repair (`removed_by`) and the phase it moves to (`target`).
 `scripts/check_fact_finality.py` (run by the test suite) checks that names are unique, phases never go back in
 execution order, a repair names what removes it, and setup, check and bookkeeping passes write no fact. The drivers run
-every pass that can change models inside `fact_pass(DECL)` (`parser/_finality.py`), with the models it works on for a
-module pass; the bookkeeping steps that only fill local variables are declared and run outside a scope. The drivers
-also mark each phase they enter on the store (`GenerationStore.enter_phase`, read as `GenerationStore.phase`). The
+every pass inside `fact_pass(DECL)` (`parser/_finality.py`), with the models it works on for a module pass, and a pass
+trace (`scripts/check_pass_pipeline.py --trace`) records each pass that runs; the test suite keeps the traces of a few
+inputs and checks that some input runs every declared pass. The drivers also mark each phase they enter on the store (`GenerationStore.enter_phase`, read as `GenerationStore.phase`). The
 finality check ([Fact Finality](#fact-finality)) compares the writes of `fact` rows with the declarations while the
 generator runs; reads and the writes of presentation rows are declared from the code. A new pass gets a declaration and
 runs inside `fact_pass`.
@@ -62073,6 +62073,7 @@ runs inside `fact_pass`.
 | PARSE | `refresh_custom_template_paths` | global | setup | - | - | Clears the template lookups of the custom template directory. Runs when: custom_template_dir. |
 | PARSE | `set_typed_extra_annotation_mode` | global | setup | - | - | Chooses how typed extra items are annotated. |
 | PARSE | `parse_raw` | global | transform | every Fact, CLASS_NAMES, MODEL_ORDER | - | L0 and L1, the parser subclass hook: builds and registers every model. |
+| PARSE | `index_const_narrowed_values` | global | bookkeeping | - | FIELD_TYPES | Indexes the data types whose value a const narrows, by data type. |
 | SETTLE | `settle_yielding_names` | global | transform | CLASS_NAMES | CLASS_NAMES | Gives the names that yield to --model-name-map their final form. |
 | SETTLE | `report_parse_diagnostics` | global | check | - | - | Reports dangling references and other parse diagnostics (parser hook). |
 | SETTLE | `warn_about_unmatched_model_name_keys` | global | check | - | CLASS_NAMES | Runs when: not a retry that suppresses parse warnings. |
@@ -62095,6 +62096,7 @@ runs inside `fact_pass`.
 | PLAN | `flatten_conflicting_base_layouts` | global | transform | BASES, FIELD_ORDER, FIELD_SET | BASES, DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES | Copies base fields into msgspec Structs whose generated bases have conflicting layouts. Runs when: msgspec. |
 | PLAN | `unconstrain_union_members` | global | transform | CONSTRAINTS, FIELD_TYPES | FIELD_TYPES | Runs when: msgspec. |
 | PLAN | `set_circular_root_model_paths` | global | plan | PLANS | FIELD_TYPES, MODULE_MEMBERSHIP | Runs when: collapse_root_models. |
+| PLAN | `record_emitting_modules` | global | bookkeeping | - | MODULE_MEMBERSHIP | Records the module that writes each model, for the names --collapse-root-models-name-strategy gives. |
 | MODULES | `record_decimal_alias_models` | module | bookkeeping | - | FIELD_NAMES | Runs when: a field of the module is named Decimal. |
 | MODULES | `alias_shadowed_imports` | module | transform | DEFAULT_EXPRESSION, IMPORT_ALIASES | FIELD_NAMES, MODULE_IMPORTS | Aliases imports that field names shadow, in types and in runtime expressions of defaults. |
 | MODULES | `override_required_field` | module | transform | DEFAULTS, FIELD_SET, REQUIRED | BASES, DEFAULTS, FIELD_SET, REQUIRED | Replaces inherited placeholders by copies of the inherited fields. |
