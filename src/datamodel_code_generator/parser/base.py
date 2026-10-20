@@ -184,28 +184,19 @@ from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _MODEL_MODULE_PREFIX,
     _RAW_SCHEMA_DEFAULT_KEY,
-    _RAW_SCHEMA_DEFAULT_UNDEFINED,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._passes._shared import (
-    _alias_base_class_imports,  # noqa: F401  # Preserve the established parser.base export.
-    _apply_structured_import_aliases,  # noqa: F401  # Preserve the established parser.base export.
     _clear_model_imports_cache,
     _clear_model_imports_cache_if_retained,
-    _detach_deferred_inherited_field_parents,  # noqa: F401  # Preserve the established parser.base export.
     _InheritedTypeModifiers,
-    _ordinary_field_shadow_aliases,  # noqa: F401  # Preserve the established parser.base export.
-    _resolve_default_scalar_data_type,  # noqa: F401  # Preserve the established parser.base export.
     _resolve_exact_import,
     _restore_inherited_field_names_for_unique_aliases,
     _unwrap_type_alias,
     alias_shadowed_imports,
     apply_inherited_field_default,
-    exact_import,  # noqa: F401  # Preserve the established parser.base export.
     field_name_model_type_of,
     get_constructor_ordering_conflicts,
     has_import_override,
-    is_ancestor_package_reference,  # noqa: F401  # Preserve the established parser.base export.
-    iter_models_field_data_types,  # noqa: F401  # Preserve the established parser.base export.
     normalize_default_value_constraints,
     override_required_field,
     redirect_collapsed_reuse_users,

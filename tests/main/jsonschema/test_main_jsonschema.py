@@ -12101,6 +12101,17 @@ def test_main_jsonschema_allof_mapping_every_part_null(output_file: Path) -> Non
     )
 
 
+def test_main_jsonschema_allof_mapping_ref_sibling_type(output_file: Path) -> None:
+    """Keep null out of an allOf map whose ref member carries a sibling type that excludes it."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_mapping_ref_sibling_type.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+    )
+
+
 def test_main_jsonschema_allof_mapping_object_type_list(output_file: Path) -> None:
     """Merge object-only type lists with inline typed additional properties."""
     run_main_and_assert(

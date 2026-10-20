@@ -640,6 +640,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             self._check_import(node, dynamic_target)
         elif (
             dynamic_target
+            and not self._check_parser_pass_import(node, dynamic_target)
             and not self._check_target_boundary(node, dynamic_target)
             and self.layer in {*_PARSER_LAYERS, "config", "reference", "shared-model"}
             and (
@@ -1098,12 +1099,7 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
             return True
         return False
 
-    def _check_import(self, node: ast.AST, target: str) -> None:
-        if (leaf := _LEAF_LAYER_IMPORTS.get(self.layer)) is not None:
-            allowed, reason = leaf
-            if not any(target == module or target.startswith(f"{module}.") for module in allowed):
-                self._add(node, f"{self.layer}-import", target, reason)
-            return
+    def _check_parser_pass_import(self, node: ast.AST, target: str) -> bool:
         if (
             self.layer == "parser-passes"
             and (target == "datamodel_code_generator.parser" or target.startswith("datamodel_code_generator.parser."))
@@ -1116,6 +1112,16 @@ class ArchitectureBoundaryVisitor(ast.NodeVisitor):
                 "pass modules must not import parser/base.py or the format parsers, not even for typing: take the "
                 "parser through a narrow Protocol and import only the store, the import ledger and other pass modules",
             )
+            return True
+        return False
+
+    def _check_import(self, node: ast.AST, target: str) -> None:
+        if (leaf := _LEAF_LAYER_IMPORTS.get(self.layer)) is not None:
+            allowed, reason = leaf
+            if not any(target == module or target.startswith(f"{module}.") for module in allowed):
+                self._add(node, f"{self.layer}-import", target, reason)
+            return
+        self._check_parser_pass_import(node, target)
         if self.layer == "reference" and _is_reference_backend_import(target):
             self._add(
                 node,

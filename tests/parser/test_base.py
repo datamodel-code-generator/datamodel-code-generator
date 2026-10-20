@@ -38,6 +38,11 @@ from datamodel_code_generator.model.runtime_validation import (
     _make_internal_schema_runtime_validation,
 )
 from datamodel_code_generator.model.type_alias import TypeAlias, TypeAliasTypeBackport, TypeStatement
+from datamodel_code_generator.parser._passes._shared import (
+    _detach_deferred_inherited_field_parents,
+    exact_import,
+    is_ancestor_package_reference,
+)
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_CLASS_KEY,
     _DEFERRED_INHERITED_FIELD_KEY,
@@ -53,7 +58,6 @@ from datamodel_code_generator.parser.base import (
     _copy_data_model_field,
     _copy_data_type,
     _copy_resolved_inherited_field,
-    _detach_deferred_inherited_field_parents,
     _find_field,
     _get_discriminator_field_value,
     _get_enum_from_base,
@@ -67,10 +71,8 @@ from datamodel_code_generator.parser.base import (
     add_model_path_to_list,
     alias_shadowed_imports,
     escape_characters,
-    exact_import,
     get_module_directory,
     get_most_of_parent,
-    is_ancestor_package_reference,
     override_required_field,
     relative,
     sort_data_models,

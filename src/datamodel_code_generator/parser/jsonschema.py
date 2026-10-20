@@ -158,6 +158,8 @@ from datamodel_code_generator.parser._null_facts import (
     NullSources,
     resolve_null_facts,
 )
+from datamodel_code_generator.parser._passes._keys import _RAW_SCHEMA_DEFAULT_UNDEFINED
+from datamodel_code_generator.parser._passes._shared import _detach_deferred_inherited_field_parents
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
@@ -175,7 +177,6 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
-    _RAW_SCHEMA_DEFAULT_UNDEFINED,
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     SPECIAL_PATH_FORMAT,
     Parser,
@@ -184,7 +185,6 @@ from datamodel_code_generator.parser.base import (
     _copy_data_model_field,  # noqa: F401  # Preserve the existing parser helper export.
     _copy_data_type,  # noqa: F401  # Preserve the existing parser helper export.
     _copy_resolved_inherited_field,  # noqa: F401  # Preserve the existing parser helper export.
-    _detach_deferred_inherited_field_parents,
     _get_inherited_type_modifiers,
     get_special_path,
     title_to_class_name,
@@ -8936,11 +8936,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         supports_literal_validation = hasattr(self.data_model_root_type, "add_literal_validation")
         single_value = len(obj.allOf) == 1 and not self._schema_requires_model_type(obj)
         mapping_schemas: list[JsonSchemaObject] = []
+        sibling_types: list[str | list[str]] = []
         for item in obj.allOf:
             match item:
                 case JsonSchemaObject() as schema:
                     if ref := schema.ref:
                         schema = self._load_ref_schema_object(ref)
+                        if item.type and self._ref_sibling_keywords_enabled:
+                            sibling_types.append(item.type)
                 case _:
                     return None
             narrows_literals = bool(
@@ -9017,7 +9020,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             merged,
             obj.model_dump(exclude={"allOf"}, exclude_unset=True, by_alias=True),
         )
-        typed = [schema.type for schema in (*mapping_schemas, obj) if schema.type]
+        typed = [*sibling_types, *(schema.type for schema in (*mapping_schemas, obj) if schema.type)]
         if any(_lists_null(type_) for type_ in typed):
             merged["type"] = (
                 ["object", "null"]

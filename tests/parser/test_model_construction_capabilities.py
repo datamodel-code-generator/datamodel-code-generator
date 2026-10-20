@@ -17,7 +17,7 @@ from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_CONDECIMAL
 from datamodel_code_generator.model.types import DataTypeManager as _CommonDataTypeManager
-from datamodel_code_generator.parser.base import _resolve_default_scalar_data_type
+from datamodel_code_generator.parser._passes._shared import _resolve_default_scalar_data_type
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.python_literal import PythonRuntimeExpression
 from datamodel_code_generator.reference import ModelType, Reference
