@@ -15,7 +15,7 @@
 {%- endfor %}
             ){% endif %},
             'additional_property_type': {% if rule.additional_property_type %}{{ rule.additional_property_type.type_hint }}{% else %}None{% endif %},
-            'allow_unmatched': {{ rule.allow_unmatched|repr }},
+            'allow_unmatched': {{ rule.allow_unmatched|repr }},{% if rule.python_regex_types %}{{ '\n            ' }}'python_regex_types': {{ rule.python_regex_types|repr }},{% endif %}
         },
 {%- endfor %}
     )

@@ -1,0 +1,170 @@
+{
+  "valid": {
+    "ab": "abc",
+    "pDeclared": {
+      "ab": "abc"
+    },
+    "rDeclared": {
+      "ab": "abc"
+    },
+    "iDeclared": [
+      {
+        "ab": "abc"
+      }
+    ],
+    "mDeclared": {
+      "k": {
+        "ab": "abc"
+      }
+    },
+    "pAny": {
+      "x": 1
+    },
+    "rAny": {
+      "x": 1
+    },
+    "iAny": [
+      {
+        "x": 1
+      }
+    ],
+    "mAny": {
+      "k": {
+        "x": 1
+      }
+    },
+    "pImplied": {
+      "x": 2
+    },
+    "rImplied": {
+      "x": 2
+    },
+    "pItems": {
+      "x": [
+        1
+      ]
+    },
+    "rItems": {
+      "x": [
+        1
+      ]
+    },
+    "pConst": {
+      "x": "a"
+    },
+    "rConst": {
+      "x": "a"
+    },
+    "pRef": {
+      "x": {
+        "x": 2
+      }
+    },
+    "rRef": {
+      "x": {
+        "x": 2
+      }
+    }
+  },
+  "invalid": [
+    {
+      "ab": "abcd"
+    },
+    {
+      "pDeclared": {
+        "ab": "abcd"
+      }
+    },
+    {
+      "rDeclared": {
+        "ab": "abcd"
+      }
+    },
+    {
+      "iDeclared": [
+        {
+          "ab": "abcd"
+        }
+      ]
+    },
+    {
+      "mDeclared": {
+        "k": {
+          "ab": "abcd"
+        }
+      }
+    },
+    {
+      "pAny": {
+        "x": "s"
+      }
+    },
+    {
+      "rAny": {
+        "x": "s"
+      }
+    },
+    {
+      "iAny": [
+        {
+          "x": "s"
+        }
+      ]
+    },
+    {
+      "mAny": {
+        "k": {
+          "x": "s"
+        }
+      }
+    },
+    {
+      "pImplied": {
+        "x": 1
+      }
+    },
+    {
+      "rImplied": {
+        "x": 1
+      }
+    },
+    {
+      "pItems": {
+        "x": [
+          -1
+        ]
+      }
+    },
+    {
+      "rItems": {
+        "x": [
+          -1
+        ]
+      }
+    },
+    {
+      "pConst": {
+        "x": "b"
+      }
+    },
+    {
+      "rConst": {
+        "x": "b"
+      }
+    },
+    {
+      "pRef": {
+        "x": {
+          "x": 1
+        }
+      }
+    },
+    {
+      "rRef": {
+        "x": {
+          "x": 1
+        }
+      }
+    }
+  ]
+}

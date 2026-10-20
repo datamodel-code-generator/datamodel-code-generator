@@ -3,10 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
+
+from datamodel_code_generator._regex_syntax import is_portable_pattern
+from datamodel_code_generator._requirements import pydantic_target_meets
 
 if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
+
+
+class _AliasModel(Protocol):
+    """The members of a type-alias model (``IS_ALIAS``) that its pattern engine depends on."""
+
+    extra_template_data: dict[str, Any]
+    fields: list[Any]
+
 
 InputNames: TypeAlias = tuple[str, ...]
 InputNameGroups: TypeAlias = tuple[InputNames, ...]
@@ -53,6 +64,49 @@ class PatternPropertiesRule:
         if self.additional_property_type is None:
             return data_types
         return (*data_types, self.additional_property_type)
+
+    @property
+    def python_regex_types(self) -> tuple[int, ...]:
+        """Return the positions in ``data_types`` whose patterns need the ``python-re`` engine of an adapter.
+
+        A pattern of a type the rule names is checked by the adapter the helper builds for it, which has no model
+        config; a pattern that is not portable (``is_portable_pattern``) selects the engine there, as a model does.
+        A type alias has no config either, so the string patterns of the aliases a type names count as its own.
+        """
+        return tuple(
+            index for index, data_type in enumerate(self.data_types) if _needs_python_regex_engine(data_type, set())
+        )
+
+
+def _needs_python_regex_engine(data_type: DataType, visited: set[int]) -> bool:
+    """Return whether a pattern of ``data_type``, or a string pattern of an alias it names, is not portable.
+
+    An alias keeps string patterns on a target that predates compiled patterns; a later target compiles every
+    pattern that needs Python's engine.
+    """
+    for nested in data_type.all_data_types:
+        if isinstance(pattern := (nested.kwargs or {}).get("pattern"), str) and not is_portable_pattern(pattern):
+            return True
+        if (
+            (reference := nested.reference) is None
+            or not getattr(source := reference.source, "IS_ALIAS", False)
+            or id(source) in visited
+        ):
+            continue
+        visited.add(id(source))
+        alias = cast("_AliasModel", source)
+        if pydantic_target_meets("pydantic.compiled_pattern", alias.extra_template_data.get("target_pydantic_version")):
+            continue
+        if any(
+            (
+                isinstance(pattern := getattr(alias_field.constraints, "pattern", None), str)
+                and not is_portable_pattern(pattern)
+            )
+            or _needs_python_regex_engine(alias_field.data_type, visited)
+            for alias_field in alias.fields
+        ):
+            return True
+    return False
 
 
 class IndependentDeclaredPatternPropertiesRule(PatternPropertiesRule):

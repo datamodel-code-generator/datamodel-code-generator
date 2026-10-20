@@ -1,0 +1,1 @@
+pattern_checks.json#/properties/lookUndeclared: one dict type cannot express this object, since it allows keys that match no pattern; the generated dict accepts or rejects some objects that the schema does not. Pydantic output with --generate-schema-validators checks it exactly.

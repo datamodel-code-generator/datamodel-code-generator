@@ -14,6 +14,7 @@ import yaml
 from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
 from pydantic import TypeAdapter, ValidationError
+from referencing import Registry, Resource
 
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
@@ -35,7 +36,15 @@ if TYPE_CHECKING:
 
 OBJECT_MAPS = JSON_SCHEMA_DATA_PATH / "object_maps"
 PAYLOADS = DATA_PATH / "payloads" / "object_maps"
-OBJECT_MAP_INPUTS = ("pattern_maps", "nullable_maps", "type_array_maps", "pattern_counts", "pattern_additional")
+OBJECT_MAP_INPUTS = (
+    "pattern_maps",
+    "nullable_maps",
+    "type_array_maps",
+    "pattern_counts",
+    "pattern_additional",
+    "declared_patterns",
+    "pattern_checks",
+)
 OUTPUT_MODEL_TYPES = (
     "pydantic_v2.BaseModel",
     "pydantic_v2.dataclass",
@@ -139,6 +148,60 @@ def test_object_maps_schema_validators(output_file: Path, recwarn: pytest.Warnin
         name="warnings",
     )
     payloads = json.loads((PAYLOADS / f"{name}.json").read_text())
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+@pytest.mark.parametrize(
+    "option_set", [pytest.param((), id="root_models"), pytest.param(("--use-type-alias",), id="type_aliases")]
+)
+def test_object_maps_schema_validators_target_pydantic_version(
+    output_file: Path, recwarn: pytest.WarningsRecorder, option_set: tuple[str, ...]
+) -> None:
+    """State the release whose regex_engine the validator adapters need above the target, as a model's config does.
+
+    A type alias keeps a string pattern on a target before compiled patterns, so the adapter of its user selects the
+    engine.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "pattern_checks.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--generate-schema-validators",
+            "--target-pydantic-version",
+            "2",
+            *option_set,
+        ],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
+    payloads = json.loads((PAYLOADS / "pattern_checks.json").read_text())
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
+def test_object_maps_schema_validators_cross_document(output_file: Path) -> None:
+    """Check a pattern that names the reference of another document as a declaration does, as it is another schema."""
+    input_path = OBJECT_MAPS / "cross_document.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--generate-schema-validators"],
+    )
+    payloads = json.loads((PAYLOADS / "cross_document.json").read_text())
+    other = json.loads((OBJECT_MAPS / "cross_document_other.json").read_text())
+    validator = Draft202012Validator(
+        json.loads(input_path.read_text()),
+        registry=Registry().with_resource("cross_document_other.json", Resource.from_contents(other)),
+    )
+    validator.validate(payloads["valid"])
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"], **change})
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 

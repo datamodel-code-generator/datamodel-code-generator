@@ -77,7 +77,14 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
                     if pattern_adapters is None:
                         pattern_adapters = {}
                     if (adapter := pattern_adapters.get(index)) is None:
+{%- if has_python_regex_types %}
+                        adapter = TypeAdapter(
+                            value_type,
+                            config={'regex_engine': 'python-re'} if index in rule.get('python_regex_types', ()) else None,
+                        )
+{%- else %}
                         adapter = TypeAdapter(value_type)
+{%- endif %}
                         pattern_adapters[index] = adapter
 {%- if has_pattern_property_intersections %}
                     validated = adapter.validate_python(value)
@@ -97,9 +104,16 @@ class {{ schema_runtime_validation_base_class_name }}(BaseModel):
                     continue
                 if rule['additional_property_type'] is not None:
                     if additional_adapter is None:
+{%- if has_python_regex_types %}
+                        additional_adapter = TypeAdapter(
+                            rule['additional_property_type'],
+                            config={'regex_engine': 'python-re'} if len(rule['pattern_properties']) in rule.get('python_regex_types', ()) else None,
+                        )
+{%- else %}
                         additional_adapter = TypeAdapter(
                             rule['additional_property_type'],
                         )
+{%- endif %}
                     if values is data:
                         values = dict(data)
                     values[key] = additional_adapter.validate_python(value)

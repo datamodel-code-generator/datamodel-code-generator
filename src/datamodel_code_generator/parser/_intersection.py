@@ -53,6 +53,7 @@ if TYPE_CHECKING:
 __all__ = [
     "ENUM_METADATA_KEYWORDS",
     "KeywordIntersection",
+    "bounds_admit_no_value",
     "enum_metadata",
     "intersect_constraint",
     "intersect_enum_values",
@@ -245,6 +246,11 @@ def _crosses(schema: Mapping[str, Any], lower: Sequence[str], upper: Sequence[st
     return low > high or (
         low == high and any(exclusive for value, exclusive in (*lows, *highs) if value in {low, high})
     )
+
+
+def bounds_admit_no_value(schema: Mapping[str, Any]) -> bool:
+    """Return whether the bounds of any dimension of a schema admit no value."""
+    return any(_crosses(schema, lower, upper) for lower, upper in _BOUND_DIMENSIONS)
 
 
 def _types(value: object) -> tuple[str, ...]:

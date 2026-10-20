@@ -1833,9 +1833,16 @@ class BaseModel(BaseModelBase):
 
     @override
     def _pydantic_constructs(self) -> Iterator[tuple[PydanticConstruct, str | None]]:
-        """Also yield the rows of the keys that the rendered ``model_config`` writes."""
+        """Also yield the rows of the keys that the rendered ``model_config`` and the schema validator adapters write.
+
+        The helper writes ``regex_engine`` in the config of the adapter of a rule's type (``python_regex_types``).
+        """
         yield from super()._pydantic_constructs()
         yield from _config_constructs(self._rendered_config_items())
+        if (validation := self.schema_runtime_validation) is not None and any(
+            rule.python_regex_types for rule in validation.pattern_properties
+        ):
+            yield from _config_constructs((("regex_engine", '"python-re"'),))
 
     def _set_config(self, config_parameters: dict[str, Any]) -> None:
         """Store the ConfigDict rendered as ``model_config``."""
@@ -2185,6 +2192,8 @@ class BaseModel(BaseModelBase):
             for rule in validation.pattern_properties
         ):
             context["has_pattern_property_intersections"] = True
+        if any(rule.python_regex_types for validation in runtime_validations for rule in validation.pattern_properties):
+            context["has_python_regex_types"] = True
         if custom_template_dir is None and cls.__module__.startswith("datamodel_code_generator.model."):
             from datamodel_code_generator.model._compiled_templates import get_builtin_renderer  # noqa: PLC0415
 

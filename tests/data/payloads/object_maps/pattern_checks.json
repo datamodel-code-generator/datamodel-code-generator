@@ -1,0 +1,48 @@
+{
+  "valid": {
+    "lookDeclared": {
+      "x": "ac"
+    },
+    "lookUndeclared": {
+      "x": "ac"
+    },
+    "crossedLength": {},
+    "crossedRange": {},
+    "lookReference": {
+      "x": "ac",
+      "y": "abc"
+    }
+  },
+  "invalid": [
+    {
+      "lookDeclared": {
+        "x": "ab"
+      }
+    },
+    {
+      "lookUndeclared": {
+        "x": "ab"
+      }
+    },
+    {
+      "crossedLength": {
+        "x": "abc"
+      }
+    },
+    {
+      "crossedRange": {
+        "x": 4
+      }
+    },
+    {
+      "lookReference": {
+        "x": "ab"
+      }
+    },
+    {
+      "lookReference": {
+        "y": "abcd"
+      }
+    }
+  ]
+}

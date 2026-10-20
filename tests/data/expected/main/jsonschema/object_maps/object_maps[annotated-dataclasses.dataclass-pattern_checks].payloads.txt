@@ -1,0 +1,7 @@
+valid: accepted
+invalid lookDeclared: accepted
+invalid lookUndeclared: accepted
+invalid crossedLength: accepted
+invalid crossedRange: accepted
+invalid lookReference: accepted
+invalid lookReference: accepted

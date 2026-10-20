@@ -28,8 +28,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
             pattern_adapters = None
             additional_adapter = None
             for key, value in data.items():
-                if key in rule['declared_properties']:
-                    continue
+                declared = key in rule['declared_properties']
                 if any(
                     re.search(pattern, key) for pattern in rule['rejected_patterns']
                 ):
@@ -48,11 +47,13 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
                     if (adapter := pattern_adapters.get(index)) is None:
                         adapter = TypeAdapter(value_type)
                         pattern_adapters[index] = adapter
-                    value = adapter.validate_python(value)
+                    validated = adapter.validate_python(value)
+                if declared:
+                    continue
                 if matched:
                     if values is data:
                         values = dict(data)
-                    values[key] = value
+                    values[key] = validated
                     continue
                 if rule['additional_property_type'] is not None:
                     if additional_adapter is None:

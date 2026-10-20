@@ -1,0 +1,18 @@
+valid: accepted
+invalid ab: accepted
+invalid pDeclared: accepted
+invalid rDeclared: accepted
+invalid iDeclared: accepted
+invalid mDeclared: accepted
+invalid pAny: accepted
+invalid rAny: accepted
+invalid iAny: accepted
+invalid mAny: accepted
+invalid pImplied: rejected
+invalid rImplied: rejected
+invalid pItems: rejected
+invalid rItems: rejected
+invalid pConst: rejected
+invalid rConst: rejected
+invalid pRef: rejected
+invalid rRef: rejected

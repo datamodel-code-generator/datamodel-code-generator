@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "LookCode": {
+      "type": "string",
+      "pattern": "^(?!ab)"
+    },
+    "ShortCode": {
+      "type": "string",
+      "maxLength": 3
+    }
+  },
+  "properties": {
+    "lookDeclared": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string",
+          "pattern": "^a"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "string",
+          "pattern": "^(?!ab)"
+        }
+      }
+    },
+    "lookUndeclared": {
+      "type": "object",
+      "patternProperties": {
+        "^x": {
+          "type": "string",
+          "pattern": "^(?!ab)"
+        }
+      }
+    },
+    "crossedLength": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 2
+        }
+      }
+    },
+    "crossedRange": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 3
+        }
+      }
+    },
+    "lookReference": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      },
+      "patternProperties": {
+        "^x": {
+          "$ref": "#/$defs/LookCode"
+        },
+        "^y": {
+          "$ref": "#/$defs/ShortCode"
+        }
+      }
+    }
+  }
+}
