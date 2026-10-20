@@ -1,0 +1,90 @@
+pydantic_v2.BaseModel default ref_items ["ab"] accepted
+pydantic_v2.BaseModel default ref_items [] accepted
+pydantic_v2.BaseModel default ref_items ["abcd"] rejected
+pydantic_v2.BaseModel default ref_items [1] rejected
+pydantic_v2.BaseModel default ref_items "ab" rejected
+pydantic_v2.BaseModel default inline_items ["ab"] accepted
+pydantic_v2.BaseModel default inline_items [] accepted
+pydantic_v2.BaseModel default inline_items ["abcd"] rejected
+pydantic_v2.BaseModel default inline_items [1] rejected
+pydantic_v2.BaseModel default inline_items "ab" rejected
+pydantic_v2.dataclass default ref_items ["ab"] accepted
+pydantic_v2.dataclass default ref_items [] accepted
+pydantic_v2.dataclass default ref_items ["abcd"] rejected
+pydantic_v2.dataclass default ref_items [1] rejected
+pydantic_v2.dataclass default ref_items "ab" rejected
+pydantic_v2.dataclass default inline_items ["ab"] accepted
+pydantic_v2.dataclass default inline_items [] accepted
+pydantic_v2.dataclass default inline_items ["abcd"] rejected
+pydantic_v2.dataclass default inline_items [1] rejected
+pydantic_v2.dataclass default inline_items "ab" rejected
+msgspec.Struct default ref_items ["ab"] accepted
+msgspec.Struct default ref_items [] accepted
+msgspec.Struct default ref_items ["abcd"] rejected
+msgspec.Struct default ref_items [1] rejected
+msgspec.Struct default ref_items "ab" rejected
+msgspec.Struct default inline_items ["ab"] accepted
+msgspec.Struct default inline_items [] accepted
+msgspec.Struct default inline_items ["abcd"] rejected
+msgspec.Struct default inline_items [1] rejected
+msgspec.Struct default inline_items "ab" rejected
+pydantic_v2.BaseModel --field-constraints ref_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints ref_items [] accepted
+pydantic_v2.BaseModel --field-constraints ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --field-constraints ref_items [1] rejected
+pydantic_v2.BaseModel --field-constraints ref_items "ab" rejected
+pydantic_v2.BaseModel --field-constraints inline_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints inline_items [] accepted
+pydantic_v2.BaseModel --field-constraints inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --field-constraints inline_items [1] rejected
+pydantic_v2.BaseModel --field-constraints inline_items "ab" rejected
+pydantic_v2.BaseModel --use-annotated ref_items ["ab"] accepted
+pydantic_v2.BaseModel --use-annotated ref_items [] accepted
+pydantic_v2.BaseModel --use-annotated ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --use-annotated ref_items [1] rejected
+pydantic_v2.BaseModel --use-annotated ref_items "ab" rejected
+pydantic_v2.BaseModel --use-annotated inline_items ["ab"] accepted
+pydantic_v2.BaseModel --use-annotated inline_items [] accepted
+pydantic_v2.BaseModel --use-annotated inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --use-annotated inline_items [1] rejected
+pydantic_v2.BaseModel --use-annotated inline_items "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models ref_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models ref_items [] accepted
+pydantic_v2.BaseModel --collapse-root-models ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --collapse-root-models ref_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models ref_items "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models inline_items ["ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models inline_items [] accepted
+pydantic_v2.BaseModel --collapse-root-models inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --collapse-root-models inline_items [1] rejected
+pydantic_v2.BaseModel --collapse-root-models inline_items "ab" rejected
+msgspec.Struct --collapse-root-models ref_items ["ab"] accepted
+msgspec.Struct --collapse-root-models ref_items [] accepted
+msgspec.Struct --collapse-root-models ref_items ["abcd"] rejected
+msgspec.Struct --collapse-root-models ref_items [1] rejected
+msgspec.Struct --collapse-root-models ref_items "ab" rejected
+msgspec.Struct --collapse-root-models inline_items ["ab"] accepted
+msgspec.Struct --collapse-root-models inline_items [] accepted
+msgspec.Struct --collapse-root-models inline_items ["abcd"] rejected
+msgspec.Struct --collapse-root-models inline_items [1] rejected
+msgspec.Struct --collapse-root-models inline_items "ab" rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items ["ab"] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items [] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items [1] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints ref_items "ab" rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints inline_items ["ab"] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints inline_items [] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints inline_items [1] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints inline_items "ab" rejected
+msgspec.Struct --strict-nullable ref_items ["ab"] accepted
+msgspec.Struct --strict-nullable ref_items [] accepted
+msgspec.Struct --strict-nullable ref_items ["abcd"] rejected
+msgspec.Struct --strict-nullable ref_items [1] rejected
+msgspec.Struct --strict-nullable ref_items "ab" rejected
+msgspec.Struct --strict-nullable inline_items ["ab"] accepted
+msgspec.Struct --strict-nullable inline_items [] accepted
+msgspec.Struct --strict-nullable inline_items ["abcd"] rejected
+msgspec.Struct --strict-nullable inline_items [1] rejected
+msgspec.Struct --strict-nullable inline_items "ab" rejected

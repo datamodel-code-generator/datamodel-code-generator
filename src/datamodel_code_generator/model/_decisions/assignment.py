@@ -262,10 +262,10 @@ def classify_assignment(inputs: AssignmentInputs) -> AssignmentFacts:
             rule: AssignmentRule = "default" if assigned else "unassigned"
         else:
             assigned, rule = model_assigned, model_rule
-            if text and not assigned:
-                rule = "legacy-stdlib-annotated" if row == "dataclass" else "legacy-basemodel-binding"
+            if row == "dataclass" and text and not assigned:
+                rule = "legacy-stdlib-annotated"
         construction_assigned = assigned
-        binds = text or assigned
+        binds = (text or assigned) if row in {"msgspec", "dataclass"} else assigned
     return AssignmentFacts(
         assigned=assigned,
         construction_assigned=construction_assigned,

@@ -22,7 +22,6 @@ AssignmentRule: TypeAlias = Literal[
     "dataclass-visible-metadata",
     "hook",
     "legacy-stdlib-annotated",
-    "legacy-basemodel-binding",
 ]
 """The rows of ``classify_assignment``: why the class body writes, or does not write, an assignment.
 
@@ -39,9 +38,6 @@ AssignmentRule: TypeAlias = Literal[
   unassigned when it is required or strips its ``None``, as if ``field(...)`` went into ``Annotated``, which the
   dataclass template never writes; ordering then lets ``field(default_factory=...)`` precede a required field
   (``TypeError`` at import). The fix counts the call it writes and deletes the row.
-* ``legacy-basemodel-binding``: the same field of the other outputs, whose ``Field(...)`` goes into ``Annotated``, is
-  unassigned but still counts as binding its name in the class body, so the hidden-type check over-reports it (masked
-  today by field-name normalization). The fix reads the assignment alone and deletes the row.
 """
 
 

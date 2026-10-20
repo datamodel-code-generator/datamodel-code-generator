@@ -62,6 +62,10 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.PydanticV2BaseModel, ("--field-constraints", "--collapse-root-models")),
         (DataModelType.PydanticV2Dataclass, ("--field-constraints",)),
     ),
+    "nullable_array_items_oas30": (
+        (DataModelType.PydanticV2BaseModel, ("--strict-nullable", "--use-annotated", "--field-constraints")),
+        (DataModelType.MsgspecStruct, ("--strict-nullable",)),
+    ),
     "ref_sibling_nullable_oas30": ((DataModelType.PydanticV2BaseModel, ("--strict-nullable",)),),
     "ref_siblings": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "root_members": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),

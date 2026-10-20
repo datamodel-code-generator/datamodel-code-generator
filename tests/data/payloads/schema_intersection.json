@@ -6072,5 +6072,45 @@
         ]
       }
     }
+  },
+  "nullable_array_items_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "ref_items": {
+        "valid": [
+          [
+            "ab"
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            "abcd"
+          ],
+          [
+            1
+          ],
+          "ab"
+        ]
+      },
+      "inline_items": {
+        "valid": [
+          [
+            "ab"
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            "abcd"
+          ],
+          [
+            1
+          ],
+          "ab"
+        ]
+      }
+    }
   }
 }
