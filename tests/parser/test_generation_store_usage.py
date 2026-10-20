@@ -383,6 +383,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
             "BACKEND_CONFIG",
             "MODULE_CODE",
             "PLANS",
+            "STDERR",
         ),
         "FreezePoint": ("B1", "B2", "RENDER"),
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),

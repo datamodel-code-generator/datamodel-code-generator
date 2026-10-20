@@ -145,6 +145,7 @@ from datamodel_code_generator.parser._intersection import (
     warn_unsatisfiable,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_graph import (
     SCHEMA_GRAPH,
     DocumentId,
@@ -14771,7 +14772,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _report_parse_diagnostics(self) -> None:
         """Report each unique dangling local reference and compatibility resolution after schema parsing completes."""
         for message in sorted(self._resource_ref_warnings):
-            warn(message, SchemaResourceRefWarning, stacklevel=4)
+            warn(message, SchemaResourceRefWarning, stacklevel=stacklevel_at_parse_caller())
         self._resource_ref_warnings.clear()
         if not self._dangling_refs:
             return
@@ -14787,7 +14788,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 f"Unresolved local $ref {ref!r} in {redact_url(source)}: JSON pointer was not found. "
                 "Generated a fallback Any model; use --strict-refs to fail instead.",
                 DanglingRefWarning,
-                stacklevel=4,
+                stacklevel=stacklevel_at_parse_caller(),
             )
         self._dangling_refs.clear()
 

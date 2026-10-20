@@ -127,6 +127,8 @@ class RenderFact(Enum):
     BACKEND_CONFIG = "backend_config"
     MODULE_CODE = "module_code"
     PLANS = "plans"
+    STDERR = "stderr"
+    """The warnings on stderr, in order: no attribute holds it, so that two passes that warn are ordered."""
 
 
 @unique
@@ -173,6 +175,7 @@ RENDER_FACT_FREEZE_POINTS: dict[RenderFact, FreezePoint] = {
     RenderFact.BACKEND_CONFIG: FreezePoint.B2,
     RenderFact.MODULE_CODE: FreezePoint.RENDER,
     RenderFact.PLANS: FreezePoint.B1,
+    RenderFact.STDERR: FreezePoint.RENDER,
 }
 """Where each render fact freezes: render preparation ends at B2; names, imports, quoting and module code at render."""
 

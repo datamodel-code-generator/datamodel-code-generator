@@ -1,0 +1,4 @@
+order: a -> b
+problem: the edges of a, b form a cycle
+provisional read: b reads REQUIRED before a writes it (a first)
+provisional read: a reads DEFAULTS before b writes it (b first)

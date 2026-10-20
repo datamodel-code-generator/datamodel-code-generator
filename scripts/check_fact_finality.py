@@ -2,8 +2,9 @@
 
 Every run checks ``PASS_DECLS`` in ``src/datamodel_code_generator/parser/_pass_decls.py``: names are unique, phases
 never go back in execution order, a repair names the change that removes it, and setup, check and bookkeeping passes
-write no fact. ``KNOWN_WRITES`` in ``src/datamodel_code_generator/parser/_finality.py`` lists the violations of
-today's pipeline that ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` reports but never raises. Each entry names a
+write no fact (a check pass may write ``STDERR``, the warnings it emits). ``KNOWN_WRITES`` in
+``src/datamodel_code_generator/parser/_finality.py`` lists the violations of today's pipeline that
+``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` reports but never raises. Each entry names a
 witness, the arguments of one ``datamodel-codegen`` run that makes it. ``--witnesses`` runs every witness with the check
 reporting and lists the entries whose witness no longer makes their violation: the change that removed it removes the
 entry too.
@@ -30,6 +31,7 @@ OTHER_AREAS = ("DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES", "DATAMODEL_CODE_GE
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from datamodel_code_generator.parser._facts import RenderFact  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._finality import KNOWN_WRITES  # noqa: E402, PLC2701
 from datamodel_code_generator.parser._pass_decls import PASS_DECLS, PassKind  # noqa: E402, PLC2701
 
@@ -40,6 +42,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._pass_decls import PassDecl
 
 NO_WRITE_KINDS = frozenset({PassKind.SETUP, PassKind.CHECK, PassKind.BOOKKEEPING})
+CHECK_WRITES = frozenset({RenderFact.STDERR})
+"""What a check pass may write: the warnings it emits."""
 
 WITNESS_RUNNER = """\
 import json, os, shlex, sys
@@ -68,7 +72,7 @@ def declaration_problems(declarations: Iterable[PassDecl] = PASS_DECLS) -> list[
         previous = decl
         if decl.kind is PassKind.REPAIR and not decl.removed_by:
             problems.append(f"repair pass {decl.name} must name the change that removes it")
-        if decl.kind in NO_WRITE_KINDS and decl.writes:
+        if decl.kind in NO_WRITE_KINDS and decl.writes - (CHECK_WRITES if decl.kind is PassKind.CHECK else frozenset()):
             problems.append(f"{decl.kind.value} pass {decl.name} must not write facts")
     return problems
 

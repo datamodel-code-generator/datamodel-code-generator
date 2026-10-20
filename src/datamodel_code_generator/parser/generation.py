@@ -997,7 +997,7 @@ class GenerationStore:  # noqa: PLR0904
         self._root_collapse_internal_mutation_depth = 0
         self._reference_copies: _ReferenceCopies | None = None
         self.phase = Phase.PARSE
-        """The phase of the pipeline that runs now, which the parser drivers set as they enter it."""
+        """The phase of the pipeline that runs now, which the parser pipeline sets as it enters it."""
 
     @classmethod
     def create_with_results(cls) -> tuple[GenerationStore, list[DataModel]]:

@@ -1,0 +1,4 @@
+order: G12b -> G06 -> G03b -> G08
+provisional read: G12b reads DEFAULTS, FIELD_TYPES before G06 writes it (unique-item containers are decided on the final nullability and defaults)
+provisional read: G12b reads FIELD_TYPES before G03b writes it (constrained forms are decided after the const nullability)
+provisional read: G06 reads CONSTRAINTS, FIELD_TYPES before G03b writes it (constraints apply to the final container type)

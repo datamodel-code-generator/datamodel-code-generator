@@ -1,7 +1,7 @@
 """Debug checks that watch how the passes of one parse change the model graph.
 
 Two check areas share this module. With neither variable set, ``Parser.parse`` installs nothing, and the scopes the
-drivers of ``parser/base.py`` open (``pass_scope``, ``fact_pass``, ``module_checkpoint``) are one shared no-op. Inside
+pipeline of ``parser/base.py`` opens (``pass_scope``, ``fact_pass``, ``module_checkpoint``) are one shared no-op. Inside
 ``recording_pass_trace``, ``fact_pass`` and ``module_checkpoint`` also record each pass and module, whether an area is
 on or not (``scripts/check_pass_pipeline.py``).
 
@@ -9,10 +9,10 @@ on or not (``scripts/check_pass_pipeline.py``).
 presentation attribute of ``ATTRIBUTE_FACTS`` only while a ``GenerationStore`` operation that some row names in
 ``store_ops`` runs. Any such operation accepts any guarded write; which pass and phase may write which attribute is the
 finality check's. A write outside every store operation is reported with the line that wrote it, the parser method it
-ran in and the pass scope and phase of the drivers (``pass_scope``), once per line and parse; the construction of an
+ran in and the pass scope and phase of the pipeline (``pass_scope``), once per line and parse; the construction of an
 object (its ``__init__`` and what that calls) writes freely.
 
-``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``: the drivers run every pass inside
+``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY``: the pipeline runs every pass inside
 ``fact_pass(DECL)`` with its declaration from ``parser/_pass_decls.py``. The parse keeps one fingerprint per model: the
 values of the ``fact`` rows of ``ATTRIBUTE_FACTS`` on the model, its fields and every data type of their types and of
 its bases, holding the objects it keys. When a pass ends, the fingerprints of the models it touched are compared with
@@ -927,7 +927,7 @@ class _ParseChecks:
     finality_mode: CheckMode | None
     finality: _Finality | None = None
     scopes: list[tuple[str, Phase]] = field(default_factory=list)
-    """The driver scopes open now, innermost last."""
+    """The pass scopes of the pipeline open now, innermost last."""
     operations: list[str] = field(default_factory=list)
     """The store operations running now, innermost last."""
     _store: GenerationStore | None = None
@@ -1122,13 +1122,13 @@ def parse_checks(parser: object, error: type[Exception]) -> Generator[None, None
 
 
 def arm_parse_checks(store: GenerationStore, scope: str) -> None:
-    """Arm the checks of the current parse at the end of L1, if they are open; ``scope`` names the SETTLE driver."""
+    """Arm the checks of the current parse at the end of L1, if they are open; ``scope`` names the SETTLE scope."""
     if (checks := _CHECKS.get()) is not None:
         checks.arm(store, scope)
 
 
 def pass_scope(name: str, phase: Phase) -> AbstractContextManager[None]:
-    """Name the driver scope and phase that guarded writes inside are reported with; a no-op unless a parse is armed."""
+    """Name the scope and phase that guarded writes inside are reported with; a no-op unless a parse is armed."""
     if (checks := _CHECKS.get()) is None or not checks.armed:
         return _NO_SCOPE
     return _scope(checks, name, phase)

@@ -6,6 +6,7 @@ starts processing each output module; ``scripts/check_pass_pipeline.py`` records
 
 from __future__ import annotations
 
+from itertools import starmap
 from pathlib import Path
 
 import pytest
@@ -84,3 +85,112 @@ def test_every_declared_pass_runs() -> None:
     traces.append("\n".join(check_pass_pipeline.call_trace(outside.parse)))
 
     assert_output("".join(f"{name}\n" for name in check_pass_pipeline.unrun_passes(traces)) or "every pass runs\n")
+
+
+def test_pipeline_tables_follow_the_rules(capsys: pytest.CaptureFixture[str]) -> None:
+    """The tables run the declarations in order, in their phases and scopes, ordered by the order rule.
+
+    The provisional reads are the explicit edges that run a reader before a writer of what it reads.
+    """
+    exit_status = check_pass_pipeline.main([])
+
+    assert_output(f"exit status: {exit_status}\n{capsys.readouterr().err}", name="checks")
+    assert_output("".join(f"{read}\n" for read in check_pass_pipeline.provisional_reads()), name="provisional_reads")
+
+
+WAVE_B_READS = {
+    "G12b": {"REQUIRED", "DEFAULTS", "NULLABLE", "DISCRIMINATOR_TAGS", "FIELD_TYPES"},
+    "G06": {"FIELD_TYPES", "MODEL_KIND", "BASES", "DISCRIMINATOR_TAGS", "CONSTRAINTS"},
+    "G03b": {"FIELD_TYPES", "CONSTRAINTS", "TYPE_OVERRIDES"},
+    "G08": {"DEFAULTS", "REQUIRED", "FIELD_TYPES", "BASES", "DISCRIMINATOR_TAGS", "TYPE_OVERRIDES"},
+}
+WAVE_B_WRITES = {
+    "declared": {
+        "G12b": {"NULLABLE", "DEFAULTS"},
+        "G06": {"CONTAINERS", "DEFAULTS"},
+        "G03b": {"CONSTRAINTS"},
+        "G08": {"DEFAULTS"},
+    },
+    "measured": {
+        "G12b": {"NULLABLE", "DEFAULTS", "REQUIRED"},
+        "G06": {"FIELD_TYPES", "DEFAULTS"},
+        "G03b": {"CONSTRAINTS", "FIELD_TYPES"},
+        "G08": {"DEFAULTS", "REQUIRED"},
+    },
+}
+WAVE_B_AFTER = {
+    "declared": {
+        "G06": [("G12b", "unique-item containers are decided on the final nullability and defaults")],
+        "G03b": [("G06", "constraints apply to the final container type")],
+        "G08": [("G06", "object defaults are dropped after the container decision")],
+    },
+    "measured": {
+        "G06": [("G12b", "unique-item containers are decided on the final nullability and defaults")],
+        "G03b": [
+            ("G12b", "constrained forms are decided after the const nullability"),
+            ("G06", "constraints apply to the final container type"),
+        ],
+    },
+}
+
+
+def _decl(name: str, reads: set[str], writes: set[str], after: list[tuple[str, str]]) -> check_pass_pipeline.PassDecl:
+    return check_pass_pipeline.PassDecl(
+        name,
+        check_pass_pipeline.Phase.DECIDE,
+        check_pass_pipeline.Scope.GLOBAL,
+        check_pass_pipeline.PassKind.TRANSFORM,
+        reads=frozenset(check_pass_pipeline.Fact[fact] for fact in reads),
+        writes=frozenset(check_pass_pipeline.Fact[fact] for fact in writes),
+        after=tuple(starmap(check_pass_pipeline.After, after)),
+    )
+
+
+def _wave_b(writes: str, *, edges: bool) -> list[check_pass_pipeline.PassDecl]:
+    return [
+        _decl(name, reads, WAVE_B_WRITES[writes][name], WAVE_B_AFTER[writes].get(name, []) if edges else [])
+        for name, reads in WAVE_B_READS.items()
+    ]
+
+
+ORDER_CASES = {
+    "wave-b-declared-without-edges": (_wave_b("declared", edges=False), True),
+    "wave-b-declared": (_wave_b("declared", edges=True), True),
+    "wave-b-measured-without-edges": (_wave_b("measured", edges=False), True),
+    "wave-b-measured": (_wave_b("measured", edges=True), True),
+    "edge-to-a-later-pass-of-a-table": (
+        [
+            _decl("a", {"DEFAULTS"}, {"REQUIRED"}, [("b", "reads what b writes")]),
+            _decl("b", {"REQUIRED"}, {"DEFAULTS"}, []),
+        ],
+        False,
+    ),
+    "edge-to-an-unknown-or-unrelated-pass": (
+        [
+            _decl("a", {"DEFAULTS"}, {"REQUIRED"}, []),
+            _decl("b", {"BASES"}, {"BASES"}, [("a", "decorative"), ("missing", "names no pass")]),
+        ],
+        False,
+    ),
+    "cycle": (
+        [
+            _decl("a", {"DEFAULTS"}, {"REQUIRED"}, [("b", "a first")]),
+            _decl("b", {"REQUIRED"}, {"DEFAULTS"}, [("a", "b first")]),
+        ],
+        True,
+    ),
+}
+
+
+@pytest.mark.parametrize(("decls", "computed"), ORDER_CASES.values(), ids=ORDER_CASES)
+def test_check_order(decls: list[check_pass_pipeline.PassDecl], computed: bool) -> None:
+    """The order rule orders the passes, reports conflicting pairs no edge orders, and records provisional reads."""
+    result = check_pass_pipeline.check_order(decls, computed=computed)
+
+    assert_output(
+        "".join([
+            f"order: {' -> '.join(result.order)}\n",
+            *(f"problem: {problem}\n" for problem in result.problems),
+            *(f"provisional read: {read}\n" for read in result.provisional_reads),
+        ])
+    )

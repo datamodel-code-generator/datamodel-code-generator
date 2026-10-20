@@ -1,0 +1,3 @@
+order: G12b -> G06 -> G03b -> G08
+provisional read: G12b reads DEFAULTS before G06 writes it (unique-item containers are decided on the final nullability and defaults)
+provisional read: G06 reads CONSTRAINTS before G03b writes it (constraints apply to the final container type)

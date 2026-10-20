@@ -288,7 +288,19 @@ def _pass_notes(decl: PassDecl) -> str:
         notes.append(f"Moves to {decl.target.name}.")
     if decl.removed_by:
         notes.append(f"Removed by {decl.removed_by}.")
+    notes.extend(f"After `{edge.pass_name}`: {edge.reason}." for edge in decl.after)
     return " ".join(notes)
+
+
+def _provisional_reads() -> list[str]:
+    """List each explicit edge that runs a pass reading a fact before the pass that writes it, in execution order."""
+    by_name = {decl.name: decl for decl in PASS_DECLS}
+    return [
+        f"- `{edge.pass_name}` reads {_facts_cell(read_first)} before `{decl.name}` writes it: {edge.reason}."
+        for decl in PASS_DECLS
+        for edge in decl.after
+        if (read_first := by_name[edge.pass_name].reads & decl.writes)
+    ]
 
 
 def generate_pass_table() -> str:
@@ -306,6 +318,7 @@ def generate_pass_table() -> str:
         f"{_facts_cell(decl.reads)} | {_pass_notes(decl)} |"
         for decl in PASS_DECLS
     )
+    lines.extend(["", "Provisional reads, from the explicit edges:", "", *_provisional_reads()])
     return "\n".join(lines) + "\n"
 
 

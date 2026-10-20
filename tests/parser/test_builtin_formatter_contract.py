@@ -46,7 +46,7 @@ def _attributes_on(node: ast.AST, object_name: str) -> set[str]:
 
 def _generated_formatter_guarded_config_fields() -> set[str]:
     init_tree = ast.parse(textwrap.dedent(inspect.getsource(Parser.__init__)))
-    parse_tree = ast.parse(textwrap.dedent(inspect.getsource(Parser._Parser__prepare_parse)))
+    parse_tree = ast.parse(textwrap.dedent(inspect.getsource(Parser._Parser__detect_standard_generation_templates)))
     configured_types = _assigned_value(init_tree, "_configured_generation_types_are_builtin")
     standard_templates = _assigned_value(parse_tree, "_uses_standard_generation_templates")
     config_by_instance_attribute: dict[str, str] = {}

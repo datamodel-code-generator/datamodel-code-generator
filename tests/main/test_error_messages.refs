@@ -8,9 +8,13 @@
 	main/error_messages/cli_latin1_custom_header_writes_module.py
 [test_cross_file_empty_ref_is_valid_in_strict_mode]
 	main/malformed/cross_file_empty_ref//*.py
+[test_dangling_component_ref_warning_names_the_parse_caller]
+	main/error_messages/dangling_component_ref_warning_names_the_parse_caller.txt
 [test_dangling_local_ref_warns_and_preserves_generated_output]
 	main/malformed/dangling_local_ref.py
 	main/malformed/dangling_ref_warning_location.txt
+[test_dangling_ref_warning_names_the_caller_of_a_traced_parse]
+	main/error_messages/dangling_ref_warning_names_the_caller_of_a_traced_parse.txt
 [test_directory_input_custom_header_trailing_newlines]
 False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/
 False-prepend-\n\n	main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n]/	= main/error_messages/directory_input_custom_header_trailing_newlines[False-prepend-_n_n].2/

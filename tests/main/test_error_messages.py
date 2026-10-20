@@ -24,6 +24,7 @@ from datamodel_code_generator import (
     SchemaResourceRefWarning,
     YamlValue,
     generate,
+    snooper_to_methods,
 )
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.config import GenerateConfig
@@ -1288,6 +1289,49 @@ def test_dangling_local_ref_warns_and_preserves_generated_output(
             f"{filename}\n" for filename in dict.fromkeys(Path(warning.filename).name for warning in dangling_warnings)
         ),
         EXPECTED_MALFORMED_PATH / "dangling_ref_warning_location.txt",
+    )
+
+
+def test_dangling_component_ref_warning_names_the_parse_caller(output_file: Path) -> None:
+    """The diagnostics warnings of an OpenAPI document name ``OpenAPIParser.parse()``, which calls the base one."""
+    with pytest.warns(DanglingRefWarning) as warning_records:
+        run_main_with_args([
+            "--input",
+            str(MALFORMED_DATA_PATH / "dangling_component_ref.yaml"),
+            "--input-file-type",
+            "openapi",
+            "--output",
+            str(output_file),
+        ])
+    assert_output(
+        "".join(
+            f"{filename}\n"
+            for filename in dict.fromkeys(
+                Path(warning.filename).name for warning in warning_records if warning.category is DanglingRefWarning
+            )
+        )
+    )
+
+
+def test_dangling_ref_warning_names_the_caller_of_a_traced_parse(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Under the tracing wrappers that ``--debug`` installs, the diagnostics warnings name the caller of ``parse()``."""
+    pysnooper = pytest.importorskip("pysnooper")
+    monkeypatch.setattr(pysnooper.tracer, "DISABLED", False)
+
+    @snooper_to_methods()
+    class TracedParser(JsonSchemaParser):
+        """A parser whose methods, ``parse()`` included, run inside the tracing wrappers."""
+
+    parser = TracedParser(MALFORMED_DATA_PATH / "dangling_local_ref.json", formatters=[Formatter.BUILTIN])
+    with pytest.warns(DanglingRefWarning) as warning_records:
+        parser.parse()
+    assert_output(
+        "".join(
+            f"{filename}\n"
+            for filename in dict.fromkeys(
+                Path(warning.filename).name for warning in warning_records if warning.category is DanglingRefWarning
+            )
+        )
     )
 
 

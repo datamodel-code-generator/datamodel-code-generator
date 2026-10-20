@@ -295,8 +295,10 @@ measure performance outside pytest with the variables unset as well.
 does not list; the listed ones are today's, each with the roadmap item that removes it and a witness, the
 `datamodel-codegen` arguments of one run that makes it. `python scripts/check_fact_finality.py --witnesses` (and the
 test suite) run the witnesses and fail for an entry whose witness no longer makes its violation: remove the entry. The
-list only shrinks. A new pass is declared in `parser/_pass_decls.py` and runs inside `fact_pass(DECL)`; the same script
-checks the declarations, and a test that fails with "... undeclared: ..." made a write its pass does not declare.
+list only shrinks. A new pass is declared in `parser/_pass_decls.py` and gets an entry in the pipeline tables of
+`Parser`, whose runner runs it inside `fact_pass(DECL)`; the same script checks the declarations,
+`scripts/check_pass_pipeline.py` checks the tables and their order, and a test that fails with "... undeclared: ..."
+made a write its pass does not declare.
 
 `STORE_WRITES` is the exception: today's code still writes outside store operations at the places
 `scripts/generation_store_allowlist.toml` lists, so `1` would stop every generation. Unless you set the variable,
