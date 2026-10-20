@@ -351,6 +351,10 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
         for name in ("nested", "siblings", "inherited")
     },
     "jsonschema/type_alias_lookaround/annotated_root.json": {PayloadBackend.PYDANTIC_V2: ("--use-annotated",)},
+    "jsonschema/decimal_multiple_of_field_forms.json": {
+        PayloadBackend.PYDANTIC_V2: ("--use-decimal-for-multiple-of", "--use-annotated"),
+        PayloadBackend.PYDANTIC_V2_DATACLASS: ("--use-decimal-for-multiple-of", "--field-constraints"),
+    },
     **{
         f"jsonschema/{name}.json": dict.fromkeys(PayloadBackend, ("--collapse-root-models",))
         for name in (
@@ -389,8 +393,12 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
         "pydantic serializes URI values in JSON mode, which can collapse distinct source-valid strings and violate "
         "uniqueItems"
     ),
-    "jsonschema/strict_types_matrix.json": (
-        "pydantic serializes Decimal JSON values as strings while the source schema requires number"
+    **dict.fromkeys(
+        (
+            "jsonschema/decimal_multiple_of_field_forms.json",
+            "jsonschema/strict_types_matrix.json",
+        ),
+        "pydantic serializes Decimal JSON values as strings while the source schema requires number",
     ),
     "jsonschema/type_alias_annotated/shadowed_imports.json": (
         "pydantic serializes Decimal JSON values as strings while the source schema requires number"

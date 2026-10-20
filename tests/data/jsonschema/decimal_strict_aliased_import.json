@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StrictDecimalAliased",
+  "type": "object",
+  "properties": {
+    "Decimal": {"type": "string"},
+    "amount": {"type": "number", "multipleOf": 0.01}
+  }
+}

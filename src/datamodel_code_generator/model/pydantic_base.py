@@ -14,6 +14,7 @@ from pydantic import Field as _Field
 from typing_extensions import override
 
 from datamodel_code_generator import cached_path_exists
+from datamodel_code_generator.imports import IMPORT_DECIMAL
 from datamodel_code_generator.model import (
     UNDEFINED,
     DataModel,
@@ -236,7 +237,21 @@ class DataModelField(DataModelFieldBase):
                 )
             ) is not None:
                 merge_normalized_constraint(constraint_data, normalized[0], normalized[1])
+        if self._has_strict_decimal():
+            constraint_data["strict"] = True
         return constraint_data
+
+    def _has_strict_decimal(self) -> bool:
+        """Return whether the field's type, or a member of the union it is, is a strict ``Decimal``, aliased or not.
+
+        Pydantic has no strict ``Decimal`` class, so the field writes the strictness among its ``Field()`` arguments.
+        """
+        return any(
+            data_type.strict
+            and (import_ := data_type.import_) is not None
+            and (import_.from_, import_.import_) == (IMPORT_DECIMAL.from_, IMPORT_DECIMAL.import_)
+            for data_type in (self.data_type, *self.data_type.data_types)
+        )
 
     def _anyurl_dropped_constraints(self) -> list[str]:
         """Return the constraint keywords the field leaves out where it is written, as its type holds ``AnyUrl``.

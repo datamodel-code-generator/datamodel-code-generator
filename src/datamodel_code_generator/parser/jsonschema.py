@@ -704,11 +704,11 @@ def _literal_met(
 
 
 def _carried_constraint_keywords(data_type: DataType) -> frozenset[str]:
-    """Return the keywords that a type, or a member of a union it is, writes itself, which its field leaves out."""
+    """Return the keywords that a type, or a member of a union it is, consumed itself, which its field leaves out."""
     if data_type.is_list or data_type.is_dict or data_type.is_tuple or data_type.is_set or data_type.is_frozen_set:
-        return data_type.CARRIED_CONSTRAINT_KEYWORDS
-    return data_type.CARRIED_CONSTRAINT_KEYWORDS.union(
-        *(member.CARRIED_CONSTRAINT_KEYWORDS for member in data_type.data_types)
+        return data_type._consumed_constraints  # noqa: SLF001
+    return data_type._consumed_constraints.union(  # noqa: SLF001
+        *(member._consumed_constraints for member in data_type.data_types)  # noqa: SLF001
     )
 
 
@@ -4089,32 +4089,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         def _get_data_type(type_: str, format__: str) -> DataType:
             types = self._get_type_with_mappings(type_, format__)
-            kwargs_to_pass: dict[str, JsonSchemaDataTypeKwargValue]
-            if self.field_constraints and not localize_constraints:
-                # To prevent type manager from generating conint/confloat,
-                # we only pass constraints that perfectly match specialized types
-                # (like NonNegativeInt -> minimum: 0).
-                # Other constraints should remain on Field(), so we pass {}
-                kwargs_to_pass = {}
-                number_kwargs: dict[str, int | float | bool] = {}
-                for key in ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"):
-                    value = getattr(obj, key)
-                    if value is not None:
-                        number_kwargs[key] = value.value if isinstance(value, UnionIntFloat) else value
-
-                if self.data_type_manager.use_non_positive_negative_number_constrained_types:
-                    zero_bound_keys = [k for k, v in number_kwargs.items() if v == 0]
-                    if len(zero_bound_keys) == 1:
-                        key = zero_bound_keys[0]
-                        kwargs_to_pass = {key: number_kwargs[key]}
-            else:
-                kwargs_to_pass = {}
-                kwargs_to_pass.update(_get_data_type_constraint_kwargs(obj, types))
-
-            if format_kwargs := self._get_format_type_kwargs(type_, format__, types):
-                kwargs_to_pass.update(format_kwargs)
-                if format_kwargs.get("base64_encoded"):
-                    kwargs_to_pass.update(_get_data_type_constraint_kwargs(obj, types))
+            kwargs_to_pass: dict[str, JsonSchemaDataTypeKwargValue] = {
+                **_get_data_type_constraint_kwargs(obj, types),
+                **self._get_format_type_kwargs(type_, format__, types),
+            }
             return self.data_type_manager.get_data_type(
                 types,
                 field_constraints=self.field_constraints and not localize_constraints,

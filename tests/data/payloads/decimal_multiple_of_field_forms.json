@@ -1,0 +1,22 @@
+{
+  "valid": {
+    "amount": 1.23,
+    "opt": 1.5,
+    "maxed": 9.9,
+    "inty": 4,
+    "arr": [0.05],
+    "mapv": {"a": 0.07},
+    "rate": 0.005,
+    "plainf": 1.5
+  },
+  "invalid": {
+    "amount": 0.0100000001,
+    "opt": 0.25,
+    "maxed": 10.1,
+    "inty": 3,
+    "arr": [0.011],
+    "mapv": {"a": 0.011},
+    "rate": 0,
+    "plainf": -1
+  }
+}

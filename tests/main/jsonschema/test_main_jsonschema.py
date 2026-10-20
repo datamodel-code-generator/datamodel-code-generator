@@ -6560,6 +6560,79 @@ def test_main_string_constraints_on_emitted_types(output_file: Path, extra_args:
     "extra_args",
     [
         pytest.param([], id="default"),
+        pytest.param(["--use-annotated"], id="use_annotated"),
+        pytest.param(["--field-constraints"], id="field_constraints"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], id="dataclass_annotated"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], id="dataclass_field"),
+        pytest.param(
+            ["--field-constraints", "--use-non-positive-negative-number-constrained-types"], id="zero_bound_classes"
+        ),
+        pytest.param(["--strict-types", "float"], id="strict_float"),
+        pytest.param(["--use-annotated", "--strict-types", "float"], id="strict_float_annotated"),
+    ],
+)
+def test_main_decimal_multiple_of_in_field_forms(output_file: Path, extra_args: list[str]) -> None:
+    """Test ``--use-decimal-for-multiple-of`` writes a ``Decimal`` for a number with ``multipleOf`` in every form.
+
+    The field forms write ``Decimal`` with the constraints in ``Field()`` at a property, a nullable property, an item,
+    a map value and a root, so ``0.0100000001`` is rejected as by ``condecimal``; an integer stays ``int``, and a
+    number without ``multipleOf`` keeps its zero-bound class. Under ``--strict-types float`` the ``Decimal`` is strict:
+    ``condecimal(..., strict=True)``, or ``strict=True`` among the ``Field()`` arguments.
+    """
+    name = "decimal_multiple_of_field_forms"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--use-decimal-for-multiple-of",
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    with _generated_model(output_file, name, "DecimalMultipleOfFieldForms") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["valid"]))
+        rejected = []
+        for field_name, value in payloads["invalid"].items():
+            with pytest.raises(ValidationError):
+                validate(json.dumps(payloads["valid"] | {field_name: value}))
+            rejected.append(field_name)
+    assert_output("\n".join(rejected) + "\n", name="rejected")
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--field-constraints"], id="field_constraints"),
+        pytest.param(["--use-annotated"], id="use_annotated"),
+    ],
+)
+def test_main_strict_decimal_beside_a_field_named_decimal(output_file: Path, extra_args: list[str]) -> None:
+    """Test a strict ``Decimal`` keeps ``strict=True`` when a field named ``Decimal`` makes its import aliased."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "decimal_strict_aliased_import.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--use-decimal-for-multiple-of",
+            "--strict-types",
+            "float",
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
         pytest.param(["--field-constraints"], id="field_constraints"),
         pytest.param(["--use-annotated"], id="use_annotated"),
         pytest.param(["--enum-field-as-literal", "all"], id="literal"),

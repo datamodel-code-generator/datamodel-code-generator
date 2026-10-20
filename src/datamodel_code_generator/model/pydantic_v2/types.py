@@ -188,6 +188,9 @@ _ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
 _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
 
 bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
+_FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
+_ZERO_BOUND_KEYWORDS: tuple[str, ...] = ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum")
+"""The bounds of which exactly one equal to 0 gives a zero-bound class in the field forms, in schema order."""
 
 escape_characters = str.maketrans({
     "'": r"\'",
@@ -359,13 +362,12 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         if data_type_kwargs:
             # Use Decimal instead of float when multipleOf is present to avoid floating-point precision issues
             if self.use_decimal_for_multiple_of and "multiple_of" in data_type_kwargs:
-                return self.data_type.from_import(
-                    IMPORT_CONDECIMAL,
-                    kwargs={
-                        k: Decimal(str(v.value if isinstance(v, UnionIntFloat) else v))
-                        for k, v in data_type_kwargs.items()
-                    },
-                )
+                decimal_kwargs: dict[str, Any] = {
+                    k: Decimal(str(v.value if isinstance(v, UnionIntFloat) else v)) for k, v in data_type_kwargs.items()
+                }
+                if strict:
+                    decimal_kwargs["strict"] = True
+                return self.data_type.from_import(IMPORT_CONDECIMAL, kwargs=decimal_kwargs)
             if not strict:
                 if data_type_kwargs == {"gt": 0}:
                     return self.data_type.from_import(IMPORT_POSITIVE_FLOAT)
@@ -467,6 +469,26 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
             return self.copy_data_type(self.strict_type_map[StrictTypes.bytes])
         return self.copy_data_type(self.type_map[types])
 
+    def _is_decimal_multiple(self, types: Types, kwargs: Mapping[str, Any]) -> bool:
+        """Return whether a number schema with ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of``."""
+        return (
+            self.use_decimal_for_multiple_of
+            and kwargs.get("multipleOf") is not None
+            and types in _FLOAT_TYPES
+            and not kwargs.get("string_format")
+        )
+
+    def _field_form_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """Return the arguments a type of a field form is built from: the constraints it takes, and the others."""
+        if kwargs.get("base64_encoded"):
+            return kwargs
+        taken = {key: value for key, value in kwargs.items() if key not in self.kwargs_schema_to_model}
+        if self.use_non_positive_negative_number_constrained_types and (
+            len(zero_bounds := [key for key in _ZERO_BOUND_KEYWORDS if kwargs.get(key) == 0]) == 1
+        ):
+            taken[zero_bounds[0]] = kwargs[zero_bounds[0]]
+        return taken
+
     @override
     def get_data_type(  # noqa: PLR0911
         self,
@@ -475,12 +497,23 @@ class _PydanticDataTypeManager(_DataTypeManagerBase):
         field_constraints: bool = False,
         **kwargs: Any,
     ) -> DataType:
-        """Get data type with appropriate constraints for the given type."""
+        """Get data type with appropriate constraints for the given type.
+
+        The parser passes every constraint the schema declares for the type. In the field forms
+        (``field_constraints``) the field writes them, so the type takes none of them but the lengths of bytes decoded
+        from base64 text and, under ``use_non_positive_negative_number_constrained_types``, the one bound equal to 0
+        of a schema that has exactly one (row ``legacy-consumed-at-object-property`` writes it again); a number with
+        ``multipleOf`` is a ``Decimal`` under ``use_decimal_for_multiple_of``, strict under ``--strict-types float``.
+        """
+        if field_constraints:
+            if self._is_decimal_multiple(types, kwargs):
+                return self.data_type.from_import(IMPORT_DECIMAL, strict=StrictTypes.float in self.strict_types)
+            kwargs = self._field_form_kwargs(kwargs)
         if types == Types.string:
             return self.get_data_str_type(types, **kwargs)
         if types in {Types.int32, Types.int64, Types.integer}:
             return self.get_data_int_type(types, **kwargs)
-        if types in {Types.float, Types.double, Types.number, Types.time} and not kwargs.get("string_format"):
+        if types in _FLOAT_TYPES and not kwargs.get("string_format"):
             return self.get_data_float_type(types, **kwargs)
         if types == Types.decimal:
             return self.get_data_decimal_type(types, **kwargs)
@@ -553,8 +586,13 @@ class EncodedBytesDataType(PydanticV2DataType):
     ``EncodedBytes``. Pydantic checks them so from 2.10 on.
     """
 
-    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = _applicability.BASE64_BYTES_CARRIED_KEYWORDS
     annotated_bytes: ClassVar[bool] = True
+
+    @property
+    @override
+    def _consumed_constraints(self) -> frozenset[str]:
+        """The lengths the type writes in front of its decoding, which it enforces itself."""
+        return _applicability.base64_bytes_consumed_keywords(self.kwargs or {})
 
     def _binding(self, name: str) -> str:
         return next(import_.binding_name for import_ in self.runtime_expression_imports if import_.import_ == name)

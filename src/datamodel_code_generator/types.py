@@ -1272,8 +1272,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """Return whether this DataType represents a union of multiple types."""
         return len(self.data_types) > 1
 
-    CARRIED_CONSTRAINT_KEYWORDS: ClassVar[frozenset[str]] = _applicability.NO_KEYWORDS
-    """Schema keywords that the type writes itself, which a field of the type leaves out of its constraints."""
+    @property
+    def _consumed_constraints(self) -> frozenset[str]:
+        """The schema keywords the type enforces itself, which a field of the type leaves out of its constraints."""
+        return _applicability.NO_KEYWORDS
 
     # Historical conversion policy retained for direct DataType users and
     # external subclasses. Output backends must declare their own policy.

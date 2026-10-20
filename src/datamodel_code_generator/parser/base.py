@@ -440,7 +440,8 @@ def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
 def _has_root_field_constraints(root_field: DataModelFieldBase) -> bool:
     """Return whether a root field has constraints, as Field() arguments or written inside its type."""
     return (isinstance(constraints := root_field.constraints, ConstraintsBase) and constraints.has_constraints) or any(
-        data_type.CARRIED_CONSTRAINT_KEYWORDS for data_type in (root_field.data_type, *root_field.data_type.data_types)
+        data_type._consumed_constraints  # noqa: SLF001
+        for data_type in (root_field.data_type, *root_field.data_type.data_types)
     )
 
 

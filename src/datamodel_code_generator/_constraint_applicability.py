@@ -54,7 +54,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ARRAY_KEYWORDS",
-    "BASE64_BYTES_CARRIED_KEYWORDS",
     "BASE_OUTPUT",
     "LENGTH_KEYWORDS",
     "LENGTH_KEYWORD_ORDER",
@@ -77,6 +76,7 @@ __all__ = [
     "DeclaredKinds",
     "OutputKeywords",
     "all_of_root_keyword_kinds",
+    "base64_bytes_consumed_keywords",
     "constrained_type_keyword_order",
     "declared_keywords",
     "declared_string_keywords_taken",
@@ -179,9 +179,11 @@ _STRING_KEYWORDS_KEPT_TYPE: Final = "pydantic.AnyUrl"
 _BASE64_DECODED_KEYWORDS: Final[frozenset[str]] = STRING_KEYWORDS
 """The keywords a type that decodes base64 text takes, as written beside it in every release: Pydantic checks them on
 the decoded value, not on the text the schema constrains."""
-BASE64_BYTES_CARRIED_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS
-"""The keywords that bytes decoded from base64 text write inside their own annotation, in front of the decoding, so a
-field of the type leaves them out of its own constraints (``CARRIED_CONSTRAINT_KEYWORDS``)."""
+_BASE64_BYTES_LENGTH_ARGUMENTS: Final[Mapping[str, str]] = MappingProxyType({
+    "min_length": "minLength",
+    "max_length": "maxLength",
+})
+"""The ``Field()`` arguments of the lengths that bytes decoded from base64 text write in front of the decoding."""
 
 TAG_LITERAL_UNTAKEN_KEYWORD: Final = "pattern"
 """The keyword a discriminator tag's ``Literal`` leaves out in an output model that writes ``Field()`` arguments, once
@@ -448,6 +450,14 @@ def property_consumed_keywords(
     them out; a root, an item or a union member of the class writes them again.
     """
     return zero_bound_classes.get(type_name, ()) if type_name else ()
+
+
+def base64_bytes_consumed_keywords(arguments: Mapping[str, object]) -> frozenset[str]:
+    """Return the lengths that bytes decoded from base64 text write inside their own annotation, by its arguments.
+
+    The type consumes them, so a field of the type leaves them out of its own constraints.
+    """
+    return frozenset(keyword for argument, keyword in _BASE64_BYTES_LENGTH_ARGUMENTS.items() if argument in arguments)
 
 
 def holds_number_format(mapped_type: str) -> bool:

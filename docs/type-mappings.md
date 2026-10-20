@@ -391,6 +391,15 @@ class Product(BaseModel):
 - Scientific calculations requiring precision
 - Any schema with `multipleOf` constraints
 
+### Forms and strict types
+
+The default Pydantic output writes `condecimal(...)`. With `--field-constraints` or `--use-annotated` the field is a
+`Decimal` with its constraints in `Field()`, for example `Annotated[Decimal, Field(ge=0, multiple_of=0.01)]`. Under
+`--strict-types float` the `Decimal` is strict: `condecimal(..., strict=True)`, or `strict=True` among the `Field()`
+arguments. It rejects Python floats and, as Pydantic's strict `Decimal` does in JSON, accepts JSON numbers and numeric
+strings. A custom `DataTypeManager` receives every constraint of the
+schema in the field forms too, with `field_constraints=True`; the base class ignores them.
+
 ---
 
 ## Common Patterns
