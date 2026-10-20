@@ -15,7 +15,7 @@ from uuid import UUID
 
 from typing_extensions import TypeVar
 
-from .media import plain
+from .media import json_bytes, plain
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -137,7 +137,7 @@ class DataclassCodec(Generic[T]):
 
     def encode(self, value: T) -> bytes:
         """Serialize compact UTF-8 JSON, refusing non-finite JSON numbers."""
-        return json.dumps(self.dump(value), separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode()
+        return json_bytes(self.dump(value))
 
     def dump(self, value: T) -> object:
         """Rename present keys and serialize values through their native leaf representations."""

@@ -359,6 +359,7 @@ def _canonical_values(records: ModuleType, lines: list[str]) -> None:
         ("nan", float("nan")),
         ("surrogate", "\ud800"),
         ("cyclic", cycle),
+        ("integer over conversion limit", 10**5000),
         ("integral decimal over conversion limit", Decimal("1" + "0" * 5000)),
     ):
         record(lines, f"canonical {label}", lambda value=value: _canonical(records, value))

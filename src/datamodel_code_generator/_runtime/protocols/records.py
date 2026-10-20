@@ -11,7 +11,10 @@ from typing import Final, Generic, Literal, NoReturn, TypeAlias, cast, get_args
 from typing_extensions import Self, TypeVar
 
 from ..client.responses import ResponseInfo
-from ..model_codecs.media import JSONValue  # noqa: TC001 - Public annotations support get_type_hints().
+from ..model_codecs.media import (
+    JSONValue,
+    json_bytes,
+)
 
 __all__ = (
     "BodySelector",
@@ -48,8 +51,6 @@ _OCCURRENCES: Final = ("single", "all")
 _PARAMETER_LOCATIONS: Final = ("path", "query", "header", "cookie")
 _POINTER: Final = re.compile(r"(?:/(?:[^~/]|~[01])*)*")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
-_NESTING: Final = "A wire value must not be nested beyond the interpreter recursion limit"
-_SURROGATES: Final = "A wire string must not contain lone surrogates"
 
 
 def record_string(value: object, name: str) -> str:
@@ -84,19 +85,9 @@ def _choice(value: object, name: str, choices: tuple[str, ...]) -> None:
         raise ValueError(msg)
 
 
-def _dumped(value: object, *, sort_keys: bool) -> bytes:
-    try:
-        text = json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
-        return text.encode()
-    except RecursionError:
-        raise ValueError(_NESTING) from None
-    except UnicodeEncodeError:
-        raise ValueError(_SURROGATES) from None
-
-
 def plain_copy(value: object) -> JSONValue:
     """Copy a JSON value through its UTF-8 JSON text, refusing what `canonical_json` refuses."""
-    return cast("JSONValue", json.loads(_dumped(value, sort_keys=False)))
+    return cast("JSONValue", json.loads(json_bytes(value)))
 
 
 def canonical_json(value: object) -> bytes:
@@ -105,7 +96,7 @@ def canonical_json(value: object) -> bytes:
     A value nested beyond the interpreter recursion limit, a lone surrogate, or an integer over the interpreter's
     decimal conversion limit raises ValueError, and a value that is not JSON raises TypeError.
     """
-    return _dumped(value, sort_keys=True)
+    return json_bytes(value, sort_keys=True)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

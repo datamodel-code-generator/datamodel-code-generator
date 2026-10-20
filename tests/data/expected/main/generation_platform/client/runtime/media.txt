@@ -58,7 +58,7 @@ title
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
   store narrowed ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', reason='unexpected_media_type') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, media_type='application/json'] unexpected_media_type
-  store value ! DecodeError: DecodeError(operation_id='storeDocument', reason='unencodable', location='body') [operation_id='storeDocument', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('Object of type set is not JSON serializable')] unencodable
+  store value ! DecodeError: DecodeError(operation_id='storeDocument', reason='unencodable', location='body') [operation_id='storeDocument', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A wire value must be made of JSON values and string keys')] unencodable
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
   read ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', reason='invalid_value') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=1 validation error for Draft
@@ -178,7 +178,7 @@ secret
   > POST https://media.example.com/api/documents
     [host: media.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/json, content-length: 1] b'1'
   store narrowed ! DecodeError: DecodeError(status_code=302, operation_id='storeDocument', reason='unexpected_media_type') [operation_id='storeDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, media_type='application/json'] unexpected_media_type
-  store value ! DecodeError: DecodeError(operation_id='storeDocument', reason='unencodable', location='body') [operation_id='storeDocument', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('Object of type set is not JSON serializable')] unencodable
+  store value ! DecodeError: DecodeError(operation_id='storeDocument', reason='unencodable', location='body') [operation_id='storeDocument', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A wire value must be made of JSON values and string keys')] unencodable
   > GET https://media.example.com/api/documents/%7B%22key%22%3A%22a%2Fb%22%7D?filter=%7B%22q%22%3A%5B1%5D%7D
     [host: media.example.com, accept-encoding: gzip, deflate, accept: application/vnd.api+json, x-mode: fast] b''
   read ! DecodeError: DecodeError(status_code=200, operation_id='readDocument', reason='invalid_value') [operation_id='readDocument', body_bytes=b'{"id":1,"title":"t"}', truncated=False, cause=TypeError("Draft.__init__() missing 1 required positional argument: 'secret'")] invalid_value

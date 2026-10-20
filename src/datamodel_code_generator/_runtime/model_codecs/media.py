@@ -32,7 +32,13 @@ _NUMBER: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+
 _TRIPLET: Final = re.compile(rb"%[0-9A-Fa-f]{2}")
 _FORM_SAFE: Final = "*-._"
 _SCALARS: Final = frozenset({bool, int, float, str, type(None)})
-_NON_FINITE: Final = "A value must be a finite JSON number"
+
+_NESTING: Final = "A wire value must not be nested beyond the interpreter recursion limit"
+_SURROGATES: Final = "A wire string must not contain lone surrogates"
+_NOT_JSON: Final = "A wire value must be made of JSON values and string keys"
+_CIRCULAR: Final = "A wire value must not refer to itself"
+_NON_FINITE: Final = "A wire number must be finite"
+_TOO_LARGE: Final = "A wire integer must not exceed the interpreter's decimal conversion limit"
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,9 +50,41 @@ class FieldPlan:
     repeated: bool = False
 
 
-def json_bytes(value: object, *, ascii_only: bool = False) -> bytes:
-    """Serialize ordinary JSON builtins as compact UTF-8 bytes, escaping non-ASCII text when asked."""
-    return json.dumps(value, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False).encode()
+def json_text(value: object, *, ascii_only: bool = False, sort_keys: bool = False) -> str:
+    """Serialize ordinary JSON builtins as compact JSON text, escaping non-ASCII text when asked.
+
+    The errors are the runtime's own, with the same messages on every Python version: ValueError for a circular
+    reference, a non-finite number, an integer over the interpreter's decimal conversion limit, or a value nested
+    beyond the recursion limit, and TypeError for a value or key that is not JSON.
+    """
+    try:
+        return json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False)
+    except RecursionError:
+        raise ValueError(_NESTING) from None
+    except TypeError:
+        raise TypeError(_NOT_JSON) from None
+    except ValueError as error:
+        raise ValueError(_value_error(str(error))) from None
+
+
+def _value_error(text: str) -> str:
+    if text.startswith("Circular reference"):
+        return _CIRCULAR
+    if text.startswith("Out of range float"):
+        return _NON_FINITE
+    return _TOO_LARGE
+
+
+def json_bytes(value: object, *, ascii_only: bool = False, sort_keys: bool = False) -> bytes:
+    """Serialize ordinary JSON builtins as compact UTF-8 bytes, escaping non-ASCII text when asked.
+
+    The errors are those of `json_text`, and a lone surrogate raises ValueError.
+    """
+    text = json_text(value, ascii_only=ascii_only, sort_keys=sort_keys)
+    try:
+        return text.encode()
+    except UnicodeEncodeError:
+        raise ValueError(_SURROGATES) from None
 
 
 def json_value(content: str | bytes) -> JSONValue:

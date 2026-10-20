@@ -377,7 +377,7 @@
   create without body ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False] unencodable
   create undeclared media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] undeclared
   create invalid media ! ConfigurationError: ConfigurationError(operation_id='createPet', reason='undeclared', field_path='media_type') [operation_id='createPet', field_path=('media_type',)] undeclared
-  create invalid body ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('Object of type object is not JSON serializable')] unencodable
+  create invalid body ! DecodeError: DecodeError(operation_id='createPet', reason='unencodable', location='body') [operation_id='createPet', location=('body',), body_bytes=b'', truncated=False, cause=TypeError('A wire value must be made of JSON values and string keys')] unencodable
   > POST https://api.example.com/v1/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 24] b'{"name":"dog","tag":"x"}'
   create rejected ! UnprocessableEntityError: Error code: 422 - {"code":22} [operation_id='createPet', status_code=422, body={'code': 22}, body_bytes=b'{"code":22}', truncated=False]

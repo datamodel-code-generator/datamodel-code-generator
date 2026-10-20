@@ -148,15 +148,15 @@
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
   canonical string = (b'"secret-cursor"', True)
   canonical integer = (b'20', True)
-  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical float = (b'2.5', True)
   canonical large float = (b'1e+16', True)
   canonical small float = (b'1e-07', True)
   canonical negative zero float = (b'-0.0', True)
   canonical whole float = (b'100.0', True)
-  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical large integer = (b'1180591620717411303424', True)
   canonical null = (b'null', True)
   canonical boolean = (b'false', True)
@@ -164,13 +164,14 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
   canonical list = (b'[1,"two"]', True)
   canonical tuple = (b'[1,"two"]', True)
-  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
   canonical integer key = (b'{"1":"secret-cursor"}', True)
-  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical nan ! ValueError: A wire number must be finite []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
-  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -180,8 +181,8 @@
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -485,15 +486,15 @@
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
   canonical string = (b'"secret-cursor"', True)
   canonical integer = (b'20', True)
-  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical float = (b'2.5', True)
   canonical large float = (b'1e+16', True)
   canonical small float = (b'1e-07', True)
   canonical negative zero float = (b'-0.0', True)
   canonical whole float = (b'100.0', True)
-  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical large integer = (b'1180591620717411303424', True)
   canonical null = (b'null', True)
   canonical boolean = (b'false', True)
@@ -501,13 +502,14 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
   canonical list = (b'[1,"two"]', True)
   canonical tuple = (b'[1,"two"]', True)
-  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
   canonical integer key = (b'{"1":"secret-cursor"}', True)
-  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical nan ! ValueError: A wire number must be finite []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
-  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -517,8 +519,8 @@
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -822,15 +824,15 @@
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
   canonical string = (b'"secret-cursor"', True)
   canonical integer = (b'20', True)
-  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical float = (b'2.5', True)
   canonical large float = (b'1e+16', True)
   canonical small float = (b'1e-07', True)
   canonical negative zero float = (b'-0.0', True)
   canonical whole float = (b'100.0', True)
-  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical large integer = (b'1180591620717411303424', True)
   canonical null = (b'null', True)
   canonical boolean = (b'false', True)
@@ -838,13 +840,14 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
   canonical list = (b'[1,"two"]', True)
   canonical tuple = (b'[1,"two"]', True)
-  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
   canonical integer key = (b'{"1":"secret-cursor"}', True)
-  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical nan ! ValueError: A wire number must be finite []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
-  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -854,8 +857,8 @@
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -1159,15 +1162,15 @@
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
   canonical string = (b'"secret-cursor"', True)
   canonical integer = (b'20', True)
-  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical float = (b'2.5', True)
   canonical large float = (b'1e+16', True)
   canonical small float = (b'1e-07', True)
   canonical negative zero float = (b'-0.0', True)
   canonical whole float = (b'100.0', True)
-  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical large integer = (b'1180591620717411303424', True)
   canonical null = (b'null', True)
   canonical boolean = (b'false', True)
@@ -1175,13 +1178,14 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
   canonical list = (b'[1,"two"]', True)
   canonical tuple = (b'[1,"two"]', True)
-  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
   canonical integer key = (b'{"1":"secret-cursor"}', True)
-  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical nan ! ValueError: A wire number must be finite []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
-  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -1191,8 +1195,8 @@
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
@@ -1496,15 +1500,15 @@
   origin 'https' b'api.example.com' 443 ! TypeError: host must be a string []
   canonical string = (b'"secret-cursor"', True)
   canonical integer = (b'20', True)
-  canonical decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical float = (b'2.5', True)
   canonical large float = (b'1e+16', True)
   canonical small float = (b'1e-07', True)
   canonical negative zero float = (b'-0.0', True)
   canonical whole float = (b'100.0', True)
-  canonical negative zero decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical exponent decimal ! TypeError: Object of type Decimal is not JSON serializable []
-  canonical whole decimal ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical negative zero decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical exponent decimal ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical whole decimal ! TypeError: A wire value must be made of JSON values and string keys []
   canonical large integer = (b'1180591620717411303424', True)
   canonical null = (b'null', True)
   canonical boolean = (b'false', True)
@@ -1512,13 +1516,14 @@
   canonical reordered = (b'{"a":[{"c":"\xc3\xa9","d":1}],"b":1}', True)
   canonical list = (b'[1,"two"]', True)
   canonical tuple = (b'[1,"two"]', True)
-  canonical mapping proxy ! TypeError: Object of type mappingproxy is not JSON serializable []
-  canonical bytes ! TypeError: Object of type bytes is not JSON serializable []
+  canonical mapping proxy ! TypeError: A wire value must be made of JSON values and string keys []
+  canonical bytes ! TypeError: A wire value must be made of JSON values and string keys []
   canonical integer key = (b'{"1":"secret-cursor"}', True)
-  canonical nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  canonical nan ! ValueError: A wire number must be finite []
   canonical surrogate ! ValueError: A wire string must not contain lone surrogates []
-  canonical cyclic ! ValueError: Circular reference detected []
-  canonical integral decimal over conversion limit ! TypeError: Object of type Decimal is not JSON serializable []
+  canonical cyclic ! ValueError: A wire value must not refer to itself []
+  canonical integer over conversion limit ! ValueError: A wire integer must not exceed the interpreter's decimal conversion limit []
+  canonical integral decimal over conversion limit ! TypeError: A wire value must be made of JSON values and string keys []
   snapshot repr=PollSnapshot(terminal=False, response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), elapsed=0.25, content_type='application/json', request_id=None, attempt_count=1))
   snapshot secret=False data identity=True response identity=True
   snapshot state=dict {'status': 'secret-state', 'steps': [1, 2]}
@@ -1528,8 +1533,8 @@
   snapshot terminal string ! TypeError: terminal must be a bool []
   snapshot response None ! TypeError: response must be a ResponseInfo []
   snapshot response mapping ! TypeError: response must be a ResponseInfo []
-  snapshot state object ! TypeError: Object of type object is not JSON serializable []
-  snapshot state nan ! ValueError: Out of range float values are not JSON compliant: nan []
+  snapshot state object ! TypeError: A wire value must be made of JSON values and string keys []
+  snapshot state nan ! ValueError: A wire number must be finite []
   snapshot state deeply nested ! ValueError: A wire value must not be nested beyond the interpreter recursion limit []
   snapshot missing data ! TypeError: PollSnapshot.__init__() missing 1 required keyword-only argument: 'data' []
   PaginationOptions.max_pages None = None
