@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import operator
 import sys
+import typing
 from functools import reduce
 from typing import TYPE_CHECKING, Any
 
@@ -121,7 +122,14 @@ def test_object_maps(
 
 
 def _payload_verdicts(output_file: Path, output_model_type: str, payloads: dict[str, Any]) -> str:
-    """Return whether the generated ``Model`` accepts the valid payload and each invalid change of it."""
+    """Return whether the generated ``Model`` accepts the valid payload and each invalid change of it.
+
+    typing caches subscriptions such as ``NotRequired[dict[str, int] | str]`` by equal arguments, and a union equals
+    its members in any order, so the caches are cleared first: Pydantic then tries the union members in the order this
+    output writes them, whatever an earlier test wrote.
+    """
+    for clear_cache in typing._cleanups:
+        clear_cache()
     with _generated_model(output_file, "object_maps_model", "Model") as model:
         verdicts = [f"valid: {_verdict(model, output_model_type, payloads['valid'])}"]
         verdicts.extend(
