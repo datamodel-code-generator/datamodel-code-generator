@@ -1518,18 +1518,11 @@ def test_traverse_schema_objects_falls_back_for_parser_subclass_children() -> No
             obj: JsonSchemaObject,
             path: list[str],
             callback: Callable[[JsonSchemaObject, list[str]], None],
-            *,
-            include_one_of: bool = True,
         ) -> None:
-            super()._traverse_schema_objects(obj, path, callback, include_one_of=include_one_of)
+            super()._traverse_schema_objects(obj, path, callback)
             if isinstance(obj, ExtensionSchema):
                 for index, child in enumerate(obj.children):
-                    self._traverse_schema_objects(
-                        child,
-                        [*path, "children", str(index)],
-                        callback,
-                        include_one_of=include_one_of,
-                    )
+                    self._traverse_schema_objects(child, [*path, "children", str(index)], callback)
 
     parser = ExtensionParser("")
     obj = ExtensionSchema.model_validate({"children": [{"type": "string"}]})

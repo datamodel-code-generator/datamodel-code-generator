@@ -514,8 +514,6 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         obj: JsonSchemaObject,
         path: list[str],
         callback: Callable[[JsonSchemaObject, list[str]], None],
-        *,
-        include_one_of: bool = True,
     ) -> None:
         """Record where each schema the reference walk visits declares its members, at its place in its document.
 
@@ -524,7 +522,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         property needs its schema too.
         """
         if callback != self._resolve_ref_callback:
-            super()._traverse_schema_objects(obj, path, callback, include_one_of=include_one_of)
+            super()._traverse_schema_objects(obj, path, callback)
             return
         walked = self._walked_schemas
         if walked and (parent := walked[-1]) is not None:
@@ -537,7 +535,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
             self.free_schemas.setdefault(declaration, obj)
         walked.append((len(path), declaration, value))
         try:
-            super()._traverse_schema_objects(obj, path, callback, include_one_of=include_one_of)
+            super()._traverse_schema_objects(obj, path, callback)
         finally:
             walked.pop()
 

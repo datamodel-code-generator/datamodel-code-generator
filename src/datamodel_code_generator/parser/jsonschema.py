@@ -14475,23 +14475,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         path: list[str],
         callback: Callable[[JsonSchemaObject, list[str]], None],
-        *,
-        include_one_of: bool = True,
     ) -> None:
         """Traverse schema objects recursively and apply callback, within the schema resources they declare."""
         if (scope := self._subschema_scope(obj)) is None:
-            self._walk_schema_objects(obj, path, callback, include_one_of=include_one_of)
+            self._walk_schema_objects(obj, path, callback)
             return
         with scope:
-            self._walk_schema_objects(obj, path, callback, include_one_of=include_one_of)
+            self._walk_schema_objects(obj, path, callback)
 
     def _walk_schema_objects(  # noqa: PLR0912
         self,
         obj: JsonSchemaObject,
         path: list[str],
         callback: Callable[[JsonSchemaObject, list[str]], None],
-        *,
-        include_one_of: bool = True,
     ) -> None:
         """Apply callback to a schema object and traverse its child schemas."""
         callback(obj, path)
@@ -14504,7 +14500,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return
         match obj.items:
             case JsonSchemaObject() as item:
-                self._traverse_schema_objects(item, [*path, "items"], callback, include_one_of=include_one_of)
+                self._traverse_schema_objects(item, [*path, "items"], callback)
             case list() as items:
                 for index, item in enumerate(items):
                     if isinstance(item, JsonSchemaObject):
@@ -14512,7 +14508,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             item,
                             [*path, "items", str(index)],
                             callback,
-                            include_one_of=include_one_of,
                         )
         if obj.prefixItems:
             for index, item in enumerate(obj.prefixItems):
@@ -14521,28 +14516,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         item,
                         [*path, "prefixItems", str(index)],
                         callback,
-                        include_one_of=include_one_of,
                     )
         if isinstance(obj.additionalProperties, JsonSchemaObject):
             self._traverse_schema_objects(
                 obj.additionalProperties,
                 [*path, "additionalProperties"],
                 callback,
-                include_one_of=include_one_of,
             )
         if isinstance(obj.unevaluatedProperties, JsonSchemaObject):
             self._traverse_schema_objects(
                 obj.unevaluatedProperties,
                 [*path, "unevaluatedProperties"],
                 callback,
-                include_one_of=include_one_of,
             )
         if isinstance(obj.unevaluatedItems, JsonSchemaObject):
             self._traverse_schema_objects(
                 obj.unevaluatedItems,
                 [*path, "unevaluatedItems"],
                 callback,
-                include_one_of=include_one_of,
             )
         if obj.patternProperties:
             for key, value in obj.patternProperties.items():
@@ -14551,14 +14542,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         value,
                         [*path, "patternProperties", key],
                         callback,
-                        include_one_of=include_one_of,
                     )
         if isinstance(obj.propertyNames, JsonSchemaObject):
             self._traverse_schema_objects(
                 obj.propertyNames,
                 [*path, "propertyNames"],
                 callback,
-                include_one_of=include_one_of,
             )
         for index, item in enumerate(obj.anyOf):
             if isinstance(item, JsonSchemaObject):
@@ -14566,7 +14555,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     item,
                     [*path, "anyOf", str(index)],
                     callback,
-                    include_one_of=include_one_of,
                 )
         for index, item in enumerate(obj.allOf):
             if isinstance(item, JsonSchemaObject):
@@ -14574,17 +14562,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     item,
                     [*path, "allOf", str(index)],
                     callback,
-                    include_one_of=include_one_of,
                 )
-        if include_one_of:
-            for index, item in enumerate(obj.oneOf):
-                if isinstance(item, JsonSchemaObject):
-                    self._traverse_schema_objects(
-                        item,
-                        [*path, "oneOf", str(index)],
-                        callback,
-                        include_one_of=include_one_of,
-                    )
+        for index, item in enumerate(obj.oneOf):
+            if isinstance(item, JsonSchemaObject):
+                self._traverse_schema_objects(item, [*path, "oneOf", str(index)], callback)
         if self.generate_schema_validators:
             for keyword in ("if", "then", "else"):
                 item = self._get_conditional_schema(obj, keyword)
@@ -14593,7 +14574,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         item,
                         [*path, keyword],
                         callback,
-                        include_one_of=include_one_of,
                     )
         if obj.properties:
             for key, value in obj.properties.items():
@@ -14602,7 +14582,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         value,
                         [*path, "properties", key],
                         callback,
-                        include_one_of=include_one_of,
                     )
 
     def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
@@ -15011,7 +14990,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def parse_id(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Recursively parse all $id fields in a schema object."""
-        self._traverse_schema_objects(obj, path, self._add_id_callback, include_one_of=False)
+        self._traverse_schema_objects(obj, path, self._add_id_callback)
 
     @contextmanager
     def root_id_context(self, root_raw: dict[str, Any]) -> Generator[None, None, None]:

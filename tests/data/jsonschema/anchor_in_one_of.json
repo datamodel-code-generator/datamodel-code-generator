@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "choice": {
+      "oneOf": [
+        {"$anchor": "inner", "type": "object", "properties": {"a": {"type": "string"}}},
+        {"type": "integer"}
+      ]
+    },
+    "again": {"$ref": "#inner"}
+  }
+}

@@ -1638,6 +1638,17 @@ def test_main_jsonschema_anchor_ref(output_file: Path) -> None:
     )
 
 
+def test_main_jsonschema_anchor_in_one_of(output_file: Path) -> None:
+    """Resolve a `$ref` to an `$anchor` declared inside a `oneOf` branch like any other keyword."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "anchor_in_one_of.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("input_name", "expected_file", "extra_args"),
     [

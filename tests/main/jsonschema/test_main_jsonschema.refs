@@ -5993,6 +5993,8 @@ pydantic_v2.dataclass-dataclass-unexpected_keyword_argument	main/jsonschema/allo
 	main/jsonschema/allof_scalar_roots.py
 [test_main_jsonschema_allof_with_true_schema]
 	main/jsonschema/allof_with_true_schema.py
+[test_main_jsonschema_anchor_in_one_of]
+	main/jsonschema/main_jsonschema/anchor_in_one_of.py
 [test_main_jsonschema_anchor_ref]
 	main/jsonschema/anchor_ref.py
 [test_main_jsonschema_anyof_const_enum_descriptions]
