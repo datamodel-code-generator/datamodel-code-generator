@@ -325,6 +325,7 @@ class BaseGenerateConfig(BaseModel):
     capitalise_enum_members: bool = False
     keep_model_order: bool = False
     order_constructor_fields_by_final_names: bool = False
+    order_constructor_fields_by_written_defaults: bool = False
     custom_file_header: str | None = None
     custom_file_header_path: Path | None = None
     custom_file_header_mode: CustomFileHeaderMode = CustomFileHeaderMode.Replace

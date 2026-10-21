@@ -529,6 +529,15 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
+    "--order-constructor-fields-by-written-defaults",
+    help="Order the fields of msgspec.Struct models by the defaults they write. Under --strip-default-none an optional "
+    "field whose None default is stripped still writes UNSET and goes after the required fields with the other "
+    "optional fields; without it the field keeps its schema place among the required fields, and the struct is "
+    "reordered only when a required field would then follow a default.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--keyword-only",
     help="Defined models as keyword only (for example dataclass(kw_only=True)).",
     action="store_true",

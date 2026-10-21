@@ -916,6 +916,10 @@
       "not_recommended": "preset",
       "reason": "Dataclass and msgspec.Struct output only: set by the dated presets from 20261019; the recommendation starts from the preset."
     },
+    "order_constructor_fields_by_written_defaults": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output under --strip-default-none only: set by the dated presets from 20261019; the recommendation starts from the preset."
+    },
     "original_field_name_delimiter": {
       "not_recommended": "style",
       "reason": "Word delimiter for --snake-case-field; a project convention."

@@ -24,6 +24,7 @@ from datamodel_code_generator.model._constraints import PatternConstraints as _C
 from datamodel_code_generator.model._decisions.assignment import (
     MsgspecWritten,
     struct_assigned,
+    struct_construction_assigned,
     written_data,
 )
 from datamodel_code_generator.model._decisions.literal_default import decide_literal_default
@@ -34,6 +35,7 @@ from datamodel_code_generator.model.base import (
     BaseLayoutView,
     _apply_literal_default,
     _default_factory_type_name,
+    _keeps_stripped_place,
     _model_key_of_model,
     _ModelKeys,
     _nested_model_default_factory,
@@ -196,6 +198,18 @@ def has_field_assignment(field: DataModelFieldBase) -> bool:
     return struct_assigned(required=field.required and not field.use_default_with_required)
 
 
+def _construction_order_key(field: DataModelFieldBase) -> bool:
+    """Return whether a Struct is built with the field among the fields with a default.
+
+    Under ``--strip-default-none`` a field whose ``None`` default is stripped keeps its schema place among the fields
+    without one, unless ``--order-constructor-fields-by-written-defaults`` is given.
+    """
+    return struct_construction_assigned(
+        required=field.required and not field.use_default_with_required,
+        keeps_stripped_place=_keeps_stripped_place(field),
+    )
+
+
 def get_field_default_info(field: DataModelFieldBase) -> tuple[bool, bool]:
     """Return msgspec constructor-default semantics."""
     return field._get_constructor_default_info()  # noqa: SLF001  # output-owned field policy hook
@@ -241,7 +255,7 @@ class Struct(DataModel):
     BASE_CLASS_ALIAS: ClassVar[str] = "_Struct"
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = ()
     FIELD_ASSIGNMENT_CHECKER = staticmethod(has_field_assignment)
-    FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(has_field_assignment)
+    FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(_construction_order_key)
     FIELD_DEFAULT_CLASSIFIER = staticmethod(get_field_default_info)
     _ASSIGNMENT_ROW: ClassVar[AssignmentRow | None] = "msgspec"
     FIELD_NAME_MODEL_TYPE: ClassVar[ModelType] = ModelType.MSGSPEC

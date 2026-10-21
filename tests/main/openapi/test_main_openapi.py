@@ -3623,10 +3623,40 @@ def test_main_openapi_strip_default_none_nullable_reference(output_model_type: s
             ["--type-overrides", '{"M.n": "decimal.Decimal"}'],
             id="pydantic-dataclass-field-type-override",
         ),
-        pytest.param("msgspec.Struct", [], id="msgspec"),
-        pytest.param("msgspec.Struct", ["--keyword-only"], id="msgspec-keyword-only"),
+        pytest.param("msgspec.Struct", ["--order-constructor-fields-by-written-defaults"], id="msgspec"),
+        pytest.param(
+            "msgspec.Struct",
+            ["--keyword-only", "--order-constructor-fields-by-written-defaults"],
+            id="msgspec-keyword-only",
+        ),
+        pytest.param("msgspec.Struct", [], id="msgspec-schema-place"),
+        pytest.param("msgspec.Struct", ["--keyword-only"], id="msgspec-keyword-only-schema-place"),
         pytest.param("dataclasses.dataclass", [], id="dataclass"),
     ],
+)
+@pytest.mark.cli_doc(
+    options=["--order-constructor-fields-by-written-defaults"],
+    option_description="""Order the fields of msgspec.Struct models by the defaults they write.
+
+The `--order-constructor-fields-by-written-defaults` flag only changes `msgspec.Struct` output under
+`--strip-default-none`; other output model types and runs without `--strip-default-none` ignore it.
+
+A Struct writes a default for every optional field: `UNSET`, or `None` when the type admits None, even where
+`--strip-default-none` strips the field's `None` default. Without the flag such a field keeps its schema place among
+the required fields, the order of earlier releases, and the struct is reordered only when a required field would
+then follow a default (which the Struct rejects at import). With the flag every optional field goes after the
+required fields, in schema order, which changes the order of the constructor's positional arguments.""",
+    input_schema="openapi/strip_default_none_constructor_order.yaml",
+    cli_args=[
+        "--output-model-type",
+        "msgspec.Struct",
+        "--strip-default-none",
+        "--target-python-version",
+        "3.10",
+        "--order-constructor-fields-by-written-defaults",
+    ],
+    golden_output="main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py",
+    comparison_output="main/openapi/main_openapi/strip_default_none_constructor_order[msgspec-schema-place].py",
 )
 def test_main_openapi_strip_default_none_constructor_order(
     output_model_type: str, extra_args: list[str], output_file: Path
@@ -3639,7 +3669,9 @@ def test_main_openapi_strip_default_none_constructor_order(
     a keyword-only model keeps it among the fields without a default. It may follow an inherited default without
     being keyword-only, and a required field that redeclares an inherited one is assigned ``Field(...)`` so that the
     inherited ``None`` does not become its default. Pydantic 2.14 targets put a required aliased
-    ``Field(...)`` field before it. msgspec.Struct keeps every default, so the option leaves its output as without it.
+    ``Field(...)`` field before it. msgspec.Struct writes every default; --order-constructor-fields-by-written-defaults
+    puts its optional fields after the required ones, and without it a stripped field keeps its schema place unless a
+    required field would follow it.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "strip_default_none_constructor_order.yaml",

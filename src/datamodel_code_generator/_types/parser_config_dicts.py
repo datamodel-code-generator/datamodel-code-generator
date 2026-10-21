@@ -161,6 +161,7 @@ class ParserConfigDict(TypedDict):
     capitalise_enum_members: NotRequired[bool]
     keep_model_order: NotRequired[bool]
     order_constructor_fields_by_final_names: NotRequired[bool]
+    order_constructor_fields_by_written_defaults: NotRequired[bool]
     use_one_literal_as_default: NotRequired[bool]
     use_enum_values_in_discriminator: NotRequired[bool]
     use_msgspec_tagged_unions: NotRequired[bool]

@@ -77,6 +77,7 @@ reviewed-safe no_alias
 reviewed-safe omit_redundant_constraints
 reviewed-safe omit_redundant_reference_null
 reviewed-safe order_constructor_fields_by_final_names
+reviewed-safe order_constructor_fields_by_written_defaults
 reviewed-safe original_field_name_delimiter
 reviewed-safe parent_scoped_naming
 reviewed-safe pin_aliases_with_alias_generator

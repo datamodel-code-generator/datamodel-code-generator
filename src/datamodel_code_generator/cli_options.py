@@ -327,6 +327,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--order-constructor-fields-by-final-names": CLIOptionMeta(
         name="--order-constructor-fields-by-final-names", category=OptionCategory.MODEL
     ),
+    "--order-constructor-fields-by-written-defaults": CLIOptionMeta(
+        name="--order-constructor-fields-by-written-defaults", category=OptionCategory.MODEL
+    ),
     "--allow-extra-fields": CLIOptionMeta(
         name="--allow-extra-fields",
         category=OptionCategory.MODEL,

@@ -1149,6 +1149,7 @@ if TYPE_CHECKING:
         data_type: DataType
         constraints: Constraints | dict[str, object] | None
         strip_default_none: bool
+        order_constructor_fields_by_written_defaults: bool
         nullable: bool | None
         extras: dict[str, object] | None
         use_annotated: bool

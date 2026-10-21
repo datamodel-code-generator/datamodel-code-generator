@@ -4113,6 +4113,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.capitalise_enum_members = config.capitalise_enum_members
         self.keep_model_order = config.keep_model_order
         self.order_constructor_fields_by_final_names = config.order_constructor_fields_by_final_names
+        self.order_constructor_fields_by_written_defaults = config.order_constructor_fields_by_written_defaults
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions

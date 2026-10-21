@@ -128,6 +128,7 @@
 - `--no-use-frozen-field`
 - `--omit-redundant-reference-null`: Do not write None again at a reference to a model that holds null itself.
 - `--order-constructor-fields-by-final-names`: Order the constructor fields of dataclass and msgspec.Struct mode...
+- `--order-constructor-fields-by-written-defaults`: Order the fields of msgspec.Struct models by the defaults th...
 - `--output-model-type`: Generate models from GraphQL with different output model types.
 - `--parent-scoped-naming`: Namespace models by their parent scope to avoid naming conflicts.
 - `--pin-aliases-with-alias-generator`: Decide a field's alias by the alias generator its model applies.

@@ -48,6 +48,7 @@ __all__ = [
     "classify_assignment",
     "participates_in_constructor",
     "struct_assigned",
+    "struct_construction_assigned",
     "written_data",
 ]
 
@@ -60,7 +61,10 @@ AssignmentRow: TypeAlias = Literal["model", "dataclass", "pydantic-dataclass", "
   takes no part in the constructor.
 * ``pydantic-dataclass``: Pydantic dataclasses: the template keeps a stripped ``None`` default when the rendered type
   admits None, and a ``ClassVar`` takes no part in the constructor.
-* ``msgspec``: msgspec Structs: a default for every optional field, as a Struct never strips its defaults.
+* ``msgspec``: msgspec Structs: a default for every optional field, as a Struct never strips its defaults. The
+  construction key still counts a field whose ``None`` default ``--strip-default-none`` strips as having none, so it
+  keeps its schema place among the required fields, unless ``--order-constructor-fields-by-written-defaults`` is given
+  (``AssignmentInputs.keeps_stripped_place``).
 """
 
 DefaultState: TypeAlias = Literal["undefined", "none", "value"]
@@ -143,7 +147,10 @@ class AssignmentInputs:
     ``required`` tells that the field is required without ``--use-default-with-required``, ``strips_none`` that
     ``--strip-default-none`` strips its ``None`` default, ``annotated`` that it is written under ``--use-annotated``,
     ``init_excluded`` that it declares ``init=False``. ``visibility`` is given for the ``pydantic-dataclass`` row and
-    for a ``PydanticDataclassWritten`` assignment, which read it.
+    for a ``PydanticDataclassWritten`` assignment, which read it. ``keeps_stripped_place`` tells, for the ``msgspec``
+    row, that the construction key counts the field as having no default: ``--strip-default-none`` strips its
+    ``None`` default, and neither ``--order-constructor-fields-by-written-defaults`` nor
+    ``--use-default-with-required`` is given.
     """
 
     row: AssignmentRow
@@ -154,6 +161,7 @@ class AssignmentInputs:
     class_var: bool = False
     init_excluded: bool = False
     visibility: DataclassVisibility | None = None
+    keeps_stripped_place: bool = False
 
 
 def written_data(keys: Collection[str]) -> WrittenData:
@@ -174,6 +182,15 @@ def struct_assigned(*, required: bool) -> bool:
     The row reads requiredness alone, so the Struct's hooks answer without rendering the field.
     """
     return not required
+
+
+def struct_construction_assigned(*, required: bool, keeps_stripped_place: bool) -> bool:
+    """Return whether a msgspec Struct's construction key counts a field as having a default.
+
+    A field that keeps its stripped place counts as having none, the order the Struct had before it ordered fields by
+    the defaults it writes; a required field after it then makes the constructor ordering move the fields.
+    """
+    return struct_assigned(required=required) and not keeps_stripped_place
 
 
 def _text(written: WrittenAssignment) -> bool:
@@ -260,11 +277,14 @@ def classify_assignment(inputs: AssignmentInputs) -> AssignmentFacts:
         if row == "msgspec":
             assigned = struct_assigned(required=inputs.required)
             rule: AssignmentRule = "default" if assigned else "unassigned"
+            construction_assigned = struct_construction_assigned(
+                required=inputs.required, keeps_stripped_place=inputs.keeps_stripped_place
+            )
         else:
             assigned, rule = model_assigned, model_rule
             if row == "dataclass" and text and not assigned:
                 rule = "legacy-stdlib-annotated"
-        construction_assigned = assigned
+            construction_assigned = assigned
         binds = (text or assigned) if row in {"msgspec", "dataclass"} else assigned
     return AssignmentFacts(
         assigned=assigned,

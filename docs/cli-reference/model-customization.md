@@ -30,6 +30,7 @@
 | [`--naming-strategy`](#naming-strategy) | Use parent-prefixed naming strategy for duplicate model name... |
 | [`--omit-redundant-reference-null`](#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds... |
 | [`--order-constructor-fields-by-final-names`](#order-constructor-fields-by-final-names) | Order the constructor fields of dataclass and msgspec.Struct... |
+| [`--order-constructor-fields-by-written-defaults`](#order-constructor-fields-by-written-defaults) | Order the fields of msgspec.Struct models by the defaults th... |
 | [`--output-model-type`](#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 datac... |
 | [`--parent-scoped-naming`](#parent-scoped-naming) | Namespace models by their parent scope to avoid naming confl... |
 | [`--pin-aliases-with-alias-generator`](#pin-aliases-with-alias-generator) | Decide a field's alias by the alias generator its model appl... |
@@ -4221,6 +4222,430 @@ once every field has its final name, so the override takes the place of the inhe
         class Child(Base):
             Bar_1: a.Bar = Field(..., alias='Bar', kw_only=True)
             Zed: str | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--order-constructor-fields-by-written-defaults` {#order-constructor-fields-by-written-defaults}
+
+Order the fields of msgspec.Struct models by the defaults they write.
+
+The `--order-constructor-fields-by-written-defaults` flag only changes `msgspec.Struct` output under
+`--strip-default-none`; other output model types and runs without `--strip-default-none` ignore it.
+
+A Struct writes a default for every optional field: `UNSET`, or `None` when the type admits None, even where
+`--strip-default-none` strips the field's `None` default. Without the flag such a field keeps its schema place among
+the required fields, the order of earlier releases, and the struct is reordered only when a required field would
+then follow a default (which the Struct rejects at import). With the flag every optional field goes after the
+required fields, in schema order, which changes the order of the constructor's positional arguments.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input strip_default_none_constructor_order.yaml --output-model-type msgspec.Struct --strip-default-none --target-python-version 3.10 --order-constructor-fields-by-written-defaults # (1)!
+    ```
+
+    1. :material-arrow-left: `--order-constructor-fields-by-written-defaults` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: strip default none constructor order
+      version: 1.0.0
+    paths: {}
+    components:
+      schemas:
+        Plain:
+          type: object
+          properties:
+            a:
+              type: string
+        Nullable:
+          type: [object, "null"]
+          properties:
+            a:
+              type: string
+        Kept:
+          type: object
+          required: [r]
+          properties:
+            n:
+              anyOf:
+                - $ref: '#/components/schemas/Plain'
+                - type: "null"
+            p:
+              $ref: '#/components/schemas/Plain'
+            q:
+              type: string
+            r:
+              type: string
+            d:
+              type: string
+              default: x
+            e:
+              type: [string, "null"]
+        Spelling:
+          type: object
+          properties:
+            d:
+              type: string
+              default: x
+            n:
+              anyOf:
+                - $ref: '#/components/schemas/Plain'
+                - type: "null"
+            e:
+              anyOf:
+                - type: string
+                - type: "null"
+            t:
+              type: [string, "null"]
+        SpellingRequired:
+          type: object
+          properties:
+            d:
+              type: string
+              default: x
+            t:
+              type: [string, "null"]
+            n:
+              anyOf:
+                - $ref: '#/components/schemas/Plain'
+                - type: "null"
+            q:
+              type: string
+        M:
+          type: object
+          properties:
+            d:
+              type: string
+              default: x
+            n:
+              $ref: '#/components/schemas/Nullable'
+            q:
+              type: string
+        Earlier:
+          type: object
+          required: [r]
+          properties:
+            d:
+              type: string
+              default: x
+            n:
+              $ref: '#/components/schemas/Nullable'
+            r:
+              type: string
+        Later:
+          type: object
+          required: [r]
+          properties:
+            d:
+              type: string
+              default: x
+            n:
+              $ref: '#/components/schemas/NullableLater'
+            r:
+              type: string
+        UnionMember:
+          type: object
+          properties:
+            u:
+              anyOf:
+                - $ref: '#/components/schemas/Nullable'
+                - type: string
+            l:
+              type: array
+              items:
+                $ref: '#/components/schemas/Nullable'
+            q:
+              type: string
+        Base:
+          type: object
+          properties:
+            n:
+              anyOf:
+                - $ref: '#/components/schemas/Plain'
+                - type: "null"
+        Child:
+          allOf:
+            - $ref: '#/components/schemas/Base'
+            - type: object
+              required: [r]
+              properties:
+                r:
+                  type: string
+                q:
+                  type: string
+        AliasedRequired:
+          type: object
+          required: [R-1]
+          properties:
+            n:
+              anyOf:
+                - $ref: '#/components/schemas/Plain'
+                - type: "null"
+            R-1:
+              type: string
+        WithDefault:
+          type: object
+          properties:
+            d:
+              type: string
+              default: x
+        KeptAfterInheritedDefault:
+          allOf:
+            - $ref: '#/components/schemas/WithDefault'
+            - type: object
+              properties:
+                n:
+                  anyOf:
+                    - $ref: '#/components/schemas/Plain'
+                    - type: "null"
+        Cat:
+          type: object
+          required: [lives]
+          properties:
+            kind:
+              anyOf:
+                - type: string
+                - type: "null"
+            lives:
+              type: integer
+        NamedCat:
+          allOf:
+            - $ref: '#/components/schemas/Cat'
+            - type: object
+              required: [kind]
+              properties:
+                kind:
+                  type: string
+                name:
+                  type: string
+        NullableLater:
+          type: [object, "null"]
+          properties:
+            a:
+              type: string
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  strip_default_none_constructor_order.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from msgspec import UNSET, Struct, UnsetType, field
+
+
+        class Plain(Struct):
+            a: str | UnsetType = UNSET
+
+
+        class Nullable(Struct):
+            a: str | UnsetType = UNSET
+
+
+        class Kept(Struct):
+            r: str
+            n: Plain | None | UnsetType = UNSET
+            p: Plain | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+            d: str | UnsetType = 'x'
+            e: str | None | UnsetType = UNSET
+
+
+        class Spelling(Struct):
+            d: str | UnsetType = 'x'
+            n: Plain | None | UnsetType = UNSET
+            e: str | None | UnsetType = UNSET
+            t: str | None | UnsetType = UNSET
+
+
+        class SpellingRequired(Struct):
+            d: str | UnsetType = 'x'
+            t: str | None | UnsetType = UNSET
+            n: Plain | None | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+
+
+        class M(Struct):
+            d: str | UnsetType = 'x'
+            n: Nullable | None | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+
+
+        class Earlier(Struct):
+            r: str
+            d: str | UnsetType = 'x'
+            n: Nullable | None | UnsetType = UNSET
+
+
+        class UnionMember(Struct):
+            u: Nullable | None | str | UnsetType = UNSET
+            l: list[Nullable | None] | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+
+
+        class Base(Struct):
+            n: Plain | None | UnsetType = UNSET
+
+
+        class Child(Base, kw_only=True):
+            r: str
+            q: str | UnsetType = UNSET
+
+
+        class AliasedRequired(Struct):
+            R_1: str = field(name='R-1')
+            n: Plain | None | UnsetType = UNSET
+
+
+        class WithDefault(Struct):
+            d: str | UnsetType = 'x'
+
+
+        class KeptAfterInheritedDefault(WithDefault):
+            n: Plain | None | UnsetType = UNSET
+
+
+        class Cat(Struct):
+            lives: int
+            kind: str | None | UnsetType = UNSET
+
+
+        class NamedCat(Cat):
+            kind: str
+            name: str | UnsetType = UNSET
+
+
+        class NullableLater(Struct):
+            a: str | UnsetType = UNSET
+
+
+        class Later(Struct):
+            r: str
+            d: str | UnsetType = 'x'
+            n: NullableLater | None | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  strip_default_none_constructor_order.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from msgspec import UNSET, Struct, UnsetType, field
+
+
+        class Plain(Struct):
+            a: str | UnsetType = UNSET
+
+
+        class Nullable(Struct):
+            a: str | UnsetType = UNSET
+
+
+        class Kept(Struct):
+            r: str
+            n: Plain | None | UnsetType = UNSET
+            p: Plain | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+            e: str | None | UnsetType = UNSET
+            d: str | UnsetType = 'x'
+
+
+        class Spelling(Struct):
+            n: Plain | None | UnsetType = UNSET
+            e: str | None | UnsetType = UNSET
+            t: str | None | UnsetType = UNSET
+            d: str | UnsetType = 'x'
+
+
+        class SpellingRequired(Struct):
+            t: str | None | UnsetType = UNSET
+            n: Plain | None | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+            d: str | UnsetType = 'x'
+
+
+        class M(Struct):
+            n: Nullable | None | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+            d: str | UnsetType = 'x'
+
+
+        class Earlier(Struct):
+            r: str
+            n: Nullable | None | UnsetType = UNSET
+            d: str | UnsetType = 'x'
+
+
+        class UnionMember(Struct):
+            u: Nullable | None | str | UnsetType = UNSET
+            l: list[Nullable | None] | UnsetType = UNSET
+            q: str | UnsetType = UNSET
+
+
+        class Base(Struct):
+            n: Plain | None | UnsetType = UNSET
+
+
+        class Child(Base, kw_only=True):
+            r: str
+            q: str | UnsetType = UNSET
+
+
+        class AliasedRequired(Struct):
+            R_1: str = field(name='R-1')
+            n: Plain | None | UnsetType = UNSET
+
+
+        class WithDefault(Struct):
+            d: str | UnsetType = 'x'
+
+
+        class KeptAfterInheritedDefault(WithDefault):
+            n: Plain | None | UnsetType = UNSET
+
+
+        class Cat(Struct):
+            lives: int
+            kind: str | None | UnsetType = UNSET
+
+
+        class NamedCat(Cat):
+            kind: str
+            name: str | UnsetType = UNSET
+
+
+        class NullableLater(Struct):
+            a: str | UnsetType = UNSET
+
+
+        class Later(Struct):
+            r: str
+            n: NullableLater | None | UnsetType = UNSET
+            d: str | UnsetType = 'x'
         ```
 
         <!-- fmt: on -->

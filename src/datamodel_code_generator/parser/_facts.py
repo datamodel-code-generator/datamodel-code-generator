@@ -473,6 +473,14 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact("DataModelFieldBase", "strip_default_none", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
+        "DataModelFieldBase",
+        "order_constructor_fields_by_written_defaults",
+        FactKind.PRESENTATION,
+        (),
+        Phase.PARSE,
+        FreezePoint.B1,
+    ),
+    AttributeFact(
         "DataModelFieldBase", "nullable", FactKind.FACT, (Fact.NULLABLE,), Phase.CROSS_MODULE, FreezePoint.B1
     ),
     AttributeFact(

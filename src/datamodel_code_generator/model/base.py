@@ -617,6 +617,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     data_type: DataType
     constraints: Any = None
     strip_default_none: bool = False
+    order_constructor_fields_by_written_defaults: bool = False
     nullable: Optional[bool] = None  # noqa: UP045
     parent: Optional[DataModel] = None  # noqa: UP045
     extras: dict[str, Any] = Field(default_factory=dict)
@@ -2034,6 +2035,19 @@ def _assignment_inputs(
             if row == "pydantic-dataclass" or isinstance(written, PydanticDataclassWritten)
             else None
         ),
+        keeps_stripped_place=row == "msgspec" and _keeps_stripped_place(field),
+    )
+
+
+def _keeps_stripped_place(field: DataModelFieldBase) -> bool:
+    """Return whether a msgspec Struct is built with the field among those without a default.
+
+    ``--strip-default-none`` strips the field's ``None`` default, which the Struct writes as ``UNSET`` all the same,
+    and neither ``--order-constructor-fields-by-written-defaults`` nor ``--use-default-with-required`` is given.
+    """
+    return (
+        not (field.order_constructor_fields_by_written_defaults or field.use_default_with_required)
+        and field.should_strip_default_none()
     )
 
 

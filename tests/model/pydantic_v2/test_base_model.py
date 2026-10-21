@@ -466,6 +466,7 @@ def test_parser_simple_field_matches_validated_field() -> None:
         "serialization_alias": "itemName",
         "constraints": None,
         "strip_default_none": True,
+        "order_constructor_fields_by_written_defaults": True,
         "nullable": True,
         "parent": None,
         "extras": {},
