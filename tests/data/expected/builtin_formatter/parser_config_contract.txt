@@ -54,6 +54,7 @@ reviewed-safe field_extra_keys
 reviewed-safe field_extra_keys_without_x_prefix
 reviewed-safe field_include_all_keys
 reviewed-safe field_type_collision_strategy
+reviewed-safe filter_literal_values
 reviewed-safe force_optional_for_required_fields
 reviewed-safe formatters
 reviewed-safe frozen_dataclasses

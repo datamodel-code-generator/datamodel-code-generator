@@ -170,6 +170,7 @@ class ParserConfigDict(TypedDict):
     use_typed_nullable_map_values: NotRequired[bool]
     use_single_value_enum_as_const: NotRequired[bool]
     read_const_beside_enum: NotRequired[bool]
+    filter_literal_values: NotRequired[bool]
     known_third_party: NotRequired[list[str] | None]
     custom_formatters: NotRequired[list[str] | None]
     custom_formatters_kwargs: NotRequired[dict[str, Any] | None]

@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 37 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 38 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 51 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
@@ -190,6 +190,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--field-extra-keys-without-x-prefix`](field-customization.md#field-extra-keys-without-x-prefix)
 - [`--field-include-all-keys`](field-customization.md#field-include-all-keys)
 - [`--field-type-collision-strategy`](field-customization.md#field-type-collision-strategy)
+- [`--filter-literal-values`](typing-customization.md#filter-literal-values)
 - [`--force-optional`](model-customization.md#force-optional)
 - [`--formatters`](template-customization.md#formatters)
 - [`--frozen-dataclasses`](model-customization.md#frozen-dataclasses)

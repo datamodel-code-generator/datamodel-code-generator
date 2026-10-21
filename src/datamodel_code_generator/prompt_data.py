@@ -75,6 +75,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--field-extra-keys-without-x-prefix": "Include schema extension keys in Field() without requiring 'x-' prefix.",
     "--field-include-all-keys": "Include all schema keys in Field() json_schema_extra.",
     "--field-type-collision-strategy": "Rename type class instead of field when names collide (Pydantic v2 only).",
+    "--filter-literal-values": "Keep only the values of a `const` or an `enum` that meet the constraints beside them.",
     "--force-optional": "Force all fields to be Optional regardless of required status.",
     "--formatters": "Specify code formatters to apply to generated output.",
     "--frozen-dataclasses": "Generate frozen dataclasses with optional keyword-only fields.",

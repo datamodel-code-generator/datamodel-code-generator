@@ -1199,6 +1199,8 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/msgspec_keyword_only_omit_defaults.py
 [test_main_openapi_max_items_enum]
 	main/openapi/max_items_enum.py
+[test_main_openapi_max_items_enum_without_option]
+	main/openapi/main_openapi/max_items_enum_without_option.py
 [test_main_openapi_max_min]
 	main/openapi/max_min_number.py
 [test_main_openapi_module_class_name_collision_deep_exact_imports_pydantic_v2]

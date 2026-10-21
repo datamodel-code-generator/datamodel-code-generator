@@ -107,6 +107,7 @@ discriminator_duplicate_value	main/openapi/redundant_reference_null/stored_input
 null_type_array_definition	main/openapi/redundant_reference_null/stored_inputs[null_type_array_definition].py
 recursive_nullable_union	main/openapi/redundant_reference_null/stored_inputs[recursive_nullable_union].py
 redundant_constraints	main/openapi/redundant_reference_null/stored_inputs[redundant_constraints].py
+redundant_constraints	main/openapi/redundant_reference_null/stored_inputs[redundant_constraints].py	@isort=6	= main/openapi/redundant_reference_null/stored_inputs[redundant_constraints]@isort6.py
 ref_type_has_null	main/openapi/redundant_reference_null/stored_inputs[ref_type_has_null].py
 root_model_aliases	main/openapi/redundant_reference_null/stored_inputs[root_model_aliases].py
 root_model_metadata	main/openapi/redundant_reference_null/stored_inputs[root_model_metadata].py

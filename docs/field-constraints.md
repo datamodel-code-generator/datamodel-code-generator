@@ -266,14 +266,16 @@ class Model(BaseModel):
 
 ## 🎯 Constraints beside a `const` or an `enum`
 
-The values of a `const` or an `enum` are checked against the `minLength`, `maxLength`, `minimum`, `maximum`,
-`exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` beside them that the field does not write itself, and a value
-that does not meet them is left out: an Enum class or the `Literal` of an enum keeps only the values the schema
+With `--filter-literal-values` (which `--omit-redundant-constraints` includes), the values of a `const` or an `enum`
+are checked against the `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`,
+`multipleOf` and `pattern` beside them that the field does not write itself, and a value that does not meet them is
+left out; without it every value stays, as in 0.86.0: an Enum class or the `Literal` of an enum keeps only the values the schema
 admits, with their `x-enum-varnames`, `x-enum-names` and `x-enum-descriptions`. The consts of a `oneOf` or `anyOf`
 are checked against their own constraints and those beside the `oneOf` or `anyOf`. A keyword of another JSON type, such
 as `minimum` beside a string, is met, as is every keyword by `null`; no bound is met by NaN, and `multipleOf` is
-checked on the decimal text of the values. `pattern` is not checked, nor a `multipleOf` that is not positive or beside a value
-that is not finite.
+checked on the decimal text of the values. A `pattern` is checked only where a static scan certifies that every regular
+expression engine reads it alike, and a `multipleOf` that is not positive or beside a value that is not finite is not
+checked.
 
 When no value meets them, the schema admits no value: the values stay as written, with a warning. A field that writes
 the keyword as a `Field()` argument beside the `Literal`, the `const` of a Pydantic model with `--field-constraints` or

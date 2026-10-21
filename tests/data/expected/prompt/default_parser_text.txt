@@ -29,6 +29,7 @@
 - `--disable-future-imports`: Prevent automatic addition of __future__ imports in generated code.
 - `--enum-field-as-literal`: Convert all enum fields to Literal types instead of Enum classes.
 - `--enum-field-as-literal-map`: Override enum/literal generation per-field via JSON mapping.
+- `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the constraints beside them.
 - `--ignore-enum-constraints`: Ignore enum constraints and use base string type instead of Enum classes.
 - `--import-overrides`: Override modules for generated imports by symbol name.
 - `--no-use-annotated`

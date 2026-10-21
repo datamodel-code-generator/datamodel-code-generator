@@ -419,6 +419,7 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
             "read_as_const_marker_in_document",
         )
     },
+    "jsonschema/enum_multiple_of_big_integer.json": dict.fromkeys(PayloadBackend, ("--filter-literal-values",)),
     "jsonschema/msgspec_boolean_enum_literal.json": {
         PayloadBackend.MSGSPEC: ("--enum-field-as-literal", "all"),
     },

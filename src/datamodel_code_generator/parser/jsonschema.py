@@ -2760,8 +2760,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         A const is kept when it meets its branch's constraints and those of the parent its field leaves out
         (``_literal_written``); a const that meets its branch's and every one of the parent's is a value the schema
-        admits (``_admitted_or_warn``).
+        admits (``_admitted_or_warn``). None without --filter-literal-values.
         """
+        if not self.checks_literal_values:
+            return None
         keywords: dict[str, None] = {}
         own: list[bool] = []
         for value, branch in zip(values, branches, strict=True):
@@ -2785,6 +2787,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if not (
             writes
+            and self.checks_literal_values
             and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
             and not self.config.omit_redundant_constraints
             and _literal_constraints(obj)
@@ -2810,6 +2813,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _check_literal_const(self, obj: JsonSchemaObject, const: object) -> None:
         """Warn when a const does not meet every constraint beside it that the literal check decides."""
+        if not self.checks_literal_values:
+            return
         decided, met, _ = _literal_met(obj, [const], NO_KEYWORDS)
         self._admitted_or_warn(obj, met, met, ("const", *decided))
 
@@ -2818,8 +2823,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The values a const beside the enum leaves decide whether the schema admits any value; the schema itself when
         every value meets them or none is admitted (``_admitted_or_warn``). The copy keeps the values as written.
+        Without --filter-literal-values the schema itself.
         """
-        if not _literal_constraints(obj):
+        if not self.checks_literal_values or not _literal_constraints(obj):
             return obj
         decided, met, kept = _literal_met(obj, obj.enum, written)
         if excluded := self._enum_positions_outside_const(obj):

@@ -839,6 +839,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--filter-literal-values",
+    help="Keep only the values of a `const` or an `enum` that meet the `minLength`, `maxLength`, `pattern`, bound and "
+    "`multipleOf` constraints beside them in its `Literal` or Enum, as JSON Schema validates them; a schema none of "
+    "whose values meets them stays as written with a warning",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--field-constraints",
     help="Use field constraints and not con* annotations",
     action="store_true",

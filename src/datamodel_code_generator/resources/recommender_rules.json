@@ -711,6 +711,10 @@
       "not_recommended": "style",
       "reason": "Which name changes when a field and its type share a name; a project convention."
     },
+    "filter_literal_values": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261022 presets; the recommendation starts from a preset."
+    },
     "force_optional": {
       "not_recommended": "runtime-behaviour",
       "reason": "Makes required fields optional; changes validation."

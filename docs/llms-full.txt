@@ -11611,14 +11611,16 @@ class Model(BaseModel):
 
 ## 🎯 Constraints beside a `const` or an `enum`
 
-The values of a `const` or an `enum` are checked against the `minLength`, `maxLength`, `minimum`, `maximum`,
-`exclusiveMinimum`, `exclusiveMaximum` and `multipleOf` beside them that the field does not write itself, and a value
-that does not meet them is left out: an Enum class or the `Literal` of an enum keeps only the values the schema
+With `--filter-literal-values` (which `--omit-redundant-constraints` includes), the values of a `const` or an `enum`
+are checked against the `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`,
+`multipleOf` and `pattern` beside them that the field does not write itself, and a value that does not meet them is
+left out; without it every value stays, as in 0.86.0: an Enum class or the `Literal` of an enum keeps only the values the schema
 admits, with their `x-enum-varnames`, `x-enum-names` and `x-enum-descriptions`. The consts of a `oneOf` or `anyOf`
 are checked against their own constraints and those beside the `oneOf` or `anyOf`. A keyword of another JSON type, such
 as `minimum` beside a string, is met, as is every keyword by `null`; no bound is met by NaN, and `multipleOf` is
-checked on the decimal text of the values. `pattern` is not checked, nor a `multipleOf` that is not positive or beside a value
-that is not finite.
+checked on the decimal text of the values. A `pattern` is checked only where a static scan certifies that every regular
+expression engine reads it alike, and a `multipleOf` that is not positive or beside a value that is not finite is not
+checked.
 
 When no value meets them, the schema admits no value: the values stay as written, with a warning. A field that writes
 the keyword as a `Field()` argument beside the `Literal`, the `const` of a Pydantic model with `--field-constraints` or
@@ -22067,7 +22069,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 37 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 38 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 51 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
@@ -22248,6 +22250,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--field-extra-keys-without-x-prefix`](field-customization.md#field-extra-keys-without-x-prefix)
 - [`--field-include-all-keys`](field-customization.md#field-include-all-keys)
 - [`--field-type-collision-strategy`](field-customization.md#field-type-collision-strategy)
+- [`--filter-literal-values`](typing-customization.md#filter-literal-values)
 - [`--force-optional`](model-customization.md#force-optional)
 - [`--formatters`](template-customization.md#formatters)
 - [`--frozen-dataclasses`](model-customization.md#frozen-dataclasses)
@@ -37328,6 +37331,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/typing-custo
 | [`--disable-future-imports`](#disable-future-imports) | Prevent automatic addition of __future__ imports in generate... |
 | [`--enum-field-as-literal`](#enum-field-as-literal) | Convert all enum fields to Literal types instead of Enum cla... |
 | [`--enum-field-as-literal-map`](#enum-field-as-literal-map) | Override enum/literal generation per-field via JSON mapping. |
+| [`--filter-literal-values`](#filter-literal-values) | Keep only the values of a `const` or an `enum` that meet the... |
 | [`--ignore-enum-constraints`](#ignore-enum-constraints) | Ignore enum constraints and use base string type instead of ... |
 | [`--import-overrides`](#import-overrides) | Override modules for generated imports by symbol name. |
 | [`--no-use-closed-typed-dict`](#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
@@ -39002,6 +39006,79 @@ You can pass the mapping either inline as JSON or as a path to a JSON file.
         )
         priority: Priority | None = Field(None, title='Priority')
         category: Category | None = Field(None, title='Category')
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--filter-literal-values` {#filter-literal-values}
+
+Keep only the values of a `const` or an `enum` that meet the constraints beside them.
+
+JSON Schema validates a value against the `enum` and the keywords beside it, so `{"enum": ["hello", "goodbye"],
+"maxLength": 5}` admits `hello` only. With `--filter-literal-values`, the `Literal` or the Enum of a `const` or
+an `enum` holds the values that meet the `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`,
+`exclusiveMaximum`, `multipleOf` and `pattern` keywords beside them, as far as the generator can decide them (a
+`pattern` only where every regular expression engine reads it alike). A schema none of whose values meets them
+admits no value: it stays as written, with a warning. A field that writes a constraint itself, such as
+`Field(min_length=...)`, keeps the values that constraint checks. `--omit-redundant-constraints` includes this
+check. Without the option, every value stays and the keywords are written beside the type.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input max_items_enum.yaml --filter-literal-values # (1)!
+    ```
+
+    1. :material-arrow-left: `--filter-literal-values` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: "3.1.0"
+    components:
+      schemas:
+        Foo:
+          type: object
+          properties:
+            bar:
+              type: array
+              items:
+                enum:
+                  - hello
+                  - goodbye
+                maxLength: 5
+                minLength: 1
+                type: string
+                pattern: "^.*$"
+              maxItems: 3
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  max_items_enum.yaml
+    #   timestamp: 2019-07-26T00:00:00+00:00
+
+    from __future__ import annotations
+
+    from enum import Enum
+
+    from pydantic import BaseModel, Field
+
+
+    class BarEnum(Enum):
+        hello = 'hello'
+
+
+    class Foo(BaseModel):
+        bar: list[BarEnum] | None = Field(None, max_length=3)
     ```
 
     <!-- fmt: on -->
@@ -60997,6 +61074,7 @@ datamodel-codegen [OPTIONS]
 | [`--disable-future-imports`](typing-customization.md#disable-future-imports) | Prevent automatic addition of __future__ imports in generated code. |
 | [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal) | Convert all enum fields to Literal types instead of Enum classes. |
 | [`--enum-field-as-literal-map`](typing-customization.md#enum-field-as-literal-map) | Override enum/literal generation per-field via JSON mapping. |
+| [`--filter-literal-values`](typing-customization.md#filter-literal-values) | Keep only the values of a `const` or an `enum` that meet the constraints beside ... |
 | [`--ignore-enum-constraints`](typing-customization.md#ignore-enum-constraints) | Ignore enum constraints and use base string type instead of Enum classes. |
 | [`--import-overrides`](typing-customization.md#import-overrides) | Override modules for generated imports by symbol name. |
 | [`--no-use-closed-typed-dict`](typing-customization.md#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
@@ -61332,6 +61410,7 @@ All options sorted alphabetically:
 - [`--field-extra-keys-without-x-prefix`](field-customization.md#field-extra-keys-without-x-prefix) - Include schema extension keys in Field() without requiring '...
 - [`--field-include-all-keys`](field-customization.md#field-include-all-keys) - Include all schema keys in Field() json_schema_extra.
 - [`--field-type-collision-strategy`](field-customization.md#field-type-collision-strategy) - Rename type class instead of field when names collide (Pydan...
+- [`--filter-literal-values`](typing-customization.md#filter-literal-values) - Keep only the values of a `const` or an `enum` that meet the...
 - [`--force-optional`](model-customization.md#force-optional) - Force all fields to be Optional regardless of required statu...
 - [`--formatters`](template-customization.md#formatters) - Specify code formatters to apply to generated output.
 - [`--frozen-dataclasses`](model-customization.md#frozen-dataclasses) - Generate frozen dataclasses with optional keyword-only field...
@@ -63392,16 +63471,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 191 | Shared generation options. |
-| `GenerateConfig` | 206 | Public `generate()` configuration. |
-| `ParserConfig` | 156 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 158 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 165 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 166 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 159 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 159 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 158 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 159 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 192 | Shared generation options. |
+| `GenerateConfig` | 207 | Public `generate()` configuration. |
+| `ParserConfig` | 157 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 159 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 166 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 167 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 160 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 160 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 159 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 160 | GraphQL-specific parser options. |
 
 ### Formatter Names
 

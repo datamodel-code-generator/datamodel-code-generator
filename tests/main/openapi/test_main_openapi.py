@@ -6077,14 +6077,40 @@ def test_main_collapse_root_models_with_references_to_flat_types(output_file: Pa
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--filter-literal-values"],
+    option_description="""Keep only the values of a `const` or an `enum` that meet the constraints beside them.
+
+JSON Schema validates a value against the `enum` and the keywords beside it, so `{"enum": ["hello", "goodbye"],
+"maxLength": 5}` admits `hello` only. With `--filter-literal-values`, the `Literal` or the Enum of a `const` or
+an `enum` holds the values that meet the `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`,
+`exclusiveMaximum`, `multipleOf` and `pattern` keywords beside them, as far as the generator can decide them (a
+`pattern` only where every regular expression engine reads it alike). A schema none of whose values meets them
+admits no value: it stays as written, with a warning. A field that writes a constraint itself, such as
+`Field(min_length=...)`, keeps the values that constraint checks. `--omit-redundant-constraints` includes this
+check. Without the option, every value stays and the keywords are written beside the type.""",
+    input_schema="openapi/max_items_enum.yaml",
+    cli_args=["--filter-literal-values"],
+    golden_output="main/openapi/max_items_enum.py",
+)
 def test_main_openapi_max_items_enum(output_file: Path) -> None:
-    """Test OpenAPI generation with max items enum."""
+    """Keep only the enum values that meet maxLength with --filter-literal-values."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "max_items_enum.yaml",
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
         expected_file="max_items_enum.py",
+        extra_args=["--filter-literal-values"],
+    )
+
+
+def test_main_openapi_max_items_enum_without_option(output_file: Path) -> None:
+    """Keep every enum value without --filter-literal-values, as 0.86.0 does."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "max_items_enum.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
     )
 
 

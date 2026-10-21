@@ -35,6 +35,7 @@ What other options should I use?
 - `--disable-future-imports`: Prevent automatic addition of __future__ imports in generated code.
 - `--enum-field-as-literal`: Convert all enum fields to Literal types instead of Enum classes.
 - `--enum-field-as-literal-map`: Override enum/literal generation per-field via JSON mapping.
+- `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the constraints beside them.
 - `--ignore-enum-constraints`: Ignore enum constraints and use base string type instead of Enum classes.
 - `--import-overrides`: Override modules for generated imports by symbol name.
 - `--no-use-annotated`
@@ -453,6 +454,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         "literal", "priority": "enum"}'. Overrides --enum-
                         field-as-literal for matched fields.
   --field-constraints   Use field constraints and not con* annotations
+  --filter-literal-values
+                        Keep only the values of a `const` or an `enum` that
+                        meet the `minLength`, `maxLength`, `pattern`, bound
+                        and `multipleOf` constraints beside them in its
+                        `Literal` or Enum, as JSON Schema validates them; a
+                        schema none of whose values meets them stays as
+                        written with a warning
   --ignore-enum-constraints
                         Ignore enum constraints and use the base type (e.g.,
                         str, int) instead of generating Enum classes

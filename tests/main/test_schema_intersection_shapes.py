@@ -131,6 +131,7 @@ def _args(input_path: Path, output_path: Path, backend: DataModelType, options: 
         "--formatters",
         "builtin",
         "--read-const-beside-enum",
+        "--filter-literal-values",
         *options,
     ]
 
@@ -158,6 +159,7 @@ def test_schema_intersection_shape_output(
                 "--formatters",
                 "builtin",
                 "--read-const-beside-enum",
+                "--filter-literal-values",
                 *options,
             ],
         )

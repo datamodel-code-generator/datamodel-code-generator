@@ -6836,7 +6836,7 @@ a `Literal` instead of a root model. A `pattern` and a `multipleOf` the check ca
 @pytest.mark.parametrize(
     "extra_args",
     [
-        pytest.param(["--use-annotated"], id="annotated"),
+        pytest.param(["--use-annotated", "--filter-literal-values"], id="annotated"),
         pytest.param(["--use-annotated", "--omit-redundant-constraints"], id="annotated_option"),
         pytest.param(["--field-constraints", "--omit-redundant-constraints"], id="field_constraints_option"),
         pytest.param(
@@ -6956,6 +6956,7 @@ def test_main_literal_constraints(output_file: Path, extra_args: list[str]) -> N
             assert_func=assert_file_content,
             extra_args=[
                 "--read-const-beside-enum",
+                "--filter-literal-values",
                 *extra_args,
                 *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"),
             ],
@@ -7006,6 +7007,7 @@ def test_main_nullable_enum_literal_length(output_file: Path, extra_args: list[s
             assert_func=assert_file_content,
             extra_args=[
                 *extra_args,
+                "--filter-literal-values",
                 *("--enum-field-as-literal", "all", "--formatters", "builtin", "--disable-timestamp"),
                 *("--target-python-version", "3.10"),
             ],
@@ -7030,6 +7032,56 @@ def test_main_nullable_enum_literal_length(output_file: Path, extra_args: list[s
 
 
 @pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        pytest.param(name, extra_args, id=f"{name}-{args_id}")
+        for name, args in (
+            (
+                "literal_constraints",
+                {
+                    "default": [],
+                    "field_constraints": ["--field-constraints"],
+                    "use_annotated": ["--use-annotated"],
+                    "literal": ["--enum-field-as-literal", "all"],
+                    "literal_field_constraints": ["--enum-field-as-literal", "all", "--field-constraints"],
+                    "pydantic_dataclass": ["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"],
+                    "dataclass": ["--output-model-type", "dataclasses.dataclass"],
+                    "typed_dict": ["--output-model-type", "typing.TypedDict"],
+                    "msgspec": ["--output-model-type", "msgspec.Struct"],
+                },
+            ),
+            ("literal_constraints_undecided", {"default": [], "literal": ["--enum-field-as-literal", "all"]}),
+            ("enum_multiple_of_big_integer", {"default": []}),
+        )
+        for args_id, extra_args in args.items()
+    ],
+)
+def test_main_literal_constraints_without_option(output_file: Path, name: str, extra_args: list[str]) -> None:
+    """Keep every value of a const or an enum without --filter-literal-values, as 0.86.0 does.
+
+    The values that fail the lengths, bounds, ``multipleOf`` and ``pattern`` beside them stay in the ``Literal`` or the
+    enum, and no unsatisfiable warning is made for them.
+    """
+    suffix = "yaml" if name == "literal_constraints_undecided" else "json"
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.{suffix}",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recorded_warnings if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize(
     "extra_args",
     [pytest.param([], id="default"), pytest.param(["--enum-field-as-literal", "all"], id="literal")],
 )
@@ -7043,7 +7095,11 @@ def test_main_literal_constraints_undecided(output_file: Path, extra_args: list[
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
-        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"],
+        extra_args=[
+            *extra_args,
+            "--filter-literal-values",
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"),
+        ],
         force_exec_validation=True,
     )
 
@@ -7054,7 +7110,10 @@ def test_main_literal_constraints_big_integer(output_file: Path) -> None:
         input_path=JSON_SCHEMA_DATA_PATH / "enum_multiple_of_big_integer.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"],
+        extra_args=[
+            "--filter-literal-values",
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.10"),
+        ],
         force_exec_validation=True,
     )
     assert_generated_model_json_validation(

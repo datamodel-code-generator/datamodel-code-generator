@@ -186,6 +186,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         "literal", "priority": "enum"}'. Overrides --enum-
                         field-as-literal for matched fields.
   --field-constraints   Use field constraints and not con* annotations
+  --filter-literal-values
+                        Keep only the values of a `const` or an `enum` that
+                        meet the `minLength`, `maxLength`, `pattern`, bound
+                        and `multipleOf` constraints beside them in its
+                        `Literal` or Enum, as JSON Schema validates them; a
+                        schema none of whose values meets them stays as
+                        written with a warning
   --ignore-enum-constraints
                         Ignore enum constraints and use the base type (e.g.,
                         str, int) instead of generating Enum classes

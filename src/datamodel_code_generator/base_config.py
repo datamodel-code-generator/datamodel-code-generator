@@ -244,6 +244,7 @@ class BaseGenerateConfig(BaseModel):
     use_typed_nullable_map_values: bool = False
     use_single_value_enum_as_const: bool = False
     read_const_beside_enum: bool = False
+    filter_literal_values: bool = False
     set_default_enum_member: bool = False
     use_subclass_enum: bool = False
     use_specialized_enum: bool = True

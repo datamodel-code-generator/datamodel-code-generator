@@ -1102,19 +1102,18 @@ class DataModelField(DataModelFieldBase):
     def _literal_decided_meta_keywords(self, data: dict[str, Any]) -> frozenset[str]:
         """Return the constraints the values of a const's or an enum's ``Literal`` decide, which it leaves out silently.
 
-        The parser keeps only the values that meet them (``_applicability.literal_check``), or warns that none does.
+        The parser keeps only the values that meet them (``_applicability.literal_check``), or warns that none does. A
+        constraint that only some of the values meet stays reported: the values that fail it are kept, as without
+        --filter-literal-values, and the ``Meta`` keyword would have rejected them.
         """
         if not _is_value_literal(base := self._annotated_base_data_type()):
             return frozenset()
-        decided = _applicability.literal_check(
-            base.literals,
-            {
-                schema: data[meta]
-                for meta, schema in _applicability.META_SCHEMA_KEYWORDS.items()
-                if schema in _applicability.LITERAL_DECIDABLE_KEYWORDS and data.get(meta) is not None
-            },
-        )[0]
-        return frozenset(meta for meta, schema in _applicability.META_SCHEMA_KEYWORDS.items() if schema in decided)
+        checks = {
+            meta: _applicability.literal_check(base.literals, {schema: data[meta]})
+            for meta, schema in _applicability.META_SCHEMA_KEYWORDS.items()
+            if schema in _applicability.LITERAL_DECIDABLE_KEYWORDS and data.get(meta) is not None
+        }
+        return frozenset(meta for meta, (decided, met) in checks.items() if decided and (all(met) or not any(met)))
 
     def _union_leaves(
         self,
