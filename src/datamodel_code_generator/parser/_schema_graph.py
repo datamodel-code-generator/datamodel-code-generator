@@ -9,7 +9,8 @@ location table, which ``JsonSchemaObject`` reads through ``SCHEMA_GRAPH`` while 
 ``SchemaGraphBuilder.with_ref_edges`` makes each `$ref` and `$dynamicRef` keyword of the document a ``ResolvedRef``, the
 string as written that also carries its ``RefEdge``; ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge
 resolves to in its own document, and ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document
-validates to, which every reader of that object shares.
+validates to, which every reader of that object shares. ``SchemaGraphBuilder.node`` names a JSON object of a loaded
+document as the node walks visit once (``SchemaNodeId``).
 """
 
 from __future__ import annotations
@@ -44,6 +45,7 @@ __all__ = [
     "ResourceRegistry",
     "SchemaGraphBuilder",
     "SchemaGraphView",
+    "SchemaNodeId",
     "canonical_ref_spelling",
     "keep_resolved_ref",
     "walk_schema_resources",
@@ -51,6 +53,9 @@ __all__ = [
 
 DocumentId = NewType("DocumentId", str)
 """A loaded document as the resource registry names it: an absolute POSIX path or a URL, empty for unnamed input."""
+
+SchemaNodeId = NewType("SchemaNodeId", SchemaLocation)
+"""A JSON object of a loaded document as a node of the graph: its location, which names one object per parse."""
 
 SchemaPath: TypeAlias = tuple[str | int, ...]
 """The keys and indexes from a schema to a schema-valued keyword below it."""
@@ -445,6 +450,11 @@ class SchemaGraphBuilder:
             schema = validate()
             cached = self._schemas[key] = schema, _fingerprint(schema) if fingerprint else None
         return cached[0]
+
+    def node(self, raw: object) -> SchemaNodeId | None:
+        """Return the node a JSON object of a loaded document is, or None for a value the graph does not locate."""
+        location = self.locations.get(id(raw)) if isinstance(raw, dict) else None
+        return None if location is None else SchemaNodeId(location)
 
     def changed_schemas(self) -> Iterator[SchemaLocation]:
         """Yield the location of each shared object whose fingerprint differs from the one recorded at validation."""

@@ -293,6 +293,10 @@ A JSON object of a loaded document is validated once per parse (`SchemaGraphBuil
 body targets of `get_ref_model`, and the `if`, `then`, `else` and `not` branches `_get_conditional_schema` reads share
 one object per located value and its type, which no reader writes; the schema graph check compares each shared object
 at the end of L1 with the fingerprint taken when it was validated (`kind="shared-schema"`).
+The walks that follow references from a schema (field flags, literal and null checks, inherited properties and
+overrides, validation sources, `uniqueItems` rules, merged `allOf` values) visit each schema graph node once
+(`SchemaNodeId`, the location of the object a reference names: `_key_node`), and a `$ref` target merged with its sibling
+keywords is dumped once per node and document being parsed (`_ref_target_dump`).
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.

@@ -25256,6 +25256,12 @@ ALLOF_INHERITANCE_CYCLE_ERROR = (
 )
 
 
+ALLOF_INHERITANCE_MULTI_BASE_CYCLE_ERROR = (
+    "Generated model inheritance cycle: A (cycle_multi_base.json#/$defs/A) -> B (cycle_multi_base.json#/$defs/B) "
+    "-> A (cycle_multi_base.json#/$defs/A)\n"
+)
+
+
 ALLOF_INHERITANCE_MRO_ERROR = (
     "Generated model E (mro_conflict.json#/$defs/E) has inconsistent method resolution order for generated bases "
     "C (mro_conflict.json#/$defs/C), D (mro_conflict.json#/$defs/D).\n"
@@ -25276,6 +25282,21 @@ def test_main_allof_inheritance_cycle(output_model: str, output_file: Path, caps
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr=ALLOF_INHERITANCE_CYCLE_ERROR,
+        output_should_not_exist=True,
+    )
+
+
+def test_main_allof_inheritance_cycle_with_multiple_bases(
+    output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Reject a cycle whose classes have several allOf parents while ordering their bases."""
+    run_main_and_assert(
+        input_path=ALLOF_INHERITANCE_ERRORS_PATH / "cycle_multi_base.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=ALLOF_INHERITANCE_MULTI_BASE_CYCLE_ERROR,
         output_should_not_exist=True,
     )
 

@@ -1,0 +1,6 @@
+{"$defs": {
+ "A": {"allOf": [{"$ref": "#/$defs/B"}, {"$ref": "#/$defs/E"}], "properties": {"a": {"type": "string"}}},
+ "B": {"allOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/E"}], "properties": {"b": {"type": "string"}}},
+ "E": {"properties": {"e": {"type": "string"}}},
+ "D": {"allOf": [{"$ref": "#/$defs/A"}, {"$ref": "#/$defs/B"}], "properties": {"d": {"type": "string"}}}},
+ "properties": {"x": {"$ref": "#/$defs/D"}}}
