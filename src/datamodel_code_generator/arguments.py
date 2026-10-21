@@ -1091,6 +1091,13 @@ field_options.add_argument(
     default=None,
 )
 field_options.add_argument(
+    "--omit-redundant-reference-null",
+    help="Do not write None again where a field, item or member references a model that holds null itself (a root "
+    "model or type alias whose type admits None, or an enum with a None member), so that a null parses to that model",
+    action="store_true",
+    default=None,
+)
+field_options.add_argument(
     "--strip-default-none",
     help="Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to "
     "None only when the type admits None)",

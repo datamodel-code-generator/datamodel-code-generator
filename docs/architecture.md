@@ -162,16 +162,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 184 | Shared generation options. |
-| `GenerateConfig` | 199 | Public `generate()` configuration. |
-| `ParserConfig` | 149 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 151 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 158 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 159 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 152 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 152 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 151 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 152 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 185 | Shared generation options. |
+| `GenerateConfig` | 200 | Public `generate()` configuration. |
+| `ParserConfig` | 150 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 152 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 159 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 160 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 153 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 153 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 152 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 153 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -396,7 +396,7 @@ Single-file output has one module, so "per module" then means the whole graph.
 | `__import_renamed_types` | imports of types that a later module renamed |
 | `__import_enum_member_literal_classes` | imports for enum member literals |
 | `__apply_generic_base_class` | inserts the generated base model and rewrites base classes |
-| decision phase: the decisions of `Parser._DECISION_PASSES` (none registered yet) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
+| decision phase: the decisions of `Parser._DECISION_PASSES` (`omit_held_null` behind `--omit-redundant-reference-null`) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
 
 Render preparation, module by module in module order, for the models each module had at the end of L5:
 
@@ -646,17 +646,20 @@ Provisional reads, from the explicit edges:
 ### Decision Phase
 
 The `decide` segment (`DECIDE`, entered at B1 right after `__apply_generic_base_class`) runs the decisions of the
-parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry is empty: no decision runs and
-nothing is built. A decision is a `DecisionPass`: a `DecisionSpec` (its `PassDecl`, a global transform of `DECIDE`
-that reads and writes `Fact` members only, and the issue it fixes), the writer protocol of its writes (a
-`DecisionWriter`) and `run(facts, writer)`. When the registry holds decisions, `GenerationStore.seal_facts` builds the
-one `FinalFacts` of the parse: per output module, the models that render (unused models, which leave their modules
-later, are left out), as the read-only views of `model/_views.py` (`ModelView`, `FieldView`, `DataTypeView`,
-`ReferenceView`). The views list the facts final at B1 and rendered nullability through `admits_none`, never the
-`is_optional` that render preparation writes; presentation attributes are not part of them, and type checking rejects
-writes through a view. Every decision writes through `_DecisionWriter`, the one implementation of the writer protocols
-over the store, which records the models it changes (`DecisionOutcome`). A writer never changes a data type node that
-other fields share: it replaces the node in the one field with a copy first.
+parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds one decision, `omit_held_null`
+(`parser/_held_null.py`, `--omit-redundant-reference-null`, #5081): a type that names a model holding null itself (a
+root model or type alias whose type admits None, or an enum with a None member) drops the None it restates of that
+model; the None it writes itself stays. A decision is a `DecisionPass`: a `DecisionSpec` (its `PassDecl`, a global
+transform of `DECIDE` that reads and writes `Fact` members only, and the issue it fixes), the writer protocol of its
+writes (a `DecisionWriter`), `run(facts, writer)` and, for a decision behind an option, `when(parser)`. When a decision
+runs, `GenerationStore.seal_facts` builds the one `FinalFacts` of the parse: per output module, the models that render
+(unused models, which leave their modules later, are left out), as the read-only views of `model/_views.py`
+(`ModelView`, `FieldView`, `DataTypeView`, `ReferenceView`). The views list the facts final at B1 and rendered
+nullability through `admits_none`, never the `is_optional` that render preparation writes; presentation attributes are
+not part of them, and type checking rejects writes through a view. Every decision writes through `_DecisionWriter`, the
+one implementation of the writer protocols over the store, which records the models it changes (`DecisionOutcome`). A
+writer never changes a data type node that other fields share: it replaces the node in the one field with a copy
+first.
 
 The decisions run in the order the order rule computes from their declarations (`decision_order`): a decision that
 reads what another writes runs after it, every other conflicting pair needs an `After` edge in `decl.after` (the only

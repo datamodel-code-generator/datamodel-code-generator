@@ -65,6 +65,7 @@ OPTION_SETS = {
     "annotated": ("--use-annotated",),
     "typed_map_values_field_constraints": ("--use-typed-nullable-map-values", "--field-constraints"),
     "typed_map_values_annotated": ("--use-typed-nullable-map-values", "--use-annotated"),
+    "omit_redundant_reference_null": ("--omit-redundant-reference-null",),
 }
 
 

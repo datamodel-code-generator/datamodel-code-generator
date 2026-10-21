@@ -50,6 +50,7 @@ from pydantic_core import core_schema
 from typing_extensions import TypeIs, assert_never, override
 
 from datamodel_code_generator import _constraint_applicability as _applicability
+from datamodel_code_generator import _null_markers
 from datamodel_code_generator import imports as generator_imports
 from datamodel_code_generator._format_types import (
     DateClassType,
@@ -90,8 +91,10 @@ _RUNTIME_EXPRESSION_IMPORTS_DATA_TYPE_KEY = "_runtime_expression_imports"
 _ENUM_MEMBER_LITERAL_REFERENCE_DATA_TYPE_KEY = "_enum_member_literal_reference"
 _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
 _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
-_REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
+_REFERENCE_NULL_DATA_TYPE_KEY = _null_markers.REFERENCE_NULL_KEY
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
+_TARGET_NULL_DATA_TYPE_KEY = _null_markers.TARGET_NULL_KEY
+_HELD_NULL_DROPPED_DATA_TYPE_KEY = _null_markers.HELD_NULL_DROPPED_KEY
 _RENDER_PREPARATION_NULL_DATA_TYPE_KEY = "_has_render_preparation_null"
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
 _VALUES_AS_WRITTEN_KEY = _applicability.VALUES_AS_WRITTEN_KEY
@@ -695,7 +698,13 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 object.__setattr__(new_obj, field_name, copied_value)
         new_obj._set_runtime_expression_imports(self.runtime_expression_imports)
         new_obj._set_forward_reference(self._is_forward_reference)
-        for key in (_REFERENCE_NULL_DATA_TYPE_KEY, _NULL_STRIPPED_DATA_TYPE_KEY, _VALUES_AS_WRITTEN_KEY):
+        for key in (
+            _REFERENCE_NULL_DATA_TYPE_KEY,
+            _NULL_STRIPPED_DATA_TYPE_KEY,
+            _VALUES_AS_WRITTEN_KEY,
+            _TARGET_NULL_DATA_TYPE_KEY,
+            _HELD_NULL_DROPPED_DATA_TYPE_KEY,
+        ):
             if key in self.__dict__:
                 new_obj.__dict__[key] = self.__dict__[key]
         if (enum_member_literal_reference := self._enum_member_literal_reference) is not None:
@@ -1139,8 +1148,25 @@ class DataType(_BaseModel):  # noqa: PLR0904
         )
 
     def _reference_adds_null(self) -> bool:
-        """Return whether the type hint adds the None of the nullable model the type names."""
-        return _NULL_STRIPPED_DATA_TYPE_KEY not in self.__dict__ and self.names_nullable_model
+        """Return whether the type hint adds the None of the nullable model the type names.
+
+        It does not when the model holds null itself and ``--omit-redundant-reference-null`` dropped it at the use.
+        """
+        return (
+            _NULL_STRIPPED_DATA_TYPE_KEY not in self.__dict__
+            and _HELD_NULL_DROPPED_DATA_TYPE_KEY not in self.__dict__
+            and self.names_nullable_model
+        )
+
+    @property
+    def has_target_null(self) -> bool:
+        """Whether the type's own None is the one its referenced schema admits (``--omit-redundant-reference-null``)."""
+        return _TARGET_NULL_DATA_TYPE_KEY in self.__dict__
+
+    @property
+    def held_null_dropped(self) -> bool:
+        """Whether ``--omit-redundant-reference-null`` dropped the None of the model the type names."""
+        return _HELD_NULL_DROPPED_DATA_TYPE_KEY in self.__dict__
 
     @property
     def admits_none(self) -> bool:

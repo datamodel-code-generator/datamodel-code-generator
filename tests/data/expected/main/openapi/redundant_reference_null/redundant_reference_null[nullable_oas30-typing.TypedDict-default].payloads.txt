@@ -1,0 +1,5 @@
+valid: accepted
+parsed: {'items_s': ['a', None], 'items_e': ['a'], 'str_f': None, 'str_a': ['x', None], 'enum_f': None, 'enum_a': ['a', None], 'obj_f': None, 'obj_a': [None, {'id': 1}]}
+invalid str_f: rejected (string_type)
+invalid enum_f: rejected (literal_error)
+invalid obj_f: rejected (dict_type)

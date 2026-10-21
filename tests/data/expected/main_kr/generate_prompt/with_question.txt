@@ -130,6 +130,7 @@ How do I convert enums to Literal types?
 - `--no-allow-population-by-field-name`
 - `--no-collapse-root-models`
 - `--no-use-frozen-field`
+- `--omit-redundant-reference-null`: Do not write None again at a reference to a model that holds null itself.
 - `--output-model-type`: Generate models from GraphQL with different output model types.
 - `--parent-scoped-naming`: Namespace models by their parent scope to avoid naming conflicts.
 - `--reuse-model`: Reuse identical model definitions instead of generating duplicates.
@@ -593,6 +594,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --no-alias            Do not add a field alias. E.g., if --snake-case-field
                         is used along with a base class, which has an
                         alias_generator
+  --omit-redundant-reference-null
+                        Do not write None again where a field, item or member
+                        references a model that holds null itself (a root
+                        model or type alias whose type admits None, or an enum
+                        with a None member), so that a null parses to that
+                        model
   --original-field-name-delimiter ORIGINAL_FIELD_NAME_DELIMITER
                         Set delimiter to convert to snake case. This option
                         only can be used with --snake-case-field (default: `_`

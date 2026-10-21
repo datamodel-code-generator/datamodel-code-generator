@@ -154,6 +154,7 @@ Generated model class and package behavior.
 - `--model-extra-keys-without-x-prefix`: Add extra keys with `x-` prefix to model_config json_schema_extra. The extra keys are stripped of the `x-` prefix.
 - `--force-optional`: Force optional for required fields
 - `--strict-nullable`: Treat default field as a non-nullable field
+- `--omit-redundant-reference-null`: Do not write None again where a field, item or member references a model that holds null itself (a root model or type alias whose type admits None, or an enum with a None member), so that a null parses to that model
 - `--strip-default-none`: Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to None only when the type admits None)
 - `--use-default`: Use default value even if a field is required
 - `--use-default-kwarg`: Use `default=` instead of a positional argument for Fields that have default values.

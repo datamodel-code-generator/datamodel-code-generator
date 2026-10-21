@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info: {title: Redundant reference null, version: "1"}
+paths: {}
+components:
+  schemas:
+    Name: {type: [string, "null"]}
+    Color: {enum: [red, null]}
+    Size: {type: string, enum: [s, m]}
+    Pet: {type: object, properties: {id: {type: integer}}}
+    Use:
+      type: object
+      required: [name_f, name_a, name_m, name_u, name_o, color_f, color_a, color_m, color_u, size_f, size_a, size_m, size_u, pet_f, pet_a, pet_m, pet_u]
+      properties:
+        name_f: {$ref: '#/components/schemas/Name'}
+        name_a: {type: array, items: {$ref: '#/components/schemas/Name'}}
+        name_m: {type: object, additionalProperties: {$ref: '#/components/schemas/Name'}}
+        name_u: {anyOf: [{$ref: '#/components/schemas/Name'}, {type: integer}]}
+        name_o: {anyOf: [{$ref: '#/components/schemas/Name'}, {type: "null"}]}
+        name_d: {$ref: '#/components/schemas/Name'}
+        color_f: {$ref: '#/components/schemas/Color'}
+        color_a: {type: array, items: {$ref: '#/components/schemas/Color'}}
+        color_m: {type: object, additionalProperties: {$ref: '#/components/schemas/Color'}}
+        color_u: {anyOf: [{$ref: '#/components/schemas/Color'}, {type: integer}]}
+        size_f: {$ref: '#/components/schemas/Size'}
+        size_a: {type: array, items: {$ref: '#/components/schemas/Size'}}
+        size_m: {type: object, additionalProperties: {$ref: '#/components/schemas/Size'}}
+        size_u: {anyOf: [{$ref: '#/components/schemas/Size'}, {type: integer}]}
+        pet_f: {$ref: '#/components/schemas/Pet'}
+        pet_a: {type: array, items: {$ref: '#/components/schemas/Pet'}}
+        pet_m: {type: object, additionalProperties: {$ref: '#/components/schemas/Pet'}}
+        pet_u: {anyOf: [{$ref: '#/components/schemas/Pet'}, {type: integer}]}

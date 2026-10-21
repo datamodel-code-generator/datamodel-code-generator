@@ -116,6 +116,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--no-use-type-checking-imports": "Keep generated model imports available at runtime when using Ruff fixes.",
     "--no-use-union-operator": "Use Union[X, Y] / Optional[X] instead of X | Y union operator.",
     "--omit-redundant-constraints": "Do not write a constraint again beside a type that already enforces it.",
+    "--omit-redundant-reference-null": "Do not write None again at a reference to a model that holds null itself.",
     "--openapi-include-info-version": "Emit OpenAPI info.version as a generated constant.",
     "--openapi-include-paths": "Filter OpenAPI paths to include in model generation.",
     "--openapi-paths-bodies-as-definitions": "Give the bodies of the paths and webhooks scopes the models their sch...",

@@ -189,6 +189,12 @@ class Enum(DataModel):
         """Get data type for enum (not implemented)."""
         raise NotImplementedError
 
+    @property
+    @override
+    def holds_null(self) -> bool:
+        """Whether a member of the enum is None."""
+        return any(get_raw_enum_member_value(field.default) is None for field in self.fields)
+
     def get_member(self, field: DataModelFieldBase) -> Member:
         """Create a Member instance for the given field."""
         return Member(self, field)

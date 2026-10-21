@@ -1,0 +1,8 @@
+valid: accepted
+parsed: Model(values=None, patterns=None, names=None, plain=None, valueItems=[None, {'x': 1}], patternItems=[None, {'a1': 1}], nameValues={'k': None, 'l': {'a': 1}}, plainValues={'k': None}, patternRoot=None, combined={'x': 1}, combinedItems=['s', {'x': 1}], branchNullable=None, combinedRoot=CombinedRoot(root={'a1': 1}), trueBranch=None, refBranch={'x': 1}, valueRoot=None, valueRootItems=[ValueRoot(root=None), ValueRoot(root={'x': 1})])
+invalid patternItems: rejected (string_pattern_mismatch)
+invalid values: rejected (int_parsing)
+invalid combined: rejected (string_type)
+invalid branchNullable: rejected (string_type)
+invalid combinedRoot: rejected (int_parsing)
+invalid valueRootItems: rejected (too_short)

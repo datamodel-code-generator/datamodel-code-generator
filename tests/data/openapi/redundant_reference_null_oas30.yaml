@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info: {title: Redundant reference null, version: "1"}
+paths: {}
+components:
+  schemas:
+    NullStr: {type: string, nullable: true}
+    NullEnum: {type: string, enum: [a, b], nullable: true}
+    NullObj: {type: object, nullable: true, properties: {id: {type: integer}}}
+    Use:
+      type: object
+      required: [items_s, items_e, str_f, str_a, enum_f, enum_a, obj_f, obj_a]
+      properties:
+        items_s: {type: array, items: {type: string, nullable: true}}
+        items_e: {type: array, items: {type: string, enum: [a, b], nullable: true}}
+        str_f: {$ref: '#/components/schemas/NullStr'}
+        str_a: {type: array, items: {$ref: '#/components/schemas/NullStr'}}
+        enum_f: {$ref: '#/components/schemas/NullEnum'}
+        enum_a: {type: array, items: {$ref: '#/components/schemas/NullEnum'}}
+        obj_f: {$ref: '#/components/schemas/NullObj'}
+        obj_a: {type: array, items: {$ref: '#/components/schemas/NullObj'}}

@@ -178,3 +178,15 @@ pydantic_v2.dataclass --use-missing-sentinel w "s" accepted
 pydantic_v2.dataclass --use-missing-sentinel w {"x": 1} accepted
 pydantic_v2.dataclass --use-missing-sentinel w null rejected
 pydantic_v2.dataclass --use-missing-sentinel w 1 rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null u "s" accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null u {"x": 1} accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null u 1 rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null u {"x": "a"} rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null v null accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null v "s" accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null v {"x": 1} accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null v 1 rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null w "s" accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null w {"x": 1} accepted
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null w null rejected
+pydantic_v2.BaseModel --strict-nullable --use-missing-sentinel --omit-redundant-reference-null w 1 rejected

@@ -1,0 +1,6 @@
+valid: accepted
+parsed: {'name_f': None, 'name_a': ['a', None], 'name_m': {'k': None}, 'name_u': None, 'name_o': None, 'name_d': None, 'color_f': None, 'color_a': ['red', None], 'color_m': {'k': None}, 'color_u': None, 'size_f': 's', 'size_a': ['m'], 'size_m': {'k': 's'}, 'size_u': 1, 'pet_f': {'id': 1}, 'pet_a': [], 'pet_m': {}, 'pet_u': 2}
+invalid name_f: rejected (string_type)
+invalid pet_f: rejected (dict_type)
+invalid size_f: rejected (literal_error)
+invalid pet_a: rejected (dict_type)

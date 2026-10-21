@@ -182,6 +182,7 @@ from datamodel_code_generator.parser._finality import (
     parse_checks,
     pass_scope,
     record_ordering_inputs,
+    viewed,
 )
 from datamodel_code_generator.parser._graph_ids import (
     UNRESOLVED_MODEL_KEY,
@@ -190,6 +191,7 @@ from datamodel_code_generator.parser._graph_ids import (
     keyed_models,
     unchecked,
 )
+from datamodel_code_generator.parser._held_null import OMIT_HELD_NULL
 from datamodel_code_generator.parser._imports_plan import ImportProducer, ModuleImportLedger
 from datamodel_code_generator.parser._model_shapes import (
     COLLAPSE_REUSE,
@@ -2140,6 +2142,7 @@ def _apply_inherited_field_nullability(
     """Keep omission optionality separate from the schema's null intersection."""
     if not copied_field.required and current_type.is_optional:
         copied_field.data_type.is_optional = True
+        GenerationStore.clear_target_null(copied_field.data_type)
 
     match current_type:
         case _InheritedTypeModifiers(excludes_null=True):
@@ -3671,7 +3674,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _cache_local_sources_during_parse: ClassVar[bool] = False
     _cache_parsed_sources_from_path: ClassVar[bool] = False
     _collapses_list_item_root_models: ClassVar[bool] = True
-    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = ()
+    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = (OMIT_HELD_NULL,)
     """The decisions of the decision phase, in registration order; ``parser/_phases.py`` says how they run."""
     _http_fetch_session: _HTTPFetchSession | None = None
     _dropped_constraint_fields: DroppedConstraintFields = frozenset()
@@ -3965,6 +3968,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_subclass_enum: bool = config.use_subclass_enum
         self.use_specialized_enum: bool = config.use_specialized_enum
         self.strict_nullable: bool = config.strict_nullable
+        self.omit_redundant_reference_null: bool = config.omit_redundant_reference_null
         self.use_generic_container_types: bool = config.use_generic_container_types
         self.use_union_operator: bool = config.use_union_operator
         self.enable_faux_immutability: bool = config.enable_faux_immutability
@@ -9176,12 +9180,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def __decide(self, runner: Runner, run: _FinishRun) -> None:
         """Seal the facts final at B1 and run the decisions of the registry on them, when it holds any."""
-        if not (decisions := self._DECISION_PASSES):
+        if not (decisions := tuple(d for d in self._DECISION_PASSES if d.when is None or d.when(self))):
             return
         unused = {id(model) for model in run.unused_models}
         modules = [(ctx.module_key, [model for model in ctx.models if id(model) not in unused]) for ctx in run.contexts]
         facts = self.generation_store.seal_facts(modules, decision_views())
-        writer = _DecisionWriter(self.generation_store)
+        writer = _DecisionWriter(self.generation_store, viewed, _copy_data_type)
         for decision in decision_order(decisions):
             runner.run_decision(decision, facts, writer)
         run.decisions = writer.outcome(model for _, models in modules for model in models)

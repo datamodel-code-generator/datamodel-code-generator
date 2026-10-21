@@ -1504,7 +1504,9 @@ class _Projector:
         binding = (
             self.binder.reference(reference, self.direction) if (reference := data_type.reference) is not None else None
         )
-        nullable_reference = binding is not None and binding.nullable and not binding.is_alias
+        nullable_reference = (
+            binding is not None and binding.nullable and not binding.is_alias and not data_type.held_null_dropped
+        )
         if (data_type.is_optional or inferred_optional or nullable_reference) and projected != ImportedType(IMPORT_ANY):
             base = projected
             projected = _ordered_union(

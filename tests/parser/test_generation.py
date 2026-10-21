@@ -61,7 +61,9 @@ IMPORT_CACHE_CLEARING_MUTATION_METHODS = frozenset({
 })
 IMPORT_CACHE_NEUTRAL_MUTATION_METHODS = frozenset({
     "defer_refresh",
+    "clear_target_null",
     "discard_derived_facts",
+    "mark_target_null",
     "note_changed_models",
     "record_values_as_written",
     "register_model",
@@ -72,6 +74,7 @@ IMPORT_CACHE_CALLER_MUTATION_METHODS = frozenset({
     "add_model_import",
     "apply_const",
     "drop_field_discriminator",
+    "drop_held_null",
     "drop_union_member_constraints",
     "override_type_import",
     "require_field",

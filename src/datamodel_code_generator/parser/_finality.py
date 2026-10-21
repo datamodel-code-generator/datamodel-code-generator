@@ -127,6 +127,7 @@ __all__ = [
     "pass_scope",
     "record_ordering_inputs",
     "recording_pass_trace",
+    "viewed",
 ]
 
 _PACKAGE_ROOT: Final = Path(__file__).parents[1]
@@ -1349,6 +1350,11 @@ def decision_views() -> Callable[[DataModel], ModelView] | None:
     if (checks := _CHECKS.get()) is None or (finality := checks.finality) is None:
         return None
     return _ReadGuard(finality).view
+
+
+def viewed(value: Any) -> Any:
+    """Return the object a view of ``FinalFacts`` stands for: the object of a guarded view, else ``value`` itself."""
+    return value._object if isinstance(value, _GuardedView) else value  # noqa: SLF001
 
 
 def record_ordering_inputs(

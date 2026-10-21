@@ -891,6 +891,10 @@
         "constraints.omit-redundant"
       ]
     },
+    "omit_redundant_reference_null": {
+      "not_recommended": "preset",
+      "reason": "Nullability spelling chosen by the practical presets; the recommendation starts from a preset."
+    },
     "openapi_include_info_version": {
       "not_recommended": "style",
       "reason": "Adds the API version as a constant; a project need."

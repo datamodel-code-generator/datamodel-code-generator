@@ -214,3 +214,7 @@ class ModelView(Protocol):
     @property
     def reused_reference(self) -> ReferenceView | None:
         """The model whose duplicate the model is."""
+
+    @property
+    def holds_null(self) -> bool:
+        """Whether the class holds null as its own value: a root model or alias admitting None, or an enum with None."""

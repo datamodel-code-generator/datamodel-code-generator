@@ -1147,6 +1147,23 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             or data_type.is_tuple
         )
 
+    def _admits_none(self) -> bool:
+        """Return whether the field's annotation admits None, from the facts final at B1 and without rendering it."""
+        data_type = self.data_type
+        return (
+            data_type.admits_none
+            or self._data_type_renders_none(data_type)
+            or field_renders_none(
+                hint_has_none=False,
+                has_default_factory=self.has_default_factory,
+                nullable=self.nullable,
+                required=(required := self.required),
+                type_has_null=required and self.type_has_null,
+                fall_back_to_nullable=not required and self.fall_back_to_nullable,
+            )
+            is not None
+        )
+
     def _data_type_renders_none(self, data_type: DataType) -> bool:
         if any((
             data_type.is_dict,
@@ -2628,7 +2645,23 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         model decides its sequence interface first (``_prepare_dedup_key``).
         """
         key = tuple(to_hashable(v) for v in (self.render(class_name=class_name), self.imports))
-        return (*key, to_hashable(written)) if (written := self._written_values_by_position()) else key
+        if written := self._written_values_by_position():
+            key = (*key, to_hashable(written))
+        return (*key, ("target-null", target_null)) if (target_null := self._target_null_positions()) else key
+
+    def _target_null_positions(self) -> tuple[int, ...]:
+        """Return the positions of the types whose None is the one the schema they reference admits.
+
+        Only ``--omit-redundant-reference-null`` marks them (``GenerationStore.mark_target_null``); it drops such a
+        None later, so models whose types render alike today stay apart when their None comes from different places.
+        """
+        return tuple(
+            position
+            for position, data_type in enumerate(
+                data_type for field in self.fields for data_type in field.data_type.all_data_types
+            )
+            if data_type.has_target_null
+        )
 
     def _written_values_by_position(self) -> tuple[tuple[int, tuple[Any, ...]], ...]:
         """Return the values as written that the model and the types of its fields keep, by their position."""
@@ -3011,6 +3044,14 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def is_alias(self) -> bool:
         """Whether is a type alias (i.e. not an instance of BaseModel/RootModel)."""
         return self.IS_ALIAS
+
+    @property
+    def holds_null(self) -> bool:
+        """Whether the class holds null as a value of its own: a root model or type alias whose type admits None.
+
+        A type that names it restates no None under ``--omit-redundant-reference-null``.
+        """
+        return (self.IS_ROOT_MODEL or self.IS_ALIAS) and len(fields := self.fields) == 1 and fields[0]._admits_none()  # noqa: SLF001
 
     @classmethod
     def create_base_class_model(

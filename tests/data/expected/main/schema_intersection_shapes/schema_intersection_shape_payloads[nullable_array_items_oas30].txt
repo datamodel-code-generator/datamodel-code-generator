@@ -138,3 +138,23 @@ msgspec.Struct --strict-nullable inline_items [] accepted
 msgspec.Struct --strict-nullable inline_items ["abcd"] rejected
 msgspec.Struct --strict-nullable inline_items [1] rejected
 msgspec.Struct --strict-nullable inline_items "ab" rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null ref_items ["ab"] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null ref_items [] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null ref_items ["abcd"] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null ref_items [1] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null ref_items "ab" rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null inline_items ["ab"] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null inline_items [] accepted
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null inline_items ["abcd"] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null inline_items [1] rejected
+pydantic_v2.BaseModel --strict-nullable --use-annotated --field-constraints --omit-redundant-reference-null inline_items "ab" rejected
+msgspec.Struct --strict-nullable --omit-redundant-reference-null ref_items ["ab"] accepted
+msgspec.Struct --strict-nullable --omit-redundant-reference-null ref_items [] accepted
+msgspec.Struct --strict-nullable --omit-redundant-reference-null ref_items ["abcd"] rejected
+msgspec.Struct --strict-nullable --omit-redundant-reference-null ref_items [1] rejected
+msgspec.Struct --strict-nullable --omit-redundant-reference-null ref_items "ab" rejected
+msgspec.Struct --strict-nullable --omit-redundant-reference-null inline_items ["ab"] accepted
+msgspec.Struct --strict-nullable --omit-redundant-reference-null inline_items [] accepted
+msgspec.Struct --strict-nullable --omit-redundant-reference-null inline_items ["abcd"] rejected
+msgspec.Struct --strict-nullable --omit-redundant-reference-null inline_items [1] rejected
+msgspec.Struct --strict-nullable --omit-redundant-reference-null inline_items "ab" rejected

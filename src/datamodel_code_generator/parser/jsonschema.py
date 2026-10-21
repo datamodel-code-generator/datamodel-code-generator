@@ -4878,7 +4878,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             (reference := self._dynamic_specialization_reference(ref, resolved_ref)) is None
         ):
             reference = self._add_ref(ref)
-        return self.data_type(reference=reference, is_optional=is_optional)
+        data_type = self.data_type(reference=reference, is_optional=is_optional)
+        if is_optional and self.omit_redundant_reference_null:
+            self.generation_store.mark_target_null(data_type)
+        return data_type
 
     def set_additional_properties(self, path: str, obj: JsonSchemaObject) -> None:
         """Set additional properties flag in extra template data.

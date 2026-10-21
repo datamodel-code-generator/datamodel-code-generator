@@ -341,6 +341,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--use-subclass-enum": CLIOptionMeta(name="--use-subclass-enum", category=OptionCategory.MODEL),
     "--force-optional": CLIOptionMeta(name="--force-optional", category=OptionCategory.MODEL),
     "--strict-nullable": CLIOptionMeta(name="--strict-nullable", category=OptionCategory.MODEL),
+    "--omit-redundant-reference-null": CLIOptionMeta(
+        name="--omit-redundant-reference-null", category=OptionCategory.MODEL
+    ),
     "--use-default": CLIOptionMeta(name="--use-default", category=OptionCategory.MODEL),
     "--use-default-kwarg": CLIOptionMeta(name="--use-default-kwarg", category=OptionCategory.MODEL),
     "--use-missing-sentinel": CLIOptionMeta(

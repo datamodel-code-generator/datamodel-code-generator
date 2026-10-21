@@ -53,6 +53,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY, VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._null_markers import HELD_NULL_DROPPED_KEY, REFERENCE_NULL_KEY, TARGET_NULL_KEY
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
@@ -126,14 +127,17 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "add_model_import",
     "append_field",
     "apply_const",
+    "clear_target_null",
     "collapse_root_data_type",
     "defer_refresh",
     "detach_data_type_ref",
     "detach_model_data_type_refs",
     "discard_derived_facts",
     "drop_field_discriminator",
+    "drop_held_null",
     "drop_union_member_constraints",
     "insert_field",
+    "mark_target_null",
     "move_model",
     "note_changed_models",
     "override_type_import",
@@ -190,11 +194,14 @@ passes build are ``copied``."""
 
 NO_SITE_EFFECT: frozenset[str] = frozenset({
     "add_model_import",
+    "clear_target_null",
     "defer_refresh",
     "detach_data_type_ref",
     "detach_model_data_type_refs",
     "discard_derived_facts",
     "drop_field_discriminator",
+    "drop_held_null",
+    "mark_target_null",
     "move_model",
     "override_type_import",
     "record_values_as_written",
@@ -1743,6 +1750,31 @@ class GenerationStore:  # noqa: PLR0904
         literal check narrows to the same values stay apart as they were written. Nothing the store derives reads them.
         """
         owner.__dict__[VALUES_AS_WRITTEN_KEY] = tuple(values)
+
+    @staticmethod
+    def mark_target_null(data_type: DataType) -> None:
+        """Mark the None of a new reference type as the one the schema it references admits.
+
+        ``--omit-redundant-reference-null`` drops that None where the model the type names holds null itself, and
+        duplicate models compare the marks besides their rendering (``DataModel._render_dedup_key``).
+        """
+        data_type.__dict__[TARGET_NULL_KEY] = True
+
+    @staticmethod
+    def clear_target_null(data_type: DataType) -> None:
+        """Forget that the None of a type is its target's, after a null of another source joined it."""
+        data_type.__dict__.pop(TARGET_NULL_KEY, None)
+
+    @staticmethod
+    def drop_held_null(data_type: DataType) -> None:
+        """Drop the None a reference type restates of the model it names, which holds null itself.
+
+        The type loses its own None when that None is its target's or the one its nullable model gave it, and the None
+        of its nullable model.
+        """
+        if data_type.__dict__.pop(REFERENCE_NULL_KEY, None) or TARGET_NULL_KEY in data_type.__dict__:
+            data_type.is_optional = False
+        data_type.__dict__[HELD_NULL_DROPPED_KEY] = True
 
     def note_changed_models(self, *models: object) -> None:
         """Record ``models`` again at the next refresh, after their types changed outside the store.

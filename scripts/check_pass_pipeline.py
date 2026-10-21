@@ -256,6 +256,7 @@ VIEW_OWNERS: dict[type[Any], str] = {
 """The class whose ``ATTRIBUTE_FACTS`` rows each view reads."""
 VIEW_ACCESSORS = {
     "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
+    "ModelView.holds_null": "the model kind, and the nullability of its root type or its enum members, final at B1",
 }
 """The view members that read no row of their own, each with what it reads."""
 
