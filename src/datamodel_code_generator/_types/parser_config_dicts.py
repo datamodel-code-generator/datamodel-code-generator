@@ -173,6 +173,7 @@ class ParserConfigDict(TypedDict):
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
     read_nullable_beside_type_list: NotRequired[bool]
+    keep_field_defaults_off_branch_roots: NotRequired[bool]
     known_third_party: NotRequired[list[str] | None]
     custom_formatters: NotRequired[list[str] | None]
     custom_formatters_kwargs: NotRequired[dict[str, Any] | None]

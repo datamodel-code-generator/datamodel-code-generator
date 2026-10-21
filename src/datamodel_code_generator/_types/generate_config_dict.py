@@ -123,6 +123,7 @@ class BaseGenerateConfig(TypedDict):
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
     read_nullable_beside_type_list: NotRequired[bool]
+    keep_field_defaults_off_branch_roots: NotRequired[bool]
     set_default_enum_member: NotRequired[bool]
     use_subclass_enum: NotRequired[bool]
     use_specialized_enum: NotRequired[bool]

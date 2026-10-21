@@ -270,6 +270,7 @@ class ParserConfig(BaseModel):
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
     read_nullable_beside_type_list: bool = False
+    keep_field_defaults_off_branch_roots: bool = False
     known_third_party: list[str] | None = None
     custom_formatters: list[str] | None = None
     custom_formatters_kwargs: dict[str, Any] | None = None

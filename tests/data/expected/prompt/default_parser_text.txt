@@ -120,6 +120,7 @@
 - `--enable-faux-immutability`: Enable faux immutability in Pydantic models (frozen=True).
 - `--force-optional`: Force all fields to be Optional regardless of required status.
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
+- `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.

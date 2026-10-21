@@ -605,6 +605,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--read-nullable-beside-type-list": CLIOptionMeta(
         name="--read-nullable-beside-type-list", category=OptionCategory.MODEL
     ),
+    "--keep-field-defaults-off-branch-roots": CLIOptionMeta(
+        name="--keep-field-defaults-off-branch-roots", category=OptionCategory.MODEL
+    ),
     "--disable-future-imports": CLIOptionMeta(
         name="--disable-future-imports",
         category=OptionCategory.TYPING,

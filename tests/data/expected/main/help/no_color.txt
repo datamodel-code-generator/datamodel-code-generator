@@ -350,6 +350,11 @@ Field customization:
                         type': rename type class with suffix to preserve field
                         name.
   --force-optional      Force optional for required fields
+  --keep-field-defaults-off-branch-roots
+                        Leave the default of a property off the root models
+                        extracted from the branches of its `anyOf` or `oneOf`,
+                        which then require their value; without it each such
+                        root takes the property's default
   --model-extra-keys MODEL_EXTRA_KEYS [MODEL_EXTRA_KEYS ...]
                         Add extra keys from schema extensions (x-* fields) to
                         model_config json_schema_extra

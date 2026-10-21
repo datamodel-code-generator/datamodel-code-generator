@@ -1,4 +1,7 @@
-"""A model extracted from one branch of a field's union keeps the field's default off its root."""
+"""A model extracted from one branch of a field's union keeps the field's default off its root.
+
+Only with --keep-field-defaults-off-branch-roots: without it the root takes the field's default, as in 0.86.0.
+"""
 
 from __future__ import annotations
 
@@ -33,12 +36,19 @@ OUTPUT_MODEL_TYPES = (
     ),
     "msgspec.Struct",
 )
+KEEP_DEFAULTS_OFF = "--keep-field-defaults-off-branch-roots"
 OPTION_SETS = {
     "default": (),
-    "field_constraints": ("--field-constraints",),
-    "annotated": ("--use-annotated",),
-    "strict_nullable": ("--strict-nullable", "--field-constraints"),
+    "field_constraints": ("--field-constraints", KEEP_DEFAULTS_OFF),
+    "annotated": ("--use-annotated", KEEP_DEFAULTS_OFF),
+    "strict_nullable": ("--strict-nullable", "--field-constraints", KEEP_DEFAULTS_OFF),
 }
+OPTION_SETS_WITHOUT_OPTION = {
+    name: tuple(option for option in options if option != KEEP_DEFAULTS_OFF)
+    for name, options in OPTION_SETS.items()
+    if name != "default"
+}
+"""The option sets whose extracted branch roots take the field's default without the option, as in 0.86.0."""
 
 
 def _verdict(model: Any, output_model_type: str, document: object) -> str:
@@ -57,24 +67,62 @@ def _verdict(model: Any, output_model_type: str, document: object) -> str:
 
 
 def _root_model_verdict(output_file: Path) -> str:
-    """Return the error type of building the extracted ``Weight`` model without its value, which must be rejected."""
-    with (
-        _generated_model(output_file, "extracted_branch_default_weight", "Weight") as weight,
-        pytest.raises(ValidationError) as error,
-    ):
-        weight()
-    return f"rejected ({error.value.errors()[0]['type']})"
+    """Return whether the extracted ``Weight`` model builds without its value, with the error type where it does not."""
+    with _generated_model(output_file, "extracted_branch_default_weight", "Weight") as weight:
+        try:
+            weight()
+        except ValidationError as error:
+            return f"rejected ({error.errors()[0]['type']})"
+    return "accepted"
 
 
+@pytest.mark.cli_doc(
+    options=["--keep-field-defaults-off-branch-roots"],
+    option_description="""Leave a property's default off the root models extracted from its `anyOf` or `oneOf` branches.
+
+Under `--field-constraints` or `--use-annotated` a branch with constraints, such as `{type: number, minimum: 0}` in
+the `anyOf` of a property with `default: null`, becomes a root model of its own. Without the option that root takes
+the property's default, as in 0.86.0: `root: float = Field(None, ge=0.0)`, so the model builds without a value and
+holds a default its type rejects. With `--keep-field-defaults-off-branch-roots` the default stays with the property,
+and the root requires its value: `root: float = Field(..., ge=0.0)`.""",
+    input_schema="openapi/extracted_branch_default.yaml",
+    cli_args=["--field-constraints", "--keep-field-defaults-off-branch-roots"],
+    golden_output=(
+        "main/openapi/extracted_branch_default/extracted_branch_default[field_constraints-pydantic_v2.BaseModel].py"
+    ),
+    comparison_output=(
+        "main/openapi/extracted_branch_default/without_option[field_constraints-pydantic_v2.BaseModel].py"
+    ),
+)
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
 @pytest.mark.parametrize("option_set", OPTION_SETS)
 def test_extracted_branch_default(output_file: Path, output_model_type: str, option_set: str) -> None:
     """Leave the default with the field that declares it and keep the extracted branch's value required."""
+    _record_extracted_branch_default(
+        output_file, output_model_type, OPTION_SETS[option_set], root_model=option_set != "default"
+    )
+
+
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+@pytest.mark.parametrize("option_set", OPTION_SETS_WITHOUT_OPTION)
+def test_extracted_branch_default_without_option(output_file: Path, output_model_type: str, option_set: str) -> None:
+    """Give the extracted branch's root the field's default without --keep-field-defaults-off-branch-roots.
+
+    The root of ``Weight`` is then ``Field(None, ge=0.0)``, so ``Weight()`` builds without a value, as in 0.86.0.
+    """
+    _record_extracted_branch_default(
+        output_file, output_model_type, OPTION_SETS_WITHOUT_OPTION[option_set], root_model=True
+    )
+
+
+def _record_extracted_branch_default(
+    output_file: Path, output_model_type: str, options: tuple[str, ...], *, root_model: bool
+) -> None:
     run_main_and_assert(
         input_path=INPUT,
         output_path=output_file,
         input_file_type="openapi",
-        extra_args=["--formatters", "builtin", "--output-model-type", output_model_type, *OPTION_SETS[option_set]],
+        extra_args=["--formatters", "builtin", "--output-model-type", output_model_type, *options],
     )
     payloads = json.loads(PAYLOADS.read_text())
     validator = Draft202012Validator(yaml.safe_load(INPUT.read_text())["components"]["schemas"]["Model"])
@@ -91,6 +139,6 @@ def test_extracted_branch_default(output_file: Path, output_model_type: str, opt
             f"invalid {', '.join(change)}: {_verdict(model, output_model_type, {**payloads['valid'], **change})}"
             for change in payloads["invalid"]
         )
-    if output_model_type == "pydantic_v2.BaseModel" and option_set != "default":
+    if output_model_type == "pydantic_v2.BaseModel" and root_model:
         verdicts.append(f"Weight(): {_root_model_verdict(output_file)}")
     assert_output("".join(f"{verdict}\n" for verdict in verdicts), name="payloads")
