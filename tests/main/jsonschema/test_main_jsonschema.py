@@ -24994,6 +24994,44 @@ def test_main_ref_sibling_nesting_too_deep(
     )
 
 
+def test_main_read_only_write_only_flag_diamonds(tmp_path: Path, output_file: Path) -> None:
+    """Resolve a field's readOnly/writeOnly flag through references that meet again, reading each target once."""
+    depth = 18
+    links: dict[str, Any] = {
+        f"N{index}": {
+            "anyOf": [
+                {"allOf": [{"$ref": f"#/x-links/N{index + 1}"}]},
+                {"allOf": [{"$ref": f"#/x-links/N{index + 1}"}]},
+            ]
+        }
+        for index in range(depth)
+    }
+    links[f"N{depth}"] = {"type": "string"}
+    (input_path := tmp_path / "flag_diamonds.json").write_text(
+        json.dumps({
+            "type": "object",
+            "properties": {"p": {"$ref": "#/x-links/N0"}, "q": {"type": "string", "readOnly": True}},
+            "x-links": links,
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+
+
 def test_main_jsonschema_recursive_ref(output_file: Path) -> None:
     """Test JSON Schema 2019-09 $recursiveRef with $recursiveAnchor."""
     run_main_and_assert(

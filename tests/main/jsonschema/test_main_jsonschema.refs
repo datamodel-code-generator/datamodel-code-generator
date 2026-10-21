@@ -7644,6 +7644,8 @@ unrelated-custom-explicit-target-2.12	main/jsonschema/pydantic_v2_dataclass_refe
 unrelated-custom-explicit-target-unset	main/jsonschema/pydantic_v2_dataclass_reference_alias_defaults_modern.py
 [test_main_pydantic_v2_model_rebuild_inheritance]
 	main/jsonschema/pydantic_v2_model_rebuild_inheritance.py
+[test_main_read_only_write_only_flag_diamonds]
+	main/jsonschema/read_only_write_only_flag_diamonds.py
 [test_main_redundant_constraints]
 annotated	main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].rejected.txt
 annotated	main/jsonschema/main_jsonschema/main_redundant_constraints[annotated].warnings.txt

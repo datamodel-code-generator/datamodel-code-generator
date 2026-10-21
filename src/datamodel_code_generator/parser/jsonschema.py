@@ -11,7 +11,7 @@ import json
 import math
 import re
 from collections import Counter, defaultdict, deque
-from contextlib import contextmanager, nullcontext, suppress
+from contextlib import ExitStack, contextmanager, nullcontext, suppress
 from copy import copy, deepcopy
 from dataclasses import dataclass, replace
 from functools import cached_property, lru_cache, partial, wraps
@@ -3447,28 +3447,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 non_literal_values.append(enum_value)
         return literal_values, non_literal_values, has_null
 
-    def _resolve_field_flag(
-        self,
-        obj: JsonSchemaObject,
-        flag: Literal["readOnly", "writeOnly"],
-        active: frozenset[str] = frozenset(),
-    ) -> bool:
-        """Resolve a field flag (readOnly/writeOnly) from direct value, $ref, and compositions."""
-        if getattr(obj, flag) is True:
-            return True
-        if self.read_only_write_only_model_type and obj.ref and (resolved_ref := self._ref_path(obj.ref)) not in active:
-            referenced_schema = self._load_ref_schema_object(obj.ref)
-            with self._inherited_ref_context(resolved_ref):
-                if self._resolve_field_flag(
-                    referenced_schema,
-                    flag,
-                    active | {resolved_ref},
-                ):
-                    return True
-        for schemas in (obj.allOf, obj.anyOf, obj.oneOf):
-            for sub in schemas:
-                if isinstance(sub, JsonSchemaObject) and self._resolve_field_flag(sub, flag, active):
-                    return True
+    def _resolve_field_flag(self, obj: JsonSchemaObject, flag: Literal["readOnly", "writeOnly"]) -> bool:
+        """Resolve a field flag (readOnly/writeOnly) from direct value, $ref, and compositions.
+
+        Visits the $ref target, then the allOf, anyOf and oneOf members, depth first on an explicit stack; each $ref
+        target is read once, in the contexts of the $refs leading to it.
+        """
+        visited: set[str] = set()
+        pending: list[tuple[JsonSchemaObject, tuple[str, ...]]] = [(obj, ())]
+        while pending:
+            schema, contexts = pending.pop()
+            if getattr(schema, flag) is True:
+                return True
+            pending.extend(
+                (sub, contexts)
+                for schemas in (schema.oneOf, schema.anyOf, schema.allOf)
+                for sub in reversed(schemas)
+                if isinstance(sub, JsonSchemaObject)
+            )
+            if not (self.read_only_write_only_model_type and schema.ref):
+                continue
+            with ExitStack() as scope:
+                for context in contexts:
+                    scope.enter_context(self._inherited_ref_context(context))
+                if (resolved_ref := self._ref_path(schema.ref)) in visited:
+                    continue
+                visited.add(resolved_ref)
+                pending.append((self._load_ref_schema_object(schema.ref), (*contexts, resolved_ref)))
         return False
 
     def _collect_inherited_fields_for_request_response(
