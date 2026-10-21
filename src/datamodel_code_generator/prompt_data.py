@@ -127,6 +127,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--output-datetime-class": "Specify datetime class type for date-time schema fields.",
     "--output-model-type": "Generate models from GraphQL with different output model types.",
     "--parent-scoped-naming": "Namespace models by their parent scope to avoid naming conflicts.",
+    "--pin-aliases-with-alias-generator": "Decide a field's alias by the alias generator its model applies.",
     "--preset": "Apply an immutable built-in option preset.",
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
     "--recommend-options": "Recommend options for the input schema on top of the latest dated preset (experimental).",

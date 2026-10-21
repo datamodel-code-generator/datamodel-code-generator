@@ -4044,6 +4044,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             target_pydantic_version=config.target_pydantic_version,
             schema_validator_base_class_name=config.schema_validator_base_class_name,
             generate_schema_validators=config.generate_schema_validators,
+            pin_aliases_with_alias_generator=config.pin_aliases_with_alias_generator,
         )
 
         self.model_resolver = self._model_resolver_factory(

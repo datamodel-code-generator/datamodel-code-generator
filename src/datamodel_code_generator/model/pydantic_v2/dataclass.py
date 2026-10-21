@@ -364,9 +364,14 @@ class _PydanticDataclassField(DataModelFieldV2):
     @override
     def _alias_generator_name_from_parent(self) -> str | None:
         """Follow only a generator that the dataclass config applies: the template writes no template-data one."""
-        if _ALIAS_GENERATOR_TEMPLATE_DATA_KEY not in self._parent_config_items():
+        if self._pins_aliases() and _ALIAS_GENERATOR_TEMPLATE_DATA_KEY not in self._parent_config_items():
             return None
         return super()._alias_generator_name_from_parent()
+
+    @override
+    def _alias_generator_renames(self, name: str) -> bool:
+        """Return False without ``--pin-aliases-with-alias-generator``: the dataclass template renders no generator."""
+        return self._pins_aliases() and super()._alias_generator_renames(name)
 
     @override
     def _get_field_data_and_default_factory(self) -> tuple[dict[str, Any], Any]:

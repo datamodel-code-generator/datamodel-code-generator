@@ -264,6 +264,7 @@ DataModelFieldV1 = _PydanticBaseDataModelField  # deprecated re-export, pydantic
 _ALIAS_GENERATOR_TEMPLATE_DATA_KEY = "alias_generator"
 _ALIAS_GENERATOR_INTERNAL_KEY = "_alias_generator"
 _NO_ALIAS_INTERNAL_KEY = "_no_alias"
+_PIN_ALIASES_INTERNAL_KEY = "_pin_aliases_with_alias_generator"
 _MISSING_SENTINEL = "MISSING"
 _CONFIG_ITEMS_TEMPLATE_DATA_KEY = "config_items"
 _RENDERED_NONE = "None"
@@ -980,9 +981,9 @@ class DataModelField(_PydanticBaseDataModelField):
     def _update_alias_for_alias_generator(self, data: dict[str, Any]) -> str | None:
         """Keep only an alias the parent's generator does not reproduce and return the generated alias to pin.
 
-        A target predating the 2.8 generator algorithms pins that alias on the fields of a model that renders or
-        inherits the generator, a BaseModel or a dataclass whose config names it: never a RootModel, enum, union or
-        type alias.
+        A target predating the 2.8 generator algorithms pins that alias on the fields of a BaseModel and, with
+        ``--pin-aliases-with-alias-generator``, of a dataclass whose config names the generator: never a RootModel,
+        enum, union or type alias.
         """
         if self.name is None or self.is_pydantic_extra_field:
             return None
@@ -992,7 +993,7 @@ class DataModelField(_PydanticBaseDataModelField):
         pinned_alias: str | None = None
         if not model_target_meets(parent := self.parent, "pydantic.alias_generators") and (
             (isinstance(parent, BaseModel) and not parent.IS_ROOT_MODEL)
-            or _ALIAS_GENERATOR_TEMPLATE_DATA_KEY in self._parent_config_items()
+            or (self._pins_aliases() and _ALIAS_GENERATOR_TEMPLATE_DATA_KEY in self._parent_config_items())
         ):
             pinned_alias = self.name if generated_alias is None else generated_alias
         alias = data.get("alias")
@@ -1006,18 +1007,28 @@ class DataModelField(_PydanticBaseDataModelField):
         data["alias"] = wire_name
         return pinned_alias
 
+    def _pins_aliases(self) -> bool:
+        """Return whether ``--pin-aliases-with-alias-generator`` decides the aliases of the parent's fields."""
+        return (parent := self.parent) is not None and bool(parent.extra_template_data.get(_PIN_ALIASES_INTERNAL_KEY))
+
     def _parent_config_items(self) -> dict[str, str]:
         """Return the config items that Pydantic applies to the parent model, or none for a parent of another kind."""
         return parent._applied_config_items() if isinstance(parent := self.parent, BaseModel) else {}  # noqa: SLF001
 
     def _alias_generator_name_from_parent(self) -> str | None:
-        """Return the generator of the config Pydantic applies to the parent, else the generic base's generator.
+        """Return the generator the parent's template data names, else the generic base's generator.
 
-        A rendered ``None`` is no generator; a rendered generator that dcg does not know is returned as its source,
-        which ``_generate_alias`` cannot run, so every field keeps its alias.
+        With ``--pin-aliases-with-alias-generator`` it is the generator of the config Pydantic applies to the parent,
+        else the generic base's generator. A rendered ``None`` is no generator; a rendered generator that dcg does not
+        know is returned as its source, which ``_generate_alias`` cannot run, so every field keeps its alias.
         """
         if (parent := self.parent) is None:
             return None
+        if not self._pins_aliases():
+            alias_generator = parent.extra_template_data.get(_ALIAS_GENERATOR_TEMPLATE_DATA_KEY)
+            if alias_generator is None:
+                alias_generator = parent.extra_template_data.get(_ALIAS_GENERATOR_INTERNAL_KEY)
+            return _alias_generator_name(alias_generator)
         if _ALIAS_GENERATOR_TEMPLATE_DATA_KEY in (config_items := self._parent_config_items()):
             rendered = config_items[_ALIAS_GENERATOR_TEMPLATE_DATA_KEY]
             return None if rendered == _RENDERED_NONE else _alias_generator_name(rendered) or rendered

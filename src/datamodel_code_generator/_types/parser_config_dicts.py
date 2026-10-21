@@ -69,6 +69,7 @@ class ParserConfigDict(TypedDict):
     validation: NotRequired[bool]
     field_constraints: NotRequired[bool]
     alias_generator: NotRequired[AliasGenerator | None]
+    pin_aliases_with_alias_generator: NotRequired[bool]
     snake_case_field: NotRequired[bool]
     strip_default_none: NotRequired[bool]
     aliases: NotRequired[Mapping[str, str | list[str]] | None]

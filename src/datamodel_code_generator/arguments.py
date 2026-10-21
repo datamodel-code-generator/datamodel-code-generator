@@ -607,6 +607,15 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
+    "--pin-aliases-with-alias-generator",
+    help="pydantic_v2.dataclass output only: for a --target-pydantic-version older than 2.8, whose alias generators "
+    "can differ from the generated aliases, write the generated alias on every field of a dataclass whose config names "
+    "an alias generator, and read the generator a dataclass inherits from its base. Without it a dataclass field "
+    "keeps the alias it has without the generator, which the config then replaces.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--treat-dot-as-module",
     help="Treat dotted schema names as module paths, creating nested directory structures (e.g., 'foo.bar.Model' "
     "becomes 'foo/bar.py'). Use --no-treat-dot-as-module to keep dots in names as underscores for single-file output.",

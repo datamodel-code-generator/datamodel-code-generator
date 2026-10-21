@@ -166,6 +166,7 @@ class ParserConfig(BaseModel):
     validation: bool = False
     field_constraints: bool = False
     alias_generator: AliasGenerator | None = None
+    pin_aliases_with_alias_generator: bool = False
     snake_case_field: bool = False
     strip_default_none: bool = False
     aliases: Mapping[str, str | list[str]] | None = None

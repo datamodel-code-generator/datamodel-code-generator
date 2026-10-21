@@ -5419,39 +5419,53 @@ msgspec	main/jsonschema/output_context/typed_extra_msgspec_Struct.py
 pydantic-v2	main/jsonschema/output_context/typed_extra_pydantic_v2_BaseModel.py
 typed-dict	main/jsonschema/output_context/typed_extra_typing_TypedDict.py
 [test_main_alias_generator_inherited_from_base]
-pydantic_v2.BaseModel-target-2	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2].py
-pydantic_v2.BaseModel-target-2	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2].round_trip.txt
-pydantic_v2.BaseModel-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-unset].py	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2].py
-pydantic_v2.BaseModel-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-unset].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2].round_trip.txt
-pydantic_v2.dataclass-target-2	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2].py
-pydantic_v2.dataclass-target-2	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2].round_trip.txt
-pydantic_v2.dataclass-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-unset].py	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2].py
-pydantic_v2.dataclass-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-unset].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2].round_trip.txt
+pydantic_v2.BaseModel-target-2-default	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-default].py
+pydantic_v2.BaseModel-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-pinned].py
+pydantic_v2.BaseModel-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-pinned].round_trip.txt
+pydantic_v2.BaseModel-target-unset-default	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-unset-default].py	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-default].py
+pydantic_v2.BaseModel-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-unset-pinned].py	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-pinned].py
+pydantic_v2.BaseModel-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-unset-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-pinned].round_trip.txt
+pydantic_v2.dataclass-target-2-default	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2-default].py
+pydantic_v2.dataclass-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2-pinned].py
+pydantic_v2.dataclass-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-pinned].round_trip.txt
+pydantic_v2.dataclass-target-unset-default	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-unset-default].py	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2-default].py
+pydantic_v2.dataclass-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-unset-pinned].py	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-2-pinned].py
+pydantic_v2.dataclass-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.dataclass-target-unset-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_inherited_from_base[pydantic_v2.BaseModel-target-2-pinned].round_trip.txt
 [test_main_alias_generator_internal_template_data_dataclass]
-	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass.py
-	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass.round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2].round_trip.txt
+default	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass[default].py
+pinned	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass[pinned].py
+pinned	main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass[pinned].round_trip.txt
 [test_main_alias_generator_keeps_camel_case_names]
 	main/jsonschema/alias_generator_camel_case_names.py
 [test_main_alias_generator_model_config]
-dataclass-to_camel-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2].py
-dataclass-to_camel-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2].round_trip.txt
-dataclass-to_camel-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-unset].py
-dataclass-to_camel-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-unset].round_trip.txt
-null-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].py
-null-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].round_trip.txt
-null-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-unset].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].py
-null-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-unset].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].round_trip.txt
-to_pascal-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2].py
-to_pascal-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].round_trip.txt
-to_pascal-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-unset].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2].py
-to_pascal-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-unset].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].round_trip.txt
-unknown-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2].py
-unknown-target-2	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].round_trip.txt
-unknown-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-unset].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2].py
-unknown-target-unset	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-unset].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2].round_trip.txt
+dataclass-to_camel-target-2-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2-default].py
+dataclass-to_camel-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2-pinned].py
+dataclass-to_camel-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-2-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_internal_template_data_dataclass[pinned].round_trip.txt
+dataclass-to_camel-target-unset-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-unset-default].py
+dataclass-to_camel-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-unset-pinned].py
+dataclass-to_camel-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[dataclass-to_camel-target-unset-pinned].round_trip.txt
+null-target-2-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-default].py
+null-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].py
+null-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].round_trip.txt
+null-target-unset-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-unset-default].py
+null-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-unset-pinned].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].py
+null-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-unset-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].round_trip.txt
+to_pascal-target-2-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2-default].py
+to_pascal-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2-pinned].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2-default].py
+to_pascal-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].round_trip.txt
+to_pascal-target-unset-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-unset-default].py
+to_pascal-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-unset-pinned].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-2-default].py
+to_pascal-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[to_pascal-target-unset-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].round_trip.txt
+unknown-target-2-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2-default].py
+unknown-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2-pinned].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2-default].py
+unknown-target-2-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].round_trip.txt
+unknown-target-unset-default	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-unset-default].py
+unknown-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-unset-pinned].py	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-2-default].py
+unknown-target-unset-pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config[unknown-target-unset-pinned].round_trip.txt	= main/jsonschema/main_jsonschema/main_alias_generator_model_config[null-target-2-pinned].round_trip.txt
 [test_main_alias_generator_model_config_root_and_nested]
-	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_and_nested.py
-	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_and_nested.round_trip.txt
+default	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_and_nested[default].py
+pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_and_nested[pinned].py
+pinned	main/jsonschema/main_jsonschema/main_alias_generator_model_config_root_and_nested[pinned].round_trip.txt
 [test_main_alias_generator_no_alias]
 2-alias_generator_no_alias_target_2.py	main/jsonschema/alias_generator_no_alias_target_2.py
 None-alias_generator_no_alias.py	main/jsonschema/alias_generator_no_alias.py
@@ -5478,8 +5492,12 @@ to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/round_trip
 to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/to_snake_unset.py
 [test_main_alias_generator_target_pydantic_version_enum_only]
 	main/jsonschema/oneof_const_enum.py
+[test_main_alias_generator_template_data_dataclass_default]
+	main/jsonschema/main_jsonschema/main_alias_generator_template_data_dataclass_default.py
 [test_main_alias_generator_template_data_dataclass_target_pydantic_version]
 	main/jsonschema/alias_generator_template_data_dataclass_target_2.py
+[test_main_alias_generator_template_data_dataclass_type_alias]
+	main/jsonschema/main_jsonschema/main_alias_generator_template_data_dataclass_type_alias.py
 [test_main_alias_import_alias]
 	main/jsonschema/alias_import_alias//*.py
 [test_main_all_of_any_of]

@@ -2597,6 +2597,37 @@ def test_main_alias_generator_target_pydantic_version_enum_only(output_file: Pat
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--pin-aliases-with-alias-generator"],
+    option_description="""Decide a field's alias by the alias generator its model applies.
+
+The `--pin-aliases-with-alias-generator` flag only applies to `--output-model-type pydantic_v2.BaseModel` and
+`pydantic_v2.dataclass`; other output model types ignore it.
+
+Pydantic applies the `alias_generator` in the `config` of a model, and a subclass applies the one in the config of
+its base. Without the flag the generated aliases are decided from the generator of the whole run (`--alias-generator`
+or the template data key `alias_generator`) even where the model does not apply it, a dataclass renders none, and the
+`alias_generator` in the `config` of a model, of its base or of a dataclass is not read. A field may then lose the
+alias that carries the document's property name, or keep an alias the generator already produces.
+
+With the flag the aliases follow the generator the model applies: the one in its config or in the config it
+inherits, none for `alias_generator: null`, and none for a dataclass whose config names none. For a
+`--target-pydantic-version` older than 2.8, whose generator algorithms can differ from the ones dcg runs, the
+generated alias is written on every field of a dataclass whose config names a generator, as it is for a BaseModel.""",
+    input_schema="jsonschema/alias_generator.json",
+    cli_args=[
+        "--output-model-type",
+        "pydantic_v2.dataclass",
+        "--snake-case-field",
+        "--pin-aliases-with-alias-generator",
+        "--extra-template-data",
+        "jsonschema/extra_data_alias_generator.json",
+        "--target-pydantic-version",
+        "2",
+    ],
+    golden_output="main/jsonschema/alias_generator_template_data_dataclass_target_2.py",
+    comparison_output="main/jsonschema/main_jsonschema/main_alias_generator_template_data_dataclass_default.py",
+)
 def test_main_alias_generator_template_data_dataclass_target_pydantic_version(output_file: Path) -> None:
     """Write every alias a dataclass field needs when template data names a generator the dataclass does not render."""
     run_main_and_assert(
@@ -2609,6 +2640,7 @@ def test_main_alias_generator_template_data_dataclass_target_pydantic_version(ou
             "--output-model-type",
             "pydantic_v2.dataclass",
             "--snake-case-field",
+            "--pin-aliases-with-alias-generator",
             "--extra-template-data",
             str(JSON_SCHEMA_DATA_PATH / "extra_data_alias_generator.json"),
             "--target-pydantic-version",
@@ -2617,6 +2649,43 @@ def test_main_alias_generator_template_data_dataclass_target_pydantic_version(ou
     )
 
 
+def test_main_alias_generator_template_data_dataclass_default(output_file: Path) -> None:
+    """Leave dataclass fields unpinned for --target-pydantic-version 2 when template data names a generator."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--snake-case-field",
+            "--extra-template-data",
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_alias_generator.json"),
+            "--target-pydantic-version",
+            "2",
+        ],
+    )
+
+
+def test_main_alias_generator_template_data_dataclass_type_alias(output_file: Path) -> None:
+    """Pin the aliases of a type alias that a dataclass output writes beside its dataclasses."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "alias_generator_target_pydantic.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--pin-aliases-with-alias-generator",
+            "--extra-template-data",
+            str(JSON_SCHEMA_DATA_PATH / "extra_data_alias_generator.json"),
+            "--target-pydantic-version",
+            "2",
+        ],
+    )
+
+
+@pytest.mark.parametrize("pin_aliases", [False, True], ids=["default", "pinned"])
 @pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["target-unset", "target-2"])
 @pytest.mark.parametrize(
     ("output_model_type", "alias_generator"),
@@ -2634,6 +2703,7 @@ def test_main_alias_generator_model_config(
     output_model_type: str,
     alias_generator: str | None,
     target_pydantic_version: str | None,
+    pin_aliases: bool,
 ) -> None:
     """Decide aliases and import the generator from the alias generator that a model's own config renders."""
     extra_template_data = tmp_path / "extra-template-data.json"
@@ -2649,6 +2719,7 @@ def test_main_alias_generator_model_config(
             output_model_type,
             "--snake-case-field",
             *(["--alias-generator", "to_camel"] if output_model_type == "pydantic_v2.BaseModel" else []),
+            *(["--pin-aliases-with-alias-generator"] if pin_aliases else []),
             "--extra-template-data",
             str(extra_template_data),
             "--disable-timestamp",
@@ -2657,6 +2728,8 @@ def test_main_alias_generator_model_config(
         force_exec_validation=True,
         skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
     )
+    if not pin_aliases:
+        return
     with _generated_model(output_file, "alias_generator_model_config", "AliasGeneratorModel") as model:
         adapter = TypeAdapter(model)
         payload = '{"firstName": "Ada", "lastName": "Lovelace", "foo_bar": "engine", "weird-url": 1}'
@@ -2665,7 +2738,10 @@ def test_main_alias_generator_model_config(
         )
 
 
-def test_main_alias_generator_model_config_root_and_nested(output_file: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize("pin_aliases", [False, True], ids=["default", "pinned"])
+def test_main_alias_generator_model_config_root_and_nested(
+    output_file: Path, tmp_path: Path, pin_aliases: bool
+) -> None:
     """Import the generator a nested model's config names; a RootModel renders no generator, so it imports none."""
     extra_template_data = tmp_path / "extra-template-data.json"
     extra_template_data.write_text(
@@ -2684,21 +2760,25 @@ def test_main_alias_generator_model_config_root_and_nested(output_file: Path, tm
             "pydantic_v2.BaseModel",
             "--alias-generator",
             "to_camel",
+            *(["--pin-aliases-with-alias-generator"] if pin_aliases else []),
             "--extra-template-data",
             str(extra_template_data),
             "--disable-timestamp",
         ],
         force_exec_validation=True,
     )
+    if not pin_aliases:
+        return
     payload = (JSON_DATA_PATH / "alias_generator_target_pydantic.json").read_text(encoding="utf-8")
     with _generated_model(output_file, "alias_generator_model_config_root", "Account") as model:
         assert_output(model.model_validate_json(payload).model_dump_json(by_alias=True, indent=2), name="round_trip")
 
 
+@pytest.mark.parametrize("pin_aliases", [False, True], ids=["default", "pinned"])
 @pytest.mark.parametrize("target_pydantic_version", [None, "2"], ids=["target-unset", "target-2"])
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
 def test_main_alias_generator_inherited_from_base(
-    output_file: Path, tmp_path: Path, output_model_type: str, target_pydantic_version: str | None
+    output_file: Path, tmp_path: Path, output_model_type: str, target_pydantic_version: str | None, pin_aliases: bool
 ) -> None:
     """Decide a subclass's aliases by the generator its base's config renders, which Pydantic applies to it too."""
     extra_template_data = tmp_path / "extra-template-data.json"
@@ -2711,6 +2791,7 @@ def test_main_alias_generator_inherited_from_base(
             "--output-model-type",
             output_model_type,
             "--snake-case-field",
+            *(["--pin-aliases-with-alias-generator"] if pin_aliases else []),
             "--extra-template-data",
             str(extra_template_data),
             "--disable-timestamp",
@@ -2719,6 +2800,8 @@ def test_main_alias_generator_inherited_from_base(
         force_exec_validation=True,
         skip_code_validation=not installed_pydantic_runs_target(target_pydantic_version),
     )
+    if not pin_aliases:
+        return
     with _generated_model(output_file, "alias_generator_inherited", "Child") as model:
         adapter = TypeAdapter(model)
         payload = '{"baseField": "base", "child_field": "child", "otherName": "other"}'
@@ -2727,7 +2810,10 @@ def test_main_alias_generator_inherited_from_base(
         )
 
 
-def test_main_alias_generator_internal_template_data_dataclass(output_file: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize("pin_aliases", [False, True], ids=["default", "pinned"])
+def test_main_alias_generator_internal_template_data_dataclass(
+    output_file: Path, tmp_path: Path, pin_aliases: bool
+) -> None:
     """Keep a dataclass field's alias when template data names a generic-base generator the dataclass never applies."""
     extra_template_data = tmp_path / "extra-template-data.json"
     extra_template_data.write_text(json.dumps({"#all#": {"_alias_generator": "to_camel"}}), encoding="utf-8")
@@ -2739,12 +2825,15 @@ def test_main_alias_generator_internal_template_data_dataclass(output_file: Path
             "--output-model-type",
             "pydantic_v2.dataclass",
             "--snake-case-field",
+            *(["--pin-aliases-with-alias-generator"] if pin_aliases else []),
             "--extra-template-data",
             str(extra_template_data),
             "--disable-timestamp",
         ],
         force_exec_validation=True,
     )
+    if not pin_aliases:
+        return
     with _generated_model(output_file, "alias_generator_internal_template_data", "AliasGeneratorModel") as model:
         adapter = TypeAdapter(model)
         payload = '{"firstName": "Ada", "lastName": "Lovelace", "foo_bar": "engine", "weird-url": 1}'

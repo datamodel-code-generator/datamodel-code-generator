@@ -38,6 +38,7 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     target_pydantic_version: TargetPydanticVersion | None,
     schema_validator_base_class_name: str | None,
     generate_schema_validators: bool,
+    pin_aliases_with_alias_generator: bool,
 ) -> dict[str, Any]:
     """Prepare output configuration while retaining template keys and insertion order."""
     if validators:
@@ -59,6 +60,8 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
             extra_template_data[ALL_MODEL]["_alias_generator"] = alias_generator
     if no_alias:
         extra_template_data[ALL_MODEL]["_no_alias"] = True
+    if pin_aliases_with_alias_generator:
+        extra_template_data[ALL_MODEL]["_pin_aliases_with_alias_generator"] = True
     if allow_extra_fields:
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["allow_extra_fields"] = True
     if extra_fields:
