@@ -11907,8 +11907,11 @@ With `--use-single-dict-for-object-maps` it is one dict whose key pattern joins 
 the union of their value types, so an object that mixes the keys of several patterns is accepted; a dict that
 cannot express the object exactly (keys outside the patterns, different value schemas) is named by a warning.
 The null and the other types of a `type` array, such as `[object, string, null]`, join the dict in a union, and its
-property counts stay on the dict. Without the option the map is written as in 0.86.0: a union of dicts, one per
-value type of the patterns, the other types of a `type` array left out.""",
+property counts stay on the dict. With `--generate-schema-validators`, the dict root of a validated map also takes
+its keys from `propertyNames` and counts the keys its patterns admit, the model of an object without `properties`
+joins the other types of its `type` array, and a pattern checks every declared key whose schema it adds an assertion
+to. Without the option the map is written as in 0.86.0: a union of dicts, one per value type of the patterns, the
+other types of a `type` array left out.""",
     input_schema="jsonschema/pattern_properties_merge.json",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-single-dict-for-object-maps"],
     golden_output="jsonschema/pattern_properties_merge.py",

@@ -1,0 +1,5 @@
+valid: rejected (model_type)
+invalid pStringOrPatterns: rejected (int_parsing)
+invalid rStringOrNames: rejected (model_type)
+invalid pArrayOrPatternCounts: rejected (model_type)
+invalid pArrayOrNamedCounts: rejected (model_type)

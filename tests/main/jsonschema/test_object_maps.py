@@ -193,6 +193,46 @@ def test_pattern_maps_without_single_dict(output_file: Path, name: str) -> None:
     )
 
 
+RELEASED_VALIDATED_PATTERN_MAPS = (
+    "additional_pattern_intersections/boolean",
+    "additional_pattern_intersections/boolean_integer",
+    "additional_pattern_intersections/boolean_optional",
+    "additional_pattern_intersections/declared_witness",
+    "additional_pattern_intersections/minimum_large",
+    "pattern_intersections/aliased_declared",
+    "pattern_intersections/declared",
+    "pattern_intersections/declared_object",
+    "pattern_intersections/redundant_declared",
+    "pattern_intersections/rejected",
+    "pattern_intersections/unreachable_declared",
+    "pattern_intersections/weaker_declared",
+    "undeclared_required/closed",
+    "undeclared_required/objects",
+)
+
+
+@pytest.mark.parametrize("name", RELEASED_VALIDATED_PATTERN_MAPS, ids=lambda name: name.replace("/", "-"))
+def test_pattern_maps_schema_validators_without_single_dict(output_file: Path, name: str) -> None:
+    """Check declared keys against the patterns as 0.86.0 did when schema validators check the pattern maps.
+
+    Their tests pin the output of --use-single-dict-for-object-maps; without it, a pattern checks a declared key only
+    where it rejects a value of a simple declared schema: a ``false`` pattern, an integer minimum, or required keys.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--generate-schema-validators",
+        ],
+    )
+
+
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
 def test_nullable_object_maps(output_file: Path, output_model_type: str) -> None:
     """Under --strict-nullable, a nullable OpenAPI object map admits null at every position, array items included."""
@@ -245,6 +285,30 @@ def test_object_maps_schema_validators(output_file: Path, recwarn: pytest.Warnin
     assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
 
 
+@pytest.mark.parametrize("name", OBJECT_MAP_INPUTS)
+def test_object_maps_schema_validators_without_single_dict(
+    output_file: Path, recwarn: pytest.WarningsRecorder, name: str
+) -> None:
+    """Without --use-single-dict-for-object-maps, schema validators build the maps of 0.86.0.
+
+    The dict root of a validated map has ``str`` keys and counts its keys without its patterns, an object model of a
+    type array leaves its other types out, and a pattern checks a declared key only where it rejects a value of a
+    simple declared schema.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--generate-schema-validators"],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
+    payloads = json.loads((PAYLOADS / f"{name}.json").read_text())
+    assert_output(_payload_verdicts(output_file, "pydantic_v2.BaseModel", payloads), name="payloads")
+
+
 @pytest.mark.parametrize(
     "option_set", [pytest.param((), id="root_models"), pytest.param(("--use-type-alias",), id="type_aliases")]
 )
@@ -264,6 +328,7 @@ def test_object_maps_schema_validators_target_pydantic_version(
             "--formatters",
             "builtin",
             "--generate-schema-validators",
+            SINGLE_DICT,
             "--target-pydantic-version",
             "2",
             *option_set,
@@ -284,7 +349,7 @@ def test_object_maps_schema_validators_cross_document(output_file: Path) -> None
         input_path=input_path,
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--formatters", "builtin", "--generate-schema-validators"],
+        extra_args=["--formatters", "builtin", "--generate-schema-validators", SINGLE_DICT],
     )
     payloads = json.loads((PAYLOADS / "cross_document.json").read_text())
     other = json.loads((OBJECT_MAPS / "cross_document_other.json").read_text())
@@ -306,7 +371,7 @@ def test_object_maps_schema_validators_false_property(output_file: Path) -> None
         input_path=input_path,
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--formatters", "builtin", "--generate-schema-validators"],
+        extra_args=["--formatters", "builtin", "--generate-schema-validators", SINGLE_DICT],
     )
     payloads = json.loads((PAYLOADS / "false_property.json").read_text())
     validator = Draft202012Validator(json.loads(input_path.read_text()))
