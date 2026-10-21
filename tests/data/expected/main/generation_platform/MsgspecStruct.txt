@@ -7,7 +7,7 @@
     "_generate_module_output": 1,
     "_get_ref_raw_schema": 6,
     "_load_ref_schema_object": 5,
-    "_validate_schema_object": 9,
+    "_validate_schema_object": 5,
     "add_ref": 8,
     "resolve_ref": 15
   },

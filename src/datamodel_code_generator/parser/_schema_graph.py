@@ -8,7 +8,8 @@ location table, which ``JsonSchemaObject`` reads through ``SCHEMA_GRAPH`` while 
 ``ResourceRegistry.register`` fills the registry dicts L1 resolves references through from that record.
 ``SchemaGraphBuilder.with_ref_edges`` makes each `$ref` and `$dynamicRef` keyword of the document a ``ResolvedRef``, the
 string as written that also carries its ``RefEdge``; ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge
-resolves to in its own document.
+resolves to in its own document, and ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document
+validates to, which every reader of that object shares.
 """
 
 from __future__ import annotations
@@ -17,9 +18,10 @@ from contextvars import ContextVar
 from copy import copy
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import cached_property
 from operator import is_not
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias, TypeVar
 from urllib.parse import unquote, urljoin
 
 from typing_extensions import Self, final, override
@@ -27,7 +29,7 @@ from typing_extensions import Self, final, override
 from datamodel_code_generator.reference import SchemaLocation
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 
 __all__ = [
     "SCHEMA_GRAPH",
@@ -55,6 +57,8 @@ SchemaPath: TypeAlias = tuple[str | int, ...]
 
 REF_KEYWORDS: Final = ("$ref", "$dynamicRef")
 """The keywords whose values become ``ResolvedRef``s."""
+
+SchemaT = TypeVar("SchemaT")
 
 
 @final
@@ -378,7 +382,16 @@ class SchemaGraphBuilder:
     The graph keeps the documents alive, so an identity in the location table stays valid for the whole parse.
     """
 
-    __slots__ = ("_documents", "_edge_keys", "_mounted", "_ref_sites", "_schema_reads", "locations", "registry")
+    __slots__ = (
+        "_documents",
+        "_edge_keys",
+        "_mounted",
+        "_ref_sites",
+        "_schema_reads",
+        "_schemas",
+        "locations",
+        "registry",
+    )
 
     def __init__(self) -> None:
         """Start an empty graph."""
@@ -389,6 +402,7 @@ class SchemaGraphBuilder:
         self._edge_keys: dict[RefEdge, RefKey] = {}
         self._ref_sites: dict[tuple[str, RefOrigin], list[int]] = {}
         self._schema_reads: dict[int, Any] = {}
+        self._schemas: dict[tuple[int, type[Any]], tuple[Any, object]] = {}
 
     def count_ref(self, site: str, ref: str, plain_origin: RefOrigin) -> None:
         """Count a reference that reached a check ``site``, by its origin, with or without its edge.
@@ -415,6 +429,28 @@ class SchemaGraphBuilder:
         if (key := self._edge_keys.get(edge)) is None:
             key = self._edge_keys[edge] = compute(edge)
         return key
+
+    def schema(
+        self, raw: object, kind: type[SchemaT], validate: Callable[[], SchemaT], *, fingerprint: bool
+    ) -> SchemaT:
+        """Return the ``kind`` object a JSON object of a loaded document validates to, which ``validate`` makes once.
+
+        Every reader shares it, so none writes it. A value the graph does not locate is validated at every read.
+        ``fingerprint`` records what the object holds, which ``changed_schemas`` compares at the end of L1.
+        A ``validate`` that raises records nothing, so the next read raises again.
+        """
+        if not isinstance(raw, dict) or id(raw) not in self.locations:
+            return validate()
+        if (cached := self._schemas.get(key := (id(raw), kind))) is None:
+            schema = validate()
+            cached = self._schemas[key] = schema, _fingerprint(schema) if fingerprint else None
+        return cached[0]
+
+    def changed_schemas(self) -> Iterator[SchemaLocation]:
+        """Yield the location of each shared object whose fingerprint differs from the one recorded at validation."""
+        for (raw_id, _), (schema, recorded) in self._schemas.items():
+            if recorded is not None and _fingerprint(schema) != recorded:
+                yield self.locations[raw_id]
 
     def target(self, edge: RefEdge) -> SchemaLocation | None:
         """Return the registered location an edge names, by registry document name, if its target is registered."""
@@ -544,3 +580,36 @@ class SchemaGraphBuilder:
         mounted = self.index_document(converted, location)
         self._mounted.add(id(mounted))
         return mounted
+
+
+def _fingerprint(value: object, active: frozenset[int] = frozenset()) -> object:
+    """Return a comparable record of what an object holds, its attributes and those of the objects it holds included.
+
+    The values ``functools.cached_property`` keeps in an object's ``__dict__`` are not part of it. A container that is
+    its own ancestor is recorded by its type.
+    """
+    if (value_id := id(value)) in active:
+        return type(value)
+    active |= {value_id}
+    match value:
+        case dict():
+            return dict, tuple((key, _fingerprint(item, active)) for key, item in value.items())
+        case list() | tuple() | set() | frozenset():
+            items = sorted(value, key=repr) if isinstance(value, (set, frozenset)) else value
+            return type(value), tuple(_fingerprint(item, active) for item in items)
+        case _ if isinstance(attributes := getattr(value, "__dict__", None), dict):
+            kind = type(value)
+            return (
+                kind,
+                tuple(
+                    (name, _fingerprint(item, active))
+                    for name, item in attributes.items()
+                    if not isinstance(getattr(kind, name, None), cached_property)
+                ),
+                tuple(
+                    _fingerprint(getattr(value, name, None), active)
+                    for name in ("__pydantic_fields_set__", "__pydantic_extra__", "__pydantic_private__")
+                ),
+            )
+        case _:
+            return type(value), value

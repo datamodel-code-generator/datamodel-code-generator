@@ -12,7 +12,7 @@ from collections import defaultdict
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, replace
 from enum import Enum
-from functools import cache, cached_property
+from functools import cache, cached_property, partial
 from pathlib import Path
 from re import Pattern
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, TypeVar, Union, cast
@@ -626,9 +626,12 @@ class OpenAPIParser(JsonSchemaParser):
     def resolve_object(self, obj: ReferenceObject | BaseModelT, object_type: type[BaseModelT]) -> BaseModelT:
         """Resolve a reference object to its actual type or return the object as-is."""
         if isinstance(obj, ReferenceObject):
-            ref_obj = self.get_ref_model(obj.ref)
-            return object_type.model_validate(ref_obj)
+            return self._validated_target(self.get_ref_model(obj.ref), object_type)
         return obj
+
+    def _validated_target(self, raw: object, object_type: type[BaseModelT]) -> BaseModelT:
+        """Return the ``object_type`` a value of a loaded document validates to, validated once and shared."""
+        return self._shared_object(raw, object_type, partial(object_type.model_validate, raw))
 
     def _parse_schema_or_ref(
         self,
@@ -863,7 +866,7 @@ class OpenAPIParser(JsonSchemaParser):
                 if not detail.ref:  # pragma: no cover
                     continue
                 ref_model = self.get_ref_model(detail.ref)
-                content = {k: MediaObject.model_validate(v) for k, v in ref_model.get("content", {}).items()}
+                content = {k: self._validated_target(v, MediaObject) for k, v in ref_model.get("content", {}).items()}
             else:
                 content = detail.content
 
@@ -1084,7 +1087,7 @@ class OpenAPIParser(JsonSchemaParser):
         if operation.requestBody:
             if isinstance(operation.requestBody, ReferenceObject):
                 ref_model = self.get_ref_model(operation.requestBody.ref)
-                request_body = RequestBodyObject.model_validate(ref_model)
+                request_body = self._validated_target(ref_model, RequestBodyObject)
             else:
                 request_body = operation.requestBody
             self.parse_request_body(

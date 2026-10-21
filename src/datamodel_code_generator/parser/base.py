@@ -9818,6 +9818,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if self._schema_graph is not None and (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
             self._check_model_owners(mode)
         if self._schema_graph is not None and (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is not None:
+            if changed := [redact_reference(str(location)) for location in self._schema_graph.changed_schemas()]:
+                mode.violation(
+                    Error,
+                    f"shared schema objects changed after validation: {', '.join(changed)}",
+                    kind="shared-schema",
+                    locations=changed,
+                )
             for (site, origin), (plain, carried) in self._schema_graph.ref_site_counts().items():
                 mode.record(
                     f"{CheckArea.SCHEMA_GRAPH.value}: {site} read {carried} references of origin {origin.value} with "

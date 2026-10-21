@@ -420,6 +420,7 @@ _READ_AS_CONST_KEY = "x-datamodel-code-generator-read-as-const"
 
 
 _SchemaT = TypeVar("_SchemaT", bound="JsonSchemaObject")
+_ValidatedT = TypeVar("_ValidatedT")
 
 
 class _LocatedDict(dict):  # noqa: FURB189 - pydantic validates it as the dict it is
@@ -5589,9 +5590,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
         """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
         resolved_ref = self._ref_path(ref)
-        loaded = self._validate_schema_object(self._get_ref_raw_schema(resolved_ref), [resolved_ref])
+        loaded = self._shared_schema_object(self._get_ref_raw_schema(resolved_ref), [resolved_ref])
         self._check_ref_target("_load_ref_schema_object", ref, loaded.schema_location)
         return loaded
+
+    def _shared_schema_object(self, raw: dict[str, YamlValue] | YamlValue, path: list[str]) -> JsonSchemaObject:
+        """Return the schema object a value of a loaded document validates to, validated once and shared by its readers.
+
+        ``path`` names the reference in the error of a value that does not validate.
+        """
+        return self._shared_object(raw, self.SCHEMA_OBJECT_TYPE, partial(self._validate_schema_object, raw, path))
+
+    def _shared_object(self, raw: object, kind: type[_ValidatedT], validate: Callable[[], _ValidatedT]) -> _ValidatedT:
+        """Return the ``kind`` object a value of a loaded document validates to, validated once by the schema graph."""
+        return cast("SchemaGraphBuilder", self._schema_graph).schema(
+            raw, kind, validate, fingerprint=check_mode(CheckArea.SCHEMA_GRAPH) is not None
+        )
 
     def _current_document_root(self) -> SchemaLocation:
         """Return the location of the root of the document whose schemas are being parsed."""
@@ -8833,7 +8847,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Load and cache a schema used only for inherited field inspection."""
         if cached := self._inherited_schema_cache.get(resolved_ref):
             return cached
-        schema = self._validate_schema_object(self._get_ref_raw_schema(resolved_ref), [resolved_ref])
+        schema = self._shared_schema_object(self._get_ref_raw_schema(resolved_ref), [resolved_ref])
         self._inherited_schema_cache[resolved_ref] = schema
         return schema
 
@@ -9855,14 +9869,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         keyword: Literal["if", "then", "else", "not"],
     ) -> JsonSchemaObject | bool | None:
-        """Return the branch schema named by keyword, parsing it from extras on first use."""
+        """Return the branch schema named by keyword, which the schema graph validates once from extras."""
         item = obj.extras.get(keyword)
         if isinstance(item, (JsonSchemaObject, bool)):
             return item
         if isinstance(item, dict):
-            item = self.SCHEMA_OBJECT_TYPE.model_validate(item)
-            obj.extras[keyword] = item
-            return item
+            return self._shared_object(
+                item, self.SCHEMA_OBJECT_TYPE, partial(self.SCHEMA_OBJECT_TYPE.model_validate, item)
+            )
         return None
 
     def _iter_conditional_branches(self, obj: JsonSchemaObject) -> Iterator[JsonSchemaObject]:

@@ -288,6 +288,11 @@ and, for an OpenAPI input document or under the `api` scope, its `$self`; a sche
 own, an Avro schema of an AsyncAPI document, names that document as its edges' `home`) through the external mapping, the embedded
 resource, the normalized spelling and `ModelResolver.resolve_ref`; a new model is named after that spelling
 (`ModelResolver._add_ref_at`). A plain string has no edge and resolves in the context its caller set.
+A JSON object of a loaded document is validated once per parse (`SchemaGraphBuilder.schema`): the targets
+`_load_ref_schema_object`, `_load_inherited_schema_object` and OpenAPI's `resolve_object` load, the response and request
+body targets of `get_ref_model`, and the `if`, `then`, `else` and `not` branches `_get_conditional_schema` reads share
+one object per located value and its type, which no reader writes; the schema graph check compares each shared object
+at the end of L1 with the fingerprint taken when it was validated (`kind="shared-schema"`).
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
