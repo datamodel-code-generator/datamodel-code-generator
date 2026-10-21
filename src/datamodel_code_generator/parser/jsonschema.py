@@ -1584,6 +1584,20 @@ class Discriminator(BaseModel):
     mapping: Optional[dict[str, str]] = None  # noqa: UP045
 
 
+_IN_PLACE_APPLICATOR_KEYWORDS: Final = frozenset({
+    "allOf",
+    "anyOf",
+    "oneOf",
+    "not",
+    "if",
+    "dependentSchemas",
+    "dependencies",
+    "$ref",
+    "$dynamicRef",
+    "$recursiveRef",
+})
+
+
 class JsonSchemaObject(BaseModel):  # noqa: PLR0904
     """Represent a JSON Schema object with validation and parsing capabilities."""
 
@@ -1689,6 +1703,19 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
             case False:
                 del values["exclusiveMinimum"]
         return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def read_unevaluated_properties_as_additional(cls, values: Any) -> Any:
+        """Read a schema-valued ``unevaluatedProperties`` as ``additionalProperties`` when nothing applies in place."""
+        if (
+            not isinstance(values, dict)
+            or not isinstance(values.get("unevaluatedProperties"), dict)
+            or "additionalProperties" in values
+            or not _IN_PLACE_APPLICATOR_KEYWORDS.isdisjoint(values)
+        ):
+            return values
+        return {**values, "additionalProperties": values["unevaluatedProperties"]}
 
     @model_validator(mode="before")
     @classmethod

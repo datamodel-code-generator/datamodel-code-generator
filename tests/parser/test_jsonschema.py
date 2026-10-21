@@ -5664,7 +5664,7 @@ def test_set_unevaluated_properties_schema_allows_extra_without_typed_runtime() 
 
     parser.set_unevaluated_properties(
         "#/Model",
-        JsonSchemaObject.model_validate({"unevaluatedProperties": {"type": "integer"}}),
+        JsonSchemaObject.model_validate({"allOf": [{"type": "object"}], "unevaluatedProperties": {"type": "integer"}}),
     )
 
     assert parser.extra_template_data["#/Model"] == {"unevaluatedProperties": True}

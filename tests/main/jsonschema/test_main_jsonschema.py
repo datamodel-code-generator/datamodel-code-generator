@@ -10110,13 +10110,35 @@ def test_main_jsonschema_unevaluated_properties_true(output_file: Path) -> None:
 
 
 def test_main_jsonschema_unevaluated_properties_schema(output_file: Path) -> None:
-    """Test unevaluatedProperties schema allows extra keys without typed runtime validation."""
+    """Test unevaluatedProperties schema without an in-place applicator types the extra keys."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "unevaluated_properties_schema.json",
         output_path=output_file,
         input_file_type="jsonschema",
         assert_func=assert_file_content,
         expected_file="unevaluated_properties_schema.py",
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_unevaluated_properties_root_map(output_file: Path) -> None:
+    """Test unevaluatedProperties schema without an in-place applicator types a root map like additionalProperties."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unevaluated_properties_root_map.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_unevaluated_properties_schema_with_applicator(output_file: Path) -> None:
+    """Test unevaluatedProperties schema beside an in-place applicator keeps extras untyped."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unevaluated_properties_schema_with_applicator.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
         force_exec_validation=True,
     )
 
