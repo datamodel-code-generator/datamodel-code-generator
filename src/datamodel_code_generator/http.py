@@ -169,8 +169,7 @@ if TYPE_CHECKING:
         Client: _HTTPXClientFactory
         Response: _HTTPXResponseFactory
         URL: _HTTPXURLFactory
-
-        def create_ssl_context(self, *, verify: bool) -> ssl.SSLContext: ...
+        create_ssl_context: Callable[[bool], ssl.SSLContext]
 
         def get(  # noqa: PLR0913
             self,
@@ -618,7 +617,7 @@ def _create_pinned_transport_type(
             is_https = request.url.raw_scheme == b"https"
             if (pool := self._pools.get(is_https)) is None:
                 pool = self._pools[is_https] = httpcore_module.ConnectionPool(
-                    ssl_context=httpx_module.create_ssl_context(verify=self._verify) if is_https else None,
+                    ssl_context=httpx_module.create_ssl_context(self._verify) if is_https else None,
                     network_backend=self._network_backend,
                 )
             req = httpcore_module.Request(
