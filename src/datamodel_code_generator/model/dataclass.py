@@ -6,9 +6,10 @@ Generates Python dataclasses using the @dataclass decorator.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
 
-from typing_extensions import override
+from typing_extensions import final, override
 
 from datamodel_code_generator._format_types import (
     DateClassType,
@@ -24,12 +25,24 @@ from datamodel_code_generator.model._decisions.assignment import (
     participates_in_constructor,
     written_data,
 )
+from datamodel_code_generator.model._render_plan import (
+    CallArguments,
+    CallPlan,
+    FieldDefault,
+    FieldRenderPlan,
+    RuleId,
+    Why,
+    field_call_text,
+    written_argument_names,
+)
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     _default_factory_type_name,
     _has_field_assignment,
     _model_key_of_model,
-    _nested_model_default_factory,
+    _nested_model_factory,
+    _NestedModelFactory,
+    _ValueFactory,
     get_effective_fields,
 )
 from datamodel_code_generator.model.imports import IMPORT_DATACLASS, IMPORT_FIELD
@@ -45,6 +58,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
+    from datamodel_code_generator.model._render_plan import Omitted
     from datamodel_code_generator.reference import Reference
 
 
@@ -160,7 +174,26 @@ def _walks_to_recursive_nested_mapping_default(model: DataClass) -> bool:
     return False
 
 
-def _build_nested_dataclass_default_factory(data_type: DataType, default: dict[Any, Any]) -> str | None:
+@final
+@dataclass(frozen=True, slots=True, eq=False)
+class _NestedDataclassFactory:
+    """The default factory that builds a nested dataclass from a mapping default: ``lambda: Model(a=1)``.
+
+    Its text names the model as the module finally names it.
+    """
+
+    data_type: DataType
+    arguments: tuple[str, ...]
+
+    @override
+    def __str__(self) -> str:
+        """Return the factory as the field's call writes it."""
+        return f"lambda: {_default_factory_type_name(self.data_type)}({', '.join(self.arguments)})"
+
+
+def _build_nested_dataclass_default_factory(
+    data_type: DataType, default: dict[Any, Any]
+) -> _NestedDataclassFactory | None:
     """Build one valid dataclass constructor factory candidate."""
     if not (data_type.reference and isinstance(source := data_type.reference.source, DataClass)):
         return None
@@ -198,9 +231,28 @@ def _build_nested_dataclass_default_factory(data_type: DataType, default: dict[A
         return None
     if has_nested_mapping_default and _has_recursive_nested_mapping_default(source):
         return None
-    return f"lambda: {_default_factory_type_name(data_type)}({', '.join(arguments)})"
+    return _NestedDataclassFactory(data_type, tuple(arguments))
 
 
+_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
+_FIELD_CALL = Why(RuleId("D11.dataclass.field-call"))
+"""The field writes ``field(...)``: an argument, a default factory, or a forced assignment needs one."""
+_FORCED_FIELD_CALL = Why(RuleId("D4.default.forced-required-assignment"))
+"""A required field that a dataclass base's defaults would follow writes ``field()``, so it stays required."""
+_FIELD_ARGUMENT = RuleId("D11.dataclass.field-argument")
+_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
+_BARE_DEFAULT = Why(RuleId("D4.default.bare"), keyword="default")
+"""The field writes its default alone after the annotation."""
+_KEPT_NONE_DEFAULT = Why(RuleId("D4.default.none-beside-arguments"), keyword="default")
+"""A ``None`` default goes into a ``field(...)`` other arguments need, unless ``--strip-default-none`` strips it."""
+_REQUIRED = Why(RuleId("D4.default.required"), keyword="required")
+_NESTED_MODEL_FACTORY = Why(
+    RuleId("D4.default.nested-model-factory"), option="--use-default-factory-for-optional-nested-models"
+)
+_NESTED_MAPPING_FACTORY = Why(RuleId("D4.default.nested-dataclass-from-mapping"), keyword="default")
+_MUTABLE_FACTORY = Why(RuleId("D4.default.mutable-factory"), keyword="default")
+_UNBOUND_FACTORY = Why(RuleId("D4.default.unbound-field-factory"))
+"""A field that hides a type its class names writes its default through a factory, so ``dataclasses`` unbinds it."""
 _REQUIRED_INHERITED_INIT_KEY = "_required_inherited_init"
 _UNBOUND_FIELD_KEY = "_unbound_field"
 _PSEUDO_FIELD_TYPE = re.compile(r"(?:\w+\.)*(?:ClassVar|InitVar)\b")
@@ -231,6 +283,7 @@ class DataClass(_DataclassReuseMixin, DataModel):
     FIELD_PARTICIPATES_IN_CONSTRUCTOR = staticmethod(field_participates_in_constructor)
     FIELD_CONSTRUCTION_ORDER_KEY = staticmethod(_has_field_assignment)
     _ASSIGNMENT_ROW: ClassVar[AssignmentRow | None] = "dataclass"
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE: ClassVar[bool] = True
     USES_DATACLASS_ARGUMENTS: ClassVar[bool] = True
     SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT: ClassVar[bool] = True
@@ -364,9 +417,8 @@ class DataModelField(DataModelFieldBase):
     @property
     @override
     def imports(self) -> tuple[Import, ...]:
-        """Get imports including field() if needed."""
-        field = self.field
-        if field and field.startswith("field("):
+        """Get imports including field() when the field writes ``field(...)``, as its ``field`` property gives it."""
+        if (field := self.field) and field.startswith("field("):
             return chain_as_tuple(super().imports, (IMPORT_FIELD,))
         return super().imports
 
@@ -379,16 +431,15 @@ class DataModelField(DataModelFieldBase):
             return None
         return result
 
-    def _get_default_factory_for_nested_model(self) -> str | None:
+    def _get_default_factory_for_nested_model(self) -> _NestedModelFactory | None:
         """Get default_factory for nested dataclass model fields.
 
-        Returns the class name if the field type references a DataClass,
-        otherwise returns None.
+        Returns the factory of the nested model if the field type references a DataClass, otherwise None.
         """
-        return _nested_model_default_factory(self, DataClass)
+        return _nested_model_factory(self, DataClass)
 
-    def _get_default_factory_for_nested_value(self, default: dict[Any, Any]) -> str | None:
-        """Render a mapping default as a nested dataclass constructor."""
+    def _get_default_factory_for_nested_value(self, default: dict[Any, Any]) -> _NestedDataclassFactory | None:
+        """Return the factory that builds a nested dataclass from a mapping default, if exactly one can."""
         if self.data_type.is_dict or self.data_type.is_mapping:
             return None
 
@@ -396,7 +447,7 @@ class DataModelField(DataModelFieldBase):
         if any(data_type.is_dict or data_type.is_mapping for data_type in data_types):
             return None
 
-        default_factory: str | None = None
+        default_factory: _NestedDataclassFactory | None = None
         for data_type in data_types:
             if (factory := _build_nested_dataclass_default_factory(data_type, default)) is None:
                 continue
@@ -405,69 +456,120 @@ class DataModelField(DataModelFieldBase):
             default_factory = factory
         return default_factory
 
-    def _get_field_data(self) -> dict[str, Any]:
-        """Return structured field() arguments before rendering."""
-        data: dict[str, Any] = {k: v for k, v in self.extras.items() if k in self._FIELD_KEYS}
+    def _field_arguments(self, omitted: list[Omitted]) -> CallArguments:
+        """Build the ``field(...)`` arguments in the order the call writes them, the default among them."""
+        args = CallArguments(omitted)
+        for key, value in self.extras.items():
+            if key in self._FIELD_KEYS:
+                args.put(key, value, Why(_FIELD_ARGUMENT, key), (f"extra:{key}",))
 
-        needs_nested_factory = (
-            self.use_default_factory_for_optional_nested_models
-            and not self.required
-            and (self.default is None or self.default is UNDEFINED)
-            and "default_factory" not in data
-        )
-        if needs_nested_factory and (nested_model_name := self._get_default_factory_for_nested_model()):
-            data["default_factory"] = nested_model_name
+        if (
+            self._takes_nested_model_factory()
+            and "default_factory" not in args
+            and (nested := self._get_default_factory_for_nested_model()) is not None
+        ):
+            args.put("default_factory", nested, _NESTED_MODEL_FACTORY)
 
         if self.default is None:
-            if data and "default_factory" not in data and (not self.strip_default_none or data.get("init") is False):
-                data["default"] = None
-        elif self.default != UNDEFINED and "default_factory" not in data:
-            data["default"] = self.default
+            if args and "default_factory" not in args and (not self.strip_default_none or args.get("init") is False):
+                args.put("default", None, _KEPT_NONE_DEFAULT)
+        elif self.default != UNDEFINED and "default_factory" not in args:
+            args.put("default", self.default, _DEFAULT)
 
         if self.required and not self.use_default_with_required:
-            data = {
-                k: v
-                for k, v in data.items()
-                if k
-                not in {
-                    "default",
-                    "default_factory",
-                }
-            }
+            args.pop("default", "factory-not-applicable", _REQUIRED)
+            args.pop("default_factory", "factory-not-applicable", _REQUIRED)
 
-        match data.get("default", UNDEFINED):
-            case dict() as default if nested_factory := self._get_default_factory_for_nested_value(default):
-                data.pop("default")
-                data["default_factory"] = nested_factory
-            case list() | dict() | set() as default:
-                data.pop("default")
-                data["default_factory"] = (
-                    f"lambda: {represent_python_value(default)}" if default else type(default).__name__
-                )
+        if (entry := args.entry("default")) is not None:
+            match entry.value:
+                case dict() as default if nested_factory := self._get_default_factory_for_nested_value(default):
+                    args.take("default")
+                    args.put("default_factory", nested_factory, _NESTED_MAPPING_FACTORY, entry.items)
+                case list() | dict() | set() as default:
+                    args.take("default")
+                    args.put("default_factory", _ValueFactory(default), _MUTABLE_FACTORY, entry.items)
 
         if self.__dict__.get(_UNBOUND_FIELD_KEY) and (
-            "default" in data
-            or not (data or (self.required and not self.use_default_with_required) or self.should_strip_default_none())
+            "default" in args
+            or not (args or (self.required and not self.use_default_with_required) or self.should_strip_default_none())
         ):
-            data["default_factory"] = f"lambda: {represent_python_value(data.pop('default', self.default))}"
-        return data
+            value = self.default if (entry := args.take("default")) is None else entry.value
+            items = () if entry is None else entry.items
+            args.put("default_factory", _ValueFactory(value, always_lambda=True), _UNBOUND_FACTORY, items)
+        return args
+
+    @override
+    def _build_frozen_render_plan(self) -> FieldRenderPlan:
+        return self._build_render_plan()
+
+    @override
+    def _build_render_plan(self) -> FieldRenderPlan:
+        """Build the plan: ``field(...)`` with its arguments, the default alone, or nothing after the annotation."""
+        args = self._field_arguments([])
+        kwargs = args.kwargs()
+        call: CallPlan | None = None
+        default = FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT)
+        bare_default = False
+        if not kwargs:
+            if self._has_forced_field_assignment:
+                call = CallPlan(None, None, (), default_keyword=False, why=_FORCED_FIELD_CALL, callee="field")
+        elif len(kwargs) == 1 and kwargs[0].name == "default":
+            default = FieldDefault(kwargs[0].value, missing_sentinel=False, why=_BARE_DEFAULT, items=kwargs[0].items)
+            bare_default = True
+        else:
+            call = CallPlan(None, None, kwargs, default_keyword=False, why=_FIELD_CALL, callee="field")
+        return FieldRenderPlan(
+            annotation_form="plain",
+            call=call,
+            default=default,
+            has_default_factory_in_field="default_factory" in args,
+            omitted=tuple(args.omitted),
+            symbol_imports=() if call is None else ((IMPORT_FIELD, call.why),),
+            why=_PLAIN_ANNOTATION,
+            bare_default=bare_default,
+        )
+
+    def _plan_text(self, plan: FieldRenderPlan) -> str:  # noqa: PLR6301
+        """Write what follows the annotation from ``plan``: ``field(...)``, the default alone, or nothing."""
+        if (call := plan.call) is not None:
+            return field_call_text(call)
+        return represent_python_value(plan.default.value) if plan.bare_default else ""
+
+    def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
+        """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
+        return (
+            self._plan_text(plan),
+            tuple(import_ for import_, _ in plan.symbol_imports),
+            tuple((omitted.item, omitted.reason) for omitted in plan.omitted),
+        )
+
+    def _declared_render_items(self) -> frozenset[str]:
+        """Return the items the field declares that its plan must write or omit: its ``field()`` arguments."""
+        return frozenset(f"extra:{key}" for key in self.extras if key in self._FIELD_KEYS)
+
+    def _get_field_data(self) -> dict[str, Any]:
+        """Return the ``field()`` arguments the field writes, its default factory as text."""
+        plan = self._render_plan()
+        if plan.bare_default:
+            return {"default": plan.default.value}
+        if (call := plan.call) is None:
+            return {}
+        return {
+            argument.name: str(argument.value) if argument.name == "default_factory" else argument.value
+            for argument in call.kwargs
+        }
 
     @override
     def _written_assignment(self) -> DataclassWritten:
         """Return the ``field()`` arguments the field writes and whether it forces a ``field()``."""
-        return DataclassWritten(data=written_data(self._get_field_data()), forced=self._has_forced_field_assignment)
+        return DataclassWritten(
+            data=written_data(written_argument_names(self._render_plan())), forced=self._has_forced_field_assignment
+        )
 
     @override
     def __str__(self) -> str:
         """Generate field() call or default value representation."""
-        data = self._get_field_data()
-        if not data:
-            return "field()" if self._has_forced_field_assignment else ""
-
-        if len(data) == 1 and "default" in data:
-            return represent_python_value(data["default"])
-        kwargs = [f"{k}={v if k == 'default_factory' else represent_python_value(v)}" for k, v in data.items()]
-        return f"field({', '.join(kwargs)})"
+        return self._plan_text(self._render_plan())
 
 
 class DataTypeManager(_DataTypeManager):

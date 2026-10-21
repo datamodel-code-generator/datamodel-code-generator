@@ -1,0 +1,9 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, List, Optional
+
+
+@dataclass
+class M:
+    b: Optional[List[Any]] = ['x']

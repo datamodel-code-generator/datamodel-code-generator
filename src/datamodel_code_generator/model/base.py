@@ -49,7 +49,15 @@ from datamodel_code_generator.model._decisions.assignment import (
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
 from datamodel_code_generator.model._decisions.nullability import field_renders_none
-from datamodel_code_generator.model._render_plan import AssignmentFacts, visible_nested_factories
+from datamodel_code_generator.model._render_plan import (
+    AssignmentFacts,
+    FieldDefault,
+    FieldRenderPlan,
+    RuleId,
+    Why,
+    frozen_render_plan,
+    visible_nested_factories,
+)
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
     _normalize_string,
@@ -79,7 +87,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, WrittenAssignment
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
-    from datamodel_code_generator.model._render_plan import FieldRenderPlan, NestedFactoryMetadata
+    from datamodel_code_generator.model._render_plan import NestedFactoryMetadata
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -1371,6 +1379,24 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Build the render plan the parse freezes for this field at B2, or None when it renders without one."""
         return None
 
+    def _render_plan(self) -> FieldRenderPlan:
+        """Return the plan the parse froze for this field, or build one without keeping it."""
+        if (plan := frozen_render_plan(self)) is not None:
+            return plan
+        return self._build_render_plan()
+
+    def _build_render_plan(self) -> FieldRenderPlan:
+        """Build the field's render plan from its facts as they are now: its type alone, nothing after it."""
+        return FieldRenderPlan(
+            annotation_form="plain",
+            call=None,
+            default=FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT_VALUE),
+            has_default_factory_in_field=False,
+            omitted=(),
+            symbol_imports=(),
+            why=_PLAIN_ANNOTATION,
+        )
+
     def _written_assignment(self) -> WrittenAssignment:
         """Return what the field's backend writes after its annotation, as assignment classification reads it."""
         return _model_written(self)
@@ -1381,6 +1407,14 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             metadata_assignment=self.use_annotated and getattr(self, "requires_dataclass_field_assignment", False),
             factory_in_field=getattr(self, "has_default_factory_in_field", False),
             admits_none=self.data_type.admits_none,
+        )
+
+    def _takes_nested_model_factory(self) -> bool:
+        """Return whether the field may write its nested model's factory: optional, defaulting to None, option on."""
+        return (
+            self.use_default_factory_for_optional_nested_models
+            and not self.required
+            and (self.default is None or self.default is UNDEFINED)
         )
 
     def _has_default_for_nested_model_factory(self) -> bool:
@@ -1541,6 +1575,31 @@ def _is_hidden_by_earlier_field(field: DataModelFieldBase, name: str) -> bool:
     )
 
 
+_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
+"""The annotation is the field's type alone."""
+_DEFAULT_VALUE = Why(RuleId("D4.default.value"), keyword="default")
+"""The field's default, as its schema or the parser gives it."""
+
+
+@final
+@dataclass(frozen=True, slots=True, eq=False)
+class _ValueFactory:
+    """The default factory of a mutable default: ``lambda: <value>``, or the type of an empty container.
+
+    ``always_lambda`` writes the lambda for an empty or false value too (a field the class body leaves unbound).
+    """
+
+    value: object
+    always_lambda: bool = False
+
+    @override
+    def __str__(self) -> str:
+        """Return the factory as the field's call writes it."""
+        if self.value or self.always_lambda:
+            return f"lambda: {represent_python_value(self.value)}"
+        return type(self.value).__name__
+
+
 @final
 @dataclass(frozen=True, slots=True, eq=False)
 class _NestedModelFactory:
@@ -1602,11 +1661,6 @@ def _nested_model_factory(field: DataModelFieldBase, model_cls: type[DataModel])
                 case _:
                     return _NestedModelFactory(data_type, source, builds_by_name=False)
     return None
-
-
-def _nested_model_default_factory(field: DataModelFieldBase, model_cls: type[DataModel]) -> str | None:
-    """Return the nested model name usable as a default_factory for optional fields."""
-    return None if (factory := _nested_model_factory(field, model_cls)) is None else str(factory)
 
 
 def _set_nested_model_default_factory_order(models: list[DataModel], metadata: NestedFactoryMetadata) -> None:

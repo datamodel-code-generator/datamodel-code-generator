@@ -3154,6 +3154,57 @@ def test_render_plan_whose_field_changes_after_render_preparation(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+_FIELD_TYPE_SCHEMA = (
+    '{"title": "M", "type": "object", "required": ["a"], "properties": {"a": {"type": "integer"},'
+    ' "b": {"type": "string", "default": "x"}, "c": {"type": "integer"}}}'
+)
+
+
+@pytest.mark.parametrize("override", ["field", "str", "none"])
+def test_dataclass_field_type_imports_follow_its_field(override: str) -> None:
+    """A dataclass field type that overrides ``field`` or ``__str__`` gets ``field`` imported exactly when it writes it.
+
+    A field writing ``field(...)`` for each optional field imports it; one whose ``field`` is None writes its default
+    alone and imports nothing, though the built-in field would write ``field(default_factory=...)``.
+    """
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    types = get_data_model_types(DataModelType.DataclassesDataclass, PythonVersion.PY_311)
+
+    class ReprlessField(types.field_model):
+        @property
+        def field(self) -> str | None:
+            return super().field if self.required else f"field(default={self.represented_default}, repr=False)"
+
+    class ReprlessStr(types.field_model):
+        def __str__(self) -> str:
+            return super().__str__() if self.required else f"field(default={self.represented_default}, repr=False)"
+
+    class PlainDefaults(types.field_model):
+        @property
+        def field(self) -> str | None:
+            return None
+
+    schema = _FIELD_TYPE_SCHEMA
+    if override == "none":
+        schema = '{"title": "M", "type": "object", "properties": {"b": {"type": "array", "default": ["x"]}}}'
+    parser = JsonSchemaParser(
+        schema,
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type={"field": ReprlessField, "str": ReprlessStr, "none": PlainDefaults}[override],
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        target_python_version=PythonVersion.PY_311,
+        formatters=[Formatter.BUILTIN],
+    )
+    output = str(parser.parse())
+    assert_output(output)
+    if override != "none":
+        validate_generated_code(output, "<generated>", do_exec=True)
+
+
 @freeze_time(TIMESTAMP)
 def test_import_overrides_apply_to_additional_imports(output_file: Path) -> None:
     """Override explicitly included imports without rewriting future imports."""

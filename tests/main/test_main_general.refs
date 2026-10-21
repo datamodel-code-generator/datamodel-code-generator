@@ -366,6 +366,10 @@ same	main/jsonschema/custom_file_header_path_prepend_multi_file//*.py
 sibling	main/jsonschema/custom_file_header_path_prepend_multi_file//*.py
 [test_custom_file_header_prepend_preserves_future_import_text]
 	main/jsonschema/custom_file_header_schema_description_future.py
+[test_dataclass_field_type_imports_follow_its_field]
+field	main/main_general/dataclass_field_type_imports_follow_its_field[field].txt
+none	main/main_general/dataclass_field_type_imports_follow_its_field[none].txt
+str	main/main_general/dataclass_field_type_imports_follow_its_field[str].txt	= main/main_general/dataclass_field_type_imports_follow_its_field[field].txt
 [test_default_target_python_version_follows_the_interpreter]
 	main/default_target_python_version.txt
 [test_direct_input_dict]

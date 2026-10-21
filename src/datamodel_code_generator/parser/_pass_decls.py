@@ -892,7 +892,7 @@ FREEZE_FIELD_RENDER_PLANS = PassDecl(
         RenderFact.DEFAULT_EXPRESSION,
         RenderFact.BACKEND_CONFIG,
     ),
-    summary="Freezes one render plan per field of the Pydantic models, which rendering reads; B2 follows.",
+    summary="Freezes one render plan per field of the built-in output models, which rendering reads; B2 follows.",
 )
 
 SNAPSHOT_MODEL_IMPORTS = PassDecl(
@@ -1138,10 +1138,9 @@ SET_NESTED_MODEL_DEFAULT_FACTORY_METADATA = PassDecl(
     PassKind.TRANSFORM,
     writes=_facts(RenderFact.DEFAULT_EXPRESSION),
     condition="use_default_factory_for_optional_nested_models",
-    removed_by="RP14c",
     summary=(
-        "Publishes the nested-factory decision on the models, for the outputs that do not read render plans"
-        " (row legacy.L-NF)."
+        "Publishes the nested-factory decision on the models, for the models that render without frozen plans"
+        " (GraphQL unions, custom output models; row legacy.L-NF)."
     ),
 )
 RECORD_PYDANTIC_FLOOR = PassDecl(

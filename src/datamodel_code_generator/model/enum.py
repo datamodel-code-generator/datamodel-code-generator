@@ -141,6 +141,9 @@ class Enum(DataModel):
     BASE_CLASS: ClassVar[str] = "enum.Enum"
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_ENUM,)
     SUPPORTS_GENERIC_BASE_CLASS: ClassVar[bool] = False
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
+    """A member is a field of the output's backend: the template writes ``name = value``, and the member's imports
+    (row ``legacy.enum-member-import-bindings``) come from the plan its backend froze for it."""
 
     def __init__(  # noqa: PLR0913
         self,

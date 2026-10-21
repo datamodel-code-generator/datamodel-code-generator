@@ -1,0 +1,11 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Optional
+
+
+@dataclass
+class M:
+    a: int
+    b: Optional[str] = field(default='x', repr=False)
+    c: Optional[int] = field(default=None, repr=False)

@@ -6,6 +6,7 @@ Generates Python TypedDict classes for use with type checkers.
 from __future__ import annotations
 
 import keyword
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
@@ -13,6 +14,7 @@ from typing_extensions import override
 from datamodel_code_generator._target_unicode import is_identifier
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import DataModel, DataModelFieldBase, _rebuild_model_with_datamodel_namespace
+from datamodel_code_generator.model._render_plan import FieldRenderPlan, RuleId, Why
 from datamodel_code_generator.model.base import UNDEFINED
 from datamodel_code_generator.model.imports import (
     IMPORT_NOT_REQUIRED,
@@ -38,6 +40,11 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.reference import Reference
+
+
+_KEY_REQUIREDNESS = Why(RuleId("D3.typed-dict.key-requiredness"), keyword="required")
+"""A key whose requiredness differs from the class's totality is ``Required[`` or ``NotRequired[``."""
+_READ_ONLY = Why(RuleId("D11.typed-dict.read-only"), keyword="readOnly", option="--use-frozen-field")
 
 
 escape_characters = str.maketrans({
@@ -70,6 +77,7 @@ class TypedDict(DataModel):
     REQUIRES_ADDITIONAL_PROPERTIES_REFERENCE_CLASSES: ClassVar[bool] = True
     SUPPORTS_TYPED_DICT_TOTAL_FALSE: ClassVar[bool] = True
     SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = False
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
 
     @classmethod
     @override
@@ -319,12 +327,41 @@ class DataModelField(DataModelFieldBase):
     def type_hint(self) -> str:
         """Get type hint with ReadOnly and/or key-requiredness wrapper if needed."""
         type_hint = super().type_hint
-        # Apply ReadOnly first (inner), then Required/NotRequired (outer)
-        if self._read_only:
-            type_hint = f"{READ_ONLY_PREFIX}{type_hint}]"
-        if requiredness := self._requiredness:
-            type_hint = f"{requiredness}{type_hint}]"
+        for prefix, _ in self._render_plan().qualifiers:
+            type_hint = f"{prefix}{type_hint}]"
         return type_hint
+
+    @override
+    def _build_frozen_render_plan(self) -> FieldRenderPlan:
+        return self._build_render_plan()
+
+    @override
+    def _build_render_plan(self) -> FieldRenderPlan:
+        """Build the plan: the type alone, wrapped in ``ReadOnly[`` (inner) and the key's requiredness (outer)."""
+        qualifiers: list[tuple[str, Why]] = []
+        symbol_imports: list[tuple[Import, Why]] = []
+        if read_only := self._read_only:
+            qualifiers.append((READ_ONLY_PREFIX, _READ_ONLY))
+        if requiredness := self._requiredness:
+            qualifiers.append((requiredness, _KEY_REQUIREDNESS))
+            requiredness_imports = (
+                self.DEFAULT_REQUIRED_IMPORTS if requiredness == REQUIRED_PREFIX else self.DEFAULT_IMPORTS
+            )
+            symbol_imports.extend((import_, _KEY_REQUIREDNESS) for import_ in requiredness_imports)
+        if read_only:
+            symbol_imports.extend((import_, _READ_ONLY) for import_ in self.DEFAULT_READ_ONLY_IMPORTS)
+        return replace(super()._build_render_plan(), qualifiers=tuple(qualifiers), symbol_imports=tuple(symbol_imports))
+
+    def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:  # noqa: PLR6301
+        """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
+        return (
+            tuple(prefix for prefix, _ in plan.qualifiers),
+            tuple(import_ for import_, _ in plan.symbol_imports),
+        )
+
+    def _declared_render_items(self) -> frozenset[str]:  # noqa: PLR6301
+        """Return the items the field declares that its plan must write or omit: a key writes none."""
+        return frozenset()
 
     @property
     def _requiredness(self) -> str:
@@ -361,22 +398,9 @@ class DataModelField(DataModelFieldBase):
     def imports(self) -> tuple[Import, ...]:
         """Get imports including key-requiredness and ReadOnly qualifiers."""
         base_imports = super().imports
-        read_only_imports = self.DEFAULT_READ_ONLY_IMPORTS if self._read_only else ()
-        if not (requiredness := self._requiredness) and not read_only_imports:
+        if not (symbol_imports := self._render_plan().symbol_imports):
             return base_imports
-
-        match requiredness:
-            case requiredness if requiredness == REQUIRED_PREFIX:
-                requiredness_imports = self.DEFAULT_REQUIRED_IMPORTS
-            case requiredness if requiredness == NOT_REQUIRED_PREFIX:
-                requiredness_imports = self.DEFAULT_IMPORTS
-            case _:
-                requiredness_imports = ()
-        return (
-            *base_imports,
-            *requiredness_imports,
-            *read_only_imports,
-        )
+        return (*base_imports, *(import_ for import_, _ in symbol_imports))
 
 
 class DataModelFieldReadOnlyBackport(DataModelField):

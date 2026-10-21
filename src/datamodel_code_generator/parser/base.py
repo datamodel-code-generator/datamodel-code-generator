@@ -9678,8 +9678,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _set_nested_model_default_factory_metadata(self, contexts: list[ModuleContext]) -> None:  # noqa: PLR6301
         """Publish the nested-factory decision of render preparation on the models of every module.
 
-        The outputs that do not read render plans read it from here on (row ``legacy.L-NF`` of
-        ``model/_render_plan.py``).
+        The models that render without frozen plans (GraphQL unions, custom output models) read it from here on (row
+        ``legacy.L-NF`` of ``model/_render_plan.py``).
         """
         metadata = cast("RenderReady", RENDER_READY.get()).nested_factories
         for ctx in contexts:

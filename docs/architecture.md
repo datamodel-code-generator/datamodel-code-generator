@@ -417,12 +417,12 @@ Then, over every model:
 | `_finalize_modules`: `__prepare_type_alias_fields`, `finalize_type_alias_users` (backend) | type-alias field form, backend config |
 | `__mark_set_item_models_hashable` | identity hash for set item models |
 | `_finalize_structured_imports` | imports |
-| `__decide_nested_model_default_factories`, `__freeze_field_render_plans` | the nested models' default factories (row `legacy.L-NF`), one frozen render plan per Pydantic field (B2) |
+| `__decide_nested_model_default_factories`, `__freeze_field_render_plans` | the nested models' default factories (row `legacy.L-NF`), one frozen render plan per field of the built-in output models (B2) |
 | model imports snapshot, unused-model removal | imports, module model lists |
 | `remove_unused`, `resolve_module_import_conflicts` (backend), `_bind_module_field_names` | module imports, field binding |
 | `__change_imported_model_name` | renames models that collide with imports (the last class-name change) |
 | `model._name_final_classes` (model hook) | renders TypedDict `extra_items` again from the data type it was built from, so that it names the final class |
-| `_check_model_inheritance`, warnings, `_set_nested_model_default_factory_metadata` | errors, warnings, publishes the nested-factory decision for the outputs that do not read render plans |
+| `_check_model_inheritance`, warnings, `_set_nested_model_default_factory_metadata` | errors, warnings, publishes the nested-factory decision for the models that render without frozen plans |
 
 Three L6 passes repair results built from facts that changed afterwards: `__import_removed_reuse_canonicals`
 and `__import_renamed_types` (reuse and renames in a later module, including the `parent` collapse rename) and
@@ -466,20 +466,25 @@ the None it adds; msgspec's top-level None and the `Field()` default plan read t
 `DataModel._write_pre_render_nullability` (`legacy-l3-import-nullability`, which overrides and constructor ordering
 read) write it; msgspec's `_strip_null` writes it on its own copies at L7. A decision before render preparation reads
 `types.py:DataType.admits_none`, which computes the rendered nullability with
-`model/_decisions/nullability.py:rendered_nullability` without writing it. A field of a Pydantic `BaseModel`, `RootModel` or dataclass, and a Pydantic field of a
-type alias, renders from one frozen render plan (`model/_render_plan.py:FieldRenderPlan`): its annotation form, its `Field()` call with
-each argument and the declared items it writes, its default, the imports the call needs and every declared item it does
-not write (`Omitted`, with its reason), each with a `Why`. `model/pydantic_base.py:DataModelField` builds it (a
-Pydantic dataclass field adds the `Field(...)` of a forced assignment and the plain annotation of a call the dataclass
-must see, `model/pydantic_v2/dataclass.py`); the last
-render preparation pass freezes one per field in the parse's `RenderReady` (B2), and `field`, `annotated`, `type_hint`,
-`represented_default`, `has_default_factory_in_field`, the import collection and the dropped-constraints warning read
-the frozen plan, before B2 a plan built and not kept. The plan holds values and writes its text when it is read, so the
-names it holds are the final ones. Custom templates get the raw fields, which answer from the same plan.
-`DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS` checks that each frozen plan writes or omits every item its field declares
-and that it renders as the plan rebuilt when the modules are written. Row `legacy.L-NF`: the nested models' default
-factories are decided when render preparation ends, but the import snapshot reads each field as if the factory were
-written (a second plan, `RenderReady.import_view`), and the other outputs read the decision only once
+`model/_decisions/nullability.py:rendered_nullability` without writing it. A field of every built-in output model
+(Pydantic `BaseModel`, `RootModel` and dataclass, msgspec `Struct`, stdlib dataclass, `TypedDict`, enum, type alias)
+renders from one frozen render plan (`model/_render_plan.py:FieldRenderPlan`): its annotation form, its calls
+(`Field()`, `field()`, msgspec `Meta()`) with each argument and the declared items it writes, its default, the imports
+the calls need and every declared item it does not write (`Omitted`, with its reason), each with a `Why`. The field's
+backend builds it: `model/pydantic_base.py:DataModelField` (a Pydantic dataclass field adds the `Field(...)` of a
+forced assignment and the plain annotation of a call the dataclass must see, `model/pydantic_v2/dataclass.py`),
+`model/msgspec.py:DataModelField` (`Meta(...)` inside `Annotated`, then `field(...)` or the default alone),
+`model/dataclass.py:DataModelField` (`field(...)` or the default alone) and `model/typed_dict.py:DataModelField` (the
+`ReadOnly[`, `Required[` and `NotRequired[` qualifiers of the key); an enum member is a field of the output's backend,
+whose plan gives the member's imports. The last render preparation pass freezes one per field in the parse's
+`RenderReady` (B2), and `field`, `annotated`, `type_hint`, `represented_default`, `has_default_factory_in_field`, the
+import collection and the dropped-constraints warnings read the frozen plan, before B2 a plan built and not kept. The
+plan holds values and writes its text when it is read, so the names it holds are the final ones. Custom templates get
+the raw fields, which answer from the same plan. `DATAMODEL_CODE_GENERATOR_CHECK_RENDER_PLANS` checks that each frozen
+plan writes or omits every item its field declares and that it renders as the plan rebuilt when the modules are
+written. Row `legacy.L-NF`: the nested models' default factories are decided when render preparation ends, but the
+import snapshot reads each field as if the factory were written (a second plan, `RenderReady.import_view`), and the
+models that render without frozen plans (GraphQL unions, custom output models) read the decision only once
 `_set_nested_model_default_factory_metadata` publishes it after the warnings. A RootModel decides its config items, and
 adds or drops its `ConfigDict` import, when it renders (`model/pydantic_v2/root_model.py:RootModel._sync_config_items`),
 after the module's import block is built: the named row `legacy.rootmodel-config-late-import` of the import ledger.
@@ -600,7 +605,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | RENDER_PREPARATION | `clear_default_factory_import_caches` | global | bookkeeping | - | - | Runs when: use_default_factory_for_optional_nested_models. |
 | RENDER_PREPARATION | `finalize_sequence_interface` | global | transform | BACKEND_CONFIG | CLASS_NAMES, FIELD_TYPES, MODEL_KIND | Runs when: use_root_model_sequence_interface. After `finalize_type_alias_users`: both write backend config; the sequence interface is decided last. |
 | RENDER_PREPARATION | `decide_nested_model_default_factories` | global | plan | - | DEFAULTS, FIELD_TYPES, MODELS_EXIST, MODEL_ORDER | Decides, from the final model order and reference cycles, the default factories of optional nested models that the render plans read (row legacy.L-NF). Runs when: use_default_factory_for_optional_nested_models. |
-| RENDER_PREPARATION | `freeze_field_render_plans` | global | plan | - | every Fact, BACKEND_CONFIG, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY | Freezes one render plan per field of the Pydantic models, which rendering reads; B2 follows. |
+| RENDER_PREPARATION | `freeze_field_render_plans` | global | plan | - | every Fact, BACKEND_CONFIG, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY | Freezes one render plan per field of the built-in output models, which rendering reads; B2 follows. |
 | IMPORTS | `snapshot_model_imports` | global | plan | - | every Fact, BACKEND_CONFIG, DEFAULT_EXPRESSION, IMPORT_ALIASES, QUOTING, TYPE_ALIAS_BODY | Collects the imports of every model once; B2 precedes it. |
 | IMPORTS | `append_model_imports` | global | transform | MODULE_IMPORTS | - |  |
 | IMPORTS | `remove_unused_models` | global | transform | MODELS_EXIST, MODULE_IMPORTS, MODULE_MEMBERSHIP | MODELS_EXIST | Removes the models that collapse left unused from their modules. After `append_model_imports`: removes the imports of unused models after every model added its imports. After `snapshot_model_imports`: the snapshot holds the imports of unused models, which leave with them. |
@@ -624,7 +629,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | IMPORTS | `warn_about_decimal_defaults` | global | check | STDERR | DEFAULTS | After `warn_about_dropped_constraints`: warnings keep their order. |
 | IMPORTS | `warn_about_variant_discriminator_tags` | global | check | STDERR | DISCRIMINATOR_TAGS | After `warn_about_decimal_defaults`: warnings keep their order. |
 | IMPORTS | `warn_about_msgspec_decoding` | global | check | STDERR | FIELD_TYPES | After `warn_about_variant_discriminator_tags`: warnings keep their order. |
-| IMPORTS | `set_nested_model_default_factory_metadata` | global | transform | DEFAULT_EXPRESSION | - | Publishes the nested-factory decision on the models, for the outputs that do not read render plans (row legacy.L-NF). Runs when: use_default_factory_for_optional_nested_models. Removed by RP14c. |
+| IMPORTS | `set_nested_model_default_factory_metadata` | global | transform | DEFAULT_EXPRESSION | - | Publishes the nested-factory decision on the models, for the models that render without frozen plans (GraphQL unions, custom output models; row legacy.L-NF). Runs when: use_default_factory_for_optional_nested_models. |
 | IMPORTS | `record_pydantic_floor` | global | check | - | BACKEND_CONFIG, CONSTRAINTS, FIELD_ALIASES, FIELD_TYPES, MODEL_KIND, TYPE_ALIAS_BODY | Runs when: an explicit target Pydantic version. |
 | IMPORTS | `add_root_init_result` | global | bookkeeping | - | MODULE_MEMBERSHIP |  |
 | RENDER | `render_modules` | global | transform | FIELD_TYPES | every Fact, ASSIGNMENT_FORM, BACKEND_CONFIG, CLASS_NAMES, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, FIELD_ORDER, FORCED_ASSIGNMENT, IMPORT_ALIASES, KEYWORD_ONLY, MODEL_ORDER, MODULE_CODE, MODULE_IMPORTS, MODULE_MEMBERSHIP, PLANS, QUOTING, SET_ITEM_HASH, STDERR, TYPE_ALIAS_BODY, UNBOUND_FIELDS | L7: renders every module; writes the import of the Any an empty union renders as. |

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, cast
 
 from pydantic import Field as _Field
-from typing_extensions import final, override
+from typing_extensions import override
 
 from datamodel_code_generator import cached_path_exists
 from datamodel_code_generator.imports import IMPORT_DECIMAL
@@ -25,6 +25,7 @@ from datamodel_code_generator.model import ConstraintsBase as _ConstraintsBase
 from datamodel_code_generator.model._constraints import Constraints
 from datamodel_code_generator.model._constraints import PatternConstraints as _PatternConstraints
 from datamodel_code_generator.model._pydantic_imports import IMPORT_ANYURL, IMPORT_FIELD
+from datamodel_code_generator.model._render_plan import CallArguments as _FieldArguments
 from datamodel_code_generator.model._render_plan import (
     CallPlan,
     FieldDefault,
@@ -53,7 +54,6 @@ if TYPE_CHECKING:
     from collections import defaultdict
 
     from datamodel_code_generator.imports import Import
-    from datamodel_code_generator.model._render_plan import OmitReason
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
@@ -112,90 +112,6 @@ class _PydanticFieldRenderPlan(NamedTuple):
 
 
 _EMPTY_FIELD_TEXT = _PydanticFieldRenderPlan("", None, (), None)
-
-
-@final
-class _FieldArguments:
-    """The ``Field()`` keyword arguments of a field while it builds them, with the declared items each writes.
-
-    An argument removed with ``pop`` leaves its items as ``Omitted`` with the reason; ``take`` removes one whose
-    items another argument writes. ``factory`` is the default factory the field's own facts give it.
-    """
-
-    __slots__ = ("_entries", "factory", "omitted")
-
-    def __init__(self, omitted: list[Omitted]) -> None:
-        """Start with no argument and the omissions the field already knows."""
-        self._entries: dict[str, Kwarg] = {}
-        self.omitted = omitted
-        self.factory: Kwarg | None = None
-
-    def __contains__(self, name: str) -> bool:
-        """Return whether the call has an argument ``name``."""
-        return name in self._entries
-
-    def get(self, name: str) -> Any:
-        """Return the value of the argument ``name``, or None."""
-        return None if (entry := self._entries.get(name)) is None else entry.value
-
-    def entry(self, name: str) -> Kwarg | None:
-        """Return the argument ``name``, or None."""
-        return self._entries.get(name)
-
-    def names(self) -> tuple[str, ...]:
-        """Return the names of the arguments in the order they were added."""
-        return tuple(self._entries)
-
-    def put(self, name: str, value: Any, why: Why, items: tuple[str, ...] = ()) -> None:
-        """Set the argument ``name``; one it replaces leaves its items as ``superseded``."""
-        if (replaced := self._entries.get(name)) is not None:
-            self.omit_entry(replaced, "superseded", why)
-        self._entries[name] = Kwarg(name, value, why, items)
-
-    def update(self, name: str, value: Any, why: Why, items: tuple[str, ...] = ()) -> None:
-        """Give the argument ``name`` a new value in its place, keeping its items and adding ``items``."""
-        entry = self._entries[name]
-        self._entries[name] = Kwarg(
-            name,
-            value,
-            Why(why.rule, why.keyword, why.option, (entry.why.rule,)),
-            (
-                *entry.items,
-                *items,
-            ),
-        )
-
-    def take(self, name: str) -> Kwarg | None:
-        """Remove the argument ``name`` and return it; its items stay to be written or omitted by the caller."""
-        return self._entries.pop(name, None)
-
-    def pop(self, name: str, reason: OmitReason, why: Why) -> Any:
-        """Remove the argument ``name``, its items omitted for ``reason``, and return its value."""
-        if (entry := self._entries.pop(name, None)) is None:
-            return None
-        self.omit_entry(entry, reason, why)
-        return entry.value
-
-    def omit(self, item: str, value: Any, reason: OmitReason, why: Why) -> None:
-        """Record a declared item the call does not write."""
-        self.omitted.append(Omitted(item, value, reason, why))
-
-    def omit_entry(self, entry: Kwarg, reason: OmitReason, why: Why) -> None:
-        """Record the items of an argument the call does not write."""
-        for item in entry.items:
-            self.omit(item, entry.value, reason, why)
-
-    def writes(self, item: str) -> bool:
-        """Return whether an argument writes the declared item ``item``."""
-        return any(item in entry.items for entry in self._entries.values())
-
-    def data(self) -> dict[str, Any]:
-        """Return the arguments as a mapping of names to values, in order."""
-        return {name: entry.value for name, entry in self._entries.items()}
-
-    def kwargs(self) -> tuple[Kwarg, ...]:
-        """Return the arguments in order."""
-        return tuple(self._entries.values())
 
 
 def _put_discriminator_last(args: _FieldArguments) -> None:
@@ -601,12 +517,7 @@ class DataModelField(DataModelFieldBase):
         args = self._field_arguments(omitted, anyurl=anyurl)
         return args.data(), None if (factory := self._call_default_factory(args)) is None else factory.value
 
-    def _render_plan(self) -> FieldRenderPlan:
-        """Return the plan the parse froze for this field, or build one without keeping it."""
-        if (plan := frozen_render_plan(self)) is not None:
-            return plan
-        return self._build_render_plan()
-
+    @override
     def _build_render_plan(self) -> FieldRenderPlan:
         """Build the field's render plan from its facts as they are now."""
         omitted, anyurl = self._warned_omissions()

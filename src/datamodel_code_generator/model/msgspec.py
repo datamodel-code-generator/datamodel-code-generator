@@ -7,12 +7,13 @@ from __future__ import annotations
 
 import keyword
 from ast import literal_eval
+from dataclasses import dataclass
 from fractions import Fraction
 from functools import wraps
 from math import ceil, floor, isfinite
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
 
-from typing_extensions import Sentinel, override
+from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
@@ -29,6 +30,19 @@ from datamodel_code_generator.model._decisions.assignment import (
 )
 from datamodel_code_generator.model._decisions.literal_default import decide_literal_default
 from datamodel_code_generator.model._decisions.tag_value import struct_discriminator_tag, struct_tag_options
+from datamodel_code_generator.model._render_plan import (
+    CallArguments,
+    CallPlan,
+    FieldDefault,
+    FieldRenderPlan,
+    Kwarg,
+    Omitted,
+    RuleId,
+    Why,
+    field_call_text,
+    frozen_render_plan,
+    written_argument_names,
+)
 from datamodel_code_generator.model.base import (
     UNDEFINED,
     BaseClassDataType,
@@ -38,7 +52,9 @@ from datamodel_code_generator.model.base import (
     _keeps_stripped_place,
     _model_key_of_model,
     _ModelKeys,
-    _nested_model_default_factory,
+    _nested_model_factory,
+    _NestedModelFactory,
+    _ValueFactory,
     linearize_data_models,
 )
 from datamodel_code_generator.model.field_name import MsgspecFieldNameResolver
@@ -133,13 +149,73 @@ def _is_exact_float_divisor(value: Any) -> bool:
     return not divisor.denominator & (divisor.denominator - 1) and Fraction(float(value)) == divisor
 
 
-class _MsgspecFieldRenderPlan(NamedTuple):
-    """Structured msgspec field output and its syntax-owned imports."""
+_PLAIN_ANNOTATION = Why(RuleId("D11.annotation.plain"))
+_ANNOTATED = Why(RuleId("D11.annotation.annotated"), option="--use-annotated")
+_CLASS_VAR = Why(RuleId("D7.tag.class-var"), keyword="discriminator")
+"""A tag field of a tagged Struct: msgspec writes the tag itself, and the built-in template skips the field."""
+_FIELD_CALL = Why(RuleId("D11.msgspec.field-call"))
+"""The field writes ``field(...)``: a name, a default factory, or a default beside them needs one."""
+_META_CALL = Why(RuleId("D11.msgspec.meta"), option="--use-annotated")
+_FIELD_ARGUMENT = RuleId("D11.msgspec.field-argument")
+_META_ARGUMENT = RuleId("D11.msgspec.meta-argument")
+_ALIAS = Why(RuleId("D9.alias.explicit"), keyword="alias")
+_DEFAULT = Why(RuleId("D4.default.value"), keyword="default")
+_BARE_DEFAULT = Why(RuleId("D4.default.bare"), keyword="default")
+"""The field writes its default alone after the annotation."""
+_UNSET_DEFAULT = Why(RuleId("D4.default.msgspec-unset"), keyword="required")
+"""An optional field without a default writes ``UNSET``, or ``None`` when it is nullable: a Struct always writes one."""
+_NONE_DEFAULT = Why(RuleId("D4.default.msgspec-none"), keyword="nullable")
+_REQUIRED = Why(RuleId("D4.default.required"), keyword="required")
+_STRUCT_CONVERSION = Why(RuleId("D4.default.msgspec-convert"), keyword="default")
+"""A default holding Structs is written as a factory that converts it with ``msgspec.convert``."""
+_MUTABLE_FACTORY = Why(RuleId("D4.default.mutable-factory"), keyword="default")
+_NESTED_MODEL_FACTORY = Why(
+    RuleId("D4.default.nested-model-factory"), option="--use-default-factory-for-optional-nested-models"
+)
+_CONSTRAINT = RuleId("D2.msgspec.constraint")
+_NON_FINITE = RuleId("D2.msgspec.non-finite-bound")
+_MULTIPLE_OF_ONE = RuleId("D2.msgspec.integer-multiple-of-one")
+_STRONGER_BOUND = RuleId("D2.msgspec.stronger-bound")
+_ITEMS_AS_LENGTH = RuleId("D2.msgspec.items-as-length")
+_UNTAKEN = RuleId("D2.untaken-by-type")
+_LITERAL_DECIDED = RuleId("D2.msgspec.literal-decided")
+"""The values of the field's ``Literal`` decide the constraint (``_applicability.literal_check``)."""
+_INEXACT = RuleId("D2.msgspec.inexact-float-divisor")
+_NONE_VALUE = Why(RuleId("D11.msgspec.none-unset"))
+_NEEDS_ANNOTATED = Why(RuleId("D11.msgspec.meta-needs-annotated"), option="--use-annotated")
 
-    rendered: str
-    needs_field_import: bool
-    needs_convert_import: bool
-    needs_unset_import: bool
+
+@final
+@dataclass(frozen=True, slots=True, eq=False)
+class _StructConversion:
+    """The default factory that converts a default holding Structs: ``lambda: convert({...},  type=Model)``.
+
+    ``of_list`` converts to a list of ``target``; ``container`` is the list type whose hint names ``target``. Its text
+    names the models as the module finally names them.
+    """
+
+    method: str
+    default: object
+    target: DataType
+    container: DataType | None = None
+    of_list: bool = False
+
+    @override
+    def __str__(self) -> str:
+        """Return the factory as the field's call writes it."""
+        name = _default_factory_type_name(self.target)
+        if self.of_list:
+            type_text = f"list[{name}]"
+        elif self.container is not None:
+            type_text = self.container.type_hint.replace(self.target.alias or name, name)
+        else:
+            type_text = name
+        return f"lambda: {self.method}({represent_python_value(self.default)},  type={type_text})"
+
+
+def _meta_call_text(call: CallPlan) -> str:
+    """Write a ``Meta(...)`` call: its arguments sorted by their text."""
+    return f"Meta({', '.join(sorted(f'{k.name}={represent_python_value(k.value)}' for k in call.kwargs))})"
 
 
 class _UnionLeaf(NamedTuple):
@@ -164,6 +240,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
+    from datamodel_code_generator.model._render_plan import OmitReason
     from datamodel_code_generator.reference import Reference
 
 
@@ -226,17 +303,9 @@ def import_extender(cls: type[DataModelFieldBaseT]) -> type[DataModelFieldBaseT]
     def new_imports(self: DataModelFieldBaseT) -> tuple[Import, ...]:
         if self.is_class_var:
             return ()
-        extra_imports = []
+        extra_imports: tuple[Import, ...] = ()
         if isinstance(self, DataModelField):
-            plan = self._get_field_render_plan()
-            if plan.needs_field_import:
-                extra_imports.append(IMPORT_MSGSPEC_FIELD)
-            if plan.needs_convert_import:
-                extra_imports.append(IMPORT_MSGSPEC_CONVERT)
-            if self.needs_meta_import:
-                extra_imports.append(IMPORT_MSGSPEC_META)
-            if plan.needs_unset_import:
-                extra_imports.append(IMPORT_MSGSPEC_UNSET)
+            extra_imports = tuple(import_ for import_, _ in self._render_plan().symbol_imports)
         imports = original_getter(self)
         return chain_as_tuple(imports, extra_imports)
 
@@ -248,6 +317,7 @@ class Struct(DataModel):
     """DataModel implementation for msgspec.Struct."""
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "msgspec.jinja2"
+    _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     RESOLVES_STRING_ANNOTATIONS_FROM_MODULE: ClassVar[bool] = True
     WRITES_QUOTED_NAMES_IN_TYPING_GENERICS: ClassVar[bool] = True
     BASE_CLASS: ClassVar[str] = "msgspec.Struct"
@@ -906,63 +976,52 @@ class DataModelField(DataModelFieldBase):
     @override
     def field(self) -> str | None:
         """For backwards compatibility."""
-        return self._get_field_render_plan().rendered or None
+        return self._plan_text(self._render_plan()) or None
 
-    def _get_field_data_and_import_requirements(self) -> tuple[dict[str, Any], bool]:
-        """Return structured field() arguments and whether msgspec.convert produced a factory."""
-        data: dict[str, Any] = {k: v for k, v in self.extras.items() if k in self._FIELD_KEYS}
-        needs_convert_import = False
+    def _field_call_arguments(self, omitted: list[Omitted]) -> tuple[CallArguments, bool]:
+        """Build the ``field(...)`` arguments in the order the call writes them, and whether one converts Structs."""
+        args = CallArguments(omitted)
+        for key, value in self.extras.items():
+            if key in self._FIELD_KEYS:
+                args.put(key, value, Why(_FIELD_ARGUMENT, key), (f"extra:{key}",))
+        converts = False
         if self.alias is not None:
-            data["name"] = self.alias
+            args.put("name", self.alias, _ALIAS, ("alias",))
 
         if self.default is not UNDEFINED and self.default is not None:
-            data["default"] = self.default
-        elif self._not_required and "default_factory" not in data:
-            data["default"] = None if self.nullable else UNSET
+            args.put("default", self.default, _DEFAULT)
+        elif self._not_required and "default_factory" not in args:
+            args.put("default", None if self.nullable else UNSET, _NONE_DEFAULT if self.nullable else _UNSET_DEFAULT)
 
         if self.required and not self.use_default_with_required:
-            data = {
-                k: v
-                for k, v in data.items()
-                if k
-                not in {
-                    "default",
-                    "default_factory",
-                }
-            }
+            args.pop("default", "factory-not-applicable", _REQUIRED)
+            args.pop("default_factory", "factory-not-applicable", _REQUIRED)
         elif (
             self.default is not UNDEFINED
             and self.default is not None
-            and "default_factory" not in data
-            and (default_factory := self._get_default_as_struct_model()) is not None
+            and "default_factory" not in args
+            and (conversion := self._get_default_as_struct_model()) is not None
         ):
-            data.pop("default")
-            data["default_factory"] = default_factory
-            needs_convert_import = True
-
-        if "default" in data and isinstance(data["default"], (list, dict, set)) and "default_factory" not in data:
-            default_value = data.pop("default")
-            if default_value:
-                data["default_factory"] = f"lambda: {represent_python_value(default_value)}"
-            else:
-                data["default_factory"] = type(default_value).__name__
+            default = cast("Kwarg", args.take("default"))
+            args.put("default_factory", conversion, _STRUCT_CONVERSION, default.items)
+            converts = True
 
         if (
-            self.use_default_factory_for_optional_nested_models
-            and not self.required
-            and (self.default is None or self.default is UNDEFINED)
-            and "default_factory" not in data
+            (entry := args.entry("default")) is not None
+            and isinstance(entry.value, (list, dict, set))
+            and "default_factory" not in args
         ):
-            nested_model_name = self._get_default_factory_for_optional_nested_model()
-            if nested_model_name:
-                data["default_factory"] = nested_model_name
-                data.pop("default", None)
+            args.take("default")
+            args.put("default_factory", _ValueFactory(entry.value), _MUTABLE_FACTORY, entry.items)
 
-        return data, needs_convert_import
-
-    def _get_field_data(self) -> dict[str, Any]:
-        """Return structured field() arguments before rendering."""
-        return self._get_field_data_and_import_requirements()[0]
+        if (
+            self._takes_nested_model_factory()
+            and "default_factory" not in args
+            and (nested := self._get_default_factory_for_optional_nested_model()) is not None
+        ):
+            args.put("default_factory", nested, _NESTED_MODEL_FACTORY)
+            args.pop("default", "superseded", _NESTED_MODEL_FACTORY)
+        return args, converts
 
     @override
     def _has_default_for_nested_model_factory(self) -> bool:
@@ -972,40 +1031,108 @@ class DataModelField(DataModelFieldBase):
     @override
     def _written_assignment(self) -> MsgspecWritten:
         """Return the ``field()`` arguments the field writes."""
-        return MsgspecWritten(data=written_data(self._get_field_data_and_import_requirements()[0]))
+        if (plan := frozen_render_plan(self)) is not None:
+            return MsgspecWritten(data=written_data(written_argument_names(plan)))
+        return MsgspecWritten(data=written_data(self._field_call_arguments([])[0].names()))
 
-    def _get_field_render_plan(self) -> _MsgspecFieldRenderPlan:
-        """Build the msgspec field output and imports without parsing rendered Python."""
-        data, needs_convert_import = self._get_field_data_and_import_requirements()
-        needs_unset_import = data.get("default") is UNSET
-        if not data:
-            return _MsgspecFieldRenderPlan(
-                rendered="",
-                needs_field_import=False,
-                needs_convert_import=needs_convert_import,
-                needs_unset_import=needs_unset_import,
-            )
+    @override
+    def _build_frozen_render_plan(self) -> FieldRenderPlan:
+        return self._build_render_plan()
 
-        if len(data) == 1 and "default" in data:
-            return _MsgspecFieldRenderPlan(
-                rendered=represent_python_value(data["default"]),
-                needs_field_import=False,
-                needs_convert_import=needs_convert_import,
-                needs_unset_import=needs_unset_import,
-            )
+    @override
+    def _build_render_plan(self) -> FieldRenderPlan:
+        """Build the plan: ``Meta(...)`` inside ``Annotated``, then ``field(...)``, the default alone, or nothing.
 
-        kwargs = [f"{k}={v if k == 'default_factory' else represent_python_value(v)}" for k, v in data.items()]
-        return _MsgspecFieldRenderPlan(
-            rendered=f"field({', '.join(kwargs)})",
-            needs_field_import=True,
-            needs_convert_import=needs_convert_import,
-            needs_unset_import=needs_unset_import,
+        A tag field (a class variable) keeps both for templates that read them; the built-in template skips it.
+        """
+        omitted: list[Omitted] = []
+        args, converts = self._field_call_arguments(omitted)
+        meta = self._build_meta_call(omitted)
+        kwargs = args.kwargs()
+        call: CallPlan | None = None
+        default = FieldDefault(self.default, missing_sentinel=False, why=_DEFAULT)
+        bare_default = False
+        if len(kwargs) == 1 and kwargs[0].name == "default":
+            default = FieldDefault(kwargs[0].value, missing_sentinel=False, why=_BARE_DEFAULT, items=kwargs[0].items)
+            bare_default = True
+        elif kwargs:
+            call = CallPlan(None, None, kwargs, default_keyword=False, why=_FIELD_CALL, callee="field")
+        symbol_imports: list[tuple[Import, Why]] = []
+        if not self.is_class_var:
+            if call is not None:
+                symbol_imports.append((IMPORT_MSGSPEC_FIELD, call.why))
+            if converts:
+                symbol_imports.append((IMPORT_MSGSPEC_CONVERT, _STRUCT_CONVERSION))
+            if meta is not None:
+                symbol_imports.append((IMPORT_MSGSPEC_META, meta.why))
+            if args.get("default") is UNSET:
+                symbol_imports.append((IMPORT_MSGSPEC_UNSET, _UNSET_DEFAULT))
+        form, why = (
+            ("classvar", _CLASS_VAR)
+            if self.is_class_var
+            else ("plain", _PLAIN_ANNOTATION)
+            if meta is None
+            else ("annotated", _ANNOTATED)
         )
+        return FieldRenderPlan(
+            annotation_form=form,
+            call=call,
+            default=default,
+            has_default_factory_in_field="default_factory" in args,
+            omitted=tuple(omitted),
+            symbol_imports=tuple(symbol_imports),
+            why=why,
+            annotated_call=meta,
+            bare_default=bare_default,
+        )
+
+    @staticmethod
+    def _plan_text(plan: FieldRenderPlan) -> str:
+        """Write what follows the annotation from ``plan``: ``field(...)``, the default alone, or nothing."""
+        if (call := plan.call) is not None:
+            return field_call_text(call)
+        return represent_python_value(plan.default.value) if plan.bare_default else ""
+
+    def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
+        """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
+        return (
+            self._plan_text(plan),
+            None if plan.annotated_call is None else _meta_call_text(plan.annotated_call),
+            plan.annotation_form,
+            tuple(import_ for import_, _ in plan.symbol_imports),
+            tuple((omitted.item, omitted.reason, omitted.warns) for omitted in plan.omitted),
+        )
+
+    def _declared_render_items(self) -> frozenset[str]:
+        """Return the items the field declares that its plan must write or omit.
+
+        They are its ``field()`` and ``Meta()`` metadata, its alias and its constraints.
+        """
+        items = {f"extra:{key}" for key in self.extras if key in self._FIELD_KEYS or key in self._META_FIELD_KEYS}
+        if self.alias is not None:
+            items.add("alias")
+        if self.constraints is not None:
+            items.update(
+                f"constraint:{key}" for key, value in self.constraints.model_dump().items() if value is not None
+            )
+        return frozenset(items)
+
+    def _get_field_data(self) -> dict[str, Any]:
+        """Return the ``field()`` arguments the field writes, its default factory as text."""
+        plan = self._render_plan()
+        if plan.bare_default:
+            return {"default": plan.default.value}
+        if (call := plan.call) is None:
+            return {}
+        return {
+            argument.name: str(argument.value) if argument.name == "default_factory" else argument.value
+            for argument in call.kwargs
+        }
 
     @override
     def __str__(self) -> str:
         """Generate field() call or default value representation."""
-        return self._get_field_render_plan().rendered
+        return self._plan_text(self._render_plan())
 
     @property
     @override
@@ -1075,11 +1202,96 @@ class DataModelField(DataModelFieldBase):
 
     def _get_meta_data(self) -> tuple[dict[str, Any], frozenset[str]]:
         """Return the Meta(...) keyword data that msgspec takes on the type, and the constraints it leaves out."""
-        data = self._get_declared_meta_data()
+        args, dropped = self._meta_call_arguments([])
+        return args.data(), dropped
+
+    def _meta_call_arguments(self, omitted: list[Omitted]) -> tuple[CallArguments, frozenset[str]]:
+        """Return the ``Meta(...)`` arguments msgspec takes on the type, and the constraints it leaves out.
+
+        The constraints it does not take go to ``omitted``, warning unless the values of the field's ``Literal`` decide
+        them; so does a float ``multiple_of`` that msgspec checks inexactly.
+        """
+        args = self._declared_meta_arguments(omitted)
+        data = args.data()
         untaken, inexact = self._dropped_meta_keywords(data)
-        if dropped := (untaken | {"multiple_of"}) if inexact else untaken:
-            data = {k: v for k, v in data.items() if k not in dropped}
-        return data, dropped
+        dropped = (untaken | {"multiple_of"}) if inexact else untaken
+        decided = self._literal_decided_meta_keywords(data) if untaken else frozenset()
+        for name in args.names():
+            if name not in dropped:
+                continue
+            entry = cast("Kwarg", args.take(name))
+            if name in untaken:
+                literal = name in decided
+                reason: OmitReason = "consumed-by-type" if literal else "untaken-by-type"
+                why = Why(_LITERAL_DECIDED if literal else _UNTAKEN, name)
+                warns = not literal
+            else:
+                reason, why, warns = "inexact-float-divisor", Why(_INEXACT, name), True
+            omitted.extend(Omitted(item, entry.value, reason, why, warns=warns) for item in entry.items)
+        return args, dropped
+
+    def _declared_meta_arguments(self, omitted: list[Omitted]) -> CallArguments:
+        """Return the ``Meta(...)`` arguments of the field's metadata and constraints, before the type decides them.
+
+        Number bounds are normalized for the field's numeric type, the weaker of two bounds of one side goes, and
+        item counts are written as lengths.
+        """
+        args = CallArguments(omitted)
+        for key, value in self.extras.items():
+            if key in self._META_FIELD_KEYS:
+                args.put(key, value, Why(_META_ARGUMENT, key), (f"extra:{key}",))
+        unset = [cast("Kwarg", args.take(entry.name)) for entry in args.kwargs() if entry.value is None]
+        omitted.extend(Omitted(item, None, "none-value", _NONE_VALUE) for entry in unset for item in entry.items)
+        if self.constraints is not None:
+            declared = {k: v for k, v in self.constraints.model_dump().items() if v is not None}
+            if (blocked := self._constraints_blocked_by()) is not None:
+                omitted.extend(Omitted(f"constraint:{k}", v, blocked, Why(_CONSTRAINT, k)) for k, v in declared.items())
+            else:
+                for key, argument in self._normalized_meta_constraints(declared, omitted).items():
+                    args.put(key, argument.value, argument.why, argument.items)
+
+        if (gt := args.get("gt")) is not None and (ge := args.get("ge")) is not None:
+            args.pop("ge" if gt >= ge else "gt", "superseded", Why(_STRONGER_BOUND, "gt"))
+        if (lt := args.get("lt")) is not None and (le := args.get("le")) is not None:
+            args.pop("le" if lt <= le else "lt", "superseded", Why(_STRONGER_BOUND, "lt"))
+
+        for items_key, length_key in (("min_items", "min_length"), ("max_items", "max_length")):
+            if (entry := args.take(items_key)) is not None:
+                args.put(length_key, entry.value, Why(_ITEMS_AS_LENGTH, items_key), entry.items)
+        return args
+
+    def _normalized_meta_constraints(self, declared: dict[str, Any], omitted: list[Omitted]) -> dict[str, Kwarg]:
+        """Return the constraints ``Meta(...)`` writes, normalized for the field's numeric type, merging collisions.
+
+        A constraint ``Meta`` has no argument for, a non-finite bound and an integer ``multiple_of`` of one go to
+        ``omitted``.
+        """
+        has_integer_constraints = any(key in self._COMPARE_EXPRESSIONS for key in declared)
+        is_float_type = has_integer_constraints and self._has_numeric_data_type("float")
+        is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int")
+        values: dict[str, Any] = {}
+        sources: dict[str, tuple[str, ...]] = {}
+        for k, v in declared.items():
+            item = f"constraint:{k}"
+            if k not in self._META_FIELD_KEYS:
+                omitted.append(Omitted(item, v, "backend-cannot-express", Why(_CONSTRAINT, k)))
+                continue
+            if (
+                normalized := self._get_strict_field_constraint(
+                    k, v, is_float_type=is_float_type, is_int_type=is_int_type
+                )
+            ) is None:
+                if isinstance(v, float) and not isfinite(v):
+                    omitted.append(Omitted(item, v, "backend-cannot-express", Why(_NON_FINITE, k)))
+                else:
+                    omitted.append(Omitted(item, v, "consumed-by-type", Why(_MULTIPLE_OF_ONE, k)))
+                continue
+            merge_normalized_constraint(values, normalized[0], normalized[1])
+            sources[normalized[0]] = (*sources.get(normalized[0], ()), item)
+        return {
+            key: Kwarg(key, value, Why(_CONSTRAINT, sources[key][0].removeprefix("constraint:")), sources[key])
+            for key, value in values.items()
+        }
 
     def _dropped_meta_keywords(self, data: dict[str, Any]) -> tuple[frozenset[str], bool]:
         """Return the constraints msgspec.Meta does not take on the type, and whether a float multiple_of is inexact.
@@ -1315,23 +1527,24 @@ class DataModelField(DataModelFieldBase):
     @property
     @override
     def dropped_constraints_warning(self) -> str | None:
-        """Return a warning naming the constraints left out because msgspec.Meta does not take or check them exactly."""
-        untaken: frozenset[str] = frozenset()
-        inexact = False
+        """Return a warning naming the constraints left out because msgspec.Meta does not take or check them exactly.
+
+        Those of the field's own ``Meta(...)`` are the omitted items of its render plan that warn.
+        """
+        omitted = self._render_plan().omitted
         reasons: list[str] = []
-        if self.use_annotated:
-            declared = self._get_declared_meta_data()
-            untaken, inexact = self._dropped_meta_keywords(declared)
-            if untaken and (untaken := untaken - self._literal_decided_meta_keywords(declared)):
-                reasons.append(
-                    f"msgspec.Meta does not take {', '.join(sorted(untaken))} on "
-                    f"{self._annotated_base_data_type().type_hint}"
-                )
-            if inexact:
-                reasons.append(
-                    "msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of "
-                    f"{represent_python_value(declared['multiple_of'])} that floats only approximate"
-                )
+        untaken = frozenset(cast("str", o.why.keyword) for o in omitted if o.reason == "untaken-by-type" and o.warns)
+        inexact = next((o for o in omitted if o.reason == "inexact-float-divisor" and o.warns), None)
+        if untaken:
+            reasons.append(
+                f"msgspec.Meta does not take {', '.join(sorted(untaken))} on "
+                f"{self._annotated_base_data_type().type_hint}"
+            )
+        if inexact is not None:
+            reasons.append(
+                "msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of "
+                f"{represent_python_value(inexact.value)} that floats only approximate"
+            )
         kinds, union_keywords, integer_keywords = self.__dict__.get(
             _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset())
         )
@@ -1350,45 +1563,29 @@ class DataModelField(DataModelFieldBase):
         if not reasons:
             return None
         return self._generated_without_constraints(
-            "; ".join(reasons), len(untaken | union_keywords | integer_keywords) + inexact
+            "; ".join(reasons), len(untaken | union_keywords | integer_keywords) + (inexact is not None)
         )
 
     def _get_meta_string(self) -> str | None:
-        """Compute Meta(...) string if there are any meta constraints."""
-        data = self._get_meta_data()[0]
-        meta_arguments = sorted(f"{k}={represent_python_value(v)}" for k, v in data.items() if v is not None)
-        return f"Meta({', '.join(meta_arguments)})" if meta_arguments else None
+        """Return the ``Meta(...)`` the field writes inside ``Annotated``, or None (always without --use-annotated)."""
+        return None if (meta := self._meta_call()) is None else _meta_call_text(meta)
 
-    def _get_declared_meta_data(self) -> dict[str, Any]:
-        """Return the Meta(...) keyword data of the field's metadata and constraints."""
-        data: dict[str, Any] = {k: v for k, v in self.extras.items() if k in self._META_FIELD_KEYS}
-        if self.constraints is not None and self._can_apply_constraints:
-            dumped = self.constraints.model_dump()
-            has_integer_constraints = any(dumped.get(key) is not None for key in self._COMPARE_EXPRESSIONS)
-            is_float_type = has_integer_constraints and self._has_numeric_data_type("float")
-            is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int")
-            constraint_data: dict[str, Any] = {}
-            for k, v in dumped.items():
-                if k not in self._META_FIELD_KEYS or v is None:
-                    continue
-                if (
-                    normalized := self._get_strict_field_constraint(
-                        k, v, is_float_type=is_float_type, is_int_type=is_int_type
-                    )
-                ) is not None:
-                    merge_normalized_constraint(constraint_data, normalized[0], normalized[1])
-            data = {**data, **constraint_data}
+    def _meta_call(self) -> CallPlan | None:
+        """Return the ``Meta(...)`` call of the frozen plan, or before B2 the call the plan would hold."""
+        if (plan := frozen_render_plan(self)) is not None:
+            return plan.annotated_call
+        return self._build_meta_call([])
 
-        if (gt := data.get("gt")) is not None and (ge := data.get("ge")) is not None:
-            data.pop("ge" if gt >= ge else "gt")
-        if (lt := data.get("lt")) is not None and (le := data.get("le")) is not None:
-            data.pop("le" if lt <= le else "lt")
-
-        if (min_items := data.pop("min_items", None)) is not None:
-            data["min_length"] = min_items
-        if (max_items := data.pop("max_items", None)) is not None:
-            data["max_length"] = max_items
-        return data
+    def _build_meta_call(self, omitted: list[Omitted]) -> CallPlan | None:
+        """Build the ``Meta(...)`` call written inside ``Annotated``: its arguments, under --use-annotated."""
+        if not self.use_annotated:
+            args = self._declared_meta_arguments(omitted)
+            for argument in args.kwargs():
+                args.omit_entry(argument, "meta-needs-annotated", _NEEDS_ANNOTATED)
+            return None
+        if not (kwargs := self._meta_call_arguments(omitted)[0].kwargs()):
+            return None
+        return CallPlan(None, None, kwargs, default_keyword=False, why=_META_CALL, callee="Meta")
 
     @property
     @override
@@ -1426,7 +1623,7 @@ class DataModelField(DataModelFieldBase):
         ClassVar fields with Meta need Annotated only when use_annotated is True.
         ClassVar fields without Meta don't need Annotated.
         """
-        return self.use_annotated and self._get_meta_string() is not None
+        return self._meta_call() is not None
 
     @property
     @override
@@ -1434,7 +1631,7 @@ class DataModelField(DataModelFieldBase):
         """Check if this field requires the Meta import."""
         return self.use_annotated and self._get_meta_string() is not None
 
-    def _get_default_as_struct_model(self) -> str | None:
+    def _get_default_as_struct_model(self) -> _StructConversion | None:
         """Convert default value to Struct model using msgspec convert."""
         if self._uses_empty_builtin_container_factory():
             return None
@@ -1458,10 +1655,7 @@ class DataModelField(DataModelFieldBase):
                     and (isinstance(data_type_child.reference.source, (Struct, TypeAliasBase)))
                     and isinstance(self.default, list)
                 ):
-                    return (
-                        f"lambda: {self._PARSE_METHOD}({represent_python_value(self.default)},  "
-                        f"type=list[{_default_factory_type_name(data_type_child)}])"
-                    )
+                    return _StructConversion(self._PARSE_METHOD, self.default, data_type_child, of_list=True)
             elif data_type.reference and (
                 isinstance(data_type.reference.source, Struct)
                 or (
@@ -1474,11 +1668,9 @@ class DataModelField(DataModelFieldBase):
                         continue
                     if isinstance(self.default, dict) and any(dt.is_dict for dt in self.data_type.data_types):
                         continue
-                name = _default_factory_type_name(data_type)
-                model_type = (
-                    self.data_type.type_hint.replace(data_type.alias or name, name) if self.data_type.is_list else name
+                return _StructConversion(
+                    self._PARSE_METHOD, self.default, data_type, self.data_type if self.data_type.is_list else None
                 )
-                return f"lambda: {self._PARSE_METHOD}({represent_python_value(self.default)},  type={model_type})"
         return None
 
     def _type_alias_needs_struct_conversion(self, source: TypeAliasBase) -> bool:
@@ -1532,13 +1724,12 @@ class DataModelField(DataModelFieldBase):
             return True
         return any(getattr(data_type, container_attribute) for data_type in self.data_type.data_types)
 
-    def _get_default_factory_for_optional_nested_model(self) -> str | None:
+    def _get_default_factory_for_optional_nested_model(self) -> _NestedModelFactory | None:
         """Get default_factory for optional nested Struct model fields.
 
-        Returns the class name if the field type references a Struct,
-        otherwise returns None.
+        Returns the factory of the nested model if the field type references a Struct, otherwise None.
         """
-        return _nested_model_default_factory(self, Struct)
+        return _nested_model_factory(self, Struct)
 
 
 class DataTypeManager(_DataTypeManager):
