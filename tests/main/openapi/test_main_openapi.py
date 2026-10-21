@@ -14416,3 +14416,48 @@ def test_main_openapi_typed_dict_extra_items_final_name(
         extra_args=["--output-model-type", "typing.TypedDict", "--formatters", "builtin", *extra_args],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--read-nullable-beside-type-list"],
+    option_description="""Write the null that `nullable: true` declares beside a `type` list into the root model.
+
+A schema whose `type` list holds an object and another type is generated as a model of its properties and a root
+model of the union of the types. Under `--strict-nullable` or `--use-missing-sentinel` its fields write the null their
+schema declares, and so does that root model for a `type` list holding `"null"`. Without the option the root model
+ignores `nullable: true` and rejects null, as in 0.86.0; with `--read-nullable-beside-type-list` it admits None as the
+`type` list holding `"null"` does.""",
+    input_schema="openapi/schema_intersection/null_multiple_types_oas30.yaml",
+    cli_args=["--use-missing-sentinel", "--read-nullable-beside-type-list"],
+    golden_output=(
+        "main/schema_intersection_shapes/"
+        "schema_intersection_shape_output[null_multiple_types_oas30-pydantic_v2.BaseModel-use-missing-sentinel].py"
+    ),
+    comparison_output="main/openapi/main_openapi/read_nullable_beside_type_list[without-option].py",
+)
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--read-nullable-beside-type-list"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_openapi_read_nullable_beside_type_list(output_file: Path, extra_args: list[str]) -> None:
+    """Write the null that ``nullable: true`` declares beside a ``type`` list into its root model with the option.
+
+    Without --read-nullable-beside-type-list the root model ``U1`` of ``type: [object, string]`` with ``nullable: true``
+    is ``U | str | MISSING`` under --use-missing-sentinel, as in 0.86.0; with it ``U | str | None | MISSING``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "schema_intersection" / "null_multiple_types_oas30.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *extra_args,
+            "--use-missing-sentinel",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )

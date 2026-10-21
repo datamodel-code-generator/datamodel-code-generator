@@ -602,6 +602,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     "--read-const-beside-enum": CLIOptionMeta(name="--read-const-beside-enum", category=OptionCategory.TYPING),
     "--filter-literal-values": CLIOptionMeta(name="--filter-literal-values", category=OptionCategory.TYPING),
     "--intersect-allof-keywords": CLIOptionMeta(name="--intersect-allof-keywords", category=OptionCategory.TYPING),
+    "--read-nullable-beside-type-list": CLIOptionMeta(
+        name="--read-nullable-beside-type-list", category=OptionCategory.MODEL
+    ),
     "--disable-future-imports": CLIOptionMeta(
         name="--disable-future-imports",
         category=OptionCategory.TYPING,

@@ -117,8 +117,14 @@ def _input_file_type(input_path: Path) -> str:
     return "openapi" if input_path.is_relative_to(OPEN_API_DATA_PATH) else "jsonschema"
 
 
-OPTION_ARGS: tuple[str, ...] = ("--read-const-beside-enum", "--filter-literal-values", "--intersect-allof-keywords")
-"""The options that make the stored output the intersection of the parts; without them it is the output of 0.86.0."""
+OPTION_ARGS: tuple[str, ...] = (
+    "--read-const-beside-enum",
+    "--filter-literal-values",
+    "--intersect-allof-keywords",
+    "--read-nullable-beside-type-list",
+)
+"""The options that make the stored output the intersection of the parts and write the null a root declares; without
+them it is the output of 0.86.0."""
 
 
 def _args(

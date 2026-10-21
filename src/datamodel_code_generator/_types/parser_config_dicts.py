@@ -172,6 +172,7 @@ class ParserConfigDict(TypedDict):
     read_const_beside_enum: NotRequired[bool]
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
+    read_nullable_beside_type_list: NotRequired[bool]
     known_third_party: NotRequired[list[str] | None]
     custom_formatters: NotRequired[list[str] | None]
     custom_formatters_kwargs: NotRequired[dict[str, Any] | None]

@@ -4884,6 +4884,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             use_missing_sentinel=self.use_missing_sentinel,
             force_optional=self.force_optional_for_required_fields,
             type_excludes_member_null=self.intersects_allof_keywords,
+            read_nullable_beside_type_list=self.config.read_nullable_beside_type_list,
         )
 
     def _type_has_null(self, obj: JsonSchemaObject) -> bool:

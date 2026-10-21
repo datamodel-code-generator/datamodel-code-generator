@@ -370,6 +370,12 @@ Field customization:
                         Set delimiter to convert to snake case. This option
                         only can be used with --snake-case-field (default: `_`
                         )
+  --read-nullable-beside-type-list
+                        Write the null that `nullable: true` declares beside a
+                        `type` list with an object into the root model of that
+                        schema under --strict-nullable or --use-missing-
+                        sentinel, as a declared field does; without it only a
+                        `type` list holding null makes that root admit None
   --remove-special-field-name-prefix
                         Remove field name prefix if it has a special meaning
                         e.g. underscores

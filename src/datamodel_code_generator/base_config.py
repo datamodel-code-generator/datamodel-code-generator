@@ -246,6 +246,7 @@ class BaseGenerateConfig(BaseModel):
     read_const_beside_enum: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
+    read_nullable_beside_type_list: bool = False
     set_default_enum_member: bool = False
     use_subclass_enum: bool = False
     use_specialized_enum: bool = True

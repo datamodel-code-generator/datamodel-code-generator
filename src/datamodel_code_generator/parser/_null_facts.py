@@ -97,6 +97,7 @@ NullRule: TypeAlias = Literal[
     "force-optional",
     "legacy-root-type-nullable-ungated",
     "root-type-not-nullable",
+    "legacy-multiple-types-nullable-not-recorded",
     "multiple-types-root-declared",
     "array-force-optional",
     "array-strict",
@@ -154,9 +155,12 @@ NullRule: TypeAlias = Literal[
 * ``legacy-root-type-nullable-ungated``: a root field is optional and nullable by its ``nullable``, also without
   ``--strict-nullable``; ``type`` lists do not count.
 * ``root-type-not-nullable``: otherwise its default decides.
-* ``multiple-types-root-declared``: the root field of a ``type`` list with an object is optional by ``nullable`` or
-  ``type-or-member-null``, and under ``--strict-nullable`` or ``--use-missing-sentinel`` writes that null, as
-  ``field-declared`` does.
+* ``legacy-multiple-types-nullable-not-recorded``: the root field of a ``type`` list with an object is optional by
+  ``nullable`` or ``type-or-member-null``, but records only the latter, under ``--strict-nullable`` or
+  ``--use-missing-sentinel``.
+* ``multiple-types-root-declared``: with ``--read-nullable-beside-type-list``
+  (``NullMode.read_nullable_beside_type_list``), it writes that null under ``--strict-nullable`` or
+  ``--use-missing-sentinel`` instead, as ``field-declared`` does.
 * ``array-force-optional``: ``--force-optional`` makes an array field optional with undecided nullability.
 * ``array-strict``: under ``--strict-nullable`` an array field is required without a default and writes the
   ``nullable`` its schema declares.
@@ -212,7 +216,9 @@ class NullMode:
     ``nullable_as_type_list``: OpenAPI reads ``nullable`` beside one scalar ``type`` under ``--strict-nullable`` as a
     ``type`` list holding null. ``type_excludes_member_null``: ``--intersect-allof-keywords``, under which a ``type``
     that excludes null drops the null of the ``anyOf`` or ``oneOf`` members beside it (row
-    ``type-excludes-member-null``).
+    ``type-excludes-member-null``). ``read_nullable_beside_type_list``: ``--read-nullable-beside-type-list``, under
+    which the root of a ``type`` list with an object writes the null its ``nullable`` declares (row
+    ``multiple-types-root-declared``).
     """
 
     strict_nullable: bool = False
@@ -220,6 +226,7 @@ class NullMode:
     force_optional: bool = False
     nullable_as_type_list: bool = False
     type_excludes_member_null: bool = False
+    read_nullable_beside_type_list: bool = False
 
 
 NO_NULL_MODE: NullMode = NullMode()
@@ -308,9 +315,12 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
             return NullFacts("root-type-not-nullable")
         case "multiple-types-root":
             declared = bool(sources.nullable) or type_null
+            reads_nullable = mode.read_nullable_beside_type_list
             return NullFacts(
-                "multiple-types-root-declared",
-                admits_null=declared if (mode.strict_nullable or mode.use_missing_sentinel) else None,
+                "multiple-types-root-declared" if reads_nullable else "legacy-multiple-types-nullable-not-recorded",
+                admits_null=(declared if reads_nullable else type_null)
+                if (mode.strict_nullable or mode.use_missing_sentinel)
+                else None,
                 required=not (mode.force_optional or declared),
             )
         case "array-field":

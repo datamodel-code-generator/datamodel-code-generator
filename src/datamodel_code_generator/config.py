@@ -269,6 +269,7 @@ class ParserConfig(BaseModel):
     read_const_beside_enum: bool = False
     filter_literal_values: bool = False
     intersect_allof_keywords: bool = False
+    read_nullable_beside_type_list: bool = False
     known_third_party: list[str] | None = None
     custom_formatters: list[str] | None = None
     custom_formatters_kwargs: dict[str, Any] | None = None
