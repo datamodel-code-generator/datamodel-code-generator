@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Box": {
+      "$id": "https://example.com/box.json",
+      "type": "object",
+      "properties": {
+        "item": {"$ref": "#/definitions/Item"}
+      },
+      "definitions": {
+        "Item": {"type": "string"}
+      }
+    }
+  }
+}

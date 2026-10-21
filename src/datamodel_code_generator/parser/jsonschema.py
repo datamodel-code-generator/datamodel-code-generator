@@ -177,11 +177,13 @@ from datamodel_code_generator.parser._schema_graph import (
     RefKey,
     RefOrigin,
     RefReading,
+    ReservedTarget,
     ResolvedRef,
     ResourceRegistry,
     SchemaGraphBuilder,
     canonical_ref_spelling,
     keep_resolved_ref,
+    same_values,
     walk_schema_resources,
 )
 from datamodel_code_generator.parser.base import (
@@ -1179,6 +1181,12 @@ def _get_model_by_path_or_missing(
             raise NotImplementedError(msg)  # pragma: no cover
         current = value
     raise AssertionError  # pragma: no cover
+
+
+def _reserved_value(tree: dict[str, YamlValue], key: str) -> YamlValue | object:
+    """Return the value a reserved reference key names in a document tree, as parsing it reads that value."""
+    object_paths = _split_json_pointer(tree, key.split("#", 1)[-1])[0]
+    return _get_model_by_path_or_missing(tree, object_paths) if object_paths else tree
 
 
 def split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> list[str]:
@@ -15501,6 +15509,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._has_embedded_schema_resources = False
         self._lenient_documents: dict[str, dict[str, Any]] = {}
         self._implicit_documents: set[str] = set()
+        self._rewritten_documents: set[str] = set()
         self._resource_ref_warnings: set[str] = set()
         self._schema_resources: dict[str, set[str]] = registry.resources
         self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = registry.dynamic_anchors
@@ -15783,6 +15792,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         registry.forget(document)
         self._lenient_documents.pop(document, None)
         self._implicit_documents.discard(document)
+        self._rewritten_documents.discard(document)
         base = document if is_url(document) else Path(document).as_uri() if document else f"{self.base_path.as_uri()}/"
         id_field = (
             self.schema_features.id_field
@@ -15812,6 +15822,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             prepared = self._rewrite_schema_resource_refs(
                 raw, document, base, resources.root_base, id_field, is_root=True
             )
+            if prepared is not raw:
+                self._rewritten_documents.add(document)
         prepared = self._index_document(prepared, path_parts)
         self._schema_resource_cache[document] = raw, prepared
         return prepared
@@ -16362,37 +16374,92 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._reset_local_source_cache()
 
     def _resolve_unparsed_json_pointer(self) -> None:
-        """Resolve any remaining unparsed JSON pointer references recursively."""
-        model_count: int = len(self.results)
-        for source in self.iter_source:
-            path_parts = list(source.path.parts)
-            if not (reserved_refs := self.reserved_refs.get(tuple(path_parts))):
-                continue
-            if self.current_source_path is not None:
-                self.current_source_path = source.path
+        """Parse the targets each source reserves, in key order, until a round over the sources adds no model.
 
-            prepared = (
-                self._schema_resource_cache[document][1]
-                if self._lenient_documents
-                and (document := self._schema_resource_document(path_parts)) in self._lenient_documents
-                else None
-            )
-            with (
-                self.model_resolver.current_base_path_context(source.path.parent),
-                self.model_resolver.current_root_context(path_parts),
-            ):
-                loaded = prepared
-                for reserved_ref in sorted(reserved_refs):
-                    if self.model_resolver.add_ref(reserved_ref, resolved=True).loaded:
-                        continue
-                    if loaded is None:
-                        loaded = self._index_document(self._load_source_dict(source), path_parts)
-                    self.raw_obj = loaded
-                    self.parse_json_pointer(self.raw_obj, reserved_ref, path_parts)
+        A target is read from the prepared tree of its source document, the tree the document's models came from. A
+        document whose references the embedded-resource rewrite changed, and that does not resolve references against
+        itself, is the named legacy row ``rewritten-document``: its targets are read from a fresh load of the source,
+        which holds the references as written.
+        """
+        while True:
+            model_count = len(self.results)
+            for source in self.iter_source:
+                path_parts = list(source.path.parts)
+                if not self.reserved_refs.get(tuple(path_parts)):
+                    continue
+                if self.current_source_path is not None:
+                    self.current_source_path = source.path
+                prepared = self._schema_resource_cache[document := self._schema_resource_document(path_parts)][1]
+                rewritten = document in self._rewritten_documents and document not in self._lenient_documents
+                loads: list[dict[str, YamlValue]] = []
+                with (
+                    self.model_resolver.current_base_path_context(source.path.parent),
+                    self.model_resolver.current_root_context(path_parts),
+                ):
+                    for target in self._reserved_targets(path_parts, prepared, self._reserved_ref_loaded):
+                        tree = self._load_source_once(source, loads) if rewritten else prepared
+                        self._check_reserved_target(target, prepared, source, loads, rewritten=rewritten)
+                        self.raw_obj = tree
+                        self.parse_json_pointer(tree, target["key"], path_parts)
+            if model_count == len(self.results):
+                return
 
-        if model_count != len(self.results):
-            # New model have been generated. It try to resolve json pointer again.
-            self._resolve_unparsed_json_pointer()
+    def _reserved_targets(
+        self, path_parts: list[str], tree: dict[str, YamlValue], loaded: Callable[[str], bool]
+    ) -> Iterator[ReservedTarget]:
+        """Yield the targets the source document at ``path_parts`` reserves and ``loaded`` does not, in key order.
+
+        The keys are read when the first target is taken, and each key is tested when its turn comes, after the target
+        before it is parsed; the targets parsed meanwhile reserve more for a later round. The node of a target is the
+        object its key names in ``tree``, the document's prepared tree.
+        """
+        document = DocumentId(self._schema_resource_document(path_parts))
+        graph = cast("SchemaGraphBuilder", self._schema_graph)
+        for key in sorted(self.reserved_refs.get(tuple(path_parts)) or ()):
+            if not loaded(key):
+                yield ReservedTarget(document=document, key=key, node=graph.node(_reserved_value(tree, key)))
+
+    def _reserved_ref_loaded(self, key: str) -> bool:
+        """Return whether the model of a reserved key is loaded, adding its reference when it has none."""
+        return self.model_resolver.add_ref(key, resolved=True).loaded
+
+    def _reserved_ref_settled(self, key: str) -> bool:
+        """Return whether a reserved key has no reference, or names a loaded model."""
+        return (reference := self.model_resolver.references.get(key)) is None or reference.loaded
+
+    def _load_source_once(self, source: Source, loads: list[dict[str, YamlValue]]) -> dict[str, YamlValue]:
+        """Return a fresh load of a source as a located tree; ``loads`` keeps the one load a round makes."""
+        if not loads:
+            loads.append(self._index_document(self._load_source_dict(source), list(source.path.parts)))
+        return loads[0]
+
+    def _check_reserved_target(
+        self,
+        target: ReservedTarget,
+        prepared: dict[str, YamlValue],
+        source: Source,
+        loads: list[dict[str, YamlValue]],
+        *,
+        rewritten: bool,
+    ) -> None:
+        """Report a reserved target whose value in the prepared tree differs from a fresh load of its source.
+
+        A document that resolves references against itself is parsed from its prepared tree, whose rewritten
+        references a fresh load does not hold, and is not compared. A difference in a ``rewritten`` document, whose
+        targets are read from the fresh load, is the listed ``rewritten-document`` class, recorded and not reported.
+        """
+        if (mode := check_mode(CheckArea.SCHEMA_GRAPH)) is None or target["document"] in self._lenient_documents:
+            return
+        key = target["key"]
+        if same_values(_reserved_value(prepared, key), _reserved_value(self._load_source_once(source, loads), key)):
+            return
+        message = (
+            f"the reserved target {redact_url(key)!r} differs between the prepared tree and a fresh load of its source"
+        )
+        if rewritten:
+            mode.record(f"{mode.area.value}: {message}", kind="rewritten-document", key=redact_url(key))
+            return
+        mode.violation(Error, message, kind="reserved-target", key=redact_url(key))
 
     def parse_json_pointer(self, raw: dict[str, YamlValue], ref: str, path_parts: list[str]) -> None:
         """Parse a JSON pointer reference into a model."""
@@ -16652,13 +16719,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                                 validated_definition_objects.get(tuple(path)),
                             )
 
-                key = tuple(path_parts)
-                reserved_refs = set(self.reserved_refs.get(key) or [])
-                while reserved_refs:
-                    for reserved_path in sorted(reserved_refs):
-                        reference = self.model_resolver.references.get(reserved_path)
-                        if not reference or reference.loaded:
-                            continue
+                taken: set[str] = set()
+                while (reserved := self.reserved_refs.get(tuple(path_parts))) and reserved != taken:
+                    taken = set(reserved)
+                    for target in self._reserved_targets(path_parts, raw, self._reserved_ref_settled):
+                        reserved_path = target["key"]
+                        reference = self.model_resolver.references[reserved_path]
                         object_paths, reference_paths = _split_json_pointer(raw, reserved_path.split("#", 1)[-1])
                         if not object_paths:
                             self.parse_obj(
@@ -16669,10 +16735,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         model_name = reference_paths[-1]
                         path = [*path_parts, f"#/{reference_paths[0]}", *reference_paths[1:]]
                         self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
-                    previous_reserved_refs = reserved_refs
-                    reserved_refs = set(self.reserved_refs.get(key) or [])
-                    if previous_reserved_refs == reserved_refs:
-                        break
 
 
 # Snapshot the default hooks after JsonSchemaParser is fully defined. The local

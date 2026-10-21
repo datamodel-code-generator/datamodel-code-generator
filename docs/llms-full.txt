@@ -65926,6 +65926,12 @@ The walks that follow references from a schema (field flags, literal and null ch
 overrides, validation sources, `uniqueItems` rules, merged `allOf` values) visit each schema graph node once
 (`SchemaNodeId`, the location of the object a reference names: `_key_node`), and a `$ref` target merged with its sibling
 keywords is dumped once per node and document being parsed (`_ref_target_dump`).
+A local reference whose model a document has not parsed yet is reserved for that document (`reserved_refs`).
+`_parse_file`, `_resolve_unparsed_json_pointer` and AsyncAPI's `_resolve_asyncapi_unparsed_json_pointer` take the
+targets from one worklist (`_reserved_targets`: a `ReservedTarget` with the document, the key and the node the key names
+in the document's prepared tree), in key order, repeating while a round reserves more keys (`_parse_file`) or adds
+models (the others), and parse each target from the prepared tree; the schema graph check loads the source again and
+compares the value at each target (`kind="reserved-target"`).
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `_read_document`, so document rewrites do not apply to them.
@@ -66648,8 +66654,8 @@ parses. Parse paths are not document locations: legacy OpenAPI `paths` and `para
 sibling keywords, `$ref` targets inside extension keys and properties whose names start with `x-` all produce paths
 that a path-based test misreads. The mark has to survive every step that builds a new object from a marked one:
 copy-on-write rewrites (`_single_value_enum_as_const`, `_rewrite_schema_resource_refs`), `_validate_schema_object`,
-`_merge_ref_with_schema`, synthetic enums, allOf and combined-schema merges, OpenAPI operation copies, and
-`_resolve_unparsed_json_pointer`, which loads the source again as a fresh dict. `--use-single-value-enum-as-const` has
+`_merge_ref_with_schema`, synthetic enums, allOf and combined-schema merges, and OpenAPI operation copies.
+`--use-single-value-enum-as-const` has
 such a mark: its L0 walk marks every schema object that holds a `const` after the rewrite, written or rewritten, with
 `x-datamodel-code-generator-read-as-const`, and L1 `_extract_const_enum_from_combined` reads it as `read_as_const`. That
 it survives each of these steps is not verified. The schema location of [Metadata Output](#metadata-output) is a mark

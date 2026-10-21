@@ -10,7 +10,8 @@ location table, which ``JsonSchemaObject`` reads through ``SCHEMA_GRAPH`` while 
 string as written that also carries its ``RefEdge``; ``SchemaGraphBuilder.edge_key`` keeps the ``RefKey`` each edge
 resolves to in its own document, and ``SchemaGraphBuilder.schema`` the object each JSON object of a loaded document
 validates to, which every reader of that object shares. ``SchemaGraphBuilder.node`` names a JSON object of a loaded
-document as the node walks visit once (``SchemaNodeId``).
+document as the node walks visit once (``SchemaNodeId``), and a ``ReservedTarget`` the node a reference a document
+reserves names in it.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, NewType, Protocol, TypeAlias, TypeVar
 from urllib.parse import unquote, urljoin
 
-from typing_extensions import Self, final, override
+from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
 from datamodel_code_generator.reference import SchemaLocation
 
@@ -41,6 +42,7 @@ __all__ = [
     "RefKey",
     "RefOrigin",
     "RefReading",
+    "ReservedTarget",
     "ResolvedRef",
     "ResourceRegistry",
     "SchemaGraphBuilder",
@@ -48,6 +50,7 @@ __all__ = [
     "SchemaNodeId",
     "canonical_ref_spelling",
     "keep_resolved_ref",
+    "same_values",
     "walk_schema_resources",
 ]
 
@@ -56,6 +59,18 @@ DocumentId = NewType("DocumentId", str)
 
 SchemaNodeId = NewType("SchemaNodeId", SchemaLocation)
 """A JSON object of a loaded document as a node of the graph: its location, which names one object per parse."""
+
+
+class ReservedTarget(TypedDict):
+    """A reference a source document reserves, to parse its target from the document after the models it holds."""
+
+    document: ReadOnly[DocumentId]
+    """The source document, whose prepared tree holds the target."""
+    key: ReadOnly[str]
+    """The reference key the parser reserves (``reserved_refs``), which names the model of the target."""
+    node: ReadOnly[SchemaNodeId | None]
+    """The node the key names in the prepared tree, or None when no JSON object of it is there."""
+
 
 SchemaPath: TypeAlias = tuple[str | int, ...]
 """The keys and indexes from a schema to a schema-valued keyword below it."""
@@ -590,6 +605,11 @@ class SchemaGraphBuilder:
         mounted = self.index_document(converted, location)
         self._mounted.add(id(mounted))
         return mounted
+
+
+def same_values(left: object, right: object) -> bool:
+    """Return whether two values of loaded documents hold the same data, their attributes and types included."""
+    return _fingerprint(left) == _fingerprint(right)
 
 
 def _fingerprint(value: object, active: frozenset[int] = frozenset()) -> object:

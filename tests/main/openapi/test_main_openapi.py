@@ -10947,6 +10947,45 @@ def test_schema_graph_check_counts_references_without_an_edge(monkeypatch: pytes
     assert_output(report_path.read_text(encoding="utf-8"))
 
 
+class _ReservedTargetWriterParser(OpenAPIParser):
+    """Adds a property to a target its document reserves: a prepared tree that differs from its source."""
+
+    def _parse_specification(self, specification: dict[str, Any], path_parts: list[str]) -> None:
+        super()._parse_specification(specification, path_parts)
+        specification["components"]["schemas"]["Parent"]["properties"]["pet"]["properties"] = {
+            "written": {"type": "string"}
+        }
+
+
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_schema_graph_check_of_a_reserved_target_that_differs_from_its_source(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A reserved target is parsed from the prepared tree of its document, which the check compares with its source.
+
+    The check (`1`, as the test suite sets it) loads the source again and raises when the value at a reserved target
+    differs, `report:<path>` appends it as a JSON line, and with the check off (`0`) the target is parsed from the
+    prepared tree, with the property added to it.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = _ReservedTargetWriterParser(
+        OPEN_API_DATA_PATH / "reference_to_object_properties.yaml", formatters=[Formatter.BUILTIN]
+    )
+    if flag == "check":
+        with pytest.raises(
+            Error,
+            match=f"^{CHECK_SCHEMA_GRAPH_ENV}: the reserved target "
+            "'reference_to_object_properties.yaml#/components/schemas/Parent/properties/pet' differs between the "
+            "prepared tree and a fresh load of its source$",
+        ):
+            parser.parse()
+        return
+    assert_output(str(parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 def test_webhooks_ref_with_external_schema(output_file: Path) -> None:
     """Test OpenAPI generation with $ref to external webhook file containing relative schema refs."""
     run_main_and_assert(

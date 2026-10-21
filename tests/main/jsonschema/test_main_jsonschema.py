@@ -31056,6 +31056,42 @@ def test_schema_graph_check_of_a_reader_that_writes_a_shared_schema(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+def test_main_jsonschema_reserved_target_of_a_rewritten_document(tmp_path: Path) -> None:
+    """A target another file reserves in a document whose embedded `$id` rewrites a reference is read as loaded.
+
+    `box.json` is parsed before `holder.json` reserves `#/definitions/Box/properties/item` in it. The embedded
+    resource rewrites that `$ref` in the prepared tree, so the target is read from a fresh load of `box.json`, as
+    before the schema graph: there `#/definitions/Item` names no value of the document and stays dangling.
+    """
+    with pytest.warns(DanglingRefWarning, match="#/definitions/Item"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "reserved_target_rewritten_document",
+            output_path=tmp_path / "model",
+            input_file_type="jsonschema",
+        )
+
+
+def test_schema_graph_check_records_reserved_targets_of_a_rewritten_document(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The schema graph check records a reserved target read from a fresh load as the listed class, not a mismatch.
+
+    `report:<path>` appends one `rewritten-document` line for the target whose fresh load differs from the prepared
+    tree; the check (`1`, as the test suite sets it) does not raise for it.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_SCHEMA_GRAPH_ENV, f"report:{report_path}")
+    with pytest.warns(DanglingRefWarning, match="#/definitions/Item"):
+        generate(
+            JSON_SCHEMA_DATA_PATH / "reserved_target_rewritten_document",
+            input_file_type=InputFileType.JsonSchema,
+            output=tmp_path / "model",
+            disable_timestamp=True,
+            formatters=[Formatter.BUILTIN],
+        )
+    assert_output(report_path.read_text(encoding="utf-8"))
+
+
 def test_main_jsonschema_shared_schema_with_cyclic_extension() -> None:
     """A referenced schema whose extension value holds itself is validated once and shared by its readers.
 

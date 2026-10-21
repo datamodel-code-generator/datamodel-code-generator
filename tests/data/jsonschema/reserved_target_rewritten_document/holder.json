@@ -1,0 +1,6 @@
+{
+  "type": "object",
+  "properties": {
+    "item": {"$ref": "box.json#/definitions/Box/properties/item"}
+  }
+}

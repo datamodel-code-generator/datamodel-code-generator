@@ -1005,20 +1005,20 @@ class AsyncAPIParser(OpenAPIParser):
         self,
         context_sources: dict[tuple[str, ...], AsyncAPIContext],
     ) -> None:
-        """Resolve JSON pointers per AsyncAPI context, preserving sorted reserved-ref fixed-point order."""
-        model_count = len(self.results)
-        for root_key, context in context_sources.items():
-            if not (reserved_refs := self.reserved_refs.get(root_key)):
-                continue
+        """Parse the targets each AsyncAPI context reserves, in key order, until a round adds no model.
 
-            with self._asyncapi_context(context):
-                for reserved_ref in sorted(reserved_refs):
-                    if self.model_resolver.add_ref(reserved_ref, resolved=True).loaded:
-                        continue
-                    self.parse_json_pointer(context.raw_obj, reserved_ref, list(root_key))
-
-        if model_count != len(self.results):
-            self._resolve_asyncapi_unparsed_json_pointer(context_sources)
+        A target is read from the document of its context.
+        """
+        while True:
+            model_count = len(self.results)
+            for root_key, context in context_sources.items():
+                if not self.reserved_refs.get(root_key):
+                    continue
+                with self._asyncapi_context(context):
+                    for target in self._reserved_targets(list(root_key), context.raw_obj, self._reserved_ref_loaded):
+                        self.parse_json_pointer(context.raw_obj, target["key"], list(root_key))
+            if model_count == len(self.results):
+                return
 
     def parse_raw(self) -> None:
         """Parse AsyncAPI component schemas and message payload/header schemas."""

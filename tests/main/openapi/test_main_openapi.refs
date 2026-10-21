@@ -1821,6 +1821,10 @@ cli	main/openapi/type_union_nullable.py
 	main/openapi/ref_merge_parameters.py
 [test_schema_graph_check_counts_references_without_an_edge]
 	main/openapi/main_openapi/schema_graph_check_counts_references_without_an_edge.txt
+[test_schema_graph_check_of_a_reserved_target_that_differs_from_its_source]
+off	main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[off].txt
+report	main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[report].report.txt
+report	main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[report].txt	= main/openapi/main_openapi/schema_graph_check_of_a_reserved_target_that_differs_from_its_source[off].txt
 [test_stdin]
 	main/openapi/general.py	= main/openapi/custom_file_header_empty.py
 [test_target_python_version]
