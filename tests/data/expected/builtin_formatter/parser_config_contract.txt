@@ -96,6 +96,7 @@ reviewed-safe strict_nullable
 reviewed-safe strict_refs
 reviewed-safe strict_types
 reviewed-safe strip_default_none
+reviewed-safe tag_msgspec_by_payload_name
 reviewed-safe target_date_class
 reviewed-safe target_datetime_class
 reviewed-safe target_pydantic_version

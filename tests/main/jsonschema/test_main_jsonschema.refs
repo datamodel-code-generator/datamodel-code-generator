@@ -7432,7 +7432,8 @@ tagged-unions	main/jsonschema/discriminator_const_enum_msgspec.py
 [test_main_msgspec_discriminator_mapping_tags]
 	main/jsonschema/discriminator_mapping_msgspec_tags.py
 [test_main_msgspec_discriminator_wire_name]
-default	main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
+default	main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default]~main_msgspec_discriminator_wire_name[default].py
+payload-name	main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[payload-name].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 tagged-unions	main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[tagged-unions].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 [test_main_msgspec_discriminator_with_meta]
 	main/jsonschema/discriminator_with_meta_msgspec.py

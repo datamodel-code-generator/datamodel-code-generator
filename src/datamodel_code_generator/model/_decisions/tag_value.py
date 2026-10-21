@@ -13,7 +13,7 @@ passes that apply tags), ``parser/jsonschema.py`` (``_SchemaTagFacts`` behind
 The rows named ``legacy-*`` keep today's output where passes or backends disagree on a tag; the fix of each deletes
 its row (G05): ``legacy-literal-only`` (``FieldTagSite``),
 ``legacy-python-equality`` (``TagIdentity``), ``legacy-any-key`` (``MappingPathRule``) and the rows in the docstrings
-of ``redeclared_tag_field`` and ``tagged_union_discriminator``.
+of ``redeclared_tag_field``, ``tagged_union_discriminator`` and ``struct_tag_field``.
 """
 
 from __future__ import annotations
@@ -94,6 +94,7 @@ __all__ = [
     "struct_discriminator_tag",
     "struct_tag_clash",
     "struct_tag_conflicts",
+    "struct_tag_field",
     "struct_tag_options",
     "tag_field_matches",
     "tag_key",
@@ -419,6 +420,17 @@ def tagged_union_discriminator(declared: object, /, *, literal_property: str) ->
     if declared.get("propertyName") == literal_property:
         return {**declared, "propertyName": literal_property}
     return {key: value for key, value in declared.items() if key != "mapping"} | {"propertyName": literal_property}
+
+
+def struct_tag_field(*, property_name: str, field_name: str, by_payload_name: bool) -> str:
+    """Return the ``tag_field`` a union's msgspec Structs are tagged with.
+
+    Row ``legacy-python-name``: unless ``--tag-msgspec-by-payload-name`` or ``--use-msgspec-tagged-unions`` is given,
+    the Structs whose tag fields hold one literal each take the Python name the property resolves to, which msgspec
+    looks for in the payload instead, so a property named ``pet-kind`` (``pet_kind``) decodes nothing. With either
+    option the tag field is the property name the payload carries.
+    """
+    return property_name if by_payload_name else field_name
 
 
 def struct_tag_conflicts(value: TagValue | None, mapped: Iterable[str], /) -> bool:

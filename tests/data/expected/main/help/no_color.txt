@@ -550,6 +550,14 @@ Model customization:
                         applies only to automatic inference and does not
                         override --treat-dot-as-module or --no-treat-dot-as-
                         module.
+  --tag-msgspec-by-payload-name
+                        msgspec.Struct output only: tag the structs of a
+                        discriminated union with the property name the
+                        document carries (for example 'pet-kind') instead of
+                        the Python name that property resolves to (pet_kind),
+                        which msgspec looks for in the payload. --use-msgspec-
+                        tagged-unions already tags by the document's property
+                        name. Without either option the Python name is kept.
   --target-pydantic-version {2,2.11,2.12,2.14}
                         Oldest Pydantic version the generated code must
                         support. Unset: the newest supported feature forms,

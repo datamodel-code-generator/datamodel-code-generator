@@ -9436,7 +9436,9 @@ class Cat(Struct):
 `Cat(petType='cat')`, `cat.petType` and decoding `Cat` on its own work, but decoding the union `Cat | Dog` raises
 msgspec's `TypeError`. That form only tags a variant whose discriminator property is a single literal such as a
 `const`, or one that a second discriminated union uses, and its `tag_field` is the generated field name, which
-differs from the property name when the field is renamed.
+differs from the property name when the field is renamed. A property named `pet-kind` is tagged by `pet_kind`, which
+msgspec looks for in the payload instead. [`--tag-msgspec-by-payload-name`](cli-reference/model-customization.md#tag-msgspec-by-payload-name)
+tags those structs by the property name of the document (`pet-kind`) and changes nothing else.
 
 [`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions) writes a union as
 tagged structs as a whole instead, with the property name of the document as `tag_field`:
@@ -22067,7 +22069,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 36 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 48 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 49 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 9 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -22384,6 +22386,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### T {#t}
 
+- [`--tag-msgspec-by-payload-name`](model-customization.md#tag-msgspec-by-payload-name)
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version)
 - [`--target-python-version`](model-customization.md#target-python-version)
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module)
@@ -23637,6 +23640,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-custom
 | [`--skip-root-model`](#skip-root-model) | Skip generation of root model when schema contains nested de... |
 | [`--strict-nullable`](#strict-nullable) | Treat default field as a non-nullable field. |
 | [`--strip-default-none`](#strip-default-none) | Remove fields with None as default value from generated mode... |
+| [`--tag-msgspec-by-payload-name`](#tag-msgspec-by-payload-name) | Tag the structs of a msgspec discriminated union with the pr... |
 | [`--target-pydantic-version`](#target-pydantic-version) | Target Pydantic version for generated code compatibility. |
 | [`--target-python-version`](#target-python-version) | Target Python version for generated code syntax and imports. |
 | [`--union-mode`](#union-mode) | Union mode for combining anyOf/oneOf schemas (smart or left_... |
@@ -29362,6 +29366,142 @@ under `--strict-nullable` defaults to `None`, and that default stays, as the fie
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--tag-msgspec-by-payload-name` {#tag-msgspec-by-payload-name}
+
+Tag the structs of a msgspec discriminated union with the property name of the document.
+
+The `--tag-msgspec-by-payload-name` flag only applies to `--output-model-type msgspec.Struct`; other output model
+types ignore it.
+
+msgspec reads the tag from the payload under `tag_field`. Without the flag, the structs whose discriminator is a
+single literal take the Python name the property resolves to: a property named `pet-kind` is tagged by `pet_kind`,
+which msgspec looks for in the payload instead, so the union decodes nothing. With the flag, `tag_field` is the
+property name the document carries (`pet-kind`). `--use-msgspec-tagged-unions` tags by the document's property name
+too.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input discriminator_msgspec_wire_name.json --tag-msgspec-by-payload-name --output-model-type msgspec.Struct # (1)!
+    ```
+
+    1. :material-arrow-left: `--tag-msgspec-by-payload-name` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "Cat": {
+          "type": "object",
+          "properties": {
+            "pet-kind": {
+              "const": "cat"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "pet-kind"
+          ]
+        },
+        "Dog": {
+          "type": "object",
+          "properties": {
+            "pet-kind": {
+              "const": "dog"
+            },
+            "bark": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "pet-kind"
+          ]
+        }
+      },
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "pet": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ],
+          "discriminator": {
+            "propertyName": "pet-kind"
+          }
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  discriminator_msgspec_wire_name.json
+
+        from __future__ import annotations
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class Cat(Struct, tag_field='pet_kind', tag='cat'):
+            name: str | UnsetType = UNSET
+
+
+        class Dog(Struct, tag_field='pet_kind', tag='dog'):
+            bark: str | UnsetType = UNSET
+
+
+        class Model(Struct):
+            pet: Cat | Dog | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  discriminator_msgspec_wire_name.json
+
+        from __future__ import annotations
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class Cat(Struct, tag_field='pet_kind', tag='cat'):
+            name: str | UnsetType = UNSET
+
+
+        class Dog(Struct, tag_field='pet_kind', tag='dog'):
+            bark: str | UnsetType = UNSET
+
+
+        class Model(Struct):
+            pet: Cat | Dog | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -60057,6 +60197,7 @@ datamodel-codegen [OPTIONS]
 | [`--skip-root-model`](model-customization.md#skip-root-model) | Skip generation of root model when schema contains nested definitions. |
 | [`--strict-nullable`](model-customization.md#strict-nullable) | Treat default field as a non-nullable field. |
 | [`--strip-default-none`](model-customization.md#strip-default-none) | Remove fields with None as default value from generated models. |
+| [`--tag-msgspec-by-payload-name`](model-customization.md#tag-msgspec-by-payload-name) | Tag the structs of a msgspec discriminated union with the property name of the d... |
 | [`--target-pydantic-version`](model-customization.md#target-pydantic-version) | Target Pydantic version for generated code compatibility. |
 | [`--target-python-version`](model-customization.md#target-python-version) | Target Python version for generated code syntax and imports. |
 | [`--union-mode`](model-customization.md#union-mode) | Union mode for combining anyOf/oneOf schemas (smart or left_to_right). |
@@ -60380,6 +60521,7 @@ All options sorted alphabetically:
 - [`--strict-refs`](general-options.md#strict-refs) - Treat unresolved local `$ref` JSON pointers as errors.
 - [`--strict-types`](typing-customization.md#strict-types) - Enable strict type validation for specified Python types.
 - [`--strip-default-none`](model-customization.md#strip-default-none) - Remove fields with None as default value from generated mode...
+- [`--tag-msgspec-by-payload-name`](model-customization.md#tag-msgspec-by-payload-name) - Tag the structs of a msgspec discriminated union with the pr...
 - [`--target-pydantic-version`](model-customization.md#target-pydantic-version) - Target Pydantic version for generated code compatibility.
 - [`--target-python-version`](model-customization.md#target-python-version) - Target Python version for generated code syntax and imports.
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module) - Treat dots in schema names as module separators.
@@ -62336,16 +62478,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 186 | Shared generation options. |
-| `GenerateConfig` | 201 | Public `generate()` configuration. |
-| `ParserConfig` | 151 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 153 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 160 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 161 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 154 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 154 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 153 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 154 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 187 | Shared generation options. |
+| `GenerateConfig` | 202 | Public `generate()` configuration. |
+| `ParserConfig` | 152 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 154 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 161 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 162 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 155 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 155 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 154 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 155 | GraphQL-specific parser options. |
 
 ### Formatter Names
 

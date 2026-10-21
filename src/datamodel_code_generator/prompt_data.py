@@ -162,6 +162,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--strict-refs": "Treat unresolved local `$ref` JSON pointers as errors.",
     "--strict-types": "Enable strict type validation for specified Python types.",
     "--strip-default-none": "Remove fields with None as default value from generated models.",
+    "--tag-msgspec-by-payload-name": "Tag the structs of a msgspec discriminated union with the property name of th...",
     "--target-pydantic-version": "Target Pydantic version for generated code compatibility.",
     "--target-python-version": "Target Python version for generated code syntax and imports.",
     "--treat-dot-as-module": "Treat dots in schema names as module separators.",

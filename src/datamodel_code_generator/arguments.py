@@ -551,6 +551,15 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
+    "--tag-msgspec-by-payload-name",
+    help="msgspec.Struct output only: tag the structs of a discriminated union with the property name the document "
+    "carries (for example 'pet-kind') instead of the Python name that property resolves to (pet_kind), which msgspec "
+    "looks for in the payload. --use-msgspec-tagged-unions already tags by the document's property name. Without "
+    "either option the Python name is kept.",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--use-msgspec-nullable-enum-alias",
     help="msgspec.Struct output only: write an enum that lists null as an Enum without the None member plus an "
     "Enum | None type alias, so that msgspec can decode it. Without it a plain Enum keeps the 0.83.0 None member, "

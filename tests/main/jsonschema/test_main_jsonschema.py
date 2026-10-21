@@ -14951,9 +14951,33 @@ def test_main_msgspec_discriminator_const_enum(output_file: Path, extra_args: li
     )
 
 
-@pytest.mark.parametrize("extra_args", [[], ["--use-msgspec-tagged-unions"]], ids=["default", "tagged-unions"])
+@pytest.mark.cli_doc(
+    options=["--tag-msgspec-by-payload-name"],
+    option_description="""Tag the structs of a msgspec discriminated union with the property name of the document.
+
+The `--tag-msgspec-by-payload-name` flag only applies to `--output-model-type msgspec.Struct`; other output model
+types ignore it.
+
+msgspec reads the tag from the payload under `tag_field`. Without the flag, the structs whose discriminator is a
+single literal take the Python name the property resolves to: a property named `pet-kind` is tagged by `pet_kind`,
+which msgspec looks for in the payload instead, so the union decodes nothing. With the flag, `tag_field` is the
+property name the document carries (`pet-kind`). `--use-msgspec-tagged-unions` tags by the document's property name
+too.""",
+    input_schema="jsonschema/discriminator_msgspec_wire_name.json",
+    cli_args=["--tag-msgspec-by-payload-name", "--output-model-type", "msgspec.Struct"],
+    golden_output="main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py",
+    comparison_output=(
+        "main/jsonschema/main_jsonschema/"
+        "main_msgspec_discriminator_wire_name[default]~main_msgspec_discriminator_wire_name[default].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [[], ["--tag-msgspec-by-payload-name"], ["--use-msgspec-tagged-unions"]],
+    ids=["default", "payload-name", "tagged-unions"],
+)
 def test_main_msgspec_discriminator_wire_name(output_file: Path, extra_args: list[str]) -> None:
-    """Tag msgspec variants by the property name the payload carries, not by its Python name."""
+    """Tag msgspec variants by the Python name of the property, or by the one the payload carries with the options."""
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_msgspec_wire_name.json",
         output_path=output_file,

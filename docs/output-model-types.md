@@ -418,7 +418,9 @@ class Cat(Struct):
 `Cat(petType='cat')`, `cat.petType` and decoding `Cat` on its own work, but decoding the union `Cat | Dog` raises
 msgspec's `TypeError`. That form only tags a variant whose discriminator property is a single literal such as a
 `const`, or one that a second discriminated union uses, and its `tag_field` is the generated field name, which
-differs from the property name when the field is renamed.
+differs from the property name when the field is renamed. A property named `pet-kind` is tagged by `pet_kind`, which
+msgspec looks for in the payload instead. [`--tag-msgspec-by-payload-name`](cli-reference/model-customization.md#tag-msgspec-by-payload-name)
+tags those structs by the property name of the document (`pet-kind`) and changes nothing else.
 
 [`--use-msgspec-tagged-unions`](cli-reference/model-customization.md#use-msgspec-tagged-unions) writes a union as
 tagged structs as a whole instead, with the property name of the document as `tag_field`:

@@ -127,6 +127,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     schema_path_keys,
     struct_tag_clash,
     struct_tag_conflicts,
+    struct_tag_field,
     tag_field_matches,
     tag_key,
     variant_tags,
@@ -4114,6 +4115,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
+        self.tag_msgspec_by_payload_name = config.tag_msgspec_by_payload_name
         self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias
         self.use_typed_nullable_map_values = config.use_typed_nullable_map_values
         self.use_single_value_enum_as_const = config.use_single_value_enum_as_const
@@ -5297,6 +5299,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         can_retain_cache: bool,
     ) -> None:
         tagged_unions = self.use_msgspec_tagged_unions
+        tag_by_payload_name = tagged_unions or self.tag_msgspec_by_payload_name
         unions: list[_DiscriminatorUnion] = []
         for model in models:  # noqa: PLR1702
             for field in model.fields:
@@ -5522,10 +5525,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 _drop_discriminator_tag_patterns(self.generation_store, tag_fields)
                 if not tags:
                     continue
+                tag_field = struct_tag_field(
+                    property_name=property_name, field_name=field_name, by_payload_name=tag_by_payload_name
+                )
                 if tagged_unions:
-                    unions.append((model, tags, property_name, mapping))
+                    unions.append((model, tags, tag_field, mapping))
                 else:
-                    _apply_discriminator_tags(tags, property_name, can_retain_cache=can_retain_cache)
+                    _apply_discriminator_tags(tags, tag_field, can_retain_cache=can_retain_cache)
         if (deferred := self._deferred_tagged_unions) or unions:
             self._deferred_tagged_unions = _tag_discriminator_unions(
                 [*deferred, *unions],

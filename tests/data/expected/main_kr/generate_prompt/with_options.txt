@@ -141,6 +141,7 @@ What other options should I use?
 - `--skip-root-model`: Skip generation of root model when schema contains nested definitions.
 - `--strict-nullable`: Treat default field as a non-nullable field.
 - `--strip-default-none`: Remove fields with None as default value from generated models.
+- `--tag-msgspec-by-payload-name`: Tag the structs of a msgspec discriminated union with the property name of th...
 - `--target-pydantic-version`: Target Pydantic version for generated code compatibility.
 - `--target-python-version`: Target Python version for generated code syntax and imports.
 - `--union-mode`: Union mode for combining anyOf/oneOf schemas (smart or left_to_right).
@@ -812,6 +813,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         applies only to automatic inference and does not
                         override --treat-dot-as-module or --no-treat-dot-as-
                         module.
+  --tag-msgspec-by-payload-name
+                        msgspec.Struct output only: tag the structs of a
+                        discriminated union with the property name the
+                        document carries (for example 'pet-kind') instead of
+                        the Python name that property resolves to (pet_kind),
+                        which msgspec looks for in the payload. --use-msgspec-
+                        tagged-unions already tags by the document's property
+                        name. Without either option the Python name is kept.
   --target-pydantic-version {2,2.11,2.12,2.14}
                         Oldest Pydantic version the generated code must
                         support. Unset: the newest supported feature forms,

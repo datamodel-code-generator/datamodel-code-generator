@@ -1102,6 +1102,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "Drops None defaults; changes which fields are required."
     },
+    "tag_msgspec_by_payload_name": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the dated presets from 20261019; the recommendation starts from the preset."
+    },
     "target_pydantic_version": {
       "not_recommended": "target",
       "reason": "The oldest pydantic version the project supports; only the project knows it."
