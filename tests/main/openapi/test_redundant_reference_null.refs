@@ -90,13 +90,13 @@ nullable_oas30-typing.TypedDict-default	main/openapi/redundant_reference_null/re
 nullable_oas30-typing.TypedDict-option	main/openapi/redundant_reference_null/redundant_reference_null[nullable_oas30-typing.TypedDict-option].payloads.txt	= main/openapi/redundant_reference_null/redundant_reference_null[nullable_oas30-typing.TypedDict-default].payloads.txt
 nullable_oas30-typing.TypedDict-option	main/openapi/redundant_reference_null/redundant_reference_null[nullable_oas30-typing.TypedDict-option].py
 [test_redundant_reference_null_object_maps]
-dataclasses.dataclass	main/openapi/redundant_reference_null/object_maps[dataclasses.dataclass].payloads.txt
+dataclasses.dataclass	main/openapi/redundant_reference_null/object_maps[dataclasses.dataclass].payloads.txt	= main/openapi/redundant_reference_null/object_maps[typing.TypedDict].payloads.txt
 dataclasses.dataclass	main/openapi/redundant_reference_null/object_maps[dataclasses.dataclass].py
 msgspec.Struct	main/openapi/redundant_reference_null/object_maps[msgspec.Struct].payloads.txt
 msgspec.Struct	main/openapi/redundant_reference_null/object_maps[msgspec.Struct].py
-pydantic_v2.BaseModel	main/openapi/redundant_reference_null/object_maps[pydantic_v2.BaseModel].payloads.txt
+pydantic_v2.BaseModel	main/openapi/redundant_reference_null/object_maps[pydantic_v2.BaseModel].payloads.txt	= main/openapi/redundant_reference_null/object_maps[typing.TypedDict].payloads.txt
 pydantic_v2.BaseModel	main/openapi/redundant_reference_null/object_maps[pydantic_v2.BaseModel].py
-pydantic_v2.dataclass	main/openapi/redundant_reference_null/object_maps[pydantic_v2.dataclass].payloads.txt
+pydantic_v2.dataclass	main/openapi/redundant_reference_null/object_maps[pydantic_v2.dataclass].payloads.txt	= main/openapi/redundant_reference_null/object_maps[typing.TypedDict].payloads.txt
 pydantic_v2.dataclass	main/openapi/redundant_reference_null/object_maps[pydantic_v2.dataclass].py
 typing.TypedDict	main/openapi/redundant_reference_null/object_maps[typing.TypedDict].payloads.txt
 typing.TypedDict	main/openapi/redundant_reference_null/object_maps[typing.TypedDict].py

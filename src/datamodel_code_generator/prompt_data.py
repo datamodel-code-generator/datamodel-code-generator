@@ -208,6 +208,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-schema-description": "Use schema description as class docstring.",
     "--use-serialization-alias": "Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).",
     "--use-serialize-as-any": "Wrap fields with subtypes in Pydantic's SerializeAsAny.",
+    "--use-single-dict-for-object-maps": "Type an object map as one dict instead of a union of dicts.",
     "--use-single-line-docstring": "Emit short docstrings on a single line.",
     "--use-single-value-enum-as-const": "Treat `enum` with a single value as `const` with that value.",
     "--use-site-models-for-constrained-refs": "Give an allOf of `$ref` members whose other parts add assertions its...",

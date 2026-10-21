@@ -47,7 +47,12 @@ def test_annotated_string_keys(
         or installed_pydantic_runs_target(".".join(map(str, minimum)))
     )
     formatters = ["builtin"] if formatter == "builtin" else ["black", "isort"]
-    options: dict[str, Any] = {"field_constraints": True, "use_field_description": True, **case["options"]}
+    options: dict[str, Any] = {
+        "field_constraints": True,
+        "use_field_description": True,
+        "use_single_dict_for_object_maps": True,
+        **case["options"],
+    }
     match entrypoint:
         case "cli":
             args = ["--output-model-type", backend, "--disable-timestamp", "--formatters", *formatters]

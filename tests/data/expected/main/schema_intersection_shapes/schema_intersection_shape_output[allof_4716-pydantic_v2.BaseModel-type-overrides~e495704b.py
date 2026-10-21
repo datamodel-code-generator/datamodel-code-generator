@@ -86,7 +86,7 @@ class Measurement(BaseModel):
     pair: Pair | None = None
     single: Pair | None = None
     ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)
-    pp: dict[constr(pattern=r'^a|^b'), Pp | Pp1] | None = None
+    pp: dict[constr(pattern=r'^a'), Pp] | dict[constr(pattern=r'^b'), Pp1] | None = None
     ap: dict[str, Ap] | None = None
     q_allof: QAllof | None = None
     q_items: list[QItem] | None = None

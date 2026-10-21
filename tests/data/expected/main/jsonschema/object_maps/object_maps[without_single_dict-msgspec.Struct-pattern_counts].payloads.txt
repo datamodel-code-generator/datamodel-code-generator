@@ -1,0 +1,23 @@
+valid: rejected
+invalid pClosed: rejected
+invalid rClosed: rejected
+invalid iClosed: rejected
+invalid mClosed: rejected
+invalid pNames: rejected
+invalid rNames: rejected
+invalid iNames: rejected
+invalid pRefNames: rejected
+invalid rRefNames: rejected
+invalid mRefNames: rejected
+invalid pOpen: rejected
+invalid rOpen: rejected
+invalid mOpen: rejected
+invalid pNullableCount: rejected
+invalid rNullableCount: rejected
+invalid iNullableCount: rejected
+invalid pStringOrCount: rejected
+invalid rStringOrCount: rejected
+invalid mStringOrCount: rejected
+invalid pNoKeys: rejected
+invalid rNoKeys: rejected
+invalid iNoKeys: rejected

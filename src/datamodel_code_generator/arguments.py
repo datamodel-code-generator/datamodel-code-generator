@@ -955,6 +955,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-single-dict-for-object-maps",
+    help="Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, "
+    "as one dict whose keys are those of every key class and whose value is the union of their values, beside the "
+    "null and the other types of its type array",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-subclass-enum",
     help="Define generic Enum class as subclass with field type when enum has type (int, float, bytes, str)",
     action="store_true",

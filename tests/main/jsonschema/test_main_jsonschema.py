@@ -11892,13 +11892,33 @@ def test_main_jsonschema_pattern_properties_boolean(output_file: Path) -> None:
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
+            "--use-single-dict-for-object-maps",
         ],
         force_exec_validation=True,
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-single-dict-for-object-maps"],
+    option_description="""Type an object map as one dict instead of a union of dicts.
+
+An object map is an object without `properties` whose keys `patternProperties` or `propertyNames` constrain.
+With `--use-single-dict-for-object-maps` it is one dict whose key pattern joins every pattern and whose value is
+the union of their value types, so an object that mixes the keys of several patterns is accepted; a dict that
+cannot express the object exactly (keys outside the patterns, different value schemas) is named by a warning.
+The null and the other types of a `type` array, such as `[object, string, null]`, join the dict in a union, and its
+property counts stay on the dict. Without the option the map is written as in 0.86.0: a union of dicts, one per
+value type of the patterns, the other types of a `type` array left out.""",
+    input_schema="jsonschema/pattern_properties_merge.json",
+    cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-single-dict-for-object-maps"],
+    golden_output="jsonschema/pattern_properties_merge.py",
+    comparison_output="jsonschema/main_jsonschema/pattern_properties_merge_without_single_dict.py",
+)
 def test_main_jsonschema_pattern_properties_merge(output_file: Path) -> None:
-    """Test merging multiple patternProperties with same value type into single regex pattern."""
+    """Merge patternProperties into one dict whose value is the union of their value types.
+
+    Under --use-single-dict-for-object-maps the patterns join one key pattern and the value types one union.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "pattern_properties_merge.json",
         output_path=output_file,
@@ -11908,7 +11928,19 @@ def test_main_jsonschema_pattern_properties_merge(output_file: Path) -> None:
         extra_args=[
             "--output-model-type",
             "pydantic_v2.BaseModel",
+            "--use-single-dict-for-object-maps",
         ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_pattern_properties_merge_without_single_dict(output_file: Path) -> None:
+    """Merge the patternProperties with the same value type into one regex pattern, a union of dicts, as in 0.86.0."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "pattern_properties_merge.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
         force_exec_validation=True,
     )
 
@@ -31990,6 +32022,7 @@ def test_type_union_constraints(name: str, constraints: bool, entry: str, output
                 extra_args=[
                     "--custom-file-header",
                     "# Type-specific union constraints",
+                    "--use-single-dict-for-object-maps",
                     *(["--field-constraints"] if constraints else []),
                 ],
                 assert_func=assert_file_content,
@@ -32002,12 +32035,15 @@ def test_type_union_constraints(name: str, constraints: bool, entry: str, output
                 input_file_type=InputFileType.JsonSchema,
                 custom_file_header="# Type-specific union constraints",
                 field_constraints=constraints,
+                use_single_dict_for_object_maps=True,
                 assert_func=assert_file_content,
                 expected_file=expected_file,
             )
         else:
             dynamic_model = generate_dynamic_models(
-                schema, config=GenerateConfig(field_constraints=constraints), cache_size=0
+                schema,
+                config=GenerateConfig(field_constraints=constraints, use_single_dict_for_object_maps=True),
+                cache_size=0,
             )["Root"]
     Draft202012Validator.check_schema(schema)
     validator = Draft202012Validator(schema)
@@ -32125,6 +32161,7 @@ def test_type_union_pattern_properties(output_file: Path, entrypoint: str, *, sc
                 extra_args=[
                     "--disable-timestamp",
                     "--field-constraints",
+                    "--use-single-dict-for-object-maps",
                     "--formatters",
                     "builtin",
                     *(["--generate-schema-validators"] if schema_validators else []),
@@ -32139,6 +32176,7 @@ def test_type_union_pattern_properties(output_file: Path, entrypoint: str, *, sc
                 input_file_type=InputFileType.JsonSchema,
                 disable_timestamp=True,
                 field_constraints=True,
+                use_single_dict_for_object_maps=True,
                 generate_schema_validators=schema_validators,
                 formatters=[Formatter.BUILTIN],
                 assert_func=assert_file_content,
@@ -32211,6 +32249,7 @@ def test_pattern_property_intersections(
                 "--disable-timestamp",
                 "--formatters",
                 *formatters,
+                "--use-single-dict-for-object-maps",
                 *(["--generate-schema-validators"] if enabled else []),
                 *(["--custom-template-dir", str(custom_template_dir)] if custom_template_dir else []),
                 *(
@@ -32234,6 +32273,7 @@ def test_pattern_property_intersections(
                 output=output,
                 disable_timestamp=True,
                 generate_schema_validators=enabled,
+                use_single_dict_for_object_maps=True,
                 custom_template_dir=custom_template_dir,
                 base_class=PATTERN_INTERSECTION_CASES[case].get("base_class", ""),
                 formatters=[Formatter(value) for value in formatters],
@@ -32329,6 +32369,7 @@ def test_additional_pattern_intersections(
                 "--disable-timestamp",
                 "--formatters",
                 *formatters,
+                "--use-single-dict-for-object-maps",
                 *(["--generate-schema-validators"] if enabled else []),
                 *(["--field-constraints"] if field_constraints else []),
                 *(["--custom-template-dir", str(template)] if template else []),
@@ -32348,6 +32389,7 @@ def test_additional_pattern_intersections(
                 output_model_type=DataModelType.PydanticV2BaseModel,
                 disable_timestamp=True,
                 generate_schema_validators=enabled,
+                use_single_dict_for_object_maps=True,
                 field_constraints=field_constraints,
                 custom_template_dir=template,
                 formatters=[Formatter(value) for value in formatters],
@@ -32437,6 +32479,7 @@ def test_undeclared_required(
                 "--disable-timestamp",
                 "--formatters",
                 *formatters,
+                "--use-single-dict-for-object-maps",
                 *(["--generate-schema-validators"] if enabled else []),
                 *args,
             ],
@@ -32458,6 +32501,7 @@ def test_undeclared_required(
                 output_model_type=DataModelType.PydanticV2BaseModel,
                 disable_timestamp=True,
                 generate_schema_validators=enabled,
+                use_single_dict_for_object_maps=True,
                 formatters=[Formatter(value) for value in formatters],
                 **options,
             ),
@@ -32598,6 +32642,7 @@ def test_unknown_pattern_root_annotations(
                 "--disable-timestamp",
                 "--formatters",
                 *formatters,
+                "--use-single-dict-for-object-maps",
                 *(["--generate-schema-validators"] if enabled else []),
                 *(["--field-constraints"] if field_constraints else []),
                 *options,
@@ -32614,6 +32659,7 @@ def test_unknown_pattern_root_annotations(
                 output_model_type=DataModelType.PydanticV2BaseModel,
                 disable_timestamp=True,
                 generate_schema_validators=enabled,
+                use_single_dict_for_object_maps=True,
                 field_constraints=field_constraints,
                 formatters=[Formatter(value) for value in formatters],
                 **record["config"],

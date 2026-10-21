@@ -3206,22 +3206,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             constraints["maxItems"] = 0
         return constraints
 
-    @classmethod
-    def _dropped_property_counts(cls, obj: JsonSchemaObject, data_type: DataType) -> dict[str, int]:
+    def _dropped_property_counts(self, obj: JsonSchemaObject, data_type: DataType) -> dict[str, int]:
         """Return the property counts of ``obj`` that the object map builder leaves out of its type-array union.
 
         A field takes the counts only on a type that is a map itself; they are keyed as the field writes the length
-        of a map, so the dropped-constraint warning names them.
+        of a map, so the dropped-constraint warning names them. Only the builder of
+        ``--use-single-dict-for-object-maps`` joins the map with the other types.
         """
         if (
-            not (obj.patternProperties or obj.propertyNames is not None)
+            not self.use_single_dict_for_object_maps
+            or not (obj.patternProperties or obj.propertyNames is not None)
             or _object_map_other_types(obj) is None
             or not any(member.is_dict or member.is_mapping for member in data_type.data_types)
         ):
             return {}
         return {
             "minLength" if key == "minItems" else "maxLength": value
-            for key, value in cls._get_property_count_constraints(obj).items()
+            for key, value in self._get_property_count_constraints(obj).items()
         }
 
     def _should_parse_empty_object_as_dict(self, obj: JsonSchemaObject) -> bool:  # noqa: PLR6301
@@ -4735,12 +4736,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the type of a type array from the types of its members other than null.
 
         The dict of an array of object and null is the type itself, admitting the null, so the property counts of
-        the object stay on it.
+        the object stay on it, under ``--use-single-dict-for-object-maps``.
         """
         match data_types:
             case []:
                 return self.data_type_manager.get_data_type(Types.null)
-            case [map_type] if map_type.is_dict and set(types) <= {"object", "null"}:
+            case [map_type] if (
+                self.use_single_dict_for_object_maps and map_type.is_dict and set(types) <= {"object", "null"}
+            ):
                 return _with_null(map_type) if "null" in types else map_type
         return build_union(self.data_type, data_types, nullable=len(data_types) != len(types))
 
@@ -12782,8 +12785,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         propertyNames types the keys and additionalProperties the values. Where the patternProperties validator
         checks the map, the values are ``Any`` and the keys are read from propertyNames as a pattern map reads them.
-        The object map builder's rule gives the dict its null. The field reads the keywords that count the keys of
-        the object, patternProperties included, so a key that a pattern admits counts.
+        Under ``--use-single-dict-for-object-maps`` the object map builder's rule gives the dict its null. The field
+        reads the keywords that count the keys of the object, patternProperties included, so a key that a pattern
+        admits counts.
         """
         value_type = self.data_type_manager.get_data_type(Types.any)
         if self._has_pattern_properties_validator(obj):
@@ -12816,7 +12820,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             field=additional_props_field,
             required=True,
             original_field_name=None,
-            field_type=_with_null(map_type) if self._object_map_admits_null(obj) else map_type,
+            field_type=(
+                _with_null(map_type)
+                if self.use_single_dict_for_object_maps and self._object_map_admits_null(obj)
+                else map_type
+            ),
             alias=None,
         )
 
@@ -12955,8 +12963,61 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         type is written, and a value that admits anything makes the whole value ``Any``. The patterns are joined
         into one key pattern, intersected with ``property_names``. A ``false`` pattern admits no key. A map whose
         additionalProperties types the keys that match no pattern (``_other_keys_schema``) is not built here.
+        Without ``--use-single-dict-for-object-maps`` the map is the union of one dict per value type
+        (``_parse_pattern_properties_union``).
         """
+        if not self.use_single_dict_for_object_maps:
+            return self._parse_pattern_properties_union(name, pattern_properties, path, property_names)
         return self._parse_pattern_map(name, pattern_properties, path, property_names, None)
+
+    def _parse_pattern_properties_union(
+        self,
+        name: str,
+        pattern_properties: dict[str, JsonSchemaObject | bool],
+        path: list[str],
+        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
+    ) -> DataType:
+        """Parse patternProperties into a union of dicts, one per value type, whose keys match its patterns."""
+        pattern_value_pairs: list[tuple[str, DataType]] = []
+        for i, (pattern, schema) in enumerate(pattern_properties.items()):
+            if schema is False:
+                continue
+
+            if schema is True:
+                value_type = self.data_type_manager.get_data_type(Types.any)
+            else:
+                value_type = self.parse_item(
+                    name,
+                    schema,
+                    get_special_path(f"patternProperties/{i}", path),
+                )
+            pattern_value_pairs.append((pattern, value_type))
+
+        if not pattern_value_pairs:
+            return self.data_type(
+                data_types=[self.data_type_manager.get_data_type(Types.any)],
+                is_dict=True,
+            )
+
+        groups: dict[str, tuple[list[str], DataType]] = {}
+        for pattern, value_type in pattern_value_pairs:
+            key = value_type.type_hint
+            if key not in groups:
+                groups[key] = ([], value_type)
+            groups[key][0].append(pattern)
+
+        data_types: list[DataType] = []
+        for patterns, value_type in groups.values():
+            merged_pattern = patterns[0] if len(patterns) == 1 else "|".join(patterns)
+            data_types.append(
+                self.data_type(
+                    data_types=[value_type],
+                    is_dict=True,
+                    dict_key=self._pattern_map_key_type(property_names, merged_pattern),
+                )
+            )
+
+        return self.data_type(data_types=data_types)
 
     def _parse_pattern_map(
         self,
@@ -13077,8 +13138,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         values only under ``--use-typed-nullable-map-values``, whose value schema callers pass as ``typed_values``.
         The dict itself admits the null of a type array of object and null, or of ``nullable`` under
         ``--strict-nullable``, so its property counts stay on it; other types of the type array join it in a union.
-        The members of the dict are parsed under ``object_path``, the other types under ``path``.
+        The members of the dict are parsed under ``object_path``, the other types under ``path``. Without
+        ``--use-single-dict-for-object-maps`` the map is built as 0.86.0 built it (``_parse_object_map_union``).
         """
+        if not self.use_single_dict_for_object_maps:
+            return self._parse_object_map_union(name, obj, path, object_path, typed_values)
         if pattern_properties := obj.patternProperties:
             self._warn_inexact_object_map(name, obj, pattern_properties)
             map_type = (
@@ -13096,13 +13160,53 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             map_type = self._parse_additional_properties_map(name, obj, object_path, obj.additionalProperties)
         else:
             map_type = self.data_type_manager.get_data_type(Types.object)
-        if (type_list := _object_map_other_types(obj)) is not None:
-            return build_union(
-                self.data_type,
-                [map_type, *self._iter_non_object_union_types(name, obj, type_list, path, keep_constraints=True)],
-                nullable=self._object_map_admits_null(obj),
-            )
+        if (union := self._object_map_type_union(name, obj, path, map_type)) is not None:
+            return union
         return _with_null(map_type) if self._object_map_admits_null(obj) else map_type
+
+    def _object_map_type_union(
+        self, name: str, obj: JsonSchemaObject, path: list[str], map_type: DataType
+    ) -> DataType | None:
+        """Return the union of the dict of an object map with the other types of its type array, or None."""
+        if (type_list := _object_map_other_types(obj)) is None:
+            return None
+        return build_union(
+            self.data_type,
+            [map_type, *self._iter_non_object_union_types(name, obj, type_list, path, keep_constraints=True)],
+            nullable=self._object_map_admits_null(obj),
+        )
+
+    def _parse_object_map_union(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+        object_path: list[str],
+        typed_values: JsonSchemaObject | None,
+    ) -> DataType:
+        """Build an object map as 0.86.0 did, without ``--use-single-dict-for-object-maps``.
+
+        patternProperties give a union of dicts, one per value type (``parse_pattern_properties``), else propertyNames
+        and additionalProperties one dict; the null and the other types of its type array are left to the field.
+        The values typed under ``--use-typed-nullable-map-values`` make one dict, optional where its type array lists
+        null, and the union with the other types of its type array.
+        """
+        if pattern_properties := obj.patternProperties:
+            return self.parse_pattern_properties(
+                name, pattern_properties, object_path, property_names=obj.propertyNames
+            )
+        if obj.propertyNames is not None:
+            return self.parse_property_names(
+                name, obj.propertyNames, obj.additionalProperties, object_path, parent_obj=obj
+            )
+        if typed_values is not None:
+            map_type = self._parse_nullable_map(name, obj, object_path, typed_values)
+            if (union := self._object_map_type_union(name, obj, path, map_type)) is not None:
+                return union
+            return self.data_type(data_types=[map_type], is_optional=obj.type_has_null)
+        if isinstance(obj.additionalProperties, JsonSchemaObject):
+            return self._parse_additional_properties_map(name, obj, object_path, obj.additionalProperties)
+        return self.data_type_manager.get_data_type(Types.object)
 
     def _object_map_admits_null(self, obj: JsonSchemaObject) -> bool:
         """Return whether an object map admits null: its type array lists object and null, or it is nullable.

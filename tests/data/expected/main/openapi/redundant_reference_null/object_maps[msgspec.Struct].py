@@ -20,7 +20,7 @@ TrueBranch: TypeAlias = dict[str, int] | None
 IntegerMap: TypeAlias = dict[str, int]
 
 
-ValueRoot: TypeAlias = Annotated[dict[str, int], Meta(min_length=1)] | None
+ValueRoot: TypeAlias = Annotated[dict[str, int], Meta(min_length=1)]
 
 
 class Model(Struct):
@@ -28,16 +28,16 @@ class Model(Struct):
     patterns: dict[str, int] | None
     names: dict[str, int] | None
     plain: dict[str, Any] | None
-    valueItems: list[dict[str, int] | None] | UnsetType = UNSET
-    patternItems: list[dict[str, int] | None] | UnsetType = UNSET
-    nameValues: dict[str, dict[str, int] | None] | UnsetType = UNSET
-    plainValues: dict[str, dict[str, Any] | None] | UnsetType = UNSET
+    valueItems: list[dict[str, int]] | UnsetType = UNSET
+    patternItems: list[dict[str, int]] | UnsetType = UNSET
+    nameValues: dict[str, dict[str, int]] | UnsetType = UNSET
+    plainValues: dict[str, dict[str, Any]] | UnsetType = UNSET
     patternRoot: PatternRoot | UnsetType = UNSET
     combined: str | dict[str, int] | None = None
     combinedItems: list[str | dict[str, int] | None] | UnsetType = UNSET
-    branchNullable: str | dict[str, int] | None | UnsetType = UNSET
+    branchNullable: str | dict[str, int] | UnsetType = UNSET
     combinedRoot: CombinedRoot | UnsetType = UNSET
     trueBranch: TrueBranch | UnsetType = UNSET
     refBranch: str | dict[str, int] | None = None
-    valueRoot: ValueRoot | UnsetType = UNSET
-    valueRootItems: list[ValueRoot] | UnsetType = UNSET
+    valueRoot: ValueRoot | None | UnsetType = UNSET
+    valueRootItems: list[ValueRoot | None] | UnsetType = UNSET

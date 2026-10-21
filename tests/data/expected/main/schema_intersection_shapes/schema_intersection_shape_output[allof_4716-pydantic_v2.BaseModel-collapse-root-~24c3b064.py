@@ -54,7 +54,9 @@ class Measurement(BaseModel):
     pair: Pair | None = None
     single: Pair | None = None
     ref_pair: list[str] | None = Field(None, max_length=2, min_length=1)
-    pp: dict[constr(pattern=r'^a|^b'), conint(ge=1) | conint(le=9)] | None = None
+    pp: (
+        dict[constr(pattern=r'^a'), conint(ge=1)] | dict[constr(pattern=r'^b'), conint(le=9)] | None
+    ) = None
     ap: dict[str, conint(ge=1)] | None = None
     q_allof: conint(ge=1, le=10) | None = None
     q_items: list[conint(ge=1, le=10)] | None = None

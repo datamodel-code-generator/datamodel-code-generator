@@ -139,6 +139,7 @@ reviewed-safe use_root_model_sequence_interface
 reviewed-safe use_schema_description
 reviewed-safe use_serialization_alias
 reviewed-safe use_serialize_as_any
+reviewed-safe use_single_dict_for_object_maps
 reviewed-safe use_single_line_docstring
 reviewed-safe use_single_value_enum_as_const
 reviewed-safe use_site_models_for_constrained_refs

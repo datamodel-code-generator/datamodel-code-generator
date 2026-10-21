@@ -169,6 +169,7 @@ class ParserConfigDict(TypedDict):
     tag_msgspec_by_payload_name: NotRequired[bool]
     use_msgspec_nullable_enum_alias: NotRequired[bool]
     use_typed_nullable_map_values: NotRequired[bool]
+    use_single_dict_for_object_maps: NotRequired[bool]
     use_single_value_enum_as_const: NotRequired[bool]
     read_const_beside_enum: NotRequired[bool]
     filter_literal_values: NotRequired[bool]

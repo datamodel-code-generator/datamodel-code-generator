@@ -58,19 +58,25 @@ OUTPUT_MODEL_TYPES = (
     ),
     "msgspec.Struct",
 )
+SINGLE_DICT = "--use-single-dict-for-object-maps"
 OPTION_SETS = {
-    "default": (),
-    "typed_map_values": ("--use-typed-nullable-map-values",),
-    "field_constraints": ("--field-constraints",),
-    "annotated": ("--use-annotated",),
-    "typed_map_values_field_constraints": ("--use-typed-nullable-map-values", "--field-constraints"),
-    "typed_map_values_annotated": ("--use-typed-nullable-map-values", "--use-annotated"),
-    "omit_redundant_reference_null": ("--omit-redundant-reference-null",),
+    "default": (SINGLE_DICT,),
+    "typed_map_values": (SINGLE_DICT, "--use-typed-nullable-map-values"),
+    "field_constraints": (SINGLE_DICT, "--field-constraints"),
+    "annotated": (SINGLE_DICT, "--use-annotated"),
+    "typed_map_values_field_constraints": (SINGLE_DICT, "--use-typed-nullable-map-values", "--field-constraints"),
+    "typed_map_values_annotated": (SINGLE_DICT, "--use-typed-nullable-map-values", "--use-annotated"),
+    "omit_redundant_reference_null": (SINGLE_DICT, "--omit-redundant-reference-null"),
+    "without_single_dict": (),
+    "without_single_dict_typed_map_values": ("--use-typed-nullable-map-values",),
 }
 
 
 def _verdict(model: Any, output_model_type: str, document: object) -> str:
-    """Return whether a generated model accepts a JSON document, with the first error type where Pydantic rejects it."""
+    """Return whether a generated model accepts a JSON document, with the first error type where Pydantic rejects it.
+
+    msgspec refuses to decode into a type it cannot express, such as a union of two dicts, with a TypeError.
+    """
     text = json.dumps(document)
     try:
         if output_model_type == "msgspec.Struct":
@@ -81,6 +87,8 @@ def _verdict(model: Any, output_model_type: str, document: object) -> str:
         return f"rejected ({error.errors()[0]['type']})"
     except msgspec.ValidationError:
         return "rejected"
+    except TypeError:
+        return "not decodable (TypeError)"
     return "accepted"
 
 
@@ -90,7 +98,12 @@ def _verdict(model: Any, output_model_type: str, document: object) -> str:
 def test_object_maps(
     output_file: Path, recwarn: pytest.WarningsRecorder, name: str, output_model_type: str, option_set: str
 ) -> None:
-    """Keep null, the other types of a type array and property counts on one dict, and decode every key class."""
+    """Keep null, the other types of a type array and property counts on one dict, and decode every key class.
+
+    Without --use-single-dict-for-object-maps the maps are those of 0.86.0: a union of dicts, one per value type of
+    the patterns, with the null and the other types of a type array left to the field, while the values typed under
+    --use-typed-nullable-map-values keep the other types of their type array.
+    """
     input_path = OBJECT_MAPS / f"{name}.json"
     run_main_and_assert(
         input_path=input_path,
@@ -122,17 +135,94 @@ def _payload_verdicts(output_file: Path, output_model_type: str, payloads: dict[
     return "".join(f"{verdict}\n" for verdict in verdicts)
 
 
+RELEASED_PATTERN_MAPS = (
+    "additional_pattern_intersections/anchored_disjoint",
+    "additional_pattern_intersections/minimum_float",
+    "additional_pattern_intersections/minimum",
+    "additional_pattern_intersections/minimum_large",
+    "additional_pattern_intersections/minimum_maximum",
+    "additional_pattern_intersections/minimum_null",
+    "additional_pattern_intersections/minimum_number",
+    "additional_pattern_intersections/minimum_shared",
+    "additional_pattern_intersections/prefix_suffix",
+    "additional_pattern_intersections/suffix_prefix",
+    "annotated_string_keys/union",
+    "pattern_intersections/annotated_objects",
+    "pattern_intersections/closed_objects",
+    "pattern_intersections/complex",
+    "pattern_intersections/disjoint",
+    "pattern_intersections/equivalent_objects",
+    "pattern_intersections/incompatible_objects",
+    "pattern_intersections/opaque_root",
+    "pattern_intersections/overlap",
+    "pattern_intersections/reachable_nested",
+    "pattern_intersections/third_rejected_pattern",
+    "pattern_intersections/unreachable_nested",
+    "pattern_properties_boolean",
+    "pattern_properties",
+    "pattern_string_adapters/minimum",
+    "schema_validators_property_count_root_collapse",
+    "type_union_constraints/keys_count_field",
+    "type_union_constraints/keys_count_root",
+    "type_union_constraints/keys_field",
+    "type_union_constraints/keys_root",
+    "type_union_constraints/pattern_properties",
+    "undeclared_required/objects",
+    "unique_items_allof_mapping",
+    "unknown_pattern_annotations/annotation",
+    "unknown_pattern_annotations/base_class_extension",
+    "unknown_pattern_annotations/classvar",
+    "unknown_pattern_annotations/other_annotation",
+    "unknown_pattern_annotations/python_type",
+    "unknown_pattern_annotations/unknown_keyword",
+)
+
+
+@pytest.mark.parametrize("name", RELEASED_PATTERN_MAPS, ids=lambda name: name.replace("/", "-"))
+def test_pattern_maps_without_single_dict(output_file: Path, name: str) -> None:
+    """Generate the pattern maps of the intersection, annotation, key-type and required-key fixtures as 0.86.0 did.
+
+    Their tests pin the output of --use-single-dict-for-object-maps; without it, each map of patternProperties is a
+    union of dicts, one per value type, and the other types of a type array are left to the field.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"],
+    )
+
+
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
 def test_nullable_object_maps(output_file: Path, output_model_type: str) -> None:
     """Under --strict-nullable, a nullable OpenAPI object map admits null at every position, array items included."""
+    assert_output(_nullable_object_map_verdicts(output_file, output_model_type, SINGLE_DICT), name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_nullable_object_maps_without_single_dict(output_file: Path, output_model_type: str) -> None:
+    """Without --use-single-dict-for-object-maps, a nullable OpenAPI object map is generated as in 0.86.0."""
+    assert_output(_nullable_object_map_verdicts(output_file, output_model_type), name="payloads")
+
+
+def _nullable_object_map_verdicts(output_file: Path, output_model_type: str, *extra_args: str) -> str:
+    """Generate the nullable object maps under --strict-nullable and return the verdicts on their payloads."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "nullable_object_maps.yaml",
         output_path=output_file,
         input_file_type="openapi",
-        extra_args=["--formatters", "builtin", "--output-model-type", output_model_type, "--strict-nullable"],
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            output_model_type,
+            "--strict-nullable",
+            *extra_args,
+        ],
     )
-    payloads = json.loads((PAYLOADS / "nullable_object_maps.json").read_text())
-    assert_output(_payload_verdicts(output_file, output_model_type, payloads), name="payloads")
+    return _payload_verdicts(
+        output_file, output_model_type, json.loads((PAYLOADS / "nullable_object_maps.json").read_text())
+    )
 
 
 @pytest.mark.parametrize("name", OBJECT_MAP_INPUTS)
@@ -145,7 +235,7 @@ def test_object_maps_schema_validators(output_file: Path, recwarn: pytest.Warnin
         input_path=OBJECT_MAPS / f"{name}.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--formatters", "builtin", "--generate-schema-validators"],
+        extra_args=["--formatters", "builtin", "--generate-schema-validators", SINGLE_DICT],
     )
     assert_output(
         "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
@@ -230,8 +320,19 @@ def test_object_maps_schema_validators_false_property(output_file: Path) -> None
 def test_object_maps_released_pattern_properties_hook(tmp_path: Path) -> None:
     """Call a ``parse_pattern_properties`` override written for 0.86.0 with the arguments of that release.
 
-    The dict of a map whose additionalProperties types the keys that match no pattern is built without the hook.
+    Under --use-single-dict-for-object-maps, the dict of a map whose additionalProperties types the keys that match
+    no pattern is built without the hook.
     """
+    assert_output(_released_hook_parser(tmp_path, single_dict=True).parse())
+
+
+def test_object_maps_released_pattern_properties_hook_without_single_dict(tmp_path: Path) -> None:
+    """Without --use-single-dict-for-object-maps, the hook builds every pattern map, as in 0.86.0."""
+    assert_output(_released_hook_parser(tmp_path, single_dict=False).parse())
+
+
+def _released_hook_parser(tmp_path: Path, *, single_dict: bool) -> JsonSchemaParser:
+    """Return a parser for two pattern maps whose ``parse_pattern_properties`` override was written for 0.86.0."""
 
     class ReleasedHookParser(JsonSchemaParser):
         def parse_pattern_properties(
@@ -258,26 +359,53 @@ def test_object_maps_released_pattern_properties_hook(tmp_path: Path) -> None:
         }),
         encoding="utf-8",
     )
-    parser = ReleasedHookParser(input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN])
-    assert_output(parser.parse())
+    return ReleasedHookParser(
+        input_path, base_path=tmp_path, formatters=[Formatter.BUILTIN], use_single_dict_for_object_maps=single_dict
+    )
 
 
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
 def test_object_map_bodies(output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str) -> None:
     """Build the models of object-kind request and response bodies in the paths scope as definitions are built."""
+    warnings, verdicts = _object_map_body_outputs(output_file, recwarn, output_model_type, SINGLE_DICT)
+    assert_output(warnings, name="warnings")
+    assert_output(verdicts, name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_object_map_bodies_without_single_dict(
+    output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str
+) -> None:
+    """Build the same body models without --use-single-dict-for-object-maps, whose maps are those of 0.86.0."""
+    warnings, verdicts = _object_map_body_outputs(output_file, recwarn, output_model_type)
+    assert_output(warnings, name="warnings")
+    assert_output(verdicts, name="payloads")
+
+
+def _object_map_body_outputs(
+    output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str, *extra_args: str
+) -> tuple[str, str]:
+    """Generate the object map bodies of the paths scope and return the warnings and the verdicts on the payloads."""
     input_path = OPEN_API_DATA_PATH / "object_map_bodies.yaml"
     run_main_and_assert(
         input_path=input_path,
         output_path=output_file,
         input_file_type="openapi",
-        extra_args=["--formatters", "builtin", "--output-model-type", output_model_type, "--openapi-scopes", "paths"],
-    )
-    assert_output(
-        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
-        name="warnings",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "paths",
+            *extra_args,
+        ],
     )
     payloads = json.loads((PAYLOADS / "object_map_bodies.json").read_text())
-    assert_output(_body_verdicts(input_path, output_file, output_model_type, payloads), name="payloads")
+    return (
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        _body_verdicts(input_path, output_file, output_model_type, payloads),
+    )
 
 
 def _body_verdicts(input_path: Path, output_file: Path, output_model_type: str, payloads: dict[str, Any]) -> str:

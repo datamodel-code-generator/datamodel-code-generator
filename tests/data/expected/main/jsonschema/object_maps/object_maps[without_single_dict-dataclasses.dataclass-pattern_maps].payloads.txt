@@ -1,0 +1,4 @@
+valid: rejected (int_parsing)
+invalid pClosedOne: rejected (int_parsing)
+invalid rClosedSame: rejected (int_parsing)
+invalid pAnnotatedSame: rejected (int_parsing)

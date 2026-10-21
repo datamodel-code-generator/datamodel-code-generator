@@ -6838,6 +6838,8 @@ reuse-model	main/jsonschema/nullable_map_value_reuse.py
 	main/jsonschema/pattern_properties_by_reference.py
 [test_main_jsonschema_pattern_properties_merge]
 	main/jsonschema/pattern_properties_merge.py
+[test_main_jsonschema_pattern_properties_merge_without_single_dict]
+	main/jsonschema/main_jsonschema/pattern_properties_merge_without_single_dict.py
 [test_main_jsonschema_prefix_items]
 msgspec.Struct-prefix_items_msgspec.py	main/jsonschema/prefix_items_msgspec.py
 pydantic_v2.BaseModel-prefix_items.py	main/jsonschema/prefix_items.py

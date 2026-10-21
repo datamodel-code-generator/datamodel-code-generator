@@ -20,7 +20,7 @@ TrueBranch: TypeAlias = dict[str, int] | None
 IntegerMap: TypeAlias = dict[str, int]
 
 
-ValueRoot: TypeAlias = dict[str, int] | None
+ValueRoot: TypeAlias = dict[str, int]
 
 
 class Model(TypedDict):
@@ -28,16 +28,16 @@ class Model(TypedDict):
     patterns: dict[str, int] | None
     names: dict[str, int] | None
     plain: dict[str, Any] | None
-    valueItems: NotRequired[list[dict[str, int] | None]]
-    patternItems: NotRequired[list[dict[str, int] | None]]
-    nameValues: NotRequired[dict[str, dict[str, int] | None]]
-    plainValues: NotRequired[dict[str, dict[str, Any] | None]]
+    valueItems: NotRequired[list[dict[str, int]]]
+    patternItems: NotRequired[list[dict[str, int]]]
+    nameValues: NotRequired[dict[str, dict[str, int]]]
+    plainValues: NotRequired[dict[str, dict[str, Any]]]
     patternRoot: NotRequired[PatternRoot]
     combined: NotRequired[str | dict[str, int] | None]
     combinedItems: NotRequired[list[str | dict[str, int] | None]]
-    branchNullable: NotRequired[str | dict[str, int] | None]
+    branchNullable: NotRequired[str | dict[str, int]]
     combinedRoot: NotRequired[CombinedRoot]
     trueBranch: NotRequired[TrueBranch]
     refBranch: NotRequired[str | dict[str, int] | None]
-    valueRoot: NotRequired[ValueRoot]
-    valueRootItems: NotRequired[list[ValueRoot]]
+    valueRoot: NotRequired[ValueRoot | None]
+    valueRootItems: NotRequired[list[ValueRoot | None]]

@@ -82,7 +82,7 @@ class Measurement(Struct):
     pair: Pair | UnsetType = UNSET
     single: Pair | UnsetType = UNSET
     ref_pair: Annotated[list[str], Meta(max_length=2, min_length=1)] | UnsetType = UNSET
-    pp: dict[str, int] | UnsetType = UNSET
+    pp: dict[str, Pp] | dict[str, Pp1] | UnsetType = UNSET
     ap: dict[str, Ap] | UnsetType = UNSET
     q_allof: QAllof | UnsetType = UNSET
     q_items: list[QItem] | UnsetType = UNSET

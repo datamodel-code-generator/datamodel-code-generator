@@ -1,0 +1,5 @@
+valid: rejected (dict_type)
+invalid pNullableCount: rejected (dict_type)
+invalid rNullableCount: rejected (dict_type)
+invalid pNullableOpenCount: rejected (dict_type)
+invalid rPatternCount: rejected (dict_type)

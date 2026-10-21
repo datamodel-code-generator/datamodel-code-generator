@@ -53,6 +53,7 @@
 - `--use-object-type`: Use object instead of Any for unspecified object and array values.
 - `--use-pendulum`: Use pendulum types for date, time, and duration fields.
 - `--use-root-model-type-alias`: Generate RootModel as type alias format for better mypy support.
+- `--use-single-dict-for-object-maps`: Type an object map as one dict instead of a union of dicts.
 - `--use-single-value-enum-as-const`: Treat `enum` with a single value as `const` with that value.
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
@@ -545,6 +546,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
+  --use-single-dict-for-object-maps
+                        Type an object map, an object without properties whose
+                        keys patternProperties or propertyNames constrain, as
+                        one dict whose keys are those of every key class and
+                        whose value is the union of their values, beside the
+                        null and the other types of its type array
   --use-single-value-enum-as-const
                         Treat `enum` with a single value as `const` with that
                         value, which JSON Schema defines as equal: oneOf/anyOf

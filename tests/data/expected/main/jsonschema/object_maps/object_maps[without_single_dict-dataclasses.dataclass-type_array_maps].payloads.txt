@@ -1,0 +1,5 @@
+valid: rejected (dict_type)
+invalid pStringOrPatterns: rejected (int_parsing)
+invalid rStringOrNames: rejected (dict_type)
+invalid pArrayOrPatternCounts: rejected (dict_type)
+invalid pArrayOrNamedCounts: rejected (dict_type)

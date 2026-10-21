@@ -19,7 +19,7 @@ TrueBranch: TypeAlias = dict[str, int] | None
 IntegerMap: TypeAlias = dict[str, int]
 
 
-ValueRoot: TypeAlias = dict[str, int] | None
+ValueRoot: TypeAlias = dict[str, int]
 
 
 @dataclass
@@ -28,10 +28,10 @@ class Model:
     patterns: dict[str, int] | None
     names: dict[str, int] | None
     plain: dict[str, Any] | None
-    valueItems: list[dict[str, int] | None] | None = None
-    patternItems: list[dict[str, int] | None] | None = None
-    nameValues: dict[str, dict[str, int] | None] | None = None
-    plainValues: dict[str, dict[str, Any] | None] | None = None
+    valueItems: list[dict[str, int]] | None = None
+    patternItems: list[dict[str, int]] | None = None
+    nameValues: dict[str, dict[str, int]] | None = None
+    plainValues: dict[str, dict[str, Any]] | None = None
     patternRoot: PatternRoot | None = None
     combined: str | dict[str, int] | None = None
     combinedItems: list[str | dict[str, int] | None] | None = None
@@ -40,4 +40,4 @@ class Model:
     trueBranch: TrueBranch | None = None
     refBranch: str | dict[str, int] | None = None
     valueRoot: ValueRoot | None = None
-    valueRootItems: list[ValueRoot] | None = None
+    valueRootItems: list[ValueRoot | None] | None = None
