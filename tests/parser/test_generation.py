@@ -63,6 +63,8 @@ IMPORT_CACHE_NEUTRAL_MUTATION_METHODS = frozenset({
     "note_changed_models",
     "record_values_as_written",
     "register_model",
+    "replace_model",
+    "retire_model",
 })
 IMPORT_CACHE_CALLER_MUTATION_METHODS = frozenset({
     "add_model_import",

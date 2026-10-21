@@ -1,0 +1,11 @@
+from __future__ import annotations
+
+from typing import Optional, Union
+
+from pydantic import BaseModel
+
+
+class Model(BaseModel):
+    a: Optional[Union[str, bool, int]] = None
+    b: Optional[bool] = None
+    c: Optional[Union[int, bool]] = None

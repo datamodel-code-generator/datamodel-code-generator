@@ -4625,6 +4625,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         # Batch removal: O(n) instead of O(n²)
         if models_to_remove:
             models[:] = [m for m in models if m not in models_to_remove]
+            for model in models_to_remove:
+                self.generation_store.retire_model(model)
 
     def _names_have_class_keyed_options(self, names: set[str]) -> bool:
         """Return whether an option keyed by class name, or by a class-scoped field, names one of ``names``.
@@ -5670,9 +5672,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if model_key_of(cached_model_reference) in require_update:
                     updated_models.append(inherited_model)
                 replace_model_in_list(models, model, inherited_model)
+                self.generation_store.replace_model(model, inherited_model)
 
         for duplicate in duplicates:
             models.remove(duplicate)
+            self.generation_store.retire_model(duplicate)
         if updated_models:
             self.__require_update_action(updated_models, require_update_action_models)
 
@@ -5726,6 +5730,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if id(duplicate_model.reference) in typed_map_values and id(canonical.reference) not in typed_map_values:
                 self.generation_store.redirect_reference_users(duplicate_model.reference, canonical.reference)
                 module_lists[duplicate_module].remove(duplicate_model)
+                self.generation_store.retire_model(duplicate_model)
             else:
                 remaining.append(duplicate)
         return remaining
@@ -5744,7 +5749,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
             raise Error(msg)
 
-    def __create_shared_module_from_duplicates(  # noqa: PLR0912
+    def __create_shared_module_from_duplicates(  # noqa: PLR0912, PLR0915
         self,
         module_models: list[tuple[tuple[str, ...], list[DataModel]]],
         duplicates: list[tuple[tuple[str, ...], DataModel, tuple[str, ...], DataModel]],
@@ -5798,6 +5803,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         canonical_model,
                     )
                     models_to_remove[module].add(duplicate_model)
+                    self.generation_store.retire_model(duplicate_model)
                 else:
                     inherited_model = duplicate_model.create_reuse_model(shared_ref)
                     self.generation_store.redirect_model_reference_users(
@@ -5808,6 +5814,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if model_key_of(shared_ref) in require_update:
                         updated_models.append(inherited_model)
                     replace_model_in_list(models, duplicate_model, inherited_model)
+                    self.generation_store.replace_model(duplicate_model, inherited_model)
                 break
 
         for canonical in canonical_models_seen:
@@ -5907,6 +5914,29 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             and (root_type_field.data_type.is_dict or root_type_field.data_type.is_mapping)
         )
 
+    def __has_remaining_root_references(self, reference: Reference, data_type: DataType) -> bool:
+        """Return whether data types other than ``data_type`` name the root model of ``reference``.
+
+        Under the ``MODEL_GRAPH`` check with a report file, record when the answer over the emitted models differs.
+        """
+        store = self.generation_store
+        if (answer := store._root_collapse_has_data_type_references(reference, excluded_data_type=data_type)) is None:  # noqa: SLF001
+            answer = store.index.has_data_type_references_other_than(reference, data_type)
+        if (
+            (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None
+            and mode.report_path is not None
+            and answer != store.index.has_data_type_references_other_than(reference, data_type, universe="emitted")
+        ):
+            path = redact_reference(reference.path)
+            users = "are all models the output does not write" if answer else "are all models built after parsing"
+            mode.record(
+                f"{CheckArea.MODEL_GRAPH.value}: when collapsing root models, the other users of {path} {users}",
+                kind="universe-differs",
+                path=path,
+                parsed=answer,
+            )
+        return answer
+
     def __collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         models: list[DataModel],
@@ -5991,16 +6021,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 root_type_model, inner_model, model_path_to_module_name
                             )
 
-                        if (
-                            has_remaining_root_references := generation_store._root_collapse_has_data_type_references(  # noqa: SLF001
-                                root_type_model.reference,
-                                excluded_data_type=data_type,
-                            )
-                        ) is None:
-                            has_remaining_root_references = generation_index.has_data_type_references_other_than(
-                                root_type_model.reference,
-                                data_type,
-                            )
+                        has_remaining_root_references = self.__has_remaining_root_references(
+                            root_type_model.reference, data_type
+                        )
                         generation_store.collapse_root_data_type(data_type, inner_reference)
                         self.__carry_const_narrowings(root_type_field.data_type, data_type)
 
@@ -6030,16 +6053,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         else root_type_field.data_type.model_copy()
                     )
                     self.__carry_const_narrowings(root_type_field.data_type, copied_data_type)
-                    if (
-                        has_remaining_root_references := generation_store._root_collapse_has_data_type_references(  # noqa: SLF001
-                            root_type_model.reference,
-                            excluded_data_type=data_type,
-                        )
-                    ) is None:
-                        has_remaining_root_references = generation_index.has_data_type_references_other_than(
-                            root_type_model.reference,
-                            data_type,
-                        )
+                    has_remaining_root_references = self.__has_remaining_root_references(
+                        root_type_model.reference, data_type
+                    )
 
                     replacement_context = None
                     if isinstance(field_ := data_type.parent, self.data_model_field_type):
@@ -7293,9 +7309,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Only model-level overrides (keys without dots) cause model removal.
         Scoped overrides (ClassName.field) only affect specific fields.
         """
-        if not self._model_type_override_imports:
+        if not (overrides := self._model_type_override_imports):
             return models
-        return [m for m in models if m.class_name not in self._model_type_override_imports]
+        kept: list[DataModel] = []
+        for model in models:
+            if model.class_name in overrides:
+                self.generation_store.retire_model(model)
+            else:
+                kept.append(model)
+        return kept
 
     def __apply_field_type_overrides(self, models: list[DataModel]) -> None:
         """Replace field type references with custom import types, before constructor ordering reads the field types.
@@ -7838,6 +7860,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         base_class_model.file_path = first_root_file_path
         self._generic_base_model = base_class_model
         first_root_models.insert(0, base_class_model)
+        self.generation_store.register_model(base_class_model)
 
         base_class_dt = BaseClassDataType(type=base_class_ref.name, reference=base_class_ref)
 
@@ -8937,6 +8960,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 )
             raise _CollapseRootModelsRecursionError from exc
 
+    def __extract_module_inherited_enums(self, state: _ModuleState) -> None:
+        """Merge the enums that empty subclasses inherit, each merged enum taking the store place of its subclass."""
+        models = state.model_list.copy()
+        self.__extract_inherited_enum(state.model_list)
+        for model, merged_enum in zip(models, state.model_list, strict=True):
+            if merged_enum is not model:
+                self.generation_store.replace_model(model, merged_enum)
+
     def __remove_module_overridden_models(self, state: _ModuleState) -> None:
         """Keep the models a model-level type override replaces out of the module, and the list before it."""
         state.model_list_before_override_removal = state.model_list
@@ -9109,6 +9140,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         state = _FinalizeState(contexts, unused_models, model_to_module_models, module_to_import)
         self.__runner().run_steps(Parser.__FINALIZE_SEGMENTS, self, state)
+        if (mode := check_mode(CheckArea.MODEL_GRAPH)) is not None:
+            self.generation_store.check_emitted_models(mode, (model for ctx in contexts for model in ctx.models))
 
     def __decide(self, runner: Runner, run: _FinishRun) -> None:
         """Seal the facts final at B1 and run the decisions of the registry on them, when it holds any."""
@@ -9148,7 +9181,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 )
 
     def __remove_unused_models(self, state: _FinalizeState) -> None:
-        """Remove the unused models from their modules, and their imports from the module imports."""
+        """Remove the unused models from their modules, and their imports from the module imports.
+
+        A model leaves the output, and the store's emitted models, only when the list it leaves is the one its module
+        writes; the list the module structure recorded may be an earlier one.
+        """
+        written_lists = {id(ctx.models) for ctx in state.contexts}
         replaced_root_modules = (
             {
                 id(model): (ctx.module_key, ctx.models)
@@ -9170,6 +9208,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     ImportProducer("unused-models", unused_model),
                 )
                 models.remove(unused_model)
+                if id(models) in written_lists:
+                    self.generation_store.retire_model(unused_model)
 
     def __validate_explicit_field_aliases(self, state: _FinalizeState) -> None:
         """Reject the explicit field aliases that no field name can carry."""
@@ -9842,7 +9882,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
 
     def __sort_data_models(self, run: _SettleRun) -> None:
-        """Sort the parsed models so that each follows the models it needs."""
+        """Sort the parsed models so that each follows the models it needs.
+
+        The sort keeps one model per path; the others leave the output.
+        """
         _, run.sorted_data_models, require_update = sort_data_models(
             self.results,
             generation_index=self.generation_store.index,
@@ -9852,6 +9895,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ),
         )
         self._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())
+        sorted_model_ids = {id(model) for model in run.sorted_data_models.values()}
+        for model in self.results:
+            if id(model) not in sorted_model_ids:
+                self.generation_store.retire_model(model)
 
     def __record_source_reference_paths(self, run: _SettleRun) -> None:  # noqa: PLR6301
         """Record the reference path each model was parsed from, for the model metadata."""
@@ -10076,7 +10123,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         ),
         PassSpec(
             decls.EXTRACT_INHERITED_ENUM,
-            lambda self, s: self.__extract_inherited_enum(s.model_list),
+            lambda self, s: self.__extract_module_inherited_enums(s),
             checked_models=_module_models,
         ),
         PassSpec(

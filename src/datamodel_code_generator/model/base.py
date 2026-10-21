@@ -2638,21 +2638,43 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def create_reuse_model(self, base_ref: Reference) -> Self:
         """Create inherited model with empty fields pointing to base reference."""
-        reuse_model = self.__class__(
+        reuse_model = self._derive(
+            reference=Reference(name=self.name, path=self.reference.path + "/reuse"),
             fields=[],
             base_classes=[base_ref],
             description=self.description,
-            reference=Reference(
-                name=self.name,
-                path=self.reference.path + "/reuse",
-            ),
-            custom_template_dir=self._custom_template_dir,
-            custom_base_class=self.custom_base_class,
-            keyword_only=self.keyword_only,
-            treat_dot_as_module=self._treat_dot_as_module,
         )
         reuse_model.reused_reference = self.reference
         return reuse_model
+
+    def _derive(
+        self,
+        *,
+        reference: Reference,
+        fields: list[DataModelFieldBase],
+        base_classes: list[Reference] | None = None,
+        description: str | None = None,
+    ) -> Self:
+        """Build a model of this class from ``reference``, ``fields`` and the rest, carrying over this model's options.
+
+        The options are those ``_derived_options`` returns; a model built from another one goes through here.
+        """
+        return self.__class__(
+            reference=reference,
+            fields=fields,
+            base_classes=base_classes,
+            description=description,
+            **self._derived_options(),
+        )
+
+    def _derived_options(self) -> dict[str, Any]:
+        """Return the constructor options a model built from this one carries over."""
+        return {
+            "custom_template_dir": self._custom_template_dir,
+            "custom_base_class": self.custom_base_class,
+            "keyword_only": self.keyword_only,
+            "treat_dot_as_module": self._treat_dot_as_module,
+        }
 
     def _set_deprecated_decorator(self) -> None:
         """Add a class-level deprecated decorator when schema metadata requires it.

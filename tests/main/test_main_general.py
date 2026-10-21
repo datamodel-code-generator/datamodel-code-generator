@@ -788,6 +788,58 @@ def test_model_graph_check_reports_a_copied_reference(
         assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+@pytest.mark.parametrize("flag", ["check", "report", "off"])
+def test_model_graph_check_reports_a_written_model_that_the_store_retired(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, flag: str
+) -> None:
+    """A custom parser that retires a model it still writes leaves the written models and the emitted ones apart.
+
+    The check (`1`, as the test suite sets it) raises once the modules are final; `report:<path>` appends it to the
+    file as one JSON line, after the collapse decisions whose answer over the emitted models differs, because the
+    retired root model is the only other user of the root models it references; with the check off (`0`) the model is
+    generated as usual.
+    """
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class RetiringParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            self.generation_store.retire_model(next(model for model in self.results if model.class_name == "Model"))
+
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, {"check": "1", "report": f"report:{report_path}", "off": "0"}[flag])
+    parser = RetiringParser(
+        JSON_SCHEMA_DATA_PATH / "collapse_root_models_shared_reference.json",
+        collapse_root_models=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    if flag == "check":
+        with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is written but is not an"):
+            parser.parse()
+        return
+    assert_output(cast("str", parser.parse()))
+    if flag == "report":
+        assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
+def test_model_graph_check_reports_an_emitted_model_that_is_not_written() -> None:
+    """A custom parser that drops a model from its module without retiring it leaves it among the emitted models."""
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class DroppingParser(JsonSchemaParser):
+        def _finalize_modules(self, contexts: Any, *args: Any) -> None:
+            contexts[0].models.pop()
+            super()._finalize_modules(contexts, *args)
+
+    parser = DroppingParser(
+        JSON_SCHEMA_DATA_PATH / "reuse_model_inline_definitions.json", formatters=[Formatter.BUILTIN]
+    )
+    with pytest.raises(
+        Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: the model Model \(.*\) is an emitted model but is not"
+    ):
+        parser.parse()
+
+
 @pytest.mark.abnormal_path(
     "a reference graph snapshot answers as the computation it replaced for every input: only a broken computation "
     "makes the two differ"

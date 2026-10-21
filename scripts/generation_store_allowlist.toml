@@ -126,9 +126,6 @@ required = 1
 ["src/datamodel_code_generator/model/dataclass.py"."DataClass.unbind_fields"]
 '__dict__[_UNBOUND_FIELD_KEY]' = 1
 
-["src/datamodel_code_generator/model/dataclass.py"."_DataclassReuseMixin.create_reuse_model"]
-reused_reference = "--input tests/data/jsonschema/reuse_scope_tree --input-file-type jsonschema --output-model-type dataclasses.dataclass --reuse-model --reuse-scope tree"
-
 ["src/datamodel_code_generator/model/enum.py"."Enum._coerced_member_index"]
 '@cached_property' = 1
 

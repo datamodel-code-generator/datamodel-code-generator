@@ -873,9 +873,15 @@ the counted ones. When the scan learns to find a write a witness covers, the wit
 
 Current behaviour that a decision reading the index must allow for:
 
-- Only parsers call `register_model`. Models created after parsing (reuse subclasses, the merged inherited Enum, the
-  generated base model) are not registered, and models removed from module lists stay in the store. The index covers
-  the parsed models plus redirected edges, not the module lists that L3–L6 edit.
+- Index queries answer over the parsed universe by default: the models parsers registered (`Parser.results`) plus
+  redirected edges, removed ones included, not the module lists that L3–L6 edit. A model a later pass builds (a reuse
+  subclass, the merged inherited Enum, the generic base class) is registered in the emitted universe only, and
+  `retire_model` (`replace_model` for a model built in another's place) records each model that leaves the output
+  (duplicates, reused and overridden models, unused models leaving their written module list). `universe="emitted"`
+  answers over the models the output writes. Under `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH`, the written models
+  must equal the emitted universe after render preparation, and with a report file each root-collapse decision on
+  remaining references records when its answer over the emitted models differs (`kind: universe-differs`), the
+  evidence for switching the default.
 - A store operation called with `refresh="deferred"` notes the models it changes for the next refresh but does not
   mark the facts dirty, so they stay as they were until another mutation. `drop_union_member_constraints` (msgspec
   `unconstrain_union_members`, slice assignment on `data_types`), `swap_data_type` for the nested lists of

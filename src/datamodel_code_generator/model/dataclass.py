@@ -35,7 +35,6 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.model.imports import IMPORT_DATACLASS, IMPORT_FIELD
 from datamodel_code_generator.model.types import DataTypeManager as _DataTypeManager
 from datamodel_code_generator.python_literal import represent_python_value
-from datamodel_code_generator.reference import Reference
 from datamodel_code_generator.types import DataType, StrictTypes, chain_as_tuple
 
 if TYPE_CHECKING:
@@ -43,11 +42,10 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Sequence
     from pathlib import Path
 
-    from typing_extensions import Self
-
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
+    from datamodel_code_generator.reference import Reference
 
 
 def has_field_assignment(field: DataModelFieldBase) -> bool:
@@ -213,31 +211,14 @@ class _DataclassReuseMixin:
         """Return whether a dataclass declaration enables keyword-only fields."""
         return bool(cast("DataModel", self).dataclass_arguments.get("kw_only"))
 
-    def create_reuse_model(self, base_ref: Reference) -> Self:
-        """Create inherited model with empty fields pointing to base reference."""
+    def _derived_options(self) -> dict[str, Any]:
+        """Return the constructor options a model built from this one carries over, frozen and its arguments too."""
         model = cast("DataModel", self)
-        model_cls = cast("Any", self.__class__)
-        model_attrs = vars(model)
-        reuse_model = cast(
-            "DataModel",
-            model_cls(
-                fields=[],
-                base_classes=[base_ref],
-                description=model.description,
-                reference=Reference(
-                    name=model.name,
-                    path=model.reference.path + "/reuse",
-                ),
-                custom_template_dir=model_attrs["_custom_template_dir"],
-                custom_base_class=model.custom_base_class,
-                keyword_only=model.keyword_only,
-                frozen=model.frozen,
-                treat_dot_as_module=model_attrs["_treat_dot_as_module"],
-                dataclass_arguments=model.dataclass_arguments,
-            ),
-        )
-        reuse_model.reused_reference = model.reference
-        return cast("Self", reuse_model)
+        return {
+            **DataModel._derived_options(model),  # noqa: SLF001
+            "frozen": model.frozen,
+            "dataclass_arguments": model.dataclass_arguments,
+        }
 
 
 class DataClass(_DataclassReuseMixin, DataModel):
