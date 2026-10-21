@@ -39,6 +39,27 @@ class ApiCollisionWrapperResponseModel:
 
 
 @dataclass
+class ApiChildRequestModel:
+    label: str
+
+
+@dataclass
+class ApiChildResponseModel:
+    label: str
+    id: int | None = None
+
+
+@dataclass
+class ApiDirectInlineContainerRequestModel:
+    child: ApiChildRequestModel = Field(..., title='DirectInlineLeaf')
+
+
+@dataclass
+class ApiDirectInlineContainerResponseModel:
+    child: ApiChildResponseModel = Field(..., title='DirectInlineLeaf')
+
+
+@dataclass
 class ApiChildRequestModel1:
     label: str
 
@@ -50,34 +71,13 @@ class ApiChildResponseModel1:
 
 
 @dataclass
-class ApiDirectInlineContainerRequestModel:
-    child: ApiChildRequestModel1 = Field(..., title='DirectInlineLeaf')
-
-
-@dataclass
-class ApiDirectInlineContainerResponseModel:
-    child: ApiChildResponseModel1 = Field(..., title='DirectInlineLeaf')
-
-
-@dataclass
-class ApiChildRequestModel2:
-    label: str
-
-
-@dataclass
-class ApiChildResponseModel2:
-    label: str
-    id: int | None = None
-
-
-@dataclass
 class ApiForwardInlineContainerRequestModel:
-    child: ApiChildRequestModel2 = Field(..., title='ForwardInlineLeaf')
+    child: ApiChildRequestModel1 = Field(..., title='ForwardInlineLeaf')
 
 
 @dataclass
 class ApiForwardInlineContainerResponseModel:
-    child: ApiChildResponseModel2 = Field(..., title='ForwardInlineLeaf')
+    child: ApiChildResponseModel1 = Field(..., title='ForwardInlineLeaf')
 
 
 @dataclass

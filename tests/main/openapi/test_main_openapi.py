@@ -12894,6 +12894,51 @@ def test_main_openapi_recursive_ref_discriminator_pydantic_v2(output_file: Path)
     )
 
 
+def test_main_openapi_recursive_ref_discriminator_request_response(output_file: Path) -> None:
+    """Generate the default models under request-response for a recursive discriminated union without flags."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+
+
+def test_main_openapi_read_only_write_only_nullable_enum_reference(output_file: Path) -> None:
+    """Reference one model of a nullable enum from the request/response variants of the model holding it."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_nullable_enum_reference.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+        force_exec_validation=True,
+    )
+    for model_name in ("PetRequest", "PetResponse"):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"read_only_write_only_nullable_enum_reference_{model_name}",
+            model_name=model_name,
+            valid_json='{"tags":[{"t":"m"},{"t":null}]}',
+            invalid_json='{"tags":[{"t":"x"}]}',
+            expected_error_type="enum",
+        )
+
+
 def test_main_openapi_dynamic_ref(output_file: Path) -> None:
     """Test OpenAPI 3.1 $dynamicRef resolving to a component $dynamicAnchor."""
     run_main_and_assert(

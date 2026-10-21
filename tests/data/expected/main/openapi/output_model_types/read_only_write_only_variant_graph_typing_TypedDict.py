@@ -31,6 +31,23 @@ class ApiCollisionWrapperResponseModel(TypedDict):
     sourceRequest: ApiUserRequestModel
 
 
+class ApiChildRequestModel(TypedDict):
+    label: str
+
+
+class ApiChildResponseModel(TypedDict):
+    id: NotRequired[int]
+    label: str
+
+
+class ApiDirectInlineContainerRequestModel(TypedDict):
+    child: ApiChildRequestModel
+
+
+class ApiDirectInlineContainerResponseModel(TypedDict):
+    child: ApiChildResponseModel
+
+
 class ApiChildRequestModel1(TypedDict):
     label: str
 
@@ -40,29 +57,12 @@ class ApiChildResponseModel1(TypedDict):
     label: str
 
 
-class ApiDirectInlineContainerRequestModel(TypedDict):
+class ApiForwardInlineContainerRequestModel(TypedDict):
     child: ApiChildRequestModel1
 
 
-class ApiDirectInlineContainerResponseModel(TypedDict):
-    child: ApiChildResponseModel1
-
-
-class ApiChildRequestModel2(TypedDict):
-    label: str
-
-
-class ApiChildResponseModel2(TypedDict):
-    id: NotRequired[int]
-    label: str
-
-
-class ApiForwardInlineContainerRequestModel(TypedDict):
-    child: ApiChildRequestModel2
-
-
 class ApiForwardInlineContainerResponseModel(TypedDict):
-    child: ApiChildResponseModel2
+    child: ApiChildResponseModel1
 
 
 class ApiInlineObjectArrayItemRequestModel(TypedDict):

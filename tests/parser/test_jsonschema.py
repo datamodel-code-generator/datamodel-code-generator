@@ -5307,13 +5307,6 @@ def test_request_response_variant_graph_handles_cached_internal_and_missing_refs
     assert parser._get_raw_inherited_fields(cached_reference, frozenset()) == []
     assert parser._raw_inherited_own_names_cache[cached_reference.path] == frozenset({"value"})
 
-    all_parser = JsonSchemaParser(
-        "",
-        read_only_write_only_model_type=ReadOnlyWriteOnlyModelType.All,
-    )
-    all_parser.raw_obj = None  # type: ignore[assignment]  # exercise an unresolved external document
-    assert not all_parser._ref_schema_generates_variant("#/$defs/Missing", "Request")
-
 
 def test_request_response_schema_graph_helper_edges(tmp_path: Path) -> None:
     """Schema graph helpers cover tuple items, combined key schemas, and mapped leaves."""

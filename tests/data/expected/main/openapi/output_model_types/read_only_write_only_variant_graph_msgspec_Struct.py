@@ -32,6 +32,23 @@ class ApiCollisionWrapperResponseModel(Struct):
     sourceRequest: ApiUserRequestModel
 
 
+class ApiChildRequestModel(Struct):
+    label: str
+
+
+class ApiChildResponseModel(Struct):
+    label: str
+    id: int | UnsetType = UNSET
+
+
+class ApiDirectInlineContainerRequestModel(Struct):
+    child: Annotated[ApiChildRequestModel, Meta(title='DirectInlineLeaf')]
+
+
+class ApiDirectInlineContainerResponseModel(Struct):
+    child: Annotated[ApiChildResponseModel, Meta(title='DirectInlineLeaf')]
+
+
 class ApiChildRequestModel1(Struct):
     label: str
 
@@ -41,29 +58,12 @@ class ApiChildResponseModel1(Struct):
     id: int | UnsetType = UNSET
 
 
-class ApiDirectInlineContainerRequestModel(Struct):
-    child: Annotated[ApiChildRequestModel1, Meta(title='DirectInlineLeaf')]
-
-
-class ApiDirectInlineContainerResponseModel(Struct):
-    child: Annotated[ApiChildResponseModel1, Meta(title='DirectInlineLeaf')]
-
-
-class ApiChildRequestModel2(Struct):
-    label: str
-
-
-class ApiChildResponseModel2(Struct):
-    label: str
-    id: int | UnsetType = UNSET
-
-
 class ApiForwardInlineContainerRequestModel(Struct):
-    child: Annotated[ApiChildRequestModel2, Meta(title='ForwardInlineLeaf')]
+    child: Annotated[ApiChildRequestModel1, Meta(title='ForwardInlineLeaf')]
 
 
 class ApiForwardInlineContainerResponseModel(Struct):
-    child: Annotated[ApiChildResponseModel2, Meta(title='ForwardInlineLeaf')]
+    child: Annotated[ApiChildResponseModel1, Meta(title='ForwardInlineLeaf')]
 
 
 class ApiInlineObjectArrayItemRequestModel(Struct):

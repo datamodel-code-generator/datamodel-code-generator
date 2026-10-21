@@ -37,6 +37,27 @@ class ApiCollisionWrapperResponseModel:
 
 
 @dataclass
+class ApiChildRequestModel:
+    label: str
+
+
+@dataclass
+class ApiChildResponseModel:
+    label: str
+    id: int | None = None
+
+
+@dataclass
+class ApiDirectInlineContainerRequestModel:
+    child: ApiChildRequestModel
+
+
+@dataclass
+class ApiDirectInlineContainerResponseModel:
+    child: ApiChildResponseModel
+
+
+@dataclass
 class ApiChildRequestModel1:
     label: str
 
@@ -48,34 +69,13 @@ class ApiChildResponseModel1:
 
 
 @dataclass
-class ApiDirectInlineContainerRequestModel:
+class ApiForwardInlineContainerRequestModel:
     child: ApiChildRequestModel1
 
 
 @dataclass
-class ApiDirectInlineContainerResponseModel:
-    child: ApiChildResponseModel1
-
-
-@dataclass
-class ApiChildRequestModel2:
-    label: str
-
-
-@dataclass
-class ApiChildResponseModel2:
-    label: str
-    id: int | None = None
-
-
-@dataclass
-class ApiForwardInlineContainerRequestModel:
-    child: ApiChildRequestModel2
-
-
-@dataclass
 class ApiForwardInlineContainerResponseModel:
-    child: ApiChildResponseModel2
+    child: ApiChildResponseModel1
 
 
 @dataclass

@@ -62419,6 +62419,7 @@ collapse replacing a member of a shared list.
 | class names and reference paths | L6 `__change_imported_model_name` |
 | schema resources and anchors of a document (`parser/_schema_graph.py:DocumentResources`, the registry dicts) | the document's load in L0; loading the document again replaces its entries |
 | schema location of a model (`reference.py:location_of`, kept on the `Reference` object, not keyed by its path) | end of L1 |
+| read/write facts of a schema key (`--read-only-write-only-model-type`: whether the documents it reaches declare a readOnly or writeOnly property, `parser/jsonschema.py:_get_ref_schema_rw_model_reference_facts`, `_get_ref_schema_rw_model_field_facts`) | the L0 load of the documents it reaches; never read from parsed fields. A model at a special path records its split in L1 before a reference reads it |
 | module membership | L6 unused-model removal |
 | field aliases | the model's own L5 `__rename_fields_hiding_types`; validated in L6 |
 | names written in annotations, module imports except future imports | end of `_finalize_modules` |

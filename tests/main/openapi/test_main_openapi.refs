@@ -1425,6 +1425,8 @@ single-document-request-response	main/openapi/main_openapi/read_only_write_only_
 	main/openapi/read_only_write_only_nested_allof.py
 [test_main_openapi_read_only_write_only_nested_allof_order]
 	main/openapi/read_only_write_only_nested_allof_order.py
+[test_main_openapi_read_only_write_only_nullable_enum_reference]
+	main/openapi/openapi_read_only_write_only_nullable_enum_reference.py
 [test_main_openapi_read_only_write_only_ref]
 	main/openapi/read_only_write_only_ref.py
 [test_main_openapi_read_only_write_only_ref_request_response]
@@ -1456,6 +1458,8 @@ typed-dict	main/openapi/output_model_types/read_only_write_only_variant_graph_ty
 	main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_recursive_ref_discriminator_pydantic_v2]
 	main/openapi/recursive_ref_discriminator_pydantic_v2.py	= main/openapi/recursive_ref_discriminator.py
+[test_main_openapi_recursive_ref_discriminator_request_response]
+	main/openapi/openapi_recursive_ref_discriminator_request_response.py	= main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_ref_nullable_strict_nullable]
 	main/openapi/ref_nullable_strict_nullable.py
 [test_main_openapi_reference_same_hierarchy_directory]
