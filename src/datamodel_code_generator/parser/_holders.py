@@ -60,6 +60,19 @@ class ChildList:
     """The nodes that hold the list, in the order a full rebuild's traversal first reaches them."""
 
 
+InlinedReplacement: TypeAlias = Literal["sole-holder", "replace-in-owner", "legacy-shared-node-in-place"]
+"""How root-model collapse replaces a node under a root type it inlined by sharing (``GenerationStore.inline_shared``).
+
+* ``sole-holder``: no node from the node up to its field is held by more than one holder; the holder gets the
+  replacement.
+* ``replace-in-owner``: a direct member of a shared `ChildList` (or a shared dict key): the owner, the node its
+  ``parent`` names, gets a new list with the replacement; the other holders keep the old list and the member, whose
+  reference is detached.
+* ``legacy-shared-node-in-place``: a member deeper under a shared `ChildList`: the shared node that holds it is
+  written in place, so every holder of that node sees the replacement.
+"""
+
+
 def parent_is_holder(parent: object, edges: Iterable[HolderEdge]) -> bool:
     """Return whether ``parent`` is unset or one of the field and node holders that ``edges`` name.
 

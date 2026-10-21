@@ -68,6 +68,7 @@ from datamodel_code_generator.parser._holders import (
     ChildList,
     FieldKey,
     HolderEdge,
+    InlinedReplacement,
     NodeKey,
     ParentMismatch,
     node_in_cycle,
@@ -141,6 +142,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "drop_field_discriminator",
     "drop_held_null",
     "drop_union_member_constraints",
+    "inline_shared",
     "insert_field",
     "mark_target_null",
     "move_model",
@@ -166,6 +168,7 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "set_field_extras",
     "set_fields",
     "set_nested_data_types",
+    "set_type_discriminator",
     "swap_data_type",
     "update_model_reference",
     "use_assignment_for_forward_references",
@@ -177,6 +180,7 @@ SITE_EFFECTS: Mapping[str, ProvenanceHow] = MappingProxyType({
     "apply_const": "overridden",
     "collapse_root_data_type": "collapsed",
     "drop_union_member_constraints": "overridden",
+    "inline_shared": "collapsed",
     "insert_field": "copied",
     "note_changed_models": "overridden",
     "redirect_model_reference_users": "redirected",
@@ -220,6 +224,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "set_field_default",
     "set_field_extra",
     "set_field_extras",
+    "set_type_discriminator",
     "update_model_reference",
     "use_assignment_for_forward_references",
     "write_rendered_null",
@@ -1385,6 +1390,7 @@ class GenerationStore:  # noqa: PLR0904
         self._retired_models: dict[int, DataModel] = {}
         self._site_effects = _SiteEffects()
         self._carried_sites: Iterable[RefSite] = ()
+        self._inlined_owners: dict[NodeKey, list[DataType]] = {}
         self.phase = Phase.PARSE
         """The phase of the pipeline that runs now, which the parser pipeline sets as it enters it."""
 
@@ -1424,6 +1430,7 @@ class GenerationStore:  # noqa: PLR0904
         self._retired_models.clear()
         self._site_effects.clear()
         self._carried_sites = ()
+        self._inlined_owners.clear()
         self._dirty = True
 
     @property
@@ -2175,6 +2182,11 @@ class GenerationStore:  # noqa: PLR0904
         field_.data_type.discriminator = None
 
     @staticmethod
+    def set_type_discriminator(data_type: DataType, discriminator: str) -> None:
+        """Write the discriminator of a data type, which every holder of the type sees."""
+        data_type.discriminator = discriminator
+
+    @staticmethod
     def override_type_import(data_type: DataType, import_: Import) -> None:
         """Make a data type name ``import_``, which every holder of the type sees."""
         data_type.import_ = import_
@@ -2279,7 +2291,10 @@ class GenerationStore:  # noqa: PLR0904
                 case "field":
                     self.replace_field_type(owner, new_data_type)
                 case "nested":  # pragma: no branch
-                    self.replace_nested_data_type(owner, data_type, new_data_type)
+                    if self._inlined_replacement(data_type, owner) == "replace-in-owner":
+                        self._replace_in_owner(owner, data_type, new_data_type)
+                    else:
+                        self.replace_nested_data_type(owner, data_type, new_data_type)
         finally:
             self._root_collapse_internal_mutation_depth -= 1
         try:
@@ -2306,6 +2321,57 @@ class GenerationStore:  # noqa: PLR0904
             self._invalidate_after_mutation()
         finally:
             self._root_collapse_internal_mutation_depth -= 1
+
+    def inline_shared(self, root_type: DataType, site: DataType) -> DataType:
+        """Return a copy of ``root_type`` for collapse to put at ``site``, sharing the children of ``root_type``.
+
+        The copy holds the same ``data_types`` list (a `ChildList`) and dict key as ``root_type`` and every other copy
+        of it, so each child has a holder edge from each of them (`_inlined_holders`). The sites of the copy are
+        collapsed from the root model ``site`` names.
+        """
+        copied = root_type.model_copy()
+        if (owners := self._inlined_owners.get(NodeKey(id(root_type)))) is None:
+            owners = self._inlined_owners[NodeKey(id(root_type))] = [root_type]
+        owners.append(copied)
+        self._inlined_owners[NodeKey(id(copied))] = owners
+        self._state_tree_sites("inline_shared", (copied,), via=site.reference)
+        return copied
+
+    def _inlined_holders(self, node: DataType) -> tuple[HolderEdge, ...]:
+        """Return the holder edges of ``node`` from its ``parent`` and the types sharing its children with it."""
+        if (owners := self._inlined_owners.get(NodeKey(id(node.parent)))) is None:
+            return ()
+        return (
+            *(
+                HolderEdge(NodeKey(id(owner)), "nested", index)
+                for owner in owners
+                for index, member in enumerate(owner.data_types)
+                if member is node
+            ),
+            *(HolderEdge(NodeKey(id(owner)), "dict_key", None) for owner in owners if owner.dict_key is node),
+        )
+
+    def _inlined_replacement(self, data_type: DataType, owner: DataType) -> InlinedReplacement:
+        """Return the policy that replaces ``data_type`` under ``owner``, read from the holders `inline_shared` gave."""
+        from datamodel_code_generator.types import DataType as RuntimeDataType  # noqa: PLC0415
+
+        if len(self._inlined_holders(data_type)) > 1:
+            return "replace-in-owner"
+        node: object = owner
+        seen: set[int] = set()
+        while isinstance(node, RuntimeDataType) and id(node) not in seen:
+            if len(self._inlined_holders(node)) > 1:
+                return "legacy-shared-node-in-place"
+            seen.add(id(node))
+            node = node.parent
+        return "sole-holder"
+
+    def _replace_in_owner(self, owner: DataType, data_type: DataType, new_data_type: DataType) -> None:
+        """Replace a direct member of a shared `ChildList` in ``owner`` alone (row ``replace-in-owner``).
+
+        ``owner`` gets a new list; the other holders keep the old list and ``data_type``, whose reference is detached.
+        """
+        self.replace_nested_data_type(owner, data_type, new_data_type)
 
     def set_nested_data_types(self, data_type: DataType, nested_data_types: Iterable[DataType]) -> None:
         """Replace nested data types and invalidate derived facts; the new sites under ``data_type`` are overridden."""

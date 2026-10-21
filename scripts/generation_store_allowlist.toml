@@ -286,9 +286,6 @@ name = 1
 ["src/datamodel_code_generator/parser/base.py"."Parser.__change_from_import"]
 alias = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser.__collapse_root_models_in_scope"]
-discriminator = 1
-
 ["src/datamodel_code_generator/parser/base.py"."Parser.__defer_recursive_containers"]
 alias = 1
 use_union_operator = 1

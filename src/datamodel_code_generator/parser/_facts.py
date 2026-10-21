@@ -354,7 +354,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.DISCRIMINATOR_TAGS,),
         Phase.MODULES,
         FreezePoint.B1,
-        store_ops=("drop_field_discriminator",),
+        store_ops=("drop_field_discriminator", "set_type_discriminator"),
     ),
     AttributeFact(
         "DataType",

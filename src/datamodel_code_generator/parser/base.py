@@ -6083,7 +6083,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     copied_data_type = (
                         self._copy_model_type(root_type_field.data_type)
                         if source_module_name != target_module_name
-                        else root_type_field.data_type.model_copy()
+                        else generation_store.inline_shared(root_type_field.data_type, data_type)
                     )
                     self.__carry_const_narrowings(root_type_field.data_type, copied_data_type)
                     has_remaining_root_references = self.__has_remaining_root_references(
@@ -6144,7 +6144,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                     mapping,
                                     enum_member_tags=self.use_enum_values_in_discriminator,
                                 ):
-                                    copied_data_type.discriminator = field_name
+                                    generation_store.set_type_discriminator(copied_data_type, field_name)
                         replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                             data_type,
                             copied_data_type,
