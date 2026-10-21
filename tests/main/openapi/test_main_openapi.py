@@ -3719,20 +3719,16 @@ def test_main_openapi_type_overrides_constructor_order(
         )
 
 
-@pytest.mark.parametrize(
-    "extra_args",
-    [
-        pytest.param(["--type-overrides", '{"Gain.g": "decimal.Decimal"}'], id="base-override-gains-field-argument"),
-        pytest.param(
-            [
-                "--strip-default-none",
-                "--type-overrides",
-                '{"Child.n": "decimal.Decimal", "Base.b": "decimal.Decimal"}',
-            ],
-            id="base-override-drops-inherited-default",
-        ),
-    ],
-)
+_TYPE_OVERRIDES_CONSTRUCTOR_ORDER_MODULES = [
+    pytest.param(["--type-overrides", '{"Gain.g": "decimal.Decimal"}'], id="base-override-gains-field-argument"),
+    pytest.param(
+        ["--strip-default-none", "--type-overrides", '{"Child.n": "decimal.Decimal", "Base.b": "decimal.Decimal"}'],
+        id="base-override-drops-inherited-default",
+    ),
+]
+
+
+@pytest.mark.parametrize("extra_args", _TYPE_OVERRIDES_CONSTRUCTOR_ORDER_MODULES)
 def test_main_openapi_type_overrides_constructor_order_modules(extra_args: list[str], output_dir: Path) -> None:
     """Order a subclass by the fields its base has after the base's own module applied --type-overrides.
 
@@ -3740,6 +3736,28 @@ def test_main_openapi_type_overrides_constructor_order_modules(extra_args: list[
     field a ``Field()`` argument makes the subclass's required field keyword-only, so the package imports; an override
     that removes the inherited default leaves the subclass's fields positional.
     """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "type_overrides_constructor_order_modules.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            "--order-constructor-fields-by-final-names",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("extra_args", _TYPE_OVERRIDES_CONSTRUCTOR_ORDER_MODULES)
+def test_main_openapi_type_overrides_constructor_order_modules_default(extra_args: list[str], output_dir: Path) -> None:
+    """Order a subclass while the modules are processed: the base's own module has not applied --type-overrides yet."""
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "type_overrides_constructor_order_modules.yaml",
         output_path=output_dir,

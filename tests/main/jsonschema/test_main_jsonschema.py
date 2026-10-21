@@ -3772,7 +3772,7 @@ def test_main_jsonschema_discriminator_tag_of_earlier_module(
         pytest.param(
             "field_type_collision_inherited_modules",
             DataModelType.PydanticV2Dataclass,
-            [],
+            ["--order-constructor-fields-by-final-names"],
             "field_type_collision_inherited_modules",
             "b",
             "Bar_1",
@@ -3852,6 +3852,30 @@ def test_main_jsonschema_discriminator_tag_of_earlier_module(
         ),
     ],
 )
+@pytest.mark.cli_doc(
+    options=["--order-constructor-fields-by-final-names"],
+    option_description="""Order the constructor fields of dataclass and msgspec.Struct models by final field names.
+
+The `--order-constructor-fields-by-final-names` flag only applies to output models that can mark fields keyword-only
+(`dataclasses.dataclass`, `pydantic_v2.dataclass` and `msgspec.Struct`); other output model types ignore it.
+
+A field that is renamed because it is named like its type, such as `Bar: Bar`, is renamed in every class of its
+family. Without the flag the order of a class's constructor fields is decided while its module is processed, where
+the inherited field may not be renamed yet: a subclass that overrides it as a required field then reads as a new
+field after the inherited default, and is written keyword-only (`kw_only=True`), which moves it behind the
+positional fields and changes the first positional argument of the constructor. With the flag the order is decided
+once every field has its final name, so the override takes the place of the inherited field and stays positional.""",
+    input_schema="jsonschema/field_type_collision_inherited_modules",
+    cli_args=[
+        "--output-model-type",
+        "pydantic_v2.dataclass",
+        "--target-python-version",
+        "3.11",
+        "--order-constructor-fields-by-final-names",
+    ],
+    golden_output="main/jsonschema/field_type_collision_inherited_modules/",
+    comparison_output="main/jsonschema/main_jsonschema/field_type_collision_inherited_modules_default_order/",
+)
 def test_main_jsonschema_field_type_collision_inherited_modules(
     output_dir: Path,
     input_name: str,
@@ -3892,6 +3916,24 @@ def test_main_jsonschema_field_type_collision_inherited_modules(
             f"{getattr(parsed, field_name).x}\n",
             DATA_PATH / "expected/payloads/field_type_collision_cross_module/runtime.txt",
         )
+
+
+def test_main_jsonschema_field_type_collision_inherited_modules_default_order(output_dir: Path) -> None:
+    """Write the override of a renamed inherited field keyword-only, as the constructor order is decided per module."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_inherited_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2Dataclass.value,
+            "--target-python-version",
+            "3.11",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
 
 
 def test_main_reuse_model_discriminator_literal(output_file: Path) -> None:

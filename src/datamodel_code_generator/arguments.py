@@ -520,6 +520,15 @@ model_options.add_argument(
     default=None,
 )
 model_options.add_argument(
+    "--order-constructor-fields-by-final-names",
+    help="Order the constructor fields of dataclass and msgspec.Struct models after every field has its final name. "
+    "A field that overrides an inherited field renamed in another module is then matched to it and keeps its place; "
+    "without it the override reads as a new field after the inherited default and is written keyword-only "
+    "(kw_only=True).",
+    action="store_true",
+    default=None,
+)
+model_options.add_argument(
     "--keyword-only",
     help="Defined models as keyword only (for example dataclass(kw_only=True)).",
     action="store_true",

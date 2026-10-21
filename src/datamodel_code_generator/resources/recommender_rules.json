@@ -912,6 +912,10 @@
       "not_recommended": "style",
       "reason": "Which OpenAPI sections generate models; the project decides which models it needs."
     },
+    "order_constructor_fields_by_final_names": {
+      "not_recommended": "preset",
+      "reason": "Dataclass and msgspec.Struct output only: set by the dated presets from 20261019; the recommendation starts from the preset."
+    },
     "original_field_name_delimiter": {
       "not_recommended": "style",
       "reason": "Word delimiter for --snake-case-field; a project convention."

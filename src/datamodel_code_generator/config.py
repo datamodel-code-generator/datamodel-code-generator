@@ -257,6 +257,7 @@ class ParserConfig(BaseModel):
     remove_special_field_name_prefix: bool = False
     capitalise_enum_members: bool = False
     keep_model_order: bool = False
+    order_constructor_fields_by_final_names: bool = False
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False
     use_msgspec_tagged_unions: bool = False

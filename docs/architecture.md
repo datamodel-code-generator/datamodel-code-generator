@@ -162,16 +162,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 187 | Shared generation options. |
-| `GenerateConfig` | 202 | Public `generate()` configuration. |
-| `ParserConfig` | 152 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 154 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 161 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 162 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 155 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 155 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 154 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 155 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 188 | Shared generation options. |
+| `GenerateConfig` | 203 | Public `generate()` configuration. |
+| `ParserConfig` | 153 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 155 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 162 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 163 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 156 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 156 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 155 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 156 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -557,6 +557,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | MODULES | `remove_overridden_models` | module | transform | MODELS_EXIST | CLASS_NAMES, TYPE_OVERRIDES | Keeps the models that a model-level --type-overrides replaces out of the module. |
 | MODULES | `apply_field_type_overrides` | module | transform | CONSTRAINTS, FIELD_TYPES, MODULE_IMPORTS, TYPE_OVERRIDES | FIELD_NAMES, TYPE_OVERRIDES | After `remove_overridden_models`: overrides apply to the models kept after model-level overrides (#4958). |
 | MODULES | `type_dict_keys_by_root_types` | module | transform | BACKEND_CONFIG, FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | CONSTRAINTS, FIELD_TYPES, METADATA, MODEL_KIND, MODULE_MEMBERSHIP | Types each dict key that names a root model whose instances cannot be dict keys by its root type. After `apply_field_type_overrides`: types dict keys after field types are overridden. |
+| MODULES | `fix_constructor_field_ordering_early` | module | transform | FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED | BACKEND_CONFIG, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, NULLABLE, REQUIRED | Orders constructor fields while the modules are processed, before every field has its final name. Runs when: without --order-constructor-fields-by-final-names. |
 | MODULES | `snapshot_module_unused_models` | module | bookkeeping | - | - |  |
 | MODULES | `apply_base_class_type_overrides` | module | transform | BASES, MODULE_IMPORTS, TYPE_OVERRIDES | TYPE_OVERRIDES | After `type_dict_keys_by_root_types`: both add module imports; base overrides come after field types are final. |
 | CROSS_MODULE | `tag_fields_of_tagged_bases` | global | transform | DISCRIMINATOR_TAGS, FIELD_SET | BASES, DISCRIMINATOR_TAGS, FIELD_SET | Tags the structs that declare the tag field of a tagged base, or opts them out of the tag. Runs when: msgspec. |

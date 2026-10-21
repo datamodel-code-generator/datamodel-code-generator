@@ -137,6 +137,7 @@ datamodel-codegen [OPTIONS]
 | [`--model-name-map`](model-customization.md#model-name-map) | Rename generated model classes from a JSON mapping. |
 | [`--naming-strategy`](model-customization.md#naming-strategy) | Use parent-prefixed naming strategy for duplicate model names. |
 | [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds null itself. |
+| [`--order-constructor-fields-by-final-names`](model-customization.md#order-constructor-fields-by-final-names) | Order the constructor fields of dataclass and msgspec.Struct models by final fie... |
 | [`--output-model-type`](model-customization.md#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 dataclass, dataclasses, T... |
 | [`--parent-scoped-naming`](model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
 | [`--pin-aliases-with-alias-generator`](model-customization.md#pin-aliases-with-alias-generator) | Decide a field's alias by the alias generator its model applies. |
@@ -423,6 +424,7 @@ All options sorted alphabetically:
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) - Filter OpenAPI paths to include in model generation.
 - [`--openapi-paths-bodies-as-definitions`](openapi-only-options.md#openapi-paths-bodies-as-definitions) - Give the bodies of the paths and webhooks scopes the models ...
 - [`--openapi-scopes`](openapi-only-options.md#openapi-scopes) - Specify OpenAPI scopes to generate (schemas, paths, paramete...
+- [`--order-constructor-fields-by-final-names`](model-customization.md#order-constructor-fields-by-final-names) - Order the constructor fields of dataclass and msgspec.Struct...
 - [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) - Specify delimiter for original field names when using snake-...
 - [`--output`](base-options.md#output) - Specify the destination path for generated Python code.
 - [`--output-date-class`](typing-customization.md#output-date-class) - Specify date class type for date schema fields.

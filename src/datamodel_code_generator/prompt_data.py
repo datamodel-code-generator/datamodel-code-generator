@@ -121,6 +121,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--openapi-include-paths": "Filter OpenAPI paths to include in model generation.",
     "--openapi-paths-bodies-as-definitions": "Give the bodies of the paths and webhooks scopes the models their sch...",
     "--openapi-scopes": "Specify OpenAPI scopes to generate (schemas, paths, parameters).",
+    "--order-constructor-fields-by-final-names": "Order the constructor fields of dataclass and msgspec.Struct mode...",
     "--original-field-name-delimiter": "Specify delimiter for original field names when using snake-case conversion.",
     "--output": "Specify the destination path for generated Python code.",
     "--output-date-class": "Specify date class type for date schema fields.",

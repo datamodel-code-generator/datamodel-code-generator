@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 36 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 49 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 50 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 9 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -270,6 +270,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths)
 - [`--openapi-paths-bodies-as-definitions`](openapi-only-options.md#openapi-paths-bodies-as-definitions)
 - [`--openapi-scopes`](openapi-only-options.md#openapi-scopes)
+- [`--order-constructor-fields-by-final-names`](model-customization.md#order-constructor-fields-by-final-names)
 - [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter)
 - [`--output`](base-options.md#output)
 - [`--output-date-class`](typing-customization.md#output-date-class)

@@ -324,6 +324,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         group=OptionGroup.MODEL_REUSE,
     ),
     "--keep-model-order": CLIOptionMeta(name="--keep-model-order", category=OptionCategory.MODEL),
+    "--order-constructor-fields-by-final-names": CLIOptionMeta(
+        name="--order-constructor-fields-by-final-names", category=OptionCategory.MODEL
+    ),
     "--allow-extra-fields": CLIOptionMeta(
         name="--allow-extra-fields",
         category=OptionCategory.MODEL,

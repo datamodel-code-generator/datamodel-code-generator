@@ -58,6 +58,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -83,6 +84,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -108,6 +110,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -133,6 +136,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -158,6 +162,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -183,6 +188,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -208,6 +214,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -233,6 +240,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 -- module
@@ -258,6 +266,7 @@ rename_fields_hiding_types
 remove_overridden_models
 apply_field_type_overrides
 type_dict_keys_by_root_types
+fix_constructor_field_ordering_early
 snapshot_module_unused_models
 apply_base_class_type_overrides
 warn_enums_admitting_other_values

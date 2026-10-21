@@ -6474,6 +6474,8 @@ packages-first-rename-type-base-model	main/jsonschema/field_type_collision_inher
 packages-first-rename-type-base-model	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 packages-first-rename-type-base-model-exact-import	main/jsonschema/field_type_collision_inherited_modules_package/base_model_rename_type_exact//*.py
 packages-first-rename-type-base-model-exact-import	payloads/field_type_collision_cross_module/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+[test_main_jsonschema_field_type_collision_inherited_modules_default_order]
+	main/jsonschema/main_jsonschema/field_type_collision_inherited_modules_default_order/
 [test_main_jsonschema_field_type_collision_rename_type_double]
 	main/jsonschema/field_type_collision_rename_type_double.py
 [test_main_jsonschema_field_type_collision_runtime]

@@ -4112,6 +4112,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_type_alias = config.use_type_alias
         self.capitalise_enum_members = config.capitalise_enum_members
         self.keep_model_order = config.keep_model_order
+        self.order_constructor_fields_by_final_names = config.order_constructor_fields_by_final_names
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
@@ -7135,8 +7136,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if get_constructor_ordering_conflicts(model, effective_fields, set()):
                 model.enable_model_keyword_only()
 
-    def __fix_constructor_field_ordering(self, models: list[DataModel]) -> None:
-        """Fix constructor field ordering after inherited defaults are resolved."""
+    def __fix_constructor_field_ordering(self, models: list[DataModel], *, early: bool = False) -> None:
+        """Fix constructor field ordering after inherited defaults are resolved.
+
+        ``early`` runs it where the modules are processed, before the overrides replace the bases and before every
+        field has its final name, the form of ``--order-constructor-fields-by-final-names`` off.
+        """
         for model in models:
             restored_inherited_state = False
             for field in model.fields:
@@ -7144,7 +7149,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     model.restore_required_inherited_field_state(field) or restored_inherited_state
                 )
 
-            if (inherited := self.__get_inherited_constructor_info(model)) is None:
+            if (inherited := self.__get_inherited_constructor_info(model, early=early)) is None:
                 order_key = self.__get_local_constructor_order_key(model)
                 if self.__has_local_constructor_ordering_conflict(model, order_key):
                     model.clear_imports_cache()
@@ -7271,21 +7276,25 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             previous_key = key
         return False
 
-    def __get_inherited_constructor_info(self, model: DataModel) -> _InheritedConstructorInfo | None:
+    def __get_inherited_constructor_info(
+        self, model: DataModel, *, early: bool = False
+    ) -> _InheritedConstructorInfo | None:
         """Return inherited value leaks and exact positional ordering conflicts."""
         if not model.SUPPORTS_KW_ONLY:
             return None
         if not model.base_classes:
             return None
 
+        stand_ins = {} if early else self._base_stand_ins
         inherited_models = [
             base
-            for base in linearize_data_models(direct_base_models(model, self._base_stand_ins), self._base_stand_ins)
+            for base in linearize_data_models(direct_base_models(model, stand_ins), stand_ins)
             if base is not self._generic_base_model
         ]
         if not inherited_models:
             return None
-        record_ordering_inputs(model, inherited_models, self._base_stand_ins)
+        if not early:
+            record_ordering_inputs(model, inherited_models, stand_ins)
 
         supports_inherited_override = model.SUPPORTS_REQUIRED_INHERITED_FIELD_ASSIGNMENT
         required_assignment_names: set[str] = set()
@@ -10298,6 +10307,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             decls.TYPE_DICT_KEYS_BY_ROOT_TYPES,
             lambda self, s: self.__type_module_dict_keys_by_root_types(s),
             checked_models=_module_models,
+        ),
+        PassSpec(
+            decls.FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY,
+            lambda self, s: self.__fix_constructor_field_ordering(s.model_list_before_override_removal, early=True),
+            when=lambda self, _: not self.order_constructor_fields_by_final_names,
+            checked_models=lambda _, s: s.model_list_before_override_removal,
         ),
         PassSpec(
             decls.SNAPSHOT_MODULE_UNUSED_MODELS,

@@ -512,6 +512,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         definitions (in /definitions/ or
                         /components/schemas/), only add suffix to
                         inline/nested duplicates.
+  --order-constructor-fields-by-final-names
+                        Order the constructor fields of dataclass and
+                        msgspec.Struct models after every field has its final
+                        name. A field that overrides an inherited field
+                        renamed in another module is then matched to it and
+                        keeps its place; without it the override reads as a
+                        new field after the inherited default and is written
+                        keyword-only (kw_only=True).
   --output-date-class {date,PastDate,FutureDate}
                         Choose Date class between PastDate, FutureDate or
                         date. (Pydantic v2 only) Each output model has its

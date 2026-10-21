@@ -25,6 +25,7 @@ __all__ = [
     "COLLECT_LIVE_MODELS",
     "FINALIZE_RENDERED_NULLABILITY",
     "FIX_CONSTRUCTOR_FIELD_ORDERING",
+    "FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY",
     "FIX_TAG_OPT_OUT_FIELD_ORDERING",
     "PASS_DECLS",
     "SET_VALIDATE_DEFAULT_ON_FIELDS",
@@ -577,6 +578,27 @@ TYPE_DICT_KEYS_BY_ROOT_TYPES = PassDecl(
     writes=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.BACKEND_CONFIG),
     after=(After("apply_field_type_overrides", "types dict keys after field types are overridden"),),
     summary="Types each dict key that names a root model whose instances cannot be dict keys by its root type.",
+)
+FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY = PassDecl(
+    "fix_constructor_field_ordering_early",
+    Phase.MODULES,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.FIELD_SET,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_TYPES,
+        Fact.REQUIRED,
+        Fact.NULLABLE,
+        Fact.DEFAULTS,
+        RenderFact.FIELD_ORDER,
+        RenderFact.KEYWORD_ONLY,
+        RenderFact.FORCED_ASSIGNMENT,
+        RenderFact.BACKEND_CONFIG,
+    ),
+    writes=_facts(Fact.REQUIRED, RenderFact.FIELD_ORDER, RenderFact.KEYWORD_ONLY, RenderFact.FORCED_ASSIGNMENT),
+    summary="Orders constructor fields while the modules are processed, before every field has its final name.",
+    condition="without --order-constructor-fields-by-final-names",
 )
 SNAPSHOT_MODULE_UNUSED_MODELS = PassDecl(
     "snapshot_module_unused_models",

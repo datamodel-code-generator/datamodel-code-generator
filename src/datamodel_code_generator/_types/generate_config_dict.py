@@ -182,6 +182,7 @@ class BaseGenerateConfig(TypedDict):
     remove_special_field_name_prefix: NotRequired[bool]
     capitalise_enum_members: NotRequired[bool]
     keep_model_order: NotRequired[bool]
+    order_constructor_fields_by_final_names: NotRequired[bool]
     custom_file_header: NotRequired[str | None]
     custom_file_header_path: NotRequired[Path | None]
     custom_file_header_mode: NotRequired[CustomFileHeaderMode]
