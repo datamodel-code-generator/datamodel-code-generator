@@ -1360,6 +1360,27 @@ def test_main_openapi_enum_const_without_option(output_model: str, name: str, ou
     )
 
 
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+@pytest.mark.parametrize("name", ["enum_const_positions", "enum_const_nullable"])
+def test_main_openapi_enum_const_single_value_without_option(output_model: str, name: str, output_file: Path) -> None:
+    """Read an enum beside a const as written under --use-single-value-enum-as-const alone, as 0.86.0 does."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            "--use-single-value-enum-as-const",
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "--strict-nullable",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("order", ["base_later", "base_earlier"])
 def test_main_openapi_msgspec_tagged_unions_declaration_order(order: str, output_file: Path) -> None:
     """Tag variants and their base struct alike whichever of their unions the document declares first."""

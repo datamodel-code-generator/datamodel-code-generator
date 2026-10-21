@@ -17,7 +17,7 @@
     },
     "version": {"type": "integer", "const": 2, "default": 2},
     "default": {"type": "string", "const": "named"},
-    "both": {"type": "string", "const": "same"},
+    "both": {"type": "string", "enum": ["same"], "const": "same"},
     "options": {
       "type": "object",
       "additionalProperties": true,

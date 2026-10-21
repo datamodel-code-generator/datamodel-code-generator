@@ -2685,15 +2685,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         Const branches that --use-single-value-enum-as-const read merge into one Enum only when there are two or more
         and all hold values of one JSON type; otherwise each branch is typed as written, each const as its Literal and
-        null as None. Without the option, a document's own read-as-const marker reads nothing. The values are those that
-        meet their branch's constraints and the parent's (``_combined_values_admitted``), with all the consts as written
-        when some do not; the parent's field writes its own when ``writes``.
+        null as None. Under --read-const-beside-enum, without the option a document's own read-as-const marker reads
+        nothing; without --read-const-beside-enum it reads, as in 0.86.0. The values are those that meet their branch's
+        constraints and the parent's (``_combined_values_admitted``), with all the consts as written when some do not;
+        the parent's field writes its own when ``writes``.
         """
         enum_values: list[Any] = []
         branches: list[JsonSchemaObject] = []
         nullable = False
         inferred_type: str | None = None
-        read_as_const = self.use_single_value_enum_as_const
+        read_as_const = self.use_single_value_enum_as_const or not self.read_const_beside_enum
 
         for item in items:
             if item is False:
@@ -14305,13 +14306,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
         """Return whether --use-single-value-enum-as-const reads an enum that admits the const beside it as that const.
 
-        The option marks each schema holding a const; without it, a document's own marker reads nothing. The enum is
-        read as written beside ``nullable: true`` and a const other than null, as the option keeps such a one-value
-        enum, since a const does not carry nullable, and when the const's type would admit other values
-        (``_const_type_is_exact``).
+        Only with --read-const-beside-enum. The option marks each schema holding a const; without it, a document's own
+        marker reads nothing. The enum is read as written beside ``nullable: true`` and a const other than null, as the
+        option keeps such a one-value enum, since a const does not carry nullable, and when the const's type would admit
+        other values (``_const_type_is_exact``).
         """
         return bool(
-            self.use_single_value_enum_as_const
+            self.read_const_beside_enum
+            and self.use_single_value_enum_as_const
             and obj.read_as_const
             and "const" in obj.extras
             and (exact := self._exact_const_enum_value(obj))

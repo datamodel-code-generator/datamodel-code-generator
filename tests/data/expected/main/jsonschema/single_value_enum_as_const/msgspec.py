@@ -10,6 +10,10 @@ from typing import Annotated, Any, Literal, TypeAlias
 from msgspec import UNSET, Meta, Struct, UnsetType, field
 
 
+class Both(Enum):
+    same = 'same'
+
+
 class Level(Enum):
     low = 'low'
     high = 'high'
@@ -60,7 +64,7 @@ class Settings(Struct):
     region: Region | UnsetType = UNSET
     version: Literal[2] | UnsetType = 2
     default: Literal['named'] | UnsetType = UNSET
-    both: Literal['same'] | UnsetType = UNSET
+    both: Both | UnsetType = UNSET
     options: (
         Annotated[dict[str, Any], Meta(examples=[{'enum': ['kept']}])] | UnsetType
     ) = field(default_factory=lambda: {'enum': ['kept']})

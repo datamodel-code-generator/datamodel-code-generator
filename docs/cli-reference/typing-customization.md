@@ -2799,8 +2799,11 @@ names such an enum, a property, an item, a map value or key, a union branch or a
 by the const: `Literal[<Enum>.<member>]` when the members of the enum equal their values (`IntEnum`, `StrEnum`,
 `--use-subclass-enum`), the const's own `Literal`, or `None` for a null const. A plain `Enum`, and any msgspec
 enum, keeps the enum type and warns once per schema location that the other values are accepted. A schema whose
-const is none of its enum values admits no value and is generated as written with a warning. Without the
-option, a `const` beside an `enum` is ignored.
+const is none of its enum values admits no value and is generated as written with a warning. Under
+`--use-single-value-enum-as-const`, an `enum` that admits the `const` beside it, such as
+`{"enum": ["a", "b"], "const": "a"}`, is read as that `const` without the enum class written beside it otherwise,
+except one with `nullable: true` and a const other than `null`. Without the option, a `const` beside an `enum` is
+ignored.
 
 !!! tip "Usage"
 
@@ -4411,9 +4414,7 @@ become one Enum with branch titles as member names when there are two or more an
 of one JSON type; otherwise each branch is typed as written, such as `Literal['a'] | None` for one
 value beside a `null` branch or `Literal['a'] | Literal[1]` for values of different JSON types. A
 schema with one enum value is typed `Literal[...]` instead of a one-member Enum, except one with
-`nullable: true` and a value other than `null`, which keeps its enum and is read as written. An
-`enum` that admits the `const` beside it, such as `{"enum": ["a", "b"], "const": "a"}`, is read as
-that `const` the same way, without the enum class written beside it otherwise. The
+`nullable: true` and a value other than `null`, which keeps its enum and is read as written. The
 option reads `const` branches the same way, which without it merge into one Enum in those cases
 too. Instance data such as `default` and `examples`, extension values (`x-...` except
 `x-propertyNames`), links and servers stay as written, so a schema kept under an extension
@@ -4519,6 +4520,10 @@ Schema and GraphQL inputs are not changed.
         from pydantic import BaseModel, Field, RootModel
 
 
+        class Both(Enum):
+            same = 'same'
+
+
         class Level(Enum):
             low = 'low'
             high = 'high'
@@ -4597,6 +4602,10 @@ Schema and GraphQL inputs are not changed.
         from msgspec import UNSET, Meta, Struct, UnsetType, field
 
 
+        class Both(Enum):
+            same = 'same'
+
+
         class Level(Enum):
             low = 'low'
             high = 'high'
@@ -4647,7 +4656,7 @@ Schema and GraphQL inputs are not changed.
             region: Region | UnsetType = UNSET
             version: Literal[2] | UnsetType = 2
             default: Literal['named'] | UnsetType = UNSET
-            both: Literal['same'] | UnsetType = UNSET
+            both: Both | UnsetType = UNSET
             options: (
                 Annotated[dict[str, Any], Meta(examples=[{'enum': ['kept']}])] | UnsetType
             ) = field(default_factory=lambda: {'enum': ['kept']})

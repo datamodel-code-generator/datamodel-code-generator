@@ -6326,6 +6326,17 @@ subclass-enum-dataclasses	main/jsonschema/main_jsonschema/enum_const_positions[s
 subclass-enum-dataclasses	main/jsonschema/main_jsonschema/enum_const_positions[subclass-enum-dataclasses].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 subclass-enum-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[subclass-enum-pydantic-v2].py
 subclass-enum-pydantic-v2	main/jsonschema/main_jsonschema/enum_const_positions[subclass-enum-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_main_jsonschema_enum_const_single_value_without_option]
+integral-float-literal-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[integral-float-literal-pydantic_v2.BaseModel].py
+marker-in-document-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[marker-in-document-msgspec.Struct].py
+marker-in-document-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[marker-in-document-pydantic_v2.BaseModel].py
+non-literal-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[non-literal-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_without_option[non-literal-pydantic_v2.BaseModel].py
+positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[positions-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_without_option[positions-msgspec.Struct].py
+positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[positions-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_without_option[positions-pydantic_v2.BaseModel].py
+titles-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[titles-msgspec.Struct].py
+titles-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[titles-pydantic_v2.BaseModel].py
+type-list-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[type-list-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_type_list[msgspec.Struct].py
+type-list-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_single_value_without_option[type-list-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_type_list[pydantic_v2.BaseModel].py
 [test_main_jsonschema_enum_const_type_list]
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_type_list[msgspec.Struct].py
 msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_type_list[msgspec.Struct].warnings.txt
@@ -6351,6 +6362,8 @@ hidden-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[
 hidden-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[hidden-pydantic_v2.BaseModel].py
 integral-float-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-msgspec.Struct].py
 integral-float-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[integral-float-pydantic_v2.BaseModel].py
+marker-in-document-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[marker-in-document-msgspec.Struct].py	= main/jsonschema/main_jsonschema/enum_const_single_value_without_option[marker-in-document-msgspec.Struct].py
+marker-in-document-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[marker-in-document-pydantic_v2.BaseModel].py	= main/jsonschema/main_jsonschema/enum_const_single_value_without_option[marker-in-document-pydantic_v2.BaseModel].py
 non-literal-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[non-literal-pydantic_v2.BaseModel].py
 positions-msgspec.Struct	main/jsonschema/main_jsonschema/enum_const_without_option[positions-msgspec.Struct].py
 positions-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/enum_const_without_option[positions-pydantic_v2.BaseModel].py
@@ -7127,6 +7140,9 @@ option-default	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_f
 option-strict-nullable	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[option-strict-nullable].py
 without-option-default	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[without-option-default].py
 without-option-strict-nullable	main/jsonschema/main_jsonschema/single_value_enum_as_const_null_forms[without-option-strict-nullable].py
+[test_main_jsonschema_single_value_enum_as_const_reads_const_beside_enum]
+msgspec.Struct	main/jsonschema/main_jsonschema/single_value_enum_as_const_reads_const_beside_enum[msgspec.Struct].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/single_value_enum_as_const_reads_const_beside_enum[pydantic_v2.BaseModel].py
 [test_main_jsonschema_single_value_enum_as_const_titles]
 msgspec.Struct	main/jsonschema/main_jsonschema/single_value_enum_as_const_titles[msgspec.Struct].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/single_value_enum_as_const_titles[pydantic_v2.BaseModel].py
