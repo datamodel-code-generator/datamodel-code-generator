@@ -1,4 +1,4 @@
-"""The model graph check over the holders of data types: ``parent`` names a holder and no data type contains itself."""
+"""The model graph check: ``parent`` names a holder, no type contains itself, a refresh records what a rebuild would."""
 
 from __future__ import annotations
 
@@ -59,4 +59,53 @@ def test_model_graph_check_reports_holder_violations(
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
     parser = CorruptingParser(JSON_SCHEMA_DATA_PATH / "person.json", formatters=[Formatter.BUILTIN])
     with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: {message}"):
+        parser.parse()
+
+
+def test_model_graph_check_reports_a_change_no_operation_noted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A refresh records again only the models store operations noted, so a type changed without a note is reported.
+
+    The custom parser retypes a field of one model after the facts are built and then changes another model through the
+    store; the refresh that follows records the second model again and keeps the first as it was, which a full rebuild
+    would not.
+    """
+
+    class UnnotingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            store = self.generation_store
+            store.current_facts()
+            unnoted, noted = self.results[:2]
+            unnoted.fields[0].data_type = DataType(type="int")
+            store.set_fields(noted, list(noted.fields))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
+    parser = UnnotingParser(JSON_SCHEMA_DATA_PATH / "nested_person.json", formatters=[Formatter.BUILTIN])
+    with pytest.raises(
+        Error,
+        match=rf"^{CHECK_MODEL_GRAPH_ENV}: the models that a refresh recorded for the noted models differ from a full "
+        "rebuild$",
+    ):
+        parser.parse()
+
+
+def test_model_graph_check_reports_a_cycle_in_a_model_no_operation_noted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A type that contains itself is reported in a model no operation noted, before a rebuild would walk it.
+
+    The custom parser makes a field type of one model contain itself after the facts are built and then changes another
+    model through the store; the comparison with a full rebuild that follows would not end on the cycle.
+    """
+
+    class UnnotingParser(JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            store = self.generation_store
+            store.current_facts()
+            unnoted, noted = self.results[:2]
+            _contains_itself(unnoted)
+            store.set_fields(noted, list(noted.fields))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "1")
+    parser = UnnotingParser(JSON_SCHEMA_DATA_PATH / "nested_person.json", formatters=[Formatter.BUILTIN])
+    with pytest.raises(Error, match=rf"^{CHECK_MODEL_GRAPH_ENV}: a data type of \w+ contains itself$"):
         parser.parse()

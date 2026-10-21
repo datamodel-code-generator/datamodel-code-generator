@@ -28,9 +28,6 @@ _dedup_key_cache = 1
 ["src/datamodel_code_generator/model/base.py"."DataModel._uses_custom_root_template"]
 '@cached_property' = 1
 
-["src/datamodel_code_generator/model/base.py"."DataModel.assign_forward_reference_fields"]
-use_annotated = 1
-
 ["src/datamodel_code_generator/model/base.py"."DataModel.clear_imports_cache"]
 '__dict__.pop(_IMPORTS_CACHE_KEY)' = 1
 '__dict__.pop(_NESTED_MODEL_REQUIRED_CONSTRUCTOR_FIELDS_KEY)' = 1
@@ -68,10 +65,6 @@ _field_name_bindings = 1
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._merge_untaken_constraints"]
 '__dict__[...]' = 1
 
-["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._process_const_as_literal"]
-const = 1
-'replace_data_type()' = 2
-
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase._set_cached_field_imports"]
 '_field_imports_cache[...]' = 2
 
@@ -97,9 +90,6 @@ const = 1
 
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.record_untaken_constraints"]
 '__dict__[_UNTAKEN_CONSTRAINTS_KEY]' = 1
-
-["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.replace_data_type"]
-data_type = "--input tests/data/openapi/const.yaml --input-file-type openapi --output-model-type pydantic_v2.BaseModel --collapse-root-models"
 
 ["src/datamodel_code_generator/model/base.py"."DataModelFieldBase.self_reference"]
 '__dict__["_self_reference_cache"]' = 2
@@ -162,13 +152,6 @@ data_types = 1
 ["src/datamodel_code_generator/model/msgspec.py"."DataModelField._record_unconstrained_union_members"]
 '__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY]' = 1
 
-["src/datamodel_code_generator/model/msgspec.py"."DataModelField.process_const"]
-const = 1
-'replace_data_type()' = 1
-
-["src/datamodel_code_generator/model/msgspec.py"."DataModelField.unconstrain_union_members"]
-'data_types[:]' = 1
-
 ["src/datamodel_code_generator/model/msgspec.py"."Struct.add_base_class_kwarg"]
 '_internal_template_data["base_class_kwargs"]' = 1
 
@@ -224,9 +207,6 @@ _lookaround_regex_engine_checked = 1
 ["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass._select_python_regex_engine"]
 '_additional_imports.append()' = 1
 'extra_template_data.setdefault("config")' = 1
-
-["src/datamodel_code_generator/model/pydantic_v2/dataclass.py"."DataClass.assign_forward_reference_fields"]
-fields = 1
 
 ["src/datamodel_code_generator/model/pydantic_v2/root_model.py"."RootModel._keep_string_pattern_aliases_out_of_bases"]
 '_additional_imports.append()' = 1
@@ -372,10 +352,6 @@ import_ = 1
 alias = 1
 import_ = 1
 kwargs = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser._create_set_from_list"]
-is_list = 1
-is_set = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._decide_overridden_constraints"]
 constraints = 1
@@ -539,10 +515,6 @@ is_optional = 1
 
 ["src/datamodel_code_generator/types.py"."DataType.replace_reference"]
 reference = "--input tests/data/openapi/not_real_string.json --input-file-type openapi --collapse-root-models"
-
-["src/datamodel_code_generator/types.py"."DataType.swap_with"]
-data_type = 1
-data_types = 1
 
 ["src/datamodel_code_generator/types.py"."DataTypeManager.copy_data_type"]
 data_types = "--input tests/data/avro/decimal_defaults_simple.avsc --input-file-type avro --target-python-version 3.10 --type-overrides '{\"DecimalDefaults.positive\": \"builtins.bytes\"}'"

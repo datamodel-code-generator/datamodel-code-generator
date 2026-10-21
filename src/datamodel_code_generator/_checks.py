@@ -39,7 +39,8 @@ class CheckArea(Enum):
     parsed from a JSON document has an owner or is a root at the end of L1; the models that an order or a graph is
     built over by model key never share a key, a reference whose key names one of them names it by its path too, and
     a lookup by path, for the references whose key names none of them, never names two or more; every answer of a
-    reference graph snapshot equals the computation it replaced."""
+    reference graph snapshot equals the computation it replaced; a refresh that records only the models store
+    operations noted records the facts a full rebuild would."""
 
     SCHEMA_GRAPH = "DATAMODEL_CODE_GENERATOR_CHECK_SCHEMA_GRAPH"
     """The schema graph registers the resources of each document `Parser.parse` prepares as the old walk did, and each

@@ -681,7 +681,7 @@ an in-place write to such a node changes every holder:
   tree, so a later collapse that replaces one (`replace_nested_data_type`, then `set_nested_data_types` on that
   `parent`) rebinds only the root model's list and detaches the old member, which the other holders still contain.
 - `_create_set_from_list` returns a `model_copy()` that shares its members with the list node, and for nested lists
-  `DataType.swap_with` rebinds the parent's `data_types` to a new list outside the store.
+  the store's `swap_data_type` rebinds the parent's `data_types` to a new list.
 - `__apply_generic_base_class` puts one `BaseClassDataType` object into the base list of every target model.
 - `__extract_inherited_enum` builds the merged Enum from the base enums' field objects and gives it the original
   model's `Reference`.
@@ -875,10 +875,13 @@ Current behaviour that a decision reading the index must allow for:
 - Only parsers call `register_model`. Models created after parsing (reuse subclasses, the merged inherited Enum, the
   generated base model) are not registered, and models removed from module lists stay in the store. The index covers
   the parsed models plus redirected edges, not the module lists that L3–L6 edit.
-- `note_changed_models` records models for the next refresh but does not mark the facts dirty, so they stay as they
-  were until another mutation. msgspec `unconstrain_union_members` (slice assignment on `data_types`), the unhashable
-  default path of `__replace_unique_list_to_set` (`swap_with`), `process_const()` during collapse and
-  `__assign_forward_reference_fields` change models this way.
+- A store operation called with `refresh="deferred"` notes the models it changes for the next refresh but does not
+  mark the facts dirty, so they stay as they were until another mutation. `drop_union_member_constraints` (msgspec
+  `unconstrain_union_members`, slice assignment on `data_types`), `swap_data_type` for the nested lists of
+  `__replace_unique_list_to_set` (which stay sets when an unhashable default keeps the field a list), `apply_const`
+  (`process_const()` during collapse) and `use_assignment_for_forward_references` change models this way. Under
+  `DATAMODEL_CODE_GENERATOR_CHECK_MODEL_GRAPH`, every refresh that records only the noted models compares its facts
+  with a full rebuild.
 - Most fact writes after parsing still bypass the store; `scripts/generation_store_allowlist.toml` lists them by
   function. The checker cannot see writes through a model-list variable (`models.sort()` on a module's list), writes
   to module imports (`ModuleContext.imports`, which go through the import ledger and its runtime check instead, see

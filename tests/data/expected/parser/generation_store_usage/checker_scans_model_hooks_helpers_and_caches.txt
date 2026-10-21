@@ -1,7 +1,7 @@
-7 Field.process_const nullable: nullable changes Fact.NULLABLE outside GenerationStore operations
-9 Field.process_const replace_data_type(): use GenerationStore API instead of replace_data_type()
-10 Field.process_const fields: use GenerationStore.set_fields() instead of assigning fields
-11 Field.process_const children (read): use GenerationIndex reverse-edge queries instead of Reference.children
+7 Field.mark_as_keyword_only nullable: nullable changes Fact.NULLABLE outside GenerationStore operations
+9 Field.mark_as_keyword_only replace_data_type(): use GenerationStore API instead of replace_data_type()
+10 Field.mark_as_keyword_only fields: use GenerationStore.set_fields() instead of assigning fields
+11 Field.mark_as_keyword_only children (read): use GenerationIndex reverse-edge queries instead of Reference.children
 17 Field._helper default: default changes Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION outside GenerationStore operations
 32 Field.unrelated __dict__["_self_reference_cache"]: __dict__["_self_reference_cache"] caches state on a mutable DataModelFieldBase; keep derived values in a per-parse store memo
 33 Field.unrelated _dedup_key_cache: _dedup_key_cache caches state on a mutable DataModel; keep derived values in a per-parse store memo

@@ -64,6 +64,13 @@ IMPORT_CACHE_NEUTRAL_MUTATION_METHODS = frozenset({
     "record_values_as_written",
     "register_model",
 })
+IMPORT_CACHE_CALLER_MUTATION_METHODS = frozenset({
+    "apply_const",
+    "drop_union_member_constraints",
+    "swap_data_type",
+    "use_assignment_for_forward_references",
+})
+"""Operations that run a model hook or swap a nested type and leave the import caches to their callers."""
 GENERATION_MODEL_LIST_MUTATION_METHODS = frozenset({
     "__delitem__",
     "__iadd__",
@@ -139,7 +146,9 @@ def _dict_key_reference_classes(
 def test_generation_store_import_cache_contract_covers_mutation_surface() -> None:
     """New store mutation APIs must be classified for import-cache safety."""
     assert (
-        IMPORT_CACHE_CLEARING_MUTATION_METHODS | IMPORT_CACHE_NEUTRAL_MUTATION_METHODS
+        IMPORT_CACHE_CLEARING_MUTATION_METHODS
+        | IMPORT_CACHE_NEUTRAL_MUTATION_METHODS
+        | IMPORT_CACHE_CALLER_MUTATION_METHODS
     ) == GENERATION_STORE_MUTATION_METHODS
 
 

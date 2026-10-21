@@ -5513,20 +5513,21 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 defers_related=self._defers_tagged_unions,
             )
 
-    @classmethod
-    def _create_set_from_list(cls, data_type: DataType) -> DataType | None:
+    def _create_set_from_list(self, data_type: DataType) -> DataType | None:
+        """Return a set copy of a list type, or ``data_type`` after its nested lists became sets in place.
+
+        A nested list is swapped for its set copy at once; the facts see the swap at the next refresh.
+        """
         if data_type.is_list:
-            new_data_type = data_type.model_copy()
-            new_data_type.is_list = False
-            new_data_type.is_set = True
+            new_data_type = data_type.model_copy(update={"is_list": False, "is_set": True})
             for data_type_ in new_data_type.data_types:
                 data_type_.parent = new_data_type
             return new_data_type
         if data_type.data_types:  # pragma: no cover
             for nested_data_type in data_type.data_types[:]:
-                set_data_type = cls._create_set_from_list(nested_data_type)
+                set_data_type = self._create_set_from_list(nested_data_type)
                 if set_data_type:  # pragma: no cover
-                    nested_data_type.swap_with(set_data_type)
+                    self.generation_store.swap_data_type(nested_data_type, set_data_type, refresh="deferred")
             return data_type
         return None  # pragma: no cover
 
@@ -6058,8 +6059,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                     *runtime_expression_imports(model_field.extras),
                                 )
                             )
-                        model_field.process_const()
-                        generation_store.note_changed_models(model)
+                        generation_store.apply_const(model_field, refresh="deferred")
 
                         if self.field_constraints:
                             model_field.constraints = ConstraintsBase.merge_constraints(
@@ -8978,8 +8978,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         positions = {model.path: index for index, model in enumerate(models)}
         for index, model in enumerate(models):
-            if model.assign_forward_reference_fields(positions, index):
-                self.generation_store.note_changed_models(model)
+            if self.generation_store.use_assignment_for_forward_references(model, positions, index, refresh="deferred"):
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __unbind_hidden_type_fields(self, state: _PreparedModule) -> None:  # noqa: PLR6301
@@ -9944,8 +9943,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Drop the constraints of union members, which tagged unions cannot carry."""
         for _, models in run.module_models:
             for field in (field for model in models for field in model.fields):
-                field.unconstrain_union_members()
-            self.generation_store.note_changed_models(*models)
+                self.generation_store.drop_union_member_constraints(field, refresh="deferred")
 
     def __record_emitting_modules(self, run: _StructuredRun) -> None:
         """Record the module that writes each model, for ``--collapse-root-models-name-strategy``."""

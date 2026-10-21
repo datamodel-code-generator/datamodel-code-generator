@@ -227,7 +227,12 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_TYPES, RenderFact.TYPE_ALIAS_BODY),
         Phase.RENDER_PREPARATION,
         FreezePoint.B2,
-        store_ops=("replace_nested_data_type", "set_nested_data_types"),
+        store_ops=(
+            "drop_union_member_constraints",
+            "replace_nested_data_type",
+            "set_nested_data_types",
+            "swap_data_type",
+        ),
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -432,7 +437,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_TYPES, RenderFact.TYPE_ALIAS_BODY),
         Phase.RENDER_PREPARATION,
         FreezePoint.B2,
-        store_ops=("replace_field_type",),
+        store_ops=("apply_const", "replace_field_type", "swap_data_type"),
     ),
     AttributeFact(
         "DataModelFieldBase", "constraints", FactKind.FACT, (Fact.CONSTRAINTS,), Phase.MODULES, FreezePoint.B1
@@ -741,7 +746,13 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_SET, RenderFact.FIELD_ORDER),
         Phase.RENDER_PREPARATION,
         FreezePoint.B2,
-        store_ops=("append_field", "insert_field", "remove_field", "set_fields"),
+        store_ops=(
+            "append_field",
+            "insert_field",
+            "remove_field",
+            "set_fields",
+            "use_assignment_for_forward_references",
+        ),
         access=Access.CONTAINER,
     ),
     AttributeFact(

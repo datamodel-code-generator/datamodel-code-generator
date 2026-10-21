@@ -69,7 +69,7 @@ from datamodel_code_generator.parser._holders import (
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
     from typing_extensions import Self
@@ -96,6 +96,9 @@ ModelId: TypeAlias = int
 DataTypeId: TypeAlias = int
 DataTypeRole = Literal["field", "base", "nested", "dict_key"]
 DataTypeOccurrence: TypeAlias = tuple[DataType, int | None, DataTypeRole]
+Refresh: TypeAlias = Literal["now", "deferred"]
+"""When a store operation marks the facts stale: ``now``, or ``deferred`` until another mutation marks them; the
+models it noted are recorded again at the next refresh either way."""
 _OrderedSetItem = TypeVar("_OrderedSetItem")
 _REPLACED = MemberFacts("replaced")
 _REPLACEMENT = MemberFacts("replacement")
@@ -104,11 +107,13 @@ OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
 
 GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "append_field",
+    "apply_const",
     "collapse_root_data_type",
     "defer_refresh",
     "detach_data_type_ref",
     "detach_model_data_type_refs",
     "discard_derived_facts",
+    "drop_union_member_constraints",
     "insert_field",
     "move_model",
     "note_changed_models",
@@ -125,7 +130,9 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "set_base_classes",
     "set_fields",
     "set_nested_data_types",
+    "swap_data_type",
     "update_model_reference",
+    "use_assignment_for_forward_references",
 })
 
 
@@ -748,6 +755,51 @@ def _model_fact(model_id: ModelId, parse_order: int, model: DataModel) -> ModelF
         path=model.path,
         file_path=model.file_path,
     )
+
+
+def _fact_record(facts: GenerationFacts) -> dict[str, object]:
+    """Return what ``facts`` record, with each id replaced by the parse order or occurrence position it stands for.
+
+    An update keeps the ids a full rebuild would renumber, so two snapshots of the same models compare equal here.
+    """
+    parse_orders = {model_id: model_fact.parse_order for model_id, model_fact in facts.model_facts.items()}
+    positions = {
+        data_type_id: (parse_orders[model_id], index)
+        for model_id, data_type_ids in facts.data_types_by_model.items()
+        for index, data_type_id in enumerate(data_type_ids)
+    }
+    return {
+        "models": sorted(
+            (
+                model_fact.parse_order,
+                id(model_fact.model),
+                id(model_fact.reference),
+                model_fact.path,
+                model_fact.file_path,
+                tuple(
+                    (id(fact.data_type), fact.owner_field_index, fact.role, id(fact.reference))
+                    for fact in map(facts.data_type_facts.__getitem__, facts.data_types_by_model[model_fact.id])
+                ),
+            )
+            for model_fact in facts.model_facts.values()
+        ),
+        "data types": {object_id: positions[fact.id] for object_id, fact in facts.data_type_fact_by_object.items()},
+        "shared data types": {
+            object_id: sorted(map(positions.__getitem__, data_type_ids))
+            for object_id, data_type_ids in facts.shared_data_type_fact_ids.items()
+        },
+        "base owners": {
+            object_id: [parse_orders[model_id] for model_id in ([owners] if isinstance(owners, int) else owners)]
+            for object_id, owners in facts.base_owner_model_ids_by_object.items()
+        },
+        "paths": {path: parse_orders[model_id] for path, model_id in facts.model_by_path.items()},
+        "model keys": {key: parse_orders[model_id] for key, model_id in facts.model_by_ref_id.items()},
+        "reverse edges": {
+            key: [positions[data_type_id] for data_type_id in data_type_ids]
+            for key, data_type_ids in facts.reverse_edges.items()
+            if data_type_ids
+        },
+    }
 
 
 def _unrecorded_references(model: DataModel, *, all_dict_keys: bool) -> Iterator[Reference]:
@@ -1443,6 +1495,8 @@ class GenerationStore:  # noqa: PLR0904
                 self._rebuild_required = True
                 self._next_model_id = max(self._next_model_id, max(self._model_ids_by_object.values(), default=-1) + 1)
                 raise
+            if mode is not None:
+                self._check_update_matches_rebuild(mode, result)
         self._facts = result.facts
         self._model_ids_by_object = result.model_ids_by_object
         self._next_model_id = result.next_model_id
@@ -1464,24 +1518,41 @@ class GenerationStore:  # noqa: PLR0904
                 scope.initialized = True
                 scope.enabled = len(self._facts.data_type_fact_by_object) == len(self._facts.data_type_facts)
 
-    def _check_no_data_type_cycles(self, mode: CheckMode) -> Iterable[ModelId] | None:
-        """Report a data type that contains itself in a model this refresh records.
+    def _check_update_matches_rebuild(self, mode: CheckMode, result: GenerationBuildResult) -> None:
+        """Report facts that an update recorded differently from a full rebuild of the same models.
 
-        The check runs before the refresh walks the trees, which would not end on a cycle. Return the ids the
-        recorded models have after the refresh, or None when it records every model.
+        An update records the models that operations noted since the last refresh; a model that changed without a
+        note keeps its old facts, which a rebuild would not.
         """
-        if self._rebuild_required:
-            models: Iterable[DataModel] = self.models
-            recorded_model_ids: Iterable[ModelId] | None = None
-        else:
-            appended = self.models[len(self.models) - len(self._appended_model_ids) :]
-            models = chain(appended, (self._facts.model_facts[model_id].model for model_id in self._changed_model_ids))
+        rebuilt = GenerationIndexBuilder(self.model_key).build(
+            self.models,
+            previous_model_ids_by_object=result.model_ids_by_object,
+            next_model_id=result.next_model_id,
+        )
+        updated = _fact_record(result.facts)
+        for part, recorded in _fact_record(rebuilt.facts).items():
+            if updated[part] != recorded:
+                mode.violation(
+                    Error,
+                    f"the {part} that a refresh recorded for the noted models differ from a full rebuild",
+                    part=part,
+                )
+
+    def _check_no_data_type_cycles(self, mode: CheckMode) -> Iterable[ModelId] | None:
+        """Report a data type that contains itself in any model, noted or not.
+
+        The check runs before the refresh walks the trees, and before the comparison with a rebuild walks every tree;
+        neither ends on a cycle. Return the ids the recorded models have after the refresh, or None when it records
+        every model.
+        """
+        recorded_model_ids: Iterable[ModelId] | None = None
+        if not self._rebuild_required:
             recorded_model_ids = (
-                *range(self._next_model_id, self._next_model_id + len(appended)),
+                *range(self._next_model_id, self._next_model_id + len(self._appended_model_ids)),
                 *self._changed_model_ids,
             )
         finished: set[int] = set()
-        for model in models:
+        for model in self.models:
             roots = chain((field_.data_type for field_ in model.fields), model.base_classes)
             if (node := node_in_cycle(roots, finished)) is not None:
                 mode.violation(
@@ -1627,13 +1698,52 @@ class GenerationStore:  # noqa: PLR0904
         """Update a model's reference path and optional output file path."""
         self.update_model_reference(model, new_path=new_path, new_file_path=new_file_path)
 
-    def replace_field_type(self, field_: DataModelFieldBase, new_data_type: DataType) -> None:
+    def replace_field_type(
+        self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh = "now"
+    ) -> None:
         """Replace a field's data type and invalidate derived facts."""
         old_data_type = field_.data_type
         field_.replace_data_type(new_data_type)
         self._note_changed_data_types((old_data_type,))
         self.note_changed_models(field_.parent)
-        self._invalidate_after_mutation()
+        self._refresh_after_write(refresh)
+
+    def swap_data_type(self, data_type: DataType, new_data_type: DataType, *, refresh: Refresh = "now") -> None:
+        """Put ``new_data_type`` where ``data_type`` is in its parent: a field's type or a member of a data type.
+
+        A parent data type gets a new member list, so another holder of its old list keeps ``data_type``.
+        """
+        self._note_changed_data_types((data_type,))
+        data_type.swap_with(new_data_type)
+        self._refresh_after_write(refresh)
+
+    def apply_const(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
+        """Run the field's ``process_const`` hook, which may type its const as a Literal and write its default."""
+        field_.process_const()
+        self.note_changed_models(field_.parent)
+        self._refresh_after_write(refresh)
+
+    def drop_union_member_constraints(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
+        """Run the field's ``unconstrain_union_members`` hook, which writes members into the union lists it holds.
+
+        The hook replaces members inside the lists, so every holder of a list sees them.
+        """
+        field_.unconstrain_union_members()
+        self.note_changed_models(field_.parent)
+        self._refresh_after_write(refresh)
+
+    def use_assignment_for_forward_references(
+        self, model: DataModel, positions: Mapping[str, int], index: int, *, refresh: Refresh = "now"
+    ) -> bool:
+        """Run the model's ``assign_forward_reference_fields`` hook; return whether it changed the model.
+
+        A model that writes fields by assignment may reorder its field list in place.
+        """
+        if not model.assign_forward_reference_fields(positions, index):
+            return False
+        self.note_changed_models(model)
+        self._refresh_after_write(refresh)
+        return True
 
     def replace_nested_data_type(
         self,
@@ -1928,6 +2038,11 @@ class GenerationStore:  # noqa: PLR0904
 
     def _invalidate_after_mutation(self) -> None:
         self._invalidate()
+
+    def _refresh_after_write(self, refresh: Refresh) -> None:
+        """Mark the facts stale after a write, unless the write's ``refresh`` is ``deferred``."""
+        if refresh == "now":
+            self._invalidate_after_mutation()
 
     def _cache_owners_for_data_type(self, data_type: object) -> CacheOwners:
         current: Any = data_type

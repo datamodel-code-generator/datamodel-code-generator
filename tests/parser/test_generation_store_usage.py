@@ -303,11 +303,13 @@ def test_checker_uses_generation_store_api_surface() -> None:
     assert sorted(checker.GENERATION_STORE_MUTATION_METHODS) == snapshot(
         [
             "append_field",
+            "apply_const",
             "collapse_root_data_type",
             "defer_refresh",
             "detach_data_type_ref",
             "detach_model_data_type_refs",
             "discard_derived_facts",
+            "drop_union_member_constraints",
             "insert_field",
             "move_model",
             "note_changed_models",
@@ -324,7 +326,9 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "set_base_classes",
             "set_fields",
             "set_nested_data_types",
+            "swap_data_type",
             "update_model_reference",
+            "use_assignment_for_forward_references",
         ],
     )
 
@@ -699,7 +703,7 @@ from functools import cached_property
 
 
 class Field:
-    def process_const(self, other):
+    def mark_as_keyword_only(self, other):
         self.nullable = True
         self._helper()
         self.replace_data_type(None)
@@ -1159,7 +1163,7 @@ def test_unlisted_parser_hooks_are_reported(tmp_path: Path) -> None:
 def run(model):
     model.new_hook()
     model.harmless()
-    model.process_const()
+    model.mark_as_keyword_only()
     model.render()
     model.indirect()
     if hasattr(model, "probe"):
@@ -1176,7 +1180,7 @@ class Model:
     def harmless(self):
         return self.required
 
-    def process_const(self):
+    def mark_as_keyword_only(self):
         self.nullable = True
 
     def unused(self):
@@ -1211,7 +1215,7 @@ class Model:
         | checker.CONSTRUCTION_METHODS
         | checker.RENDER_ENTRY_POINTS.keys()
     )
-    assert checker.undefined_listed_names([model_source]) == sorted(listed - {"process_const", "render"})
+    assert checker.undefined_listed_names([model_source]) == sorted(listed - {"mark_as_keyword_only", "render"})
     assert checker.undefined_listed_names() == []
 
 

@@ -94,10 +94,12 @@ KEYED_MUTATORS = frozenset({"pop", "setdefault"})
 SETATTR_FUNCTIONS = frozenset({"setattr", "object.__setattr__"})
 
 PARSER_HOOK_METHODS = frozenset({
+    "_apply_literal_default",
+    "_copy_data_type",
+    "_prepare_dedup_key",
     "add_literal_validation",
     "add_sequence_interface",
     "apply_discriminator_tag",
-    "assign_forward_reference_fields",
     "enable_identity_hash",
     "enable_model_keyword_only",
     "enable_structured_default_validation",
@@ -108,18 +110,16 @@ PARSER_HOOK_METHODS = frozenset({
     "mark_as_keyword_only",
     "opt_out_of_inherited_tag",
     "prepare_required_inherited_field",
-    "process_const",
     "refresh_field_config",
     "restore_required_inherited_field_state",
     "set_field_name_bindings",
-    "swap_with",
     "unbind_fields",
-    "unconstrain_union_members",
 })
 """Model, field and data-type methods that parser passes call by name and that change model state.
 
 The checker also scans every model method these reach through calls (any receiver, any depth), except construction,
-reference bookkeeping and render entry points.
+reference bookkeeping and render entry points. A hook that a store operation runs (``process_const``,
+``unconstrain_union_members``, ``assign_forward_reference_fields``) is not listed: it writes inside that operation.
 """
 
 RENDER_STATE_WRITERS = frozenset({

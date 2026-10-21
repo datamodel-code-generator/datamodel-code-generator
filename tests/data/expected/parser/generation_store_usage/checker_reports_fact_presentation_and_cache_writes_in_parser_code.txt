@@ -12,8 +12,8 @@
 16 write extras.pop("discriminator"): extras.pop("discriminator") changes Fact.DISCRIMINATOR_TAGS outside GenerationStore operations
 17 write _internal_template_data["config"]: _internal_template_data["config"] changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 18 write _internal_template_data["config"].update(): _internal_template_data["config"].update() changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
-19 write data_types.append(): use GenerationStore.replace_nested_data_type() or set_nested_data_types() instead of writing data_types.append()
-20 write data_types[:]: use GenerationStore.replace_nested_data_type() or set_nested_data_types() instead of writing data_types[:]
+19 write data_types.append(): use GenerationStore.drop_union_member_constraints() or replace_nested_data_type() or set_nested_data_types() or swap_data_type() instead of writing data_types.append()
+20 write data_types[:]: use GenerationStore.drop_union_member_constraints() or replace_nested_data_type() or set_nested_data_types() or swap_data_type() instead of writing data_types[:]
 21 write class_name: use GenerationStore.rename_model() instead of writing class_name
 22 write use_generic_container: use_generic_container changes an option copied at construction outside GenerationStore operations
 23 write _dedup_key_cache.clear(): _dedup_key_cache.clear() caches state on a mutable DataModel; keep derived values in a per-parse store memo
