@@ -13022,14 +13022,47 @@ def test_main_openapi_read_only_write_only_nullable_enum_reference(output_file: 
         )
 
 
-def test_main_openapi_read_only_write_only_allof_parent_inline_models(output_file: Path) -> None:
-    """Emit one set of an allOf parent's inline models when its child splits first."""
+@pytest.mark.cli_doc(
+    options=["--dedupe-request-response-variants"],
+    option_description="""Build an allOf parent's inline models once when Request/Response variants flatten its fields.
+
+Under `--read-only-write-only-model-type` (`request-response` or `all`), a child that inherits from an allOf parent
+collects the parent's fields into its own Request and Response models. Without the flag that collection builds the
+inline models of the parent's properties a second time, so an unreferenced copy is written and the parent's own
+models take the next numbers (`Payload1` unused, `Payload2` referenced). With the flag the collection reuses the
+models the parent's own parse builds, so each inline model is written once (`Payload1` referenced). Both forms
+validate the same data.""",
+    input_schema="openapi/read_only_write_only_allof_parent_inline_models.yaml",
+    cli_args=[
+        "--output-model-type",
+        "pydantic_v2.BaseModel",
+        "--read-only-write-only-model-type",
+        "request-response",
+        "--dedupe-request-response-variants",
+    ],
+    golden_output="main/openapi/openapi_read_only_write_only_allof_parent_inline_models.py",
+    comparison_output="main/openapi/openapi_read_only_write_only_allof_parent_inline_models~read_only_write_only_allof_parent_inline_models[default].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--dedupe-request-response-variants"], id="dedupe"),
+        pytest.param([], id="default"),
+    ],
+)
+def test_main_openapi_read_only_write_only_allof_parent_inline_models(output_file: Path, extra_args: list[str]) -> None:
+    """Emit one set of an allOf parent's inline models when its child splits first.
+
+    Up to 0.86.0, and without --dedupe-request-response-variants, the child's flattening builds a second, unreferenced
+    copy of the parent's inline models and the parent's own models take the next numbers.
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "read_only_write_only_allof_parent_inline_models.yaml",
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
         extra_args=[
+            *extra_args,
             "--disable-timestamp",
             "--formatters",
             "builtin",

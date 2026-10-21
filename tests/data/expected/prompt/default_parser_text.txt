@@ -184,6 +184,7 @@
 - `--wrap-string-literal`: Wrap long string literals across multiple lines.
 
 ### OpenAPI-only Options
+- `--dedupe-request-response-variants`: Build an allOf parent's inline models once when Request/Response variant...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.

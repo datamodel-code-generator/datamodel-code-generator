@@ -900,6 +900,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         topic=OptionTopic.OPENAPI,
         group=OptionGroup.READ_ONLY_WRITE_ONLY,
     ),
+    "--dedupe-request-response-variants": CLIOptionMeta(
+        name="--dedupe-request-response-variants",
+        category=OptionCategory.OPENAPI,
+        topic=OptionTopic.OPENAPI,
+        group=OptionGroup.READ_ONLY_WRITE_ONLY,
+    ),
     "--include-path-parameters": CLIOptionMeta(
         name="--include-path-parameters",
         category=OptionCategory.OPENAPI,

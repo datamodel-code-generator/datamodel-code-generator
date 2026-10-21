@@ -200,6 +200,7 @@ class ParserConfigDict(TypedDict):
     type_mappings: NotRequired[list[str] | None]
     type_overrides: NotRequired[dict[str, str] | None]
     read_only_write_only_model_type: NotRequired[ReadOnlyWriteOnlyModelType | None]
+    dedupe_request_response_variants: NotRequired[bool]
     field_type_collision_strategy: NotRequired[FieldTypeCollisionStrategy | None]
     target_pydantic_version: NotRequired[TargetPydanticVersion | None]
     default_value_overrides: NotRequired[Mapping[str, Any] | None]

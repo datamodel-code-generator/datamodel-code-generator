@@ -33,6 +33,7 @@ guarded data_model_root_type
 guarded data_model_type
 guarded data_type_manager_type
 reviewed-safe dataclass_arguments
+reviewed-safe dedupe_request_response_variants
 reviewed-safe default_field_extras
 reviewed-safe default_value_overrides
 reviewed-safe defer_formatting

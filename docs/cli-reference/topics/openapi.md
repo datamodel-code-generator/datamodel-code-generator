@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [OpenAPI Naming](#openapi-naming) | 2 | Operation and response model naming. |
 | [OpenAPI Paths](#openapi-paths) | 3 | Path selection and path parameter output. |
 | [OpenAPI Scopes](#openapi-scopes) | 1 | OpenAPI generation scopes. |
-| [Read Only Write Only](#read-only-write-only) | 2 | readOnly/writeOnly model behavior. |
+| [Read Only Write Only](#read-only-write-only) | 3 | readOnly/writeOnly model behavior. |
 
 ## OpenAPI Naming {#openapi-naming}
 
@@ -46,5 +46,6 @@ readOnly/writeOnly model behavior.
 
 | Option | Description |
 |--------|-------------|
+| [`--dedupe-request-response-variants`](../openapi-only-options.md#dedupe-request-response-variants) | Build an allOf parent's inline models once when Request/Response variants flatte... |
 | [`--read-only-write-only-model-type`](../openapi-only-options.md#read-only-write-only-model-type) | Generate separate request and response models for readOnly/writeOnly fields. |
 | [`--use-frozen-field`](../model-customization.md#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly properties. |

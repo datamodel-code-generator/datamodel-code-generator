@@ -1475,6 +1475,12 @@ openapi_options.add_argument(
     default=None,
 )
 openapi_options.add_argument(
+    "--dedupe-request-response-variants",
+    help="Build an allOf parent's inline models once when Request/Response variants flatten its fields",
+    action="store_true",
+    default=None,
+)
+openapi_options.add_argument(
     "--use-status-code-in-response-name",
     help="Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)",
     action="store_true",

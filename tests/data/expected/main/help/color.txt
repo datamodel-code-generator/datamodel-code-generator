@@ -725,6 +725,9 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         later)
 
 [36;1mOpenAPI-only options[0m:
+  --dedupe-request-response-variants
+                        Build an allOf parent's inline models once when
+                        Request/Response variants flatten its fields
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)

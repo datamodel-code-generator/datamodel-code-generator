@@ -22071,7 +22071,7 @@ This documentation is auto-generated from test cases.
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 51 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
-| 📘 [OpenAPI-only Options](openapi-only-options.md) | 9 | OpenAPI-specific features |
+| 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
@@ -22086,7 +22086,7 @@ Use these pages when you know the workflow area but not the exact option name.
 | [Model Customization](topics/model-customization.md) | 23 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 21 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 24 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
-| [OpenAPI](topics/openapi.md) | 8 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
+| [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
 
@@ -22215,6 +22215,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments)
 - [`--debug`](utility-options.md#debug)
+- [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants)
 - [`--default-values`](field-customization.md#default-values)
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values)
 - [`--diff-against`](general-options.md#diff-against)
@@ -49006,6 +49007,7 @@ This generated reference lists every OpenAPI-only CLI flag and its tested exampl
 
 | Option | Description |
 |--------|-------------|
+| [`--dedupe-request-response-variants`](#dedupe-request-response-variants) | Build an allOf parent's inline models once when Request/Resp... |
 | [`--include-path-parameters`](#include-path-parameters) | Include OpenAPI path parameters in generated parameter model... |
 | [`--openapi-include-info-version`](#openapi-include-info-version) | Emit OpenAPI info.version as a generated constant. |
 | [`--openapi-include-paths`](#openapi-include-paths) | Filter OpenAPI paths to include in model generation. |
@@ -49031,6 +49033,162 @@ Limit OpenAPI output to operation shapes and name models from operation IDs and 
 Restrict generation to selected paths while preserving parameter and info-version context.
 
 **Options:** [`--openapi-include-paths`](#openapi-include-paths), [`--include-path-parameters`](#include-path-parameters), [`--openapi-include-info-version`](#openapi-include-info-version)
+
+---
+
+## `--dedupe-request-response-variants` {#dedupe-request-response-variants}
+
+Build an allOf parent's inline models once when Request/Response variants flatten its fields.
+
+Under `--read-only-write-only-model-type` (`request-response` or `all`), a child that inherits from an allOf parent
+collects the parent's fields into its own Request and Response models. Without the flag that collection builds the
+inline models of the parent's properties a second time, so an unreferenced copy is written and the parent's own
+models take the next numbers (`Payload1` unused, `Payload2` referenced). With the flag the collection reuses the
+models the parent's own parse builds, so each inline model is written once (`Payload1` referenced). Both forms
+validate the same data.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input read_only_write_only_allof_parent_inline_models.yaml --output-model-type pydantic_v2.BaseModel --read-only-write-only-model-type request-response --dedupe-request-response-variants # (1)!
+    ```
+
+    1. :material-arrow-left: `--dedupe-request-response-variants` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.1.0
+    info:
+      title: t
+      version: '1'
+    paths: {}
+    components:
+      schemas:
+        Child:
+          allOf:
+            - $ref: '#/components/schemas/Parent'
+            - type: object
+              properties:
+                payload:
+                  properties:
+                    extra:
+                      type: string
+        Parent:
+          type: object
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            payload:
+              type: object
+              properties:
+                value:
+                  type: object
+                  properties:
+                    code:
+                      type: integer
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  read_only_write_only_allof_parent_inline_models.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class Value(BaseModel):
+            code: int | None = None
+
+
+        class Payload(BaseModel):
+            value: Value | None = None
+            extra: str | None = None
+
+
+        class Payload1(BaseModel):
+            value: Value | None = None
+
+
+        class ChildRequest(BaseModel):
+            payload: Payload | None = None
+
+
+        class ChildResponse(BaseModel):
+            id: int | None = None
+            payload: Payload | None = None
+
+
+        class ParentRequest(BaseModel):
+            payload: Payload1 | None = None
+
+
+        class ParentResponse(BaseModel):
+            id: int | None = None
+            payload: Payload1 | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  read_only_write_only_allof_parent_inline_models.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class Value(BaseModel):
+            code: int | None = None
+
+
+        class Payload(BaseModel):
+            value: Value | None = None
+            extra: str | None = None
+
+
+        class Payload1(BaseModel):
+            value: Value | None = None
+
+
+        class ChildRequest(BaseModel):
+            payload: Payload | None = None
+
+
+        class ChildResponse(BaseModel):
+            id: int | None = None
+            payload: Payload | None = None
+
+
+        class Payload2(BaseModel):
+            value: Value | None = None
+
+
+        class ParentRequest(BaseModel):
+            payload: Payload2 | None = None
+
+
+        class ParentResponse(BaseModel):
+            id: int | None = None
+            payload: Payload2 | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -60572,7 +60730,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [OpenAPI Naming](#openapi-naming) | 2 | Operation and response model naming. |
 | [OpenAPI Paths](#openapi-paths) | 3 | Path selection and path parameter output. |
 | [OpenAPI Scopes](#openapi-scopes) | 1 | OpenAPI generation scopes. |
-| [Read Only Write Only](#read-only-write-only) | 2 | readOnly/writeOnly model behavior. |
+| [Read Only Write Only](#read-only-write-only) | 3 | readOnly/writeOnly model behavior. |
 
 ## OpenAPI Naming {#openapi-naming}
 
@@ -60607,6 +60765,7 @@ readOnly/writeOnly model behavior.
 
 | Option | Description |
 |--------|-------------|
+| [`--dedupe-request-response-variants`](../openapi-only-options.md#dedupe-request-response-variants) | Build an allOf parent's inline models once when Request/Response variants flatte... |
 | [`--read-only-write-only-model-type`](../openapi-only-options.md#read-only-write-only-model-type) | Generate separate request and response models for readOnly/writeOnly fields. |
 | [`--use-frozen-field`](../model-customization.md#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly properties. |
 
@@ -60816,6 +60975,7 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
+| [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) | Build an allOf parent's inline models once when Request/Response variants flatte... |
 | [`--include-path-parameters`](openapi-only-options.md#include-path-parameters) | Include OpenAPI path parameters in generated parameter models. |
 | [`--openapi-include-info-version`](openapi-only-options.md#openapi-include-info-version) | Emit OpenAPI info.version as a generated constant. |
 | [`--openapi-include-paths`](openapi-only-options.md#openapi-include-paths) | Filter OpenAPI paths to include in model generation. |
@@ -60961,6 +61121,7 @@ All options sorted alphabetically:
 - [`--custom-template-dir`](template-customization.md#custom-template-dir) - Use custom Jinja2 templates for model generation.
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments) - Customize dataclass decorator arguments via JSON dictionary.
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
+- [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) - Build an allOf parent's inline models once when Request/Resp...
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...
 - [`--diff-against`](general-options.md#diff-against) - Compare generated code from a baseline input with the curren...
@@ -63046,16 +63207,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 189 | Shared generation options. |
-| `GenerateConfig` | 204 | Public `generate()` configuration. |
-| `ParserConfig` | 154 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 156 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 163 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 164 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 157 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 157 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 156 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 157 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 190 | Shared generation options. |
+| `GenerateConfig` | 205 | Public `generate()` configuration. |
+| `ParserConfig` | 155 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 157 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 164 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 165 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 158 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 158 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 157 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 158 | GraphQL-specific parser options. |
 
 ### Formatter Names
 

@@ -8873,7 +8873,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             target_python_version=self.target_python_version,
         )
         fields: list[DataModelFieldBase] = []
-        owner_path = [reference.path]
+        owner_path = [reference.path] if self.dedupe_request_response_variants else []
 
         def parse_inline(source: JsonSchemaObject) -> None:
             if source.properties:

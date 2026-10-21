@@ -4143,6 +4143,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         }
         self._reuse_optimization_context = _ReuseOptimizationContext.from_type_overrides(self.type_overrides)
         self.read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = config.read_only_write_only_model_type
+        self.dedupe_request_response_variants: bool = config.dedupe_request_response_variants
         self.use_frozen_field: bool = config.use_frozen_field
         self.use_serialization_alias: bool = config.use_serialization_alias
         self.use_default_factory_for_optional_nested_models: bool = (

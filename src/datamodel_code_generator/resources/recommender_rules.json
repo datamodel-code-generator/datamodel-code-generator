@@ -598,6 +598,10 @@
       "not_recommended": "debug",
       "reason": "Debug messages."
     },
+    "dedupe_request_response_variants": {
+      "not_recommended": "preset",
+      "reason": "Request/response class naming chosen by the practical presets; the recommendation starts from a preset."
+    },
     "default_value_overrides": {
       "not_recommended": "runtime-behaviour",
       "reason": "Python API spelling of --default-values; only the project knows the values."

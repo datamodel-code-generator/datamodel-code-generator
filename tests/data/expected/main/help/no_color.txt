@@ -725,6 +725,9 @@ Template customization:
                         later)
 
 OpenAPI-only options:
+  --dedupe-request-response-variants
+                        Build an allOf parent's inline models once when
+                        Request/Response variants flatten its fields
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)
