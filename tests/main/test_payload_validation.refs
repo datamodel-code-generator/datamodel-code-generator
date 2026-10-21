@@ -31,6 +31,7 @@ jsonschema/allof_constraint_intersections/inline.json	payloads/native_numeric_em
 jsonschema/allof_constraint_intersections/metadata.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/metadata_control.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/allof_constraint_intersections/property_named_bounds.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/refs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/scalars_equal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/scalars_partial.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1669,6 +1670,7 @@ jsonschema/allof_constraint_intersections/inline.json	payloads/native_numeric_em
 jsonschema/allof_constraint_intersections/metadata.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/metadata_control.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/ordinary.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/allof_constraint_intersections/property_named_bounds.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/refs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/scalars_equal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/allof_constraint_intersections/scalars_partial.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

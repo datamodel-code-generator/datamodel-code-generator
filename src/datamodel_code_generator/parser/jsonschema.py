@@ -7492,6 +7492,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 nested_parent,
                 parent_tail=parent_tail,
                 context=context,
+                schema_map=field_name in _INHERITED_SCHEMA_MAP_FIELDS,
             ):
                 return False
         return True
@@ -7503,12 +7504,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         parent_tail: object = True,
         context: tuple[str, frozenset[str], bool] = ("", frozenset(), False),
+        schema_map: bool = False,
     ) -> bool:
         """Compare one nested schema keyword using JSON Schema intersection semantics."""
         parent_ref, active, parent_refs_resolved = context
         if child is None or child is True or parent is True or parent is False:
             return True
-        if isinstance(child, dict) and self._is_unconstrained_inherited_schema(child):
+        if not schema_map and isinstance(child, dict) and self._is_unconstrained_inherited_schema(child):
             return True
         result = False
         match child, parent:

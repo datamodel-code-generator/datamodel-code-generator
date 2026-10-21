@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Probe","type":"object","$defs":{"Base":{"type":"object","properties":{"bounds":{"type":"object","properties":{"minimum":{"type":"integer"}}}}}},"allOf":[{"$ref":"#/$defs/Base"},{"type":"object","properties":{"bounds":{"type":"object","properties":{"minimum":{"type":"integer","minimum":1}}}}}]}

@@ -87,3 +87,5 @@ parent-inherited-equal	main/jsonschema/allof_constraint_intersections/scalars_eq
 parent-inherited-partial	main/jsonschema/allof_constraint_intersections/scalars_partial_api.py
 parent-unhashable-equal	main/jsonschema/allof_constraint_intersections/scalars_equal_api_parent.py
 parent-unhashable-partial	main/jsonschema/allof_constraint_intersections/scalars_partial_api.py
+[test_allof_property_named_like_schema_keyword]
+	main/jsonschema/allof_property_named_like_schema_keyword.py

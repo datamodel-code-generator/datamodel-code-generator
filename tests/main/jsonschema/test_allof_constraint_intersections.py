@@ -275,3 +275,15 @@ def test_allof_enum_metadata(output_file: Path, fixture: str, entry_point: str) 
                 invalid_json=json.dumps(value),
                 expected_error_type="enum",
             )
+
+
+def test_allof_property_named_like_schema_keyword(output_file: Path) -> None:
+    """Compare inherited property maps key by key so properties named like schema keywords stay properties."""
+    input_path = JSON_SCHEMA_DATA_PATH / "allof_constraint_intersections" / "property_named_bounds.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+    )
