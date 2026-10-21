@@ -9,6 +9,36 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Verify CA stores
+      shell: bash
+      env:
+        SMOKE_IMAGE: ${{ inputs.image }}
+      run: |
+        set -euo pipefail
+        docker run --rm -i --entrypoint python "$SMOKE_IMAGE" - <<'PY'
+        import ssl
+
+        import certifi
+        from pip._vendor import certifi as pip_certifi
+
+        blocked = {"AAA Certificate Services", "emSign ECC Root CA - G3"}
+        for name, context in (
+            ("system", ssl.create_default_context()),
+            ("certifi", ssl.create_default_context(cafile=certifi.where())),
+            ("pip", ssl.create_default_context(cafile=pip_certifi.where())),
+        ):
+            subjects = {
+                value
+                for certificate in context.get_ca_certs()
+                for rdn in certificate["subject"]
+                for key, value in rdn
+                if key == "commonName"
+            }
+            if compromised := subjects & blocked:
+                raise SystemExit(f"{name} still trusts compromised CA roots: {sorted(compromised)}")
+            print(f"{name}: compromised CA roots excluded")
+        PY
+
     - name: Generate and validate model
       shell: bash
       env:

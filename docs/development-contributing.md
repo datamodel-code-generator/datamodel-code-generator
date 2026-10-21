@@ -143,6 +143,20 @@ are neither created nor fixed, but comparisons still run.
 private imports. Its exceptions are listed in `tests/assert_helper_allowlists.py`. Those lists only shrink: remove
 an entry when you fix its violation, and do not add new ones.
 
+## CI certificate stores
+
+Keep the lockfile's certifi and uv versions, the pinned Windows uv, the composite action's pip, and the PyPI publishing
+action updated together when their bundled CAs change. Docker builds update the OS CA package in the shared base stage
+and use fresh build layers when publishing.
+
+Node used by Wrangler and the release analysis action is selected separately from the GitHub runner's Node executable
+that runs JavaScript actions. `actions/setup-node` updates the former only. Hosted runner updates and third-party
+action containers must also include the CA fixes; self-hosted runners need their own updates. The release analysis
+action additionally installs Bun and a native CLI, with independent trust stores. As of 2026-10-21, the eMudhra fix for
+Bun is [merged but awaiting a release](https://github.com/oven-sh/bun/pull/46159). A Node upgrade does not fix those
+embedded stores. Consult the [incident's runtime update list](https://emudhra.we-have-a-problem.com/) before updating
+their pins or treating the entire CI environment as remediated.
+
 ## Documentation formatting
 
 Ruff formats Python code blocks in Markdown, including hand-written explanations.

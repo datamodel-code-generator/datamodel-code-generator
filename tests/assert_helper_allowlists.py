@@ -576,7 +576,6 @@ LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/test_http.py::datamodel_code_generator._publication",
         "private-import:tests/test_http.py::datamodel_code_generator.http._HTTPFetchSession",
         "private-import:tests/test_http.py::datamodel_code_generator.http._PinnedNetworkBackend",
-        "private-import:tests/test_http.py::datamodel_code_generator.http._create_ssl_context",
         "private-import:tests/test_http.py::datamodel_code_generator.http._embedded_ipv4",
         "private-import:tests/test_http.py::datamodel_code_generator.http._get_addr_info_ip",
         "private-import:tests/test_http.py::datamodel_code_generator.http._get_http_response",

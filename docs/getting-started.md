@@ -44,6 +44,29 @@ Install `datamodel-code-generator`, generate your first Pydantic v2 model, and p
 Use `uv tool install` when you want `datamodel-codegen` available as a standalone CLI. Use `uv add --dev` when a project
 or CI workflow should pin the generator version in its lockfile.
 
+### TLS certificate updates
+
+The [October 2026 eMudhra CA incident](https://emudhra.we-have-a-problem.com/) affects HTTPS clients whose trust stores
+still accept the compromised certificate chains. Update your operating system's CA certificates and your installer:
+uv 0.13.4 or later, or pip 26.2.2 or later. Browser updates alone do not update command-line tools' trust stores.
+
+For remote schemas (`--url` and remote `$ref`), install the current `datamodel-code-generator[http]` release and refresh
+your lockfile. The `http` and `validation` extras require certifi 2026.10.19 or later. Existing environments and older
+generator releases also need that certifi update. Rebuild containers to update both their OS and Python trust stores.
+
+The selected HTTP backend determines certificate trust:
+
+| Backend | Default CA source | What to update |
+| --- | --- | --- |
+| Stable HTTPX (`http` extra) | certifi | certifi in the environment running the generator |
+| Experimental HTTPX2 (`httpx2` extra) | OS trust store through truststore | OS CA certificates in the host or container |
+| Generated HTTPX2 client | OS trust store through truststore | OS CA certificates where the generated client runs |
+
+`SSL_CERT_FILE` replaces the backend's default CA source; otherwise `SSL_CERT_DIR` selects an OpenSSL certificate
+directory. Update these custom stores separately. This also applies to generated clients using the default HTTPX2
+client; a supplied `http_client` follows its own TLS configuration. `--http-ignore-tls` disables certificate verification
+and is not a remedy for a compromised CA.
+
 !!! info "Distribution packages"
     Community-maintained distribution packages are also available from
     [Debian](https://packages.debian.org/search?keywords=datamodel-codegen&searchon=names&suite=all&section=all),

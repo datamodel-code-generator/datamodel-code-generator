@@ -7,5 +7,7 @@
 [test_https_ignore_tls_fetches_real_schema]
 	http/pet_schema.txt
 [test_https_trusted_ca_verifies_and_generates_model]
-	http/backend.py
-	http/pet_schema.txt
+directory	http/backend.py
+directory	http/pet_schema.txt
+file	http/backend.py
+file	http/pet_schema.txt

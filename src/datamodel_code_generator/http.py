@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import contextlib
 import socket
-import ssl
 from _thread import allocate_lock  # noqa: PLC2701
 from collections import OrderedDict
 from collections.abc import Callable, Sequence  # noqa: TC003  # Runtime public annotation introspection
@@ -32,6 +31,7 @@ from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
 
 if TYPE_CHECKING:
+    import ssl
     from collections.abc import Iterable, Mapping
     from types import TracebackType
     from typing import Protocol, overload
@@ -169,6 +169,8 @@ if TYPE_CHECKING:
         Client: _HTTPXClientFactory
         Response: _HTTPXResponseFactory
         URL: _HTTPXURLFactory
+
+        def create_ssl_context(self, *, verify: bool) -> ssl.SSLContext: ...
 
         def get(  # noqa: PLR0913
             self,
@@ -584,20 +586,6 @@ class _PinnedNetworkBackend(Generic[_NetworkStreamT]):
         self._backend.sleep(seconds)
 
 
-def _create_ssl_context(*, verify: bool) -> ssl.SSLContext | None:
-    """Create the SSL context used by the pinned transport.
-
-    Returning `None` preserves the HTTP core's normal certificate verification. A custom context is needed only when
-    the caller requested the existing `ignore_tls` behavior.
-    """
-    if verify:
-        return None
-    context = ssl.create_default_context()
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
-    return context
-
-
 def _create_pinned_transport_type(
     httpx_module: _HTTPXModule,
     httpcore_module: _HTTPCoreModule,
@@ -607,7 +595,7 @@ def _create_pinned_transport_type(
     class _PinnedHTTPTransport(httpx_module.BaseTransport):  # ty: ignore[unsupported-base]
         """Transport bound to a DNS-pinned HTTP connection pool."""
 
-        __slots__ = ("_pool",)
+        __slots__ = ("_network_backend", "_pools", "_verify")
 
         def __init__(
             self,
@@ -616,19 +604,23 @@ def _create_pinned_transport_type(
             pinned_ips: tuple[IPv4Address | IPv6Address, ...],
             verify: bool,
         ) -> None:
-            """Create a pool whose TCP connections use only validated addresses."""
-            network_backend = _PinnedNetworkBackend(
+            """Configure DNS pinning and initialize connection pools on demand."""
+            self._verify = verify
+            self._pools: dict[bool, _HTTPCoreConnectionPool] = {}
+            self._network_backend = _PinnedNetworkBackend(
                 pinned_host=pinned_host,
                 pinned_ips=pinned_ips,
                 backend=httpcore_module.SyncBackend(),
             )
-            self._pool = httpcore_module.ConnectionPool(
-                ssl_context=_create_ssl_context(verify=verify),
-                network_backend=network_backend,
-            )
 
         def handle_request(self, request: _HTTPTransportRequest) -> _HTTPResponse:
             """Send a client request through the matched core and eagerly consume its stream."""
+            is_https = request.url.raw_scheme == b"https"
+            if (pool := self._pools.get(is_https)) is None:
+                pool = self._pools[is_https] = httpcore_module.ConnectionPool(
+                    ssl_context=httpx_module.create_ssl_context(verify=self._verify) if is_https else None,
+                    network_backend=self._network_backend,
+                )
             req = httpcore_module.Request(
                 method=request.method,
                 url=httpcore_module.URL(
@@ -641,7 +633,7 @@ def _create_pinned_transport_type(
                 content=request.stream,
                 extensions=dict(request.extensions),
             )
-            resp = self._pool.handle_request(req)
+            resp = pool.handle_request(req)
             stream = resp.stream
             try:
                 content = b"".join(stream)
@@ -656,8 +648,9 @@ def _create_pinned_transport_type(
             )
 
         def close(self) -> None:
-            """Close the pinned connection pool and release sockets."""
-            self._pool.close()
+            """Close the pinned connection pools and release sockets."""
+            for pool in self._pools.values():
+                pool.close()
 
     return _PinnedHTTPTransport
 

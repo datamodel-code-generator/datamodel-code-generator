@@ -29,7 +29,6 @@ from datamodel_code_generator import (
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.http import (
     MAX_HTTP_REDIRECTS,
-    _create_ssl_context,
     _embedded_ipv4,
     _get_addr_info_ip,
     _get_http_response,
@@ -3291,17 +3290,6 @@ def test_parser_http_cleanup_does_not_mask_parse_error(mocker: MockerFixture) ->
 
     session.close.assert_called_once_with()
     assert parser._http_fetch_session is None
-
-
-def test_create_ssl_context_verify_modes() -> None:
-    """Build an SSL context only when certificate verification is disabled."""
-    assert _create_ssl_context(verify=True) is None
-
-    context = _create_ssl_context(verify=False)
-
-    assert context is not None
-    assert context.check_hostname is False
-    assert context.verify_mode == 0
 
 
 @pytest.mark.parametrize(

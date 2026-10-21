@@ -53,6 +53,8 @@ jobs:
         with:
           context: .
           load: true
+          pull: true
+          no-cache: true
           tags: datamodel-code-generator:smoke
           build-args: |
             VERSION=${{ steps.release.outputs.version }}

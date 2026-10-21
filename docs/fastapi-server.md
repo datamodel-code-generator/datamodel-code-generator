@@ -1,5 +1,10 @@
 # FastAPI Server Generation
 
+TLS is configured by the server or reverse proxy that hosts the generated application. Update its trust store when it
+verifies client certificates, and update any outbound HTTP clients used by your service or authentication callbacks.
+Generating a server from a remote schema also uses the generator's
+[TLS certificate settings](getting-started.md#tls-certificate-updates). Generated routers do not maintain a CA bundle.
+
 !!! warning "Experimental"
 
     FastAPI server generation is experimental. Its options, generated package, template values, and served

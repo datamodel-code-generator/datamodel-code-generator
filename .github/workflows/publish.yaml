@@ -157,7 +157,7 @@ jobs:
           name: ${{ env.dists-artifact-name }}
           path: dist/
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           attestations: true
 
@@ -194,6 +194,8 @@ jobs:
         with:
           context: .
           load: true
+          pull: true
+          no-cache: true
           tags: datamodel-code-generator:smoke
           build-args: |
             VERSION=${{ github.ref_name }}
@@ -205,6 +207,8 @@ jobs:
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           push: true
+          pull: true
+          no-cache: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           build-args: |
             VERSION=${{ github.ref_name }}

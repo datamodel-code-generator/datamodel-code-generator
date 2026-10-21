@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import ssl
+import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import IPv4Address
@@ -26,6 +28,7 @@ if TYPE_CHECKING:
 HTTP_DATA_PATH = Path(__file__).parent / "data"
 PET_SCHEMA_PATH = HTTP_DATA_PATH / "jsonschema" / "pet_simple.json"
 assert_https_generated_file = create_assert_file_content(HTTP_DATA_PATH / "expected" / "http")
+needs_openssl = pytest.mark.skipif(shutil.which("openssl") is None, reason="OpenSSL is needed to hash a CA directory")
 
 
 def _selected_http_backend() -> HTTPBackend:
@@ -127,12 +130,21 @@ def test_https_rejects_untrusted_certificate(
         )
 
 
+def test_pinned_https_rejects_untrusted_certificate(local_https_server: tuple[str, Path]) -> None:
+    """Keep certificate verification enabled on the DNS-pinned path."""
+    server_url, _ = local_https_server
+    with pytest.raises(Exception, match=r"(?i)certificate|cert_verify|trust"):
+        _get_pinned_https_body(f"{server_url}/pet.json", verify=True)
+
+
 def test_https_ignore_tls_fetches_real_schema(
     local_https_server: tuple[str, Path],
+    monkeypatch: MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """Fetch through a real TLS handshake when certificate checks are explicitly disabled."""
     server_url, _ = local_https_server
+    monkeypatch.setenv("SSL_CERT_FILE", str(tmp_path / "missing-ca.pem"))
     output_path = tmp_path / "pet.txt"
 
     output_path.write_text(
@@ -233,15 +245,22 @@ def test_cli_https_updates_and_verifies_remote_lock(
     assert lockfile.read_text(encoding="utf-8") == lock_content
 
 
+@pytest.mark.parametrize("ca_source", ["file", pytest.param("directory", marks=needs_openssl)])
 def test_https_trusted_ca_verifies_and_generates_model(
     local_https_server: tuple[str, Path],
+    ca_source: str,
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
+    request: pytest.FixtureRequest,
 ) -> None:
     """Trust the generated CA and verify a real TLS connection without disabling checks."""
     server_url, ca_path = local_https_server
     schema_url = f"{server_url}/pet.json"
-    monkeypatch.setenv("SSL_CERT_FILE", str(ca_path))
+    match ca_source:
+        case "file":
+            monkeypatch.setenv("SSL_CERT_FILE", str(ca_path))
+        case _:
+            monkeypatch.setenv("SSL_CERT_DIR", str(request.getfixturevalue("ca_directory")))
     pinned_output_path = tmp_path / "pinned-pet.txt"
     pinned_output_path.write_text(
         _get_pinned_https_body(schema_url, verify=True),
@@ -259,3 +278,37 @@ def test_https_trusted_ca_verifies_and_generates_model(
         extra_args=["--allow-private-network", "--disable-timestamp", *_selected_http_backend_cli_args()],
         transform=lambda output: output.replace(schema_url, "http://localhost/schema.json"),
     )
+
+
+@pytest.fixture
+def ca_directory(local_https_server: tuple[str, Path], tmp_path: Path) -> Path:
+    """Install the local server's CA in an OpenSSL hashed certificate directory."""
+    _, ca_path = local_https_server
+    result = subprocess.run(
+        ["openssl", "x509", "-in", str(ca_path), "-subject_hash", "-noout"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    directory = tmp_path / "ca-directory"
+    directory.mkdir()
+    shutil.copyfile(ca_path, directory / f"{result.stdout.strip()}.0")
+    return directory
+
+
+@needs_openssl
+def test_https_explicit_ca_file_excludes_ca_directory(
+    local_https_server: tuple[str, Path],
+    ca_directory: Path,
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """An explicit CA file must replace other roots, just as it does in HTTPX."""
+    server_url, _ = local_https_server
+    unrelated_ca = tmp_path / "unrelated-ca.pem"
+    trustme.CA().cert_pem.write_to_path(unrelated_ca)
+    monkeypatch.setenv("SSL_CERT_FILE", str(unrelated_ca))
+    monkeypatch.setenv("SSL_CERT_DIR", str(ca_directory))
+
+    with pytest.raises(Exception, match="CERTIFICATE_VERIFY_FAILED"):
+        _get_pinned_https_body(f"{server_url}/pet.json", verify=True)

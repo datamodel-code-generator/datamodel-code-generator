@@ -1020,6 +1020,14 @@ borrows it and never closes it, so close it after the client. Without one, the c
 [Instrumentation](python-client-reference.md#instrumentation) and
 [Redirects and transport construction](python-client-reference.md#redirects-and-transport-construction).
 
+### TLS certificate trust
+
+HTTPX2 uses the operating system's trust store by default. Keep the CA certificates updated on the host or container
+running the generated client, including clients generated before a CA incident. Updating certifi or regenerating the
+client alone does not update that store. API calls, OAuth token requests, and secure WebSockets need current trust
+settings; a separate OAuth `http_client` needs its own update. See
+[TLS certificate updates](getting-started.md#tls-certificate-updates) for custom CA files and directories.
+
 ## Authenticate
 
 Generated clients compile root security inheritance and operation overrides from OpenAPI. `Client` and `AsyncClient`

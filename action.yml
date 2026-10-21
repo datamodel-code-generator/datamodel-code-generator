@@ -119,7 +119,8 @@ runs:
       run: |
         set -euo pipefail
 
-        pip install "$PACKAGE"
+        python -m pip install --upgrade 'pip>=26.2.2'
+        python -m pip install "$PACKAGE" 'certifi>=2026.10.19'
       shell: bash
 
     - name: Run datamodel-code-generator

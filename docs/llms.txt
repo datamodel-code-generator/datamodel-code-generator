@@ -57,7 +57,7 @@
 
 ### Generation Targets
 
-- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): FastAPI server generation is experimental. Its options, generated package, template values, and served OpenAPI document may change. See Experimenta...
+- [FastAPI Server Generation](https://datamodel-code-generator.koxudaxi.dev/fastapi-server/): TLS is configured by the server or reverse proxy that hosts the generated application. Update its trust store when it verifies client certificates,...
 - [Python Client Generation](https://datamodel-code-generator.koxudaxi.dev/python-client/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
 - [Python Client Protocol Helpers](https://datamodel-code-generator.koxudaxi.dev/python-client-helpers/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.
 - [Python Client Reference](https://datamodel-code-generator.koxudaxi.dev/python-client-reference/): HTTPX2 client generation is experimental. Its options, generated package, and template values may change. See Experimental Features.

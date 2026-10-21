@@ -703,7 +703,7 @@ jobs:
       SHARD_PROFILE: ${{ matrix.profile }}
       WINDOWS_TOX_UV_VERSION: "1.35.2"
       WINDOWS_TOX_VERSION: "4.56.1"
-      WINDOWS_UV_VERSION: "0.13.1"
+      WINDOWS_UV_VERSION: "0.13.4"
     steps: &test-shard-steps
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:

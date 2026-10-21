@@ -565,6 +565,29 @@ Install `datamodel-code-generator`, generate your first Pydantic v2 model, and p
 Use `uv tool install` when you want `datamodel-codegen` available as a standalone CLI. Use `uv add --dev` when a project
 or CI workflow should pin the generator version in its lockfile.
 
+### TLS certificate updates
+
+The [October 2026 eMudhra CA incident](https://emudhra.we-have-a-problem.com/) affects HTTPS clients whose trust stores
+still accept the compromised certificate chains. Update your operating system's CA certificates and your installer:
+uv 0.13.4 or later, or pip 26.2.2 or later. Browser updates alone do not update command-line tools' trust stores.
+
+For remote schemas (`--url` and remote `$ref`), install the current `datamodel-code-generator[http]` release and refresh
+your lockfile. The `http` and `validation` extras require certifi 2026.10.19 or later. Existing environments and older
+generator releases also need that certifi update. Rebuild containers to update both their OS and Python trust stores.
+
+The selected HTTP backend determines certificate trust:
+
+| Backend | Default CA source | What to update |
+| --- | --- | --- |
+| Stable HTTPX (`http` extra) | certifi | certifi in the environment running the generator |
+| Experimental HTTPX2 (`httpx2` extra) | OS trust store through truststore | OS CA certificates in the host or container |
+| Generated HTTPX2 client | OS trust store through truststore | OS CA certificates where the generated client runs |
+
+`SSL_CERT_FILE` replaces the backend's default CA source; otherwise `SSL_CERT_DIR` selects an OpenSSL certificate
+directory. Update these custom stores separately. This also applies to generated clients using the default HTTPX2
+client; a supplied `http_client` follows its own TLS configuration. `--http-ignore-tls` disables certificate verification
+and is not a remedy for a compromised CA.
+
 !!! info "Distribution packages"
     Community-maintained distribution packages are also available from
     [Debian](https://packages.debian.org/search?keywords=datamodel-codegen&searchon=names&suite=all&section=all),
@@ -14792,6 +14815,11 @@ Expected agent behavior:
 
 Source: https://datamodel-code-generator.koxudaxi.dev/fastapi-server/
 
+TLS is configured by the server or reverse proxy that hosts the generated application. Update its trust store when it
+verifies client certificates, and update any outbound HTTP clients used by your service or authentication callbacks.
+Generating a server from a remote schema also uses the generator's
+[TLS certificate settings](getting-started.md#tls-certificate-updates). Generated routers do not maintain a CA bundle.
+
 !!! warning "Experimental"
 
     FastAPI server generation is experimental. Its options, generated package, template values, and served
@@ -17605,6 +17633,14 @@ borrows it and never closes it, so close it after the client. Without one, the c
 `httpx2.Client(timeout=httpx2.Timeout(600, connect=5))` and closes it on `close()` or at the end of `with`. See
 [Instrumentation](python-client-reference.md#instrumentation) and
 [Redirects and transport construction](python-client-reference.md#redirects-and-transport-construction).
+
+### TLS certificate trust
+
+HTTPX2 uses the operating system's trust store by default. Keep the CA certificates updated on the host or container
+running the generated client, including clients generated before a CA incident. Updating certifi or regenerating the
+client alone does not update that store. API calls, OAuth token requests, and secure WebSockets need current trust
+settings; a separate OAuth `http_client` needs its own update. See
+[TLS certificate updates](getting-started.md#tls-certificate-updates) for custom CA files and directories.
 
 ## Authenticate
 
@@ -63064,6 +63100,20 @@ are neither created nor fixed, but comparisons still run.
 `tests/test_assert_helper_usage.py` guards these directories against direct asserts, unit-style checks, and
 private imports. Its exceptions are listed in `tests/assert_helper_allowlists.py`. Those lists only shrink: remove
 an entry when you fix its violation, and do not add new ones.
+
+## CI certificate stores
+
+Keep the lockfile's certifi and uv versions, the pinned Windows uv, the composite action's pip, and the PyPI publishing
+action updated together when their bundled CAs change. Docker builds update the OS CA package in the shared base stage
+and use fresh build layers when publishing.
+
+Node used by Wrangler and the release analysis action is selected separately from the GitHub runner's Node executable
+that runs JavaScript actions. `actions/setup-node` updates the former only. Hosted runner updates and third-party
+action containers must also include the CA fixes; self-hosted runners need their own updates. The release analysis
+action additionally installs Bun and a native CLI, with independent trust stores. As of 2026-10-21, the eMudhra fix for
+Bun is [merged but awaiting a release](https://github.com/oven-sh/bun/pull/46159). A Node upgrade does not fix those
+embedded stores. Consult the [incident's runtime update list](https://emudhra.we-have-a-problem.com/) before updating
+their pins or treating the entire CI environment as remediated.
 
 ## Documentation formatting
 
