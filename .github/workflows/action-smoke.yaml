@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'action.yml'
+      - 'requirements-pip.txt'
       - '.github/workflows/action-smoke.yaml'
       - 'tests/data/jsonschema/simple_string.json'
   push:
@@ -13,6 +14,7 @@ on:
       - main
     paths:
       - 'action.yml'
+      - 'requirements-pip.txt'
       - '.github/workflows/action-smoke.yaml'
       - 'tests/data/jsonschema/simple_string.json'
   workflow_dispatch:
