@@ -77,6 +77,7 @@ from datamodel_code_generator._regex_syntax import (
     conjoin_patterns,
     is_portable_pattern,
     literal_pattern_value,
+    lookahead_patterns,
 )
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import DefaultPutDict
@@ -1418,13 +1419,16 @@ def _read_type(obj: JsonSchemaObject) -> str | list[str] | None:
     return obj.type
 
 
-def _null_sources(obj: JsonSchemaObject, site: NullSite) -> NullSources:
+def _null_sources(
+    obj: JsonSchemaObject, site: NullSite, type_has_null: Callable[[JsonSchemaObject], bool]
+) -> NullSources:
     """Return the keywords of a schema object that can admit null, as written (``parser/_null_facts.py``).
 
-    Only the sites that read it ask ``JsonSchemaObject.type_has_null``, which records its first answer.
+    Only the sites that read it ask ``type_has_null`` (``JsonSchemaParser._type_has_null``), which records its first
+    answer.
     """
     sources = _type_null_sources(obj)
-    return replace(sources, type_has_null=obj.type_has_null) if site in _RECORDED_TYPE_NULL_SITES else sources
+    return replace(sources, type_has_null=type_has_null(obj)) if site in _RECORDED_TYPE_NULL_SITES else sources
 
 
 def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
@@ -1448,12 +1452,15 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
     )
 
 
-def _excluded_null_members(obj: JsonSchemaObject, members: Sequence[JsonSchemaObject | bool]) -> list[JsonSchemaObject]:
+def _excluded_null_members(
+    obj: JsonSchemaObject, members: Sequence[JsonSchemaObject | bool], mode: NullMode
+) -> list[JsonSchemaObject]:
     """Return the members typed only null that the ``type`` beside them excludes (row ``type-excludes-member-null``).
 
-    None of them when every member is one: the combined schema keeps them rather than admit no value.
+    None of them when every member is one: the combined schema keeps them rather than admit no value. None of them
+    without --intersect-allof-keywords (``mode``).
     """
-    if resolve_null_facts(_type_null_sources(obj), "schema-type").rule != "type-excludes-member-null":
+    if resolve_null_facts(_type_null_sources(obj), "schema-type", mode).rule != "type-excludes-member-null":
         return []
     null_members = [
         member
@@ -1978,7 +1985,11 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
 
     @cached_property
     def type_has_null(self) -> bool:
-        """Check if the type list or oneOf/anyOf contains null."""
+        """Check if the type list or oneOf/anyOf contains null.
+
+        A ``type`` that excludes null does not drop the null of its members here: that is
+        ``JsonSchemaParser._type_has_null``, with --intersect-allof-keywords.
+        """
         return bool(resolve_null_facts(_type_null_sources(self), "schema-type").admits_null)
 
     @cached_property
@@ -4605,7 +4616,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             use_default_kwarg=self.use_default_kwarg,
             original_name=original_field_name,
             has_default=has_default,
-            type_has_null=field.type_has_null,
+            type_has_null=self._type_has_null(field),
             read_only=read_only,
             write_only=write_only,
             use_frozen_field=self.use_frozen_field,
@@ -4872,7 +4883,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             strict_nullable=self.strict_nullable,
             use_missing_sentinel=self.use_missing_sentinel,
             force_optional=self.force_optional_for_required_fields,
+            type_excludes_member_null=self.intersects_allof_keywords,
         )
+
+    def _type_has_null(self, obj: JsonSchemaObject) -> bool:
+        """Return ``JsonSchemaObject.type_has_null``, false where a ``type`` excludes the null of its members.
+
+        With --intersect-allof-keywords a ``type`` that is neither null nor a list holding null, beside a null member
+        of its ``anyOf`` or ``oneOf``, admits no null (row ``type-excludes-member-null``).
+        """
+        if (
+            self.intersects_allof_keywords
+            and resolve_null_facts(_type_null_sources(obj), "schema-type", self._null_mode).rule
+            == "type-excludes-member-null"
+        ):
+            return False
+        return obj.type_has_null
 
     def _null_facts(
         self,
@@ -4885,7 +4911,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> NullFacts:
         """Return what ``site`` reads from where the null of ``obj`` comes from."""
         return resolve_null_facts(
-            _null_sources(obj, site),
+            _null_sources(obj, site, self._type_has_null),
             site,
             self._null_mode,
             required=required,
@@ -6497,7 +6523,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self._warn_untaken_patterns(where, intersection.keywords["pattern"], intersection.untaken_patterns)
 
     def _conjoined_pattern(self, patterns: Sequence[str], where: str) -> str:
-        """Return the conjoined pattern (``conjoin_patterns``), warning about the patterns it leaves out."""
+        """Return the conjoined pattern (``conjoin_patterns``), warning about the patterns it leaves out.
+
+        Without --intersect-allof-keywords the lookaheads 0.86.0 wrote (``lookahead_patterns``), without a warning.
+        """
+        if not self.intersects_allof_keywords:
+            return lookahead_patterns(patterns)
         conjunction = conjoin_patterns(patterns)
         self._warn_untaken_patterns(where, conjunction.pattern, conjunction.untaken)
         return conjunction.pattern
@@ -8530,6 +8561,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = _get_inherited_type_modifiers(
                 field.data_type,
                 null_rule=facts.rule if facts is not None and facts.admits_null is False else None,
+                drops_null_members=self.intersects_allof_keywords
+                and facts is not None
+                and facts.rule == "inherited-typed-without-null",
             )
 
     def _get_deferred_inherited_parse_object(  # noqa: PLR6301
@@ -10031,7 +10065,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         items = getattr(obj, target_attribute_name, [])
         dropped = {
             id(member)
-            for member in _excluded_null_members(obj, [item for item in items if not self._is_false_schema_item(item)])
+            for member in _excluded_null_members(
+                obj, [item for item in items if not self._is_false_schema_item(item)], self._null_mode
+            )
         }
         dropped_before = 0
         for index, target_attribute in enumerate(items):

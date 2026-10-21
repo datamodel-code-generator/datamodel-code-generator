@@ -22,6 +22,7 @@ __all__ = [
     "conjoin_patterns",
     "is_portable_pattern",
     "literal_pattern_value",
+    "lookahead_patterns",
     "pairwise_patterns",
     "pattern_admits",
     "pattern_implies",
@@ -321,6 +322,32 @@ def pairwise_patterns(patterns: Sequence[str]) -> str:
     result = patterns[0]
     for pattern in patterns[1:]:
         result = pairwise_patterns((result, pattern))
+    return result
+
+
+def lookahead_patterns(patterns: Sequence[str]) -> str:
+    r"""Return the lookaheads of ``patterns`` as 0.86.0 wrote them, the output without --intersect-allof-keywords.
+
+    Equal neighbours are one and pairs become ``(?=p1)(?=p2)``, nested pairwise; literal patterns none of which is a
+    prefix of the longest get ``\A(?=[\s\S]*a)(?=[\s\S]*b)``. No check that the patterns read alike on every engine
+    or conjoin into one expression (``conjoin_patterns`` does).
+    """
+    match patterns:
+        case [pattern]:
+            return pattern
+        case [left, right] if left == right:
+            return left
+    literals = [literal_pattern_value(pattern) for pattern in patterns]
+    if all(literal is not None for literal in literals):
+        longest = max((literal for literal in literals if literal is not None), key=str.__len__)
+        if any(literal is not None and not longest.startswith(literal) for literal in literals):
+            return r"\A" + "".join(rf"(?=[\s\S]*{pattern})" for pattern in dict.fromkeys(patterns))
+    match patterns:
+        case [left, right]:
+            return f"(?={left})(?={right})"
+    result = patterns[0]
+    for pattern in patterns[1:]:
+        result = lookahead_patterns((result, pattern))
     return result
 
 

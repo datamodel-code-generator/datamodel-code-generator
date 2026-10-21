@@ -469,10 +469,11 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         `$ref` with sibling keywords and of an inherited
                         property override, as JSON Schema validates them: the
                         tightest bounds, the `enum` values every part admits,
-                        the `type` every part admits, and the constraints of
-                        the root, item and map value positions of an `allOf`.
-                        Without it, the keyword of the last part wins where
-                        the parts disagree
+                        the `type` every part admits, the conjunction of the
+                        `pattern`s, no null beside a `type` that excludes it,
+                        and the constraints of the root, item and map value
+                        positions of an `allOf`. Without it, the keyword of
+                        the last part wins where the parts disagree
   --omit-redundant-constraints
                         Do not write a constraint again beside a type that
                         already enforces it: the bound of a zero-bound class

@@ -30,7 +30,7 @@ class AllofWithPattern(RootModel[str]):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    root: constr(pattern=r'\A(?=[\s\S]*?(?:^[a-z]+))(?=[\s\S]*?(?:[0-9]$))')
+    root: constr(pattern=r'(?=^[a-z]+)(?=[0-9]$)')
 
 
 class AllofWithUnique(RootModel[list[str]]):

@@ -2058,6 +2058,7 @@ def _get_inherited_type_modifiers(
     data_type: DataType,
     *,
     null_rule: NullRule | None = None,
+    drops_null_members: bool = False,
 ) -> _InheritedTypeModifiers:
     """Compress a partial type before replacing its forward placeholder."""
     list_wrapper = (
@@ -2078,6 +2079,7 @@ def _get_inherited_type_modifiers(
         tuple_item_count=data_type.tuple_item_count,
         kwargs=deepcopy(data_type.kwargs),
         list_wrapper=list_wrapper,
+        drops_null_members=drops_null_members,
     )
 
 
@@ -2085,7 +2087,7 @@ def _without_null_members(data_type: DataType, current_type: DataType | _Inherit
     """Return a fresh copy of the inherited ``data_type`` without the None members its override excludes."""
     if not (
         isinstance(current_type, _InheritedTypeModifiers)
-        and current_type.null_rule == "inherited-typed-without-null"
+        and current_type.drops_null_members
         and (members := union_members(data_type))
     ):
         return data_type

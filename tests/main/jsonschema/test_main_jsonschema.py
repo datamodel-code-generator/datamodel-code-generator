@@ -32675,9 +32675,10 @@ JSON Schema applies the members of an `allOf`, a `$ref` and the keywords beside 
 an inherited one all at once, so a value must meet every part. Without the option the keyword of the last part
 wins where the parts disagree: the sibling of a `$ref`, the overriding property, the last member of an `allOf`.
 With `--intersect-allof-keywords`, the tightest bound of the parts is written (`maximum: 10` beside `maximum: 20`
-keeps `10`), an `enum` holds the values every part admits, a `type` the types every part admits, and `required` the
-names of every part. An `allOf` of value schemas at a root, an item or a map value is one constraint schema in the
-same way. Parts that no value meets together keep the earlier merge with a warning.""",
+keeps `10`), an `enum` holds the values every part admits, a `type` the types every part admits, `required` the names
+of every part, and the `pattern`s of the parts are checked together. An `allOf` of value schemas at a root, an item
+or a map value is one constraint schema in the same way, and a null member beside a `type` that excludes null is
+dropped. Parts that no value meets together keep the earlier merge with a warning.""",
     input_schema="jsonschema/schema_intersection/inherited_overrides.json",
     cli_args=["--intersect-allof-keywords"],
     golden_output=(

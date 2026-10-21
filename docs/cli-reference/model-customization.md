@@ -4527,7 +4527,7 @@ required fields, in schema order, which changes the order of the constructor's p
 
 
         class NamedCat(Cat):
-            kind: str
+            kind: str | None
             name: str | UnsetType = UNSET
 
 
@@ -4634,7 +4634,7 @@ required fields, in schema order, which changes the order of the constructor's p
 
 
         class NamedCat(Cat):
-            kind: str
+            kind: str | None
             name: str | UnsetType = UNSET
 
 

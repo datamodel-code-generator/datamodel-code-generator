@@ -67,6 +67,7 @@ class _InheritedTypeModifiers:
     tuple_item_count: int | None
     kwargs: dict[str, Any] | None
     list_wrapper: DataType | None
+    drops_null_members: bool = False
 
     @property
     def excludes_null(self) -> bool:

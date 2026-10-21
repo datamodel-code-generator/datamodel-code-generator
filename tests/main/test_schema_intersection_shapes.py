@@ -98,13 +98,6 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "root_members": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "unsat_root_literals": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
 }
-WITHOUT_OPTION_EXCLUDED: frozenset[str] = frozenset({
-    "allof_patterns",
-    "allof_values",
-    "inherited_override_null_oas31",
-    "pattern_conjunction_edges",
-})
-"""The documents the run without the option leaves out: their patterns and null members are not behind it yet."""
 VALIDATING_BACKENDS = {
     DataModelType.PydanticV2BaseModel,
     DataModelType.PydanticV2Dataclass,
@@ -162,18 +155,8 @@ def test_schema_intersection_shape_output(
 
 @pytest.mark.parametrize(
     ("stem", "backend", "options"),
-    [
-        (stem, backend, options)
-        for stem in OUTPUT_DOCUMENTS
-        if stem not in WITHOUT_OPTION_EXCLUDED
-        for backend, options in _runs(stem)
-    ],
-    ids=[
-        f"{stem}-{backend.value}-{_label(options)}"
-        for stem in OUTPUT_DOCUMENTS
-        if stem not in WITHOUT_OPTION_EXCLUDED
-        for backend, options in _runs(stem)
-    ],
+    [(stem, backend, options) for stem in OUTPUT_DOCUMENTS for backend, options in _runs(stem)],
+    ids=[f"{stem}-{backend.value}-{_label(options)}" for stem in OUTPUT_DOCUMENTS for backend, options in _runs(stem)],
 )
 def test_schema_intersection_shape_output_without_option(
     output_file: Path, stem: str, backend: DataModelType, options: tuple[str, ...]
@@ -234,7 +217,7 @@ def test_schema_intersection_shape_payloads(tmp_path: Path, stem: str) -> None:
 
 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
-@pytest.mark.parametrize("stem", [stem for stem in DOCUMENTS if stem not in WITHOUT_OPTION_EXCLUDED])
+@pytest.mark.parametrize("stem", DOCUMENTS)
 def test_schema_intersection_shape_payloads_without_option(tmp_path: Path, stem: str) -> None:
     """Record what each model generated without --intersect-allof-keywords accepts, as the models of 0.86.0 do.
 

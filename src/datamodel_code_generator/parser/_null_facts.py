@@ -116,10 +116,10 @@ NullRule: TypeAlias = Literal[
 
 * ``type-or-member-null``: a ``type`` list holding null, or a direct ``anyOf``/``oneOf`` member typed null or with a
   ``type`` list holding null; ``nullable`` and ``enum`` do not count (``schema-type``).
-* ``type-excludes-member-null``: except a member beside a ``type`` that is neither null nor a list holding null,
-  without ``nullable: true``: that ``type`` excludes null, so the combined schema drops its members typed only null
-  (``null`` or ``["null"]``) and, when every member is one, is rejected as unsatisfiable
-  (``JsonSchemaParser.parse_combined_schema``).
+* ``type-excludes-member-null``: with ``--intersect-allof-keywords`` (``NullMode.type_excludes_member_null``), except
+  a member beside a ``type`` that is neither null nor a list holding null, without ``nullable: true``: that ``type``
+  excludes null, so the combined schema drops its members typed only null (``null`` or ``["null"]``) and, when every
+  member is one, is rejected as unsatisfiable (``JsonSchemaParser.parse_combined_schema``).
 * ``field-declared``: under ``--strict-nullable`` or ``--use-missing-sentinel`` a field writes the ``nullable`` its
   schema declares.
 * ``field-strict-not-null``: under ``--strict-nullable`` a required or defaulted field without ``nullable`` is not
@@ -210,13 +210,16 @@ class NullMode:
     """The options that change how sites read null.
 
     ``nullable_as_type_list``: OpenAPI reads ``nullable`` beside one scalar ``type`` under ``--strict-nullable`` as a
-    ``type`` list holding null.
+    ``type`` list holding null. ``type_excludes_member_null``: ``--intersect-allof-keywords``, under which a ``type``
+    that excludes null drops the null of the ``anyOf`` or ``oneOf`` members beside it (row
+    ``type-excludes-member-null``).
     """
 
     strict_nullable: bool = False
     use_missing_sentinel: bool = False
     force_optional: bool = False
     nullable_as_type_list: bool = False
+    type_excludes_member_null: bool = False
 
 
 NO_NULL_MODE: NullMode = NullMode()
@@ -254,7 +257,7 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     type_null = sources.type_has_null
     match site:
         case "schema-type":
-            if sources.member_null and _type_excludes_null(sources):
+            if mode.type_excludes_member_null and sources.member_null and _type_excludes_null(sources):
                 return NullFacts("type-excludes-member-null", admits_null=False)
             return NullFacts("type-or-member-null", admits_null=sources.type_lists_null or sources.member_null)
         case "field":

@@ -1,0 +1,792 @@
+pydantic_v2.BaseModel default level 0 accepted
+pydantic_v2.BaseModel default level 10 accepted
+pydantic_v2.BaseModel default level -1 rejected
+pydantic_v2.BaseModel default level 11 rejected
+pydantic_v2.BaseModel default level 1.5 rejected
+pydantic_v2.BaseModel default level_prop 0 accepted
+pydantic_v2.BaseModel default level_prop 10 accepted
+pydantic_v2.BaseModel default level_prop -1 rejected
+pydantic_v2.BaseModel default level_prop 11 rejected
+pydantic_v2.BaseModel default level_prop 1.5 rejected
+pydantic_v2.BaseModel default level_items [0] accepted
+pydantic_v2.BaseModel default level_items [10] accepted
+pydantic_v2.BaseModel default level_items [-1] rejected
+pydantic_v2.BaseModel default level_items [11] rejected
+pydantic_v2.BaseModel default level_items [1.5] rejected
+pydantic_v2.BaseModel default level_map {"k": 0} accepted
+pydantic_v2.BaseModel default level_map {"k": 10} accepted
+pydantic_v2.BaseModel default level_map {"k": -1} rejected
+pydantic_v2.BaseModel default level_map {"k": 11} rejected
+pydantic_v2.BaseModel default level_map {"k": 1.5} rejected
+pydantic_v2.BaseModel default mode 1 accepted
+pydantic_v2.BaseModel default mode 2 accepted
+pydantic_v2.BaseModel default mode 0 rejected
+pydantic_v2.BaseModel default mode_prop 1 accepted
+pydantic_v2.BaseModel default mode_prop 2 accepted
+pydantic_v2.BaseModel default mode_prop 0 accepted
+pydantic_v2.BaseModel default mode_items [1] accepted
+pydantic_v2.BaseModel default mode_items [2] accepted
+pydantic_v2.BaseModel default mode_items [0] accepted
+pydantic_v2.BaseModel default mode_map {"k": 1} accepted
+pydantic_v2.BaseModel default mode_map {"k": 2} accepted
+pydantic_v2.BaseModel default mode_map {"k": 0} accepted
+pydantic_v2.BaseModel default pat "ab" rejected
+pydantic_v2.BaseModel default pat "axb" rejected
+pydantic_v2.BaseModel default pat "a" rejected
+pydantic_v2.BaseModel default pat "ba" rejected
+pydantic_v2.BaseModel default pat_prop "ab" rejected
+pydantic_v2.BaseModel default pat_prop "axb" rejected
+pydantic_v2.BaseModel default pat_prop "a" rejected
+pydantic_v2.BaseModel default pat_prop "ba" rejected
+pydantic_v2.BaseModel default pat_items ["ab"] rejected
+pydantic_v2.BaseModel default pat_items ["axb"] rejected
+pydantic_v2.BaseModel default pat_items ["a"] rejected
+pydantic_v2.BaseModel default pat_items ["ba"] rejected
+pydantic_v2.BaseModel default pat_map {"k": "ab"} rejected
+pydantic_v2.BaseModel default pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel default pat_map {"k": "a"} rejected
+pydantic_v2.BaseModel default pat_map {"k": "ba"} rejected
+pydantic_v2.BaseModel default untyped "a" rejected
+pydantic_v2.BaseModel default untyped 5 rejected
+pydantic_v2.BaseModel default untyped "" rejected
+pydantic_v2.BaseModel default untyped "abcdef" rejected
+pydantic_v2.BaseModel default untyped_prop "a" accepted
+pydantic_v2.BaseModel default untyped_prop 5 accepted
+pydantic_v2.BaseModel default untyped_prop "" accepted
+pydantic_v2.BaseModel default untyped_prop "abcdef" accepted
+pydantic_v2.BaseModel default untyped_items ["a"] accepted
+pydantic_v2.BaseModel default untyped_items [5] accepted
+pydantic_v2.BaseModel default untyped_items [""] accepted
+pydantic_v2.BaseModel default untyped_items ["abcdef"] accepted
+pydantic_v2.BaseModel default untyped_map {"k": "a"} accepted
+pydantic_v2.BaseModel default untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel default untyped_map {"k": ""} accepted
+pydantic_v2.BaseModel default untyped_map {"k": "abcdef"} accepted
+pydantic_v2.BaseModel default p "ab" accepted
+pydantic_v2.BaseModel default p "a" rejected
+pydantic_v2.dataclass default level 0 accepted
+pydantic_v2.dataclass default level 10 accepted
+pydantic_v2.dataclass default level -1 rejected
+pydantic_v2.dataclass default level 11 rejected
+pydantic_v2.dataclass default level 1.5 rejected
+pydantic_v2.dataclass default level_prop 0 accepted
+pydantic_v2.dataclass default level_prop 10 accepted
+pydantic_v2.dataclass default level_prop -1 rejected
+pydantic_v2.dataclass default level_prop 11 rejected
+pydantic_v2.dataclass default level_prop 1.5 rejected
+pydantic_v2.dataclass default level_items [0] accepted
+pydantic_v2.dataclass default level_items [10] accepted
+pydantic_v2.dataclass default level_items [-1] rejected
+pydantic_v2.dataclass default level_items [11] rejected
+pydantic_v2.dataclass default level_items [1.5] rejected
+pydantic_v2.dataclass default level_map {"k": 0} accepted
+pydantic_v2.dataclass default level_map {"k": 10} accepted
+pydantic_v2.dataclass default level_map {"k": -1} rejected
+pydantic_v2.dataclass default level_map {"k": 11} rejected
+pydantic_v2.dataclass default level_map {"k": 1.5} rejected
+pydantic_v2.dataclass default mode 1 accepted
+pydantic_v2.dataclass default mode 2 accepted
+pydantic_v2.dataclass default mode 0 rejected
+pydantic_v2.dataclass default mode_prop 1 accepted
+pydantic_v2.dataclass default mode_prop 2 accepted
+pydantic_v2.dataclass default mode_prop 0 accepted
+pydantic_v2.dataclass default mode_items [1] accepted
+pydantic_v2.dataclass default mode_items [2] accepted
+pydantic_v2.dataclass default mode_items [0] accepted
+pydantic_v2.dataclass default mode_map {"k": 1} accepted
+pydantic_v2.dataclass default mode_map {"k": 2} accepted
+pydantic_v2.dataclass default mode_map {"k": 0} accepted
+pydantic_v2.dataclass default pat "ab" rejected
+pydantic_v2.dataclass default pat "axb" rejected
+pydantic_v2.dataclass default pat "a" rejected
+pydantic_v2.dataclass default pat "ba" rejected
+pydantic_v2.dataclass default pat_prop "ab" rejected
+pydantic_v2.dataclass default pat_prop "axb" rejected
+pydantic_v2.dataclass default pat_prop "a" rejected
+pydantic_v2.dataclass default pat_prop "ba" rejected
+pydantic_v2.dataclass default pat_items ["ab"] rejected
+pydantic_v2.dataclass default pat_items ["axb"] rejected
+pydantic_v2.dataclass default pat_items ["a"] rejected
+pydantic_v2.dataclass default pat_items ["ba"] rejected
+pydantic_v2.dataclass default pat_map {"k": "ab"} rejected
+pydantic_v2.dataclass default pat_map {"k": "axb"} rejected
+pydantic_v2.dataclass default pat_map {"k": "a"} rejected
+pydantic_v2.dataclass default pat_map {"k": "ba"} rejected
+pydantic_v2.dataclass default untyped "a" rejected
+pydantic_v2.dataclass default untyped 5 rejected
+pydantic_v2.dataclass default untyped "" rejected
+pydantic_v2.dataclass default untyped "abcdef" rejected
+pydantic_v2.dataclass default untyped_prop "a" accepted
+pydantic_v2.dataclass default untyped_prop 5 accepted
+pydantic_v2.dataclass default untyped_prop "" accepted
+pydantic_v2.dataclass default untyped_prop "abcdef" accepted
+pydantic_v2.dataclass default untyped_items ["a"] accepted
+pydantic_v2.dataclass default untyped_items [5] accepted
+pydantic_v2.dataclass default untyped_items [""] accepted
+pydantic_v2.dataclass default untyped_items ["abcdef"] accepted
+pydantic_v2.dataclass default untyped_map {"k": "a"} accepted
+pydantic_v2.dataclass default untyped_map {"k": 5} accepted
+pydantic_v2.dataclass default untyped_map {"k": ""} accepted
+pydantic_v2.dataclass default untyped_map {"k": "abcdef"} accepted
+pydantic_v2.dataclass default p "ab" accepted
+pydantic_v2.dataclass default p "a" rejected
+msgspec.Struct default level 0 accepted
+msgspec.Struct default level 10 accepted
+msgspec.Struct default level -1 rejected
+msgspec.Struct default level 11 rejected
+msgspec.Struct default level 1.5 rejected
+msgspec.Struct default level_prop 0 accepted
+msgspec.Struct default level_prop 10 accepted
+msgspec.Struct default level_prop -1 accepted
+msgspec.Struct default level_prop 11 accepted
+msgspec.Struct default level_prop 1.5 rejected
+msgspec.Struct default level_items [0] accepted
+msgspec.Struct default level_items [10] accepted
+msgspec.Struct default level_items [-1] accepted
+msgspec.Struct default level_items [11] accepted
+msgspec.Struct default level_items [1.5] rejected
+msgspec.Struct default level_map {"k": 0} accepted
+msgspec.Struct default level_map {"k": 10} accepted
+msgspec.Struct default level_map {"k": -1} rejected
+msgspec.Struct default level_map {"k": 11} rejected
+msgspec.Struct default level_map {"k": 1.5} rejected
+msgspec.Struct default mode 1 accepted
+msgspec.Struct default mode 2 accepted
+msgspec.Struct default mode 0 rejected
+msgspec.Struct default mode_prop 1 accepted
+msgspec.Struct default mode_prop 2 accepted
+msgspec.Struct default mode_prop 0 accepted
+msgspec.Struct default mode_items [1] accepted
+msgspec.Struct default mode_items [2] accepted
+msgspec.Struct default mode_items [0] accepted
+msgspec.Struct default mode_map {"k": 1} accepted
+msgspec.Struct default mode_map {"k": 2} accepted
+msgspec.Struct default mode_map {"k": 0} accepted
+msgspec.Struct default pat "ab" rejected
+msgspec.Struct default pat "axb" rejected
+msgspec.Struct default pat "a" rejected
+msgspec.Struct default pat "ba" rejected
+msgspec.Struct default pat_prop "ab" accepted
+msgspec.Struct default pat_prop "axb" accepted
+msgspec.Struct default pat_prop "a" accepted
+msgspec.Struct default pat_prop "ba" accepted
+msgspec.Struct default pat_items ["ab"] accepted
+msgspec.Struct default pat_items ["axb"] accepted
+msgspec.Struct default pat_items ["a"] accepted
+msgspec.Struct default pat_items ["ba"] accepted
+msgspec.Struct default pat_map {"k": "ab"} rejected
+msgspec.Struct default pat_map {"k": "axb"} rejected
+msgspec.Struct default pat_map {"k": "a"} rejected
+msgspec.Struct default pat_map {"k": "ba"} rejected
+msgspec.Struct default untyped "a" rejected
+msgspec.Struct default untyped 5 rejected
+msgspec.Struct default untyped "" rejected
+msgspec.Struct default untyped "abcdef" rejected
+msgspec.Struct default untyped_prop "a" accepted
+msgspec.Struct default untyped_prop 5 accepted
+msgspec.Struct default untyped_prop "" accepted
+msgspec.Struct default untyped_prop "abcdef" accepted
+msgspec.Struct default untyped_items ["a"] accepted
+msgspec.Struct default untyped_items [5] accepted
+msgspec.Struct default untyped_items [""] accepted
+msgspec.Struct default untyped_items ["abcdef"] accepted
+msgspec.Struct default untyped_map {"k": "a"} accepted
+msgspec.Struct default untyped_map {"k": 5} accepted
+msgspec.Struct default untyped_map {"k": ""} accepted
+msgspec.Struct default untyped_map {"k": "abcdef"} accepted
+msgspec.Struct default p "ab" accepted
+msgspec.Struct default p "a" accepted
+pydantic_v2.BaseModel --field-constraints level 0 accepted
+pydantic_v2.BaseModel --field-constraints level 10 accepted
+pydantic_v2.BaseModel --field-constraints level -1 rejected
+pydantic_v2.BaseModel --field-constraints level 11 rejected
+pydantic_v2.BaseModel --field-constraints level 1.5 rejected
+pydantic_v2.BaseModel --field-constraints level_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints level_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints level_prop -1 accepted
+pydantic_v2.BaseModel --field-constraints level_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints level_prop 1.5 rejected
+pydantic_v2.BaseModel --field-constraints level_items [0] accepted
+pydantic_v2.BaseModel --field-constraints level_items [10] accepted
+pydantic_v2.BaseModel --field-constraints level_items [-1] accepted
+pydantic_v2.BaseModel --field-constraints level_items [11] accepted
+pydantic_v2.BaseModel --field-constraints level_items [1.5] rejected
+pydantic_v2.BaseModel --field-constraints level_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints level_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints level_map {"k": -1} accepted
+pydantic_v2.BaseModel --field-constraints level_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints level_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --field-constraints mode 1 accepted
+pydantic_v2.BaseModel --field-constraints mode 2 accepted
+pydantic_v2.BaseModel --field-constraints mode 0 rejected
+pydantic_v2.BaseModel --field-constraints mode_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints mode_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints mode_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints mode_items [1] accepted
+pydantic_v2.BaseModel --field-constraints mode_items [2] accepted
+pydantic_v2.BaseModel --field-constraints mode_items [0] accepted
+pydantic_v2.BaseModel --field-constraints mode_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints mode_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints pat "ab" rejected
+pydantic_v2.BaseModel --field-constraints pat "axb" rejected
+pydantic_v2.BaseModel --field-constraints pat "a" rejected
+pydantic_v2.BaseModel --field-constraints pat "ba" rejected
+pydantic_v2.BaseModel --field-constraints pat_prop "ab" accepted
+pydantic_v2.BaseModel --field-constraints pat_prop "axb" accepted
+pydantic_v2.BaseModel --field-constraints pat_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints pat_prop "ba" accepted
+pydantic_v2.BaseModel --field-constraints pat_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints pat_items ["axb"] accepted
+pydantic_v2.BaseModel --field-constraints pat_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints pat_items ["ba"] accepted
+pydantic_v2.BaseModel --field-constraints pat_map {"k": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints pat_map {"k": "axb"} accepted
+pydantic_v2.BaseModel --field-constraints pat_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints pat_map {"k": "ba"} accepted
+pydantic_v2.BaseModel --field-constraints untyped "a" rejected
+pydantic_v2.BaseModel --field-constraints untyped 5 rejected
+pydantic_v2.BaseModel --field-constraints untyped "" rejected
+pydantic_v2.BaseModel --field-constraints untyped "abcdef" rejected
+pydantic_v2.BaseModel --field-constraints untyped_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints untyped_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints untyped_prop "" accepted
+pydantic_v2.BaseModel --field-constraints untyped_prop "abcdef" accepted
+pydantic_v2.BaseModel --field-constraints untyped_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints untyped_items [5] accepted
+pydantic_v2.BaseModel --field-constraints untyped_items [""] accepted
+pydantic_v2.BaseModel --field-constraints untyped_items ["abcdef"] accepted
+pydantic_v2.BaseModel --field-constraints untyped_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints untyped_map {"k": ""} accepted
+pydantic_v2.BaseModel --field-constraints untyped_map {"k": "abcdef"} accepted
+pydantic_v2.BaseModel --field-constraints p "ab" accepted
+pydantic_v2.BaseModel --field-constraints p "a" accepted
+pydantic_v2.BaseModel --use-annotated level 0 accepted
+pydantic_v2.BaseModel --use-annotated level 10 accepted
+pydantic_v2.BaseModel --use-annotated level -1 rejected
+pydantic_v2.BaseModel --use-annotated level 11 rejected
+pydantic_v2.BaseModel --use-annotated level 1.5 rejected
+pydantic_v2.BaseModel --use-annotated level_prop 0 accepted
+pydantic_v2.BaseModel --use-annotated level_prop 10 accepted
+pydantic_v2.BaseModel --use-annotated level_prop -1 accepted
+pydantic_v2.BaseModel --use-annotated level_prop 11 accepted
+pydantic_v2.BaseModel --use-annotated level_prop 1.5 rejected
+pydantic_v2.BaseModel --use-annotated level_items [0] accepted
+pydantic_v2.BaseModel --use-annotated level_items [10] accepted
+pydantic_v2.BaseModel --use-annotated level_items [-1] accepted
+pydantic_v2.BaseModel --use-annotated level_items [11] accepted
+pydantic_v2.BaseModel --use-annotated level_items [1.5] rejected
+pydantic_v2.BaseModel --use-annotated level_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-annotated level_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-annotated level_map {"k": -1} rejected
+pydantic_v2.BaseModel --use-annotated level_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-annotated level_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --use-annotated mode 1 accepted
+pydantic_v2.BaseModel --use-annotated mode 2 accepted
+pydantic_v2.BaseModel --use-annotated mode 0 rejected
+pydantic_v2.BaseModel --use-annotated mode_prop 1 accepted
+pydantic_v2.BaseModel --use-annotated mode_prop 2 accepted
+pydantic_v2.BaseModel --use-annotated mode_prop 0 accepted
+pydantic_v2.BaseModel --use-annotated mode_items [1] accepted
+pydantic_v2.BaseModel --use-annotated mode_items [2] accepted
+pydantic_v2.BaseModel --use-annotated mode_items [0] accepted
+pydantic_v2.BaseModel --use-annotated mode_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-annotated mode_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-annotated mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-annotated pat "ab" rejected
+pydantic_v2.BaseModel --use-annotated pat "axb" rejected
+pydantic_v2.BaseModel --use-annotated pat "a" rejected
+pydantic_v2.BaseModel --use-annotated pat "ba" rejected
+pydantic_v2.BaseModel --use-annotated pat_prop "ab" accepted
+pydantic_v2.BaseModel --use-annotated pat_prop "axb" accepted
+pydantic_v2.BaseModel --use-annotated pat_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated pat_prop "ba" accepted
+pydantic_v2.BaseModel --use-annotated pat_items ["ab"] accepted
+pydantic_v2.BaseModel --use-annotated pat_items ["axb"] accepted
+pydantic_v2.BaseModel --use-annotated pat_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated pat_items ["ba"] accepted
+pydantic_v2.BaseModel --use-annotated pat_map {"k": "ab"} rejected
+pydantic_v2.BaseModel --use-annotated pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel --use-annotated pat_map {"k": "a"} rejected
+pydantic_v2.BaseModel --use-annotated pat_map {"k": "ba"} rejected
+pydantic_v2.BaseModel --use-annotated untyped "a" rejected
+pydantic_v2.BaseModel --use-annotated untyped 5 rejected
+pydantic_v2.BaseModel --use-annotated untyped "" rejected
+pydantic_v2.BaseModel --use-annotated untyped "abcdef" rejected
+pydantic_v2.BaseModel --use-annotated untyped_prop "a" accepted
+pydantic_v2.BaseModel --use-annotated untyped_prop 5 accepted
+pydantic_v2.BaseModel --use-annotated untyped_prop "" accepted
+pydantic_v2.BaseModel --use-annotated untyped_prop "abcdef" accepted
+pydantic_v2.BaseModel --use-annotated untyped_items ["a"] accepted
+pydantic_v2.BaseModel --use-annotated untyped_items [5] accepted
+pydantic_v2.BaseModel --use-annotated untyped_items [""] accepted
+pydantic_v2.BaseModel --use-annotated untyped_items ["abcdef"] accepted
+pydantic_v2.BaseModel --use-annotated untyped_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-annotated untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-annotated untyped_map {"k": ""} accepted
+pydantic_v2.BaseModel --use-annotated untyped_map {"k": "abcdef"} accepted
+pydantic_v2.BaseModel --use-annotated p "ab" accepted
+pydantic_v2.BaseModel --use-annotated p "a" accepted
+pydantic_v2.BaseModel --collapse-root-models level 0 accepted
+pydantic_v2.BaseModel --collapse-root-models level 10 accepted
+pydantic_v2.BaseModel --collapse-root-models level -1 rejected
+pydantic_v2.BaseModel --collapse-root-models level 11 rejected
+pydantic_v2.BaseModel --collapse-root-models level 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models level_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models level_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models level_prop -1 rejected
+pydantic_v2.BaseModel --collapse-root-models level_prop 11 rejected
+pydantic_v2.BaseModel --collapse-root-models level_prop 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models level_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models level_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models level_items [-1] rejected
+pydantic_v2.BaseModel --collapse-root-models level_items [11] rejected
+pydantic_v2.BaseModel --collapse-root-models level_items [1.5] rejected
+pydantic_v2.BaseModel --collapse-root-models level_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models level_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models level_map {"k": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models level_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models level_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --collapse-root-models mode 1 accepted
+pydantic_v2.BaseModel --collapse-root-models mode 2 accepted
+pydantic_v2.BaseModel --collapse-root-models mode 0 rejected
+pydantic_v2.BaseModel --collapse-root-models mode_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models mode_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models mode_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models mode_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models mode_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models mode_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models pat "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models pat "axb" rejected
+pydantic_v2.BaseModel --collapse-root-models pat "a" rejected
+pydantic_v2.BaseModel --collapse-root-models pat "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models pat_prop "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models pat_prop "axb" rejected
+pydantic_v2.BaseModel --collapse-root-models pat_prop "a" rejected
+pydantic_v2.BaseModel --collapse-root-models pat_prop "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models pat_items ["ab"] rejected
+pydantic_v2.BaseModel --collapse-root-models pat_items ["axb"] rejected
+pydantic_v2.BaseModel --collapse-root-models pat_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models pat_items ["ba"] rejected
+pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "ab"} rejected
+pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models pat_map {"k": "ba"} rejected
+pydantic_v2.BaseModel --collapse-root-models untyped "a" rejected
+pydantic_v2.BaseModel --collapse-root-models untyped 5 rejected
+pydantic_v2.BaseModel --collapse-root-models untyped "" rejected
+pydantic_v2.BaseModel --collapse-root-models untyped "abcdef" rejected
+pydantic_v2.BaseModel --collapse-root-models untyped_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_prop "" accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_prop "abcdef" accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items [""] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_items ["abcdef"] accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_map {"k": ""} accepted
+pydantic_v2.BaseModel --collapse-root-models untyped_map {"k": "abcdef"} accepted
+pydantic_v2.BaseModel --collapse-root-models p "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models p "a" rejected
+msgspec.Struct --collapse-root-models level 0 accepted
+msgspec.Struct --collapse-root-models level 10 accepted
+msgspec.Struct --collapse-root-models level -1 rejected
+msgspec.Struct --collapse-root-models level 11 rejected
+msgspec.Struct --collapse-root-models level 1.5 rejected
+msgspec.Struct --collapse-root-models level_prop 0 accepted
+msgspec.Struct --collapse-root-models level_prop 10 accepted
+msgspec.Struct --collapse-root-models level_prop -1 accepted
+msgspec.Struct --collapse-root-models level_prop 11 accepted
+msgspec.Struct --collapse-root-models level_prop 1.5 rejected
+msgspec.Struct --collapse-root-models level_items [0] accepted
+msgspec.Struct --collapse-root-models level_items [10] accepted
+msgspec.Struct --collapse-root-models level_items [-1] accepted
+msgspec.Struct --collapse-root-models level_items [11] accepted
+msgspec.Struct --collapse-root-models level_items [1.5] rejected
+msgspec.Struct --collapse-root-models level_map {"k": 0} accepted
+msgspec.Struct --collapse-root-models level_map {"k": 10} accepted
+msgspec.Struct --collapse-root-models level_map {"k": -1} rejected
+msgspec.Struct --collapse-root-models level_map {"k": 11} rejected
+msgspec.Struct --collapse-root-models level_map {"k": 1.5} rejected
+msgspec.Struct --collapse-root-models mode 1 accepted
+msgspec.Struct --collapse-root-models mode 2 accepted
+msgspec.Struct --collapse-root-models mode 0 rejected
+msgspec.Struct --collapse-root-models mode_prop 1 accepted
+msgspec.Struct --collapse-root-models mode_prop 2 accepted
+msgspec.Struct --collapse-root-models mode_prop 0 accepted
+msgspec.Struct --collapse-root-models mode_items [1] accepted
+msgspec.Struct --collapse-root-models mode_items [2] accepted
+msgspec.Struct --collapse-root-models mode_items [0] accepted
+msgspec.Struct --collapse-root-models mode_map {"k": 1} accepted
+msgspec.Struct --collapse-root-models mode_map {"k": 2} accepted
+msgspec.Struct --collapse-root-models mode_map {"k": 0} accepted
+msgspec.Struct --collapse-root-models pat "ab" rejected
+msgspec.Struct --collapse-root-models pat "axb" rejected
+msgspec.Struct --collapse-root-models pat "a" rejected
+msgspec.Struct --collapse-root-models pat "ba" rejected
+msgspec.Struct --collapse-root-models pat_prop "ab" accepted
+msgspec.Struct --collapse-root-models pat_prop "axb" accepted
+msgspec.Struct --collapse-root-models pat_prop "a" accepted
+msgspec.Struct --collapse-root-models pat_prop "ba" accepted
+msgspec.Struct --collapse-root-models pat_items ["ab"] accepted
+msgspec.Struct --collapse-root-models pat_items ["axb"] accepted
+msgspec.Struct --collapse-root-models pat_items ["a"] accepted
+msgspec.Struct --collapse-root-models pat_items ["ba"] accepted
+msgspec.Struct --collapse-root-models pat_map {"k": "ab"} rejected
+msgspec.Struct --collapse-root-models pat_map {"k": "axb"} rejected
+msgspec.Struct --collapse-root-models pat_map {"k": "a"} rejected
+msgspec.Struct --collapse-root-models pat_map {"k": "ba"} rejected
+msgspec.Struct --collapse-root-models untyped "a" rejected
+msgspec.Struct --collapse-root-models untyped 5 rejected
+msgspec.Struct --collapse-root-models untyped "" rejected
+msgspec.Struct --collapse-root-models untyped "abcdef" rejected
+msgspec.Struct --collapse-root-models untyped_prop "a" accepted
+msgspec.Struct --collapse-root-models untyped_prop 5 accepted
+msgspec.Struct --collapse-root-models untyped_prop "" accepted
+msgspec.Struct --collapse-root-models untyped_prop "abcdef" accepted
+msgspec.Struct --collapse-root-models untyped_items ["a"] accepted
+msgspec.Struct --collapse-root-models untyped_items [5] accepted
+msgspec.Struct --collapse-root-models untyped_items [""] accepted
+msgspec.Struct --collapse-root-models untyped_items ["abcdef"] accepted
+msgspec.Struct --collapse-root-models untyped_map {"k": "a"} accepted
+msgspec.Struct --collapse-root-models untyped_map {"k": 5} accepted
+msgspec.Struct --collapse-root-models untyped_map {"k": ""} accepted
+msgspec.Struct --collapse-root-models untyped_map {"k": "abcdef"} accepted
+msgspec.Struct --collapse-root-models p "ab" accepted
+msgspec.Struct --collapse-root-models p "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level 0 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level -1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level 11 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_prop 0 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_prop 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_prop -1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_prop 11 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_prop 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_items [0] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_items [10] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_items [-1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_items [11] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_items [1.5] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_map {"k": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_map {"k": -1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_map {"k": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs level_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode 0 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_prop 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_prop 2 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_prop 0 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_items [1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_items [2] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_items [0] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_map {"k": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_map {"k": 2} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat "ab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat "axb" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat "ba" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_prop "ab" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_prop "axb" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_prop "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_prop "ba" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_items ["ab"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_items ["axb"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_items ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_items ["ba"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_map {"k": "ab"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_map {"k": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs pat_map {"k": "ba"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped 5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "abcdef" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_prop "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_prop 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_prop "" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_prop "abcdef" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items [5] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items [""] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_items ["abcdef"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_map {"k": "a"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_map {"k": ""} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped_map {"k": "abcdef"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs p "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level 0 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level -1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level 11 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_prop 0 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_prop 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_prop -1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_prop 11 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_prop 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_items [0] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_items [10] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_items [-1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_items [11] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_items [1.5] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_map {"k": 0} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_map {"k": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_map {"k": -1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_map {"k": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs level_map {"k": 1.5} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode 0 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_prop 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_prop 2 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_prop 0 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_items [1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_items [2] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_items [0] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_map {"k": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_map {"k": 2} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mode_map {"k": 0} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat "ab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat "axb" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat "ba" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_prop "ab" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_prop "axb" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_prop "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_prop "ba" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_items ["ab"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_items ["axb"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_items ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_items ["ba"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_map {"k": "ab"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_map {"k": "axb"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_map {"k": "a"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs pat_map {"k": "ba"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped 5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "abcdef" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_prop "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_prop 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_prop "" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_prop "abcdef" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items [5] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items [""] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_items ["abcdef"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_map {"k": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_map {"k": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_map {"k": ""} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped_map {"k": "abcdef"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs p "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs level 0 accepted
+msgspec.Struct --use-site-models-for-constrained-refs level 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs level -1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs level 11 rejected
+msgspec.Struct --use-site-models-for-constrained-refs level 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs level_prop 0 accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_prop 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_prop -1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_prop 11 accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_prop 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs level_items [0] accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_items [10] accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_items [-1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_items [11] accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_items [1.5] rejected
+msgspec.Struct --use-site-models-for-constrained-refs level_map {"k": 0} accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_map {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_map {"k": -1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs level_map {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs level_map {"k": 1.5} rejected
+msgspec.Struct --use-site-models-for-constrained-refs mode 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs mode_prop 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_prop 2 accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_prop 0 accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_items [2] accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_items [0] accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_map {"k": 2} accepted
+msgspec.Struct --use-site-models-for-constrained-refs mode_map {"k": 0} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat "ab" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pat "axb" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pat "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pat "ba" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pat_prop "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_prop "axb" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_prop "ba" accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_items ["ab"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_items ["axb"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_items ["ba"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pat_map {"k": "ab"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs pat_map {"k": "axb"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs pat_map {"k": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs pat_map {"k": "ba"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped 5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped "" rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped "abcdef" rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped_prop "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_prop 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_prop "" accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_prop "abcdef" accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items [""] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_items ["abcdef"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_map {"k": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_map {"k": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_map {"k": ""} accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped_map {"k": "abcdef"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs p "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs p "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level 0 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level -1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level 11 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop -1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [0] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [10] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [-1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [11] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [1.5] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": -1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode 0 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_prop 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_prop 2 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_prop 0 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_items [1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_items [2] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_items [0] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_map {"k": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_map {"k": 2} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat "ab" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat "axb" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat "ba" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_prop "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_prop "axb" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_prop "ba" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_items ["ab"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_items ["axb"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_items ["ba"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_map {"k": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_map {"k": "axb"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs pat_map {"k": "ba"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped 5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "abcdef" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_prop "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_prop 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_prop "" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_prop "abcdef" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items [5] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items [""] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_items ["abcdef"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_map {"k": "a"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_map {"k": ""} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_map {"k": "abcdef"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level 0 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level -1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level 11 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_prop 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_prop -1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_prop 11 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_prop 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_items [10] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_items [-1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_items [11] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_items [1.5] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_map {"k": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_map {"k": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_map {"k": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level_map {"k": 1.5} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode 0 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_prop 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_prop 2 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_prop 0 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_items [1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_items [2] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_items [0] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_map {"k": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_map {"k": 2} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mode_map {"k": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat "axb" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_prop "ab" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_prop "axb" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_prop "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_prop "ba" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_items ["ab"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_items ["axb"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_items ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_items ["ba"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_map {"k": "ab"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_map {"k": "axb"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_map {"k": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs pat_map {"k": "ba"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped 5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "abcdef" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_prop "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_prop 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_prop "" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_prop "abcdef" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items ["a"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items [5] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items [""] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_items ["abcdef"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_map {"k": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_map {"k": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_map {"k": ""} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped_map {"k": "abcdef"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs p "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs p "a" rejected

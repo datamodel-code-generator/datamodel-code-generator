@@ -99,7 +99,7 @@ class Cat:
 
 @dataclass
 class NamedCat(Cat):
-    kind: str
+    kind: str | None
     name: str | None
 
 
