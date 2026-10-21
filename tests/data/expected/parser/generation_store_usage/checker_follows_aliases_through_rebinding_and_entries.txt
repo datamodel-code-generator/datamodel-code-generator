@@ -1,8 +1,8 @@
-5 chained extras.clear(): extras.clear() changes Fact.METADATA, RenderFact.IMPORT_ALIASES outside GenerationStore operations
+5 chained extras.clear(): use GenerationStore.drop_field_discriminator() or set_field_extra() or set_field_extras() instead of writing extras.clear()
 7 chained _internal_template_data["config"].update(): _internal_template_data["config"].update() changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 8 chained _internal_template_data["config"]: _internal_template_data["config"] changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 10 chained _internal_template_data["config"] |=: _internal_template_data["config"] |= changes RenderFact.BACKEND_CONFIG, RenderFact.MODULE_CODE, RenderFact.SET_ITEM_HASH outside GenerationStore operations
 13 chained __dict__["_forced_field_assignment"].update(): __dict__["_forced_field_assignment"].update() changes RenderFact.FORCED_ASSIGNMENT outside GenerationStore operations
 15 chained __dict__[...] |=: __dict__[...] |= writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 18 chained _dedup_key_cache.clear(): _dedup_key_cache.clear() caches state on a mutable DataModel; keep derived values in a per-parse store memo
-20 chained extras["discriminator"].update(): extras["discriminator"].update() changes Fact.DISCRIMINATOR_TAGS outside GenerationStore operations
+20 chained extras["discriminator"].update(): use GenerationStore.drop_field_discriminator() or set_field_extra() instead of writing extras["discriminator"].update()

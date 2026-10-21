@@ -65,12 +65,21 @@ IMPORT_CACHE_NEUTRAL_MUTATION_METHODS = frozenset({
     "register_model",
 })
 IMPORT_CACHE_CALLER_MUTATION_METHODS = frozenset({
+    "add_model_import",
     "apply_const",
+    "drop_field_discriminator",
     "drop_union_member_constraints",
+    "override_type_import",
+    "require_field",
+    "set_field_constraints",
+    "set_field_default",
+    "set_field_extra",
+    "set_field_extras",
     "swap_data_type",
     "use_assignment_for_forward_references",
 })
-"""Operations that run a model hook or swap a nested type and leave the import caches to their callers."""
+"""Operations that run a model hook, swap a nested type or write a field or model value, and leave the import caches
+to their callers."""
 GENERATION_MODEL_LIST_MUTATION_METHODS = frozenset({
     "__delitem__",
     "__iadd__",

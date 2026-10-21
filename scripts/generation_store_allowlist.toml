@@ -277,7 +277,6 @@ default = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__apply_discriminator_type"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
-'extras["discriminator"]' = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__apply_generic_base_class"]
 _additional_imports = 2
@@ -291,25 +290,15 @@ name = 1
 alias = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__collapse_root_models_in_scope"]
-'__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY]' = 1
-constraints = 2
 discriminator = 1
-extras = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__defer_recursive_containers"]
 alias = 1
 use_union_operator = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser.__deserialize_decimal_default"]
-default = 1
-
 ["src/datamodel_code_generator/parser/base.py"."Parser.__disable_union_operator_for_forward_ref"]
 use_standard_collections = 1
 use_union_operator = 2
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__flatten_base_layouts.adopt"]
-required = 1
-use_default_with_required = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__import_enum_member_literal_classes"]
 enum_member_literals = 1
@@ -317,15 +306,8 @@ enum_member_literals = 1
 ["src/datamodel_code_generator/parser/base.py"."Parser.__init__"]
 results = 1
 
-["src/datamodel_code_generator/parser/base.py"."Parser.__replace_unique_list_to_set"]
-default = 1
-
 ["src/datamodel_code_generator/parser/base.py"."Parser.__set_default_enum_member"]
 alias = 1
-default = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser.__set_reference_default_value_to_field"]
-default = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser.__set_reference_expression"]
 alias = 1
@@ -333,9 +315,6 @@ alias = 1
 ["src/datamodel_code_generator/parser/base.py"."Parser.__update_type_aliases"]
 alias = 1
 has_forward_reference = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser._append_model_import"]
-'_additional_imports.append()' = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._apply_final_class_field_aliases"]
 '__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]' = 1
@@ -346,15 +325,11 @@ validation_aliases = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_data_type"]
 alias = 1
-import_ = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._apply_override_to_field"]
 alias = 1
 import_ = 1
 kwargs = 1
-
-["src/datamodel_code_generator/parser/base.py"."Parser._decide_overridden_constraints"]
-constraints = 1
 
 ["src/datamodel_code_generator/parser/base.py"."Parser._flatten_invalid_modules"]
 '_dedup_key_cache.clear()' = 1
@@ -397,9 +372,6 @@ use_serialization_alias = 2
 validation_aliases = 2
 write_only = 1
 
-["src/datamodel_code_generator/parser/base.py"."_drop_discriminator_tag_patterns"]
-constraints = 1
-
 ["src/datamodel_code_generator/parser/base.py"."_flatten_union_members"]
 data_types = 1
 
@@ -418,10 +390,6 @@ tuple_item_count = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_register_data_type_import"]
 alias = 1
-
-["src/datamodel_code_generator/parser/base.py"."_remove_discriminator"]
-discriminator = 1
-'extras.pop("discriminator")' = 1
 
 ["src/datamodel_code_generator/parser/base.py"."_rename_field_preserving_alias"]
 alias = 1

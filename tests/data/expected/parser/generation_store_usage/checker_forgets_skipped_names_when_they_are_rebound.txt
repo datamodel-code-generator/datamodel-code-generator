@@ -1,12 +1,12 @@
-4 loop required: required changes Fact.REQUIRED outside GenerationStore operations
-9 context required: required changes Fact.REQUIRED outside GenerationStore operations
-14 comprehension required: required changes Fact.REQUIRED outside GenerationStore operations
-21 handler required: required changes Fact.REQUIRED outside GenerationStore operations
-26 unpacking required: required changes Fact.REQUIRED outside GenerationStore operations
-31 augmented required: required changes Fact.REQUIRED outside GenerationStore operations
-36 asynchronous required: required changes Fact.REQUIRED outside GenerationStore operations
+4 loop required: use GenerationStore.require_field() instead of writing required
+9 context required: use GenerationStore.require_field() instead of writing required
+14 comprehension required: use GenerationStore.require_field() instead of writing required
+21 handler required: use GenerationStore.require_field() instead of writing required
+26 unpacking required: use GenerationStore.require_field() instead of writing required
+31 augmented required: use GenerationStore.require_field() instead of writing required
+36 asynchronous required: use GenerationStore.require_field() instead of writing required
 41 in_place __dict__ |=: __dict__ |= writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 42 in_place __dict__ |=: __dict__ |= writes a computed __dict__ key that ATTRIBUTE_FACTS cannot classify
 44 in_place _dedup_key_cache |=: _dedup_key_cache |= caches state on a mutable DataModel; keep derived values in a per-parse store memo
-46 in_place extras |=: extras |= changes Fact.METADATA, RenderFact.IMPORT_ALIASES outside GenerationStore operations
-47 in_place extras["kept"]: extras["kept"] changes Fact.METADATA, RenderFact.IMPORT_ALIASES outside GenerationStore operations
+46 in_place extras |=: use GenerationStore.drop_field_discriminator() or set_field_extra() or set_field_extras() instead of writing extras |=
+47 in_place extras["kept"]: use GenerationStore.drop_field_discriminator() or set_field_extra() or set_field_extras() instead of writing extras["kept"]

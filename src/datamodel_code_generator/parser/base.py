@@ -58,6 +58,7 @@ from datamodel_code_generator import (
 from datamodel_code_generator._checks import CheckArea, CheckMode, check_mode, read_check_flags
 from datamodel_code_generator._constraint_applicability import (
     TAG_LITERAL_UNTAKEN_KEYWORD,
+    TYPE_DEPENDENT_CONSTRAINTS_KEY,
     overridden_declared_constraints,
     resplit_overridden_constraints,
     untaken_minimums,
@@ -322,7 +323,7 @@ def _string_or_identifier_pattern(text: str, target_python_version: PythonVersio
 _TOP_LEVEL_FUTURE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from __future__ import ")
 _TOP_LEVEL_RELATIVE_IMPORT_PATTERN: Final = re.compile(r"(?m)^from \.")
 
-_TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
+_TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = TYPE_DEPENDENT_CONSTRAINTS_KEY
 _DECIMAL_WARNING_EXAMPLE_LIMIT: Final = 5
 _ADDITIONAL_IMPORTS: Final = ImportProducer("additional-imports")
 _DEFERRED_ANNOTATIONS: Final = ImportProducer("deferred-annotations")
@@ -2959,11 +2960,6 @@ def _get_mapped_discriminator_tag(
     return Parser._get_enum_discriminator_literal(enum_source, values[0]) if enum_source else values[0]  # noqa: SLF001
 
 
-def _remove_discriminator(field: DataModelFieldBase) -> None:
-    field.extras.pop("discriminator", None)
-    field.data_type.discriminator = None
-
-
 def _discriminator_tag_constraints(field: DataModelFieldBase) -> tuple[ConstraintsBase, dict[str, Any], str] | None:
     """Return the constraints of a tag an output model writes as ``Field()`` arguments, their values and pattern."""
     if not field.SUPPORTS_FIELD_CONSTRAINTS or not isinstance(constraints := field.constraints, ConstraintsBase):
@@ -2986,6 +2982,7 @@ def _tag_satisfies_pattern(value: DiscriminatorValue, pattern: str) -> bool:
 
 
 def _drop_discriminator_tag_patterns(
+    store: GenerationStore,
     tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
 ) -> None:
     """Write the tags of a union without patterns where an output model writes constraints as ``Field()`` arguments.
@@ -3005,7 +3002,7 @@ def _drop_discriminator_tag_patterns(
     ):
         return
     for field, (constraints, values, _), _ in patterned:
-        field.constraints = type(constraints).model_validate(values)
+        store.set_field_constraints(field, type(constraints).model_validate(values))
         field.invalidate_semantic_caches()
 
 
@@ -5289,11 +5286,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     field_name=property_name, model_type=self.field_name_model_type
                 )
                 mapping = discriminator.get("mapping", {})
-                field.extras["discriminator"] = discriminator = {**discriminator, "propertyName": field_name}
+                discriminator = {**discriminator, "propertyName": field_name}
+                self.generation_store.set_field_extra(field, "discriminator", discriminator)
                 # Any type cannot be a discriminated union variant (Pydantic v2 rejects it)
                 has_any_variant = any(_is_any_variant(dt) for dt in field.data_type.data_types)
                 if has_any_variant:  # pragma: no cover
-                    _remove_discriminator(field)
+                    self.generation_store.drop_field_discriminator(field)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                     continue
                 if not _discriminator_variants_are_valid(
@@ -5303,7 +5301,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     original_name=property_name if field.SUPPORTS_DISCRIMINATOR else None,
                     enum_member_tags=self.use_enum_values_in_discriminator,
                 ):
-                    _remove_discriminator(field)
+                    self.generation_store.drop_field_discriminator(field)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                     continue
                 tag_fields: list[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]] = [
@@ -5498,7 +5496,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                                 discriminator_field,
                                 _get_mapped_discriminator_tag(discriminator_values, base_enum_source),
                             ))
-                _drop_discriminator_tag_patterns(tag_fields)
+                _drop_discriminator_tag_patterns(self.generation_store, tag_fields)
                 if not tags:
                     continue
                 if tagged_unions:
@@ -5553,7 +5551,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                             self.generation_store.note_changed_models(model)
                             _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
                             continue
-                        model_field.default = converted_default
+                        self.generation_store.set_field_default(model_field, converted_default)
                     self.generation_store.replace_field_type(model_field, set_data_type)
                     changed = True
         if changed and not can_retain_cache:
@@ -5594,9 +5592,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 continue
             model.enable_identity_hash()
 
-    @classmethod
     def __set_reference_default_value_to_field(
-        cls,
+        self,
         models: list[DataModel],
         *,
         can_retain_cache: bool,
@@ -5610,7 +5607,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     and model_field.data_type.reference.source.default != UNDEFINED
                 ):
                     # pragma: no cover
-                    model_field.default = model_field.data_type.reference.source.default
+                    self.generation_store.set_field_default(model_field, model_field.data_type.reference.source.default)
                     _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __require_update_action(
@@ -6048,10 +6045,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     if isinstance(field_ := data_type.parent, self.data_model_field_type):
                         # for field
                         # override empty field by root-type field
-                        model_field.extras = {
-                            **root_type_field.extras,
-                            **model_field.extras,
-                        }
+                        generation_store.set_field_extras(model_field, {**root_type_field.extras, **model_field.extras})
                         if root_type_field.runtime_expression_imports:
                             model_field._set_runtime_expression_imports(  # noqa: SLF001
                                 (
@@ -6062,15 +6056,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         generation_store.apply_const(model_field, refresh="deferred")
 
                         if self.field_constraints:
-                            model_field.constraints = ConstraintsBase.merge_constraints(
-                                root_type_field.constraints, model_field.constraints
+                            generation_store.set_field_constraints(
+                                model_field,
+                                ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
+                                type_dependent=root_type_field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY),
                             )
-                            if (
-                                type_dependent_constraints := root_type_field.__dict__.get(
-                                    _TYPE_DEPENDENT_CONSTRAINTS_KEY
-                                )
-                            ) is not None:
-                                model_field.__dict__[_TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent_constraints
 
                         replacement_context = generation_store._replace_data_type_and_detach_data_type_ref(  # noqa: SLF001
                             data_type,
@@ -6081,8 +6071,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                     elif isinstance(parent_data_type := data_type.parent, DataType) and parent_data_type.is_list:
                         if self.field_constraints:
-                            model_field.constraints = ConstraintsBase.merge_constraints(
-                                root_type_field.constraints, model_field.constraints
+                            generation_store.set_field_constraints(
+                                model_field,
+                                ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),
                             )
                         discriminator = root_type_field.extras.get("discriminator")
                         if discriminator and root_type_field.SUPPORTS_DISCRIMINATOR:
@@ -6395,7 +6386,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 default = enum_members or default
                 if default is model_field.default:
                     continue
-                model_field.default = default
+                self.generation_store.set_field_default(model_field, default)
                 _clear_model_imports_cache_if_retained(model, can_retain_cache=can_retain_cache)
 
     def __set_validate_default_on_fields(
@@ -6487,8 +6478,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             except (InvalidOperation, TypeError, ValueError):
                 self.__record_decimal_default_warning(model, field)
                 return False
-        field.default = PythonRuntimeExpression.from_import_call(
-            descriptor.constructor_import, repr(value), value=value
+        self.generation_store.set_field_default(
+            field, PythonRuntimeExpression.from_import_call(descriptor.constructor_import, repr(value), value=value)
         )
         field._set_runtime_expression_imports((descriptor.constructor_import,))  # noqa: SLF001
         self._register_runtime_expression()
@@ -7350,7 +7341,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     self._base_stand_ins[id(base_class)] = reference
                     base_classes_overridden = True
                     for import_ in base_class.all_imports:
-                        Parser._append_model_import(model, import_)
+                        self.generation_store.add_model_import(model, import_)
             if base_classes_overridden:
                 model.clear_imports_cache()
 
@@ -7430,7 +7421,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 path, target, number_values=True, target_model_version=minimum
             ),
         )
-        field.constraints = type(constraints).model_validate(values) if is_model else values
+        self.generation_store.set_field_constraints(
+            field, type(constraints).model_validate(values) if is_model else values
+        )
 
     def _mark_untaken_constraints(
         self,
@@ -7461,18 +7454,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ),
         )
 
-    @staticmethod
-    def _append_model_import(model: DataModel, import_: Import) -> None:
-        """Append an import to a model once."""
-        if import_ in model.imports:
-            return
-        model._additional_imports.append(import_)  # noqa: SLF001
-
     def _apply_override_to_data_type(self, data_type: DataType) -> bool:
         """Recursively apply model-level overrides to a DataType."""
         overridden = False
         if data_type.reference and (override_import := self._model_type_override_imports.get(data_type.reference.name)):
-            data_type.import_ = override_import
+            self.generation_store.override_type_import(data_type, override_import)
             data_type.alias = override_import.import_
             self.generation_store.detach_data_type_ref(data_type)
             overridden = True
@@ -10708,9 +10694,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if id(field) not in own_fields:
                 field = self._copy_model_field(field)
             if required and not field.required:
-                field.required = True
-                if self.apply_default_values_for_required_fields and field.has_default:
-                    field.use_default_with_required = True
+                self.generation_store.require_field(
+                    field,
+                    use_default_with_required=self.apply_default_values_for_required_fields and field.has_default,
+                )
             return field
 
         fields = model.flatten_base_layouts(adopt)

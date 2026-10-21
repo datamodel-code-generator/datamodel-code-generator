@@ -1,9 +1,9 @@
 [exact]
 [one short]
-4 write required: required changes Fact.REQUIRED outside GenerationStore operations
+4 write required: use GenerationStore.require_field() instead of writing required
 [one over, other path]
 0 write required: stale allowlist entry 'required': expected 3, found 2; remove or lower it in scripts/generation_store_allowlist.toml
 [other function]
-3 write required: required changes Fact.REQUIRED outside GenerationStore operations
-4 write required: required changes Fact.REQUIRED outside GenerationStore operations
+3 write required: use GenerationStore.require_field() instead of writing required
+4 write required: use GenerationStore.require_field() instead of writing required
 0 renamed required: stale allowlist entry 'required': expected 2, found 0; remove or lower it in scripts/generation_store_allowlist.toml

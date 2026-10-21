@@ -73,6 +73,7 @@ __all__ = [
     "STRING_KEYWORD_ORDER",
     "STRING_LENGTH_KEYWORD_ORDER",
     "TAG_LITERAL_UNTAKEN_KEYWORD",
+    "TYPE_DEPENDENT_CONSTRAINTS_KEY",
     "TYPE_DEPENDENT_KEYWORDS",
     "DeclaredKinds",
     "OutputKeywords",
@@ -132,6 +133,8 @@ LITERAL_DECIDABLE_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS | LENGTH_KEY
 
 VALUES_AS_WRITTEN_KEY: Final = "_values_as_written"
 """The key under which a type, model or schema holding only the values a literal check admits keeps them as written."""
+TYPE_DEPENDENT_CONSTRAINTS_KEY: Final = "_type_dependent_constraints"
+"""The key under which a field keeps the declared constraints whose keywords depend on the type it emits."""
 
 _KEYWORD_KINDS: Final[tuple[tuple[frozenset[str], frozenset[str]], ...]] = (
     (frozenset({"string"}), STRING_KEYWORDS),

@@ -261,6 +261,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
         Phase.RENDER,
         FreezePoint.RENDER,
+        store_ops=("override_type_import",),
     ),
     AttributeFact(
         "DataType",
@@ -338,7 +339,13 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("DataType", "treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataType", "use_serialize_as_any", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
-        "DataType", "discriminator", FactKind.FACT, (Fact.DISCRIMINATOR_TAGS,), Phase.MODULES, FreezePoint.B1
+        "DataType",
+        "discriminator",
+        FactKind.FACT,
+        (Fact.DISCRIMINATOR_TAGS,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("drop_field_discriminator",),
     ),
     AttributeFact(
         "DataType",
@@ -413,9 +420,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION),
         Phase.IMPORTS,
         FreezePoint.B2,
+        store_ops=("set_field_default",),
     ),
     AttributeFact(
-        "DataModelFieldBase", "required", FactKind.FACT, (Fact.REQUIRED,), Phase.CROSS_MODULE, FreezePoint.B1
+        "DataModelFieldBase",
+        "required",
+        FactKind.FACT,
+        (Fact.REQUIRED,),
+        Phase.CROSS_MODULE,
+        FreezePoint.B1,
+        store_ops=("require_field",),
     ),
     AttributeFact("DataModelFieldBase", "alias", FactKind.FACT, (Fact.FIELD_ALIASES,), Phase.MODULES, FreezePoint.B1),
     AttributeFact(
@@ -440,7 +454,13 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         store_ops=("apply_const", "replace_field_type", "swap_data_type"),
     ),
     AttributeFact(
-        "DataModelFieldBase", "constraints", FactKind.FACT, (Fact.CONSTRAINTS,), Phase.MODULES, FreezePoint.B1
+        "DataModelFieldBase",
+        "constraints",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("set_field_constraints",),
     ),
     AttributeFact("DataModelFieldBase", "strip_default_none", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
@@ -461,6 +481,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.METADATA, RenderFact.IMPORT_ALIASES),
         Phase.IMPORTS,
         FreezePoint.RENDER,
+        store_ops=("drop_field_discriminator", "set_field_extra", "set_field_extras"),
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -470,6 +491,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.DISCRIMINATOR_TAGS,),
         Phase.MODULES,
         FreezePoint.B1,
+        store_ops=("drop_field_discriminator", "set_field_extra"),
         access=Access.ITEM,
     ),
     AttributeFact(
@@ -572,6 +594,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.REQUIRED,),
         Phase.CROSS_MODULE,
         FreezePoint.B1,
+        store_ops=("require_field",),
     ),
     AttributeFact(
         "DataModelFieldBase", "_field_imports_cache", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CONTAINER
@@ -610,6 +633,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
         FreezePoint.B1,
+        store_ops=("set_field_constraints",),
         access=Access.DICT_KEY,
     ),
     AttributeFact(
@@ -806,6 +830,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.MODULE_IMPORTS,),
         Phase.RENDER,
         FreezePoint.RENDER,
+        store_ops=("add_model_import",),
         access=Access.CONTAINER,
     ),
     AttributeFact("DataModel", "custom_base_class", FactKind.FACT, (Fact.BASES,), Phase.PARSE, FreezePoint.B1),

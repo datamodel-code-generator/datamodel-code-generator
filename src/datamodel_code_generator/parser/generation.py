@@ -50,7 +50,7 @@ from typing_extensions import override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._checks import CheckArea, check_mode
-from datamodel_code_generator._constraint_applicability import VALUES_AS_WRITTEN_KEY
+from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY, VALUES_AS_WRITTEN_KEY
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
@@ -75,6 +75,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from datamodel_code_generator._checks import CheckMode
+    from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._views import ModelView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._graph_ids import KeyedModels
@@ -106,6 +107,7 @@ _REPLACEMENT_LAST = UnionPolicy("legacy-replacement-last")
 OrderedSet: TypeAlias = dict[_OrderedSetItem, None]
 
 GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
+    "add_model_import",
     "append_field",
     "apply_const",
     "collapse_root_data_type",
@@ -113,10 +115,12 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "detach_data_type_ref",
     "detach_model_data_type_refs",
     "discard_derived_facts",
+    "drop_field_discriminator",
     "drop_union_member_constraints",
     "insert_field",
     "move_model",
     "note_changed_models",
+    "override_type_import",
     "record_values_as_written",
     "redirect_model_reference_users",
     "redirect_reference_users",
@@ -126,8 +130,13 @@ GENERATION_STORE_MUTATION_METHODS: frozenset[str] = frozenset({
     "replace_data_type_ref",
     "replace_field_type",
     "replace_nested_data_type",
+    "require_field",
     "reset_base_classes",
     "set_base_classes",
+    "set_field_constraints",
+    "set_field_default",
+    "set_field_extra",
+    "set_field_extras",
     "set_fields",
     "set_nested_data_types",
     "swap_data_type",
@@ -1744,6 +1753,55 @@ class GenerationStore:  # noqa: PLR0904
         self.note_changed_models(model)
         self._refresh_after_write(refresh)
         return True
+
+    @staticmethod
+    def set_field_default(field_: DataModelFieldBase, default: Any) -> None:
+        """Write a field's default, which the facts do not record, so they stay current."""
+        field_.default = default
+
+    @staticmethod
+    def require_field(field_: DataModelFieldBase, *, use_default_with_required: bool) -> None:
+        """Make a field required, and write its default beside it when ``use_default_with_required``."""
+        field_.required = True
+        if use_default_with_required:
+            field_.use_default_with_required = True
+
+    @staticmethod
+    def set_field_constraints(
+        field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None = None
+    ) -> None:
+        """Write a field's constraints and, when given, the constraints that its type decides."""
+        field_.constraints = constraints
+        if type_dependent is not None:
+            field_.__dict__[TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent
+
+    @staticmethod
+    def set_field_extras(field_: DataModelFieldBase, extras: dict[str, Any]) -> None:
+        """Give a field a new extras dict."""
+        field_.extras = extras
+
+    @staticmethod
+    def set_field_extra(field_: DataModelFieldBase, key: str, value: Any) -> None:
+        """Write one entry into a field's extras dict, which every holder of the dict sees."""
+        field_.extras[key] = value
+
+    @staticmethod
+    def drop_field_discriminator(field_: DataModelFieldBase) -> None:
+        """Drop a field's discriminator from its extras and from its type, which every holder of the type sees."""
+        field_.extras.pop("discriminator", None)
+        field_.data_type.discriminator = None
+
+    @staticmethod
+    def override_type_import(data_type: DataType, import_: Import) -> None:
+        """Make a data type name ``import_``, which every holder of the type sees."""
+        data_type.import_ = import_
+
+    @staticmethod
+    def add_model_import(model: DataModel, import_: Import) -> None:
+        """Add an import to a model once."""
+        if import_ in model.imports:
+            return
+        model._additional_imports.append(import_)  # noqa: SLF001
 
     def replace_nested_data_type(
         self,

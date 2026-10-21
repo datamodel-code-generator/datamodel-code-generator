@@ -302,6 +302,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
 
     assert sorted(checker.GENERATION_STORE_MUTATION_METHODS) == snapshot(
         [
+            "add_model_import",
             "append_field",
             "apply_const",
             "collapse_root_data_type",
@@ -309,10 +310,12 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "detach_data_type_ref",
             "detach_model_data_type_refs",
             "discard_derived_facts",
+            "drop_field_discriminator",
             "drop_union_member_constraints",
             "insert_field",
             "move_model",
             "note_changed_models",
+            "override_type_import",
             "record_values_as_written",
             "redirect_model_reference_users",
             "redirect_reference_users",
@@ -322,8 +325,13 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "replace_data_type_ref",
             "replace_field_type",
             "replace_nested_data_type",
+            "require_field",
             "reset_base_classes",
             "set_base_classes",
+            "set_field_constraints",
+            "set_field_default",
+            "set_field_extra",
+            "set_field_extras",
             "set_fields",
             "set_nested_data_types",
             "swap_data_type",
@@ -881,7 +889,7 @@ def test_cli_checks_paths_and_writes_the_allowlist(
     assert (clean, failing, created, created_output, created_matches, refused) == snapshot((0, 1, 0, "", True, 1))
     assert failing_output == snapshot("""\
 GenerationStore usage violations found:
-<tmp>/bad.py:2:5: required changes Fact.REQUIRED outside GenerationStore operations (in write)
+<tmp>/bad.py:2:5: use GenerationStore.require_field() instead of writing required (in write)
 """)
     assert refused_output.splitlines()[:2] == snapshot([
         "Refusing to add allowlist entries; route these writes through GenerationStore:",
