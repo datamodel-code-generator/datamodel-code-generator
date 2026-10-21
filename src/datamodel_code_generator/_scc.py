@@ -25,9 +25,7 @@ class _SortableNode(Protocol):
 
 NodeT = TypeVar("NodeT", bound=_SortableNode)
 ModulePath: TypeAlias = tuple[str, ...]
-ModuleGraph: TypeAlias = dict[ModulePath, set[ModulePath]]
 SCC: TypeAlias = set[ModulePath]
-SCCList: TypeAlias = list[SCC]
 
 _EMPTY_SET: frozenset[Any] = frozenset()
 
