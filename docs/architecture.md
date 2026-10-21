@@ -452,15 +452,18 @@ bypasses the ledger fails the check, which the test suite turns on.
 **L7.** `_generate_module_output` builds the import block, calls the backend's `render_module_code`, renders each
 model and formats the body. `DataModel.render` uses the compiled renderer in `model/_compiled_templates/` for built-in
 templates and Jinja2 when a custom template directory is set. Type-alias styles are chosen when the parser is built
-(`model/__init__.py:get_data_model_types`). Rendering is not read-only. Rendering a type hint or collecting a field's
-imports writes `is_optional` on shared nodes through `types.py:DataType._materialize_render_state` (msgspec's
-`_strip_null` writes it on its own copies): `type_hint` adds the None
-of a nullable model that the type names; `types.py:DataType._render_union_type_hint` makes a union optional when a
-member's hint includes None; `model/base.py:DataModelFieldBase._normalize_data_type_import_state`, which import
-collection runs, applies the first write and makes a union optional for a `null` member; and
-`parser/base.py:_flatten_union_members` (L5 finalize) moves member nullability onto the union. Import collection
-already runs in L3 deduplication, so `is_optional` read before L7 depends on what ran first. A decision before L7
-reads `types.py:DataType.admits_none`, which computes the rendered nullability with
+(`model/__init__.py:get_data_model_types`). Rendering a type hint and collecting a field's imports write no
+nullability: `type_hint` renders the None of the type, of the nullable model it names and, for a union, of the members
+whose hints strip it (`types.py:DataType._hint_null_source`), and import collection reads
+`types.py:DataType.admits_none`. Render preparation writes rendered nullability once, in its first pass
+(`parser/base.py:Parser.__finalize_rendered_nullability`, after the module bodies, whose type-alias updates write the
+union operators and quotes the members' hints read), through `types.py:DataType._materialize_render_state`, which marks
+the None it adds; msgspec's top-level None and the `Field()` default plan read the value without it
+(`legacy-msgspec-top-level-null-as-written`, `legacy-strip-keeps-written-null-only`). Before it, only
+`parser/base.py:_flatten_union_members` (L5 finalize), which moves member nullability onto the union, and L3's
+`DataModel._write_pre_render_nullability` (`legacy-l3-import-nullability`, which overrides and constructor ordering
+read) write it; msgspec's `_strip_null` writes it on its own copies at L7. A decision before render preparation reads
+`types.py:DataType.admits_none`, which computes the rendered nullability with
 `model/_decisions/nullability.py:rendered_nullability` without writing it. A RootModel decides its config items, and
 adds or drops its `ConfigDict` import, when it renders (`model/pydantic_v2/root_model.py:RootModel._sync_config_items`),
 after the module's import block is built: the named row `legacy.rootmodel-config-late-import` of the import ledger.
@@ -520,7 +523,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | STRUCTURE | `reset_collapsed_reuse_state` | global | bookkeeping | - | - |  |
 | STRUCTURE | `snapshot_union_tags` | global | plan | PLANS | DISCRIMINATOR_TAGS | Records the tags of discriminated unions before any model is merged. Runs when: reuse_model. |
 | STRUCTURE | `delete_duplicate_models` | module | transform | BASES, CLASS_NAMES, FIELD_TYPES, MODELS_EXIST, NULLABLE | every Fact, CLASS_NAMES, FIELD_ORDER, MODULE_MEMBERSHIP | Removes models of the module that render the same as another and redirects their users. |
-| STRUCTURE | `replace_duplicate_name_in_module` | module | transform | CLASS_NAMES, NULLABLE | CLASS_NAMES, MODULE_IMPORTS | Makes class names unique within a module; collecting the imports writes rendered nullability. After `delete_duplicate_models`: renames the duplicates that deletion keeps. |
+| STRUCTURE | `replace_duplicate_name_in_module` | module | transform | CLASS_NAMES, NULLABLE | CLASS_NAMES, MODULE_IMPORTS | Makes class names unique within a module; row legacy-l3-import-nullability writes nullability first. After `delete_duplicate_models`: renames the duplicates that deletion keeps. |
 | STRUCTURE | `apply_forced_invalid_dotted_stdout_repair` | global | transform | CLASS_NAMES, MODULE_MEMBERSHIP | CLASS_NAMES, MODULE_MEMBERSHIP | Flattens the modules of dotted stdout output that a retry found invalid, then regroups. After `replace_duplicate_name_in_module`: flattens invalid roots under the names deduplication gave. |
 | STRUCTURE | `reuse_model_tree_scope` | global | transform | BASES, FIELD_SET, FIELD_TYPES, MODELS_EXIST, MODULE_MEMBERSHIP, NULLABLE | every Fact, FIELD_ORDER, MODULE_MEMBERSHIP, PLANS | Moves models duplicated across modules into a shared module. Runs when: reuse_model with the tree scope. After `apply_forced_invalid_dotted_stdout_repair`: shares the duplicates of the repaired module layout. |
 | STRUCTURE | `resolve_circular_imports` | global | transform | CLASS_NAMES, MODULE_MEMBERSHIP | BASES, FIELD_TYPES, MODULE_MEMBERSHIP | Merges modules that import each other into _internal modules. After `reuse_model_tree_scope`: breaks the cycles of the modules tree-scope reuse leaves, its shared module included. |
@@ -571,6 +574,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | RENDER_PREPARATION | `warn_required_assignments_after_defaults` | module | check | STDERR | DEFAULTS, FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED |  |
 | RENDER_PREPARATION | `clear_module_imports_cache` | module | bookkeeping | - | - | Runs when: the module cannot keep its imports cache. |
 | RENDER_PREPARATION | `fix_tag_opt_out_field_ordering` | global | repair | KEYWORD_ONLY | BASES, DEFAULTS, FIELD_SET, KEYWORD_ONLY, REQUIRED | Runs when: msgspec. Removed by G08. After `warn_required_assignments_after_defaults`: the pydantic warning and this msgspec repair never read or write the same models. |
+| RENDER_PREPARATION | `finalize_rendered_nullability` | global | transform | FIELD_TYPES, NULLABLE | FIELD_TYPES, NULLABLE, QUOTING | Writes the None each type hint renders, once, after the module bodies set union operators and quotes; rendering and import collection write none. Rendering the members' hints writes the import of the Any an empty union renders as. |
 | RENDER_PREPARATION | `collect_all_models` | global | bookkeeping | - | - |  |
 | RENDER_PREPARATION | `prepare_type_alias_fields` | global | transform | METADATA, MODULE_IMPORTS, TYPE_ALIAS_BODY | FIELD_TYPES, MODELS_EXIST, MODEL_KIND | Rewrites the bodies of type aliases (alias bodies are not part of FIELD_TYPES) and compiles patterns. |
 | RENDER_PREPARATION | `finalize_type_alias_users` | global | transform | BACKEND_CONFIG | FIELD_TYPES, MODEL_KIND | Lets the backend configure the models that use type aliases (model hook). |
@@ -578,7 +582,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | RENDER_PREPARATION | `finalize_structured_imports` | global | transform | DEFAULT_EXPRESSION, IMPORT_ALIASES, MODULE_IMPORTS | CONSTRAINTS, DEFAULTS, FIELD_NAMES, MODULE_IMPORTS | Aliases imports that runtime default expressions shadow (Avro also aligns shared defaults). Moves to IMPORTS. After `prepare_type_alias_fields`: aliases imports after alias bodies dropped their con* imports. |
 | RENDER_PREPARATION | `clear_default_factory_import_caches` | global | bookkeeping | - | - | Runs when: use_default_factory_for_optional_nested_models. |
 | RENDER_PREPARATION | `finalize_sequence_interface` | global | transform | BACKEND_CONFIG | CLASS_NAMES, FIELD_TYPES, MODEL_KIND | Runs when: use_root_model_sequence_interface. After `finalize_type_alias_users`: both write backend config; the sequence interface is decided last. |
-| IMPORTS | `snapshot_model_imports` | global | plan | NULLABLE | every Fact, BACKEND_CONFIG, DEFAULT_EXPRESSION, IMPORT_ALIASES, QUOTING, TYPE_ALIAS_BODY | Collects the imports of every model once, which writes rendered nullability; B2 precedes it. |
+| IMPORTS | `snapshot_model_imports` | global | plan | - | every Fact, BACKEND_CONFIG, DEFAULT_EXPRESSION, IMPORT_ALIASES, QUOTING, TYPE_ALIAS_BODY | Collects the imports of every model once; B2 precedes it. |
 | IMPORTS | `append_model_imports` | global | transform | MODULE_IMPORTS | - |  |
 | IMPORTS | `remove_unused_models` | global | transform | MODELS_EXIST, MODULE_IMPORTS, MODULE_MEMBERSHIP | MODELS_EXIST | Removes the models that collapse left unused from their modules. After `append_model_imports`: removes the imports of unused models after every model added its imports. After `snapshot_model_imports`: the snapshot holds the imports of unused models, which leave with them. |
 | IMPORTS | `validate_explicit_field_aliases` | global | check | - | FIELD_ALIASES, FIELD_NAMES | Runs when: aliases. |
@@ -604,7 +608,7 @@ reads and the writes of presentation rows are declared from the code. A new pass
 | IMPORTS | `set_nested_model_default_factory_metadata` | global | transform | DEFAULT_EXPRESSION | DEFAULTS, FIELD_TYPES | Runs when: use_default_factory_for_optional_nested_models. Moves to RENDER_PREPARATION. |
 | IMPORTS | `record_pydantic_floor` | global | check | - | BACKEND_CONFIG, CONSTRAINTS, FIELD_ALIASES, FIELD_TYPES, MODEL_KIND, TYPE_ALIAS_BODY | Runs when: an explicit target Pydantic version. |
 | IMPORTS | `add_root_init_result` | global | bookkeeping | - | MODULE_MEMBERSHIP |  |
-| RENDER | `render_modules` | global | transform | FIELD_TYPES, NULLABLE | every Fact, ASSIGNMENT_FORM, BACKEND_CONFIG, CLASS_NAMES, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, FIELD_ORDER, FORCED_ASSIGNMENT, IMPORT_ALIASES, KEYWORD_ONLY, MODEL_ORDER, MODULE_CODE, MODULE_IMPORTS, MODULE_MEMBERSHIP, PLANS, QUOTING, SET_ITEM_HASH, STDERR, TYPE_ALIAS_BODY, UNBOUND_FIELDS | L7: renders every module; writes rendered nullability into shared nodes. |
+| RENDER | `render_modules` | global | transform | FIELD_TYPES | every Fact, ASSIGNMENT_FORM, BACKEND_CONFIG, CLASS_NAMES, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, FIELD_ORDER, FORCED_ASSIGNMENT, IMPORT_ALIASES, KEYWORD_ONLY, MODEL_ORDER, MODULE_CODE, MODULE_IMPORTS, MODULE_MEMBERSHIP, PLANS, QUOTING, SET_ITEM_HASH, STDERR, TYPE_ALIAS_BODY, UNBOUND_FIELDS | L7: renders every module; writes the import of the Any an empty union renders as. |
 
 Provisional reads, from the explicit edges:
 
@@ -649,7 +653,7 @@ that reads and writes `Fact` members only, and the issue it fixes), the writer p
 one `FinalFacts` of the parse: per output module, the models that render (unused models, which leave their modules
 later, are left out), as the read-only views of `model/_views.py` (`ModelView`, `FieldView`, `DataTypeView`,
 `ReferenceView`). The views list the facts final at B1 and rendered nullability through `admits_none`, never the
-`is_optional` that rendering still writes; presentation attributes are not part of them, and type checking rejects
+`is_optional` that render preparation writes; presentation attributes are not part of them, and type checking rejects
 writes through a view. Every decision writes through `_DecisionWriter`, the one implementation of the writer protocols
 over the store, which records the models it changes (`DecisionOutcome`). A writer never changes a data type node that
 other fields share: it replaces the node in the one field with a copy first.
@@ -711,7 +715,7 @@ collapse replacing a member of a shared list.
 | field order | end of the L5 loop (discriminator tags append fields to variants of any module); initial order: L1 construction key (`DataModel.FIELD_CONSTRUCTION_ORDER_KEY`); msgspec keyword-only: L6 `__fix_tag_opt_out_field_ordering` |
 | field names | the model's own L5 `__rename_fields_hiding_types` |
 | field types | end of the L5 loop (collapse, overrides and discriminator tags reach every module; overrides replace the module's own field types in its L5 `__apply_field_type_overrides`, before constructor ordering); pydantic v2 type-alias bodies: L6 `__prepare_type_alias_fields` |
-| rendered nullability of a type | end of the L5 loop, like the field types it is computed from with `types.py:DataType.admits_none`; L7 writes it into `is_optional` (see L7) |
+| rendered nullability of a type | end of the L5 loop, like the field types it is computed from with `types.py:DataType.admits_none`; render preparation writes it into `is_optional` once (see L7) |
 | set vs list containers | end of the L5 loop (collapse and overrides can still replace item types) |
 | required, nullable | end of the L5 loop (discriminator tags, one-literal defaults, collapse `process_const()`); msgspec: L6 |
 | default values | the model's own L5 `__set_validate_default_on_fields`, unless another module's discriminator pass changes it; default-factory metadata: L6 `_set_nested_model_default_factory_metadata` |

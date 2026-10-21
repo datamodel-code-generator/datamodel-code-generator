@@ -3226,7 +3226,7 @@ def test_field_import_fallback_collects_dict_key_typing_names() -> None:
 
 
 def test_field_import_fallback_collects_nullable_reference_in_union() -> None:
-    """Test nullable references inside complex types contribute Optional structurally."""
+    """Test nullable references inside complex types contribute Optional structurally, from the member and the union."""
     reference = Reference(path="#/definitions/User", name="User")
     reference.source = ReferenceSource(nullable=True)
     field = DataModelFieldBase(
@@ -3235,11 +3235,12 @@ def test_field_import_fallback_collects_nullable_reference_in_union() -> None:
         required=True,
     )
 
-    assert field.imports == (IMPORT_OPTIONAL, IMPORT_UNION)
+    assert field.imports == (IMPORT_OPTIONAL, IMPORT_OPTIONAL, IMPORT_UNION)
+    assert field.data_type.data_types[0].is_optional is False
 
 
 def test_field_import_cache_normalizes_union_on_cache_hit(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test cached import lookup still applies union Optional side effects."""
+    """Test import lookup, cached or not, reads a union's None without writing it."""
     DataModelFieldBase._field_imports_cache.clear()
     try:
         primed_field = DataModelFieldBase(
@@ -3249,7 +3250,7 @@ def test_field_import_cache_normalizes_union_on_cache_hit(monkeypatch: pytest.Mo
         )
 
         assert primed_field.imports == (IMPORT_OPTIONAL,)
-        assert primed_field.data_type.is_optional is True
+        assert primed_field.data_type.is_optional is False
 
         uncached = Mock(side_effect=AssertionError("unexpected uncached import collection"))
         monkeypatch.setattr(DataModelFieldBase, "_collect_field_imports_uncached", uncached)
@@ -3259,9 +3260,8 @@ def test_field_import_cache_normalizes_union_on_cache_hit(monkeypatch: pytest.Mo
             required=True,
         )
 
-        assert cached_field.data_type.is_optional is False
         assert cached_field.imports == (IMPORT_OPTIONAL,)
-        assert cached_field.data_type.is_optional is True
+        assert cached_field.data_type.is_optional is False
         uncached.assert_not_called()
     finally:
         DataModelFieldBase._field_imports_cache.clear()
@@ -3289,7 +3289,7 @@ def test_field_import_cache_distinguishes_fixed_tuple_item_count() -> None:
 
 
 def test_field_import_cache_normalizes_nullable_reference_on_cache_hit(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test cached import lookup still applies reference nullable side effects."""
+    """Test import lookup, cached or not, reads the None of a nullable reference without writing it."""
     DataModelFieldBase._field_imports_cache.clear()
     try:
         primed_reference = Reference(path="#/definitions/User", name="User")
@@ -3300,8 +3300,8 @@ def test_field_import_cache_normalizes_nullable_reference_on_cache_hit(monkeypat
             required=True,
         )
 
-        assert primed_field.imports == (IMPORT_OPTIONAL, IMPORT_UNION)
-        assert primed_field.data_type.data_types[0].is_optional is True
+        assert primed_field.imports == (IMPORT_OPTIONAL, IMPORT_OPTIONAL, IMPORT_UNION)
+        assert primed_field.data_type.data_types[0].is_optional is False
 
         uncached = Mock(side_effect=AssertionError("unexpected uncached import collection"))
         monkeypatch.setattr(DataModelFieldBase, "_collect_field_imports_uncached", uncached)
@@ -3313,9 +3313,8 @@ def test_field_import_cache_normalizes_nullable_reference_on_cache_hit(monkeypat
             required=True,
         )
 
+        assert cached_field.imports == (IMPORT_OPTIONAL, IMPORT_OPTIONAL, IMPORT_UNION)
         assert cached_field.data_type.data_types[0].is_optional is False
-        assert cached_field.imports == (IMPORT_OPTIONAL, IMPORT_UNION)
-        assert cached_field.data_type.data_types[0].is_optional is True
         uncached.assert_not_called()
     finally:
         DataModelFieldBase._field_imports_cache.clear()

@@ -20,5 +20,5 @@ class W(Struct):
 
 class Model(Struct):
     u: U | str | UnsetType = UNSET
-    v: V | str | None | None | UnsetType = UNSET
+    v: V | None | str | UnsetType = UNSET
     w: W | str | UnsetType = UNSET

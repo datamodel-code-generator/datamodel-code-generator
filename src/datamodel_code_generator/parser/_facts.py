@@ -29,8 +29,9 @@ Columns of a row:
 The checker enforces the kind rules: a fact row names a ``Fact``, a presentation row names only ``RenderFact``
 members, a cache row names no ``Fact``. Three exceptions are allowed: plan rows (``Parser`` snapshots that later
 passes read) are fact rows that name only ``RenderFact.PLANS``; rows holding rendered nullability (``is_optional``
-and its two ``__dict__`` markers, written up to L7) name ``Fact.NULLABLE`` and freeze at B2, where rendered
-nullability is written once; the schema-validator plan cache names ``RenderFact.MODULE_CODE``, the code it holds.
+and its ``__dict__`` markers) name ``Fact.NULLABLE`` and freeze at B2: render preparation writes rendered nullability
+once, and only the null a msgspec field strips from its copied types is written at L7; the schema-validator plan
+cache names ``RenderFact.MODULE_CODE``, the code it holds.
 """
 
 from __future__ import annotations
@@ -272,7 +273,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.RENDER,
     ),
     AttributeFact("DataType", "python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
-    AttributeFact("DataType", "is_optional", FactKind.FACT, (Fact.NULLABLE,), Phase.RENDER, FreezePoint.B2),
+    AttributeFact("DataType", "is_optional", FactKind.FACT, (Fact.NULLABLE,), Phase.RENDER_PREPARATION, FreezePoint.B2),
     AttributeFact("DataType", "is_dict", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
     AttributeFact("DataType", "is_list", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
     AttributeFact("DataType", "is_set", FactKind.FACT, (Fact.CONTAINERS,), Phase.MODULES, FreezePoint.B1),
@@ -391,7 +392,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "_REFERENCE_NULL_DATA_TYPE_KEY",
         FactKind.PRESENTATION,
         (Fact.NULLABLE,),
-        Phase.RENDER,
+        Phase.RENDER_PREPARATION,
         FreezePoint.B2,
         access=Access.DICT_KEY,
     ),
@@ -401,6 +402,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FactKind.PRESENTATION,
         (Fact.NULLABLE,),
         Phase.RENDER,
+        FreezePoint.B2,
+        access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataType",
+        "_RENDER_PREPARATION_NULL_DATA_TYPE_KEY",
+        FactKind.PRESENTATION,
+        (Fact.NULLABLE,),
+        Phase.RENDER_PREPARATION,
         FreezePoint.B2,
         access=Access.DICT_KEY,
     ),

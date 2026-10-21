@@ -168,12 +168,12 @@ def test_fact_finality_reports_known_violations_without_raising(
 ) -> None:
     """A violation that ``KNOWN_WRITES`` lists is reported as known and does not stop the generation when raising."""
     report = tmp_path / "violations.jsonl"
-    schema = SCHEMA.with_name("ref_type_has_null.json")
+    schema = SCHEMA.with_name("collapse_root_models_empty_union.json")
     _finality_only(monkeypatch, "1")
-    raised = JsonSchemaParser(schema, formatters=[Formatter.BUILTIN], use_union_operator=True).parse()
+    raised = JsonSchemaParser(schema, formatters=[Formatter.BUILTIN], collapse_root_models=True).parse()
     _finality_only(monkeypatch, f"report:{report}")
 
-    reported = JsonSchemaParser(schema, formatters=[Formatter.BUILTIN], use_union_operator=True).parse()
+    reported = JsonSchemaParser(schema, formatters=[Formatter.BUILTIN], collapse_root_models=True).parse()
 
     assert_output(raised, name="raised")
     assert_output(reported, name="reported")

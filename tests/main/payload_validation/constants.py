@@ -325,6 +325,10 @@ EXCLUDED_CASES: dict[str, str] = {
         "top-level nullable object components need a wrapper policy; "
         "test_main_openapi_strip_default_none_constructor_order imports the models that reference them",
     ),
+    "openapi/strip_default_none_nullable_reference.yaml::components.schemas.S": (
+        "top-level nullable object components need a wrapper policy; "
+        "test_main_openapi_strip_default_none_nullable_reference pins the models that reference it"
+    ),
     **dict.fromkeys(
         (
             "openapi/schema_intersection/null_multiple_types_oas30.yaml::components.schemas.U",

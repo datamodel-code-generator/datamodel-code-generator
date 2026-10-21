@@ -61,6 +61,7 @@ set_validate_default_on_fields
 assign_forward_reference_fields
 warn_required_assignments_after_defaults
 fix_tag_opt_out_field_ordering
+finalize_rendered_nullability
 collect_all_models
 prepare_type_alias_fields
 finalize_type_alias_users

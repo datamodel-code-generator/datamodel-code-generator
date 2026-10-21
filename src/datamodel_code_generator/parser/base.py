@@ -4670,6 +4670,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         models keep the names they had before values were typed.
         """
         models = self._typed_map_values_last(models)
+        for model in models:
+            model._write_pre_render_nullability()  # noqa: SLF001
         scoped_model_resolver = ModelResolver(
             exclude_names={i.alias or i.import_ for m in models for i in m.imports},
             duplicate_name_suffix="Model",
@@ -9184,6 +9186,20 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             runner.run_decision(decision, facts, writer)
         run.decisions = writer.outcome(model for _, models in modules for model in models)
 
+    def __finalize_rendered_nullability(self, state: _FinalizeState) -> None:  # noqa: PLR6301
+        """Write the None each type hint of every model renders, once per node, before imports and rendering read it.
+
+        It runs after the module bodies: the members' hints read the union operator and the quotes that updating type
+        aliases writes (row ``legacy-member-null-from-hint-text``).
+        """
+        seen: set[int] = set()
+        for model in _context_models(state.contexts):
+            for field in model.fields:
+                for data_type in field.data_type.all_data_types:
+                    if id(data_type) not in seen:
+                        seen.add(id(data_type))
+                        data_type._materialize_render_state("rendered-null")  # noqa: SLF001
+
     def __collect_all_models(self, state: _FinalizeState) -> None:  # noqa: PLR6301
         """Take the models of every module, before unused models leave them."""
         state.all_models = [model for ctx in state.contexts for model in ctx.models]
@@ -10324,6 +10340,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             Phase.RENDER_PREPARATION,
             _same_state,
             (
+                PassSpec(
+                    decls.FINALIZE_RENDERED_NULLABILITY,
+                    lambda self, s: self.__finalize_rendered_nullability(s),
+                    checked_models=lambda _, s: _context_models(s.contexts),
+                ),
                 PassSpec(decls.COLLECT_ALL_MODELS, lambda self, s: self.__collect_all_models(s)),
                 PassSpec(
                     decls.PREPARE_TYPE_ALIAS_FIELDS,

@@ -768,7 +768,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def should_strip_default_none(self, *, keep_optional: bool = False) -> bool:
         """Return whether an actual None default should be omitted."""
-        match (self.strip_default_none, keep_optional and self.data_type.is_optional):
+        match (self.strip_default_none, keep_optional and self.data_type._optional_before_render_preparation()):  # noqa: SLF001
             case (False, _) | (_, True):
                 return False
 
@@ -843,10 +843,17 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         *,
         pending_reference_null: bool = False,
     ) -> FieldNullSource | None:
-        """Return why the field writes None around the hint of ``data_type`` (``field_renders_none``)."""
+        """Return why the field writes None around the hint of ``data_type`` (``field_renders_none``).
+
+        Without ``pending_reference_null`` the hint is the one ``type_hint`` renders; with it, imports collected
+        without a hint read the type's own None and pass its model's.
+        """
         required = self.required
+        hint_has_none = (
+            data_type.is_optional if pending_reference_null else data_type._hint_null_source() is not None  # noqa: SLF001
+        )
         return field_renders_none(
-            hint_has_none=data_type.is_optional and data_type.type != ANY,
+            hint_has_none=hint_has_none and data_type.type != ANY,
             has_default_factory=self.has_default_factory,
             nullable=self.nullable,
             required=required,
@@ -899,7 +906,6 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         if self._can_collect_imports_without_type_hint(needs_annotated=needs_annotated, data_type=data_type):
             return self._collect_field_imports_without_type_hint(data_type=data_type)
 
-        self._normalize_data_type_import_state(data_type)
         cache_key = self._field_imports_cache_key(needs_annotated=needs_annotated, data_type=data_type)
         if (cached_imports := self._field_imports_cache.get(cache_key)) is not None:
             return cached_imports
@@ -923,7 +929,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         needs_annotated: bool,
         data_type: DataType,
     ) -> tuple[Import, ...]:
-        """Collect field imports after import-affecting DataType normalization."""
+        """Collect field imports from the structure of the type, reading rendered nullability without writing it."""
         requirements = self._typing_import_requirements(needs_annotated=needs_annotated, data_type=data_type)
         imports = tuple(data_type.all_imports)
         if requirements.any_ and IMPORT_ANY not in imports:
@@ -946,15 +952,15 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             return None
         return data_type
 
-    def _normalize_data_type_import_state(self, data_type: DataType) -> None:
-        """Write the render-time state that the imports read, before the cache lookup."""
+    def _write_pre_render_nullability(self, data_type: DataType) -> None:
+        """Write the None of the nullable models the type names and of bare None union members, as L3 imports did."""
         if data_type.reference:
             data_type._materialize_render_state("reference-null")  # noqa: SLF001
 
         for child in data_type.data_types:
-            self._normalize_data_type_import_state(child)
+            self._write_pre_render_nullability(child)
         if data_type.dict_key:
-            self._normalize_data_type_import_state(data_type.dict_key)
+            self._write_pre_render_nullability(data_type.dict_key)
 
         if not data_type.is_union or data_type.preserve_union_member_order:
             return
@@ -1110,7 +1116,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def _data_type_needs_optional_import(self, data_type: DataType) -> bool:
         if data_type.use_union_operator or data_type.type == ANY:
             return False
-        return data_type.is_optional and self._data_type_renders_importable_hint(data_type)
+        return data_type.admits_none and self._data_type_renders_importable_hint(data_type)
 
     def _needs_field_optional_import_from_structure(self, *, data_type: DataType | None = None) -> bool:
         data_type = data_type or self.data_type
@@ -1174,7 +1180,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             to_hashable(data_type.kwargs),
             data_type.strict,
             data_type.is_custom_type,
-            data_type.is_optional,
+            data_type.admits_none,
             data_type.is_func,
             data_type.is_dict,
             data_type.is_list,
@@ -2598,14 +2604,21 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def _prepare_dedup_key(self) -> None:
         """Write what rendering the dedup key decides, so rendering it writes nothing.
 
-        A root model decides its sequence interface, and every field writes the nullability its type hint renders
-        (``DataModelFieldBase._normalize_data_type_import_state``).
+        A root model decides its sequence interface; rendering writes no nullability, so the key reads the None each
+        hint renders.
         """
         if self.IS_ROOT_MODEL:
             self.finalize_sequence_interface()
+
+    def _write_pre_render_nullability(self) -> None:
+        """Write the nullability that collecting the model's imports wrote at L3 (``legacy-l3-import-nullability``).
+
+        Type overrides copy it as the type's own and constructor ordering reads it before render preparation writes
+        rendered nullability; the row goes when ordering reads the plans of render preparation (RP14).
+        """
         for field in self.fields:
             if (data_type := field._import_state_data_type()) is not None:  # noqa: SLF001
-                field._normalize_data_type_import_state(data_type)  # noqa: SLF001
+                field._write_pre_render_nullability(data_type)  # noqa: SLF001
 
     def _render_dedup_key(self, class_name: str | None) -> tuple[Any, ...]:
         """Render the hashable deduplication key for a class name without caching it.

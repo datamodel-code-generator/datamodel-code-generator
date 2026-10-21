@@ -2,7 +2,7 @@
 
 Every input is an immutable fact passed by keyword, so the functions read nothing else. The adapters
 ``types.py:DataType.admits_none`` and ``model/base.py:DataModelFieldBase._field_null_source`` read the facts from the
-live objects; ``types.py:DataType._materialize_render_state`` writes what rendering decides.
+live objects; ``types.py:DataType._materialize_render_state`` writes it once at render preparation.
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ def field_renders_none(  # noqa: PLR0913
 
     ``hint_has_none`` tells that the type's hint includes None already (its ``is_optional``, unless it renders
     ``Any``); a default factory always gives a value, and such a hint keeps its None as it is.
-    ``pending_reference_null`` tells that the type names a nullable model whose None no rendered hint has written yet,
+    ``pending_reference_null`` tells that the type names a nullable model whose None ``hint_has_none`` leaves out,
     which only import collection that skips rendering the hint reads. A ``nullable`` that is not a bool counts as
     not nullable. Without ``nullable``, a required field asks whether its schema type admits null (``type_has_null``)
     and an optional field asks its output backend (``fall_back_to_nullable``), so a caller passes only the one that

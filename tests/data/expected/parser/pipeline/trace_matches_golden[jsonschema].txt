@@ -56,6 +56,7 @@ update_type_aliases
 collect_live_models
 set_validate_default_on_fields
 warn_required_assignments_after_defaults
+finalize_rendered_nullability
 collect_all_models
 prepare_type_alias_fields
 finalize_type_alias_users

@@ -697,7 +697,11 @@ class DataModelField(DataModelFieldBase):
         )
 
     def _data_type_has_top_level_none(self, data_type: DataType) -> bool:
-        if data_type.is_optional or self._data_type_renders_none(data_type):
+        """Return whether the type writes None at the top; row ``legacy-msgspec-top-level-null-as-written``.
+
+        It reads ``is_optional`` as written before render preparation, without the None render preparation wrote.
+        """
+        if data_type._optional_before_render_preparation() or self._data_type_renders_none(data_type):  # noqa: SLF001
             return True
         if not data_type.is_union:
             return False

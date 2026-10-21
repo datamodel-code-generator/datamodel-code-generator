@@ -701,12 +701,12 @@ def test_datatype_union_rendering_preserves_order_and_base_selector(
         ("base_type_hint", "Optional[str]", "Optional[str]"),
     ],
 )
-def test_datatype_repeated_property_access_preserves_mutation_carryover(
+def test_datatype_repeated_property_access_writes_no_nullability(
     first_hint: str,
     expected_first: str,
     expected_second: str,
 ) -> None:
-    """Pin mutation carryover when child type hints are evaluated repeatedly."""
+    """Pin repeated hint rendering: a union renders its members' None without writing it."""
     from datamodel_code_generator.model.base import DataModelFieldBase  # noqa: F401
 
     child = DataType(data_types=[DataType(type="str"), DataType(type="None")])
@@ -719,7 +719,7 @@ def test_datatype_repeated_property_access_preserves_mutation_carryover(
         assert data_type.base_type_hint == expected_first
         assert data_type.type_hint == expected_second
     assert data_type.is_optional is False
-    assert child.is_optional is True
+    assert child.is_optional is False
 
 
 @pytest.mark.parametrize(

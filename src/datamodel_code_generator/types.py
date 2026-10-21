@@ -92,9 +92,12 @@ _FORWARD_REFERENCE_DATA_TYPE_KEY = "_is_forward_reference"
 _RENDERED_UNION_MEMBERS_KEY = "_rendered_union_members"
 _REFERENCE_NULL_DATA_TYPE_KEY = "_has_reference_null"
 _NULL_STRIPPED_DATA_TYPE_KEY = "_is_null_stripped"
+_RENDER_PREPARATION_NULL_DATA_TYPE_KEY = "_has_render_preparation_null"
 _LITERAL_IMPORT_DATA_TYPE_KEY = "_literal_import"
 _VALUES_AS_WRITTEN_KEY = _applicability.VALUES_AS_WRITTEN_KEY
-_RenderStateWrite: TypeAlias = Literal["reference-null", "member-null", "null-moved-to-union", "empty-union"]
+_RenderStateWrite: TypeAlias = Literal[
+    "rendered-null", "reference-null", "member-null", "null-moved-to-union", "empty-union"
+]
 
 
 class DefaultValueRecipe(Enum):
@@ -179,7 +182,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource
-    from datamodel_code_generator.model._decisions.union_assembly import MemberRole, UnionRow
+    from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -841,7 +844,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def _conditional_imports(self) -> Iterator[tuple[bool, Import]]:
         """Yield (condition, import) pairs in the order they may be emitted."""
         use_standard_collections = self.use_standard_collections
-        yield (self.is_optional and not self.use_union_operator, IMPORT_OPTIONAL)
+        yield (self.admits_none and not self.use_union_operator, IMPORT_OPTIONAL)
         yield (len(self.data_types) > 1 and not self.use_union_operator, IMPORT_UNION)
         has_literal = (bool(self.literals) or bool(self.enum_member_literals)) and not self.alias
         yield (has_literal, self._literal_import if has_literal else IMPORT_LITERAL)
@@ -1003,7 +1006,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
         *,
         use_base_type_hint: bool,
         wrap_discriminator: bool,
-    ) -> str:
+    ) -> tuple[str, bool]:
+        """Return the hint of the nested types and whether a union takes the None of its members."""
+        member_null = False
         if self.is_tuple:
             tuple_type = STANDARD_TUPLE if self.use_standard_collections else TUPLE
             if self.tuple_item_count == 0:
@@ -1020,7 +1025,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 ]
                 type_ = f"{tuple_type}[{', '.join(inner_types)}]" if inner_types else f"{tuple_type}[()]"
         elif self.is_union:
-            type_ = self._render_union_type_hint(
+            type_, member_null = self._render_union_type_hint(
                 use_base_type_hint=use_base_type_hint,
                 wrap_discriminator=wrap_discriminator,
             )
@@ -1039,35 +1044,22 @@ class DataType(_BaseModel):  # noqa: PLR0904
             # TODO support strict Any
             type_ = ""
 
-        return type_
+        return type_, member_null
 
     def _render_union_type_hint(
         self,
         *,
         use_base_type_hint: bool,
         wrap_discriminator: bool,
-    ) -> str:
+    ) -> tuple[str, bool]:
+        """Return the hint of the union and whether it takes the None of its members, which it writes no more."""
         if self.preserve_union_member_order:
             return self._render_ordered_union_type_hint(
                 use_base_type_hint=use_base_type_hint,
                 wrap_discriminator=wrap_discriminator,
-            )
+            ), False
 
-        union = _union_core()
-        merged = union.merge_members(
-            union.WrittenMember(
-                data_type_type,
-                kept := NONE
-                if (null := data_type_type == NONE)
-                else _remove_none_from_union(data_type_type, use_union_operator=self.use_union_operator),
-                null=null,
-                strips_null=kept != data_type_type,
-            )
-            for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint)
-            if data_type_type
-        )
-        if merged.takes_null:
-            self._materialize_render_state("member-null")
+        merged = self._merge_union_member_type_hints(use_base_type_hint=use_base_type_hint)
         data_types = merged.kept
         if not data_types:
             type_ = ANY
@@ -1079,7 +1071,23 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
         if wrap_discriminator and (discriminator := self.discriminator):
             type_ = self._wrap_discriminator_type_hint(type_, discriminator)
-        return type_
+        return type_, merged.takes_null
+
+    def _merge_union_member_type_hints(self, *, use_base_type_hint: bool) -> MergedMembers[str]:
+        """Merge the rendered hints of the union members, taking the None out of each hint that strips it."""
+        union = _union_core()
+        return union.merge_members(
+            union.WrittenMember(
+                data_type_type,
+                kept := NONE
+                if (null := data_type_type == NONE)
+                else _remove_none_from_union(data_type_type, use_union_operator=self.use_union_operator),
+                null=null,
+                strips_null=kept != data_type_type,
+            )
+            for data_type_type in self._iter_union_member_type_hints(use_base_type_hint=use_base_type_hint)
+            if data_type_type
+        )
 
     def _iter_union_member_type_hints(self, *, use_base_type_hint: bool) -> Iterator[str]:
         """Yield the hints of union members, spreading a member union that renders as a plain union."""
@@ -1159,6 +1167,25 @@ class DataType(_BaseModel):  # noqa: PLR0904
             else (),
         )
 
+    def _hint_null_source(self) -> NullSource | None:
+        """Return why ``type_hint`` writes None: the type's own, its nullable model's, or its members' by their hints.
+
+        A union takes the None of a member whose rendered hint strips it under the union's operator (row M,
+        ``legacy-member-null-from-hint-text``), so the members are rendered only when neither of the others decides.
+        """
+        return _nullability_core().rendered_nullability(
+            own=self.is_optional, reference=self._reference_adds_null(), member_nulls=self._iter_hint_member_nulls()
+        )
+
+    def _iter_hint_member_nulls(self) -> Iterator[bool]:
+        """Yield whether the union, as ``type_hint`` renders it, takes the None of its members."""
+        if not (self.alias or self.type) and _nullability_core().takes_member_null(
+            is_tuple=self.is_tuple,
+            keeps_member_order=self.preserve_union_member_order,
+            member_count=len(self.data_types),
+        ):
+            yield self._merge_union_member_type_hints(use_base_type_hint=False).takes_null
+
     def _gives_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a member of a union, gives the union its None (``member_null``)."""
         verdict = core.member_null(is_none=self.type == NONE and not self.data_types, is_any=self.type == ANY)
@@ -1167,29 +1194,42 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def _materialize_render_state(self, write: _RenderStateWrite, /) -> None:
         """Write what rendering decides about the type: the writer of its render-time state on shared nodes.
 
+        ``"rendered-null"`` writes the None that ``type_hint`` renders (``_hint_null_source``) and marks it as written
+        at render preparation, which writes rendered nullability once for every node of every model.
         ``"reference-null"`` writes the None of the nullable model the type names into ``is_optional`` when the
         rendered None comes from that model (``rendered_nullability``), marked as not the type's own.
         ``"member-null"`` writes the None that a union takes over from a member, ``"null-moved-to-union"`` takes the
         None off a member whose union writes it now, and ``"empty-union"`` gives a union without a member to write
-        the import of the ``Any`` it renders as. Rendering a hint, collecting a field's imports and union flattening
-        call it where they decide, some before L7, so ``is_optional`` read before L7 depends on what ran first.
+        the import of the ``Any`` it renders as. Before render preparation only union flattening and the imports
+        that L3 collects (row ``legacy-l3-import-nullability``) write nullability; rendering and import collection
+        write none.
         """
+        null: NullSource | None = None
         match write:
+            case "rendered-null":
+                if (null := self._hint_null_source()) in {None, "own"}:
+                    return
+                self.__dict__[_RENDER_PREPARATION_NULL_DATA_TYPE_KEY] = True
             case "reference-null":
-                if not (reference := self._reference_adds_null()) or (
-                    _nullability_core().rendered_nullability(own=self.is_optional, reference=reference) != "reference"
+                if (
+                    not (reference := self._reference_adds_null())
+                    or (null := _nullability_core().rendered_nullability(own=self.is_optional, reference=reference))
+                    != "reference"
                 ):
                     return
-                self.is_optional = True
-                self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
             case "member-null":
-                self.is_optional = True
+                null = "member"
             case "null-moved-to-union":
                 self.is_optional = False
+                return
             case "empty-union":
                 self.import_ = self.import_ or IMPORT_ANY
+                return
             case _:  # pragma: no cover
                 assert_never(write)
+        self.is_optional = True
+        if null == "reference":
+            self.__dict__[_REFERENCE_NULL_DATA_TYPE_KEY] = True
 
     def _strip_null(self, *, own: bool) -> None:
         """Drop the None of the type, for good when it is the type's own rather than its nullable model's.
@@ -1199,6 +1239,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if own or (self.is_optional and _REFERENCE_NULL_DATA_TYPE_KEY not in self.__dict__):
             self.__dict__[_NULL_STRIPPED_DATA_TYPE_KEY] = True
         self.is_optional = False
+
+    def _optional_before_render_preparation(self) -> bool:
+        """Return ``is_optional`` without the None that render preparation wrote (rows MS and SK read it)."""
+        return self.is_optional and _RENDER_PREPARATION_NULL_DATA_TYPE_KEY not in self.__dict__
 
     def _wrap_dict_type_hint(
         self,
@@ -1291,10 +1335,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def type_hint(self) -> str:
         """Generate the Python type hint string for this DataType."""
         type_: str | None = self.alias or self.type
+        member_null = False
         if not type_:
-            type_ = self._render_nested_type_hint(use_base_type_hint=False, wrap_discriminator=True)
-        if self.reference:
-            self._materialize_render_state("reference-null")
+            type_, member_null = self._render_nested_type_hint(use_base_type_hint=False, wrap_discriminator=True)
         has_collection_container = self.is_frozen_set or self.is_set or self.is_sequence
         has_mapping_container = self.is_list or self.is_mapping or self.is_dict
         if has_collection_container or has_mapping_container:
@@ -1305,7 +1348,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
             )
         if self.__dict__.get(_FORWARD_REFERENCE_DATA_TYPE_KEY):
             type_ = repr(type_) if '"' in type_ or "\\" in type_ else f'"{type_}"'
-        if self.is_optional and type_ != ANY:
+        if (self.is_optional or member_null or self._reference_adds_null()) and type_ != ANY:
             return get_optional_type(type_, self.use_union_operator)
         if self.is_func and self.kwargs:
             kwargs: str = ", ".join(f"{k}={represent_python_value(v)}" for k, v in self.kwargs.items())
@@ -1347,10 +1390,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 return base_type
 
         type_: str | None = self.alias or self.type
+        member_null = False
         if not type_:
-            type_ = self._render_nested_type_hint(use_base_type_hint=True, wrap_discriminator=False)
-        if self.reference:
-            self._materialize_render_state("reference-null")
+            type_, member_null = self._render_nested_type_hint(use_base_type_hint=True, wrap_discriminator=False)
         if self.is_list or self.is_set or self.is_dict:
             type_ = self._wrap_container_type_hint(
                 type_,
@@ -1358,7 +1400,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
                 use_base_type_hint=True,
             )
 
-        if self.is_optional and type_ != ANY:
+        if (self.is_optional or member_null or self._reference_adds_null()) and type_ != ANY:
             return get_optional_type(type_, self.use_union_operator)
         return type_
 

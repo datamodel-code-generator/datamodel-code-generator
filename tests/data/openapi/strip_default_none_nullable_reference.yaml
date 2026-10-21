@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info: {title: Nullable references under strip-default-none, version: "1"}
+paths: {}
+components:
+  schemas:
+    S:
+      type: [object, "null"]
+      properties:
+        a: {type: string}
+    M:
+      type: object
+      required: [r]
+      properties:
+        d: {type: string, default: x}
+        n:
+          $ref: '#/components/schemas/S'
+        n-1:
+          $ref: '#/components/schemas/S'
+        n2:
+          $ref: '#/components/schemas/S'
+          description: described
+        q: {type: string}
+        r: {type: string}

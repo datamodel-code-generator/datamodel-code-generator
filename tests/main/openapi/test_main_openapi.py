@@ -3571,6 +3571,31 @@ def test_main_openapi_strip_default_none_semantic_default(
     )
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_openapi_strip_default_none_nullable_reference(output_model_type: str, output_file: Path) -> None:
+    """Keep the None default of a field naming a nullable model only where the field writes no ``Field()``.
+
+    ``Field()`` decides from the type's None as written before render preparation, which leaves out the None the
+    nullable model gives (row ``legacy-strip-keeps-written-null-only``): ``n_1`` and ``n2`` write ``Field()`` without
+    it, while ``n`` keeps ``= None``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "strip_default_none_nullable_reference.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--strict-nullable",
+            "--strip-default-none",
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.parametrize(
     ("output_model_type", "extra_args"),
     [

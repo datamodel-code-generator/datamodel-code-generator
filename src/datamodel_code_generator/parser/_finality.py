@@ -401,16 +401,23 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "--use-annotated --formatters builtin",
         "RP14a",
     ),
-    KnownWrite("snapshot_model_imports", Rule.FROZEN, "DataType.is_optional", _EMPTY_UNION_WITNESS, "RP13"),
-    KnownWrite("render_modules", Rule.FROZEN, "DataType.import_", _EMPTY_UNION_WITNESS, "RP13"),
     KnownWrite(
-        "render_modules",
-        Rule.FROZEN,
+        "fix_constructor_field_ordering",
+        Rule.ORDERING_INPUT,
         "DataType.is_optional",
-        "--input tests/data/jsonschema/ref_type_has_null.json --input-file-type jsonschema --use-union-operator "
-        "--formatters builtin",
-        "RP13",
+        "--input tests/data/openapi/schema_intersection/inherited_override_null_oas31.yaml --input-file-type openapi "
+        "--output-model-type msgspec.Struct --formatters builtin",
+        "RP14",
     ),
+    KnownWrite(
+        "finalize_rendered_nullability",
+        Rule.FROZEN,
+        "DataType.import_",
+        "--input tests/data/generation_platform/fastapi/unbound-body.yaml --input-file-type openapi --openapi-scopes "
+        "schemas api --collapse-root-models --formatters builtin",
+        "RP15",
+    ),
+    KnownWrite("render_modules", Rule.FROZEN, "DataType.import_", _EMPTY_UNION_WITNESS, "RP15"),
 )
 """The violations of today's pipeline; ``scripts/check_fact_finality.py --witnesses`` runs their witnesses.
 
@@ -418,9 +425,10 @@ A module pass writes models of other modules: the discriminator pass writes the 
 first), reuse redirects the users of removed duplicates (G07's reuse groups), and L3 deduplication redirects users
 and bases module by module (DC11b makes it one step). Constructor ordering, after the decision phase, gives a
 required field back the place in the constructor it left out while its base excluded it (RP14c's dataclass field
-plan holds it). Import collection and rendering write rendered nullability and
-types after B2 (RP13 writes rendered nullability once), and alias preparation records compiled patterns in field extras
-after B1 (RP14a's field render plan holds them).
+plan holds it), and it reads the nullability of base fields before render preparation writes rendered nullability
+once (RP14's ordering reads the plans written after it). Rendering writes the import of the ``Any`` an empty union
+renders as after B1, at render preparation and at L7 (RP15), and alias preparation records compiled patterns in
+field extras after B1 (RP14a's field render plan holds them).
 """
 
 _KNOWN: Final = frozenset((known.pass_name, known.rule, known.row) for known in KNOWN_WRITES)

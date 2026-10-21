@@ -1,1 +1,1 @@
-{"pass_name": "render_modules", "rule": "frozen", "row": "DataType.is_optional", "facts": ["NULLABLE"], "model": "Model", "phase": "RENDER", "known": true}
+{"pass_name": "render_modules", "rule": "frozen", "row": "DataType.import_", "facts": ["FIELD_TYPES"], "model": "Model", "phase": "RENDER", "known": true}

@@ -124,10 +124,10 @@ reference bookkeeping and render entry points. A hook that a store operation run
 
 RENDER_STATE_WRITERS = frozenset({
     "_materialize_render_state",
-    "_normalize_data_type_import_state",
     "_render_ordered_union_type_hint",
     "_render_union_type_hint",
     "_strip_null",
+    "_write_pre_render_nullability",
 })
 """Private helpers that write rendered state, or reach its one writer, when a pass reads ``type_hint`` or collects
 imports."""
@@ -349,7 +349,7 @@ def _expected_frozen_at(row: FactRow, freeze_points: dict[str, str]) -> str | No
     if row.kind not in WRITE_KINDS:
         return None
     points = [freeze_points[_member(fact)] if fact.startswith("RenderFact.") else "B1" for fact in row.facts] or ["B1"]
-    if row.facts == RENDERED_NULLABILITY and row.final_after == "RENDER":
+    if row.facts == RENDERED_NULLABILITY and row.final_after in {"RENDER_PREPARATION", "RENDER"}:
         points.append("B2")
     return max(points, key=FREEZE_ORDER.index)
 

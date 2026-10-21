@@ -227,7 +227,7 @@ REPLACE_DUPLICATE_NAME_IN_MODULE = PassDecl(
     reads=_facts(RenderFact.CLASS_NAMES, RenderFact.MODULE_IMPORTS),
     writes=_facts(Fact.NULLABLE, RenderFact.CLASS_NAMES),
     after=(After("delete_duplicate_models", "renames the duplicates that deletion keeps"),),
-    summary="Makes class names unique within a module; collecting the imports writes rendered nullability.",
+    summary="Makes class names unique within a module; row legacy-l3-import-nullability writes nullability first.",
 )
 APPLY_FORCED_INVALID_DOTTED_STDOUT_REPAIR = PassDecl(
     "apply_forced_invalid_dotted_stdout_repair",
@@ -770,6 +770,19 @@ FIX_TAG_OPT_OUT_FIELD_ORDERING = PassDecl(
     removed_by="G08",
     condition="msgspec",
 )
+FINALIZE_RENDERED_NULLABILITY = PassDecl(
+    "finalize_rendered_nullability",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.QUOTING),
+    writes=_facts(Fact.NULLABLE, Fact.FIELD_TYPES),
+    summary=(
+        "Writes the None each type hint renders, once, after the module bodies set union operators and quotes;"
+        " rendering and import collection write none. Rendering the members' hints writes the import of the Any an"
+        " empty union renders as."
+    ),
+)
 COLLECT_ALL_MODELS = PassDecl(
     "collect_all_models",
     Phase.RENDER_PREPARATION,
@@ -844,8 +857,7 @@ SNAPSHOT_MODEL_IMPORTS = PassDecl(
         RenderFact.DEFAULT_EXPRESSION,
         RenderFact.BACKEND_CONFIG,
     ),
-    writes=_facts(Fact.NULLABLE),
-    summary="Collects the imports of every model once, which writes rendered nullability; B2 precedes it.",
+    summary="Collects the imports of every model once; B2 precedes it.",
 )
 APPEND_MODEL_IMPORTS = PassDecl(
     "append_model_imports",
@@ -1107,8 +1119,8 @@ RENDER_MODULES = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(*Fact, *RenderFact),
-    writes=_facts(Fact.NULLABLE, Fact.FIELD_TYPES),
-    summary="L7: renders every module; writes rendered nullability into shared nodes.",
+    writes=_facts(Fact.FIELD_TYPES),
+    summary="L7: renders every module; writes the import of the Any an empty union renders as.",
 )
 
 PASS_DECLS: tuple[PassDecl, ...] = tuple(value for value in tuple(globals().values()) if isinstance(value, PassDecl))
