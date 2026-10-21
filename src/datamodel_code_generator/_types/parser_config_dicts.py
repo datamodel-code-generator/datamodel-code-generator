@@ -127,6 +127,7 @@ class ParserConfigDict(TypedDict):
     use_operation_id_as_name: NotRequired[bool]
     use_unique_items_as_set: NotRequired[bool]
     use_tuple_for_fixed_items: NotRequired[bool]
+    use_tuple_for_closed_arrays: NotRequired[bool]
     use_tuple_for_fixed_length_arrays: NotRequired[bool]
     use_total_false_for_typed_dict: NotRequired[bool]
     use_closed_typed_dict: NotRequired[bool]

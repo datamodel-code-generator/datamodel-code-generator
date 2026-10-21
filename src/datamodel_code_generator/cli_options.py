@@ -696,6 +696,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         topic=OptionTopic.TYPING_CUSTOMIZATION,
         group=OptionGroup.COLLECTION_TYPES,
     ),
+    "--use-tuple-for-closed-arrays": CLIOptionMeta(
+        name="--use-tuple-for-closed-arrays",
+        category=OptionCategory.TYPING,
+        topic=OptionTopic.TYPING_CUSTOMIZATION,
+        group=OptionGroup.COLLECTION_TYPES,
+    ),
     "--use-tuple-for-fixed-length-arrays": CLIOptionMeta(
         name="--use-tuple-for-fixed-length-arrays",
         category=OptionCategory.TYPING,

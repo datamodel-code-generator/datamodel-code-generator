@@ -305,6 +305,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-total-false-for-typed-dict
                         Generate TypedDict with total=False and mark required
                         fields with Required
+  --use-tuple-for-closed-arrays
+                        Generate tuple types for positional arrays that no
+                        other item can follow: a closed prefixItems tail
+                        (items, unevaluatedItems or additionalItems false)
+                        whose length the length keywords fix, so that each
+                        position keeps its own type
   --use-tuple-for-fixed-items
                         Generate tuple types for arrays with items array
                         syntax when minItems equals maxItems equals items

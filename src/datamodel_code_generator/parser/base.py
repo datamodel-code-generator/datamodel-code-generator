@@ -4000,6 +4000,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_operation_id_as_name: bool = config.use_operation_id_as_name
         self.use_unique_items_as_set: bool = config.use_unique_items_as_set
         self.use_tuple_for_fixed_items: bool = config.use_tuple_for_fixed_items
+        self.use_tuple_for_closed_arrays: bool = config.use_tuple_for_closed_arrays
         self.use_tuple_for_fixed_length_arrays: bool = config.use_tuple_for_fixed_length_arrays
         self.use_total_false_for_typed_dict: bool = config.use_total_false_for_typed_dict
         self.use_closed_typed_dict: bool = config.use_closed_typed_dict
@@ -5576,7 +5577,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if (
                     not self.use_unique_items_as_set
                     or not _declares_unique_items(model_field)
-                    or _unique_items_tuple(model_field.data_type) is not None
+                    or (self.use_tuple_for_closed_arrays and _unique_items_tuple(model_field.data_type) is not None)
                 ):
                     continue
                 set_data_type = self._create_set_from_list(model_field.data_type)
@@ -6701,7 +6702,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         Runtime schema validators check uniqueItems on tuples too, so nothing is left out with them.
         """
         if (
-            not self.use_unique_items_as_set
+            not self.use_tuple_for_closed_arrays
+            or not self.use_unique_items_as_set
             or self.generate_schema_validators
             or not _declares_unique_items(field)
             or (tuple_type := _unique_items_tuple(field.data_type)) is None

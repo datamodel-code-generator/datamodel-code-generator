@@ -1335,6 +1335,10 @@
       "not_recommended": "style",
       "reason": "TypedDict totality spelling; a typing style choice."
     },
+    "use_tuple_for_closed_arrays": {
+      "not_recommended": "preset",
+      "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."
+    },
     "use_tuple_for_fixed_items": {
       "not_recommended": "preset",
       "reason": "Typing style chosen by the practical presets; the recommendation starts from a preset."

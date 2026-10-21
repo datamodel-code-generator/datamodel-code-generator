@@ -66,6 +66,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-standard-collections`](typing-customization.md#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types) | Use Python standard library types for string formats instead of str. |
 | [`--use-total-false-for-typed-dict`](typing-customization.md#use-total-false-for-typed-dict) | Generate TypedDict declarations with `total=False`. |
+| [`--use-tuple-for-closed-arrays`](typing-customization.md#use-tuple-for-closed-arrays) | Generate tuple types for positional arrays that no other item can follow. |
 | [`--use-tuple-for-fixed-items`](typing-customization.md#use-tuple-for-fixed-items) | Generate tuple types for arrays with items array syntax. |
 | [`--use-tuple-for-fixed-length-arrays`](typing-customization.md#use-tuple-for-fixed-length-arrays) | Generate tuple types for homogeneous fixed-length arrays. |
 | [`--use-type-alias`](typing-customization.md#use-type-alias) | Use TypeAlias instead of root models for type definitions (experimental). |
@@ -534,6 +535,7 @@ All options sorted alphabetically:
 - [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name) - Name inline oneOf/anyOf branch models after their tag: what ...
 - [`--use-title-as-name`](field-customization.md#use-title-as-name) - Use schema title as the generated class name.
 - [`--use-total-false-for-typed-dict`](typing-customization.md#use-total-false-for-typed-dict) - Generate TypedDict declarations with `total=False`.
+- [`--use-tuple-for-closed-arrays`](typing-customization.md#use-tuple-for-closed-arrays) - Generate tuple types for positional arrays that no other ite...
 - [`--use-tuple-for-fixed-items`](typing-customization.md#use-tuple-for-fixed-items) - Generate tuple types for arrays with items array syntax.
 - [`--use-tuple-for-fixed-length-arrays`](typing-customization.md#use-tuple-for-fixed-length-arrays) - Generate tuple types for homogeneous fixed-length arrays.
 - [`--use-type-alias`](typing-customization.md#use-type-alias) - Use TypeAlias instead of root models for type definitions (e...

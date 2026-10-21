@@ -59,6 +59,7 @@ Type annotation, import, and primitive type behavior.
 - `--no-use-union-operator`: Use | operator for Union type (PEP 604). Default: enabled
 - `--use-unique-items-as-set`: define field type as `set` when the field attribute has `uniqueItems`
 - `--use-tuple-for-fixed-items`: Generate tuple types for arrays with items array syntax when minItems equals maxItems equals items length
+- `--use-tuple-for-closed-arrays`: Generate tuple types for positional arrays that no other item can follow: a closed prefixItems tail (items, unevaluatedItems or additionalItems false) whose length the length keywords fix, so that each position keeps its own type
 - `--use-tuple-for-fixed-length-arrays`: Generate tuple types for fixed-length arrays with a single items schema
 - `--use-total-false-for-typed-dict`: Generate TypedDict with total=False and mark required fields with Required
 - `--use-closed-typed-dict`: Generate TypedDict with PEP 728 closed=True/extra_items for additionalProperties constraints. Use --no-use-closed-typed-dict for type checkers that don't yet support PEP 728 (e.g., mypy).

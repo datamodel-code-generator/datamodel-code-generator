@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 39 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 40 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 27 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 23 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 21 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 24 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 25 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -388,6 +388,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)
 - [`--use-title-as-name`](field-customization.md#use-title-as-name)
 - [`--use-total-false-for-typed-dict`](typing-customization.md#use-total-false-for-typed-dict)
+- [`--use-tuple-for-closed-arrays`](typing-customization.md#use-tuple-for-closed-arrays)
 - [`--use-tuple-for-fixed-items`](typing-customization.md#use-tuple-for-fixed-items)
 - [`--use-tuple-for-fixed-length-arrays`](typing-customization.md#use-tuple-for-fixed-length-arrays)
 - [`--use-type-alias`](typing-customization.md#use-type-alias)

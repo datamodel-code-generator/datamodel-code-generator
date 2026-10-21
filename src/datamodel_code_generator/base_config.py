@@ -274,6 +274,7 @@ class BaseGenerateConfig(BaseModel):
     use_operation_id_as_name: bool = False
     use_unique_items_as_set: bool = False
     use_tuple_for_fixed_items: bool = False
+    use_tuple_for_closed_arrays: bool = False
     use_tuple_for_fixed_length_arrays: bool = False
     use_total_false_for_typed_dict: bool = False
     use_closed_typed_dict: bool = True

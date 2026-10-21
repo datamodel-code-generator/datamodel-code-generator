@@ -3353,7 +3353,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         length, and the tuple is written only where the list form would lose positions: a list is kept when its items
         and every allowed position accept the same values, so the list and its length constraints are exact.
         ``canonical_ref`` reads the ``$ref`` values of ``obj``; by default they belong to the document being parsed.
+        Without ``--use-tuple-for-closed-arrays`` only equal explicit ``minItems`` and ``maxItems`` make a tuple.
         """
+        if not self.use_tuple_for_closed_arrays:
+            return self._get_explicit_fixed_positional_items(obj)
         if obj.prefixItems is not None:
             positional_key, positions = "prefixItems", obj.prefixItems
             explicit = obj.minItems is not None and obj.minItems == obj.maxItems
@@ -3377,6 +3380,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for schema in [*items, *(self._get_list_item_schemas(obj) or [True])]
         )
         return None if all(other == first for other in others) else items
+
+    def _get_explicit_fixed_positional_items(self, obj: JsonSchemaObject) -> list[JsonSchemaObject | bool] | None:
+        """Return the positions of an array whose explicit ``minItems`` and ``maxItems`` are equal, or None."""
+        if obj.prefixItems is not None:
+            return self._get_fixed_length_prefix_tuple_items(obj)
+        if (
+            self.use_tuple_for_fixed_items
+            and isinstance(obj.items, list)
+            and obj.minItems == obj.maxItems == len(obj.items)
+            and not any(item is False for item in obj.items)
+        ):
+            return [*obj.items]
+        return None
+
+    @classmethod
+    def _get_fixed_length_prefix_tuple_items(cls, obj: JsonSchemaObject) -> list[JsonSchemaObject | bool] | None:
+        """Return positional item schemas for fixed-length prefixItems arrays."""
+        if (tuple_length := obj.minItems) is None or tuple_length != obj.maxItems or tuple_length < 0:
+            return None
+        items = [*(obj.prefixItems or [])[:tuple_length]]
+        if isinstance(obj.items, (JsonSchemaObject, bool)):
+            tail_item: JsonSchemaObject | bool = obj.items
+        elif isinstance(obj.unevaluatedItems, (JsonSchemaObject, bool)):
+            tail_item = obj.unevaluatedItems
+        else:
+            tail_item = True
+        items.extend(tail_item for _ in range(tuple_length - len(items)))
+        return None if any(item is False for item in items) else items
 
     def _get_position_validation_keywords(
         self,
@@ -7640,7 +7671,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if positional_items and schema.minItems == schema.maxItems == len(positional_items):
             shape["minItems"] = schema.minItems
             shape["maxItems"] = schema.maxItems
-        elif (fixed_items := self._get_fixed_positional_items(schema, canonical_ref)) is not None:
+        elif (
+            self.use_tuple_for_closed_arrays
+            and (fixed_items := self._get_fixed_positional_items(schema, canonical_ref)) is not None
+        ):
             shape["minItems"] = shape["maxItems"] = len(fixed_items)
         return shape
 

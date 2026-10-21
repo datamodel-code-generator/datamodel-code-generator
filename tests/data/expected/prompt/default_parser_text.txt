@@ -58,6 +58,7 @@
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.
 - `--use-total-false-for-typed-dict`: Generate TypedDict declarations with `total=False`.
+- `--use-tuple-for-closed-arrays`: Generate tuple types for positional arrays that no other item can follow.
 - `--use-tuple-for-fixed-items`: Generate tuple types for arrays with items array syntax.
 - `--use-tuple-for-fixed-length-arrays`: Generate tuple types for homogeneous fixed-length arrays.
 - `--use-type-alias`: Use TypeAlias instead of root models for type definitions (experimental).

@@ -85,6 +85,7 @@ class CodeModel(RootModel[Literal['abc']]):
 
 
 class Level(Enum):
+    a = 'a'
     bb = 'bb'
     ccc = 'ccc'
 

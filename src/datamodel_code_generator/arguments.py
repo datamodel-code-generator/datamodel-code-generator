@@ -985,6 +985,14 @@ typing_options.add_argument(
     default=None,
 )
 typing_options.add_argument(
+    "--use-tuple-for-closed-arrays",
+    help="Generate tuple types for positional arrays that no other item can follow: a closed prefixItems tail "
+    "(items, unevaluatedItems or additionalItems false) whose length the length keywords fix, so that each position "
+    "keeps its own type",
+    action="store_true",
+    default=None,
+)
+typing_options.add_argument(
     "--use-tuple-for-fixed-length-arrays",
     help="Generate tuple types for fixed-length arrays with a single items schema",
     action="store_true",

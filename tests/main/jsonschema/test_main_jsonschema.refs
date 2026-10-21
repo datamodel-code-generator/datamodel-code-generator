@@ -6649,7 +6649,9 @@ with-option	main/jsonschema/main_jsonschema/intersect_allof_keywords[with-option
 without-option	main/jsonschema/main_jsonschema/intersect_allof_keywords[without-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output_without_option[inherited_overrides-pydantic_v2.BaseModel-field-constraints].py
 [test_main_jsonschema_items_array_additional_items_false]
 msgspec.Struct	main/jsonschema/main_jsonschema/items_array_additional_items_false[msgspec.Struct].py
+msgspec.Struct-default	main/jsonschema/main_jsonschema/items_array_additional_items_false[msgspec.Struct-default].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/items_array_additional_items_false[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/items_array_additional_items_false[pydantic_v2.BaseModel-default].py
 [test_main_jsonschema_items_array_tuple]
 	main/jsonschema/items_array_tuple.py
 [test_main_jsonschema_items_array_tuple_allof_keeps_legacy_list]
@@ -6841,8 +6843,11 @@ msgspec.Struct-prefix_items_msgspec.py	main/jsonschema/prefix_items_msgspec.py
 pydantic_v2.BaseModel-prefix_items.py	main/jsonschema/prefix_items.py
 [test_main_jsonschema_prefix_items_closed_length]
 allof-merge-mode-none	main/jsonschema/main_jsonschema/prefix_items_closed_length[allof-merge-mode-none].py	= main/jsonschema/main_jsonschema/prefix_items_closed_length[pydantic_v2.BaseModel].py
+allof-merge-mode-none-default	main/jsonschema/main_jsonschema/prefix_items_closed_length[allof-merge-mode-none-default].py
 msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_closed_length[msgspec.Struct].py
+msgspec.Struct-default	main/jsonschema/main_jsonschema/prefix_items_closed_length[msgspec.Struct-default].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_closed_length[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/prefix_items_closed_length[pydantic_v2.BaseModel-default].py
 [test_main_jsonschema_prefix_items_fixed_any_tail_schema]
 	main/jsonschema/prefix_items_fixed_any_tail_schema.py
 [test_main_jsonschema_prefix_items_fixed_tail_schema]
@@ -6858,10 +6863,16 @@ pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_closed_length
 [test_main_jsonschema_prefix_items_unique_items]
 msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct].py
 msgspec.Struct	main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct].warnings.txt
+msgspec.Struct-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct-default].py
+msgspec.Struct-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct-default].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unique_items[pydantic_v2.BaseModel].py
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/prefix_items_unique_items[pydantic_v2.BaseModel].warnings.txt	= main/jsonschema/main_jsonschema/prefix_items_unique_items[msgspec.Struct].warnings.txt
+pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[pydantic_v2.BaseModel-default].py
+pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[pydantic_v2.BaseModel-default].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators].py
 schema-validators	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+schema-validators-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators-default].py
+schema-validators-default	main/jsonschema/main_jsonschema/prefix_items_unique_items[schema-validators-default].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 [test_main_jsonschema_prefix_items_with_false_schema]
 	main/jsonschema/prefix_items_with_false_schema.py
 [test_main_jsonschema_prefix_items_with_true_schema]

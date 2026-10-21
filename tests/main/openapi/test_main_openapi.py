@@ -3324,9 +3324,7 @@ def test_validation_failed(mocker: MockerFixture, output_file: Path) -> None:
 
 The `--use-unique-items-as-set` flag generates Python set types instead of
 list types for JSON Schema arrays that have the uniqueItems constraint set
-to true, enforcing uniqueness at the type level. An array written as a tuple
-keeps its positions and stays a tuple; a warning names the field generated
-without uniqueness, unless `--generate-schema-validators` checks it.""",
+to true, enforcing uniqueness at the type level.""",
     input_schema="openapi/api_constrained.yaml",
     cli_args=["--use-unique-items-as-set", "--field-constraints"],
     golden_output="openapi/with_field_constraints_pydantic_v2_use_standard_collections_set.py",

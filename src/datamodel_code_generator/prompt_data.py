@@ -219,6 +219,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-tag-as-union-variant-name": "Name inline oneOf/anyOf branch models after their tag: what `--infer-union-...",
     "--use-title-as-name": "Use schema title as the generated class name.",
     "--use-total-false-for-typed-dict": "Generate TypedDict declarations with `total=False`.",
+    "--use-tuple-for-closed-arrays": "Generate tuple types for positional arrays that no other item can follow.",
     "--use-tuple-for-fixed-items": "Generate tuple types for arrays with items array syntax.",
     "--use-tuple-for-fixed-length-arrays": "Generate tuple types for homogeneous fixed-length arrays.",
     "--use-type-alias": "Use TypeAlias instead of root models for type definitions (experimental).",

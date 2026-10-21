@@ -36,6 +36,7 @@
 | [`--use-standard-collections`](#use-standard-collections) | Use built-in dict/list instead of typing.Dict/List. |
 | [`--use-standard-primitive-types`](#use-standard-primitive-types) | Use Python standard library types for string formats instead... |
 | [`--use-total-false-for-typed-dict`](#use-total-false-for-typed-dict) | Generate TypedDict declarations with `total=False`. |
+| [`--use-tuple-for-closed-arrays`](#use-tuple-for-closed-arrays) | Generate tuple types for positional arrays that no other ite... |
 | [`--use-tuple-for-fixed-items`](#use-tuple-for-fixed-items) | Generate tuple types for arrays with items array syntax. |
 | [`--use-tuple-for-fixed-length-arrays`](#use-tuple-for-fixed-length-arrays) | Generate tuple types for homogeneous fixed-length arrays. |
 | [`--use-type-alias`](#use-type-alias) | Use TypeAlias instead of root models for type definitions (e... |
@@ -5595,16 +5596,406 @@ are optional.
 
 ---
 
+## `--use-tuple-for-closed-arrays` {#use-tuple-for-closed-arrays}
+
+Generate tuple types for positional arrays that no other item can follow.
+
+A `prefixItems` array whose tail is closed by `items: false`, `unevaluatedItems: false`, a `false` position or
+`contains`, and an `items` array closed by `additionalItems: false` or a `false` position, is written as a tuple
+when its length bounds fix its length, so every position keeps its own type. Without the option only equal
+`minItems` and `maxItems` make a tuple, and a closed array is a list with length constraints that accepts items in
+the wrong positions. When bounds other than equal `minItems` and `maxItems` fix the length, the list stays if its
+item schemas (the allowed positions and the `items` schema) accept the same values, compared without annotations
+and `x-` keys, with a `$ref` read as its target and `type: [T]` as `type: T`. `--use-tuple-for-fixed-items` still
+decides whether the `items` array form is read. A tuple cannot hold `uniqueItems`: with `--use-unique-items-as-set`
+it stays a tuple and a warning names the field generated without uniqueness, unless `--generate-schema-validators`
+checks it.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input prefix_items_closed_length.json --use-tuple-for-closed-arrays # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-tuple-for-closed-arrays` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "PrefixItemsClosedLength",
+      "type": "object",
+      "properties": {
+        "closed_by_items_false": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "items": false,
+          "minItems": 2
+        },
+        "closed_by_unevaluated_items_false": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "unevaluatedItems": false,
+          "minItems": 2
+        },
+        "closed_by_false_position": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}, false],
+          "minItems": 2
+        },
+        "closed_below_max_items": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 5
+        },
+        "closed_nullable": {
+          "type": ["array", "null"],
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "items": false,
+          "minItems": 2
+        },
+        "closed_by_contains": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "contains": true,
+          "minContains": 2,
+          "maxContains": 2
+        },
+        "closed_by_contains_beyond_positions": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}],
+          "contains": {},
+          "minContains": 3,
+          "maxContains": 3
+        },
+        "closed_to_one_position": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "contains": {},
+          "maxContains": 1
+        },
+        "closed_before_other_positions": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "string"}, {"type": "integer"}],
+          "items": false,
+          "maxItems": 2,
+          "contains": {},
+          "minContains": 2
+        },
+        "kept_one_schema": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "string"}],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_one_schema_apart_from_annotations": {
+          "type": "array",
+          "prefixItems": [{"type": "string", "description": "first", "$comment": "first position"}, {"type": "string"}],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_one_position": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}],
+          "items": false,
+          "minItems": 1
+        },
+        "kept_one_schema_with_tail": {
+          "type": "array",
+          "prefixItems": [{"type": "string", "x-position": "first"}],
+          "items": {"type": "string", "x-position": "first"},
+          "contains": {},
+          "minContains": 3,
+          "maxContains": 3
+        },
+        "kept_variable_length": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "integer"}],
+          "items": false,
+          "minItems": 1
+        },
+        "closed_by_type_list": {
+          "type": "array",
+          "prefixItems": [{"type": ["string", "null"]}, {"type": "string"}],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_apart_from_extension_keys": {
+          "type": "array",
+          "prefixItems": [{"type": "string", "x-order": 1}, {"type": "string"}],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_ref_and_equal_inline": {
+          "type": "array",
+          "prefixItems": [{"$ref": "#/$defs/Name"}, {"type": "string", "maxLength": 5}],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_type_list_of_one": {
+          "type": "array",
+          "prefixItems": [{"type": ["string"]}, {"type": "string"}],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_ref_to_root_with_extension_key": {
+          "type": "array",
+          "prefixItems": [{"$ref": "#/$defs/Tagged"}, {"type": "integer"}],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_nested_items": {
+          "type": "array",
+          "prefixItems": [
+            {"type": "array", "items": {"type": "string", "title": "Tag"}},
+            {"type": "array", "items": {"type": "string"}}
+          ],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_nested_any_of": {
+          "type": "array",
+          "prefixItems": [
+            {"anyOf": [{"type": "string"}, {"type": "integer", "description": "A count."}]},
+            {"anyOf": [{"type": "string"}, {"type": "integer"}]}
+          ],
+          "items": false,
+          "minItems": 2
+        },
+        "kept_nested_dependent_schemas": {
+          "type": "array",
+          "prefixItems": [
+            {"type": "object", "dependentSchemas": {"a": {"type": "object", "required": ["b"], "description": "Needs b."}}},
+            {"type": "object", "dependentSchemas": {"a": {"type": "object", "required": ["b"]}}}
+          ],
+          "items": false,
+          "minItems": 2
+        },
+        "explicit_one_schema": {
+          "type": "array",
+          "prefixItems": [{"type": "string"}, {"type": "string"}],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "inherited": {"$ref": "#/$defs/Child"}
+      },
+      "$defs": {
+        "Name": {"type": "string", "maxLength": 5, "description": "A name."},
+        "Tagged": {"type": "integer", "x-kind": "tag"},
+        "Parent": {
+          "type": "object",
+          "properties": {
+            "closed": {
+              "type": "array",
+              "prefixItems": [{"type": "string"}, {"type": "integer"}],
+              "items": false,
+              "minItems": 2
+            }
+          }
+        },
+        "Child": {
+          "allOf": [
+            {"$ref": "#/$defs/Parent"},
+            {"type": "object", "properties": {"closed": {"type": "array", "prefixItems": [{"type": "string", "maxLength": 3}]}}}
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  prefix_items_closed_length.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel, constr
+
+
+        class KeptRefAndEqualInlineItem(RootModel[constr(max_length=5)]):
+            root: constr(max_length=5)
+
+
+        class Name(RootModel[constr(max_length=5)]):
+            root: constr(max_length=5) = Field(..., description='A name.')
+
+
+        class Tagged(RootModel[int]):
+            root: int
+
+
+        class Parent(BaseModel):
+            closed: tuple[str, int] | None = None
+
+
+        class ClosedItem(RootModel[constr(max_length=3)]):
+            root: constr(max_length=3)
+
+
+        class Child(Parent):
+            closed: tuple[ClosedItem, int] | None = None
+
+
+        class PrefixItemsClosedLength(BaseModel):
+            closed_by_items_false: tuple[str, int] | None = None
+            closed_by_unevaluated_items_false: tuple[str, int] | None = None
+            closed_by_false_position: tuple[str, int] | None = None
+            closed_below_max_items: tuple[str, int] | None = None
+            closed_nullable: tuple[str, int] | None = None
+            closed_by_contains: tuple[str, int] | None = None
+            closed_by_contains_beyond_positions: tuple[str, Any, Any] | None = None
+            closed_to_one_position: tuple[str] | None = None
+            closed_before_other_positions: tuple[str, str] | None = None
+            kept_one_schema: list[str] | None = Field(None, max_length=2, min_length=2)
+            kept_one_schema_apart_from_annotations: list[str] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_one_position: list[str] | None = Field(None, max_length=1, min_length=1)
+            kept_one_schema_with_tail: list[str] | None = Field(
+                None, max_length=3, min_length=3
+            )
+            kept_variable_length: list[str | int] | None = Field(
+                None, max_length=2, min_length=1
+            )
+            closed_by_type_list: tuple[str | None, str] | None = None
+            kept_apart_from_extension_keys: list[str] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_ref_and_equal_inline: list[Name | KeptRefAndEqualInlineItem] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_type_list_of_one: list[str] | None = Field(None, max_length=2, min_length=2)
+            kept_ref_to_root_with_extension_key: list[Tagged | int] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_nested_items: list[list[str]] | None = Field(None, max_length=2, min_length=2)
+            kept_nested_any_of: list[str | int] | None = Field(None, max_length=2, min_length=2)
+            kept_nested_dependent_schemas: list[dict[str, Any]] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            explicit_one_schema: tuple[str, str] | None = None
+            inherited: Child | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  prefix_items_closed_length.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel, constr
+
+
+        class KeptRefAndEqualInlineItem(RootModel[constr(max_length=5)]):
+            root: constr(max_length=5)
+
+
+        class Name(RootModel[constr(max_length=5)]):
+            root: constr(max_length=5) = Field(..., description='A name.')
+
+
+        class Tagged(RootModel[int]):
+            root: int
+
+
+        class Parent(BaseModel):
+            closed: list[str | int] | None = Field(None, max_length=2, min_length=2)
+
+
+        class ClosedItem(RootModel[constr(max_length=3)]):
+            root: constr(max_length=3)
+
+
+        class Child(Parent):
+            closed: list[ClosedItem | int] | None = Field(None, max_length=2, min_length=2)
+
+
+        class PrefixItemsClosedLength(BaseModel):
+            closed_by_items_false: list[str | int] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            closed_by_unevaluated_items_false: list[str | int] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            closed_by_false_position: list[str | int] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            closed_below_max_items: list[str | int] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            closed_nullable: list[str | int] | None = Field(None, max_length=2, min_length=2)
+            closed_by_contains: list[Any] | None = Field(None, max_length=2, min_length=2)
+            closed_by_contains_beyond_positions: list[Any] | None = Field(
+                None, max_length=3, min_length=3
+            )
+            closed_to_one_position: list[Any] | None = Field(None, max_length=1, min_length=1)
+            closed_before_other_positions: list[str | int] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_one_schema: list[str] | None = Field(None, max_length=2, min_length=2)
+            kept_one_schema_apart_from_annotations: list[str] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_one_position: list[str] | None = Field(None, max_length=1, min_length=1)
+            kept_one_schema_with_tail: list[str] | None = Field(
+                None, max_length=3, min_length=3
+            )
+            kept_variable_length: list[str | int] | None = Field(
+                None, max_length=2, min_length=1
+            )
+            closed_by_type_list: list[str] | None = Field(None, max_length=2, min_length=2)
+            kept_apart_from_extension_keys: list[str] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_ref_and_equal_inline: list[Name | KeptRefAndEqualInlineItem] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_type_list_of_one: list[str] | None = Field(None, max_length=2, min_length=2)
+            kept_ref_to_root_with_extension_key: list[Tagged | int] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            kept_nested_items: list[list[str]] | None = Field(None, max_length=2, min_length=2)
+            kept_nested_any_of: list[str | int] | None = Field(None, max_length=2, min_length=2)
+            kept_nested_dependent_schemas: list[dict[str, Any]] | None = Field(
+                None, max_length=2, min_length=2
+            )
+            explicit_one_schema: tuple[str, str] | None = None
+            inherited: Child | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-tuple-for-fixed-items` {#use-tuple-for-fixed-items}
 
 Generate tuple types for arrays with items array syntax.
 
 When `--use-tuple-for-fixed-items` is enabled and an array has `items` as an array
-whose length its bounds fix, such as `minItems == maxItems == len(items)` or `additionalItems: false`
-with `minItems == len(items)`, generate a tuple type instead of a list. When bounds other than equal
-`minItems` and `maxItems` fix the length, the list stays if its item schemas (the allowed positions
-and the `additionalItems` schema) accept the same values, compared without annotations and `x-` keys,
-with a `$ref` read as its target and `type: [T]` as `type: T`.
+with `minItems == maxItems == len(items)`, generate a tuple type instead of a list.
 
 !!! tip "Usage"
 
@@ -6542,9 +6933,7 @@ Generate set types for arrays with uniqueItems constraint.
 
 The `--use-unique-items-as-set` flag generates Python set types instead of
 list types for JSON Schema arrays that have the uniqueItems constraint set
-to true, enforcing uniqueness at the type level. An array written as a tuple
-keeps its positions and stays a tuple; a warning names the field generated
-without uniqueness, unless `--generate-schema-validators` checks it.
+to true, enforcing uniqueness at the type level.
 
 !!! tip "Usage"
 
