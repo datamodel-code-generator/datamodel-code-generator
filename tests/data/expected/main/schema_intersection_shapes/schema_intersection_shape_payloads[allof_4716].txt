@@ -457,57 +457,57 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 0} reje
 pydantic_v2.dataclass --use-site-models-for-constrained-refs q_map {"k": 11} rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs short_status "open" accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs short_status "closed" rejected
-msgspec.Struct --use-site-models-for-constrained-refs count 5 import error
-msgspec.Struct --use-site-models-for-constrained-refs count 4 import error
-msgspec.Struct --use-site-models-for-constrained-refs code "A" import error
-msgspec.Struct --use-site-models-for-constrained-refs code "ABCD" import error
-msgspec.Struct --use-site-models-for-constrained-refs code "a" import error
-msgspec.Struct --use-site-models-for-constrained-refs tags ["a"] import error
-msgspec.Struct --use-site-models-for-constrained-refs tags [] import error
-msgspec.Struct --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] import error
-msgspec.Struct --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] import error
-msgspec.Struct --use-site-models-for-constrained-refs score 100 import error
-msgspec.Struct --use-site-models-for-constrained-refs score 101 import error
-msgspec.Struct --use-site-models-for-constrained-refs counts [5] import error
-msgspec.Struct --use-site-models-for-constrained-refs counts [4] import error
-msgspec.Struct --use-site-models-for-constrained-refs limits {"k": 10} import error
-msgspec.Struct --use-site-models-for-constrained-refs limits {"k": 11} import error
-msgspec.Struct --use-site-models-for-constrained-refs point {"x": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs point {"x": "a"} import error
-msgspec.Struct --use-site-models-for-constrained-refs label 123 import error
-msgspec.Struct --use-site-models-for-constrained-refs label "a" import error
-msgspec.Struct --use-site-models-for-constrained-refs status "open" import error
-msgspec.Struct --use-site-models-for-constrained-refs status "closed" import error
-msgspec.Struct --use-site-models-for-constrained-refs status "other" import error
-msgspec.Struct --use-site-models-for-constrained-refs pair ["a"] import error
-msgspec.Struct --use-site-models-for-constrained-refs pair [] import error
-msgspec.Struct --use-site-models-for-constrained-refs pair ["a", "b", "c"] import error
-msgspec.Struct --use-site-models-for-constrained-refs single ["a"] import error
-msgspec.Struct --use-site-models-for-constrained-refs single [] import error
-msgspec.Struct --use-site-models-for-constrained-refs single ["a", "b"] import error
-msgspec.Struct --use-site-models-for-constrained-refs ref_pair ["b"] import error
-msgspec.Struct --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] import error
-msgspec.Struct --use-site-models-for-constrained-refs ref_pair [] import error
-msgspec.Struct --use-site-models-for-constrained-refs pp {"a": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs pp {"b": 9} import error
-msgspec.Struct --use-site-models-for-constrained-refs pp {"a": 0} import error
-msgspec.Struct --use-site-models-for-constrained-refs pp {"b": 10} import error
-msgspec.Struct --use-site-models-for-constrained-refs ap {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs ap {"k": 0} import error
-msgspec.Struct --use-site-models-for-constrained-refs q_allof 1 import error
-msgspec.Struct --use-site-models-for-constrained-refs q_allof 10 import error
-msgspec.Struct --use-site-models-for-constrained-refs q_allof 0 import error
-msgspec.Struct --use-site-models-for-constrained-refs q_allof 11 import error
-msgspec.Struct --use-site-models-for-constrained-refs q_items [1] import error
-msgspec.Struct --use-site-models-for-constrained-refs q_items [10] import error
-msgspec.Struct --use-site-models-for-constrained-refs q_items [0] import error
-msgspec.Struct --use-site-models-for-constrained-refs q_items [11] import error
-msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 1} import error
-msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 10} import error
-msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 0} import error
-msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 11} import error
-msgspec.Struct --use-site-models-for-constrained-refs short_status "open" import error
-msgspec.Struct --use-site-models-for-constrained-refs short_status "closed" import error
+msgspec.Struct --use-site-models-for-constrained-refs count 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs count 4 rejected
+msgspec.Struct --use-site-models-for-constrained-refs code "A" accepted
+msgspec.Struct --use-site-models-for-constrained-refs code "ABCD" rejected
+msgspec.Struct --use-site-models-for-constrained-refs code "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs tags ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs tags [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs tags ["a", "b", "c", "d"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs tags ["a", "b", "c", "d", "e", "f"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs score 100 accepted
+msgspec.Struct --use-site-models-for-constrained-refs score 101 rejected
+msgspec.Struct --use-site-models-for-constrained-refs counts [5] accepted
+msgspec.Struct --use-site-models-for-constrained-refs counts [4] rejected
+msgspec.Struct --use-site-models-for-constrained-refs limits {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs limits {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs point {"x": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs point {"x": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs label 123 accepted
+msgspec.Struct --use-site-models-for-constrained-refs label "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs status "open" accepted
+msgspec.Struct --use-site-models-for-constrained-refs status "closed" accepted
+msgspec.Struct --use-site-models-for-constrained-refs status "other" rejected
+msgspec.Struct --use-site-models-for-constrained-refs pair ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs pair [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs pair ["a", "b", "c"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs single ["a"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs single [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs single ["a", "b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_pair ["b"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_pair ["a", "b", "c"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_pair [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs pp {"a": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pp {"b": 9} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pp {"a": 0} accepted
+msgspec.Struct --use-site-models-for-constrained-refs pp {"b": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs ap {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs ap {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 0 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_allof 11 rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_items [1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_items [10] accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_items [0] rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_items [11] rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 0} rejected
+msgspec.Struct --use-site-models-for-constrained-refs q_map {"k": 11} rejected
+msgspec.Struct --use-site-models-for-constrained-refs short_status "open" accepted
+msgspec.Struct --use-site-models-for-constrained-refs short_status "closed" rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count 5 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs count 4 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs code "A" accepted

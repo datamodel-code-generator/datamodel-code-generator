@@ -13092,7 +13092,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
     ) -> DataType:
-        """Parse patternProperties into a union of dicts, one per value type, whose keys match its patterns."""
+        """Parse patternProperties into a union of dicts, one per value type, whose keys match its patterns.
+
+        An output that cannot decode a union of several dicts, such as msgspec, gets the one dict of
+        ``--use-single-dict-for-object-maps`` instead.
+        """
         pattern_value_pairs: list[tuple[str, DataType]] = []
         for i, (pattern, schema) in enumerate(pattern_properties.items()):
             if schema is False:
@@ -13120,6 +13124,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if key not in groups:
                 groups[key] = ([], value_type)
             groups[key][0].append(pattern)
+
+        if len(groups) > 1 and not self._output_model_context.decodes_value_unions:
+            return self._pattern_map_type(
+                [pattern for pattern, _ in pattern_value_pairs],
+                [value_type for _, value_type in pattern_value_pairs],
+                property_names,
+                joins_patterns=True,
+            )
 
         data_types: list[DataType] = []
         for patterns, value_type in groups.values():
@@ -13168,6 +13180,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             )
 
+        return self._pattern_map_type(patterns, value_types, property_names, joins_patterns=other_keys is None)
+
+    def _pattern_map_type(
+        self,
+        patterns: list[str],
+        value_types: list[DataType],
+        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
+        *,
+        joins_patterns: bool,
+    ) -> DataType:
+        """Return the one dict of a pattern map whose value is the union of ``value_types``.
+
+        Its keys match one of ``patterns`` where ``joins_patterns``, else those of ``property_names``. It is also the
+        map of 0.86.0 patternProperties whose union of dicts the output cannot decode.
+        """
         if not value_types:
             return self.data_type(
                 data_types=[self.data_type_manager.get_data_type(Types.any)],
@@ -13181,7 +13208,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.data_type(
             data_types=value_types,
             is_dict=True,
-            dict_key=self._pattern_map_key_type(property_names, None if other_keys is not None else "|".join(patterns)),
+            dict_key=self._pattern_map_key_type(property_names, "|".join(patterns) if joins_patterns else None),
         )
 
     def _other_keys_schema(

@@ -11911,7 +11911,7 @@ property counts stay on the dict. With `--generate-schema-validators`, the dict 
 its keys from `propertyNames` and counts the keys its patterns admit, the model of an object without `properties`
 joins the other types of its `type` array, and a pattern checks every declared key whose schema it adds an assertion
 to. Without the option the map is written as in 0.86.0: a union of dicts, one per value type of the patterns, the
-other types of a `type` array left out.""",
+other types of a `type` array left out; msgspec, which cannot decode a union of several dicts, gets the one dict.""",
     input_schema="jsonschema/pattern_properties_merge.json",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--use-single-dict-for-object-maps"],
     golden_output="jsonschema/pattern_properties_merge.py",

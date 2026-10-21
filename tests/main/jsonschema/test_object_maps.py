@@ -73,10 +73,7 @@ OPTION_SETS = {
 
 
 def _verdict(model: Any, output_model_type: str, document: object) -> str:
-    """Return whether a generated model accepts a JSON document, with the first error type where Pydantic rejects it.
-
-    msgspec refuses to decode into a type it cannot express, such as a union of two dicts, with a TypeError.
-    """
+    """Return whether a generated model accepts a JSON document, with the first error type where Pydantic rejects it."""
     text = json.dumps(document)
     try:
         if output_model_type == "msgspec.Struct":
@@ -87,8 +84,6 @@ def _verdict(model: Any, output_model_type: str, document: object) -> str:
         return f"rejected ({error.errors()[0]['type']})"
     except msgspec.ValidationError:
         return "rejected"
-    except TypeError:
-        return "not decodable (TypeError)"
     return "accepted"
 
 
@@ -102,7 +97,8 @@ def test_object_maps(
 
     Without --use-single-dict-for-object-maps the maps are those of 0.86.0: a union of dicts, one per value type of
     the patterns, with the null and the other types of a type array left to the field, while the values typed under
-    --use-typed-nullable-map-values keep the other types of their type array.
+    --use-typed-nullable-map-values keep the other types of their type array. msgspec, which cannot decode a union of
+    several dicts, gets the one dict of the option there.
     """
     input_path = OBJECT_MAPS / f"{name}.json"
     run_main_and_assert(
